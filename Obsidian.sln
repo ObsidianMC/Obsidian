@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.168
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian", "Obsidian\Obsidian.csproj", "{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3D44E6F2-1277-4D74-9279-99FC41014AEF}
+	EndGlobalSection
+EndGlobal
