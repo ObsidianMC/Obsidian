@@ -21,15 +21,17 @@ namespace Obsidian.Connection
         public CancellationTokenSource Cancellation { get; private set; }
         private ConcurrentHashSet<Packet> PacketQueue;
         private Logger Logger;
+        private Config Config;
 
         //current state of client
         public PacketState state { get; private set; } = PacketState.Handshaking;
 
-        public Client(TcpClient tcp, Logger logger)
+        public Client(TcpClient tcp, Logger logger, Config config)
         {
             this.Tcp = tcp;
             this.Cancellation = new CancellationTokenSource();
             this.Logger = logger;
+            this.Config = config;
         }
 
         public async Task StartClientConnection()
@@ -59,15 +61,15 @@ namespace Obsidian.Connection
                             default: 
                                 await this.DisconnectClientAsync(new Chat()
                                 {
-                                    Text = "suck my tiddies like they're covered in ",
-                                    Extra = new List<Chat>()
+                                    Text = Config.JoinMessage,
+                                    /*Extra = new List<Chat>()
                                     {
                                         new Chat()
                                         {
                                             Text="barbecue sauce",
                                             Bold=true
                                         }
-                                    }
+                                    }*/
                                 });
                                 break;
                         }

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Obsidian.Entities;
+using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -19,7 +22,15 @@ namespace Obsidian
             Console.ResetColor();
 
             // Do some entry stuff for server class
-            Obsidian = new Server(version, "0", 25565);
+            if (!File.Exists("config.json"))
+            {
+                File.Create("config.json").Close();
+                File.WriteAllText("config.json", JsonConvert.SerializeObject(new Config()));
+                Console.WriteLine("(Created new config)");
+            }
+
+            var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
+            Obsidian = new Server(config, version, "0");
 
             Obsidian.StartServer().Wait();
 
