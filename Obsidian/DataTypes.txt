@@ -1,0 +1,16 @@
+Wiki Name           | C# Type
+--------------------+--------------
+Boolean             | bool / byte
+Byte                | sbyte
+Unsigned Byte       | byte
+Short               | short
+Unsigned Short      | ushort
+Int                 | uint / UInt32
+Long                | long / UInt64
+Float               | float
+Double              | double
+String              | string
+Chat                | (string)
+Identifier          | (string)
+VarInt              | int / Int32
+VarLong             | long / Int64

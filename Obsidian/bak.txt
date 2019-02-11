@@ -1,0 +1,74 @@
+﻿int length = await netstream.ReadVarIntAsync();// read packet length
+
+                byte[] buffer = new byte[length];
+                await netstream.ReadAsync(buffer, 0, length); // buffer rest of packet
+                await Logger.LogMessage($"Received packet with length {length} and read it into the buffer");
+                
+                if(length == 0)
+                {
+                    Logger.LogMessage("(warning) Packet is empty");
+                }
+                
+                // do stuff with byte array
+                var bufferstream = new MemoryStream(buffer);
+                var packetid = await bufferstream.ReadVarIntAsync();
+                await Logger.LogMessage($"Read packet ID {packetid.ToString("X")}"); // should be 0x00 / 0
+                // TODO: the rest
+                if (state == PacketState.Handshaking)
+                {
+                    if (packetid == 0x00)
+                    {
+                        if (length > 0)
+                        {
+                            await Logger.LogMessage("Reading handshake..");
+
+                            var packet = await Handshake.FromArrayAsync(bufferstream);
+
+                            state = packet.NextState;
+                            await Logger.LogMessage("Set state to " + state.ToString());
+
+                            //if (packet.NextState == PacketState.Status)
+                            //{
+                            //    await Logger.LogMessage("Bada bing bada boom, let's wait for that empty packet");
+                            //    // TODO debug first then the rest
+                            //    length = await netstream.ReadVarIntAsync();
+                            //    buffer = new byte[length];
+                            //    await netstream.ReadAsync(buffer, 0, length);
+                            //
+                            //    // motd lookup
+                            //    // no need for buffer stream because it's likely empty anyway
+                            //    await Logger.LogMessage("Bada bing bada boom, the empty packet is here. Let's send out MOTD.");
+                            //    // TODO
+                            //    length = 0;
+                            //    // making a default motd builder method in ServerStatus.cs.. brb
+                            //    var status = JsonConvert.SerializeObject(ServerStatus.DebugStatus);
+                            //    var statusbyte = Encoding.UTF8.GetBytes(status);
+                            //    packetid = 0x00;
+                            //    length = statusbyte.Length + packetid.GetVarintLength() + statusbyte.Length.GetVarintLength();
+                            //
+                            //    await netstream.WriteVarIntAsync(length);
+                            //    await netstream.WriteVarIntAsync(packetid);
+                            //    await netstream.WriteAsync(statusbyte, 0, statusbyte.Length);
+                            //    await Logger.LogMessage("Sent out our MOTD packet.");
+                            //    // Now minecraft will try to find out our ping
+                            //    await Logger.LogMessage("Minecraft will now try to find our ping. Let's help it with that.");
+                            //}
+                            //TODO: the another rest
+                        }
+                    }
+                }
+                else if (state == PacketState.Status)
+                {
+                    if (packetid == 0x00)
+                    {
+                        await Logger.LogMessage("Got request packet");
+                        var status = JsonConvert.SerializeObject(ServerStatus.DebugStatus);
+                        var statusbyte = Encoding.UTF8.GetBytes(status);
+                        packetid = 0x00;
+                        length = statusbyte.Length + packetid.GetVarintLength() + statusbyte.Length.GetVarintLength();
+                        await netstream.WriteVarIntAsync(length);
+                        await netstream.WriteVarIntAsync(packetid);
+                        await netstream.WriteAsync(statusbyte, 0, statusbyte.Length);
+                        await Logger.LogMessage("Sent out our MOTD packet.");
+                    }
+                }
