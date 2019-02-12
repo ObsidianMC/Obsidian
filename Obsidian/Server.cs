@@ -54,7 +54,7 @@ namespace Obsidian
             await Logger.LogMessageAsync($"Launching Obsidian Server v {Version} with ID {Id}");
 
             await Logger.LogMessageAsync("Starting server backend...");
-            Task.Run(async () => { await this.ServerLoop(); });
+            await Task.Factory.StartNew(async() => { await this.ServerLoop().ConfigureAwait(false); });
 
             await Logger.LogMessageAsync($"Start listening for new clients");
             _tcpListener.Start();
@@ -62,12 +62,12 @@ namespace Obsidian
             while (!_cts.IsCancellationRequested)
             {
                 var client = await _tcpListener.AcceptTcpClientAsync();
-                // TODO check if this is correctly fetching IP
+
                 await Logger.LogMessageAsync($"New connection from client with IP {client.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
                 var clnt = new Client(client, Logger, this.Config, this);
                 _clients.Add(clnt);
-                // Don't await, it will run parralel from all other clients.
-                Task.Run(async () => { await clnt.StartClientConnection().ConfigureAwait(false); });
+
+                await Task.Factory.StartNew(async () => { await clnt.StartClientConnection().ConfigureAwait(false); });
             }
             // Cancellation has been requested
             await Logger.LogMessageAsync($"Cancellation has been requested. Stopping server...");
