@@ -46,23 +46,27 @@ namespace Obsidian.Packets
 
         public static async Task<PlayerPositionLook> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            return new PlayerPositionLook(await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(),
-                await stream.ReadDoubleAsync(), await stream.ReadFloatAsync(), await stream.ReadFloatAsync(),
-                (PositionFlags)await stream.ReadByteAsync(), await stream.ReadVarIntAsync());
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                return new PlayerPositionLook(await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(),
+                    await stream.ReadDoubleAsync(), await stream.ReadFloatAsync(), await stream.ReadFloatAsync(),
+                    (PositionFlags)await stream.ReadByteAsync(), await stream.ReadVarIntAsync());
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteDoubleAsync(this.X);
-            await stream.WriteDoubleAsync(this.Y);
-            await stream.WriteDoubleAsync(this.Z);
-            await stream.WriteFloatAsync(this.Yaw);
-            await stream.WriteFloatAsync(this.Pitch);
-            await stream.WriteByteAsync((sbyte)this.Flags);
-            await stream.WriteVarIntAsync(this.TeleportId);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteDoubleAsync(this.X);
+                await stream.WriteDoubleAsync(this.Y);
+                await stream.WriteDoubleAsync(this.Z);
+                await stream.WriteFloatAsync(this.Yaw);
+                await stream.WriteFloatAsync(this.Pitch);
+                await stream.WriteByteAsync((sbyte)this.Flags);
+                await stream.WriteVarIntAsync(this.TeleportId);
+                return stream.ToArray();
+            }
         }
     }
 }

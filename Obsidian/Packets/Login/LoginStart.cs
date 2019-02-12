@@ -14,15 +14,19 @@ namespace Obsidian.Packets
 
         public static async Task<LoginStart> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            return new LoginStart(await stream.ReadStringAsync());
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                return new LoginStart(await stream.ReadStringAsync());
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteStringAsync(this.Username);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteStringAsync(this.Username);
+                return stream.ToArray();
+            }
         }
     }
 }

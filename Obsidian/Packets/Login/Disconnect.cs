@@ -18,9 +18,11 @@ namespace Obsidian.Packets
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteChatAsync(this.Reason);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteChatAsync(this.Reason);
+                return stream.ToArray();
+            }
         }
     }
 }

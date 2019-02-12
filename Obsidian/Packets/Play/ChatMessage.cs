@@ -23,18 +23,22 @@ namespace Obsidian.Packets
 
         public static async Task<ChatMessage> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            var chat = JsonConvert.DeserializeObject<Chat>(await stream.ReadStringAsync());
-            var pos = await stream.ReadUnsignedByteAsync();
-            return new ChatMessage(chat, pos);
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                var chat = JsonConvert.DeserializeObject<Chat>(await stream.ReadStringAsync());
+                var pos = await stream.ReadUnsignedByteAsync();
+                return new ChatMessage(chat, pos);
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteStringAsync(JsonConvert.SerializeObject(this.Message));
-            await stream.WriteUnsignedByteAsync(Position);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteStringAsync(JsonConvert.SerializeObject(this.Message));
+                await stream.WriteUnsignedByteAsync(Position);
+                return stream.ToArray();
+            }
         }
     }
 }

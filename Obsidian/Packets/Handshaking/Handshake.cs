@@ -33,14 +33,16 @@ namespace Obsidian.Packets.Handshaking
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteVarIntAsync((int)this.Version);
-            //TODO: add string length check
-            await stream.WriteStringAsync(this.ServerAddress);
-            await stream.WriteUnsignedShortAsync(this.ServerPort);
-            await stream.WriteVarIntAsync((int)this.NextState);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteVarIntAsync((int)this.Version);
+                //TODO: add string length check
+                await stream.WriteStringAsync(this.ServerAddress);
+                await stream.WriteUnsignedShortAsync(this.ServerPort);
+                await stream.WriteVarIntAsync((int)this.NextState);
 
-            return stream.ToArray();
+                return stream.ToArray();
+            }
         }
 
     }

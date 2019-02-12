@@ -14,24 +14,21 @@ namespace Obsidian.Packets.Status
         public async Task<RequestResponse> FromByteAsync(byte[] data)
         {
             await Task.Yield();
-            MemoryStream stream = new MemoryStream(data);
-            return new RequestResponse();
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                // empty data: consider taking away stream or making a separate object.
+                return new RequestResponse();
+            }
         }
 
         public async Task<byte[]> GetDataAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteStringAsync(this.Json);
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteStringAsync(this.Json);
 
-            return stream.ToArray();
-        }
-
-        public async Task<MemoryStream> GetDataStreamAsync()
-        {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteStringAsync(this.Json);
-
-            return stream;
+                return stream.ToArray();
+            }
         }
     }
 }

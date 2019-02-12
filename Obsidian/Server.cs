@@ -143,7 +143,7 @@ namespace Obsidian
             }
         }
 
-        public async Task<bool> CheckPlayerOnlineAsync(string username)
+        public bool CheckPlayerOnlineAsync(string username)
         {
             return this._clients.Any(x => x.Player.Username == username);
         }

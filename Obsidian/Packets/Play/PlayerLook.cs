@@ -23,17 +23,21 @@ namespace Obsidian.Packets
 
         public static async Task<PlayerLook> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            return new PlayerLook(await stream.ReadFloatAsync(), await stream.ReadFloatAsync(), await stream.ReadBooleanAsync());
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                return new PlayerLook(await stream.ReadFloatAsync(), await stream.ReadFloatAsync(), await stream.ReadBooleanAsync());
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteFloatAsync(this.Yaw);
-            await stream.WriteFloatAsync(this.Pitch);
-            await stream.WriteBooleanAsync(this.OnGround);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteFloatAsync(this.Yaw);
+                await stream.WriteFloatAsync(this.Pitch);
+                await stream.WriteBooleanAsync(this.OnGround);
+                return stream.ToArray();
+            }
         }
     }
 }

@@ -70,6 +70,8 @@ namespace Obsidian.Packets
             var thedata = new byte[arlen];
             await packetstream.ReadAsync(thedata, 0, thedata.Length);
 
+            packetstream.Dispose();
+
             return new Packet()
             {
                 PacketId = packetid,

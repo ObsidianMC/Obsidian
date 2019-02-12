@@ -11,7 +11,13 @@ namespace Obsidian.Packets
         public string Message { get; private set; }
 
 
-        public static async Task<IncomingChatMessage> FromArrayAsync(byte[] data) => new IncomingChatMessage(await new MemoryStream(data).ReadStringAsync(256));
+        public static async Task<IncomingChatMessage> FromArrayAsync(byte[] data)
+        {
+            using (var stream = new MemoryStream(data))
+            {
+                return new IncomingChatMessage(await stream.ReadStringAsync(256));
+            }
+        }
 
         public async Task<byte[]> ToArrayAsync()
         {

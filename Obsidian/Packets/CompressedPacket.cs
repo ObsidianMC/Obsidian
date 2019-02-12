@@ -34,6 +34,8 @@ namespace Obsidian.Packets
             await stream.WriteVarIntAsync(PacketLength);
             await stream.WriteVarIntAsync(compdata.Length);
             await stream.WriteAsync(compdata, 0, compdata.Length);
+
+            memstr.Dispose();
         }
 
         // shut the fuck up, I know what I'm doing
@@ -65,6 +67,9 @@ namespace Obsidian.Packets
 
             var thedata = new byte[arlen];
             await memstr.ReadAsync(thedata, 0, thedata.Length);
+
+            memstr.Dispose();
+            deflate.Dispose();
 
             return new CompressedPacket()
             {

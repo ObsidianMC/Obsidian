@@ -13,15 +13,19 @@ namespace Obsidian.Packets
 
         public static async Task<KeepAlive> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            return new KeepAlive(await stream.ReadLongAsync());
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                return new KeepAlive(await stream.ReadLongAsync());
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteLongAsync(this.KeepAliveId);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteLongAsync(this.KeepAliveId);
+                return stream.ToArray();
+            }
         }
     }
 }

@@ -34,28 +34,32 @@ namespace Obsidian.Packets
 
         public static async Task<JoinGame> FromArrayAsync(byte[] data)
         {
-            MemoryStream stream = new MemoryStream(data);
-            var entity = await stream.ReadVarIntAsync();
-            var gamemode = await stream.ReadUnsignedByteAsync();
-            var dimension = await stream.ReadIntAsync();
-            var difficulty = await stream.ReadUnsignedByteAsync();
-            await stream.ReadUnsignedByteAsync(); //maxplayers
-            var leveltype = await stream.ReadStringAsync();
-            var reducedebug = await stream.ReadBooleanAsync();
-            return new JoinGame(entity, gamemode, dimension, difficulty, leveltype, !reducedebug);
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                var entity = await stream.ReadVarIntAsync();
+                var gamemode = await stream.ReadUnsignedByteAsync();
+                var dimension = await stream.ReadIntAsync();
+                var difficulty = await stream.ReadUnsignedByteAsync();
+                await stream.ReadUnsignedByteAsync(); //maxplayers
+                var leveltype = await stream.ReadStringAsync();
+                var reducedebug = await stream.ReadBooleanAsync();
+                return new JoinGame(entity, gamemode, dimension, difficulty, leveltype, !reducedebug);
+            }
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            MemoryStream stream = new MemoryStream();
-            await stream.WriteIntAsync(EntityId);
-            await stream.WriteUnsignedByteAsync(GameMode);
-            await stream.WriteIntAsync(Dimension);
-            await stream.WriteUnsignedByteAsync(Difficulty);
-            await stream.WriteUnsignedByteAsync(MaxPlayers);
-            await stream.WriteStringAsync(LevelType);
-            await stream.WriteBooleanAsync(ReducedDebugInfo);
-            return stream.ToArray();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await stream.WriteIntAsync(EntityId);
+                await stream.WriteUnsignedByteAsync(GameMode);
+                await stream.WriteIntAsync(Dimension);
+                await stream.WriteUnsignedByteAsync(Difficulty);
+                await stream.WriteUnsignedByteAsync(MaxPlayers);
+                await stream.WriteStringAsync(LevelType);
+                await stream.WriteBooleanAsync(ReducedDebugInfo);
+                return stream.ToArray();
+            }
         }
     }
 }
