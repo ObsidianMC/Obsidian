@@ -6,13 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Qmmands" Version="2.1.0" />
-    <PackageReference Include="SharpZipLib" Version="1.1.0" />
+    <Compile Remove="Nbt\**" />
+    <EmbeddedResource Remove="Nbt\**" />
+    <None Remove="Nbt\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Nbt\" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Qmmands" Version="2.1.0" />
+    <PackageReference Include="SharpZipLib" Version="1.1.0" />
   </ItemGroup>
 
 </Project>
