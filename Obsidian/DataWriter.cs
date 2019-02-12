@@ -13,42 +13,80 @@ public static class DataWriter
 
     public static async Task WriteBooleanAsync(this Stream stream, bool value) => await stream.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
 
-    public static async Task WriteUnsignedShortAsync(this Stream stream, ushort value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteShortAsync(this Stream stream, short value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteIntAsync(this Stream stream, uint value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteLongAsync(this Stream stream, ulong value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteFloatAsync(this Stream stream, float value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteDoubleAsync(this Stream stream, double value) => await stream.WriteAsync(BitConverter.GetBytes(value));
-
-    public static async Task WriteStringAsync(this Stream stream, string value)
+    public static async Task WriteUnsignedShortAsync(this Stream stream, ushort value)
     {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteShortAsync(this Stream stream, short value)
+    {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteIntAsync(this Stream stream, int value)
+    {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteLongAsync(this Stream stream, long value)
+    {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteFloatAsync(this Stream stream, float value)
+    {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteDoubleAsync(this Stream stream, double value)
+    {
+        var write = BitConverter.GetBytes(value);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(write);
+        }
+        await stream.WriteAsync(write);
+    }
+
+    public static async Task WriteStringAsync(this Stream stream, string value, int maxLength = 0)
+    {
+        if (maxLength > 0 && value.Length > maxLength)
+        {
+            throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
+        }
         var bytes = Encoding.UTF8.GetBytes(value);
         await stream.WriteVarIntAsync(bytes.Length);
         await stream.WriteAsync(bytes);
     }
 
-    public static async Task WriteChatAsync(this Stream stream, Chat value)
-    {
-        if (value.ToString().Length > 32767)
-        {
-            throw new ArgumentException("string exceeded maximum length", nameof(value));
-        }
-        await stream.WriteStringAsync(value.ToString());
-    }
+    public static async Task WriteChatAsync(this Stream stream, Chat value) => await stream.WriteStringAsync(value.ToString(), 32767);
 
-    public static async Task WriteIdentifierAsync(this Stream stream, string value)
-    {
-        if (value.Length > 32767)
-        {
-            throw new ArgumentException("string exceeded maximum length", nameof(value));
-        }
-        await stream.WriteStringAsync(value);
-    }
+    public static async Task WriteIdentifierAsync(this Stream stream, string value) => await stream.WriteStringAsync(value, 32767);
 
     public static async Task WriteVarIntAsync(this Stream stream, int value)
     {
@@ -90,4 +128,6 @@ public static class DataWriter
             await stream.WriteByteAsync(temp);
         } while (value != 0);
     }
+
+    public static async Task WritePositionAsync(this Stream stream, Position value) => await stream.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
 }

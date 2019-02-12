@@ -1,5 +1,4 @@
 using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -12,7 +11,7 @@ namespace Obsidian.Packets
 
         Chat Reason;
 
-        public static async Task<Handshake> FromArrayAsync(byte[] data) => throw new NotImplementedException();
+        public static async Task<Disconnect> FromArrayAsync(byte[] data) => throw new NotImplementedException();
 
         public async Task<byte[]> ToArrayAsync()
         {

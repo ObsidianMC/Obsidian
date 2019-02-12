@@ -18,7 +18,7 @@ namespace Obsidian.Packets.Status
             return new RequestResponse();
         }
 
-        public async Task<byte[]> GetData()
+        public async Task<byte[]> GetDataAsync()
         {
             MemoryStream stream = new MemoryStream();
             await stream.WriteStringAsync(this.Json);
@@ -26,7 +26,7 @@ namespace Obsidian.Packets.Status
             return stream.ToArray();
         }
 
-        public async Task<MemoryStream> GetDataStream()
+        public async Task<MemoryStream> GetDataStreamAsync()
         {
             MemoryStream stream = new MemoryStream();
             await stream.WriteStringAsync(this.Json);

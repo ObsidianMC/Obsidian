@@ -1,19 +1,18 @@
 //https://wiki.vg/Protocol#Packet_format
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
     public class Packet
     {
-        public int PacketId { get; private set; }
+        public int PacketId { get; internal set; }
 
-        public int PacketLength { get; private set; }
+        public int PacketLength { get; internal set; }
 
-        public byte[] PacketData { get; private set; }
-
-        public MemoryStream PacketDataStream { get; private set; } = null; // stream can be longer iirc
+        public byte[] PacketData { get; internal set; }
 
         public Packet(int packetid, byte[] packetdata)
         {
@@ -22,29 +21,16 @@ namespace Obsidian.Packets
             this.PacketLength = packetid.GetVarintLength() + packetdata.Length;
         }
 
-        public Packet(int packetid, MemoryStream packetdata)
-        {
-            this.PacketDataStream = packetdata;
-            this.PacketId = packetid;
-            this.PacketLength = (int)(packetid.GetVarintLength() + packetdata.Length);
-        }
-
-        private Packet()
+        internal Packet()
         {
             // Only for the static method to _not_ error
         }
 
-        public async Task WriteToStreamAsync(Stream stream)
+        public virtual async Task WriteToStreamAsync(Stream stream)
         {
             await stream.WriteVarIntAsync(PacketLength);
             await stream.WriteVarIntAsync(PacketId);
-            if (PacketDataStream == null)
-                await stream.WriteAsync(PacketData, 0, PacketData.Length);
-            else
-            {
-                PacketDataStream.Position = 0;
-                await PacketDataStream.CopyToAsync(stream, (int)PacketDataStream.Length);
-            }
+            await stream.WriteAsync(PacketData, 0, PacketData.Length);
         }
 
         public static async Task<Packet> ReadFromStreamAsync(Stream stream)

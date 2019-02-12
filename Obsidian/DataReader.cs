@@ -38,6 +38,10 @@ public static class DataReader
     {
         var buffer = new byte[2];
         await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         return BitConverter.ToUInt16(buffer);
     }
 
@@ -45,20 +49,43 @@ public static class DataReader
     {
         var buffer = new byte[2];
         await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         return BitConverter.ToInt16(buffer);
     }
 
-    public static async Task<uint> ReadIntAsync(this Stream stream)
+    public static async Task<int> ReadIntAsync(this Stream stream)
     {
         var buffer = new byte[4];
         await stream.ReadAsync(buffer);
-        return BitConverter.ToUInt32(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
+        return BitConverter.ToInt32(buffer);
     }
 
-    public static async Task<ulong> ReadLongAsync(this Stream stream)
+    public static async Task<long> ReadLongAsync(this Stream stream)
     {
         var buffer = new byte[8];
         await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
+        return BitConverter.ToInt64(buffer);
+    }
+
+    public static async Task<ulong> ReadUnsignedLongAsync(this Stream stream)
+    {
+        var buffer = new byte[8];
+        await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         return BitConverter.ToUInt64(buffer);
     }
 
@@ -66,6 +93,10 @@ public static class DataReader
     {
         var buffer = new byte[4];
         await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         return BitConverter.ToSingle(buffer);
     }
 
@@ -73,15 +104,29 @@ public static class DataReader
     {
         var buffer = new byte[8];
         await stream.ReadAsync(buffer);
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         return BitConverter.ToDouble(buffer);
     }
 
-    public static async Task<string> ReadStringAsync(this Stream stream)
+    public static async Task<string> ReadStringAsync(this Stream stream, int maxLength = 0)
     {
         var length = await stream.ReadVarIntAsync();
         var buffer = new byte[length];
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(buffer);
+        }
         await stream.ReadAsync(buffer, 0, length);
-        return Encoding.UTF8.GetString(buffer);
+
+        var value = Encoding.UTF8.GetString(buffer);
+        if (maxLength > 0 && value.Length > maxLength)
+        {
+            throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
+        }
+        return value;
     }
 
     public static async Task<Chat> ReadChatAsync(this Stream stream)
@@ -135,5 +180,14 @@ public static class DataReader
         while ((read & 0b10000000) != 0);
 
         return result;
+    }
+
+    public static async Task<Position> ReadPositionAsync(this Stream stream)
+    {
+        ulong value = await stream.ReadUnsignedLongAsync();
+        int x = (int)(value >> 38);
+        int y = (int)((value >> 26) & 0xFFF);
+        int z = (int)(value << 38 >> 38);  
+        return new Position(x, y, z);
     }
 }

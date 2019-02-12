@@ -7,9 +7,9 @@ namespace Obsidian.Packets.Status
 {
     public class PingPong
     {
-        public ulong Payload;
+        public long Payload;
 
-        public PingPong(ulong payload)
+        public PingPong(long payload)
         {
             this.Payload = payload;
         }

@@ -1,16 +1,20 @@
-Wiki Name           | C# Type
---------------------+--------------
-Boolean             | bool / byte
-Byte                | sbyte
-Unsigned Byte       | byte
-Short               | short
-Unsigned Short      | ushort
-Int                 | uint / UInt32
-Long                | long / UInt64
-Float               | float
-Double              | double
-String              | string
-Chat                | (string)
-Identifier          | (string)
-VarInt              | int / Int32
-VarLong             | long / Int64
++----------------+------------------+------+
+| Wiki Name      | C# Type          | Size |
++----------------+------------------+------+
+| Boolean        | bool / byte      | 1    |
+| Byte           | sbyte            | 1    |
+| Unsigned Byte  | byte             | 1    |
+| Short          | short / Int16    | 2    |
+| Unsigned Short | ushort / UInt16  | 2    |
+| Int            | int / Int32      | 4    |
+| Long           | long / Int64     | 8    |
+| Float          | float            | 4    |
+| Double         | double           | 8    |
+| String         | string           | ...  |
+| Chat           | Entities.Chat    | ...  |
+| Identifier     | (string)         | ...  |
+| VarInt         | int / Int32      | ...  |
+| VarLong        | long / Int64     | ...  |
++----------------+------------------+------+
+
+NOTE: VarInt and VarLong have variable length.
