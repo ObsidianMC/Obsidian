@@ -129,6 +129,12 @@ namespace Obsidian.Connection
                                 // Login start, expected uncompressed
                                 var loginStart = await LoginStart.FromArrayAsync(packet.PacketData);
                                 await Logger.LogMessageAsync($"Received login request from user {loginStart.Username}");
+                                var isonline = await this.OriginServer.CheckPlayerOnlineAsync(loginStart.Username);
+                                if (isonline)
+                                {
+                                    // kick out the player
+                                    await this.DisconnectClientAsync(Chat.Simple($"A player with usename {loginStart.Username} is already online!"));
+                                }
                                 this.Player = new MinecraftPlayer(loginStart.Username, 0, 0, 0);
                                 
                                 // For offline mode, Respond with LoginSuccess (0x02) and switch state to Play.

@@ -143,6 +143,11 @@ namespace Obsidian
             }
         }
 
+        public async Task<bool> CheckPlayerOnlineAsync(string username)
+        {
+            return this._clients.Any(x => x.Player.Username == username);
+        }
+
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {
             // if author is null that means chat is sent by system.
