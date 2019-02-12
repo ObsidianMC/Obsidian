@@ -36,8 +36,12 @@ namespace Obsidian.Packets
             await stream.WriteAsync(compdata, 0, compdata.Length);
         }
 
+        // shut the fuck up, I know what I'm doing
+        #pragma warning disable CS0108 // Member hides inherited member; missing new keyword
         public static async Task<CompressedPacket> ReadFromStreamAsync(Stream stream)
+        #pragma warning restore CS0108 // Member hides inherited member; missing new keyword
         {
+            await Task.Yield();
             // read lengths
             var len = await stream.ReadVarIntAsync();
             var datalen = await stream.ReadVarIntAsync();

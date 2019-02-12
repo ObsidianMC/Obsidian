@@ -11,7 +11,10 @@ namespace Obsidian.Packets
 
         Chat Reason;
 
-        public static async Task<Disconnect> FromArrayAsync(byte[] data) => throw new NotImplementedException();
+        public static async Task<Disconnect> FromArrayAsync(byte[] data)
+        {
+            await Task.Yield(); throw new NotImplementedException();
+        }
 
         public async Task<byte[]> ToArrayAsync()
         {

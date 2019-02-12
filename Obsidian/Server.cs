@@ -25,6 +25,9 @@ namespace Obsidian
         public string Id { get; private set; }
         public Config Config { get; private set; }
 
+        private ConcurrentHashSet<List<QueueChat>> ChatMessages;
+        private CommandService _cmd;
+        private int keepaliveticks = 0;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
         private ConcurrentHashSet<Client> _clients;
@@ -36,13 +39,25 @@ namespace Obsidian
         public Server(Config config, string version, string serverid)
         {
             this.Logger = new Logger($"Obsidian ID: {serverid}");
+
+            this.Config = config;
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverid;
+
             this._tcpListener = new TcpListener(IPAddress.Any, this.Port);
+
             this._clients = new ConcurrentHashSet<Client>();
+
             this._cts = new CancellationTokenSource();
-            this.Config = config;
+            this.ChatMessages = new ConcurrentHashSet<List<QueueChat>>();
+            this._cmd = new CommandService(new CommandServiceConfiguration()
+            {
+                CaseSensitive = false,
+                DefaultRunMode = RunMode.Parallel,
+                IgnoreExtraArguments = true
+            });
+            this._cmd.AddModule<MainCommandModule>();
         }
 
         /// <summary>
@@ -71,24 +86,12 @@ namespace Obsidian
             }
             // Cancellation has been requested
             await Logger.LogMessageAsync($"Cancellation has been requested. Stopping server...");
-            // TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
+            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
         }
 
-        ConcurrentHashSet<List<QueueChat>> ChatMessages;
-        CommandService _cmd;
-        int keepaliveticks = 0;
-        long keepaliveid = 0;
         private async Task ServerLoop()
         {
-            ChatMessages = new ConcurrentHashSet<List<QueueChat>>();
-            _cmd = new CommandService(new CommandServiceConfiguration()
-            {
-                CaseSensitive = false,
-                DefaultRunMode = RunMode.Parallel,
-                IgnoreExtraArguments = true
-            });
-            _cmd.AddModule<MainCommandModule>();
-
+            // start loop
             while (!_cts.IsCancellationRequested)
             {
                 // Loop shit
@@ -97,13 +100,13 @@ namespace Obsidian
                 keepaliveticks++;
                 if(keepaliveticks > 200)
                 {
-                    keepaliveid = DateTime.Now.Ticks;
+                    var keepaliveid = DateTime.Now.Ticks;
                     await Logger.LogMessageAsync($"Broadcasting keepalive {keepaliveid}");
                     foreach(var clnt in this._clients)
                     {
                         if (clnt.State == PacketState.Play)
                         {
-                            await clnt.SendKeepAliveAsync(keepaliveid);
+                            await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });
                         }
                     }
                     keepaliveticks = 0;
@@ -119,7 +122,7 @@ namespace Obsidian
                         {
                             foreach (var m in msg)
                             {
-                                await clnt.SendChatAsync(m.Message, m.Position);
+                                await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(m.Message, m.Position); });
                             }
                         }
                     }
@@ -131,6 +134,10 @@ namespace Obsidian
                     if(client.KeepAlives > 5)
                     {
                         client.DisconnectClient();
+                    }
+                    if (!client.Tcp.Connected)
+                    {
+                        this._clients.TryRemove(client);
                     }
                 }
             }

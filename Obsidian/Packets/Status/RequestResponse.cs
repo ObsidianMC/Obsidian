@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -14,6 +13,7 @@ namespace Obsidian.Packets.Status
 
         public async Task<RequestResponse> FromByteAsync(byte[] data)
         {
+            await Task.Yield();
             MemoryStream stream = new MemoryStream(data);
             return new RequestResponse();
         }

@@ -158,7 +158,7 @@ namespace Obsidian.Connection
 
                                 await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
                                 // Login success!
-                                await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server!", this, system: true);
+                                await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
                                 break;
 
                             case 0x01:
@@ -444,7 +444,9 @@ namespace Obsidian.Connection
                 // will paste that in a txt
             }
             await Logger.LogMessageAsync($"Disconnected client");
-            if(Tcp.Connected)
+            await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has left the server.", this, 0, true);
+
+            if (Tcp.Connected)
                 this.Tcp.Close();
         }
 
