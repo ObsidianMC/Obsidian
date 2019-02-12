@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
+using Obsidian.Events;
+using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Packets;
 using Obsidian.Packets.Handshaking;
@@ -42,10 +44,10 @@ namespace Obsidian.Connection
     {
         public TcpClient Tcp { get; private set; }
         public CancellationTokenSource Cancellation { get; private set; }
-        private Logger Logger;
-        private Config Config;
+        private Logger Logger => OriginServer.Logger;
+        public Config Config;
         private bool Compressed = false;
-        private Server OriginServer;
+        public Server OriginServer;
         public NetworkStream netstream;
         public MinecraftPlayer Player;
         public int KeepAlives;
@@ -64,11 +66,10 @@ namespace Obsidian.Connection
             }
         }
 
-        public Client(TcpClient tcp, Logger logger, Config config, Server origin)
+        public Client(TcpClient tcp, Config config, Server origin)
         {
             this.Tcp = tcp;
             this.Cancellation = new CancellationTokenSource();
-            this.Logger = logger;
             this.Config = config;
             this.OriginServer = origin;
         }
@@ -87,6 +88,9 @@ namespace Obsidian.Connection
                     packet = await GetNextPacketAsync(netstream);
 
                 await Logger.LogMessageAsync("Received a new packet.");
+
+                await this.OriginServer.Events.InvokePacketReceived(new BaseMinecraftEventArgs(this, packet));
+
                 if(packet.PacketLength == 0)
                 {
                     this.DisconnectClient();
@@ -166,6 +170,7 @@ namespace Obsidian.Connection
                                 await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
                                 // Login success!
                                 await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
+                                await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
                                 break;
 
                             case 0x01:
@@ -510,8 +515,18 @@ namespace Obsidian.Connection
         public async Task DisconnectClientAsync(Chat reason)
         {
             var disconnect = new Disconnect(reason);
-            var packet = new Packet(0x00, await disconnect.ToArrayAsync());
+            var packet = new Packet();
+            if(State == PacketState.Play)
+            {
+                packet = new Packet(0x1B, await disconnect.ToArrayAsync());
+            }
+            else
+            {
+                packet = new Packet(0x00, await disconnect.ToArrayAsync());
+            }
+
             await packet.WriteToStreamAsync(Tcp.GetStream());
+
             DisconnectClient();
         }
 

@@ -14,6 +14,8 @@ using Obsidian.Packets;
 using Obsidian.Commands;
 using Qmmands;
 using System.Reflection;
+using Obsidian.Plugins;
+using Obsidian.Events;
 
 namespace Obsidian
 {
@@ -24,13 +26,15 @@ namespace Obsidian
         public string Version { get; private set; }
         public string Id { get; private set; }
         public Config Config { get; private set; }
+        public ConcurrentHashSet<Client> _clients { get; private set; }
+        public CommandService Commands { get; private set; }
+        public PluginManager PluginManager;
+        public MinecraftEventHandler Events;
 
-        private ConcurrentHashSet<List<QueueChat>> ChatMessages;
-        private CommandService _cmd;
+        private ConcurrentHashSet<List<QueueChat>> _chatmessages;
         private int keepaliveticks = 0;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
-        private ConcurrentHashSet<Client> _clients;
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -50,14 +54,17 @@ namespace Obsidian
             this._clients = new ConcurrentHashSet<Client>();
 
             this._cts = new CancellationTokenSource();
-            this.ChatMessages = new ConcurrentHashSet<List<QueueChat>>();
-            this._cmd = new CommandService(new CommandServiceConfiguration()
+            this._chatmessages = new ConcurrentHashSet<List<QueueChat>>();
+            this.Commands = new CommandService(new CommandServiceConfiguration()
             {
                 CaseSensitive = false,
                 DefaultRunMode = RunMode.Parallel,
                 IgnoreExtraArguments = true
             });
-            this._cmd.AddModule<MainCommandModule>();
+            this.Commands.AddModule<MainCommandModule>();
+            this.Events = new MinecraftEventHandler();
+
+            this.PluginManager = new PluginManager(this);
         }
 
         /// <summary>
@@ -68,6 +75,9 @@ namespace Obsidian
         {
             await Logger.LogMessageAsync($"Launching Obsidian Server v {Version} with ID {Id}");
 
+            await Logger.LogMessageAsync($"Loading and Initializing plugins...");
+            await this.PluginManager.LoadPluginsAsync(this.Logger);
+
             await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async() => { await this.ServerLoop().ConfigureAwait(false); });
 
@@ -76,10 +86,10 @@ namespace Obsidian
 
             while (!_cts.IsCancellationRequested)
             {
-                var client = await _tcpListener.AcceptTcpClientAsync();
+                var tcp = await _tcpListener.AcceptTcpClientAsync();
 
-                await Logger.LogMessageAsync($"New connection from client with IP {client.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
-                var clnt = new Client(client, Logger, this.Config, this);
+                await Logger.LogMessageAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
+                var clnt = new Client(tcp, this.Config, this);
                 _clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartClientConnection().ConfigureAwait(false); });
@@ -113,9 +123,9 @@ namespace Obsidian
                 }
 
                 // Chat
-                if(ChatMessages.Count > 0)
+                if(_chatmessages.Count > 0)
                 {
-                    var msg = ChatMessages.First();
+                    var msg = _chatmessages.First();
                     foreach(var clnt in this._clients)
                     {
                         if (clnt.State == PacketState.Play)
@@ -126,7 +136,7 @@ namespace Obsidian
                             }
                         }
                     }
-                    ChatMessages.TryRemove(msg);
+                    _chatmessages.TryRemove(msg);
                 }
 
                 foreach(var client in _clients)
@@ -153,7 +163,7 @@ namespace Obsidian
             // if author is null that means chat is sent by system.
             if (system)
             {
-                ChatMessages.Add(new List<QueueChat> { new QueueChat() { Message = message, Position = position } });
+                _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = message, Position = position } });
                 await Logger.LogMessageAsync(message);
             }
             else
@@ -161,15 +171,15 @@ namespace Obsidian
                 if (!CommandUtilities.HasPrefix(message, '/', out string output))
                 {
                     string formattedmsg = $"<{source.Player.Username}> {message}";
-                    ChatMessages.Add(new List<QueueChat> { new QueueChat() { Message = formattedmsg, Position = position } });
+                    _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = formattedmsg, Position = position } });
                     await Logger.LogMessageAsync(formattedmsg);
                     return;
                 }
 
                 var context = new CommandContext(source, this);
-                IResult result = await _cmd.ExecuteAsync(output, context);
+                IResult result = await Commands.ExecuteAsync(output, context);
                 if (!result.IsSuccessful)
-                    ChatMessages.Add(new List<QueueChat> { new QueueChat() { Message = $"{MinecraftColor.Red}Command error: {(result as FailedResult).Reason}",
+                    _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = $"{MinecraftColor.Red}Command error: {(result as FailedResult).Reason}",
                         Position = position } });
             }
         }

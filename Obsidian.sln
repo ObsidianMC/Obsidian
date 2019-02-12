@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian", "Obsidian\Obsidian.csproj", "{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SamplePlugin", "SamplePlugin\SamplePlugin.csproj", "{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NbsPlayerPlugin", "NbsPlayerPlugin\NbsPlayerPlugin.csproj", "{41E8638B-8778-4578-9693-3CDEC05FF92F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41E8638B-8778-4578-9693-3CDEC05FF92F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41E8638B-8778-4578-9693-3CDEC05FF92F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41E8638B-8778-4578-9693-3CDEC05FF92F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41E8638B-8778-4578-9693-3CDEC05FF92F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

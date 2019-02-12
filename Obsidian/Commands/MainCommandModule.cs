@@ -1,4 +1,5 @@
-﻿using Qmmands;
+﻿using Obsidian.Entities;
+using Qmmands;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +14,19 @@ namespace Obsidian.Commands
 
         [Command("help", "commands")]
         [Description("Lists available commands.")]
-        public Task HelpAsync()
-            => Context.Client.SendChatAsync(string.Join('\n', Service.GetAllCommands().Select(x => $"{MinecraftColor.DarkGreen}{x.Name}{MinecraftColor.Reset}: {x.Description}")));
+        public async Task HelpAsync()
+        {
+            foreach(var cmd in Service.GetAllCommands())
+            {
+                await Context.Client.SendChatAsync($"{MinecraftColor.DarkGreen}{cmd.Name}{MinecraftColor.Reset}: {cmd.Description}");
+            }
+        }
+
+        [Command("plugins")]
+        [Description("Lists plugins.")]
+        public Task PluginsAsync()
+            => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x 
+                => $"{MinecraftColor.DarkGreen}{x.Info.Name}by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
 
         [Command("echo")]
         [Description("Echoes given text.")]
@@ -25,5 +37,10 @@ namespace Obsidian.Commands
         [Description("makes an announcement")]
         public Task AnnounceAsync([Remainder] string text)
             => Context.Server.SendChatAsync(text, Context.Client, 2, true);
+
+        [Command("leave", "kickme")]
+        [Description("kicks you")]
+        public Task LeaveAsync()
+            => Context.Client.DisconnectClientAsync(Chat.Simple("Is this what you wanted?"));
     }
 }
