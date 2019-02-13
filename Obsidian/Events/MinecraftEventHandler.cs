@@ -8,6 +8,20 @@ namespace Obsidian.Events
 {
     public class MinecraftEventHandler
     {
+        private AsyncEvent<BaseMinecraftEventArgs> _packetReceived;
+
+        private AsyncEvent<PlayerJoinEventArgs> _playerJoin;
+
+        private AsyncEvent _serverTick;
+
+        public MinecraftEventHandler()
+        {
+            // Events that don't need additional arguments
+            _packetReceived = new AsyncEvent<BaseMinecraftEventArgs>(HandleException, "PacketReceived");
+            _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
+            _serverTick = new AsyncEvent(HandleException, "ServerTick");
+        }
+
         /// <summary>
         /// Invoked when any packet gets received.
         /// Used for testing whether events work.
@@ -17,20 +31,21 @@ namespace Obsidian.Events
             add { this._packetReceived.Register(value); }
             remove { this._packetReceived.Unregister(value); }
         }
-        private AsyncEvent<BaseMinecraftEventArgs> _packetReceived;
 
         public event AsyncEventHandler<PlayerJoinEventArgs> PlayerJoin
         {
             add { this._playerJoin.Register(value); }
             remove { this._playerJoin.Unregister(value); }
         }
-        private AsyncEvent<PlayerJoinEventArgs> _playerJoin;
 
-        public MinecraftEventHandler()
+        public event AsyncEventHandler ServerTick
         {
-            // Events that don't need additional arguments
-            _packetReceived = new AsyncEvent<BaseMinecraftEventArgs>(HandleException, "PacketReceived");
-            _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
+            add { this._serverTick.Register(value); }
+            remove { this._serverTick.Unregister(value); }
+        }
+
+        private void HandleException(string eventname, Exception ex)
+        {
         }
 
         internal async Task InvokePacketReceived(BaseMinecraftEventArgs eventargs)
@@ -44,9 +59,9 @@ namespace Obsidian.Events
             await Task.Factory.StartNew(async () => { await this._playerJoin.InvokeAsync(eventargs); });
         }
 
-        private void HandleException(string eventname, Exception ex)
+        internal async Task InvokeServerTick()
         {
-
+            await Task.Factory.StartNew(async () => { await this._serverTick.InvokeAsync(); });
         }
     }
 }

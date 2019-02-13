@@ -5,24 +5,14 @@ namespace NbsPlayerPlugin
 {
     public static class NbsFileReader
     {
-        public static NbsFile ReadNbsFile(string path)
-        {
-            using (var fileStream = File.OpenRead(path))
-            using (var binaryReader = new BinaryReader(fileStream))
-            {
-                var nbsFile = new NbsFile();
-                ReadNbsHeader(nbsFile, binaryReader);
-                ReadNbsNoteBlocks(nbsFile, binaryReader);
-                return nbsFile;
-            }        
-        }
-
         private static void ReadNbsHeader(NbsFile nbsFile, BinaryReader binaryReader)
         {
-            var layersCount = binaryReader.ReadInt16();
+            nbsFile.Length = binaryReader.ReadInt16();
+
+            short layersCount = binaryReader.ReadInt16();
             nbsFile.Layers = new NbsLayer[layersCount];
 
-            for(int i = 0; i < nbsFile.Layers.Length; i++)
+            for (int i = 0; i < nbsFile.Layers.Length; i++)
             {
                 nbsFile.Layers[i] = new NbsLayer();
             }
@@ -40,7 +30,16 @@ namespace NbsPlayerPlugin
             _ = binaryReader.ReadInt32();
             _ = binaryReader.ReadInt32();
             _ = binaryReader.ReadInt32();
-            _ = binaryReader.ReadNbsString(); 
+            _ = binaryReader.ReadNbsString();
+        }
+
+        private static void ReadNbsLayers(NbsFile nbsFile, BinaryReader binaryReader)
+        {
+            foreach (NbsLayer layer in nbsFile.Layers)
+            {
+                layer.Name = binaryReader.ReadNbsString();
+                layer.Volume = binaryReader.ReadByte();
+            }
         }
 
         private static void ReadNbsNoteBlocks(NbsFile nbsFile, BinaryReader binaryReader)
@@ -74,7 +73,7 @@ namespace NbsPlayerPlugin
 
                     var noteBlock = new NoteBlock(tick, layer, instrument, key);
                     noteBlocks.Add(noteBlock);
-                    
+
                     //instrumentcount[instrument]++;
                     //
                     //if (layer < layers)
@@ -91,6 +90,32 @@ namespace NbsPlayerPlugin
             }
             //the list is not used anymore
             noteBlocks.Clear();
+        }
+
+        public static void ReadNbsCustomInstruments(NbsFile nbsFile, BinaryReader binaryReader)
+        {
+            byte custom = binaryReader.ReadByte();
+            for (int i = 0; i < custom; i++)
+            {
+                _ = binaryReader.ReadNbsString();
+                _ = binaryReader.ReadNbsString();
+                _ = binaryReader.ReadByte();
+                _ = binaryReader.ReadByte();
+            }
+        }
+
+        public static NbsFile ReadNbsFile(string path)
+        {
+            using (var fileStream = File.OpenRead(path))
+            using (var binaryReader = new BinaryReader(fileStream))
+            {
+                var nbsFile = new NbsFile();
+                ReadNbsHeader(nbsFile, binaryReader);
+                ReadNbsNoteBlocks(nbsFile, binaryReader);
+                ReadNbsLayers(nbsFile, binaryReader);
+                ReadNbsCustomInstruments(nbsFile, binaryReader);
+                return nbsFile;
+            }
         }
 
         /// <summary>Reads a string from the given stream.

@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 /*
-    
+
     What is?
     0x04 = Client Settings
     0x0A = Plugin Message
@@ -35,27 +35,32 @@ using System.Threading.Tasks;
 
     Now after connecting to the world, what do?!
 
-
     */
 
 namespace Obsidian.Connection
 {
     public class Client
     {
-        public TcpClient Tcp { get; private set; }
+        private PacketState _state = PacketState.Handshaking;
+        private bool Compressed = false;
+        public Config Config;
+        public int KeepAlives;
+        public NetworkStream netstream;
+        public Server OriginServer;
+        public MinecraftPlayer Player;
+
+        public Client(TcpClient tcp, Config config, Server origin)
+        {
+            this.Tcp = tcp;
+            this.Cancellation = new CancellationTokenSource();
+            this.Config = config;
+            this.OriginServer = origin;
+        }
+
         public CancellationTokenSource Cancellation { get; private set; }
         private Logger Logger => OriginServer.Logger;
-        public Config Config;
-        private bool Compressed = false;
-        public Server OriginServer;
-        public NetworkStream netstream;
-        public MinecraftPlayer Player;
-        public int KeepAlives;
 
         //current state of client
-
-        private PacketState _state = PacketState.Handshaking;
-
         public PacketState State
         {
             get => _state;
@@ -66,12 +71,84 @@ namespace Obsidian.Connection
             }
         }
 
-        public Client(TcpClient tcp, Config config, Server origin)
+        public TcpClient Tcp { get; private set; }
+
+        private async Task<CompressedPacket> GetNextCompressedPacketAsync(Stream stream)
         {
-            this.Tcp = tcp;
-            this.Cancellation = new CancellationTokenSource();
-            this.Config = config;
-            this.OriginServer = origin;
+            return await CompressedPacket.ReadFromStreamAsync(stream);
+        }
+
+        private async Task<Packet> GetNextPacketAsync(Stream stream)
+        {
+            return await Packet.ReadFromStreamAsync(stream);
+        }
+
+        public void DisconnectClient()
+        {
+            Cancellation.Cancel();
+        }
+
+        ///Kicks a client with a reason
+        public async Task DisconnectClientAsync(Chat reason)
+        {
+            var disconnect = new Disconnect(reason);
+            var packet = new Packet();
+            if (State == PacketState.Play)
+            {
+                packet = new Packet(0x1B, await disconnect.ToArrayAsync());
+            }
+            else
+            {
+                packet = new Packet(0x00, await disconnect.ToArrayAsync());
+            }
+
+            await packet.WriteToStreamAsync(Tcp.GetStream());
+
+            DisconnectClient();
+        }
+
+        public async Task SendChatAsync(string message, byte position = 0)
+        {
+            var chat = Chat.Simple(message);
+            var pack = new Packet(0x0E, await new ChatMessage(chat, position).ToArrayAsync());
+            await pack.WriteToStreamAsync(netstream);
+        }
+
+        public async Task SendJoinGameAsync()
+        {
+            var pack = new Packet(0x25, await new JoinGame(0, 0, 1, 0, "default", true).ToArrayAsync());
+            await pack.WriteToStreamAsync(netstream);
+        }
+
+        /// <summary>
+        /// Sends KeepAlice
+        /// </summary>
+        /// <param name="id">ID for the keepalive. Just keep increasing this by 1, easiest approach.</param>
+        /// <returns></returns>
+        public async Task SendKeepAliveAsync(long id)
+        {
+            this.KeepAlives++;
+            var pack = new Packet(0x21, await new KeepAlive(id).ToArrayAsync());
+            await pack.WriteToStreamAsync(netstream);
+        }
+
+        public async Task SendPositionLookAsync(double x, double y, double z, float yaw, float pitch, PositionFlags flags, int teleportid)
+        {
+            var poslook = new PlayerPositionLook(x, y, z, yaw, pitch, flags, teleportid);
+            var pack = new Packet(0x32, await poslook.ToArrayAsync());
+            await pack.WriteToStreamAsync(netstream);
+        }
+
+        public async Task SendSoundEffectAsync(int soundId, Position position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
+        {
+            await new Packet(0x4D, await new SoundEffect(soundId, position, category, pitch, volume).ToArrayAsync()).WriteToStreamAsync(netstream);
+        }
+
+        public async Task SendSpawnPositionAsync(Position position)
+        {
+            await Logger.LogMessageAsync("Sending Spawn Position packet.");
+            var packet = new Packet(0x49, await new SpawnPosition(position).ToArrayAsync());
+            await packet.WriteToStreamAsync(netstream);
         }
 
         public async Task StartClientConnection()
@@ -91,7 +168,7 @@ namespace Obsidian.Connection
 
                 await this.OriginServer.Events.InvokePacketReceived(new BaseMinecraftEventArgs(this, packet));
 
-                if(packet.PacketLength == 0)
+                if (packet.PacketLength == 0)
                 {
                     this.DisconnectClient();
                 }
@@ -103,15 +180,15 @@ namespace Obsidian.Connection
                         {
                             case 0x00:
                                 // Handshake
-                                var handshake = await Handshake.FromArrayAsync(packet.PacketData); 
+                                var handshake = await Handshake.FromArrayAsync(packet.PacketData);
                                 var nextState = handshake.NextState;
-                                
-                                if(nextState != PacketState.Status && nextState != PacketState.Login)
+
+                                if (nextState != PacketState.Status && nextState != PacketState.Login)
                                 {
                                     await Logger.LogMessageAsync($"Client sent unexpected state (), forcing it to disconnect");
-                                    await DisconnectClientAsync(new Chat() {Text="you seem suspicious"});
+                                    await DisconnectClientAsync(new Chat() { Text = "you seem suspicious" });
                                 }
-                                
+
                                 State = nextState;
                                 await Logger.LogMessageAsync($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
                                 break;
@@ -129,6 +206,7 @@ namespace Obsidian.Connection
                                     Text = Config.JoinMessage
                                 });
                                 break;
+
                             case 0x00:
                                 // Login start, expected uncompressed
                                 var loginStart = await LoginStart.FromArrayAsync(packet.PacketData);
@@ -141,11 +219,11 @@ namespace Obsidian.Connection
                                     await this.DisconnectClientAsync(Chat.Simple($"A player with usename {loginStart.Username} is already online!"));
                                 }*/
                                 this.Player = new MinecraftPlayer(loginStart.Username, 0, 0, 0);
-                                
+
                                 // For offline mode, Respond with LoginSuccess (0x02) and switch state to Play.
                                 var loginSuccess = new LoginSuccess("069a79f4-44e9-4726-a5be-fca90e38aaf5", loginStart.Username); // does this mean we can change usernames server-side??
                                 await Logger.LogMessageAsync($"Sent Login success to User {loginStart.Username}");
-                               
+
                                 // UUID for Notch
                                 returnpack = new Packet(0x02, await loginSuccess.ToArrayAsync());
                                 await returnpack.WriteToStreamAsync(netstream);
@@ -158,7 +236,7 @@ namespace Obsidian.Connection
                                 await SendJoinGameAsync();
 
                                 // Send spawn location packet
-                                await SendSpawnPositionAsync(new Position(0,100,0));
+                                await SendSpawnPositionAsync(new Position(0, 100, 0));
 
                                 // Send position packet
                                 await Logger.LogMessageAsync("Sending Position packet.");
@@ -193,19 +271,18 @@ namespace Obsidian.Connection
                                 returnpack = new Packet(0x00, await res.GetDataAsync());
                                 await returnpack.WriteToStreamAsync(netstream);
                                 break;
-                                
+
                             case 0x01:
                                 // Ping
                                 var ping = await PingPong.FromArrayAsync(packet.PacketData); // afaik you can just resend the ping to the client
                                 await Logger.LogMessageAsync($"Client sent us ping request with payload {ping.Payload}");
-                                
+
                                 returnpack = new Packet(0x01, await ping.ToArrayAsync());
                                 await returnpack.WriteToStreamAsync(netstream);
                                 this.DisconnectClient();
                                 break;
                         }
                         break;
-
 
                     case PacketState.Play: // Gameplay packets. Put this last because the list is the longest.
                         await Logger.LogMessageAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
@@ -460,79 +537,6 @@ namespace Obsidian.Connection
 
             if (Tcp.Connected)
                 this.Tcp.Close();
-        }
-
-        public async Task SendPositionLookAsync(double x, double y, double z, float yaw, float pitch, PositionFlags flags, int teleportid)
-        {
-            var poslook = new PlayerPositionLook(x, y, z, yaw, pitch, flags, teleportid);
-            var pack = new Packet(0x32, await poslook.ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
-        }
-
-        private async Task<Packet> GetNextPacketAsync(Stream stream)
-        {
-            return await Packet.ReadFromStreamAsync(stream);
-        }
-
-        private async Task<CompressedPacket> GetNextCompressedPacketAsync(Stream stream)
-        {
-            return await CompressedPacket.ReadFromStreamAsync(stream);
-        }
-
-        public async Task SendChatAsync(string message, byte position = 0)
-        {
-            var chat = Chat.Simple(message);
-            var pack = new Packet(0x0E, await new ChatMessage(chat, position).ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
-        }
-
-        public async Task SendSpawnPositionAsync(Position position)
-        {
-            await Logger.LogMessageAsync("Sending Spawn Position packet.");
-            var packet = new Packet(0x49, await new SpawnPosition(position).ToArrayAsync());
-            await packet.WriteToStreamAsync(netstream);
-        }
-
-        public async Task SendJoinGameAsync()
-        {
-            var pack = new Packet(0x25, await new JoinGame(0, 0, 1, 0, "default", true).ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
-        }
-
-        /// <summary>
-        /// Sends KeepAlice
-        /// </summary>
-        /// <param name="id">ID for the keepalive. Just keep increasing this by 1, easiest approach.</param>
-        /// <returns></returns>
-        public async Task SendKeepAliveAsync(long id)
-        {
-            this.KeepAlives++;
-            var pack = new Packet(0x21, await new KeepAlive(id).ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
-        }
-
-        ///Kicks a client with a reason
-        public async Task DisconnectClientAsync(Chat reason)
-        {
-            var disconnect = new Disconnect(reason);
-            var packet = new Packet();
-            if(State == PacketState.Play)
-            {
-                packet = new Packet(0x1B, await disconnect.ToArrayAsync());
-            }
-            else
-            {
-                packet = new Packet(0x00, await disconnect.ToArrayAsync());
-            }
-
-            await packet.WriteToStreamAsync(Tcp.GetStream());
-
-            DisconnectClient();
-        }
-
-        public void DisconnectClient()
-        {
-            Cancellation.Cancel();
         }
     }
 }

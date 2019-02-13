@@ -1,14 +1,13 @@
 ﻿using Obsidian;
-using Obsidian.Commands;
 using Obsidian.Plugins;
-using Qmmands;
-using System.Threading.Tasks;
 
 namespace NbsPlayerPlugin
 {
     public class NbsPlayerPluginClass : IPluginClass
     {
-        Server server;
+        private Server server;
+
+        public static int ServerTickStart = 0;
 
         public PluginInfo Initialize(Server server)
         {
@@ -23,23 +22,6 @@ namespace NbsPlayerPlugin
                 "Plays back .NBS files stored on this server",
                 "https://github.com/NaamloosDT/Obsidian"
             );
-        }
-    }
-
-    public class NbsPlayerCommands : ModuleBase<CommandContext>
-    {
-        public CommandService Service { get; set; }
-
-        [Command("play")]
-        [Description("Plays back the specified song.")]
-        public async Task SampleCommandAsync(string song)
-        {
-            var nbsFile = NbsFileReader.ReadNbsFile(song);
-            
-
-            await Context.Server.SendChatAsync($"Playing {nbsFile.SongAuthor} - {nbsFile.SongName}", Context.Client, 0, false);
-
-            //TODO: implement your usual music playing stuff
         }
     }
 }

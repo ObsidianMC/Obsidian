@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>E:\Git Repos\Obsidian\Obsidian\bin\Debug\netcoreapp2.1\plugins\</OutputPath>
+    <OutputPath>A:\codeProjects\dotnet\Obsidian\Obsidian\bin\Debug\netcoreapp2.1\plugins</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
