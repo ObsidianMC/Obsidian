@@ -33,6 +33,7 @@ namespace Obsidian
         private int keepaliveticks = 0;
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;
+        public DateTimeOffset StartTime;
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -176,6 +177,9 @@ namespace Obsidian
 
             await Logger.LogMessageAsync($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
+
+            await Logger.LogMessageAsync($"Set start DateTimeOffset for measuring uptime.");
+            this.StartTime = DateTimeOffset.Now;
 
             await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });

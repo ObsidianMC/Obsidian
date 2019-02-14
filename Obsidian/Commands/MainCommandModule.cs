@@ -42,5 +42,10 @@ namespace Obsidian.Commands
         [Description("kicks you")]
         public Task LeaveAsync()
             => Context.Client.DisconnectClientAsync(Chat.Simple("Is this what you wanted?"));
+
+        [Command("uptime", "up")]
+        [Description("Gets current uptime")]
+        public Task UptimeAsync()
+            => Context.Client.SendChatAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime).ToString()}");
     }
 }
