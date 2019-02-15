@@ -48,13 +48,15 @@ namespace Obsidian.Connection
         public NetworkStream netstream;
         public Server OriginServer;
         public MinecraftPlayer Player;
+        public int PlayerId;
 
-        public Client(TcpClient tcp, Config config, Server origin)
+        public Client(TcpClient tcp, Config config, Server origin, int playerid)
         {
             this.Tcp = tcp;
             this.Cancellation = new CancellationTokenSource();
             this.Config = config;
             this.OriginServer = origin;
+            this.PlayerId = playerid;
         }
 
         public CancellationTokenSource Cancellation { get; private set; }
@@ -114,9 +116,9 @@ namespace Obsidian.Connection
             await pack.WriteToStreamAsync(netstream);
         }
 
-        public async Task SendJoinGameAsync()
+        public async Task SendJoinGameAsync(EntityId id)
         {
-            var pack = new Packet(0x25, await new JoinGame(0, 0, 1, 0, "default", true).ToArrayAsync());
+            var pack = new Packet(0x25, await new JoinGame((int)id, 0, 0, 0, "default", true).ToArrayAsync());
             await pack.WriteToStreamAsync(netstream);
         }
 
@@ -185,7 +187,7 @@ namespace Obsidian.Connection
 
                                 if (nextState != PacketState.Status && nextState != PacketState.Login)
                                 {
-                                    await Logger.LogMessageAsync($"Client sent unexpected state (), forcing it to disconnect");
+                                    await Logger.LogMessageAsync($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
                                     await DisconnectClientAsync(new Chat() { Text = "you seem suspicious" });
                                 }
 
@@ -233,14 +235,14 @@ namespace Obsidian.Connection
 
                                 // Send Join Game packet
                                 await Logger.LogMessageAsync("Sending Join Game packet.");
-                                await SendJoinGameAsync();
+                                await SendJoinGameAsync(EntityId.Player | (EntityId)PlayerId);
 
                                 // Send spawn location packet
-                                await SendSpawnPositionAsync(new Position(0, 100, 0));
+                                await SendSpawnPositionAsync(new Position(500, 500, 500));
 
                                 // Send position packet
                                 await Logger.LogMessageAsync("Sending Position packet.");
-                                await SendPositionLookAsync(0, 0, 0, 0, 0, PositionFlags.NONE, 0);
+                                await SendPositionLookAsync(500, 500, 500, 0, 0, PositionFlags.NONE, 0);
 
                                 await Logger.LogMessageAsync("Player is logged in.");
                                 await Logger.LogMessageAsync("Sending welcome msg");

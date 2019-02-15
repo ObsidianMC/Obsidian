@@ -192,7 +192,12 @@ namespace Obsidian
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
 
                 await Logger.LogMessageAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
-                var clnt = new Client(tcp, this.Config, this);
+
+                int newplayerid = 0;
+                if(_clients.Count > 0)
+                    newplayerid = this._clients.Max(x => x.PlayerId);
+
+                var clnt = new Client(tcp, this.Config, this, newplayerid);
                 _clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartClientConnection().ConfigureAwait(false); });
