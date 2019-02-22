@@ -12,27 +12,59 @@ namespace NbsPlayerPlugin
 
         [Command("play")]
         [Description("Plays back the specified song.")]
-        public async Task SampleCommandAsync(string song)
+        public async Task PlayAsync(string song)
         {
             var nbsFile = NbsFileReader.ReadNbsFile(song);
 
-            const int basedrum = 100;
-            const int bass = 101;
-            const int bell = 102;
-            const int chime = 103;
-            const int flute = 104;
-            const int guitar = 105;
-            const int harp = 106;
-            const int hat = 107;
-            const int pling = 108;
-            const int snare = 109;
-            const int xylophone = 110;
+            int[] instruments = new int[]
+            {
+                106, //dirt, harp
+                101, //wood, bass / double bass
+                100,
+                109, //sand, snare
+                107, //glass, click / hat
+                105, //wool, guitar
+                104, //clay, flute
+                102, //gold block, bell
+                103, //packed ice, chime
+                110, //bone block, xylophone
+                //108, //???, pling
+            };
+
+            float[] pitches = new float[]
+            {
+                0.5f,
+                0.529732f,
+                0.561234f,
+                0.594604f,
+                0.629961f,
+                0.667420f,
+                0.707107f,
+                0.749154f,
+                0.793701f,
+                0.840896f,
+                0.890899f,
+                0.943874f,
+                1f,
+                1.059463f,
+                1.122462f,
+                1.189207f,
+                1.259921f,
+                1.334840f,
+                1.414214f,
+                1.498307f,
+                1.587401f,
+                1.681793f,
+                1.781797f,
+                1.887749f,
+                2f
+            };
 
             NbsPlayerPluginClass.ServerTickStart = Context.Server.TotalTicks;
 
             Context.Server.Events.ServerTick += async () =>
             {
-                var position = (Context.Server.TotalTicks - NbsPlayerPluginClass.ServerTickStart) / nbsFile.Tempo;
+                int position = (Context.Server.TotalTicks - NbsPlayerPluginClass.ServerTickStart) / 1; //nbsFile.Tempo
 
                 var noteBlocks = new List<NoteBlock>();
 
@@ -44,9 +76,10 @@ namespace NbsPlayerPlugin
                 var playerPosition = new Position((int)Context.Player.X, (int)Context.Player.Y, (int)Context.Player.Z);
                 foreach (NoteBlock noteBlock in noteBlocks)
                 {
-
-                    float minecraftPitch = 0.5f + (((noteBlock.Key) / 25) * 1.5f);
-                    await Context.Client.SendSoundEffectAsync(harp, playerPosition, SoundCategory.Master, minecraftPitch, nbsFile.Layers[noteBlock.Layer].Volume);
+                    float pitch = pitches[noteBlock.Key - 33];
+                    float volume = 1f;//nbsFile.Layers[noteBlock.Layer].Volume / 100;
+                    int instrument = instruments[noteBlock.Instrument];
+                    await Context.Client.SendSoundEffectAsync(instrument, playerPosition, SoundCategory.Master, pitch, volume);
                 }
             };
 
@@ -54,5 +87,14 @@ namespace NbsPlayerPlugin
 
             //TODO: implement your usual music playing stuff
         }
+
+        [Command("test")]
+        public async Task TestAsync(int soundId, float pitch)
+        {
+            var playerPosition = new Position((int)Context.Player.X, (int)Context.Player.Y, (int)Context.Player.Z);
+            await Context.Client.SendSoundEffectAsync(soundId, playerPosition, SoundCategory.Master, pitch);
+        }
+
+       
     }
 }
