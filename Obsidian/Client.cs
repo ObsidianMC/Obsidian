@@ -147,6 +147,9 @@ namespace Obsidian
                 else
                     packet = await this.GetNextPacketAsync(this.Tcp.GetStream());
 
+                if (packet.IsEmpty)
+                    this.Disconnect();
+
                 await this.Logger.LogMessageAsync($"Received new packet with id 0x{packet.PacketId.ToString("x")}");
 
                 switch (this.State)
