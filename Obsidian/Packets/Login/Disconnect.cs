@@ -5,20 +5,24 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class Disconnect
+    public class Disconnect : Packet
     {
-        public Disconnect(Chat reason) => this.Reason = reason;
+        readonly Entities.ChatMessage Reason;
 
-        Chat Reason;
-
-        public static async Task<Disconnect> FromArrayAsync(byte[] data)
+        public Disconnect(Entities.ChatMessage reason, PacketState state) : base(state == PacketState.Play ? 0x1B : 0x00, new byte[0])
         {
-            await Task.Yield(); throw new NotImplementedException();
+            this.Reason = reason;
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream())
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        public override async Task<byte[]> ToArrayAsync()
+        {
+            using(var stream = new MemoryStream())
             {
                 await stream.WriteChatAsync(this.Reason);
                 return stream.ToArray();

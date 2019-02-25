@@ -6,14 +6,16 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class PlayerLook
+    public class PlayerLook : Packet
     {
-        public PlayerLook(float yaw, float pitch, bool onground)
+        /*public PlayerLook(float yaw, float pitch, bool onground)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onground;
-        }
+        }*/
+
+        public PlayerLook(byte[] data) : base(0x00, data) { }
 
         public float Yaw { get; private set; } = 0;
 
@@ -21,17 +23,21 @@ namespace Obsidian.Packets
 
         public bool OnGround { get; private set; } = false;
 
-        public static async Task<PlayerLook> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new PlayerLook(await stream.ReadFloatAsync(), await stream.ReadFloatAsync(), await stream.ReadBooleanAsync());
+                this.Yaw = await stream.ReadFloatAsync();
+                this.Pitch = await stream.ReadFloatAsync();
+                this.OnGround = await stream.ReadBooleanAsync();
+
+ 
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteFloatAsync(this.Yaw);
                 await stream.WriteFloatAsync(this.Pitch);

@@ -22,16 +22,17 @@ namespace Obsidian.Packets
 
         public override async Task WriteToStreamAsync(Stream stream)
         {
+            var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
             // compress data
             var memstr = new MemoryStream();
             await memstr.WriteVarIntAsync(PacketId);
-            await memstr.WriteAsync(PacketData, 0, PacketData.Length);
+            await memstr.WriteAsync(this._packetData, 0, this._packetData.Length);
 
             var inflate = new InflaterInputStream(memstr);
             byte[] compdata = new byte[inflate.Length];
             await inflate.ReadAsync(compdata, 0, compdata.Length);
 
-            await stream.WriteVarIntAsync(PacketLength);
+            await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(compdata.Length);
             await stream.WriteAsync(compdata, 0, compdata.Length);
 
@@ -74,10 +75,20 @@ namespace Obsidian.Packets
             return new CompressedPacket()
             {
                 PacketId = packetid,
-                PacketLength = len,
-                PacketData = thedata,
                 DataLength = datalen
             };
         }
+
+        #region ignore for now.
+        public override Task Populate()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<byte[]> ToArrayAsync()
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
     }
 }

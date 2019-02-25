@@ -1,30 +1,25 @@
-using System;
 using System.IO;
 using System.Threading.Tasks;
-using Obsidian.Packets;
 
 namespace Obsidian.Packets.Status
 {
-    public class PingPong
+    public class PingPong : Packet
     {
         public long Payload;
 
-        public PingPong(long payload)
-        {
-            this.Payload = payload;
-        }
+        public PingPong(byte[] data) : base(0x01, data){}
 
-        public static async Task<PingPong> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new PingPong(await stream.ReadLongAsync());
+                this.Payload = await stream.ReadLongAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteLongAsync(this.Payload);
 

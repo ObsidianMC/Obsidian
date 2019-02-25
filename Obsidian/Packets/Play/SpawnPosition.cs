@@ -7,17 +7,17 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class SpawnPosition
+    public class SpawnPosition : Packet
     {
-        public SpawnPosition(Position location) => Location = location;
+        public SpawnPosition(Position location) : base(0x49, new byte[0]) => Location = location;
 
         public Position Location { get; private set; }
 
-        public static async Task<SpawnPosition> FromArrayAsync(byte[] data) => new SpawnPosition(await new MemoryStream(data).ReadPositionAsync());
+        public override async Task Populate() => this.Location = await new MemoryStream(this._packetData).ReadPositionAsync();
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WritePositionAsync(Location);
                 return stream.ToArray();

@@ -129,7 +129,7 @@ public static class DataReader
         return value;
     }
 
-    public static async Task<Chat> ReadChatAsync(this Stream stream)
+    public static async Task<ChatMessage> ReadChatAsync(this Stream stream)
     {
         var chat = await stream.ReadStringAsync();
         
@@ -138,7 +138,7 @@ public static class DataReader
             throw new ArgumentException("string provided by stream exceeded maximum length", nameof(stream));
         }
 
-        return JsonConvert.DeserializeObject<Chat>(chat);
+        return JsonConvert.DeserializeObject<ChatMessage>(chat);
     }
 
     public static async Task<string> ReadIdentifierAsync(this Stream stream)

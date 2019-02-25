@@ -41,7 +41,7 @@ namespace Obsidian.Commands
         [Command("leave", "kickme")]
         [Description("kicks you")]
         public Task LeaveAsync()
-            => Context.Client.DisconnectClientAsync(Chat.Simple("Is this what you wanted?"));
+            => Context.Client.DisconnectAsync(ChatMessage.Simple("Is this what you wanted?"));
 
         [Command("uptime", "up")]
         [Description("Gets current uptime")]

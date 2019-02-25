@@ -1,17 +1,13 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Concurrency;
 using Obsidian.Entities;
-using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Packets;
 using Obsidian.Packets.Handshaking;
 using Obsidian.Packets.Status;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,7 +35,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Connection
 {
-    public class Client
+    /*public class Client
     {
         private PacketState _state = PacketState.Handshaking;
         private bool Compressed = false;
@@ -93,8 +89,8 @@ namespace Obsidian.Connection
         ///Kicks a client with a reason
         public async Task DisconnectClientAsync(Chat reason)
         {
-            var disconnect = new Disconnect(reason);
-            var packet = new Packet();
+            var dc = new Disconnect(reason, this.State);
+            /*var packet = new Packet();
             if (State == PacketState.Play)
             {
                 packet = new Packet(0x1B, await disconnect.ToArrayAsync());
@@ -104,7 +100,7 @@ namespace Obsidian.Connection
                 packet = new Packet(0x00, await disconnect.ToArrayAsync());
             }
 
-            await packet.WriteToStreamAsync(Tcp.GetStream());
+            await dc.WriteToStreamAsync(await dc.ToArrayAsync(), Tcp.GetStream());
 
             DisconnectClient();
         }
@@ -112,14 +108,15 @@ namespace Obsidian.Connection
         public async Task SendChatAsync(string message, byte position = 0)
         {
             var chat = Chat.Simple(message);
-            var pack = new Packet(0x0E, await new ChatMessage(chat, position).ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
+            //var pack = new Packet(0x0E, await new ChatMessage(chat, position).ToArrayAsync());
+            var pack = new ChatMessage(chat, position);
+            await pack.WriteToStreamAsync(await pack.ToArrayAsync(), netstream);
         }
 
         public async Task SendJoinGameAsync(EntityId id)
         {
-            var pack = new Packet(0x25, await new JoinGame((int)id, 0, 0, 0, "default", true).ToArrayAsync());
-            await pack.WriteToStreamAsync(netstream);
+            var pack = new JoinGame((int)id, 0, 0, 0, "default", true);
+            await pack.WriteToStreamAsync(await pack.ToArrayAsync(), netstream);
         }
 
         /// <summary>
@@ -219,8 +216,8 @@ namespace Obsidian.Connection
                                 {
                                     // kick out the player
                                     await this.DisconnectClientAsync(Chat.Simple($"A player with usename {loginStart.Username} is already online!"));
-                                }*/
-                                this.Player = new MinecraftPlayer(loginStart.Username, 0, 0, 0);
+                                }
+                                this.Player = new MinecraftPlayer(loginStart.Username, new Location(null, 0, 0, 0));
 
                                 // For offline mode, Respond with LoginSuccess (0x02) and switch state to Play.
                                 var loginSuccess = new LoginSuccess("069a79f4-44e9-4726-a5be-fca90e38aaf5", loginStart.Username); // does this mean we can change usernames server-side??
@@ -382,9 +379,9 @@ namespace Obsidian.Connection
                             case 0x10:
                                 // Player Position
                                 var pos = await PlayerPosition.FromArrayAsync(packet.PacketData);
-                                this.Player.X = pos.X;
-                                this.Player.Y = pos.Y;
-                                this.Player.Z = pos.Z;
+                                this.Player.Location.X = pos.X;
+                                this.Player.Location.Y = pos.Y;
+                                this.Player.Location.Z = pos.Z;
                                 this.Player.OnGround = pos.OnGround;
                                 await Logger.LogMessageAsync($"Updated position for {Player.Username}");
                                 break;
@@ -392,19 +389,19 @@ namespace Obsidian.Connection
                             case 0x11:
                                 // Player Position And Look (serverbound)
                                 var ppos = await PlayerPositionLook.FromArrayAsync(packet.PacketData);
-                                this.Player.X = ppos.X;
-                                this.Player.Y = ppos.Y;
-                                this.Player.Z = ppos.Z;
-                                this.Player.Yaw = ppos.Yaw;
-                                this.Player.Pitch = ppos.Pitch;
+                                this.Player.Location.X = ppos.X;
+                                this.Player.Location.Y = ppos.Y;
+                                this.Player.Location.Z = ppos.Z;
+                                this.Player.Location.Yaw = ppos.Yaw;
+                                this.Player.Location.Pitch = ppos.Pitch;
                                 await Logger.LogMessageAsync($"Updated look and position for {Player.Username}");
                                 break;
 
                             case 0x12:
                                 // Player Look
                                 var look = await PlayerLook.FromArrayAsync(packet.PacketData);
-                                this.Player.Yaw = look.Yaw;
-                                this.Player.Pitch = look.Pitch;
+                                this.Player.Location.Yaw = look.Yaw;
+                                this.Player.Location.Pitch = look.Pitch;
                                 this.Player.OnGround = look.OnGround;
                                 await Logger.LogMessageAsync($"Updated look for {Player.Username}");
                                 break;
@@ -540,5 +537,5 @@ namespace Obsidian.Connection
             if (Tcp.Connected)
                 this.Tcp.Close();
         }
-    }
+    }*/
 }

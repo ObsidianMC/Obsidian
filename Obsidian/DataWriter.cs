@@ -84,7 +84,7 @@ public static class DataWriter
         await stream.WriteAsync(bytes);
     }
 
-    public static async Task WriteChatAsync(this Stream stream, Chat value) => await stream.WriteStringAsync(value.ToString(), 32767);
+    public static async Task WriteChatAsync(this Stream stream, ChatMessage value) => await stream.WriteStringAsync(value.ToString(), 32767);
 
     public static async Task WriteIdentifierAsync(this Stream stream, string value) => await stream.WriteStringAsync(value, 32767);
 

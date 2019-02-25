@@ -6,14 +6,17 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class PlayerPosition
+    public class PlayerPosition : Packet
     {
-        public PlayerPosition(double x, double y, double z, bool onground)
+        public PlayerPosition(double x, double y, double z, bool onground) : base(0x10, new byte[0])
         {
             this.X = x;
             this.Y = y;
             this.Z = z;
+            this.OnGround = onground;
         }
+
+        public PlayerPosition(byte[] data) : base(0x10, data) { }
 
         public double X { get; private set; } = 0;
 
@@ -23,18 +26,20 @@ namespace Obsidian.Packets
 
         public bool OnGround { get; private set; } = false;
 
-        public static async Task<PlayerPosition> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new PlayerPosition(await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(),
-                    await stream.ReadDoubleAsync(), await stream.ReadBooleanAsync());
+                this.X = await stream.ReadDoubleAsync();
+                this.Y = await stream.ReadDoubleAsync();
+                this.Z = await stream.ReadDoubleAsync();
+                this.OnGround = await stream.ReadBooleanAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteDoubleAsync(this.X);
                 await stream.WriteDoubleAsync(this.Y);

@@ -6,23 +6,24 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class LoginStart
+    public class LoginStart : Packet
     {
-        public LoginStart(string username) => this.Username = username;
+        public LoginStart(string username) : base(0x00, new byte[0]) => this.Username = username;
+        public LoginStart(byte[] data) : base(0x00, data) { }
 
         public string Username { get; private set; }
 
-        public static async Task<LoginStart> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new LoginStart(await stream.ReadStringAsync());
+                this.Username = await stream.ReadStringAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteStringAsync(this.Username);
                 return stream.ToArray();

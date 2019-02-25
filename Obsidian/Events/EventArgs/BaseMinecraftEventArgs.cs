@@ -1,10 +1,6 @@
-﻿using Obsidian.Connection;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Logging;
 using Obsidian.Packets;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.Events.EventArgs
 {

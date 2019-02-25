@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class SoundEffect
+    public class SoundEffect : Packet
     {
-        public SoundEffect(int soundId, Position position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
+        public SoundEffect(int soundId, Position position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, new byte[0])
         {
             this.SoundId = soundId;
             this.Position = position;
@@ -22,9 +22,12 @@ namespace Obsidian.Packets
         public int SoundId { get; set; }
         public float Volume { get; set; }
 
-        public static async Task<SoundEffect> FromArrayAsync(byte[] data) => throw new NotImplementedException();
+        public override Task Populate()
+        {
+            throw new NotImplementedException();
+        }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
             using (var stream = new MemoryStream())
             {

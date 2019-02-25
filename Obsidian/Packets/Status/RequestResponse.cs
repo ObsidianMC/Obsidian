@@ -4,26 +4,24 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Status
 {
-    public class RequestResponse
+    public class RequestResponse : Packet
     {
-        public RequestResponse() { }
-        public RequestResponse(string json) => this.Json = json;
+        public RequestResponse(string json) : base(0x00, new byte[0]) => this.Json = json;
 
         public string Json;
 
-        public async Task<RequestResponse> FromByteAsync(byte[] data)
+        public override async Task Populate()
         {
             await Task.Yield();
-            using (MemoryStream stream = new MemoryStream(data))
+            using(var stream = new MemoryStream(this._packetData))
             {
-                // empty data: consider taking away stream or making a separate object.
-                return new RequestResponse();
+
             }
         }
 
-        public async Task<byte[]> GetDataAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using(var stream = new MemoryStream())
             {
                 await stream.WriteStringAsync(this.Json);
 

@@ -1,27 +1,30 @@
-﻿using Obsidian.Entities;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class KeepAlive
+    public class KeepAlive : Packet
     {
-        public KeepAlive(long id) => this.KeepAliveId = id;
-
-        public long KeepAliveId { get; }
-
-        public static async Task<KeepAlive> FromArrayAsync(byte[] data)
+        public KeepAlive(long id) : base(0x21, new byte[0])
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            this.KeepAliveId = id;
+        }
+
+        public KeepAlive(byte[] data) : base(0x21, data) { }
+
+        public long KeepAliveId { get; set; }
+
+        public override async Task Populate()
+        {
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new KeepAlive(await stream.ReadLongAsync());
+                this.KeepAliveId = await stream.ReadLongAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteLongAsync(this.KeepAliveId);
                 return stream.ToArray();

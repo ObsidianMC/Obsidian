@@ -1,14 +1,11 @@
-﻿using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class LoginSuccess
+    public class LoginSuccess : Packet
     {
-        public LoginSuccess(string uuid, string username)
+        public LoginSuccess(string uuid, string username) : base(0x02, new byte[0])
         {
             this.Username = username;
             this.UUID = uuid;
@@ -18,22 +15,24 @@ namespace Obsidian.Packets
 
         public string UUID { get; private set; }
 
-        public static async Task<LoginSuccess> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new LoginSuccess(await stream.ReadStringAsync(), await stream.ReadStringAsync());
+                this.Username = await stream.ReadStringAsync();
+                this.UUID = await stream.ReadStringAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteStringAsync(this.UUID);
                 await stream.WriteStringAsync(this.Username);
                 return stream.ToArray();
             }
         }
+
     }
 }

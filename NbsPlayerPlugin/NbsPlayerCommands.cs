@@ -73,13 +73,13 @@ namespace NbsPlayerPlugin
                     noteBlocks.AddRange(layer.NoteBlocks.FindAll(nb => nb.Tick == position));
                 }
 
-                var playerPosition = new Position((int)Context.Player.X, (int)Context.Player.Y, (int)Context.Player.Z);
+                var loc = Context.Player.Location;
                 foreach (NoteBlock noteBlock in noteBlocks)
                 {
                     float pitch = pitches[noteBlock.Key - 33];
                     float volume = 1f;//nbsFile.Layers[noteBlock.Layer].Volume / 100;
                     int instrument = instruments[noteBlock.Instrument];
-                    await Context.Client.SendSoundEffectAsync(instrument, playerPosition, SoundCategory.Master, pitch, volume);
+                    await Context.Client.SendSoundEffectAsync(instrument, new Position((int)loc.X, (int)loc.Y, (int)loc.Z), SoundCategory.Master, pitch, volume);
                 }
             };
 
@@ -91,8 +91,8 @@ namespace NbsPlayerPlugin
         [Command("test")]
         public async Task TestAsync(int soundId, float pitch)
         {
-            var playerPosition = new Position((int)Context.Player.X, (int)Context.Player.Y, (int)Context.Player.Z);
-            await Context.Client.SendSoundEffectAsync(soundId, playerPosition, SoundCategory.Master, pitch);
+            var loc = Context.Player.Location;
+            await Context.Client.SendSoundEffectAsync(soundId, new Position((int)loc.X, (int)loc.Y, (int)loc.Z), SoundCategory.Master, pitch);
         }
 
        

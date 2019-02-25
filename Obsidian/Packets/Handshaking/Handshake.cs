@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Handshaking
 {
-    public class Handshake
+    public class Handshake : Packet
     {
         public ProtocolVersion Version;
         
@@ -14,26 +14,28 @@ namespace Obsidian.Packets.Handshaking
 
         public PacketState NextState;
 
-        public Handshake()
+        public Handshake(byte[] data) : base(0x00, data)
         {
+    
         }
 
-        public static async Task<Handshake> FromArrayAsync(byte[] data)
+        public Handshake() : base(0x00, null){}
+
+        public override async Task Populate()
         {
-            using(MemoryStream stream = new MemoryStream(data))
+            Console.WriteLine("Populating class...");
+            using(var stream = new MemoryStream(this._packetData))
             {
-                return new Handshake() {
-                    Version = (ProtocolVersion)await stream.ReadVarIntAsync(),
-                    ServerAddress = await stream.ReadStringAsync(),
-                    ServerPort = await stream.ReadUnsignedShortAsync(),
-                    NextState = (PacketState)await stream.ReadVarIntAsync(),
-                };
+                this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
+                this.ServerAddress = await stream.ReadStringAsync();
+                this.ServerPort = await stream.ReadUnsignedShortAsync();
+                this.NextState = (PacketState)await stream.ReadVarIntAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteVarIntAsync((int)this.Version);
                 //TODO: add string length check

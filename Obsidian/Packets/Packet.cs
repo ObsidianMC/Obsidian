@@ -1,24 +1,19 @@
 //https://wiki.vg/Protocol#Packet_format
-using System;
 using System.IO;
-using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class Packet
+    public abstract class Packet
     {
+        internal protected byte[] _packetData;
+
         public int PacketId { get; internal set; }
 
-        public int PacketLength { get; internal set; }
-
-        public byte[] PacketData { get; internal set; }
-
-        public Packet(int packetid, byte[] packetdata)
+        public Packet(int packetid, byte[] data)
         {
-            this.PacketData = packetdata;
             this.PacketId = packetid;
-            this.PacketLength = packetid.GetVarintLength() + packetdata.Length;
+            this._packetData = data;
         }
 
         internal Packet()
@@ -26,12 +21,9 @@ namespace Obsidian.Packets
             // Only for the static method to _not_ error
         }
 
-        public virtual async Task WriteToStreamAsync(Stream stream)
-        {
-            await stream.WriteVarIntAsync(PacketLength);
-            await stream.WriteVarIntAsync(PacketId);
-            await stream.WriteAsync(PacketData, 0, PacketData.Length);
-        }
+        
+
+        public bool IsEmpty => this.PacketId.GetVarintLength() + this._packetData.Length == 0;
 
         public static async Task<Packet> ReadFromStreamAsync(Stream stream)
         {
@@ -64,7 +56,7 @@ namespace Obsidian.Packets
             var packetid = await packetstream.ReadVarIntAsync();
 
             int arlen = 0;
-            if (len - packetid.GetVarintLength() > -1)
+            if(len - packetid.GetVarintLength() > -1)
                 arlen = len - packetid.GetVarintLength();
 
             var thedata = new byte[arlen];
@@ -72,12 +64,45 @@ namespace Obsidian.Packets
 
             packetstream.Dispose();
 
-            return new Packet()
+            return new EmptyPacket()
             {
                 PacketId = packetid,
-                PacketLength = len,
-                PacketData = thedata
+                _packetData = thedata
             };
+        }
+
+        public async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
+
+        public virtual async Task WriteToStreamAsync(Stream stream)
+        {
+            var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
+
+            await stream.WriteVarIntAsync(packetLength);
+            await stream.WriteVarIntAsync(PacketId);
+            await stream.WriteAsync(this._packetData, 0, this._packetData.Length);
+        }
+
+        public Packet WithDataFrom(Packet p)
+        {
+            this._packetData = p._packetData;
+            return this; // ;^)
+        }
+
+        public abstract Task Populate();
+
+        public abstract Task<byte[]> ToArrayAsync();
+    }
+
+    public class EmptyPacket : Packet
+    {
+        public override Task Populate()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override Task<byte[]> ToArrayAsync()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

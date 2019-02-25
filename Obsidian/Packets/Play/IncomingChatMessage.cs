@@ -1,27 +1,30 @@
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class IncomingChatMessage
+    public class IncomingChatMessage : Packet
     {
-        public IncomingChatMessage(string message) => Message = message;
+        public IncomingChatMessage(byte[] data) : base(0x02, data) { }
 
         public string Message { get; private set; }
 
 
-        public static async Task<IncomingChatMessage> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (var stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new IncomingChatMessage(await stream.ReadStringAsync(256));
+                this.Message = await stream.ReadStringAsync(256);
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            await Task.Yield(); throw new NotImplementedException();
+            using(var ms = new MemoryStream())
+            {
+                await ms.WriteStringAsync(this.Message);
+                return ms.ToArray();
+            }
         }
     }
 }

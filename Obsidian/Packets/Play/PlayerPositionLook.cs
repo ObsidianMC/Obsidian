@@ -17,18 +17,22 @@ namespace Obsidian.Packets
         NONE = 0x00
     }
 
-    public class PlayerPositionLook
+    public class PlayerPositionLook : Packet
     {
-        public PlayerPositionLook(double x, double y, double z, float yaw, float pitch, PositionFlags flags, int teleportid)
+        public PlayerPositionLook(Location location, PositionFlags flags, int tpId) : base(0x32, new byte[0])
         {
-            this.X = x;
-            this.Y = y;
-            this.Z = z;
-            this.Yaw = yaw;
-            this.Pitch = pitch;
+            this.X = location.X;
+            this.Y = location.Y;
+            this.Z = location.Z;
+
+            this.Yaw = location.Yaw;
+            this.Pitch = location.Pitch;
+
             this.Flags = flags;
-            this.TeleportId = teleportid;
+            this.TeleportId = tpId;
         }
+
+        public PlayerPositionLook(byte[] data) : base(0x32, data) { }
 
         public double X { get; private set; } = 0;
 
@@ -44,19 +48,26 @@ namespace Obsidian.Packets
 
         public int TeleportId { get; private set; } = 0;
 
-        public static async Task<PlayerPositionLook> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using (var stream = new MemoryStream(this._packetData))
             {
-                return new PlayerPositionLook(await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(),
-                    await stream.ReadDoubleAsync(), await stream.ReadFloatAsync(), await stream.ReadFloatAsync(),
-                    (PositionFlags)await stream.ReadByteAsync(), await stream.ReadVarIntAsync());
+                this.X = await stream.ReadDoubleAsync();
+                this.Y = await stream.ReadDoubleAsync();
+                this.Z = await stream.ReadDoubleAsync();
+
+                this.Pitch = await stream.ReadFloatAsync();
+                this.Yaw = await stream.ReadFloatAsync();
+
+                this.Flags = (PositionFlags)await stream.ReadByteAsync();
+
+                this.TeleportId = await stream.ReadVarIntAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 await stream.WriteDoubleAsync(this.X);
                 await stream.WriteDoubleAsync(this.Y);

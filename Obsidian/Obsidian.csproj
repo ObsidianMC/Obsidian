@@ -6,6 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Connection\Client.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Connection\Client.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="fNbt" Version="0.6.4" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="Qmmands" Version="2.1.0" />

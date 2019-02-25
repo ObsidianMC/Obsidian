@@ -45,6 +45,7 @@ namespace SamplePlugin
         [Description("A sample command added by a sample plugin!")]
         public async Task SampleCommandAsync()
         {
+
             await Context.Server.SendChatAsync($"Sample command executed by {Context.Player.Username}" +
                 $" from within a sample plugin!!!1", Context.Client, 0, false);
         }

@@ -1,14 +1,11 @@
-﻿using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-    public class JoinGame
+    public class JoinGame : Packet
     {
-        public JoinGame(int entityid, byte gamemode, int dimension, byte difficulty, string leveltype, bool debugging)
+        public JoinGame(int entityid, byte gamemode, int dimension, byte difficulty, string leveltype, bool debugging) : base(0x25, new byte[0])
         {
             this.EntityId = entityid;
             this.GameMode = gamemode;
@@ -17,6 +14,8 @@ namespace Obsidian.Packets
             this.LevelType = leveltype;
             this.ReducedDebugInfo = !debugging;
         }
+
+        public JoinGame(byte[] data) : base(0x25, data) { }
 
         public int EntityId { get; private set; }
 
@@ -32,32 +31,31 @@ namespace Obsidian.Packets
 
         public bool ReducedDebugInfo { get; private set; } = false;
 
-        public static async Task<JoinGame> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using(var stream = new MemoryStream(this._packetData))
             {
-                var entity = await stream.ReadVarIntAsync();
-                var gamemode = await stream.ReadUnsignedByteAsync();
-                var dimension = await stream.ReadIntAsync();
-                var difficulty = await stream.ReadUnsignedByteAsync();
-                await stream.ReadUnsignedByteAsync(); //maxplayers
-                var leveltype = await stream.ReadStringAsync();
-                var reducedebug = await stream.ReadBooleanAsync();
-                return new JoinGame(entity, gamemode, dimension, difficulty, leveltype, !reducedebug);
+                this.EntityId = await stream.ReadVarIntAsync();
+                this.GameMode = await stream.ReadUnsignedByteAsync();
+                this.Dimension = await stream.ReadIntAsync();
+                this.Difficulty = await stream.ReadUnsignedByteAsync();
+                this.MaxPlayers = await stream.ReadUnsignedByteAsync(); //maxplayers
+                this.LevelType = await stream.ReadStringAsync();
+                this.ReducedDebugInfo = await stream.ReadBooleanAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using(var stream = new MemoryStream())
             {
-                await stream.WriteIntAsync(EntityId);
-                await stream.WriteUnsignedByteAsync(GameMode);
-                await stream.WriteIntAsync(Dimension);
-                await stream.WriteUnsignedByteAsync(Difficulty);
-                await stream.WriteUnsignedByteAsync(MaxPlayers);
-                await stream.WriteStringAsync(LevelType);
-                await stream.WriteBooleanAsync(ReducedDebugInfo);
+                await stream.WriteIntAsync(this.EntityId);
+                await stream.WriteUnsignedByteAsync(this.GameMode);
+                await stream.WriteIntAsync(this.Dimension);
+                await stream.WriteUnsignedByteAsync(this.Difficulty);
+                await stream.WriteUnsignedByteAsync(this.MaxPlayers);
+                await stream.WriteStringAsync(this.LevelType);
+                await stream.WriteBooleanAsync(this.ReducedDebugInfo);
                 return stream.ToArray();
             }
         }

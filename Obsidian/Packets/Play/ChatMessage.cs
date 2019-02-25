@@ -1,42 +1,38 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
 
-    public class ChatMessage
+    public class ChatMessage : Packet
     {
-        public ChatMessage(Chat msg, byte position) // TODO: add constructor
+        public ChatMessage(Entities.ChatMessage message, byte position) : base(0x0E, new byte[0])
         {
-            this.Message = msg;
+            this.Message = message;
             this.Position = position;
         }
 
-        public Chat Message { get; private set; }
+        public Entities.ChatMessage Message { get; private set; }
 
-        public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (above hotbar)
+        public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-
-        public static async Task<ChatMessage> FromArrayAsync(byte[] data)
+        public override async Task Populate()
         {
-            using (MemoryStream stream = new MemoryStream(data))
+            using(var stream = new MemoryStream(this._packetData))
             {
-                var chat = JsonConvert.DeserializeObject<Chat>(await stream.ReadStringAsync());
-                var pos = await stream.ReadUnsignedByteAsync();
-                return new ChatMessage(chat, pos);
+                this.Message = JsonConvert.DeserializeObject<Entities.ChatMessage>(await stream.ReadStringAsync());
+                this.Position = await stream.ReadUnsignedByteAsync();
             }
         }
 
-        public async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using(var stream = new MemoryStream())
             {
                 await stream.WriteStringAsync(JsonConvert.SerializeObject(this.Message));
-                await stream.WriteUnsignedByteAsync(Position);
+                await stream.WriteUnsignedByteAsync(this.Position);
                 return stream.ToArray();
             }
         }

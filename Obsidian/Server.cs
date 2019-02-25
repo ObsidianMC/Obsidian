@@ -1,21 +1,17 @@
-﻿using System;
+﻿using Obsidian.Commands;
+using Obsidian.Concurrency;
+using Obsidian.Entities;
+using Obsidian.Events;
+using Obsidian.Logging;
+using Obsidian.Plugins;
+using Qmmands;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Concurrency;
-using Obsidian.Connection;
-using Obsidian.Entities;
-using Obsidian.Logging;
-using Obsidian.Packets;
-using Obsidian.Commands;
-using Qmmands;
-using System.Reflection;
-using Obsidian.Plugins;
-using Obsidian.Events;
 
 namespace Obsidian
 {
@@ -124,9 +120,9 @@ namespace Obsidian
 
                 foreach (var client in _clients)
                 {
-                    if (client.KeepAlives > 5)
+                    if (client.Timedout)
                     {
-                        client.DisconnectClient();
+                        client.Disconnect();
                     }
                     if (!client.Tcp.Connected)
                     {
@@ -190,17 +186,17 @@ namespace Obsidian
             while (!_cts.IsCancellationRequested)
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
-
+                
                 await Logger.LogMessageAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
 
                 int newplayerid = 0;
                 if(_clients.Count > 0)
                     newplayerid = this._clients.Max(x => x.PlayerId);
 
-                var clnt = new Client(tcp, this.Config, this, newplayerid);
+                var clnt = new Client(tcp, this.Config, newplayerid, this);
                 _clients.Add(clnt);
 
-                await Task.Factory.StartNew(async () => { await clnt.StartClientConnection().ConfigureAwait(false); });
+                await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
             // Cancellation has been requested
             await Logger.LogMessageAsync($"Cancellation has been requested. Stopping server...");
