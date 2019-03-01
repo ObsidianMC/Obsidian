@@ -44,7 +44,7 @@ namespace NbsPlayerPlugin
 
         private static void ReadNbsNoteBlocks(NbsFile nbsFile, BinaryReader binaryReader)
         {
-            List<NoteBlock> noteBlocks = new List<NoteBlock>();
+            var noteBlocks = new List<NoteBlock>();
             //int[] instrumentcount = new int[5];
             //int[] layercount = new int[nbsFile.Layers.Length];
 
@@ -118,8 +118,10 @@ namespace NbsPlayerPlugin
             }
         }
 
-        /// <summary>Reads a string from the given stream.
-        /// Strings in the nbs file consist of a 32 bit integer, followed by that many ASCII bytes.</summary>
+        /// <summary>
+        /// Reads a string from the given stream.
+        /// Strings in the nbs file consist of a 32 bit integer, followed by that many ASCII bytes.
+        /// </summary>
         public static string ReadNbsString(this BinaryReader binaryReader)
         {
             int length = binaryReader.ReadInt32();
