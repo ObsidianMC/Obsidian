@@ -25,11 +25,11 @@ namespace NbsPlayerPlugin
             NbsPlayerPluginClass.Tasks.Add(task);
         }
 
-        [Command("test")]
-        public async Task TestAsync(int soundId, float pitch)
-        {
-            var loc = Context.Player.Location;
-            await Context.Client.SendSoundEffectAsync(soundId, new Position((int)loc.X, (int)loc.Y, (int)loc.Z), SoundCategory.Master, pitch);
-        }
+        //[Command("test")]
+        //public async Task TestAsync(int soundId, float pitch)
+        //{
+        //    var loc = Context.Player.Location;
+        //    await Context.Client.SendSoundEffectAsync(soundId, new Position((int)loc.X, (int)loc.Y, (int)loc.Z), SoundCategory.Master, pitch);
+        //}
     }
 }
