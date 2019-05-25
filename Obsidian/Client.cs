@@ -315,7 +315,7 @@ namespace Obsidian
                                 await this.Logger.LogMessageAsync("Received empty packet in STATUS state. Sending json status data.");
                                 //returnpack = new Packet(0x00, await res.GetDataAsync());
 
-                                returnPacket = new RequestResponse(JsonConvert.SerializeObject(ServerStatus.DebugStatus));
+                                returnPacket = new RequestResponse(ServerStatus.DebugStatus);
                                 await returnPacket.FillPacketDataAsync();
 
                                 await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
