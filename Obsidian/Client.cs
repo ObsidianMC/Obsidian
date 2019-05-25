@@ -192,7 +192,6 @@ namespace Obsidian
             while(!Cancellation.IsCancellationRequested && this.Tcp.Connected)// I'm sure
             {
                 Packet packet = null;
-                Packet returnPacket = null;
 
                 if(this.Compressed)
                     packet = await this.GetNextCompressedPacketAsync(this.Tcp.GetStream());
@@ -203,6 +202,8 @@ namespace Obsidian
                     this.Disconnect();
 
                 await this.Logger.LogMessageAsync($"Received new packet with id 0x{packet.PacketId.ToString("x")}");
+
+                Packet returnPacket = null;
 
                 switch (this.State)
                 {
@@ -293,6 +294,7 @@ namespace Obsidian
                                 await this.Logger.LogMessageAsync("Sending welcome msg");
 
                                 await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+                                
                                 // Login success!
                                 await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
                                 await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
