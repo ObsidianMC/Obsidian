@@ -23,7 +23,7 @@ namespace Obsidian.Packets
 
         public bool OnGround { get; private set; } = false;
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using (var stream = new MemoryStream(this._packetData))
             {

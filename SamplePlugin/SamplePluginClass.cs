@@ -1,11 +1,9 @@
-﻿
-using System;
-using System.Threading.Tasks;
-using Obsidian;
+﻿using Obsidian;
 using Obsidian.Commands;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
 using Qmmands;
+using System.Threading.Tasks;
 
 namespace SamplePlugin
 {

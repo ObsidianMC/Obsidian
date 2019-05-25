@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.Entities
+﻿namespace Obsidian.Entities
 {
     public enum EntityType : byte
     {

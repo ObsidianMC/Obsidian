@@ -21,9 +21,8 @@ namespace Obsidian.Packets.Handshaking
 
         public Handshake() : base(0x00, null){}
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
-            Console.WriteLine("Populating class...");
             using(var stream = new MemoryStream(this._packetData))
             {
                 this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();

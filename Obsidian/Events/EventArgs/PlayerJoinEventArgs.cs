@@ -1,8 +1,5 @@
-﻿using Obsidian.Connection;
-using Obsidian.Packets;
+﻿using Obsidian.Packets;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.Events.EventArgs
 {

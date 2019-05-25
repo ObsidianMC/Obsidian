@@ -15,8 +15,11 @@ namespace Obsidian.Packets
 
         public string UUID { get; private set; }
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
+            if (!string.IsNullOrEmpty(this.UUID) || !string.IsNullOrEmpty(this.Username))
+                return;
+
             using (var stream = new MemoryStream(this._packetData))
             {
                 this.Username = await stream.ReadStringAsync();

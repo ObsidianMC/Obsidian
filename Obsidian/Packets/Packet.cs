@@ -1,5 +1,7 @@
 //https://wiki.vg/Protocol#Packet_format
+using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -7,7 +9,6 @@ namespace Obsidian.Packets
     public abstract class Packet
     {
         internal protected byte[] _packetData;
-
         public int PacketId { get; internal set; }
 
         public Packet(int packetid, byte[] data)
@@ -16,14 +17,11 @@ namespace Obsidian.Packets
             this._packetData = data;
         }
 
-        internal Packet()
-        {
-            // Only for the static method to _not_ error
-        }
+        internal Packet() { /* Only for the static method to _not_ error */ }
 
-        
+        private async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
 
-        public bool IsEmpty => this.PacketId.GetVarintLength() + this._packetData.Length == 0;
+        public bool Empty => this._packetData.Length == 0;
 
         public static async Task<Packet> ReadFromStreamAsync(Stream stream)
         {
@@ -52,18 +50,21 @@ namespace Obsidian.Packets
             var data = new byte[len];
             await stream.ReadAsync(data, 0, len);
 
-            var packetstream = new MemoryStream(data);
-            var packetid = await packetstream.ReadVarIntAsync();
+            int packetid;
+            byte[] thedata;
 
-            int arlen = 0;
-            if(len - packetid.GetVarintLength() > -1)
-                arlen = len - packetid.GetVarintLength();
+            using (var packetstream = new MemoryStream(data))
+            {
+                packetid = await packetstream.ReadVarIntAsync();
 
-            var thedata = new byte[arlen];
-            await packetstream.ReadAsync(thedata, 0, thedata.Length);
+                int arlen = 0;
+                if (len - packetid.GetVarintLength() > -1)
+                    arlen = len - packetid.GetVarintLength();
 
-            packetstream.Dispose();
-
+                thedata = new byte[arlen];
+                await packetstream.ReadAsync(thedata, 0, thedata.Length);
+            }
+            
             return new EmptyPacket()
             {
                 PacketId = packetid,
@@ -71,7 +72,19 @@ namespace Obsidian.Packets
             };
         }
 
-        public async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
+        public static async Task<T> CreateAsync<T>(T packet) where T : Packet
+        {
+            if (!packet.Empty)
+            {
+                await packet.PopulateAsync();
+            }
+            else
+            {
+                await packet.FillPacketDataAsync();
+            }
+            
+            return (T)Convert.ChangeType(packet, typeof(T));
+        }
 
         public virtual async Task WriteToStreamAsync(Stream stream)
         {
@@ -88,14 +101,14 @@ namespace Obsidian.Packets
             return this; // ;^)
         }
 
-        public abstract Task Populate();
-
         public abstract Task<byte[]> ToArrayAsync();
+
+        protected abstract Task PopulateAsync();
     }
 
     public class EmptyPacket : Packet
     {
-        public override Task Populate()
+        protected override Task PopulateAsync()
         {
             throw new System.NotImplementedException();
         }

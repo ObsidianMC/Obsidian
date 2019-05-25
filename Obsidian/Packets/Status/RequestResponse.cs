@@ -10,7 +10,7 @@ namespace Obsidian.Packets.Status
 
         public string Json;
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             await Task.Yield();
             using(var stream = new MemoryStream(this._packetData))

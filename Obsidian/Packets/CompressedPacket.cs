@@ -11,14 +11,9 @@ namespace Obsidian.Packets
     {
         public int DataLength { get; private set; }
 
-        public CompressedPacket(int packetid, byte[] packetdata) : base(packetid, packetdata)
-        {
-        }
+        public CompressedPacket(int packetid, byte[] packetdata) : base(packetid, packetdata) { }
 
-        private CompressedPacket()
-        {
-            // Only for the static method to _not_ error
-        }
+        private CompressedPacket() { /* Only for the static method to _not_ error*/ }
 
         public override async Task WriteToStreamAsync(Stream stream)
         {
@@ -80,7 +75,7 @@ namespace Obsidian.Packets
         }
 
         #region ignore for now.
-        public override Task Populate()
+        protected override Task PopulateAsync()
         {
             throw new NotImplementedException();
         }

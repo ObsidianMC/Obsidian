@@ -10,7 +10,7 @@ namespace Obsidian
     {
         static Server Obsidian;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             string version = "0.1";
             #if DEBUG
@@ -32,7 +32,7 @@ namespace Obsidian
             var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
             Obsidian = new Server(config, version, "0");
 
-            Obsidian.StartServer().Wait();
+            await Obsidian.StartServer();
 
             Console.WriteLine("Server killed. Press any key to Return.");
             Console.ReadKey();

@@ -48,7 +48,7 @@ namespace Obsidian.Packets
 
         public int TeleportId { get; private set; } = 0;
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using (var stream = new MemoryStream(this._packetData))
             {

@@ -49,10 +49,9 @@ namespace NbsPlayerPlugin
             //int[] layercount = new int[nbsFile.Layers.Length];
 
             short tick = -1;
-            short jumps = 0;
             while (true)
             {
-                jumps = binaryReader.ReadInt16();
+                var jumps = binaryReader.ReadInt16();
                 if (jumps == 0)
                 {
                     break;

@@ -9,7 +9,7 @@ namespace Obsidian.Packets.Status
 
         public PingPong(byte[] data) : base(0x01, data){}
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using (var stream = new MemoryStream(this._packetData))
             {

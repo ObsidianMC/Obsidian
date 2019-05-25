@@ -27,11 +27,11 @@ namespace Obsidian.Plugins
             {
                 Directory.CreateDirectory("plugins");
             }
-            var files = Directory.GetFiles("plugins", "*.dll");
+            var files = Directory.GetFiles(Path.GetFullPath("plugins"), "*.dll");
              // I don't do File IO often, I just know how to do reflection from a dll
             foreach (var file in files) // don't touch pls
             {
-                var assembly = Assembly.LoadFile(Path.Combine(Path.GetFullPath("plugins"), Path.GetFileName(file)));
+                var assembly = Assembly.LoadFile(file);
                 var pluginclasses = assembly.GetTypes().Where(x => typeof(IPluginClass).IsAssignableFrom(x) && x != typeof(IPluginClass));
 
                 foreach(var ptype in pluginclasses)

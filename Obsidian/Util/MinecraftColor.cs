@@ -2,6 +2,12 @@ using System.Drawing;
 
 public struct MinecraftColor
 {
+    public Color Color { get; }
+
+    public char Code { get; }
+
+    public string Name { get; }
+
     public MinecraftColor(char code, string name, Color? color = null)
     {
         this.Code = code;
@@ -13,10 +19,7 @@ public struct MinecraftColor
     }
 
     public override string ToString() => "§" + this.Code;
-
-    char Code;
-    string Name;
-    Color Color;
+    
 
     //0-9
     public static readonly MinecraftColor Black       = new MinecraftColor('0', "black",          Color.FromArgb(0,   0,   0));

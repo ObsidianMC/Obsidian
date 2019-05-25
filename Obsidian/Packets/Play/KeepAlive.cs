@@ -14,7 +14,7 @@ namespace Obsidian.Packets
 
         public long KeepAliveId { get; set; }
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using (var stream = new MemoryStream(this._packetData))
             {

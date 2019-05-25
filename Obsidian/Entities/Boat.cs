@@ -20,7 +20,8 @@
         Oak,
         Spruce,
         Birch,
-        Jungle,Acacia,
+        Jungle,
+        Acacia,
         DarkOak
     }
 }

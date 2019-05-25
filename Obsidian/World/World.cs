@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using fNbt;
+using System.Collections.Generic;
 using System.IO;
-using fNbt;
-using System;
 
 namespace Obsidian.Entities
 {
@@ -9,7 +8,7 @@ namespace Obsidian.Entities
     {
         public Level WorldData { get; internal set; }
 
-        public List<MinecraftPlayer> Players { get; }
+        public List<Player> Players { get; }
 
         // This one later comes back in the regions, 
         // but might be easier for internal management purposes
@@ -21,7 +20,7 @@ namespace Obsidian.Entities
         public World(string folder)
         {
             this.WorldData.Time = 1200;
-            this.Players = new List<MinecraftPlayer>();
+            this.Players = new List<Player>();
             this.WorldData.Gametype = (int)Gamemode.Survival;
             this.WorldData.GeneratorName = WorldType.Default.ToString();
             this.Entities = new List<object>();
@@ -63,8 +62,8 @@ namespace Obsidian.Entities
 
         public void SetTime(long newTime) => this.WorldData.Time = newTime;
 
-        public void AddPlayer(MinecraftPlayer player) => this.Players.Add(player);
-        public void RemovePlayer(MinecraftPlayer player) => this.Players.Remove(player);
+        public void AddPlayer(Player player) => this.Players.Add(player);
+        public void RemovePlayer(Player player) => this.Players.Remove(player);
 
         //TODO
         public void Save() { }
@@ -77,7 +76,7 @@ namespace Obsidian.Entities
             PFile.LoadFromFile(playerfile);
             var playercompound = PFile.RootTag;
             // filenames are player UUIDs.
-            var player = new MinecraftPlayer("", Path.GetFileNameWithoutExtension(playerfile))
+            var player = new Player("", Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
             {
                 UUID = uuid,
                 OnGround = playercompound["OnGround"].ByteValue == 1,

@@ -19,7 +19,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// Player that invoked this event
         /// </summary>
-        public MinecraftPlayer Player => Client.Player;
+        public Player Player => Client.Player;
 
         /// <summary>
         /// Console logger

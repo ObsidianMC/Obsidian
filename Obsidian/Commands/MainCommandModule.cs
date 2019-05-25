@@ -1,9 +1,7 @@
 ﻿using Obsidian.Entities;
 using Qmmands;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -20,6 +18,7 @@ namespace Obsidian.Commands
             {
                 await Context.Client.SendChatAsync($"{MinecraftColor.DarkGreen}{cmd.Name}{MinecraftColor.Reset}: {cmd.Description}");
             }
+            
         }
 
         [Command("plugins")]

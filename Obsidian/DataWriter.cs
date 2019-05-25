@@ -93,7 +93,7 @@ public static class DataWriter
         while ((value & 128) != 0)
         {
             await stream.WriteUnsignedByteAsync((byte)(value & 127 | 128));
-            value = (int) ((uint) value) >> 7;
+            value = (int)((uint)value) >> 7;
         }
         await stream.WriteUnsignedByteAsync((byte)value);
     }
@@ -104,9 +104,9 @@ public static class DataWriter
         int value = val;
         do
         {
-            sbyte temp = (sbyte)(value & 0b01111111);
+            var temp = (sbyte)(value & 0b01111111);
             // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-            value = value >> 7;
+            value >>= 7;
             if (value != 0)
             {
                 temp |= 127;
@@ -118,11 +118,13 @@ public static class DataWriter
 
     public static async Task WriteVarLongAsync(this Stream stream, long value)
     {
-        do {
-            sbyte temp = (sbyte)(value & 0b01111111);
+        do
+        {
+            var temp = (sbyte)(value & 0b01111111);
             // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-            value = value >> 7;
-            if (value != 0) {
+            value >>= 7;
+            if (value != 0)
+            {
                 temp |= 127;
             }
             await stream.WriteByteAsync(temp);

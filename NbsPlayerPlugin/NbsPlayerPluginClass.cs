@@ -1,7 +1,6 @@
 ﻿using Obsidian;
 using Obsidian.Entities;
 using Obsidian.Plugins;
-using System;
 using System.Collections.Generic;
 
 namespace NbsPlayerPlugin
@@ -16,9 +15,9 @@ namespace NbsPlayerPlugin
         {
             this.server = server;
 
-            this.server.Commands.AddModule<NbsPlayerCommands>();
+            server.Commands.AddModule<NbsPlayerCommands>();
 
-            this.server.Events.ServerTick += async () =>
+            server.Events.ServerTick += async () =>
             {
                 foreach (PlayerTask task in Tasks)
                 {

@@ -18,7 +18,7 @@ namespace Obsidian.Packets
 
         public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using(var stream = new MemoryStream(this._packetData))
             {

@@ -8,7 +8,7 @@
         public bool Invisible { get; set; }
         public bool Glowing { get; private set; }
         /// <summary>
-        /// true if the player is flying with an elytra
+        /// true if the entity is flying with an elytra
         /// </summary>
         public bool Flying { get; private set; }
 

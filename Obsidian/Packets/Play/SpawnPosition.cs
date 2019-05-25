@@ -13,7 +13,7 @@ namespace Obsidian.Packets
 
         public Position Location { get; private set; }
 
-        public override async Task Populate() => this.Location = await new MemoryStream(this._packetData).ReadPositionAsync();
+        protected override async Task PopulateAsync() => this.Location = await new MemoryStream(this._packetData).ReadPositionAsync();
 
         public override async Task<byte[]> ToArrayAsync()
         {

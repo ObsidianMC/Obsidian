@@ -16,10 +16,10 @@ namespace Obsidian.Entities
 
         public static Identifier FromString(string id)
         {
-            string ns = "minecraft";
-            string idf = "air";
-
             var isidformat = new Regex("^[A-Za-z0-9 -_]:.+");
+
+            string ns = "minecraft";
+            string idf;
             if (isidformat.IsMatch(id))
             {
                 var split = id.Split(':').ToList(); // im lazy and this is easier

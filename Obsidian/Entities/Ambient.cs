@@ -1,7 +1,6 @@
 ﻿namespace Obsidian.Entities
 {
-    public class LivingEntity : Entity
+    public class Ambient : Insentient
     {
-
     }
 }

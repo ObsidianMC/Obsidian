@@ -46,7 +46,7 @@ namespace Obsidian
 
             this._tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
-            this._clients = new ConcurrentHashSet<Client>();
+            this.Clients = new ConcurrentHashSet<Client>();
 
             this._cts = new CancellationTokenSource();
             this._chatmessages = new ConcurrentHashSet<List<QueueChat>>();
@@ -62,14 +62,14 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
         }
 
-        public ConcurrentHashSet<Client> _clients { get; private set; }
-        public CommandService Commands { get; private set; }
-        public Config Config { get; private set; }
+        public ConcurrentHashSet<Client> Clients { get; }
+        public CommandService Commands { get; }
+        public Config Config { get; }
+        public Logger Logger { get; }
         public string Id { get; private set; }
-        public Logger Logger { get; private set; }
-        public int Port { get; private set; }
+        public string Version { get; }
+        public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
-        public string Version { get; private set; }
 
         private async Task ServerLoop()
         {
@@ -85,11 +85,11 @@ namespace Obsidian
                 keepaliveticks++;
                 if (keepaliveticks > 200)
                 {
-                    if (this._clients.Any(c => c.State == PacketState.Play))
+                    if (this.Clients.Any(c => c.State == PacketState.Play))
                     {
                         var keepaliveid = DateTime.Now.Ticks;
                         await Logger.LogMessageAsync($"Broadcasting keepalive {keepaliveid}");
-                        foreach (var clnt in this._clients)
+                        foreach (var clnt in this.Clients)
                         {
                             if (clnt.State == PacketState.Play)
                             {
@@ -105,7 +105,7 @@ namespace Obsidian
                 if (_chatmessages.Count > 0)
                 {
                     var msg = _chatmessages.First();
-                    foreach (var clnt in this._clients)
+                    foreach (var clnt in this.Clients)
                     {
                         if (clnt.State == PacketState.Play)
                         {
@@ -118,7 +118,7 @@ namespace Obsidian
                     _chatmessages.TryRemove(msg);
                 }
 
-                foreach (var client in _clients)
+                foreach (var client in Clients)
                 {
                     if (client.Timedout)
                     {
@@ -126,7 +126,7 @@ namespace Obsidian
                     }
                     if (!client.Tcp.Connected)
                     {
-                        this._clients.TryRemove(client);
+                        this.Clients.TryRemove(client);
                     }
                 }
             }
@@ -134,7 +134,7 @@ namespace Obsidian
 
         public bool CheckPlayerOnlineAsync(string username)
         {
-            return this._clients.Any(x => x.Player.Username == username);
+            return this.Clients.Any(x => x.Player.Username == username);
         }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
@@ -186,15 +186,15 @@ namespace Obsidian
             while (!_cts.IsCancellationRequested)
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
-                
+
                 await Logger.LogMessageAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
 
                 int newplayerid = 0;
-                if(_clients.Count > 0)
-                    newplayerid = this._clients.Max(x => x.PlayerId);
+                if (Clients.Count > 0)
+                    newplayerid = this.Clients.Max(x => x.PlayerId);
 
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
-                _clients.Add(clnt);
+                Clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }

@@ -20,7 +20,7 @@ namespace Obsidian.Packets
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
         public int MainHand { get; private set; }
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             using (var stream = new MemoryStream(this._packetData))
             {

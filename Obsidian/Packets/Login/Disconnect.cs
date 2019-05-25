@@ -14,7 +14,7 @@ namespace Obsidian.Packets
             this.Reason = reason;
         }
 
-        public override async Task Populate()
+        protected override async Task PopulateAsync()
         {
             await Task.Yield();
             throw new NotImplementedException();

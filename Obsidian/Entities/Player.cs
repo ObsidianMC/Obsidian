@@ -5,32 +5,40 @@ using System.Collections.Generic;
 
 namespace Obsidian.Entities
 {
-    public class MinecraftPlayer
+    public class Player : Living
     {
         // ETC
         public string UUID { get; set; }
 
         // Properties set by Minecraft (official)
         public Location Location { get; set;}
+
         public bool OnGround { get; set; }
         public bool Sleeping { get; set; }
+
         public short Air { get; set; }
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
         public short Fire { get; set; }
-        public short Health { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
+
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
         public int PlayerGameType { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
+
         public float FallDistance { get; set; }
         public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
         public float XpP { get; set; } // idfk, xp points?
+
+        public object MainHand { get; set; }
+
+        public Entity LeftShoulder { get; set; }
+        public Entity RightShoulder { get; set; }
 
         /* Missing for now:
             NbtCompound(inventory)
@@ -47,7 +55,7 @@ namespace Obsidian.Entities
         public string Username { get; }
         public World World;
 
-        public MinecraftPlayer(string UUID, string Username)
+        public Player(string UUID, string Username)
         {
             this.UUID = UUID;
             this.Username = Username;
