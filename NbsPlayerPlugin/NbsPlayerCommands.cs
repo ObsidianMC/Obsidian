@@ -16,20 +16,36 @@ namespace NbsPlayerPlugin
         {
             NbsFile nbsFile = NbsFileReader.ReadNbsFile(song);
 
-            string songName = string.IsNullOrWhiteSpace(nbsFile.SongName) ? "Unknown" : nbsFile.SongName;
-            string songAuthor = string.IsNullOrWhiteSpace(nbsFile.OriginalSongAuthor) ? "Unknown" : nbsFile.OriginalSongAuthor;
+            bool songNameSpecified = !string.IsNullOrWhiteSpace(nbsFile.SongName);
+            bool songAuthorSpecified = !string.IsNullOrWhiteSpace(nbsFile.OriginalSongAuthor);
 
-            await Context.Client.SendChatAsync($"{Constants.Prefix} Playing {songAuthor} - {songName}");
-            var task = new PlayerTask(nbsFile, Context.Client, Context.Server.TotalTicks);
-
-            NbsPlayerPluginClass.Tasks.Add(task);
+            if (songNameSpecified || songAuthorSpecified)
+            {
+                string songName = songNameSpecified ? "Unknown" : nbsFile.SongName;
+                string songAuthor = songAuthorSpecified  ? "Unknown" : nbsFile.OriginalSongAuthor;
+                await Context.Client.SendChatAsync($"{Constants.Prefix} Playing {songAuthor} - {songName}");
+            }
+            else
+            {
+                await Context.Client.SendChatAsync($"{Constants.Prefix} Playing {song}");
+            }
+            
+            NbsPlayerPluginClass.Tasks.Add(new PlayerTask(nbsFile, Context.Client, Context.Server.TotalTicks));
         }
 
-        [Command("test")]
-        public async Task TestAsync(int soundId, float pitch)
+        [Command("stop")]
+        [Description("Stops the currently playing song")]
+        public async Task StopAsync()
         {
-            var loc = Context.Player.Location;
-            await Context.Client.SendSoundEffectAsync(soundId, new Position((int)loc.X, (int)loc.Y, (int)loc.Z), SoundCategory.Master, pitch);
+            try
+            {
+                NbsPlayerPluginClass.StopTask(Context.Player.Username);
+                await Context.Client.SendChatAsync($"{Constants.Prefix} Stopped playing");
+            }
+            catch
+            {
+                await Context.Client.SendChatAsync($"{Constants.Prefix} You aren't playing a song right now.");
+            }
         }
     }
 }

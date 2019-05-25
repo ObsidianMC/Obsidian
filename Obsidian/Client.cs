@@ -4,6 +4,7 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Packets;
 using Obsidian.Packets.Handshaking;
+using Obsidian.Packets.Play;
 using Obsidian.Packets.Status;
 using System;
 using System.IO;
@@ -119,6 +120,57 @@ namespace Obsidian
             await packet.WriteToStreamAsync(this.Tcp.GetStream());
         }
 
+        public async Task SendDeclareCommandsAsync()
+        {
+            await this.Logger.LogMessageAsync("Generating Declare Commands packet.");
+
+            var packet = new DeclareCommands();
+
+            foreach (Qmmands.Command command in this.OriginServer.Commands.GetAllCommands())
+            {
+                var commandNode = new Commands.CommandNode()
+                {
+                    Name = command.Name,
+                    Type = Commands.CommandNodeType.Literal
+                };
+
+                foreach (Qmmands.Parameter parameter in command.Parameters)
+                {
+                    var parameterNode = new Commands.CommandNode()
+                    {
+                        Name = parameter.Name,
+                        Type = Commands.CommandNodeType.Argument,
+                    };
+
+                    Type type = parameter.Type;
+
+                         if (type == typeof(string))    parameterNode.Identifier = "brigadier:string";
+                    else if (type == typeof(int))       parameterNode.Identifier = "brigadier:integer";
+                    else if (type == typeof(bool))      parameterNode.Identifier = "brigadier:bool";
+                    else                                throw new NotImplementedException("Not supported parameter");
+
+                    commandNode.Children.Add(parameterNode);
+                }
+
+                if (commandNode.Children.Count > 0)
+                {
+                    commandNode.Children[0].Type |= Commands.CommandNodeType.IsExecutabe;
+                }
+                else
+                {
+                    commandNode.Type |= Commands.CommandNodeType.IsExecutabe;
+                }
+
+                packet.AddNode(commandNode);
+            }
+
+            await packet.FillPacketDataAsync();
+
+
+            await this.Logger.LogMessageAsync("Sending Declare Commands packet.");
+            await packet.WriteToStreamAsync(this.Tcp.GetStream());
+        }
+
         #endregion
 
         private async Task<CompressedPacket> GetNextCompressedPacketAsync(Stream stream)
@@ -147,6 +199,8 @@ namespace Obsidian
                     this.Disconnect();
 
                 await this.Logger.LogMessageAsync($"Received new packet with id 0x{packet.PacketId.ToString("x")}");
+
+                Packet returnPacket = null;
 
                 switch (this.State)
                 {
@@ -220,6 +274,9 @@ namespace Obsidian
                                 await this.Logger.LogMessageAsync("Sending Join Game packet.");
                                 await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
+                                // Send commands
+                                await this.SendDeclareCommandsAsync();
+
                                 // Send spawn location packet
                                 await this.SendSpawnPositionAsync(new Position(500, 500, 500));
 
@@ -231,6 +288,7 @@ namespace Obsidian
                                 await this.Logger.LogMessageAsync("Sending welcome msg");
 
                                 await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+                                
                                 // Login success!
                                 await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
                                 await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
