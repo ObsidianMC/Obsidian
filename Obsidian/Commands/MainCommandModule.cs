@@ -47,5 +47,9 @@ namespace Obsidian.Commands
         [Description("Gets current uptime")]
         public Task UptimeAsync()
             => Context.Client.SendChatAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime).ToString()}");
+
+        [Command("declarecmds", "declarecommands")]
+        [Description("Debug command for testing the Declare Commands packet")]
+        public Task DeclareCommandsTestAsync() => Context.Client.SendDeclareCommandsAsync();
     }
 }
