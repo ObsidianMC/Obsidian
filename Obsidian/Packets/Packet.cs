@@ -19,7 +19,7 @@ namespace Obsidian.Packets
 
         internal Packet() { /* Only for the static method to _not_ error */ }
 
-        private async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
+        internal async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
 
         public bool Empty => this._packetData.Length == 0;
 

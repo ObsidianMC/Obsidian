@@ -63,6 +63,11 @@ namespace Obsidian.Packets.Play
 
         }
 
-        public override Task Populate() => throw new NotImplementedException();
+        public Task Populate() => throw new NotImplementedException();
+
+        protected override Task PopulateAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

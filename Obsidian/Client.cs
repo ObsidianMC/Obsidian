@@ -11,8 +11,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Flurl.Http;
-using System.Collections.Generic;
 using Obsidian.Util;
 using System.Linq;
 
@@ -199,8 +197,6 @@ namespace Obsidian
                     this.Disconnect();
 
                 await this.Logger.LogMessageAsync($"Received new packet with id 0x{packet.PacketId.ToString("x")}");
-
-                Packet returnPacket = null;
 
                 switch (this.State)
                 {
