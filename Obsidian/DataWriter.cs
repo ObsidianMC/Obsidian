@@ -100,6 +100,11 @@ public static class DataWriter
         await stream.WriteUnsignedByteAsync((byte)value);
     }
 
+    /// <summary>
+    /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
+    /// </summary>
+    public static async Task WriteVarIntAsync(this Stream stream, Enum value) => await WriteVarIntAsync(stream, Convert.ToInt32(value));
+
     public static int GetVarintLength(this int val)
     {
         int amount = 0;
