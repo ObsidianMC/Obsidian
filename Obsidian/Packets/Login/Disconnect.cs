@@ -1,4 +1,3 @@
-using Obsidian.Entities;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -7,9 +6,9 @@ namespace Obsidian.Packets
 {
     public class Disconnect : Packet
     {
-        readonly Entities.ChatMessage Reason;
+        readonly Chat.ChatMessage Reason;
 
-        public Disconnect(Entities.ChatMessage reason, PacketState state) : base(state == PacketState.Play ? 0x1B : 0x00, new byte[0])
+        public Disconnect(Chat.ChatMessage reason, PacketState state) : base(state == PacketState.Play ? 0x1B : 0x00, new byte[0])
         {
             this.Reason = reason;
         }

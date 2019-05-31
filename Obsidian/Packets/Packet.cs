@@ -1,7 +1,7 @@
 //https://wiki.vg/Protocol#Packet_format
 using System;
 using System.IO;
-using System.Reflection;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -21,9 +21,10 @@ namespace Obsidian.Packets
 
         internal async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
 
+
         public bool Empty => this._packetData.Length == 0;
 
-        public static async Task<Packet> ReadFromStreamAsync(Stream stream)
+        public static async Task<Packet> ReadFromStreamAsync(Stream stream, bool encryption = false, ICryptoTransform cryptor = null)
         {
             /*int length = await stream.ReadVarIntAsync();
             int packetId = int.MaxValue;
@@ -50,21 +51,43 @@ namespace Obsidian.Packets
             var data = new byte[len];
             await stream.ReadAsync(data, 0, len);
 
-            int packetid;
-            byte[] thedata;
+            int packetid = 0;
+            byte[] thedata = new byte[0];
 
-            using (var packetstream = new MemoryStream(data))
+            if (encryption)
             {
-                packetid = await packetstream.ReadVarIntAsync();
+                using (var packetstream = new MemoryStream(data))
+                {
+                    using (var cStream = new CryptoStream(packetstream, cryptor, CryptoStreamMode.Read))
+                    {
 
-                int arlen = 0;
-                if (len - packetid.GetVarintLength() > -1)
-                    arlen = len - packetid.GetVarintLength();
+                        packetid = await cStream.ReadVarIntAsync();
+                        int arlen = 0;
+                        if (len - packetid.GetVarintLength() > -1)
+                            arlen = len - packetid.GetVarintLength();
 
-                thedata = new byte[arlen];
-                await packetstream.ReadAsync(thedata, 0, thedata.Length);
+                        thedata = new byte[arlen];
+                        await cStream.ReadAsync(thedata, 0, thedata.Length);
+
+                    }
+                }
             }
-            
+            else
+            {
+                using (var packetstream = new MemoryStream(data))
+                {
+                    packetid = await packetstream.ReadVarIntAsync();
+                    int arlen = 0;
+                    if (len - packetid.GetVarintLength() > -1)
+                        arlen = len - packetid.GetVarintLength();
+
+                    thedata = new byte[arlen];
+                    await packetstream.ReadAsync(thedata, 0, thedata.Length);
+                }
+
+            }
+
+
             return new EmptyPacket()
             {
                 PacketId = packetid,
@@ -82,17 +105,21 @@ namespace Obsidian.Packets
             {
                 await packet.FillPacketDataAsync();
             }
-            
+
             return (T)Convert.ChangeType(packet, typeof(T));
         }
 
-        public virtual async Task WriteToStreamAsync(Stream stream)
+        public virtual async Task WriteToStreamAsync(Stream stream, ICryptoTransform encrypt = null)
         {
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
 
-            await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(PacketId);
-            await stream.WriteAsync(this._packetData, 0, this._packetData.Length);
+
+            using (var sr = (encrypt != null ? new CryptoStream(stream, encrypt, CryptoStreamMode.Write) : stream))
+            {
+                await sr.WriteVarIntAsync(packetLength);
+                await sr.WriteVarIntAsync(PacketId);
+                await sr.WriteAsync(this._packetData, 0, this._packetData.Length);
+            }
         }
 
         public Packet WithDataFrom(Packet p)
@@ -104,18 +131,18 @@ namespace Obsidian.Packets
         public abstract Task<byte[]> ToArrayAsync();
 
         protected abstract Task PopulateAsync();
-    }
 
+    }
     public class EmptyPacket : Packet
     {
         protected override Task PopulateAsync()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public override Task<byte[]> ToArrayAsync()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

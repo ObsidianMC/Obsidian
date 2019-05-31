@@ -1,4 +1,4 @@
-using Obsidian.Entities;
+using Obsidian.Chat;
 using System;
 using System.IO;
 using System.Text;
@@ -146,6 +146,11 @@ public static class DataWriter
             amount++;
         } while (value != 0);
         return amount;
+    }
+
+    public static async Task WriteUInt8ArrayAsync(this Stream stream, byte[] value)
+    {
+        await stream.WriteAsync(value, 0, value.Length);
     }
 
     public static async Task WriteVarLongAsync(this Stream stream, long value)

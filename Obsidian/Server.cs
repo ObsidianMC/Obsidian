@@ -26,7 +26,11 @@ namespace Obsidian
         private ConcurrentHashSet<List<QueueChat>> _chatmessages;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
+
         private int keepaliveticks = 0;
+        private int lastSentPingPacket = 0;
+        private int lastPingTime = 0;
+
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
@@ -59,7 +63,7 @@ namespace Obsidian
             this.Commands.AddModule<MainCommandModule>();
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(this);
+            this.PluginManager = new PluginManager(this);        
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -70,6 +74,8 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
+
+        
 
         private async Task ServerLoop()
         {
@@ -83,11 +89,16 @@ namespace Obsidian
                 await Events.InvokeServerTick();
 
                 keepaliveticks++;
-                if (keepaliveticks > 200)
+                if (keepaliveticks - lastSentPingPacket > 40)
                 {
+                    var keepaliveid = DateTime.Now.Ticks;
+
+                    lastSentPingPacket = keepaliveticks;
+                    lastPingTime = DateTime.Now.Millisecond;
+
                     if (this.Clients.Any(c => c.State == PacketState.Play))
                     {
-                        var keepaliveid = DateTime.Now.Ticks;
+                        
                         await Logger.LogMessageAsync($"Broadcasting keepalive {keepaliveid}");
                         foreach (var clnt in this.Clients)
                         {
@@ -179,6 +190,9 @@ namespace Obsidian
 
             await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
+
+            if(!this.Config.OnlineMode)
+                await this.Logger.LogMessageAsync($"Server is offline mode..");
 
             await Logger.LogMessageAsync($"Start listening for new clients");
             _tcpListener.Start();

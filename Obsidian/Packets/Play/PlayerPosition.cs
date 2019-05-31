@@ -1,7 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets

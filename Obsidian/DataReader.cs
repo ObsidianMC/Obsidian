@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Obsidian.Chat;
 using Obsidian.Entities;
 using System;
 using System.IO;
@@ -162,6 +163,29 @@ public static class DataReader
             }
         }
         return value | ((b & 0x7F) << (size*7));
+    }
+
+    public static async Task<byte[]> ReadUInt8ArrayAsync(this Stream stream, int length)
+    {
+        var result = new byte[length];
+        if (length == 0) return result;
+        int n = length;
+        while (true)
+        {
+            n -= await stream.ReadAsync(result, length - n, n);
+            if (n == 0)
+                break;
+            await Task.Delay(1);
+        }
+        return result;
+    }
+
+    public static async Task<byte> ReadUInt8Async(this Stream stream)
+    {
+        int value = await stream.ReadByteAsync();
+        if (value == -1)
+            throw new EndOfStreamException();
+        return (byte)value;
     }
 
     public static async Task<long> ReadVarLongAsync(this Stream stream)

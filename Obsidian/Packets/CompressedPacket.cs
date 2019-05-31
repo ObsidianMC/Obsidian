@@ -1,8 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -15,7 +14,7 @@ namespace Obsidian.Packets
 
         private CompressedPacket() { /* Only for the static method to _not_ error*/ }
 
-        public override async Task WriteToStreamAsync(Stream stream)
+        public override async Task WriteToStreamAsync(Stream stream, ICryptoTransform transform)//TODO
         {
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
             // compress data

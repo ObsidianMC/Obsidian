@@ -33,7 +33,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using(var stream = new MemoryStream(this._packetData))
+            using (var stream = new MemoryStream(this._packetData))
             {
                 this.EntityId = await stream.ReadVarIntAsync();
                 this.GameMode = await stream.ReadUnsignedByteAsync();
