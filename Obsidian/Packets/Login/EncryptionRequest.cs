@@ -13,8 +13,6 @@ namespace Obsidian.Packets.Login
 
         public byte[] VerifyToken { get; private set; }
 
-        private readonly Logger _logger = new Logger("Encription Request: ");
-
         public EncryptionRequest(byte[] publicKey, byte[] verifyToken) : base(0x01, new byte[0])
         {
             this.PublicKey = publicKey;

@@ -1,11 +1,8 @@
-using Newtonsoft.Json;
-using Obsidian.Entities;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
-
     public class ClientSettings : Packet
     {
         public ClientSettings(byte[] data) : base(0x04, data)

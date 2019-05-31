@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Entities;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -20,7 +19,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using(var stream = new MemoryStream(this._packetData))
+            using (var stream = new MemoryStream(this._packetData))
             {
                 this.Message = JsonConvert.DeserializeObject<Chat.ChatMessage>(await stream.ReadStringAsync());
                 this.Position = await stream.ReadUnsignedByteAsync();

@@ -61,18 +61,18 @@ namespace Obsidian.Util
 
         public static RijndaelManaged GenerateAes(byte[] key)
         {
-            var cipher = new RijndaelManaged
+            using (var cipher = new RijndaelManaged())
             {
-                Mode = CipherMode.CFB,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                FeedbackSize = 8,
+                cipher.Mode = CipherMode.CFB;
+                cipher.Padding = PaddingMode.None;
+                cipher.KeySize = 128;
+                cipher.FeedbackSize = 8;
 
-                Key = key,
-                IV = (byte[])key.Clone()
-            };
+                cipher.Key = key;
+                cipher.IV = (byte[])key.Clone();
 
-            return cipher;
+                return cipher;
+            }
         }
 
         public static byte[] GetRandomToken()

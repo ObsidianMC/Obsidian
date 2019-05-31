@@ -12,10 +12,9 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Util;
 
 namespace Obsidian
 {
@@ -32,12 +31,19 @@ namespace Obsidian
         public Config Config;
         public ClientSettings ClientSettings;
 
-        public int KeepAlives;
+        public int Ping;
+        //public int KeepAlives;
         public int PlayerId;
 
+        public byte[] SharedKey;
+
         public bool Timedout = false;
+        public bool EncryptionEnabled = false;
 
         public PacketState State { get; private set; }
+
+        internal ICryptoTransform Encrypter { get; set; }
+        internal ICryptoTransform Decrypter { get; set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -77,14 +83,14 @@ namespace Obsidian
             //var pack = new Packet(0x0E, await new ChatMessage(chat, position).ToArrayAsync());
             var pack = await Packet.CreateAsync(new Packets.ChatMessage(chat, position));
 
-            await pack.WriteToStreamAsync(this.Tcp.GetStream());
+            await pack.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         public async Task SendJoinGameAsync(EntityId id)
         {
             var pack = await Packet.CreateAsync(new JoinGame((int)id, 0, 0, 0, "default", true));
 
-            await pack.WriteToStreamAsync(this.Tcp.GetStream());
+            await pack.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         /// <summary>
@@ -93,7 +99,7 @@ namespace Obsidian
         /// <param name="id">ID for the keepalive. Just keep increasing this by 1, easiest approach.</param>
         public async Task SendKeepAliveAsync(long id)
         {
-            this.KeepAlives++;
+            //this.KeepAlives++;
             var pack = await Packet.CreateAsync(new KeepAlive(id));
 
             await pack.WriteToStreamAsync(this.Tcp.GetStream());
@@ -103,14 +109,14 @@ namespace Obsidian
         {
             var pack = await Packet.CreateAsync(new PlayerPositionLook(location, flags, teleportid));
 
-            await pack.WriteToStreamAsync(this.Tcp.GetStream());
+            await pack.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         public async Task SendSoundEffectAsync(int soundId, Position position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
         {
             var pack = await Packet.CreateAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-            await pack.WriteToStreamAsync(this.Tcp.GetStream());
+            await pack.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         public async Task SendSpawnPositionAsync(Position position)
@@ -119,7 +125,7 @@ namespace Obsidian
 
             var packet = await Packet.CreateAsync(new SpawnPosition(position));
 
-            await packet.WriteToStreamAsync(this.Tcp.GetStream());
+            await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         public async Task SendDeclareCommandsAsync()
@@ -146,10 +152,10 @@ namespace Obsidian
 
                     Type type = parameter.Type;
 
-                         if (type == typeof(string))    parameterNode.Identifier = "brigadier:string";
-                    else if (type == typeof(int))       parameterNode.Identifier = "brigadier:integer";
-                    else if (type == typeof(bool))      parameterNode.Identifier = "brigadier:bool";
-                    else                                throw new NotImplementedException("Not supported parameter");
+                    if (type == typeof(string)) parameterNode.Identifier = "brigadier:string";
+                    else if (type == typeof(int)) parameterNode.Identifier = "brigadier:integer";
+                    else if (type == typeof(bool)) parameterNode.Identifier = "brigadier:bool";
+                    else throw new NotImplementedException("Not supported parameter");
 
                     commandNode.Children.Add(parameterNode);
                 }
@@ -168,7 +174,8 @@ namespace Obsidian
 
 
             await this.Logger.LogMessageAsync("Sending Declare Commands packet.");
-            await packet.WriteToStreamAsync(this.Tcp.GetStream());
+
+            await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
         #endregion
@@ -178,9 +185,9 @@ namespace Obsidian
             return await CompressedPacket.ReadFromStreamAsync(stream);
         }
 
-        private async Task<Packet> GetNextPacketAsync(Stream stream)
+        private async Task<Packet> GetNextPacketAsync(Stream stream, bool onlineMode = false)
         {
-            return await Packet.ReadFromStreamAsync(stream);
+            return await Packet.ReadFromStreamAsync(stream, onlineMode, this.Decrypter);
         }
 
         private byte[] Token { get; set; }
@@ -195,7 +202,7 @@ namespace Obsidian
                 if (this.Compressed)
                     packet = await this.GetNextCompressedPacketAsync(this.Tcp.GetStream());
                 else
-                    packet = await this.GetNextPacketAsync(this.Tcp.GetStream());
+                    packet = await this.GetNextPacketAsync(this.Tcp.GetStream(), this.EncryptionEnabled);
 
                 if (this.State == PacketState.Play && packet._packetData.Length < 1)
                     this.Disconnect();
@@ -204,6 +211,34 @@ namespace Obsidian
 
                 switch (this.State)
                 {
+                    case PacketState.Status: //server ping/list
+                        switch (packet.PacketId)
+                        {
+                            case 0x00:
+                                // Request
+                                await this.Logger.LogMessageAsync("Received empty packet in STATUS state. Sending json status data.");
+                                //returnpack = new Packet(0x00, await res.GetDataAsync());
+
+                                returnPacket = await Packet.CreateAsync(new RequestResponse(JsonConvert.SerializeObject(ServerStatus.DebugStatus)));
+
+                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
+                                break;
+
+                            case 0x01:
+                                // Ping
+                                // var ping = await PingPong.FromArrayAsync(await packet.ToArrayAsync()); // afaik you can just resend the ping to the client
+
+                                returnPacket = await Packet.CreateAsync(new PingPong(packet._packetData));
+
+                                await this.Logger.LogMessageAsync($"Client sent us ping request with payload {((PingPong)returnPacket).Payload}");//Yikes
+
+                                //returnpack = new Packet(0x01, await ping.ToArrayAsync());
+
+                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
+                                this.Disconnect();
+                                break;
+                        }
+                        break;
                     case PacketState.Handshaking:
                         if (packet.PacketId == 0x00)
                         {
@@ -230,7 +265,6 @@ namespace Obsidian
                             //Handle legacy ping stuff
                         }
                         break;
-
                     case PacketState.Login:
                         switch (packet.PacketId)
                         {
@@ -289,7 +323,7 @@ namespace Obsidian
                                     await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
                                     // Send commands
-                                    await this.SendDeclareCommandsAsync();
+                                    //await this.SendDeclareCommandsAsync();
 
                                     // Send spawn location packet
                                     await this.SendSpawnPositionAsync(new Position(500, 500, 500));
@@ -307,31 +341,41 @@ namespace Obsidian
                                     await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
                                     await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
                                 }
-                                
+
                                 break;
 
                             case 0x01:
                                 var resp = await Packet.CreateAsync(new EncryptionResponse(packet._packetData));
                                 await this.Logger.LogMessageAsync("Got response...");
 
+                                JoinedResponse respsonse;
+
                                 try
                                 {
-                                    var dec = PacketCryptography.Decrypt(resp.SharedSecret);
-                                    var dec2 = PacketCryptography.Decrypt(resp.VerifyToken);
-    
+                                    this.SharedKey = PacketCryptography.Decrypt(resp.SharedSecret);
+
                                     await this.Logger.LogMessageAsync($"Data decrypted..");
-                                   
+
+                                    var aes = PacketCryptography.GenerateAes((byte[])this.SharedKey.Clone());
+
+                                    await this.Logger.LogMessageAsync($"Aes generated..");
+                                    var dec2 = PacketCryptography.Decrypt(resp.VerifyToken);
+
                                     if (dec2 != this.Token)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token."));
 
-                                    var serverId = PacketCryptography.MinecraftShaDigest(dec.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
+                                    this.Decrypter = aes.CreateDecryptor();
+                                    this.Encrypter = aes.CreateEncryptor();
 
-                                    var playerObj = MinecraftAPI.HasJoined(this.Player.Username, serverId);
+                                    var serverId = PacketCryptography.MinecraftShaDigest(this.SharedKey.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
 
-                                    if (playerObj is null)
+                                    respsonse = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
+
+                                    if (respsonse is null)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Unable to authenticate.."));
 
                                     await this.Logger.LogMessageAsync($"Server Id: {serverId}");
+                                    this.EncryptionEnabled = true;
                                 }
                                 catch
                                 {
@@ -340,9 +384,9 @@ namespace Obsidian
 
                                 await this.Logger.LogMessageAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
 
-                                returnPacket = await Packet.CreateAsync(new LoginSuccess(this.Player.UUID.ToString(), this.Player.Username));
+                                returnPacket = await Packet.CreateAsync(new LoginSuccess(Guid.Parse(respsonse.Id).ToString(), this.Player.Username));
 
-                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
+                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
 
                                 this.State = PacketState.Play;
 
@@ -351,7 +395,7 @@ namespace Obsidian
                                 await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
                                 // Send commands
-                               // await this.SendDeclareCommandsAsync();
+                                //await this.SendDeclareCommandsAsync();
 
                                 // Send spawn location packet
                                 await this.SendSpawnPositionAsync(new Position(500, 500, 500));
@@ -372,34 +416,6 @@ namespace Obsidian
 
                             case 0x02:
                                 // Login Plugin Response
-                                break;
-                        }
-                        break;
-                    case PacketState.Status: //server ping/list
-                        switch (packet.PacketId)
-                        {
-                            case 0x00:
-                                // Request
-                                await this.Logger.LogMessageAsync("Received empty packet in STATUS state. Sending json status data.");
-                                //returnpack = new Packet(0x00, await res.GetDataAsync());
-
-                                returnPacket = await Packet.CreateAsync(new RequestResponse(JsonConvert.SerializeObject(ServerStatus.DebugStatus)));
-
-                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
-                                break;
-
-                            case 0x01:
-                                // Ping
-                                // var ping = await PingPong.FromArrayAsync(await packet.ToArrayAsync()); // afaik you can just resend the ping to the client
-
-                                returnPacket = await Packet.CreateAsync(new PingPong(packet._packetData));
-
-                                await this.Logger.LogMessageAsync($"Client sent us ping request with payload {((PingPong)returnPacket).Payload}");//Yikes
-
-                                //returnpack = new Packet(0x01, await ping.ToArrayAsync());
-
-                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
-                                this.Disconnect();
                                 break;
                         }
                         break;
@@ -491,7 +507,7 @@ namespace Obsidian
                                 // Check whether keepalive id has been sent
                                 await this.Logger.LogMessageAsync($"Successfully kept alive player {this.Player.Username} with ka id {keepalive.KeepAliveId}");
 
-                                this.KeepAlives = 0;//TODO: Was going to change this 
+                                // this.KeepAlives = 0;//TODO: Was going to change this 
                                 break;
 
                             case 0x0F:

@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets

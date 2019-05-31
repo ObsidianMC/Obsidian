@@ -26,7 +26,11 @@ namespace Obsidian
         private ConcurrentHashSet<List<QueueChat>> _chatmessages;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
+
         private int keepaliveticks = 0;
+        private int lastSentPingPacket = 0;
+        private int lastPingTime = 0;
+
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
@@ -71,6 +75,8 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
+        
+
         private async Task ServerLoop()
         {
             // start loop
@@ -83,11 +89,16 @@ namespace Obsidian
                 await Events.InvokeServerTick();
 
                 keepaliveticks++;
-                if (keepaliveticks > 200)
+                if (keepaliveticks - lastSentPingPacket > 40)
                 {
+                    var keepaliveid = DateTime.Now.Ticks;
+
+                    lastSentPingPacket = keepaliveticks;
+                    lastPingTime = DateTime.Now.Millisecond;
+
                     if (this.Clients.Any(c => c.State == PacketState.Play))
                     {
-                        var keepaliveid = DateTime.Now.Ticks;
+                        
                         await Logger.LogMessageAsync($"Broadcasting keepalive {keepaliveid}");
                         foreach (var clnt in this.Clients)
                         {

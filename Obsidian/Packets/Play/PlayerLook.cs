@@ -1,7 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
-using System.IO;
+﻿using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -30,8 +27,6 @@ namespace Obsidian.Packets
                 this.Yaw = await stream.ReadFloatAsync();
                 this.Pitch = await stream.ReadFloatAsync();
                 this.OnGround = await stream.ReadBooleanAsync();
-
- 
             }
         }
 
