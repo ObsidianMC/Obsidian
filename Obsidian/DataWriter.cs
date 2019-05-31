@@ -105,6 +105,31 @@ public static class DataWriter
     /// </summary>
     public static async Task WriteVarIntAsync(this Stream stream, Enum value) => await WriteVarIntAsync(stream, Convert.ToInt32(value));
 
+    public static async Task WriteAutoAsync(this Stream stream, params object[] values)
+    {
+        foreach (object value in values)
+        {
+            switch (value)
+            {
+                case int intValue:          await stream.WriteVarIntAsync(intValue); break;
+                case string stringValue:    await stream.WriteStringAsync(stringValue); break;
+                case float floatValue:      await stream.WriteFloatAsync(floatValue); break;
+                case double doubleValue:    await stream.WriteDoubleAsync(doubleValue); break;
+                case short shortValue:      await stream.WriteShortAsync(shortValue); break;
+                case ushort ushortValue:    await stream.WriteUnsignedShortAsync(ushortValue); break;
+                case long longValue:        await stream.WriteVarLongAsync(longValue); break;
+                case bool boolValue:        await stream.WriteBooleanAsync(boolValue); break;
+                case Enum enumValue:        await stream.WriteVarIntAsync(enumValue); break;
+                case ChatMessage chatValue: await stream.WriteChatAsync(chatValue); break;
+                case Guid uuidValue:        await stream.WriteUuidAsync(uuidValue); break;
+                case byte[] byteArray:      await stream.WriteAsync(byteArray); break;
+                case object[] objectArray:  await stream.WriteAutoAsync(objectArray); break;
+                case sbyte sbyteValue:      await stream.WriteByteAsync(sbyteValue); break;
+                default:                    throw new Exception($"Can't handle {value.ToString()} ({value.GetType().ToString()})");
+            }
+        }
+    }
+
     public static int GetVarintLength(this int val)
     {
         int amount = 0;
