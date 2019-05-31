@@ -7,7 +7,7 @@ namespace Obsidian.BossBar
     {
         public override int Action => 0;
 
-        public Entities.ChatMessage Title { get; set; }
+        public Chat.ChatMessage Title { get; set; }
 
         public float Health { get; set; }
 
