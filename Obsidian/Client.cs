@@ -292,9 +292,9 @@ namespace Obsidian
                                 var uid = users.FirstOrDefault();
 
                                 var uuid = Guid.Parse(uid.Id);
-                                this.Player = new Player(uuid.ToString(), loginStart.Username);
 
                                 await this.Logger.LogMessageAsync("Sending encryption request..");
+                                this.Player = new Player(uuid, loginStart.Username);
 
                                 if (this.Config.OnlineMode)
                                 {

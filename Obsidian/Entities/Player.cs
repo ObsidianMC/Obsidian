@@ -1,6 +1,7 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Obsidian.Concurrency;
+using System;
 using System.Collections.Generic;
 
 namespace Obsidian.Entities
@@ -8,7 +9,7 @@ namespace Obsidian.Entities
     public class Player : Living
     {
         // ETC
-        public string UUID { get; set; }
+        public Guid UUID { get; set; }
 
         // Properties set by Minecraft (official)
         public Location Location { get; set;}
@@ -55,10 +56,10 @@ namespace Obsidian.Entities
         public string Username { get; }
         public World World;
 
-        public Player(string UUID, string Username)
+        public Player(Guid uuid, string username)
         {
-            this.UUID = UUID;
-            this.Username = Username;
+            this.UUID = uuid;
+            this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
             this.Location = new Location();
         }
