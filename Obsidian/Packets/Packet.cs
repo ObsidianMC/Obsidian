@@ -87,6 +87,7 @@ namespace Obsidian.Packets
 
             }
 
+            await Program.PacketLogger.LogMessageAsync($">> {packetid.ToString("x")}");
 
             return new EmptyPacket()
             {
@@ -111,6 +112,8 @@ namespace Obsidian.Packets
 
         public virtual async Task WriteToStreamAsync(Stream stream, ICryptoTransform encrypt = null)
         {
+            await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
+
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
 
 

@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Entities;
+using Obsidian.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace Obsidian
     class Program
     {
         static Server Obsidian;
+        public static Logger PacketLogger = new Logger($"Packet Logger");
 
         static async Task Main(string[] args)
         {
