@@ -116,12 +116,22 @@ namespace Obsidian.Packets
 
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
 
-
-            using (var sr = (encrypt != null ? new CryptoStream(stream, encrypt, CryptoStreamMode.Write) : stream))
+            if (encrypt != null)
             {
-                await sr.WriteVarIntAsync(packetLength);
-                await sr.WriteVarIntAsync(PacketId);
-                await sr.WriteAsync(this._packetData, 0, this._packetData.Length);
+                using (var cs = new CryptoStream(stream, encrypt, CryptoStreamMode.Write))
+                {
+                    await cs.WriteVarIntAsync(packetLength);
+                    await cs.WriteVarIntAsync(PacketId);
+                    await cs.WriteUInt8ArrayAsync(this._packetData);
+
+                    cs.FlushFinalBlock();
+                }
+            }
+            else
+            {
+                await stream.WriteVarIntAsync(packetLength);
+                await stream.WriteVarIntAsync(PacketId);
+                await stream.WriteAsync(this._packetData, 0, this._packetData.Length);
             }
         }
 
