@@ -1,4 +1,5 @@
 ﻿using fNbt;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -76,7 +77,7 @@ namespace Obsidian.Entities
             PFile.LoadFromFile(playerfile);
             var playercompound = PFile.RootTag;
             // filenames are player UUIDs.
-            var player = new Player(null, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
+            var player = new Player(Guid.Empty, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
             {
                 UUID = uuid,
                 OnGround = playercompound["OnGround"].ByteValue == 1,
