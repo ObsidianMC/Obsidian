@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.Chat;
+using Obsidian.Entities;
 using Qmmands;
 using System;
 using System.Linq;

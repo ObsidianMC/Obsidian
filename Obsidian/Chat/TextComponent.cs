@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Obsidian.Entities
+namespace Obsidian.Chat
 {
     public class TextComponent
     {

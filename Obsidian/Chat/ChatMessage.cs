@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Obsidian.Entities
+namespace Obsidian.Chat
 {
     public class ChatMessage
     {

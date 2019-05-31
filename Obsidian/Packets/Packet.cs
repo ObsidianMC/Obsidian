@@ -1,7 +1,6 @@
 //https://wiki.vg/Protocol#Packet_format
 using System;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -64,7 +63,7 @@ namespace Obsidian.Packets
                 thedata = new byte[arlen];
                 await packetstream.ReadAsync(thedata, 0, thedata.Length);
             }
-            
+
             return new EmptyPacket()
             {
                 PacketId = packetid,
@@ -82,7 +81,7 @@ namespace Obsidian.Packets
             {
                 await packet.FillPacketDataAsync();
             }
-            
+
             return (T)Convert.ChangeType(packet, typeof(T));
         }
 

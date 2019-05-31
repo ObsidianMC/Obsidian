@@ -1,7 +1,4 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.Entities
 {
@@ -18,5 +15,9 @@ namespace Obsidian.Entities
 
         [JsonProperty("joinmessage")]
         public string JoinMessage = "Suck the bbq sauce on my §d§ltiddies"; // Message on join, because we haven't implemented the actual server yet.
+
+        [JsonProperty("online_mode")]
+        public bool OnlineMode = true;
+
     }
 }

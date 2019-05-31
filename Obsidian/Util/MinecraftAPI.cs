@@ -22,5 +22,18 @@ namespace Obsidian.Util
 
             return null;
         }
+
+        //TODO Uh find a good name for name
+        public static async Task<JoinedResponse> HasJoined(string username, string serverId)
+        {
+            HttpResponseMessage response = await Http.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={username}&serverId={serverId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                return JsonConvert.DeserializeObject<JoinedResponse>(await response.Content.ReadAsStringAsync());
+            }
+
+            return null;
+        }
     }
 }

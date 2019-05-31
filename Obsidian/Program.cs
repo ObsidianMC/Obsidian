@@ -25,7 +25,7 @@ namespace Obsidian
             if (!File.Exists("config.json"))
             {
                 File.Create("config.json").Close();
-                File.WriteAllText("config.json", JsonConvert.SerializeObject(new Config()));
+                File.WriteAllText("config.json", JsonConvert.SerializeObject(new Config(), Formatting.Indented));
                 Console.WriteLine("(Created new config)");
             }
 

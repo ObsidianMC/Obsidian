@@ -59,7 +59,7 @@ namespace Obsidian
             this.Commands.AddModule<MainCommandModule>();
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(this);
+            this.PluginManager = new PluginManager(this);        
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -179,6 +179,9 @@ namespace Obsidian
 
             await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
+
+            if(!this.Config.OnlineMode)
+                await this.Logger.LogMessageAsync($"Server is offline mode..");
 
             await Logger.LogMessageAsync($"Start listening for new clients");
             _tcpListener.Start();
