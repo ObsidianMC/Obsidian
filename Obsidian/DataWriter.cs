@@ -84,6 +84,8 @@ public static class DataWriter
         await stream.WriteAsync(bytes);
     }
 
+    public static async Task WriteUuidAsync(this Stream stream, Guid value) => await stream.WriteAsync(value.ToByteArray());
+
     public static async Task WriteChatAsync(this Stream stream, ChatMessage value) => await stream.WriteStringAsync(value.ToString(), 32767);
 
     public static async Task WriteIdentifierAsync(this Stream stream, string value) => await stream.WriteStringAsync(value, 32767);
@@ -97,6 +99,11 @@ public static class DataWriter
         }
         await stream.WriteUnsignedByteAsync((byte)value);
     }
+
+    /// <summary>
+    /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
+    /// </summary>
+    public static async Task WriteVarIntAsync(this Stream stream, Enum value) => await WriteVarIntAsync(stream, Convert.ToInt32(value));
 
     public static int GetVarintLength(this int val)
     {

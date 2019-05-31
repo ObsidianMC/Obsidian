@@ -26,7 +26,7 @@ namespace Obsidian.Commands
         [Description("Lists plugins.")]
         public Task PluginsAsync()
             => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x 
-                => $"{MinecraftColor.DarkGreen}{x.Info.Name}by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
+                => $"{MinecraftColor.DarkGreen}{x.Info.Name} by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
 
         [Command("echo")]
         [Description("Echoes given text.")]
