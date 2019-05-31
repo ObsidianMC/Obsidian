@@ -292,12 +292,12 @@ namespace Obsidian
                                 var uid = users.FirstOrDefault();
 
                                 var uuid = Guid.Parse(uid.Id);
-
-                                await this.Logger.LogMessageAsync("Sending encryption request..");
                                 this.Player = new Player(uuid, loginStart.Username);
 
                                 if (this.Config.OnlineMode)
                                 {
+                                    await this.Logger.LogMessageAsync("Sending encryption request..");
+
                                     var pubKey = PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair());
 
                                     returnPacket = await Packet.CreateAsync(new EncryptionRequest(pubKey, PacketCryptography.GetRandomToken()));
@@ -307,40 +307,11 @@ namespace Obsidian
                                     this.Token = ((EncryptionRequest)returnPacket).VerifyToken;
 
                                     await this.Logger.LogMessageAsync($"Encryption Request sent.");
+
+                                    break;
                                 }
-                                else
-                                {
-                                    await this.Logger.LogMessageAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
 
-                                    returnPacket = await Packet.CreateAsync(new LoginSuccess(this.Player.UUID.ToString(), this.Player.Username));
-
-                                    await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
-
-                                    this.State = PacketState.Play;
-
-                                    // Send Join Game packet
-                                    await this.Logger.LogMessageAsync("Sending Join Game packet.");
-                                    await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
-
-                                    // Send commands
-                                    //await this.SendDeclareCommandsAsync();
-
-                                    // Send spawn location packet
-                                    await this.SendSpawnPositionAsync(new Position(500, 500, 500));
-
-                                    // Send position packet
-                                    await this.Logger.LogMessageAsync("Sending Position packet.");
-                                    await this.SendPositionLookAsync(new Location() { X = 500, Y = 500, Z = 500 }, PositionFlags.NONE, 0);
-
-                                    await this.Logger.LogMessageAsync("Player is logged in.");
-                                    await this.Logger.LogMessageAsync("Sending welcome msg");
-
-                                    await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
-
-                                    // Login success!
-                                    await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
-                                    await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
-                                }
+                                await succAsync(this.Player.UUID, packet);
 
                                 break;
 
@@ -382,36 +353,7 @@ namespace Obsidian
                                     throw;
                                 }
 
-                                await this.Logger.LogMessageAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
-
-                                returnPacket = await Packet.CreateAsync(new LoginSuccess(Guid.Parse(respsonse.Id).ToString(), this.Player.Username));
-
-                                await returnPacket.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
-
-                                this.State = PacketState.Play;
-
-                                // Send Join Game packet
-                                await this.Logger.LogMessageAsync("Sending Join Game packet.");
-                                await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
-
-                                // Send commands
-                                //await this.SendDeclareCommandsAsync();
-
-                                // Send spawn location packet
-                                await this.SendSpawnPositionAsync(new Position(500, 500, 500));
-
-                                // Send position packet
-                                await this.Logger.LogMessageAsync("Sending Position packet.");
-                                await this.SendPositionLookAsync(new Location() { X = 500, Y = 500, Z = 500 }, PositionFlags.NONE, 0);
-
-                                await this.Logger.LogMessageAsync("Player is logged in.");
-                                await this.Logger.LogMessageAsync("Sending welcome msg");
-
-                                await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
-
-                                // Login success!
-                                await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
-                                await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
+                                await succAsync(new Guid(response.Id), packet);
                                 break;
 
                             case 0x02:
@@ -682,5 +624,41 @@ namespace Obsidian
         }
 
         public void Disconnect() => this.Cancellation.Cancel();
+
+        private async Task succAsync(Guid uuid, Packet packet)
+        {
+
+            await this.Logger.LogMessageAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
+
+            var returnPacket = await Packet.CreateAsync(new LoginSuccess(uuid, this.Player.Username));
+
+            await returnPacket.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
+
+
+            this.State = PacketState.Play;
+
+            // Send Join Game packet
+            await this.Logger.LogMessageAsync("Sending Join Game packet.");
+            await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
+
+            // Send commands
+            //await this.SendDeclareCommandsAsync();
+
+            // Send spawn location packet
+            await this.SendSpawnPositionAsync(new Position(500, 500, 500));
+
+            // Send position packet
+            await this.Logger.LogMessageAsync("Sending Position packet.");
+            await this.SendPositionLookAsync(new Location() { X = 500, Y = 500, Z = 500 }, PositionFlags.NONE, 0);
+
+            await this.Logger.LogMessageAsync("Player is logged in.");
+            await this.Logger.LogMessageAsync("Sending welcome msg");
+
+            await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+
+            // Login success!
+            await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
+            await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
+        }
     }
 }
