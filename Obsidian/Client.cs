@@ -219,7 +219,7 @@ namespace Obsidian
                                 await this.Logger.LogMessageAsync("Received empty packet in STATUS state. Sending json status data.");
                                 //returnpack = new Packet(0x00, await res.GetDataAsync());
 
-                                returnPacket = await Packet.CreateAsync(new RequestResponse(JsonConvert.SerializeObject(ServerStatus.DebugStatus)));
+                                returnPacket = await Packet.CreateAsync(new RequestResponse(ServerStatus.DebugStatus));
 
                                 await returnPacket.WriteToStreamAsync(this.Tcp.GetStream());
                                 break;

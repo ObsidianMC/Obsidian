@@ -77,9 +77,8 @@ namespace Obsidian.Entities
             PFile.LoadFromFile(playerfile);
             var playercompound = PFile.RootTag;
             // filenames are player UUIDs.
-            var player = new Player(Guid.Empty, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
+            var player = new Player(uuid, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
             {
-                UUID = uuid,
                 OnGround = playercompound["OnGround"].ByteValue == 1,
                 Sleeping = playercompound["Sleeping"].ByteValue == 1,
                 Air = playercompound["Air"].ShortValue,
