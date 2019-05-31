@@ -316,21 +316,21 @@ namespace Obsidian
                                 break;
 
                             case 0x01:
-                                var resp = await Packet.CreateAsync(new EncryptionResponse(packet._packetData));
+                                var encryptionResponse = await Packet.CreateAsync(new EncryptionResponse(packet._packetData));
                                 await this.Logger.LogMessageAsync("Got response...");
 
                                 JoinedResponse response;
 
                                 try
                                 {
-                                    this.SharedKey = PacketCryptography.Decrypt(resp.SharedSecret);
+                                    this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
 
                                     await this.Logger.LogMessageAsync($"Data decrypted..");
 
                                     var aes = PacketCryptography.GenerateAes((byte[])this.SharedKey.Clone());
 
                                     await this.Logger.LogMessageAsync($"Aes generated..");
-                                    var dec2 = PacketCryptography.Decrypt(resp.VerifyToken);
+                                    var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
 
                                     if (dec2 != this.Token)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token."));
@@ -625,6 +625,8 @@ namespace Obsidian
 
         public void Disconnect() => this.Cancellation.Cancel();
 
+
+        //TODO: Please change name, I couldn't come up with one
         private async Task succAsync(Guid uuid, Packet packet)
         {
 
