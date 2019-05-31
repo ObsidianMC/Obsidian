@@ -68,15 +68,15 @@ namespace Obsidian.Entities
         //TODO
         public void Save() { }
 
-        public void LoadPlayer(string uuid)
+        public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(folder, "players", $"{uuid}.dat");
+            var playerfile = Path.Combine(folder, "players", $"{uuid.ToString()}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
             var playercompound = PFile.RootTag;
             // filenames are player UUIDs.
-            var player = new Player("", Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
+            var player = new Player(null, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
             {
                 UUID = uuid,
                 OnGround = playercompound["OnGround"].ByteValue == 1,
@@ -104,7 +104,7 @@ namespace Obsidian.Entities
         }
 
         // This would also save the file back to the world folder.
-        public void UnloadPlayer(string uuid)
+        public void UnloadPlayer(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
             this.Players.RemoveAll(x => x.UUID == uuid);

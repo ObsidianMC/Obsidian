@@ -14,11 +14,11 @@ namespace Obsidian.Packets
 
         public string Username { get; private set; }
 
-        public Guid UUID { get; private set; }
+        public Guid UUID { get; private set; } = Guid.Empty;
 
         protected override async Task PopulateAsync()
         {
-            if (UUID != null || !string.IsNullOrEmpty(this.Username))
+            if (UUID != Guid.Empty || !string.IsNullOrEmpty(this.Username))
                 return;
 
             using (var stream = new MemoryStream(this._packetData))
