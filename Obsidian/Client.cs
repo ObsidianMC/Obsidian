@@ -348,7 +348,7 @@ namespace Obsidian
                                 var resp = await Packet.CreateAsync(new EncryptionResponse(packet._packetData));
                                 await this.Logger.LogMessageAsync("Got response...");
 
-                                JoinedResponse respsonse;
+                                JoinedResponse response;
 
                                 try
                                 {
@@ -369,9 +369,9 @@ namespace Obsidian
 
                                     var serverId = PacketCryptography.MinecraftShaDigest(this.SharedKey.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
 
-                                    respsonse = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
+                                    response = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
 
-                                    if (respsonse is null)
+                                    if (response is null)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Unable to authenticate.."));
 
                                     await this.Logger.LogMessageAsync($"Server Id: {serverId}");
