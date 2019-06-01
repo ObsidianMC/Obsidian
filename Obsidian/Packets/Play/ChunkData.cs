@@ -1,13 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Play
 {
-    public class ChunkData
+    public class ChunkData : Packet
     {
-        public int ChunkX;
-        public int ChunkY;
-        public bool FullChunk = false;
+        public int ChunkX { get; set; }
+        public int ChunkY { get; set; }
+        public bool FullChunk { get; set; } = false;
+        public int BitMask { get; set; } = 0;
+
+        public ChunkData() : base(0x22, new byte[0])
+        {
+        }
+
+        public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync() => throw new NotImplementedException();
     }
 }
