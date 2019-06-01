@@ -22,4 +22,8 @@
     <PackageReference Include="SharpZipLib" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="PluginMessages\" />
+  </ItemGroup>
+
 </Project>
