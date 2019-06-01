@@ -125,6 +125,7 @@ public static class DataWriter
                 case byte[] byteArray:      await stream.WriteAsync(byteArray); break;
                 case object[] objectArray:  await stream.WriteAutoAsync(objectArray); break;
                 case sbyte sbyteValue:      await stream.WriteByteAsync(sbyteValue); break;
+                case byte byteValue:        await stream.WriteUnsignedByteAsync(byteValue); break;
                 default:                    throw new Exception($"Can't handle {value.ToString()} ({value.GetType().ToString()})");
             }
         }
