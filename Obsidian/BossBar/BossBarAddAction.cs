@@ -21,7 +21,11 @@ namespace Obsidian.BossBar
         {
             using (var stream = new MemoryStream())
             {
-                await stream.WriteAutoAsync(Title, Health, Color, Division, (byte)Flags);
+                await stream.WriteChatAsync(Title);
+                await stream.WriteFloatAsync(Health);
+                await stream.WriteVarIntAsync(Color);
+                await stream.WriteVarIntAsync(Division);
+                await stream.WriteUnsignedByteAsync((byte)Flags);
                 return stream.ToArray();
             }
         }

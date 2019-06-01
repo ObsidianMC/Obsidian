@@ -51,5 +51,16 @@ namespace Obsidian.Commands
         [Command("declarecmds", "declarecommands")]
         [Description("Debug command for testing the Declare Commands packet")]
         public Task DeclareCommandsTestAsync() => Context.Client.SendDeclareCommandsAsync();
+
+        [Command("bossbar")]
+        [Description("Debug command")]
+        public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBar.BossBarAddAction()
+        {
+            Color = BossBar.BossBarColor.Blue,
+             Division = BossBar.BossBarDivisionType.None,
+              Flags = BossBar.BossBarFlags.DarkenSky,
+               Title = ChatMessage.Simple("SUCC"),
+                Health = 0.5f
+        });
     }
 }

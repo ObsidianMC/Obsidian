@@ -8,7 +8,7 @@ namespace Obsidian.Packets.Play
 {
     public class BossBar : Packet
     {
-        public BossBar(Guid uuid, BossBarAction action)
+        public BossBar(Guid uuid, BossBarAction action) : base(0x0C)
         {
             this.UUID = uuid;
             this.Action = action ?? throw new ArgumentNullException(nameof(action));
@@ -27,7 +27,6 @@ namespace Obsidian.Packets.Play
                 await stream.WriteUuidAsync(this.UUID);
                 await stream.WriteVarIntAsync(this.Action.Action);
                 await stream.WriteAsync(await this.Action.ToArrayAsync());
-
                 return stream.ToArray();
             }
         }
