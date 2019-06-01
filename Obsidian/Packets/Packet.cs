@@ -11,6 +11,11 @@ namespace Obsidian.Packets
         internal protected byte[] _packetData;
         public int PacketId { get; internal set; }
 
+        public Packet(int packetid)
+        {
+            this.PacketId = packetid;
+        }
+
         public Packet(int packetid, byte[] data)
         {
             this.PacketId = packetid;
@@ -22,7 +27,7 @@ namespace Obsidian.Packets
         internal async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
 
 
-        public bool Empty => this._packetData.Length == 0;
+        public bool Empty => this._packetData == null || this._packetData.Length == 0;
 
         public static async Task<Packet> ReadFromStreamAsync(Stream stream, bool encryption = false, ICryptoTransform cryptor = null)
         {
