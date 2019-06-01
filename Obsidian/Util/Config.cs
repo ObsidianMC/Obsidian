@@ -14,7 +14,10 @@ namespace Obsidian.Entities
         public int ServerCount = 1; // for now this does nothing. every server port will be port + n
 
         [JsonProperty("joinMessage")]
-        public string JoinMessage = "Suck the bbq sauce on my §d§ltiddies"; // Message on join, because we haven't implemented the actual server yet.
+        public string JoinMessage = "§e{0} joined the game";
+
+        [JsonProperty("leaveMessage")]
+        public string LeaveMessage = "§e{0} left the game";
 
         [JsonProperty("onlineMode")]
         public bool OnlineMode = true;

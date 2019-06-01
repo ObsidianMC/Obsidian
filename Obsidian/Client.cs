@@ -178,6 +178,13 @@ namespace Obsidian
             await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
+        public async Task SendBossBarAsync(Guid uuid, BossBar.BossBarAction action)
+        {
+            var packet = await Packet.CreateAsync(new Obsidian.Packets.Play.BossBar(uuid, action));
+
+            await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
+        }
+
         #endregion
 
         private async Task<CompressedPacket> GetNextCompressedPacketAsync(Stream stream)
@@ -617,7 +624,7 @@ namespace Obsidian
             }
 
             await Logger.LogMessageAsync($"Disconnected client");
-            await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has left the server.", this, 0, true);
+            await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
 
             if (Tcp.Connected)
                 this.Tcp.Close();
@@ -644,14 +651,14 @@ namespace Obsidian
             await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
             // Send commands
-            //await this.SendDeclareCommandsAsync();
+            await this.SendDeclareCommandsAsync();
 
             // Send spawn location packet
-            await this.SendSpawnPositionAsync(new Position(500, 500, 500));
+            await this.SendSpawnPositionAsync(new Position(0, 100, 0));
 
             // Send position packet
             await this.Logger.LogMessageAsync("Sending Position packet.");
-            await this.SendPositionLookAsync(new Location() { X = 500, Y = 500, Z = 500 }, PositionFlags.NONE, 0);
+            await this.SendPositionLookAsync(new Location() { X = 0, Y = 100, Z = 0 }, PositionFlags.NONE, 0);
 
             await this.Logger.LogMessageAsync("Player is logged in.");
             await this.Logger.LogMessageAsync("Sending welcome msg");
@@ -659,7 +666,7 @@ namespace Obsidian
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
 
             // Login success!
-            await this.OriginServer.SendChatAsync($"§l§4{this.Player.Username} has joined the server.", this, system: true);
+            await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
         }
     }
