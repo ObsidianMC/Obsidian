@@ -1,4 +1,7 @@
 //https://wiki.vg/Protocol#Packet_format
+using Obsidian.Util;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Modes;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -29,7 +32,7 @@ namespace Obsidian.Packets
 
         public bool Empty => this._packetData == null || this._packetData.Length == 0;
 
-        public static async Task<Packet> ReadFromStreamAsync(Stream stream, bool encryption = false, ICryptoTransform cryptor = null)
+        public static async Task<Packet> ReadFromStreamAsync(Stream stream, byte[] key = null)
         {
             /*int length = await stream.ReadVarIntAsync();
             int packetId = int.MaxValue;
@@ -59,22 +62,17 @@ namespace Obsidian.Packets
             int packetid = 0;
             byte[] thedata = new byte[0];
 
-            if (encryption)
+            if (key != null)
             {
-                using (var packetstream = new MemoryStream(data))
+                using (var aesStream = new AesStream(stream, key))
                 {
-                    using (var cStream = new CryptoStream(packetstream, cryptor, CryptoStreamMode.Read))
-                    {
+                    packetid = await aesStream.ReadVarIntAsync();
+                    int arlen = 0;
+                    if (len - packetid.GetVarintLength() > -1)
+                        arlen = len - packetid.GetVarintLength();
 
-                        packetid = await cStream.ReadVarIntAsync();
-                        int arlen = 0;
-                        if (len - packetid.GetVarintLength() > -1)
-                            arlen = len - packetid.GetVarintLength();
-
-                        thedata = new byte[arlen];
-                        await cStream.ReadAsync(thedata, 0, thedata.Length);
-
-                    }
+                    thedata = new byte[arlen];
+                    await aesStream.ReadAsync(thedata, 0, thedata.Length);
                 }
             }
             else
@@ -89,8 +87,8 @@ namespace Obsidian.Packets
                     thedata = new byte[arlen];
                     await packetstream.ReadAsync(thedata, 0, thedata.Length);
                 }
-
             }
+
 
             await Program.PacketLogger.LogMessageAsync($">> {packetid.ToString("x")}");
 
@@ -115,29 +113,22 @@ namespace Obsidian.Packets
             return (T)Convert.ChangeType(packet, typeof(T));
         }
 
-        public virtual async Task WriteToStreamAsync(Stream stream, ICryptoTransform encrypt = null)
+        public virtual async Task WriteToStreamAsync(Stream stream, BufferedBlockCipher encrypt = null)
         {
             await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
 
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
 
+            byte[] data = this._packetData;
+
             if (encrypt != null)
             {
-                using (var cs = new CryptoStream(stream, encrypt, CryptoStreamMode.Write))
-                {
-                    await cs.WriteVarIntAsync(packetLength);
-                    await cs.WriteVarIntAsync(PacketId);
-                    await cs.WriteUInt8ArrayAsync(this._packetData);
+                data = encrypt.ProcessBytes(this._packetData, 0, this._packetData.Length);
+            }
 
-                    cs.FlushFinalBlock();
-                }
-            }
-            else
-            {
-                await stream.WriteVarIntAsync(packetLength);
-                await stream.WriteVarIntAsync(PacketId);
-                await stream.WriteAsync(this._packetData, 0, this._packetData.Length);
-            }
+            await stream.WriteVarIntAsync(packetLength);
+            await stream.WriteVarIntAsync(PacketId);
+            await stream.WriteAsync(data, 0, data.Length);
         }
 
         public Packet WithDataFrom(Packet p)

@@ -8,6 +8,10 @@ using Obsidian.Packets.Login;
 using Obsidian.Packets.Play;
 using Obsidian.Packets.Status;
 using Obsidian.Util;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.IO;
 using System.Linq;
@@ -42,8 +46,8 @@ namespace Obsidian
 
         public PacketState State { get; private set; }
 
-        internal ICryptoTransform Encrypter { get; set; }
-        internal ICryptoTransform Decrypter { get; set; }
+        internal BufferedBlockCipher Encrypter { get; set; }
+        internal BufferedBlockCipher Decrypter { get; set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -121,8 +125,6 @@ namespace Obsidian
 
         public async Task SendSpawnPositionAsync(Position position)
         {
-            await this.Logger.LogMessageAsync("Sending Spawn Position packet.");
-
             var packet = await Packet.CreateAsync(new SpawnPosition(position));
 
             await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
@@ -194,7 +196,7 @@ namespace Obsidian
 
         private async Task<Packet> GetNextPacketAsync(Stream stream, bool onlineMode = false)
         {
-            return await Packet.ReadFromStreamAsync(stream, onlineMode, this.Decrypter);
+            return await Packet.ReadFromStreamAsync(stream, this.Decrypter);
         }
 
         private byte[] Token { get; set; }
@@ -334,16 +336,17 @@ namespace Obsidian
 
                                     await this.Logger.LogMessageAsync($"Data decrypted..");
 
-                                    var aes = PacketCryptography.GenerateAes((byte[])this.SharedKey.Clone());
+                                    this.Encrypter = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
+                                    this.Encrypter.Init(true, new ParametersWithIV(new KeyParameter(this.SharedKey), this.SharedKey, 0, 16));
+
+                                    this.Decrypter = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
+                                    this.Decrypter.Init(false, new ParametersWithIV(new KeyParameter(this.SharedKey), this.SharedKey, 0, 16));
 
                                     await this.Logger.LogMessageAsync($"Aes generated..");
                                     var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
 
                                     if (dec2 != this.Token)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token."));
-
-                                    this.Decrypter = aes.CreateDecryptor();
-                                    this.Encrypter = aes.CreateEncryptor();
 
                                     var serverId = PacketCryptography.MinecraftShaDigest(this.SharedKey.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
 
@@ -643,7 +646,6 @@ namespace Obsidian
 
             await returnPacket.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
 
-
             this.State = PacketState.Play;
 
             // Send Join Game packet
@@ -651,9 +653,10 @@ namespace Obsidian
             await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
             // Send commands
-            await this.SendDeclareCommandsAsync();
+            // await this.SendDeclareCommandsAsync();
 
             // Send spawn location packet
+            await this.Logger.LogMessageAsync("Sending Spawn Position packet.");
             await this.SendSpawnPositionAsync(new Position(0, 100, 0));
 
             // Send position packet
