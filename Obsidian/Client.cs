@@ -13,6 +13,7 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -187,6 +188,36 @@ namespace Obsidian
             await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
 
+        public async Task SendPlayerInfoAsync()
+        {
+            await this.Logger.LogMessageAsync("Generating Player Info packet.");
+
+            var list = new List<PlayerInfo.PlayerInfoAction>();
+
+            foreach (Client client in this.OriginServer.Clients)
+            {
+                //BUG: Clients still has disconnected clients this HAS to be fixed.
+                if (client.Player == null)
+                {
+                    continue;
+                }
+
+                list.Add(new PlayerInfo.PlayerInfoAddAction()
+                {
+                    Name = client.Player.Username,
+                    UUID = client.Player.UUID,
+                    Ping = 0,
+                    Gamemode = client.Player.PlayerGameType
+                });
+            }
+
+            var packet = await Packet.CreateAsync(new Packets.Play.PlayerInfo(0, list));
+
+            await this.Logger.LogMessageAsync("Sending Player Info packet.");
+
+            await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
+        }
+
         #endregion
 
         private async Task<CompressedPacket> GetNextCompressedPacketAsync(Stream stream)
@@ -194,9 +225,9 @@ namespace Obsidian
             return await CompressedPacket.ReadFromStreamAsync(stream);
         }
 
-        private async Task<Packet> GetNextPacketAsync(Stream stream, bool onlineMode = false)
+        private async Task<Packet> GetNextPacketAsync(Stream stream)
         {
-            return await Packet.ReadFromStreamAsync(stream, this.Decrypter);
+            return await Packet.ReadFromStreamAsync(stream, this.SharedKey);
         }
 
         private byte[] Token { get; set; }
@@ -211,7 +242,7 @@ namespace Obsidian
                 if (this.Compressed)
                     packet = await this.GetNextCompressedPacketAsync(this.Tcp.GetStream());
                 else
-                    packet = await this.GetNextPacketAsync(this.Tcp.GetStream(), this.EncryptionEnabled);
+                    packet = await this.GetNextPacketAsync(this.Tcp.GetStream());
 
                 if (this.State == PacketState.Play && packet._packetData.Length < 1)
                     this.Disconnect();
@@ -652,9 +683,6 @@ namespace Obsidian
             await this.Logger.LogMessageAsync("Sending Join Game packet.");
             await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
-            // Send commands
-            // await this.SendDeclareCommandsAsync();
-
             // Send spawn location packet
             await this.Logger.LogMessageAsync("Sending Spawn Position packet.");
             await this.SendSpawnPositionAsync(new Position(0, 100, 0));
@@ -671,6 +699,12 @@ namespace Obsidian
             // Login success!
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
+
+            // Send commands
+            await this.SendDeclareCommandsAsync();
+
+            // Send Player List
+            await this.SendPlayerInfoAsync();
         }
     }
 }
