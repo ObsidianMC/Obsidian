@@ -92,11 +92,17 @@ public static class DataWriter
 
     public static async Task WriteVarIntAsync(this Stream stream, int value)
     {
+        if (value <= -1)
+        {
+            throw new NotImplementedException("Negative values result in a loop");
+        }
+
         while ((value & 128) != 0)
         {
             await stream.WriteUnsignedByteAsync((byte)(value & 127 | 128));
             value = (int)((uint)value) >> 7;
         }
+
         await stream.WriteUnsignedByteAsync((byte)value);
     }
 
