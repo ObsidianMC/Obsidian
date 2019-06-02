@@ -9,6 +9,7 @@ using Obsidian.Packets.Play;
 using Obsidian.Packets.Status;
 using Obsidian.Util;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -181,6 +182,36 @@ namespace Obsidian
         public async Task SendBossBarAsync(Guid uuid, BossBar.BossBarAction action)
         {
             var packet = await Packet.CreateAsync(new Obsidian.Packets.Play.BossBar(uuid, action));
+
+            await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
+        }
+
+        public async Task SendPlayerInfoAsync()
+        {
+            await this.Logger.LogMessageAsync("Generating Player Info packet.");
+
+            var list = new List<PlayerInfo.PlayerInfoAction>();
+
+            foreach (Client client in this.OriginServer.Clients)
+            {
+                //BUG: Clients still has disconnected clients this HAS to be fixed.
+                if (client.Player == null)
+                {
+                    continue;
+                }
+
+                list.Add(new PlayerInfo.PlayerInfoAddAction()
+                {
+                    Name = client.Player.Username,
+                    UUID = client.Player.UUID,
+                    Ping = -1,
+                    Gamemode = client.Player.PlayerGameType
+                });
+            }
+
+            var packet = await Packet.CreateAsync(new Packets.Play.PlayerInfo(0, list));
+
+            await this.Logger.LogMessageAsync("Sending Player Info packet.");
 
             await packet.WriteToStreamAsync(this.Tcp.GetStream(), this.Encrypter);
         }
@@ -650,9 +681,6 @@ namespace Obsidian
             await this.Logger.LogMessageAsync("Sending Join Game packet.");
             await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
 
-            // Send commands
-            await this.SendDeclareCommandsAsync();
-
             // Send spawn location packet
             await this.SendSpawnPositionAsync(new Position(0, 100, 0));
 
@@ -668,6 +696,12 @@ namespace Obsidian
             // Login success!
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
+
+            // Send commands
+            await this.SendDeclareCommandsAsync();
+
+            // Send Player List
+            await this.SendPlayerInfoAsync();
         }
     }
 }
