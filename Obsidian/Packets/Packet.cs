@@ -31,73 +31,49 @@ namespace Obsidian.Packets
 
         public static async Task<Packet> ReadFromStreamAsync(Stream stream, bool encryption = false, ICryptoTransform cryptor = null)
         {
-            /*int length = await stream.ReadVarIntAsync();
-            int packetId = int.MaxValue;
-            byte[] data = new byte[0];
-            
-            if (length > 0)
+            int length = await stream.ReadVarIntAsync();
+            byte[] receivedData = new byte[length];
+
+            await stream.ReadAsync(receivedData, 0, length);
+
+            int packetId = 0;
+            byte[] packetData = new byte[0];
+
+            using (var packetStream = new MemoryStream(receivedData))
             {
-                packetId = await stream.ReadVarIntAsync();
+                Stream readStream = packetStream;
 
-                int dataLength = length - packetId.GetVarintLength();
-                data = new byte[dataLength];
-            }
+                if (encryption)
+                    readStream = new CryptoStream(packetStream, cryptor, CryptoStreamMode.Read);
 
-            await stream.ReadAsync(data, 0, data.Length);
-
-            return new Packet()
-            {
-                PacketId = packetId,
-                PacketLength = length,
-                PacketData = data
-            };*/
-
-            var len = await stream.ReadVarIntAsync();
-            var data = new byte[len];
-            await stream.ReadAsync(data, 0, len);
-
-            int packetid = 0;
-            byte[] thedata = new byte[0];
-
-            if (encryption)
-            {
-                using (var packetstream = new MemoryStream(data))
+                try
                 {
-                    using (var cStream = new CryptoStream(packetstream, cryptor, CryptoStreamMode.Read))
-                    {
-
-                        packetid = await cStream.ReadVarIntAsync();
-                        int arlen = 0;
-                        if (len - packetid.GetVarintLength() > -1)
-                            arlen = len - packetid.GetVarintLength();
-
-                        thedata = new byte[arlen];
-                        await cStream.ReadAsync(thedata, 0, thedata.Length);
-
-                    }
-                }
-            }
-            else
-            {
-                using (var packetstream = new MemoryStream(data))
-                {
-                    packetid = await packetstream.ReadVarIntAsync();
+                    packetId = await readStream.ReadVarIntAsync();
                     int arlen = 0;
-                    if (len - packetid.GetVarintLength() > -1)
-                        arlen = len - packetid.GetVarintLength();
 
-                    thedata = new byte[arlen];
-                    await packetstream.ReadAsync(thedata, 0, thedata.Length);
+                    if (length - packetId.GetVarintLength() > -1)
+                        arlen = length - packetId.GetVarintLength();
+
+                    packetData = new byte[arlen];
+                    await readStream.ReadAsync(packetData, 0, packetData.Length);
                 }
-
+                catch
+                {
+                    throw;
+                }
+                finally //To still dispose the temporary stream (even with exceptions) to be sure.
+                {
+                    if (encryption)
+                        readStream.Dispose();
+                }
             }
 
-            await Program.PacketLogger.LogMessageAsync($">> {packetid.ToString("x")}");
+            await Program.PacketLogger.LogMessageAsync($">> {packetId.ToString("x")}");
 
             return new EmptyPacket()
             {
-                PacketId = packetid,
-                _packetData = thedata
+                PacketId = packetId,
+                _packetData = packetData
             };
         }
 
