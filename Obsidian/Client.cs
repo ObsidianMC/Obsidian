@@ -204,7 +204,7 @@ namespace Obsidian
                 {
                     Name = client.Player.Username,
                     UUID = client.Player.UUID,
-                    Ping = -1,
+                    Ping = 0,
                     Gamemode = client.Player.PlayerGameType
                 });
             }
