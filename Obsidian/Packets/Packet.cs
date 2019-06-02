@@ -1,4 +1,3 @@
-//https://wiki.vg/Protocol#Packet_format
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -6,15 +5,15 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Packets
 {
+    /// <summary>
+    /// https://wiki.vg/Protocol#Packet_format
+    /// </summary>
     public abstract class Packet
     {
         internal protected byte[] _packetData;
         public int PacketId { get; internal set; }
 
-        public Packet(int packetid)
-        {
-            this.PacketId = packetid;
-        }
+        public Packet(int packetid) => this.PacketId = packetid;
 
         public Packet(int packetid, byte[] data)
         {
