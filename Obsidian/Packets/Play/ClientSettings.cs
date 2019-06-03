@@ -1,4 +1,4 @@
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -19,7 +19,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
                 Locale = await stream.ReadStringAsync();
                 ViewDistance = await stream.ReadByteAsync();
@@ -32,7 +32,7 @@ namespace Obsidian.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 // afaik these never get sent but that's OK
                 await stream.WriteStringAsync(Locale);

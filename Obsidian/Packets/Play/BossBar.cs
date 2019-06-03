@@ -1,7 +1,6 @@
 ﻿using Obsidian.BossBar;
-
+using Obsidian.Util;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Play
@@ -22,7 +21,7 @@ namespace Obsidian.Packets.Play
             //NOTE: Uncomment if set should be made public
             //if (Action == null) throw new Exception("Action is null!");
 
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteUuidAsync(this.UUID);
                 await stream.WriteVarIntAsync(this.Action.Action);

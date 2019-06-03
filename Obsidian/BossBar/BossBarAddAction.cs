@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Obsidian.Util;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.BossBar
@@ -19,7 +20,7 @@ namespace Obsidian.BossBar
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream(new MemoryStream()))
             {
                 await stream.WriteChatAsync(Title);
                 await stream.WriteFloatAsync(Health);

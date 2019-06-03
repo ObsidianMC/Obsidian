@@ -1,7 +1,6 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
+using Obsidian.Util;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -50,7 +49,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
                 this.X = await stream.ReadDoubleAsync();
                 this.Y = await stream.ReadDoubleAsync();
@@ -67,7 +66,7 @@ namespace Obsidian.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteDoubleAsync(this.X);
                 await stream.WriteDoubleAsync(this.Y);

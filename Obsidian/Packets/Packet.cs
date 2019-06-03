@@ -1,10 +1,8 @@
 //https://wiki.vg/Protocol#Packet_format
 using Obsidian.Util;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Modes;
 using System;
 using System.IO;
-using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -29,10 +27,9 @@ namespace Obsidian.Packets
 
         internal async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
 
-
         public bool Empty => this._packetData == null || this._packetData.Length == 0;
 
-        public static async Task<Packet> ReadFromStreamAsync(Stream stream, byte[] key = null)
+        public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
         {
             int length = await stream.ReadVarIntAsync();
             byte[] receivedData = new byte[length];
@@ -42,32 +39,60 @@ namespace Obsidian.Packets
             int packetId = 0;
             byte[] packetData = new byte[0];
 
-            using (var packetStream = new MemoryStream(receivedData))
+            using (var packetStream = new MinecraftStream(receivedData))
             {
-                Stream readStream = packetStream;
-
-                if (key != null)
-                    readStream = new AesStream(stream, key);
-
                 try
                 {
-                    packetId = await readStream.ReadVarIntAsync();
+                    packetId = await packetStream.ReadVarIntAsync();
                     int arlen = 0;
 
                     if (length - packetId.GetVarintLength() > -1)
                         arlen = length - packetId.GetVarintLength();
 
                     packetData = new byte[arlen];
-                    await readStream.ReadAsync(packetData, 0, packetData.Length);
+                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
                 }
                 catch
                 {
                     throw;
                 }
-                finally //To still dispose the temporary stream (even with exceptions) to be sure.
+            }
+
+            await Program.PacketLogger.LogMessageAsync($">> {packetId.ToString("x")}");
+
+            return new EmptyPacket()
+            {
+                PacketId = packetId,
+                _packetData = packetData
+            };
+        }
+
+        public static async Task<Packet> ReadFromStreamAsync(AesStream stream)
+        {
+            int length = await stream.ReadVarIntAsync();
+            byte[] receivedData = new byte[length];
+
+            await stream.ReadAsync(receivedData, 0, length);
+
+            int packetId = 0;
+            byte[] packetData = new byte[0];
+
+            using (var packetStream = new MinecraftStream(receivedData))
+            {
+                try
                 {
-                    if (key != null)
-                        readStream.Dispose();
+                    packetId = await packetStream.ReadVarIntAsync();
+                    int arlen = 0;
+
+                    if (length - packetId.GetVarintLength() > -1)
+                        arlen = length - packetId.GetVarintLength();
+
+                    packetData = new byte[arlen];
+                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
+                }
+                catch
+                {
+                    throw;
                 }
             }
 
@@ -94,22 +119,35 @@ namespace Obsidian.Packets
             return (T)Convert.ChangeType(packet, typeof(T));
         }
 
-        public virtual async Task WriteToStreamAsync(Stream stream, BufferedBlockCipher encrypt = null)
+        public virtual async Task WriteToStreamAsync(MinecraftStream stream)
         {
+            await Program.PacketLogger.LogMessageAsync($"Using normal stream.");
             await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
 
-            var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
+            var packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
 
             byte[] data = this._packetData;
-
-            if (encrypt != null)
-            {
-                data = encrypt.ProcessBytes(this._packetData, 0, this._packetData.Length);
-            }
 
             await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(PacketId);
             await stream.WriteAsync(data, 0, data.Length);
+        }
+
+        public virtual async Task WriteToStreamAsync(AesStream stream)
+        {
+            await Program.PacketLogger.LogMessageAsync($"Using encrypted stream.");
+            await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
+
+
+            int packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
+
+            byte[] data = this._packetData;
+
+            await Program.PacketLogger.LogMessageAsync($"Starting data sending. Packet Lenght: {packetLength}");
+            await stream.WriteVarIntAsync(packetLength);//Doesn't execute fix pls
+            await stream.WriteVarIntAsync(PacketId);
+            await stream.WriteAsync(data, 0, data.Length);
+
         }
 
         public Packet WithDataFrom(Packet p)

@@ -1,8 +1,4 @@
-using Newtonsoft.Json;
-using Obsidian.Entities;
-using Obsidian.Packets.Handshaking;
-using System;
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -13,11 +9,11 @@ namespace Obsidian.Packets
 
         public Position Location { get; private set; }
 
-        protected override async Task PopulateAsync() => this.Location = await new MemoryStream(this._packetData).ReadPositionAsync();
+        protected override async Task PopulateAsync() => this.Location = await new MinecraftStream(this._packetData).ReadPositionAsync();
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WritePositionAsync(Location);
                 return stream.ToArray();

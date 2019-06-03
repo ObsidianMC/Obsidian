@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
-using System;
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Status
@@ -17,7 +16,7 @@ namespace Obsidian.Packets.Status
         protected override async Task PopulateAsync()
         {
             await Task.Yield();
-            using(var stream = new MemoryStream(this._packetData))
+            using(var stream = new MinecraftStream(this._packetData))
             {
 
             }
@@ -25,7 +24,7 @@ namespace Obsidian.Packets.Status
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using(var stream = new MemoryStream())
+            using(var stream = new MinecraftStream())
             {
                 await stream.WriteStringAsync(this.Json);
 

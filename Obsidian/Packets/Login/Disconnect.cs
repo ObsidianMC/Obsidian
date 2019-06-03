@@ -1,5 +1,5 @@
+using Obsidian.Util;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -21,7 +21,7 @@ namespace Obsidian.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using(var stream = new MemoryStream())
+            using(var stream = new MinecraftStream())
             {
                 await stream.WriteChatAsync(this.Reason);
                 return stream.ToArray();

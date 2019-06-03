@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -19,7 +19,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
                 this.Message = JsonConvert.DeserializeObject<Chat.ChatMessage>(await stream.ReadStringAsync());
                 this.Position = await stream.ReadUnsignedByteAsync();
@@ -28,7 +28,7 @@ namespace Obsidian.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using(var stream = new MemoryStream())
+            using(var stream = new MinecraftStream())
             {
                 await stream.WriteStringAsync(JsonConvert.SerializeObject(this.Message));
                 await stream.WriteUnsignedByteAsync(this.Position);

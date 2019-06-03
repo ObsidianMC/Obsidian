@@ -1,7 +1,6 @@
-﻿using Obsidian.BossBar;
-using Obsidian.GameState;
+﻿using Obsidian.GameState;
+using Obsidian.Util;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Play
@@ -17,7 +16,7 @@ namespace Obsidian.Packets.Play
             //NOTE: Uncomment if set should be made public
             //if (Reason == null) throw new Exception("Reason is null!");
 
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteUnsignedByteAsync(this.Reason.Reason);
                 await stream.WriteFloatAsync(this.Reason.Value);

@@ -1,8 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using Org.BouncyCastle.Crypto;
+using Obsidian.Util;
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -15,11 +14,11 @@ namespace Obsidian.Packets
 
         private CompressedPacket() { /* Only for the static method to _not_ error*/ }
 
-        public override async Task WriteToStreamAsync(Stream stream, BufferedBlockCipher encrypt)//TODO
+        public override async Task WriteToStreamAsync(MinecraftStream stream)
         {
             var packetLength = this.PacketId.GetVarintLength() + this._packetData.Length;
             // compress data
-            var memstr = new MemoryStream();
+            var memstr = new MinecraftStream();
             await memstr.WriteVarIntAsync(PacketId);
             await memstr.WriteAsync(this._packetData, 0, this._packetData.Length);
 
@@ -35,14 +34,15 @@ namespace Obsidian.Packets
         }
 
         // shut the fuck up, I know what I'm doing
-        #pragma warning disable CS0108 // Member hides inherited member; missing new keyword
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
         public static async Task<CompressedPacket> ReadFromStreamAsync(Stream stream)
         #pragma warning restore CS0108 // Member hides inherited member; missing new keyword
         {
             await Task.Yield();
             // read lengths
-            var len = await stream.ReadVarIntAsync();
-            var datalen = await stream.ReadVarIntAsync();
+            var mstream = new MinecraftStream(stream);
+            var len = await mstream.ReadVarIntAsync();
+            var datalen = await mstream.ReadVarIntAsync();
 
             // read compressed data
             var compdata = new byte[len - datalen.GetVarintLength()];
@@ -55,7 +55,7 @@ namespace Obsidian.Packets
             await deflate.WriteAsync(compdata, 0, compdata.Length);
             memstr.Position = 0;
 
-            var packetid = await memstr.ReadVarIntAsync();
+            var packetid = await mstream.ReadVarIntAsync();
 
             int arlen = 0;
             if (datalen - packetid.GetVarintLength() > -1)

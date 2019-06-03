@@ -1,4 +1,4 @@
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -17,11 +17,11 @@ namespace Obsidian.Packets
             set => difficulty = (byte)(int)value;
         }
 
-        public static async Task<ServerDifficulty> FromArrayAsync(byte[] data) => new ServerDifficulty(await new MemoryStream(data).ReadUnsignedByteAsync());
+        public static async Task<ServerDifficulty> FromArrayAsync(byte[] data) => new ServerDifficulty(await new MinecraftStream(data).ReadUnsignedByteAsync());
 
         public async Task<byte[]> ToArrayAsync()
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteUnsignedByteAsync(this.difficulty);
                 return stream.ToArray();

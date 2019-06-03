@@ -1,7 +1,7 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Util;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerInfo
@@ -24,7 +24,7 @@ namespace Obsidian.PlayerInfo
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteUuidAsync(this.UUID);
 

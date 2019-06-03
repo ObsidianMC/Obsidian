@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Obsidian.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace Obsidian.Commands
 
         public async Task<byte[]> ToArrayAsync()
         {
-            using (var memoryStream = new MemoryStream())
+            using (var memoryStream = new MinecraftStream(new MemoryStream()))
             {
                 await memoryStream.WriteByteAsync((sbyte)Type);
                 await memoryStream.WriteVarIntAsync(Children.Count);

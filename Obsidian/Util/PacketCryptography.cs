@@ -59,22 +59,6 @@ namespace Obsidian.Util
             return _provider.Encrypt(toDecrypt, false);
         }
 
-        public static RijndaelManaged GenerateAes(byte[] key)
-        {
-            using (var cipher = new RijndaelManaged())
-            {
-                cipher.Mode = CipherMode.CFB;
-                cipher.Padding = PaddingMode.None;
-                cipher.KeySize = 128;
-                cipher.FeedbackSize = 8;
-
-                cipher.Key = key;
-                cipher.IV = (byte[])key.Clone();
-
-                return cipher;
-            }
-        }
-
         public static byte[] GetRandomToken()
         {
             var token = new byte[4];

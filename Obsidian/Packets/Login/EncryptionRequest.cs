@@ -1,6 +1,4 @@
-﻿using Obsidian.Logging;
-using System;
-using System.IO;
+﻿using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Login
@@ -22,43 +20,27 @@ namespace Obsidian.Packets.Login
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
-                try
-                {
-                    await stream.WriteStringAsync(this.ServerId ?? string.Empty);
-                    await stream.WriteVarIntAsync(this.PublicKey.Length);
-                    await stream.WriteUInt8ArrayAsync(this.PublicKey);
-                    await stream.WriteVarIntAsync(this.VerifyToken.Length);
-                    await stream.WriteUInt8ArrayAsync(this.VerifyToken);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message + " - " + e.StackTrace);
-                }
-
-
+                await stream.WriteStringAsync(this.ServerId ?? string.Empty);
+                await stream.WriteVarIntAsync(this.PublicKey.Length);
+                await stream.WriteUInt8ArrayAsync(this.PublicKey);
+                await stream.WriteVarIntAsync(this.VerifyToken.Length);
+                await stream.WriteUInt8ArrayAsync(this.VerifyToken);
                 return stream.ToArray();
             }
         }
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
-                try
-                {
-                    this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
-                    var keyLength = await stream.ReadVarIntAsync();
-                    this.PublicKey = await stream.ReadUInt8ArrayAsync(keyLength);
+                this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
+                var keyLength = await stream.ReadVarIntAsync();
+                this.PublicKey = await stream.ReadUInt8ArrayAsync(keyLength);
 
-                    var tokenLength = await stream.ReadVarIntAsync();
-                    this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
-                }
-                catch
-                {
-                    throw;
-                }
+                var tokenLength = await stream.ReadVarIntAsync();
+                this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
             }
         }
     }

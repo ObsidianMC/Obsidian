@@ -1,3 +1,4 @@
+using Obsidian.Util;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ namespace Obsidian.Packets.Handshaking
 
         protected override async Task PopulateAsync()
         {
-            using(var stream = new MemoryStream(this._packetData))
+            using(var stream = new MinecraftStream(this._packetData))
             {
                 this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
                 this.ServerAddress = await stream.ReadStringAsync();
@@ -33,7 +34,7 @@ namespace Obsidian.Packets.Handshaking
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync((int)this.Version);
                 //TODO: add string length check

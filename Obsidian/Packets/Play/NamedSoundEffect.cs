@@ -1,8 +1,6 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Util;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Play
@@ -37,7 +35,7 @@ namespace Obsidian.Packets.Play
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteStringAsync(this.Name);
                 await stream.WriteVarIntAsync(this.Category);

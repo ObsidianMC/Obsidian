@@ -1,5 +1,4 @@
-using System.IO;
-using System.Security.Cryptography;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -13,7 +12,7 @@ namespace Obsidian.Packets
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
                 this.Message = await stream.ReadStringAsync(256);
             }
@@ -21,7 +20,7 @@ namespace Obsidian.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using(var ms = new MemoryStream())
+            using(var ms = new MinecraftStream())
             {
                 await ms.WriteStringAsync(this.Message);
                 return ms.ToArray();

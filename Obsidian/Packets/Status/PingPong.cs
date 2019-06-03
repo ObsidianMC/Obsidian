@@ -1,4 +1,4 @@
-using System.IO;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Status
@@ -11,7 +11,7 @@ namespace Obsidian.Packets.Status
 
         protected override async Task PopulateAsync()
         {
-            using (var stream = new MemoryStream(this._packetData))
+            using (var stream = new MinecraftStream(this._packetData))
             {
                 this.Payload = await stream.ReadLongAsync();
             }
@@ -19,7 +19,7 @@ namespace Obsidian.Packets.Status
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MemoryStream())
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteLongAsync(this.Payload);
 

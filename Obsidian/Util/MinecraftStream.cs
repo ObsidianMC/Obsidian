@@ -7,160 +7,16 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util
 {
-    public partial class AesStream
+    public partial class MinecraftStream
     {
+        static MinecraftStream()
+        {
+            StringEncoding = Encoding.UTF8;
+        }
+
+        public static Encoding StringEncoding;
+
         #region Writing
-        public void WriteByte(sbyte value) => this.WriteUnsignedByte((byte)value);
-
-        public void WriteUnsignedByte(byte value) => this.Write(new[] { value });
-
-        public void WriteBoolean(bool value) => this.WriteByte((sbyte)(value ? 0x01 : 0x00));
-
-        public void WriteUnsignedShort(ushort value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteShort(short value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteInt(int value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteLong(long value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteFloat(float value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteDouble(double value)
-        {
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            this.Write(write);
-        }
-
-        public void WriteString(string value, int maxLength = 0)
-        {
-            if (maxLength > 0 && value.Length > maxLength)
-            {
-                throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
-            }
-            var bytes = Encoding.UTF8.GetBytes(value);
-            this.WriteVarInt(bytes.Length);
-            this.Write(bytes);
-        }
-
-        public void WriteUuid(Guid value) => this.Write(value.ToByteArray());
-
-        public void WriteChat(ChatMessage value) => this.WriteString(value.ToString(), 32767);
-
-        public void WriteIdentifier(string value) => this.WriteString(value, 32767);
-
-        public void WriteVarInt(int value)
-        {
-            if (value <= -1)
-            {
-                throw new NotImplementedException("Negative values result in a loop");
-            }
-            while ((value & 128) != 0)
-            {
-                this.WriteUnsignedByte((byte)(value & 127 | 128));
-                value = (int)((uint)value) >> 7;
-            }
-
-            this.WriteUnsignedByte((byte)value);
-        }
-
-        /// <summary>
-        /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
-        /// </summary>
-        public void WriteVarInt(Enum value) => this.WriteVarInt(Convert.ToInt32(value));
-
-        public void WriteAuto(params object[] values)
-        {
-            foreach (object value in values)
-            {
-                switch (value)
-                {
-                    case int intValue: this.WriteVarInt(intValue); break;
-                    case string stringValue: this.WriteString(stringValue); break;
-                    case float floatValue: this.WriteFloat(floatValue); break;
-                    case double doubleValue: this.WriteDouble(doubleValue); break;
-                    case short shortValue: this.WriteShort(shortValue); break;
-                    case ushort ushortValue: this.WriteUnsignedShort(ushortValue); break;
-                    case long longValue: this.WriteVarLong(longValue); break;
-                    case bool boolValue: this.WriteBoolean(boolValue); break;
-                    case Enum enumValue: this.WriteVarInt(enumValue); break;
-                    case ChatMessage chatValue: this.WriteChat(chatValue); break;
-                    case Guid uuidValue: this.WriteUuid(uuidValue); break;
-                    case byte[] byteArray: this.Write(byteArray); break;
-                    case object[] objectArray: this.WriteAuto(objectArray); break;
-                    case sbyte sbyteValue: this.WriteByte(sbyteValue); break;
-                    case byte byteValue: this.WriteUnsignedByte(byteValue); break;
-                    default: throw new Exception($"Can't handle {value.ToString()} ({value.GetType().ToString()})");
-                }
-            }
-        }
-
-        public void WriteUInt8Array(byte[] value)
-        {
-            this.Write(value, 0, value.Length);
-        }
-
-        public void WriteVarLong(long value)
-        {
-            do
-            {
-                var temp = (sbyte)(value & 0b01111111);
-                // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-                value >>= 7;
-                if (value != 0)
-                {
-                    temp |= 127;
-                }
-                this.WriteByte(temp);
-            } while (value != 0);
-        }
-
-        public void WritePosition(Position value) => this.WriteLong((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
-
         public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
 
         public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
@@ -246,12 +102,11 @@ namespace Obsidian.Util
 
         public async Task WriteVarIntAsync(int value)
         {
-            await Program.PacketLogger.LogMessageAsync($"Writing var int..");
             if (value <= -1)
             {
                 throw new NotImplementedException("Negative values result in a loop");
             }
-            await Program.PacketLogger.LogMessageAsync($"2");
+
             while ((value & 128) != 0)
             {
                 await this.WriteUnsignedByteAsync((byte)(value & 127 | 128));
