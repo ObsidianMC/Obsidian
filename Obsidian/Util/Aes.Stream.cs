@@ -31,10 +31,10 @@ namespace Obsidian.Util
             BaseStream = stream;
             Key = key;
             encryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
 
             decryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
         }
 
         public AesStream(byte[] data, byte[] key)
