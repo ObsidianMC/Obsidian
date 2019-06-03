@@ -1,8 +1,6 @@
-//https://wiki.vg/Protocol#Packet_format
 using Obsidian.Util;
+
 using System;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets
@@ -58,7 +56,7 @@ namespace Obsidian.Packets
                 }
             }
 
-            await Program.PacketLogger.LogMessageAsync($">> {packetId.ToString("x")}");
+            await Program.PacketLogger.LogMessageAsync($">> 0x{packetId.ToString("x")}");
 
             return new EmptyPacket()
             {
@@ -96,7 +94,7 @@ namespace Obsidian.Packets
                 }
             }
 
-            await Program.PacketLogger.LogMessageAsync($">> {packetId.ToString("x")}");
+            await Program.PacketLogger.LogMessageAsync($">> 0x{packetId.ToString("x")}");
 
             return new EmptyPacket()
             {
@@ -107,13 +105,13 @@ namespace Obsidian.Packets
 
         public static async Task<T> CreateAsync<T>(T packet) where T : Packet
         {
-            if (!packet.Empty)
+            if (packet.Empty)
             {
-                await packet.PopulateAsync();
+                await packet.FillPacketDataAsync();
             }
             else
             {
-                await packet.FillPacketDataAsync();
+                await packet.PopulateAsync();
             }
 
             return (T)Convert.ChangeType(packet, typeof(T));
@@ -122,9 +120,9 @@ namespace Obsidian.Packets
         public virtual async Task WriteToStreamAsync(MinecraftStream stream)
         {
             await Program.PacketLogger.LogMessageAsync($"Using normal stream.");
-            await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
+            await Program.PacketLogger.LogMessageAsync($"<< 0x{this.PacketId.ToString("x")}");
 
-            var packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
+            int packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
 
             byte[] data = this._packetData;
 
@@ -136,15 +134,15 @@ namespace Obsidian.Packets
         public virtual async Task WriteToStreamAsync(AesStream stream)
         {
             await Program.PacketLogger.LogMessageAsync($"Using encrypted stream.");
-            await Program.PacketLogger.LogMessageAsync($"<< {this.PacketId.ToString("x")}");
+            await Program.PacketLogger.LogMessageAsync($"<< 0x{this.PacketId.ToString("x")}");
 
 
             int packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
 
             byte[] data = this._packetData;
 
-            await Program.PacketLogger.LogMessageAsync($"Starting data sending. Packet Lenght: {packetLength}");
-            await stream.WriteVarIntAsync(packetLength);//Doesn't execute fix pls
+            await Program.PacketLogger.LogMessageAsync($"Starting data sending. Packet Length: {packetLength}");
+            await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(PacketId);
             await stream.WriteAsync(data, 0, data.Length);
 
