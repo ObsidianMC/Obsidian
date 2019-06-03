@@ -714,7 +714,13 @@ namespace Obsidian
             }
 
             await Logger.LogMessageAsync($"Disconnected client");
-            await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
+
+            //only trigger if client was logged in
+            if (this.Player != null)
+            {
+                //announce leave
+                await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
+            }
 
             if (Tcp.Connected)
                 this.Tcp.Close();
