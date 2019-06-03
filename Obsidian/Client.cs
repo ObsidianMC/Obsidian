@@ -421,7 +421,7 @@ namespace Obsidian
 
                                 try
                                 {
-                                    this.SharedKey = encryptionResponse.SharedSecret;
+                                    this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
 
                                     if (this.EncryptedStream is null)
                                         this.EncryptedStream = new AesStream(this.Tcp.GetStream(), this.SharedKey); //?
