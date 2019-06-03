@@ -251,12 +251,13 @@ namespace Obsidian.Util
 
         public async Task WriteVarIntAsync(int value)
         {
-            await Program.PacketLogger.LogMessageAsync($"Writing var int..");
             if (value <= -1)
             {
                 throw new NotImplementedException("Negative values result in a loop");
             }
-            await Program.PacketLogger.LogMessageAsync($"2");
+
+            await Program.PacketLogger.LogMessageAsync($"Writing VarInt: {value}");
+
             while ((value & 128) != 0)
             {
                 await this.WriteUnsignedByteAsync((byte)(value & 127 | 128));
