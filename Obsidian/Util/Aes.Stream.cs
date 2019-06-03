@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
+
 using System;
 using System.IO;
 using System.Threading;
@@ -20,10 +21,10 @@ namespace Obsidian.Util
             BaseStream = new MemoryStream();
             Key = key;
             encryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
 
             decryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
         }
 
         public AesStream(Stream stream, byte[] key)
@@ -42,44 +43,29 @@ namespace Obsidian.Util
             BaseStream = new MemoryStream(data);
             Key = key;
             encryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            encryptCipher.Init(true, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
 
             decryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesFastEngine(), 8));
-            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
+            decryptCipher.Init(false, new ParametersWithIV(new KeyParameter(Key), Key, 0, 16));
         }
 
         public Stream BaseStream { get; set; }
 
-        public override bool CanRead
-        {
-            get { return BaseStream.CanRead; }
-        }
+        public override bool CanRead => BaseStream.CanRead;
 
-        public override bool CanSeek
-        {
-            get { return BaseStream.CanSeek; }
-        }
+        public override bool CanSeek => BaseStream.CanSeek;
 
-        public override bool CanWrite
-        {
-            get { return BaseStream.CanWrite; }
-        }
+        public override bool CanWrite => BaseStream.CanWrite;
 
-        public override long Length
-        {
-            get { return BaseStream.Length; }
-        }
+        public override long Length => BaseStream.Length;
 
         public override long Position
         {
-            get { return BaseStream.Position; }
-            set { BaseStream.Position = value; }
+            get => BaseStream.Position;
+            set => BaseStream.Position = value;
         }
 
-        public override void Flush()
-        {
-            BaseStream.Flush();
-        }
+        public override void Flush() => BaseStream.Flush();
 
         public override int ReadByte()
         {
@@ -130,20 +116,11 @@ namespace Obsidian.Util
             BaseStream.Write(encrypted, offset, encrypted.Length);
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return BaseStream.Seek(offset, origin);
-        }
+        public override long Seek(long offset, SeekOrigin origin) => BaseStream.Seek(offset, origin);
 
-        public override void SetLength(long value)
-        {
-            BaseStream.SetLength(value);
-        }
+        public override void SetLength(long value) => BaseStream.SetLength(value);
 
-        public override void Close()
-        {
-            BaseStream.Close();
-        }
+        public override void Close() => BaseStream.Close();
 
         public byte[] ToArray()
         {
