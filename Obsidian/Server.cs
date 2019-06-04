@@ -143,10 +143,7 @@ namespace Obsidian
             }
         }
 
-        public bool CheckPlayerOnlineAsync(string username)
-        {
-            return this.Clients.Any(x => x.Player.Username == username);
-        }
+        public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {

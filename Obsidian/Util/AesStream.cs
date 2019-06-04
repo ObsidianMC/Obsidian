@@ -229,6 +229,11 @@ namespace Obsidian.Util
 
         public async Task WriteStringAsync(string value, int maxLength = 0)
         {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (maxLength > 0 && value.Length > maxLength)
             {
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
@@ -250,6 +255,8 @@ namespace Obsidian.Util
             {
                 throw new NotImplementedException("Negative values result in a loop");
             }
+
+            await Program.PacketLogger.LogMessageAsync($"Writing VarInt: {value}");
 
             while ((value & 128) != 0)
             {

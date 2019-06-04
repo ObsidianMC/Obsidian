@@ -380,12 +380,12 @@ namespace Obsidian
 
                                 await this.Logger.LogMessageAsync($"Received login request from user {loginStart.Username}");
 
-                                /*var isonline = this.OriginServer.CheckPlayerOnline(loginStart.Username);
-                                if (isonline)
+                                //Kick out logged in player if online
+                                if (this.OriginServer.CheckPlayerOnline(loginStart.Username))
                                 {
-                                    // kick out the player
-                                    await this.DisconnectClientAsync(Chat.Simple($"A player with usename {loginStart.Username} is already online!"));
-                                }*/
+                                    await this.OriginServer.Clients.FirstOrDefault(c => c.Player.Username == loginStart.Username).DisconnectAsync(Chat.ChatMessage.Simple("Logged in from another location"));
+                                }
+
                                 var users = await MinecraftAPI.GetUsersAsync(new string[] { loginStart.Username });
                                 var uid = users.FirstOrDefault();
 
@@ -712,7 +712,13 @@ namespace Obsidian
             }
 
             await Logger.LogMessageAsync($"Disconnected client");
-            await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
+
+            //only trigger if client was logged in
+            if (this.Player != null)
+            {
+                //announce leave
+                await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
+            }
 
             if (Tcp.Connected)
                 this.Tcp.Close();
