@@ -1,5 +1,4 @@
 using Obsidian.Util;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Packets.Handshaking

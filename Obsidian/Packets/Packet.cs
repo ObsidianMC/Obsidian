@@ -144,7 +144,7 @@ namespace Obsidian.Packets
             byte[] data = this._packetData;
 
             await Program.PacketLogger.LogMessageAsync($"Starting data sending. Packet Lenght: {packetLength}");
-            await stream.WriteVarIntAsync(packetLength);//Doesn't execute fix pls
+            await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(PacketId);
             await stream.WriteAsync(data, 0, data.Length);
 
