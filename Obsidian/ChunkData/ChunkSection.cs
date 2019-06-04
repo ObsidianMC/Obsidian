@@ -1,4 +1,5 @@
-﻿using Obsidian.Util;
+﻿using Obsidian.Net;
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData

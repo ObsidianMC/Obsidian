@@ -299,7 +299,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                await succAsync(this.Player.UUID, packet);
+                                await ConnectAsync(this.Player.UUID, packet);
 
                                 break;
 
@@ -338,7 +338,7 @@ namespace Obsidian
                                     throw;
                                 }
 
-                                await succAsync(new Guid(response.Id), packet);
+                                await ConnectAsync(new Guid(response.Id), packet);
                                 break;
 
                             case 0x02:
@@ -618,7 +618,7 @@ namespace Obsidian
 
 
         //TODO: Please change name, I couldn't come up with one
-        private async Task succAsync(Guid uuid, Packet packet)
+        private async Task ConnectAsync(Guid uuid, Packet packet)
         {
             await this.Logger.LogMessageAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
 
