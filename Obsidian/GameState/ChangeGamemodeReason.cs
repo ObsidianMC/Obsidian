@@ -1,4 +1,4 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.PlayerData;
 
 namespace Obsidian.GameState
 {

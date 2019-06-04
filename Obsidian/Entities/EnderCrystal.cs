@@ -2,7 +2,7 @@
 {
     public class EnderCrystal : Entity
     {
-        public Position BeamTarget { get; private set; }
+        public Location BeamTarget { get; private set; }
 
         public bool ShowBottom { get; private set; } = true;
     }

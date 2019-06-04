@@ -1,9 +1,5 @@
-﻿using Obsidian.Connection;
+﻿using Obsidian.Entities;
 using Qmmands;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Obsidian.Entities;
 
 namespace Obsidian.Commands
 {

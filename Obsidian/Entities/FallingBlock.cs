@@ -2,6 +2,6 @@
 {
     public class FallingBlock : Entity
     {
-        public Position SpawnPosition { get; private set; }
+        public Location SpawnPosition { get; private set; }
     }
 }

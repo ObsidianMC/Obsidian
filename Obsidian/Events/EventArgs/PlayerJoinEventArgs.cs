@@ -1,4 +1,4 @@
-﻿using Obsidian.Packets;
+﻿using Obsidian.Net.Packets;
 using System;
 
 namespace Obsidian.Events.EventArgs

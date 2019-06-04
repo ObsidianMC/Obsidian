@@ -1,5 +1,5 @@
-﻿using Obsidian.Chat;
-using Obsidian.Entities;
+﻿using Obsidian.Boss;
+using Obsidian.Chat;
 using Qmmands;
 using System;
 using System.Linq;
@@ -54,12 +54,12 @@ namespace Obsidian.Commands
 
         [Command("bossbar")]
         [Description("Debug command")]
-        public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBar.BossBarAddAction()
+        public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBarAddAction()
         {
-            Color = BossBar.BossBarColor.Blue,
-             Division = BossBar.BossBarDivisionType.None,
-              Flags = BossBar.BossBarFlags.DarkenSky,
-               Title = ChatMessage.Simple("SUCC"),
+            Color = BossBarColor.Blue,
+             Division = BossBarDivisionType.None,
+              Flags = BossBarFlags.DarkenSky,
+               Title = Chat.ChatMessage.Simple("SUCC"),
                 Health = 0.5f
         });
     }

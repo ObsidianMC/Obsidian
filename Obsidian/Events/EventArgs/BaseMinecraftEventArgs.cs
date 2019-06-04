@@ -1,6 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Logging;
-using Obsidian.Packets;
+using Obsidian.Net.Packets;
 
 namespace Obsidian.Events.EventArgs
 {

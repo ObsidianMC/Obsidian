@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Security;
+using System;
 using System.Numerics;
 using System.Security.Cryptography;
 
 namespace Obsidian.Util
 {
-    //Code taken from C-Raft. (https://github.com/chraft/c-raft)
     public static class PacketCryptography
     {
         /* This is hardcoded since it won't change. 
@@ -18,6 +19,8 @@ namespace Obsidian.Util
 
         private static RSACryptoServiceProvider _provider;
         public static byte[] VerifyToken { get; set; }
+
+        public static byte[] Key { get; set; }
 
         //https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
         public static string MinecraftShaDigest(byte[] data)
@@ -40,6 +43,7 @@ namespace Obsidian.Util
                 return b.ToString("x").TrimStart('0');
             }
         }
+
 
         public static RSAParameters GenerateKeyPair()
         {
@@ -66,6 +70,17 @@ namespace Obsidian.Util
             provider.GetBytes(token);
             VerifyToken = token;
             return token;
+        }
+
+        public static string CreateId()
+        {
+            var random = RandomNumberGenerator.Create();
+            byte[] data = new byte[8];
+            random.GetBytes(data);
+            var response = "";
+            foreach (byte b in data)
+                response += b.ToString("X2");
+            return response;
         }
 
         public static byte[] PublicKeyToAsn1(RSAParameters parameters)
@@ -217,5 +232,7 @@ namespace Obsidian.Util
 
             return newInt;
         }
+
+
     }
 }
