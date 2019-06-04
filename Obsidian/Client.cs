@@ -279,9 +279,13 @@ namespace Obsidian
         private async Task<Packet> GetNextPacketAsync()
         {
             if (this.EncryptionEnabled)
+            {
                 return await Packet.ReadFromStreamAsync(this.EncryptedStream);
-
-            return await Packet.ReadFromStreamAsync(this.MinecraftStream);
+            }
+            else
+            {
+                return await Packet.ReadFromStreamAsync(this.MinecraftStream);
+            }
         }
 
         private byte[] Token { get; set; }
