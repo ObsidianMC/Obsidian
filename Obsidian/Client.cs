@@ -430,8 +430,6 @@ namespace Obsidian
                                     if (this.EncryptedStream is null)
                                         this.EncryptedStream = new AesStream(this.Tcp.GetStream(), this.SharedKey); //?
 
-                                    var key = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
-
                                     await this.Logger.LogMessageAsync($"Data decrypted..");
 
                                     var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
@@ -439,7 +437,7 @@ namespace Obsidian
                                     if (dec2 != this.Token)
                                         await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token."));
 
-                                    var serverId = PacketCryptography.MinecraftShaDigest(key.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
+                                    var serverId = PacketCryptography.MinecraftShaDigest(this.SharedKey.Concat(PacketCryptography.PublicKeyToAsn1(PacketCryptography.GenerateKeyPair())).ToArray());
 
                                     response = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
 
@@ -752,16 +750,16 @@ namespace Obsidian
             this.State = PacketState.Play;
 
             // Send Join Game packet
-            await this.Logger.LogMessageAsync("Sending Join Game packet.");
             await this.SendJoinGameAsync(EntityId.Player | (EntityId)this.PlayerId);
+            await this.Logger.LogMessageAsync("Sent Join Game packet.");
 
             // Send spawn location packet
-            await this.Logger.LogMessageAsync("Sending Spawn Position packet.");
             await this.SendSpawnPositionAsync(new Position(0, 100, 0));
+            await this.Logger.LogMessageAsync("Sent Spawn Position packet.");
 
             // Send position packet
-            await this.Logger.LogMessageAsync("Sending Position packet.");
             await this.SendPositionLookAsync(new Location() { X = 0, Y = 100, Z = 0 }, PositionFlags.NONE, 0);
+            await this.Logger.LogMessageAsync("Sent Position packet.");
 
             await this.Logger.LogMessageAsync("Player is logged in.");
             await this.Logger.LogMessageAsync("Sending welcome msg");
