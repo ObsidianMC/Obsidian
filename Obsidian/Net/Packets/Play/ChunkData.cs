@@ -10,6 +10,8 @@ namespace Obsidian.Net.Packets
         public bool FullChunk { get; set; } = false;
         public int BitMask { get; set; } = 0;
 
+        
+
         public ChunkData() : base(0x22, new byte[0])
         {
         }
