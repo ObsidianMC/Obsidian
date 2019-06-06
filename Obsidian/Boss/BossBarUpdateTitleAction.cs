@@ -13,7 +13,7 @@ namespace Obsidian.Boss
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MinecraftStream(new MemoryStream()))
+            using (var stream = new MinecraftStream())
             {
                 await stream.WriteChatAsync(Title);
 
