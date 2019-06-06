@@ -35,9 +35,6 @@ namespace Obsidian.Chat
         [JsonProperty("extra", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<ChatMessage> Extra;
 
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 }

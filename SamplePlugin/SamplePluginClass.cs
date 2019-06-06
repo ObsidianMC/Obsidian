@@ -2,7 +2,9 @@
 using Obsidian.Commands;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
+
 using Qmmands;
+
 using System.Threading.Tasks;
 
 namespace SamplePlugin
