@@ -57,5 +57,7 @@ namespace Obsidian.Net
                 totalBytesCopied += this.Read(buffer, totalBytesCopied, Convert.ToInt32(this.Length) - totalBytesCopied);
             return buffer;
         }
+
+        protected override void Dispose(bool disposing) => BaseStream.Dispose();
     }
 }
