@@ -7,98 +7,47 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream : Stream
     {
-        public MinecraftStream()
-        {
-            BaseStream = new MemoryStream();
-        }
+        public MinecraftStream() => BaseStream = new MemoryStream();
 
-        public MinecraftStream(Stream stream)
-        {
-            BaseStream = stream;
-        }
+        public MinecraftStream(Stream stream) => BaseStream = stream;
 
-        public MinecraftStream(byte[] data)
-        {
-            BaseStream = new MemoryStream(data);
-        }
+        public MinecraftStream(byte[] data) => BaseStream = new MemoryStream(data);
 
         public Stream BaseStream { get; set; }
 
-        public override bool CanRead
-        {
-            get { return BaseStream.CanRead; }
-        }
+        public override bool CanRead => BaseStream.CanRead;
 
-        public override bool CanSeek
-        {
-            get { return BaseStream.CanSeek; }
-        }
+        public override bool CanSeek => BaseStream.CanSeek;
 
-        public override bool CanWrite
-        {
-            get { return BaseStream.CanWrite; }
-        }
+        public override bool CanWrite => BaseStream.CanWrite;
 
-        public override long Length
-        {
-            get { return BaseStream.Length; }
-        }
+        public override long Length => BaseStream.Length;
 
         public override long Position
         {
-            get { return BaseStream.Position; }
-            set { BaseStream.Position = value; }
+            get => BaseStream.Position;
+            set => BaseStream.Position = value;
         }
 
-        public override void Flush()
-        {
-            BaseStream.Flush();
-        }
+        public override void Flush() => BaseStream.Flush();
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            return BaseStream.Read(buffer, offset, count);
-        }
+        public override int Read(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return await BaseStream.ReadAsync(buffer, offset, count);
-        }
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await BaseStream.ReadAsync(buffer, offset, count);
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            return await BaseStream.ReadAsync(buffer, cancellationToken);
-        }
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            await BaseStream.WriteAsync(buffer, offset, count);
-        }
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await BaseStream.WriteAsync(buffer, offset, count);
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            await BaseStream.WriteAsync(buffer, cancellationToken);
-        }
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, cancellationToken);
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            BaseStream.Write(buffer, offset, count);
-        }
+        public override void Write(byte[] buffer, int offset, int count) => BaseStream.Write(buffer, offset, count);
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return BaseStream.Seek(offset, origin);
-        }
+        public override long Seek(long offset, SeekOrigin origin) => BaseStream.Seek(offset, origin);
 
-        public override void SetLength(long value)
-        {
-            BaseStream.SetLength(value);
-        }
+        public override void SetLength(long value) => BaseStream.SetLength(value);
 
-        public override void Close()
-        {
-            BaseStream.Close();
-        }
+        public override void Close() => BaseStream.Close();
 
         public byte[] ToArray()
         {
