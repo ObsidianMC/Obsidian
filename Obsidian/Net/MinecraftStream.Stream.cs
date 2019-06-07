@@ -35,11 +35,11 @@ namespace Obsidian.Net
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await BaseStream.ReadAsync(buffer, offset, count);
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
+        public virtual async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await BaseStream.WriteAsync(buffer, offset, count);
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, cancellationToken);
+        public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, cancellationToken);
 
         public override void Write(byte[] buffer, int offset, int count) => BaseStream.Write(buffer, offset, count);
 

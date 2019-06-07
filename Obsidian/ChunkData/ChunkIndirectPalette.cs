@@ -7,6 +7,7 @@ namespace Obsidian.ChunkData
 {
     class ChunkIndirectPalette : ChunkPalette
     {
+
         public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
     }
 }
