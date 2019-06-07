@@ -14,6 +14,7 @@ namespace Obsidian.ChunkData
             this.BitsPerBlock = bitsPerBlock;
             this.Palette = palette;
         }
+
         public override byte BitsPerBlock { get; set; }
 
         public override async Task<byte[]> ToArrayAsync()
