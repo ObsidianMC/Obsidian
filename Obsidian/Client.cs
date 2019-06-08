@@ -81,12 +81,12 @@ namespace Obsidian
             await Packet.CreateAsync(new KeepAlive(id), new MinecraftStream(this.Tcp.GetStream()));
         }
 
-        public async Task SendSoundEffectAsync(int soundId, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
+        public async Task SendSoundEffectAsync(int soundId, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
             await Packet.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.MinecraftStream);
         }
 
-        public async Task SendNamedSoundEffectAsync(string name, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
+        public async Task SendNamedSoundEffectAsync(string name, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
             await Packet.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
         }
