@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets
 {
     class NamedSoundEffect : Packet
     {
-        public NamedSoundEffect(string name, Location location, SoundCategory category, float volume, float pitch) : base(0x1A)
+        public NamedSoundEffect(string name, Location location, SoundCategory category, float pitch, float volume) : base(0x1A)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
