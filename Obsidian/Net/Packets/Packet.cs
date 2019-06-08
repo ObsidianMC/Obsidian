@@ -71,7 +71,9 @@ namespace Obsidian.Net.Packets
                 }
             }
 
+#if PACKETLOG
             await Program.PacketLogger.LogMessageAsync($">> 0x{packetId.ToString("x")}");
+#endif
 
             return new EmptyPacket()
             {
@@ -84,7 +86,9 @@ namespace Obsidian.Net.Packets
 
         public virtual async Task WriteToStreamAsync(MinecraftStream stream)
         {
+#if PACKETLOG
             await Program.PacketLogger.LogMessageAsync($"<< 0x{this.PacketId.ToString("x")}");
+#endif
 
             int packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
 

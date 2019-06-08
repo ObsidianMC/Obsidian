@@ -11,12 +11,14 @@ namespace Obsidian
     class Program
     {
         static Server Obsidian;
-        public static Logger PacketLogger = new Logger($"Packet Logger");
 
+#if PACKETLOG
+        public static Logger PacketLogger = new Logger($"Packet Logger");
+#endif
         static async Task Main(string[] args)
         {
             string version = "0.1";
-            #if DEBUG
+#if DEBUG
                 version += "-DEVEL";
 #endif
             Console.BackgroundColor = ConsoleColor.White;
