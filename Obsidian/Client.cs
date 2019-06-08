@@ -60,8 +60,6 @@ namespace Obsidian
         public async Task DisconnectAsync(Chat.ChatMessage reason)
         {
             await Packet.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
-
-            //TODO disconnect
         }
 
         public async Task SendChatAsync(string message, byte position = 0)
