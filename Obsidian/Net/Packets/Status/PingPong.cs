@@ -8,9 +8,9 @@ namespace Obsidian.Net.Packets
 
         public PingPong(byte[] data) : base(0x01, data){}
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.Payload = await stream.ReadLongAsync();
             }

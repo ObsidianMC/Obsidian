@@ -30,9 +30,9 @@ namespace Obsidian.Net.Packets
 
         public bool ReducedDebugInfo { get; private set; } = false;
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.EntityId = await stream.ReadVarIntAsync();
                 this.GameMode = await stream.ReadUnsignedByteAsync();

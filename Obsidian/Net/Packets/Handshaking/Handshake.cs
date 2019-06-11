@@ -19,9 +19,9 @@ namespace Obsidian.Net.Packets
 
         public Handshake() : base(0x00, null){}
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using(var stream = new MinecraftStream(this._packetData))
+            using(var stream = new MinecraftStream(this.PacketData))
             {
                 this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
                 this.ServerAddress = await stream.ReadStringAsync();

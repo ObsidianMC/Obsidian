@@ -15,17 +15,17 @@ namespace Obsidian.Commands
         [Description("Lists available commands.")]
         public async Task HelpAsync()
         {
-            foreach(var cmd in Service.GetAllCommands())
+            foreach (var cmd in Service.GetAllCommands())
             {
                 await Context.Client.SendChatAsync($"{MinecraftColor.DarkGreen}{cmd.Name}{MinecraftColor.Reset}: {cmd.Description}");
             }
-            
+
         }
 
         [Command("plugins")]
         [Description("Lists plugins.")]
         public Task PluginsAsync()
-            => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x 
+            => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x
                 => $"{MinecraftColor.DarkGreen}{x.Info.Name} by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
 
         [Command("echo")]
@@ -57,10 +57,10 @@ namespace Obsidian.Commands
         public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBarAddAction()
         {
             Color = BossBarColor.Blue,
-             Division = BossBarDivisionType.None,
-              Flags = BossBarFlags.DarkenSky,
-               Title = Chat.ChatMessage.Simple("SUCC"),
-                Health = 0.5f
+            Division = BossBarDivisionType.None,
+            Flags = BossBarFlags.DarkenSky,
+            Title = ChatMessage.Simple("SUCC"),
+            Health = 0.5f
         });
     }
 }

@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets
         public int SoundId { get; set; }
         public float Volume { get; set; }
 
-        protected override Task PopulateAsync()
+        public override Task PopulateAsync()
         {
             throw new NotImplementedException();
         }

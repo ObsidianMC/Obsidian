@@ -12,10 +12,10 @@ namespace Obsidian.Net.Packets
 
         public string Json;
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
             await Task.Yield();
-            using(var stream = new MinecraftStream(this._packetData))
+            using(var stream = new MinecraftStream(this.PacketData))
             {
 
             }

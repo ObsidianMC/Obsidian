@@ -16,9 +16,9 @@ namespace Obsidian.Net.Packets
 
         public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.Message = JsonConvert.DeserializeObject<ChatMessage>(await stream.ReadStringAsync());
                 this.Position = await stream.ReadUnsignedByteAsync();

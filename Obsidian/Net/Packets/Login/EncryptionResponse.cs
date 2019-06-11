@@ -23,9 +23,9 @@ namespace Obsidian.Net.Packets
             }
         }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 var secretLength = await stream.ReadVarIntAsync();
                 this.SharedSecret = await stream.ReadUInt8ArrayAsync(secretLength);

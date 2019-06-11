@@ -84,7 +84,7 @@ namespace Obsidian.Net
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
-        { 
+        {
             var encrypted = encryptCipher.ProcessBytes(buffer, offset, count);
             //var encrypted = this.Encrypt.EncryptBytes(buffer);
             await BaseStream.WriteAsync(encrypted, 0, encrypted.Length, cancellationToken);

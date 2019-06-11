@@ -13,9 +13,9 @@ namespace Obsidian.Net.Packets
 
         public long KeepAliveId { get; set; }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.KeepAliveId = await stream.ReadLongAsync();
             }

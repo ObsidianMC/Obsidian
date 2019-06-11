@@ -25,17 +25,16 @@ namespace Obsidian.ChunkData
         {
             if (bitsPerBlock <= 4)
             {
-                //return new ChunkIndirectPalette(4, );
+                return new ChunkIndirectPalette(4);
             }
             else if (bitsPerBlock <= 8)
             {
-                //return new ChunkIndirectPalette(bitsPerBlock);
+                return new ChunkIndirectPalette((byte)bitsPerBlock);
             }
             else
             {
                 return new ChunkDirectPalette();
             }
-            throw new NotImplementedException("WIP");
         }
 
         public async Task<byte[]> ToArrayAsync()

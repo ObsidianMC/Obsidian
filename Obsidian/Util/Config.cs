@@ -22,5 +22,7 @@ namespace Obsidian.Entities
         [JsonProperty("onlineMode")]
         public bool OnlineMode = true;
 
+        [JsonProperty("debugMode")]
+        public bool DebugMode = false;
     }
 }

@@ -30,9 +30,9 @@ namespace Obsidian.Net.Packets
             }
         }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
                 var keyLength = await stream.ReadVarIntAsync();

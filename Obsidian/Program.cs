@@ -1,14 +1,12 @@
-﻿
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Obsidian.Entities;
-using Obsidian.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian
 {
-    class Program
+    public class Program
     {
         static Server Obsidian;
 
@@ -34,7 +32,6 @@ namespace Obsidian
                 Console.WriteLine("(Created new config)");
             }
 
-            //EiCDcge7JedvmcdiGxg2Jugflb9i0f/utQszIIT+XHVq3RjsFQ==
             var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText("config.json"));
             Obsidian = new Server(config, version, "0");
 

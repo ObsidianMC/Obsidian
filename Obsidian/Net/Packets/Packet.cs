@@ -8,22 +8,23 @@ namespace Obsidian.Net.Packets
     /// </summary>
     public abstract class Packet
     {
-        internal protected byte[] _packetData;
-        public int PacketId { get; internal set; }
+        public byte[] PacketData { get; internal set; }
+
+        public int PacketId { get; }
+
+        public bool Empty => this.PacketData == null || this.PacketData.Length == 0;
 
         public Packet(int packetid) => this.PacketId = packetid;
 
         public Packet(int packetid, byte[] data)
         {
             this.PacketId = packetid;
-            this._packetData = data;
+            this.PacketData = data;
         }
 
         internal Packet() { /* Only for the static method to _not_ error */ }
 
-        internal async Task FillPacketDataAsync() => this._packetData = await this.ToArrayAsync();
-
-        public bool Empty => this._packetData == null || this._packetData.Length == 0;
+        public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
 
         public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
         {
@@ -75,11 +76,7 @@ namespace Obsidian.Net.Packets
             await Program.PacketLogger.LogMessageAsync($">> 0x{packetId.ToString("x")}");
 #endif
 
-            return new EmptyPacket()
-            {
-                PacketId = packetId,
-                _packetData = packetData
-            };
+            return new EmptyPacket(packetId, packetData);
         }
 
         public Task SendPacketAsync(MinecraftStream stream) => this.WriteToStreamAsync(stream); 
@@ -90,9 +87,9 @@ namespace Obsidian.Net.Packets
             await Program.PacketLogger.LogMessageAsync($"<< 0x{this.PacketId.ToString("x")}");
 #endif
 
-            int packetLength = this._packetData.Length + this.PacketId.GetVarintLength();
+            int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
 
-            byte[] data = this._packetData;
+            byte[] data = this.PacketData;
 
             await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(PacketId);
@@ -100,13 +97,14 @@ namespace Obsidian.Net.Packets
         }
 
         public abstract Task<byte[]> ToArrayAsync();
-
-        protected abstract Task PopulateAsync();
-
+        public abstract Task PopulateAsync();
     }
+
     public class EmptyPacket : Packet
     {
-        protected override Task PopulateAsync()
+        public EmptyPacket(int packetId, byte[] data) : base(packetId, data) { }
+
+        public override Task PopulateAsync()
         {
             throw new NotImplementedException();
         }

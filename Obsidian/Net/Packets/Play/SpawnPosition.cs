@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets
 
         public Location Location { get; private set; }
 
-        protected override async Task PopulateAsync() => this.Location = await new MinecraftStream(this._packetData).ReadPositionAsync();
+        public override async Task PopulateAsync() => this.Location = await new MinecraftStream(this.PacketData).ReadPositionAsync();
 
         public override async Task<byte[]> ToArrayAsync()
         {

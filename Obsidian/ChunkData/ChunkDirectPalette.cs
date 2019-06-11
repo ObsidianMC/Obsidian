@@ -1,7 +1,4 @@
-﻿using Obsidian.Net;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -10,12 +7,6 @@ namespace Obsidian.ChunkData
     {
         public override byte BitsPerBlock { get; set; } = 14;
 
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                return stream.ToArray();
-            }
-        }
+        public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
     }
 }

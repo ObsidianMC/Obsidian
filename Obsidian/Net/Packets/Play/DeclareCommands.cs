@@ -61,6 +61,6 @@ namespace Obsidian.Net.Packets
 
         }
 
-        protected override Task PopulateAsync() => throw new NotImplementedException();
+        public override Task PopulateAsync() => throw new NotImplementedException();
     }
 }

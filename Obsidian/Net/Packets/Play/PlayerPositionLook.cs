@@ -46,9 +46,9 @@ namespace Obsidian.Net.Packets
 
         public int TeleportId { get; private set; } = 0;
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.X = await stream.ReadDoubleAsync();
                 this.Y = await stream.ReadDoubleAsync();

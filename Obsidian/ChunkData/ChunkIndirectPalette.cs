@@ -9,10 +9,9 @@ namespace Obsidian.ChunkData
     {
         public List<int> Palette { get; set; } = new List<int>();
 
-        public ChunkIndirectPalette(byte bitsPerBlock, List<int> palette)
+        public ChunkIndirectPalette(byte bitsPerBlock)
         {
             this.BitsPerBlock = bitsPerBlock;
-            this.Palette = palette;
         }
 
         public override byte BitsPerBlock { get; set; }

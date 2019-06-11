@@ -30,7 +30,7 @@ namespace Obsidian.Net.Packets
 
         public float Pitch { get; }
 
-        protected override Task PopulateAsync() => throw new NotImplementedException();
+        public override Task PopulateAsync() => throw new NotImplementedException();
 
         public override async Task<byte[]> ToArrayAsync()
         {
