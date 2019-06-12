@@ -29,7 +29,7 @@ namespace Obsidian.Net.Packets
         {
             using(var stream = new MinecraftStream())
             {
-                await stream.WriteStringAsync(JsonConvert.SerializeObject(this.Message));
+                await stream.WriteStringAsync(this.Message.ToString());
                 await stream.WriteUnsignedByteAsync(this.Position);
                 return stream.ToArray();
             }

@@ -95,7 +95,6 @@ namespace Obsidian
 
                     if (this.Clients.Any(c => c.State == PacketState.Play))
                     {
-
                         await Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}");
                         foreach (var clnt in this.Clients)
                             if (clnt.State == PacketState.Play)
@@ -106,6 +105,7 @@ namespace Obsidian
 
                     keepaliveticks = 0;
                 }
+
 
                 if (_chatmessages.Count > 0)
                 {
@@ -186,7 +186,7 @@ namespace Obsidian
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
 
-                await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); 
+                await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
                 int newplayerid = 0;
                 if (Clients.Count > 0)
@@ -198,7 +198,7 @@ namespace Obsidian
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
             // Cancellation has been requested
-            await Logger.LogMessageAsync($"Cancellation has been requested. Stopping server...", LogLevel.Warning);
+            await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
             // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
         }
 

@@ -183,16 +183,16 @@ namespace Obsidian.Net
         #endregion
 
         #region Reading
-        public virtual async Task<sbyte> ReadByteAsync() => (sbyte)(await this.ReadUnsignedByteAsync());
+        public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
-        public virtual async Task<byte> ReadUnsignedByteAsync()
+        public async Task<byte> ReadUnsignedByteAsync()
         {
             var buffer = new byte[1];
             await this.ReadAsync(buffer);
             return buffer[0];
         }
 
-        public virtual async Task<bool> ReadBooleanAsync()
+        public async Task<bool> ReadBooleanAsync()
         {
             var value = (int)await this.ReadByteAsync();
             if (value == 0x00)

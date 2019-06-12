@@ -20,9 +20,12 @@ namespace Obsidian
         private readonly bool Compressed = false;
 
         public MinecraftStream MinecraftStream { get; set; }
-        //private AesStream EncryptedStream { get; set; }
+
+        public PacketState State { get; private set; }
 
         public CancellationTokenSource Cancellation { get; private set; }
+
+        private byte[] Token { get; set; }
 
         public Server OriginServer;
         public TcpClient Tcp;
@@ -31,15 +34,12 @@ namespace Obsidian
         public ClientSettings ClientSettings;
 
         public int Ping;
-        //public int KeepAlives;
         public int PlayerId;
 
         public byte[] SharedKey = null;
 
         public bool Timedout = false;
         public bool EncryptionEnabled = false;
-
-        public PacketState State { get; private set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -74,7 +74,7 @@ namespace Obsidian
         /// <param name="id">ID for the keepalive. Just keep increasing this by 1, easiest approach.</param>
         public async Task SendKeepAliveAsync(long id)
         {
-            //this.KeepAlives++;
+            this.Ping = (int)(DateTime.Now.Ticks - id);
             await Packet.CreateAsync(new KeepAlive(id), new MinecraftStream(this.Tcp.GetStream()));
         }
 
@@ -152,17 +152,20 @@ namespace Obsidian
             {
                 //BUG: Clients still has disconnected clients this HAS to be fixed.
                 if (client.Player == null)
-                {
                     continue;
-                }
 
-                list.Add(new PlayerInfoAddAction()
+                //MojangUserAndSkin skinProperties = await MinecraftAPI.GetUserAndSkin(client.Player.UUID.ToString().Replace("-", ""));
+
+                var action = new PlayerInfoAddAction()
                 {
                     Name = client.Player.Username,
                     UUID = client.Player.UUID,
-                    Ping = 0,
+                    Ping = this.Ping,
                     Gamemode = client.Player.PlayerGameType
-                });
+                };
+                //action.Properties.AddRange(skinProperties.Properties);
+
+                list.Add(action);
             }
 
             await Packet.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
@@ -182,22 +185,17 @@ namespace Obsidian
             return await Packet.ReadFromStreamAsync(this.MinecraftStream);
         }
 
-        private byte[] Token { get; set; }
+
 
         public async Task StartConnectionAsync()
         {
             while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)// I'm sure
             {
-                Packet packet;
+                Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
 
-                if (this.Compressed)
-                    packet = await this.GetNextCompressedPacketAsync();
-                else
-                    packet = await this.GetNextPacketAsync();
-
                 if (this.State == PacketState.Play && packet.PacketData.Length < 1)
-                    this.Disconnect();;
+                    this.Disconnect();
 
                 switch (this.State)
                 {
@@ -219,7 +217,6 @@ namespace Obsidian
                     case PacketState.Handshaking:
                         if (packet.PacketId == 0x00)
                         {
-                            // Handshake
                             if (packet == null)
                                 throw new InvalidOperationException();
 
@@ -230,7 +227,7 @@ namespace Obsidian
                             if (nextState != PacketState.Status && nextState != PacketState.Login)
                             {
                                 await this.Logger.LogDebugAsync($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
-                                await this.DisconnectAsync(new Chat.ChatMessage() { Text = "you seem suspicious" });
+                                await this.DisconnectAsync(Chat.ChatMessage.Simple("you seem suspicious"));
                             }
 
                             this.State = nextState;
@@ -246,10 +243,7 @@ namespace Obsidian
                         {
                             default:
                                 await this.Logger.LogDebugAsync($"Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
-                                await this.DisconnectAsync(new Chat.ChatMessage()
-                                {
-                                    Text = this.Config.JoinMessage
-                                });
+                                await this.DisconnectAsync(Chat.ChatMessage.Simple(this.Config.JoinMessage));
                                 break;
 
                             case 0x00:
@@ -260,14 +254,14 @@ namespace Obsidian
                                 if (this.OriginServer.CheckPlayerOnline(loginStart.Username))
                                     await this.OriginServer.Clients.FirstOrDefault(c => c.Player.Username == loginStart.Username).DisconnectAsync(Chat.ChatMessage.Simple("Logged in from another location"));
 
-                                var users = await MinecraftAPI.GetUsersAsync(new string[] { loginStart.Username });
-                                var uid = users.FirstOrDefault();
-
-                                var uuid = Guid.Parse(uid.Id);
-                                this.Player = new Player(uuid, loginStart.Username);
-
                                 if (this.Config.OnlineMode)
                                 {
+                                    var users = await MinecraftAPI.GetUsersAsync(new string[] { loginStart.Username });
+                                    var uid = users.FirstOrDefault();
+
+                                    var uuid = Guid.Parse(uid.Id);
+                                    this.Player = new Player(uuid, loginStart.Username);
+
                                     PacketCryptography.GenerateKeyPair();
 
                                     var pubKey = PacketCryptography.PublicKeyToAsn();
@@ -279,6 +273,7 @@ namespace Obsidian
                                     break;
                                 }
 
+                                this.Player = new Player(Guid.NewGuid(), loginStart.Username);
                                 await ConnectAsync(this.Player.UUID, packet);
 
                                 break;
@@ -592,8 +587,6 @@ namespace Obsidian
                 this.Tcp.Close();
         }
 
-        public void Disconnect() => this.Cancellation.Cancel();
-
         private async Task ConnectAsync(Guid uuid, Packet packet)
         {
             await this.Logger.LogDebugAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
@@ -619,5 +612,7 @@ namespace Obsidian
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
         }
+
+        internal void Disconnect() => this.Cancellation.Cancel();
     }
 }

@@ -1,7 +1,9 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Net;
+using Obsidian.Util;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -12,7 +14,7 @@ namespace Obsidian.PlayerData.Info
 
         public string Name { get; set; }
 
-        public List<object> Properties { get; set; } = new List<object>();
+        public List<SkinProperties> Properties { get; set; } = new List<SkinProperties>();
 
         public int Gamemode { get; set; }
 
@@ -24,6 +26,8 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task<byte[]> ToArrayAsync()
         {
+           
+
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteUuidAsync(this.UUID);
@@ -32,10 +36,7 @@ namespace Obsidian.PlayerData.Info
 
                 await stream.WriteVarIntAsync(Properties.Count);
 
-                foreach (var property in Properties)
-                {
-                    throw new NotImplementedException();
-                }
+                //foreach (SkinProperties props in this.Properties)
 
                 await stream.WriteVarIntAsync(this.Gamemode);
 
