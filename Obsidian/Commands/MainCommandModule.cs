@@ -17,16 +17,19 @@ namespace Obsidian.Commands
         {
             foreach (var cmd in Service.GetAllCommands())
             {
-                await Context.Client.SendChatAsync($"{MinecraftColor.DarkGreen}{cmd.Name}{MinecraftColor.Reset}: {cmd.Description}");
+                await Context.Client.SendChatAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
             }
 
         }
 
         [Command("plugins")]
         [Description("Lists plugins.")]
-        public Task PluginsAsync()
-            => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x
-                => $"{MinecraftColor.DarkGreen}{x.Info.Name} by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
+        public async Task PluginsAsync()
+        {
+            var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
+                => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
+            await Context.Client.SendChatAsync($"{ChatColor.Gold}List of plugins: {pls}");
+        }
 
         [Command("echo")]
         [Description("Echoes given text.")]

@@ -93,30 +93,18 @@ namespace Obsidian
                     lastSentPingPacket = keepaliveticks;
                     lastPingTime = DateTime.Now.Millisecond;
 
-                    if (this.Clients.Any(c => c.State == PacketState.Play))
-                    {
-                        await Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}");
-                        foreach (var clnt in this.Clients)
-                            if (clnt.State == PacketState.Play)
-                            {
-                                await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });
-                            }
-                    }
+                  
+                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
+                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
 
                     keepaliveticks = 0;
                 }
 
-
                 if (_chatmessages.Count > 0)
                 {
-                    foreach (var clnt in this.Clients)
-                    {
+                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
                         if (_chatmessages.TryDequeue(out QueueChat msg))
-                            if (clnt.State == PacketState.Play)
-                            {
-                                await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
-                            }
-                    }
+                            await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }
 
                 foreach (var client in Clients)
@@ -153,7 +141,7 @@ namespace Obsidian
                 if (!result.IsSuccessful)
                     _chatmessages.Enqueue(new QueueChat()
                     {
-                        Message = $"{MinecraftColor.Red}Command error: {(result as FailedResult).Reason}",
+                        Message = $"{ChatColor.Red}Command error: {(result as FailedResult).Reason}",
                         Position = position
                     });
             }

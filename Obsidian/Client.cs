@@ -18,8 +18,9 @@ namespace Obsidian
     public class Client
     {
         private readonly bool Compressed = false;
-
         public MinecraftStream MinecraftStream { get; set; }
+
+
 
         public PacketState State { get; private set; }
 
@@ -75,7 +76,7 @@ namespace Obsidian
         public async Task SendKeepAliveAsync(long id)
         {
             this.Ping = (int)(DateTime.Now.Ticks - id);
-            await Packet.CreateAsync(new KeepAlive(id), new MinecraftStream(this.Tcp.GetStream()));
+            await Packet.CreateAsync(new KeepAlive(id), this.MinecraftStream);
         }
 
         public async Task SendSoundEffectAsync(int soundId, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
@@ -189,7 +190,7 @@ namespace Obsidian
 
         public async Task StartConnectionAsync()
         {
-            while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)// I'm sure
+            while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
             {
                 Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
@@ -283,40 +284,35 @@ namespace Obsidian
 
                                 JoinedResponse response;
 
-                                try
+
+                                this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
+
+                                var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
+
+                                var dec2Base64 = Convert.ToBase64String(dec2);
+
+                                var tokenBase64 = Convert.ToBase64String(this.Token);
+
+                                if (!dec2Base64.Equals(tokenBase64))
                                 {
-                                    this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
-
-                                    var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
-
-                                    var dec2Base64 = Convert.ToBase64String(dec2);
-
-                                    var tokenBase64 = Convert.ToBase64String(this.Token);
-
-                                    if (!dec2Base64.Equals(tokenBase64))
-                                    {
-                                        await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token.."));
-                                        break;
-                                    }
-
-                                    var encodedKey = PacketCryptography.PublicKeyToAsn();
-
-                                    var serverId = PacketCryptography.MinecraftShaDigest(SharedKey.Concat(encodedKey).ToArray());
-
-                                    response = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
-
-                                    if (response is null)
-                                    {
-                                        await this.Logger.LogWarningAsync($"Failed to auth {this.Player.Username}");
-                                        await this.DisconnectAsync(Chat.ChatMessage.Simple("Unable to authenticate.."));
-                                    }
-                                    this.EncryptionEnabled = true;
-                                    this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
+                                    await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token.."));
+                                    break;
                                 }
-                                catch
+
+                                var encodedKey = PacketCryptography.PublicKeyToAsn();
+
+                                var serverId = PacketCryptography.MinecraftShaDigest(SharedKey.Concat(encodedKey).ToArray());
+
+                                response = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
+
+                                if (response is null)
                                 {
-                                    throw;
+                                    await this.Logger.LogWarningAsync($"Failed to auth {this.Player.Username}");
+                                    await this.DisconnectAsync(Chat.ChatMessage.Simple("Unable to authenticate.."));
+                                    break;
                                 }
+                                this.EncryptionEnabled = true;
+                                this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
                                 await ConnectAsync(new Guid(response.Id), packet);
                                 break;
@@ -351,14 +347,12 @@ namespace Obsidian
                                 break;
 
                             case 0x03:
-                                // Client status
                                 await this.Logger.LogDebugAsync("Received client status");
                                 break;
 
                             case 0x04:
                                 // Client Settings
-                                var settings = await Packet.CreateAsync(new ClientSettings(packet.PacketData));
-                                this.ClientSettings = settings;
+                                this.ClientSettings = await Packet.CreateAsync(new ClientSettings(packet.PacketData));
                                 await this.Logger.LogDebugAsync("Received client settings");
                                 break;
 
@@ -411,7 +405,6 @@ namespace Obsidian
                                 // Keep Alive (serverbound)
                                 var keepalive = await Packet.CreateAsync(new KeepAlive(packet.PacketData));
 
-                                // Check whether keepalive id has been sent
                                 await this.Logger.LogDebugAsync($"Successfully kept alive player {this.Player.Username} with ka id {keepalive.KeepAliveId}");
                                 break;
 
@@ -426,9 +419,7 @@ namespace Obsidian
                                 // Player Position 
                                 var pos = await Packet.CreateAsync(new PlayerPosition(packet.PacketData));
 
-                                this.Player.Location.X = pos.X;
-                                this.Player.Location.Y = pos.Y;
-                                this.Player.Location.Z = pos.Z;
+                                this.Player.Location = pos.ToLocation;
                                 this.Player.OnGround = pos.OnGround;
                                 await this.Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
                                 break;
@@ -437,11 +428,7 @@ namespace Obsidian
                                 // Player Position And Look (serverbound)
                                 var ppos = await Packet.CreateAsync(new PlayerPositionLook(packet.PacketData));
 
-                                this.Player.Location.X = ppos.X;
-                                this.Player.Location.Y = ppos.Y;
-                                this.Player.Location.Z = ppos.Z;
-                                this.Player.Location.Yaw = ppos.Yaw;
-                                this.Player.Location.Pitch = ppos.Pitch;
+                                this.Player.Location = ppos.ToLocation;
                                 await this.Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
                                 break;
 

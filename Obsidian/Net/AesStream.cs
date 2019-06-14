@@ -55,8 +55,6 @@ namespace Obsidian.Net
             int length = BaseStream.Read(buffer, offset, count);
             var decrypted = DecryptCipher.ProcessBytes(buffer, offset, length);
 
-            //var decrypted = this.Decrypt.DecryptBytes(buffer);
-
             Array.Copy(decrypted, 0, buffer, offset, decrypted.Length);
             return length;
         }
@@ -64,8 +62,6 @@ namespace Obsidian.Net
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             int length = await BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
-            //var decrypted = this.Decrypt.DecryptBytes(buffer);
-
             var decrypted = DecryptCipher.ProcessBytes(buffer, offset, length);
 
             Array.Copy(decrypted, 0, buffer, offset, decrypted.Length);
@@ -75,8 +71,6 @@ namespace Obsidian.Net
         public override async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default)
         {
             int length = await BaseStream.ReadAsync(buffer, cancellationToken);
-            //var decrypted = this.Decrypt.DecryptBytes(buffer);
-
             var decrypted = DecryptCipher.ProcessBytes(buffer, 0, length);
 
             Array.Copy(decrypted, 0, buffer, 0, decrypted.Length);
@@ -86,21 +80,18 @@ namespace Obsidian.Net
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             var encrypted = EncryptCipher.ProcessBytes(buffer, offset, count);
-            //var encrypted = this.Encrypt.EncryptBytes(buffer);
             await BaseStream.WriteAsync(encrypted, 0, encrypted.Length, cancellationToken);
         }
 
         public override async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
         {
             var encrypted = EncryptCipher.ProcessBytes(buffer, 0, buffer.Length);
-            //var encrypted = this.Encrypt.EncryptBytes(buffer);
             await BaseStream.WriteAsync(encrypted, cancellationToken);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
             var encrypted = EncryptCipher.ProcessBytes(buffer, offset, count);
-            //var encrypted = this.Encrypt.EncryptBytes(buffer);
             BaseStream.Write(encrypted, 0, encrypted.Length);
         }
 

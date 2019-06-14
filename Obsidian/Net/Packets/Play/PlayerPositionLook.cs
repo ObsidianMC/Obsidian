@@ -77,5 +77,7 @@ namespace Obsidian.Net.Packets
                 return stream.ToArray();
             }
         }
+
+        public Location ToLocation => new Location(this.X, this.Y, this.Z, this.Yaw, this.Pitch);
     }
 }

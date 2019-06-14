@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Entities;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
@@ -44,5 +45,7 @@ namespace Obsidian.Net.Packets
                 return stream.ToArray();
             }
         }
+
+        public Location ToLocation => new Location(this.X, this.Y, this.Z);
     }
 }
