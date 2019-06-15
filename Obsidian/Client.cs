@@ -1,9 +1,12 @@
 ﻿using Obsidian.Boss;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
+using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using System;
@@ -69,10 +72,6 @@ namespace Obsidian
             await Packet.CreateAsync(new ChatMessagePacket(chat, position), this.MinecraftStream);
         }
 
-        /// <summary>
-        /// Sends KeepAlive
-        /// </summary>
-        /// <param name="id">ID for the keepalive. Just keep increasing this by 1, easiest approach.</param>
         public async Task SendKeepAliveAsync(long id)
         {
             this.Ping = (int)(DateTime.Now.Ticks - id);
@@ -185,8 +184,6 @@ namespace Obsidian
         {
             return await Packet.ReadFromStreamAsync(this.MinecraftStream);
         }
-
-
 
         public async Task StartConnectionAsync()
         {
@@ -544,6 +541,8 @@ namespace Obsidian
 
                             case 0x27:
                                 // Animation (serverbound)
+                                var serverAnim = await Packet.CreateAsync(new AnimationServerPacket(packet.PacketData));
+
                                 await this.Logger.LogDebugAsync("Received animation (serverbound)");
                                 break;
 
@@ -585,10 +584,10 @@ namespace Obsidian
             await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), 0, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await Packet.CreateAsync(new SpawnPosition(new Location(0, 100, 0)), this.MinecraftStream);
+            await Packet.CreateAsync(new SpawnPosition(new Location(0, 25, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await Packet.CreateAsync(new PlayerPositionLook(new Location(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await Packet.CreateAsync(new PlayerPositionLook(new Location(0, 25, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
@@ -598,6 +597,28 @@ namespace Obsidian
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
+
+
+            var section = new ChunkSection(4);
+            if (section.ChunkPalette is ChunkIndirectPalette)
+            {
+                for (int i = 0; i < 10; i++)
+                    ((ChunkIndirectPalette)section.ChunkPalette).Palette.Add(1);
+            }
+            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 1");
+
+            var chunKDara = new ChunkDataPacket(0, 0)
+            {
+                Data = new List<ChunkSection>
+                {
+                    section
+                }
+            };
+
+            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 2");
+
+            await Packet.CreateAsync(chunKDara, this.MinecraftStream);
+            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 3");
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();

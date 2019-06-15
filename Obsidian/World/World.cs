@@ -119,4 +119,13 @@ namespace Obsidian.Entities
         LargeBiomes,
         Amplified
     }
+
+    public enum Dimension : int
+    {
+        Nether = -1,
+
+        Overworld, 
+
+        End
+    }
 }

@@ -3,7 +3,6 @@ using Obsidian.Net;
 using Obsidian.Util;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -26,8 +25,6 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task<byte[]> ToArrayAsync()
         {
-           
-
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteUuidAsync(this.UUID);

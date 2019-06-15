@@ -7,9 +7,14 @@ namespace Obsidian.ChunkData
 {
     public class ChunkSection : ISerializable
     {
-        public byte BitsPerBlock => Palette == null ? (byte)0 : Palette.BitsPerBlock;
+        public byte BitsPerBlock => ChunkPalette == null ? (byte)0 : ChunkPalette.BitsPerBlock;
 
-        public ChunkPalette Palette;
+        public ChunkPalette ChunkPalette;
+
+        public ChunkSection(byte bpb)
+        {
+            this.ChunkPalette = this.GetPalette(bpb);
+        }
 
         /// <summary>
         /// Calculates how many bit places are required from an array
@@ -21,15 +26,11 @@ namespace Obsidian.ChunkData
         public byte[] BlockLight;
         public byte[] SkyLight;
 
-        public ChunkPalette GetPalette(int bitsPerBlock)
+        public ChunkPalette GetPalette(byte bitsPerBlock)
         {
-            if (bitsPerBlock <= 4)
+            if (bitsPerBlock <= 4 || bitsPerBlock <= 8)
             {
-                return new ChunkIndirectPalette(4);
-            }
-            else if (bitsPerBlock <= 8)
-            {
-                return new ChunkIndirectPalette((byte)bitsPerBlock);
+                return new ChunkIndirectPalette(bitsPerBlock);
             }
             else
             {
@@ -43,7 +44,7 @@ namespace Obsidian.ChunkData
             {
                 await stream.WriteUnsignedByteAsync(BitsPerBlock);
 
-                await stream.WriteAsync(await Palette.ToArrayAsync());
+                await stream.WriteAsync(await ChunkPalette.ToArrayAsync());
 
                 await stream.WriteVarIntAsync(Data.Length);
 

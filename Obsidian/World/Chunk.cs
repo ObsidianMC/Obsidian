@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.World
 {
-    class Region
+    class Chunk
     {
     }
 }
