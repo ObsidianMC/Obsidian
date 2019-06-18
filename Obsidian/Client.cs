@@ -319,7 +319,7 @@ namespace Obsidian
                                 break;
                         }
                         break;
-                    case PacketState.Play: // Gameplay packets. Put this last because the list is the longest.
+                    case PacketState.Play:
                         await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
                         switch (packet.PacketId)
                         {
@@ -598,27 +598,7 @@ namespace Obsidian
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
 
-
-            var section = new ChunkSection(4);
-            if (section.ChunkPalette is ChunkIndirectPalette)
-            {
-                for (int i = 0; i < 10; i++)
-                    ((ChunkIndirectPalette)section.ChunkPalette).Palette.Add(1);
-            }
-            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 1");
-
-            var chunKDara = new ChunkDataPacket(0, 0)
-            {
-                Data = new List<ChunkSection>
-                {
-                    section
-                }
-            };
-
-            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 2");
-
-            await Packet.CreateAsync(chunKDara, this.MinecraftStream);
-            await this.Logger.LogDebugAsync("Chunk data sent :EYESY: 3");
+            //TODO chunk data
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();

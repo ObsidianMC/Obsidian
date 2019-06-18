@@ -1,7 +1,5 @@
 ﻿using fNbt;
-
 using Obsidian.ChunkData;
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,8 +10,7 @@ namespace Obsidian.Net.Packets
     {
         public int ChunkX { get; set; }
         public int ChunkZ { get; set; }
-        public bool FullChunk { get; set; } = false;
-        //public int BitMask { get; set; } = 0;
+        public int changedSectionFilter { get; set; } = 0b1111111111111111;
 
         public List<ChunkSection> Data { get; set; } = new List<ChunkSection>();
         public List<int> Biomes { get; set; } = new List<int>();
@@ -29,24 +26,37 @@ namespace Obsidian.Net.Packets
 
         public override async Task<byte[]> ToArrayAsync()
         {
+            bool fullChunk = changedSectionFilter == 0b1111111111111111;
+
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteIntAsync(this.ChunkX);
                 await stream.WriteIntAsync(this.ChunkZ);
 
-                await stream.WriteBooleanAsync(this.FullChunk);
+                await stream.WriteBooleanAsync(fullChunk);
 
-                int mask = 0;
+                int availableSections = 0;
 
                 byte[] data;
                 using (var dataStream = new MinecraftStream())
                 {
+                    var chunkSectionY = 0;
                     foreach (ChunkSection section in Data)
                     {
-                        await dataStream.WriteAsync(await section.ToArrayAsync());
+                        if (section == null)
+                            throw new InvalidOperationException();
+
+                        if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0) {
+
+                            availableSections |= 1 << chunkSectionY;
+
+                            await dataStream.WriteAsync(await section.ToArrayAsync());
+
+                        }
+                        chunkSectionY++;
                     }
 
-                    if (this.FullChunk)
+                    if (fullChunk)
                     {
                         foreach (int biomeId in Biomes)
                         {
@@ -56,7 +66,7 @@ namespace Obsidian.Net.Packets
 
                     data = dataStream.ToArray();
                 }
-                await stream.WriteVarIntAsync(mask);
+                await stream.WriteVarIntAsync(availableSections);
 
                 await stream.WriteVarIntAsync(data.Length);
                 await stream.WriteAsync(data);
