@@ -16,7 +16,7 @@ namespace Obsidian.Util
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException("capacity must not be negative");
             if (bitsPerValue < 1)
-                throw new ArgumentOutOfRangeException("bitsPerValue must not be smaller then 1"));
+                throw new ArgumentOutOfRangeException("bitsPerValue must not be smaller then 1");
             if (bitsPerValue > 64)
                 throw new ArgumentOutOfRangeException("bitsPerValue must not be greater then 64");
 

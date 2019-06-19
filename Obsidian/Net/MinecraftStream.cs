@@ -159,6 +159,12 @@ namespace Obsidian.Net
             await this.WriteAsync(value);
         }
 
+        public async Task WriteLongArrayAsync(long[] value)
+        {
+            for (var i = 0; i < value.Length; i++)
+                await this.WriteLongAsync(value[i]);
+        }
+
         public async Task WriteVarLongAsync(long value)
         {
             do

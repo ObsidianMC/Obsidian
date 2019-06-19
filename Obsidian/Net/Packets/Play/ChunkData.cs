@@ -10,23 +10,27 @@ namespace Obsidian.Net.Packets
     {
         public int ChunkX { get; set; }
         public int ChunkZ { get; set; }
-        public int changedSectionFilter { get; set; } = 0b1111111111111111;
+        
+        public List<ChunkSection> Data { get; }
+        public List<int> Biomes { get; }
+        public List<NbtTag> BlockEntities { get; }
 
-        public List<ChunkSection> Data { get; set; } = new List<ChunkSection>();
-        public List<int> Biomes { get; set; } = new List<int>();
-        public List<NbtTag> BlockEntities { get; set; } = new List<NbtTag>();
-
+        public int changedSectionFilter = 0b1111111111111111;
         public ChunkDataPacket() : base(0x22, new byte[0]) { }
 
         public ChunkDataPacket(int chunkX, int chunkZ) : base(0x22, new byte[0])
         {
             this.ChunkX = chunkX;
             this.ChunkZ = chunkZ;
+
+            this.Data = new List<ChunkSection>();
+            this.Biomes = new List<int>(16 * 16);
+            this.BlockEntities = new List<NbtTag>(); 
         }
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            bool fullChunk = changedSectionFilter == 0b1111111111111111;
+            bool fullChunk = true; // changedSectionFilter == 0b1111111111111111;
 
             using (var stream = new MinecraftStream())
             {
@@ -55,9 +59,14 @@ namespace Obsidian.Net.Packets
                         }
                         chunkSectionY++;
                     }
+                    if(chunkSectionY != 16)
+                        throw new InvalidOperationException();
 
                     if (fullChunk)
                     {
+                        if(Biomes.Count != 16 * 16)
+                            throw new InvalidOperationException();
+
                         foreach (int biomeId in Biomes)
                         {
                             await dataStream.WriteIntAsync(biomeId);

@@ -1,4 +1,5 @@
-﻿using Obsidian.Boss;
+﻿using Obsidian.BlockData;
+using Obsidian.Boss;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -584,10 +585,10 @@ namespace Obsidian
             await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), 0, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await Packet.CreateAsync(new SpawnPosition(new Location(0, 25, 0)), this.MinecraftStream);
+            await Packet.CreateAsync(new SpawnPosition(new Location(0, 100, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await Packet.CreateAsync(new PlayerPositionLook(new Location(0, 25, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await Packet.CreateAsync(new PlayerPositionLook(new Location(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
@@ -597,6 +598,24 @@ namespace Obsidian
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
+
+            var chunkData = new ChunkDataPacket(0, 0);
+
+            for(int i = 0; i < 16; i++)
+            {
+                chunkData.Data.Add(new ChunkSection());
+            }
+
+            chunkData.Data[6].BlockStateContainer.Set(5, 3, 5, Blocks.Stone);
+
+            for (int i = 0; i < 16 * 16; i++)
+            {
+                chunkData.Biomes.Add(2);
+            }                 
+
+            await Packet.CreateAsync(chunkData, this.MinecraftStream);
+
+            await this.Logger.LogDebugAsync("Sent chunk");
 
             //TODO chunk data
         }

@@ -23,7 +23,7 @@ namespace Obsidian.BlockData
 
     public class BlockState
     {
-        int Id = 0;
+        public int Id = 0;
 
         public BlockState(int Id)
         {
