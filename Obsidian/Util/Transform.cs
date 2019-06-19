@@ -1,9 +1,9 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Util
 {
-    public class Location
+    public class Transform
     {
-        public Location() { }
-        public Location(double x, double y, double z, float pitch = 0, float yaw = 0)
+        public Transform() { }
+        public Transform(double x, double y, double z, float pitch = 0, float yaw = 0)
         {
             this.X = x;
             this.Y = y;

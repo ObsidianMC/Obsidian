@@ -1,16 +1,16 @@
 ﻿using fNbt.Serialization;
-using Obsidian.Entities;
+using Obsidian.Util;
 
 namespace Obsidian.World
 {
     public abstract class TileEntity
     {
         [NbtIgnore]
-        public Location Location
+        public Position Position
         {
             get
             {
-                return new Location(X, Y, Z);
+                return new Position(X, Y, Z);
             }
         }
 

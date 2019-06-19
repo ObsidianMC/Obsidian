@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
 
@@ -6,7 +7,7 @@ namespace Obsidian.Net.Packets
 {
     public class SoundEffect : Packet
     {
-        public SoundEffect(int soundId, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, new byte[0])
+        public SoundEffect(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, new byte[0])
         {
             this.SoundId = soundId;
             this.Location = location;
@@ -17,7 +18,7 @@ namespace Obsidian.Net.Packets
 
         public SoundCategory Category { get; set; }
         public float Pitch { get; set; }
-        public Location Location { get; set; }
+        public Position Location { get; set; }
         public int SoundId { get; set; }
         public float Volume { get; set; }
 

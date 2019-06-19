@@ -1,6 +1,7 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Obsidian.Concurrency;
+using Obsidian.Util;
 using System;
 using System.Collections.Generic;
 
@@ -12,7 +13,7 @@ namespace Obsidian.Entities
         public Guid UUID { get; set; }
 
         // Properties set by Minecraft (official)
-        public Location Location { get; set;}
+        public Transform Transform { get; set; }
 
         public bool OnGround { get; set; }
         public bool Sleeping { get; set; }
@@ -61,12 +62,42 @@ namespace Obsidian.Entities
             this.UUID = uuid;
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
-            this.Location = new Location();
+            this.Transform = new Transform();
         }
 
+        public void UpdatePosition(Position pos, bool? onGround = null)
+        {
+            this.Transform.X = pos.X;
+            this.Transform.Y = pos.Y;
+            this.Transform.Z = pos.Z;
+            this.OnGround = onGround ?? this.OnGround;
+        }
+
+        public void UpdatePosition(Transform pos, bool? onGround = null)
+        {
+            this.Transform.X = pos.X;
+            this.Transform.Y = pos.Y;
+            this.Transform.Z = pos.Z;
+            this.OnGround = onGround ?? this.OnGround;
+        }
+
+        public void UpdatePosition(double x, double y, double z, bool? onGround = null)
+        {
+            this.Transform.X = x;
+            this.Transform.Y = y;
+            this.Transform.Z = z;
+            this.OnGround = onGround ?? this.OnGround;
+        }
+
+        public void UpdatePosition(float pitch, float yaw, bool? onGround = null)
+        {
+            this.Transform.Pitch = pitch;
+            this.Transform.Yaw = yaw;
+            this.OnGround = onGround ?? this.OnGround;
+        }
         public void LoadPerms(List<string> permissions)
         {
-            foreach(var perm in permissions)
+            foreach (var perm in permissions)
             {
                 Permissions.Add(perm);
             }

@@ -187,7 +187,7 @@ namespace Obsidian.Net
             } while (value != 0);
         }
 
-        public async Task WritePositionAsync(Location value)
+        public async Task WritePositionAsync(Position value)
         {
             //this is 1.13 
             var pos = (((int)value.X & 0x3FFFFFF) << 38) | ((((int)value.Y & 0xFFF) << 26) | ((int)value.Z & 0x3FFFFFF));
@@ -408,7 +408,7 @@ namespace Obsidian.Net
             return result;
         }
 
-        public async Task<Location> ReadPositionAsync()
+        public async Task<Position> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
             int x = (int)(value >> 38), y = (int)((value >> 26) & 0xFFF), z = (int)(value << 38 >> 38);
@@ -420,7 +420,14 @@ namespace Obsidian.Net
                 z = (int)(value << 26 >> 38);
             }
 
-            return new Location(x, y, z);
+            return new Position
+            {
+                X = x,
+
+                Y = y,
+
+                Z = z,
+            };
         }
 
         #endregion

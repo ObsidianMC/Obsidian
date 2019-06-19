@@ -79,12 +79,12 @@ namespace Obsidian
             await Packet.CreateAsync(new KeepAlive(id), this.MinecraftStream);
         }
 
-        public async Task SendSoundEffectAsync(int soundId, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
+        public async Task SendSoundEffectAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
             await Packet.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.MinecraftStream);
         }
 
-        public async Task SendNamedSoundEffectAsync(string name, Location location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
+        public async Task SendNamedSoundEffectAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
             await Packet.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
         }
@@ -321,7 +321,7 @@ namespace Obsidian
                         }
                         break;
                     case PacketState.Play:
-                        await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
+                        //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
                         switch (packet.PacketId)
                         {
                             case 0x00:
@@ -417,26 +417,23 @@ namespace Obsidian
                                 // Player Position 
                                 var pos = await Packet.CreateAsync(new PlayerPosition(packet.PacketData));
 
-                                this.Player.Location = pos.ToLocation;
-                                this.Player.OnGround = pos.OnGround;
-                                await this.Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
+                                this.Player.UpdatePosition(pos.Position, pos.OnGround);
+                                //await this.Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
                                 break;
 
                             case 0x11:
                                 // Player Position And Look (serverbound)
                                 var ppos = await Packet.CreateAsync(new PlayerPositionLook(packet.PacketData));
 
-                                this.Player.Location = ppos.ToLocation;
-                                await this.Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
+                                this.Player.UpdatePosition(ppos.Transform);
+                                //await this.Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
                                 break;
 
                             case 0x12:
                                 // Player Look
                                 var look = await Packet.CreateAsync(new PlayerLook(packet.PacketData));
 
-                                this.Player.Location.Yaw = look.Yaw;
-                                this.Player.Location.Pitch = look.Pitch;
-                                this.Player.OnGround = look.OnGround;
+                                this.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                                 await this.Logger.LogDebugAsync($"Updated look for {this.Player.Username}");
                                 break;
 
@@ -585,10 +582,10 @@ namespace Obsidian
             await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await Packet.CreateAsync(new SpawnPosition(new Location(0, 100, 0)), this.MinecraftStream);
+            await Packet.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await Packet.CreateAsync(new PlayerPositionLook(new Location(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await Packet.CreateAsync(new PlayerPositionLook(new Transform(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
@@ -601,7 +598,7 @@ namespace Obsidian
 
             var chunkData = new ChunkDataPacket(0, 0);
 
-            for(int i = 0; i < 16; i++)
+            for (int i = 0; i < 16; i++)
             {
                 chunkData.Data.Add(new ChunkSection());
 
@@ -609,7 +606,7 @@ namespace Obsidian
 
             for (var x = 0; x < 16; x++)
             {
-                for(var y = 0; y < 16; y++)
+                for (var y = 0; y < 16; y++)
                 {
                     for (var z = 0; z < 16; z++)
                     {
@@ -618,18 +615,14 @@ namespace Obsidian
                 }
             }
 
-            
-
             for (int i = 0; i < 16 * 16; i++)
             {
                 chunkData.Biomes.Add(2);
-            }                 
+            }
 
             await Packet.CreateAsync(chunkData, this.MinecraftStream);
 
             await this.Logger.LogDebugAsync("Sent chunk");
-
-            //TODO chunk data
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Obsidian.World
 {
-    public class ChunkGenerator
+    class ChunkManager
     {
     }
 }

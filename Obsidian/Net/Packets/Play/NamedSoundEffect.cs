@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
 
@@ -6,7 +7,7 @@ namespace Obsidian.Net.Packets
 {
     class NamedSoundEffect : Packet
     {
-        public NamedSoundEffect(string name, Location location, SoundCategory category, float pitch, float volume) : base(0x1A)
+        public NamedSoundEffect(string name, Position location, SoundCategory category, float pitch, float volume) : base(0x1A)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -24,7 +25,7 @@ namespace Obsidian.Net.Packets
 
         public SoundCategory Category { get; }
 
-        public Location Location { get; }
+        public Position Location { get; }
 
         public float Volume { get; }
 

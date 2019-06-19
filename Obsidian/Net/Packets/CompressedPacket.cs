@@ -1,4 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using Obsidian.Util;
 using System;
 using System.IO;
 using System.Threading.Tasks;

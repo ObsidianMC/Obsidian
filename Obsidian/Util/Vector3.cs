@@ -237,9 +237,9 @@ namespace Obsidian.Util
             }
         }
 
-        public Location ToPlayerLocation()
+        public Position ToPlayerPosition()
         {
-            return new Location(X, Y, Z);
+            return new Position(X, Y, Z);
         }
 
         #region Constants
