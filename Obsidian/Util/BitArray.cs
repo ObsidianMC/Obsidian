@@ -1,81 +1,59 @@
-﻿using System;
+﻿using Obsidian.BlockData;
+using System;
 
 namespace Obsidian.Util
 {
-    public class BitArray
+
+    public sealed class DataArray
     {
-        public long[] LongArray;
+        private byte BitsPerBlock;
+        private ulong BlockMask;
 
-        public int BitsPerEntry;
+        public ulong[] Storage { get; }
 
-        public long MaxEntryValue;
-
-        public int ArraySize;
-
-        public BitArray(int bitsPerEntryIn, int arraySizeIn)
+        public int this[int serialIndex]//Changed this to int and everything fixed
         {
-            if (bitsPerEntryIn < 1 || bitsPerEntryIn > 32)
-                throw new InvalidOperationException();
-            
-            this.ArraySize = arraySizeIn;
-            this.BitsPerEntry = bitsPerEntryIn;
-            this.MaxEntryValue = (1L << bitsPerEntryIn) - 1L;
-            this.LongArray = new long[(int)Math.Ceiling((arraySizeIn * bitsPerEntryIn) / 64.0)];
-        }
-
-        public long this[int index] { get => LongArray[index]; set => LongArray[index] = value; }
-
-       
-        public void Set(int index, int value)
-        {
-            if (index < 0 || index >= this.ArraySize)
-                throw new IndexOutOfRangeException();
-            if (value < 0 || value >= this.MaxEntryValue)
-                throw new IndexOutOfRangeException();
-
-            int i = index * this.BitsPerEntry;
-            int j = i / 64;
-            int k = ((index + 1) * this.BitsPerEntry - 1) / 64;
-            int l = i % 64;
-            this.LongArray[j] = this.LongArray[j] & ~(this.MaxEntryValue << l) | ((long)value & this.MaxEntryValue) << l;
-
-            if (j != k)
+            get
             {
-                int i1 = 64 - l;
-                int j1 = this.BitsPerEntry - i1;
-                this.LongArray[k] = this.LongArray[k].GetUnsignedRightShift(j1) << j1 | ((long)value & this.MaxEntryValue) >> i1;
+                var (indexOffset, bitOffset) = GetOffset(serialIndex);
+                var toRead = Math.Min(BitsPerBlock, 64 - bitOffset);
+                var value = Storage[indexOffset] >> bitOffset;
+                var rest = BitsPerBlock - toRead;
+                if (rest > 0)
+                    value |= (Storage[indexOffset + 1] & ((1u << rest) - 1)) << toRead;
+                return (int)value;
+            }
+
+            set
+            {
+                var stgValue = (uint)value & BlockMask;
+                var (indexOffset, bitOffset) = GetOffset(serialIndex);
+                var tmpValue = Storage[indexOffset];
+                var mask = BlockMask << bitOffset;
+                var toWrite = Math.Min(BitsPerBlock, 64 - bitOffset);
+                Storage[indexOffset] = (tmpValue & ~mask) | (stgValue << bitOffset);
+                var rest = BitsPerBlock - toWrite;
+                if (rest > 0)
+                {
+                    mask = (1u << rest) - 1;
+                    tmpValue = Storage[indexOffset + 1];
+                    stgValue >>= toWrite;
+                    Storage[indexOffset + 1] = (tmpValue & ~mask) | (stgValue & mask);
+                }
             }
         }
 
-        public int Get(int index)
+        public DataArray(byte bitsPerBlock)
         {
-            if (index < 0 || index >= this.ArraySize)
-                throw new IndexOutOfRangeException();
-
-            int i = index * this.BitsPerEntry;
-            int j = i / 64;
-            int k = ((index + 1) * this.BitsPerEntry - 1) / 64;
-            int l = i % 64;
-
-            if (j == k)
-            {
-                return (int)(this.LongArray[j].GetUnsignedRightShift(l) & this.MaxEntryValue);
-            }
-            else
-            {
-                int i1 = 64 - l;
-                return (int)((this.LongArray[j].GetUnsignedRightShift(l) | this.LongArray[k] << i1) & this.MaxEntryValue);
-            }
+            BitsPerBlock = bitsPerBlock;
+            BlockMask = (1u << BitsPerBlock) - 1;
+            Storage = new ulong[(16 * 16 * 16) * BitsPerBlock / 64];
         }
 
-        public long[] getBackingLongArray()
+        private (int indexOffset, int bitOffset) GetOffset(int serialIndex)
         {
-            return this.LongArray;
-        }
-
-        public int size()
-        {
-            return this.ArraySize;
+            var index = serialIndex * BitsPerBlock;
+            return (index / 64, index % 64);
         }
     }
 }

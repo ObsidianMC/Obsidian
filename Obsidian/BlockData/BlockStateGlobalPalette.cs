@@ -52,6 +52,7 @@ namespace Obsidian.BlockData
                     return id;
                 }
             }
+
             if(this.IsFull)
             {
                 return -1;

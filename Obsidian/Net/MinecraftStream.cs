@@ -166,18 +166,24 @@ namespace Obsidian.Net
                 await this.WriteLongAsync(value[i]);
         }
 
+        public async Task WriteLongArrayAsync(ulong[] value)
+        {
+            for (var i = 0; i < value.Length; i++)
+                await this.WriteLongAsync((long)value[i]);
+        }
+
         public async Task WriteVarLongAsync(long value)
         {
             do
             {
-                var temp = (sbyte)(value & 0b01111111);
+                byte temp = (byte)(value & 0b01111111);
                 // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-                value >>= 7;
+                value = value.GetUnsignedRightShift(7);
                 if (value != 0)
                 {
-                    temp |= 127;
+                    temp |= 0b10000000;
                 }
-                await this.WriteByteAsync(temp);
+                await this.WriteUnsignedByteAsync(temp);
             } while (value != 0);
         }
 
@@ -339,18 +345,23 @@ namespace Obsidian.Net
 
         public virtual async Task<int> ReadVarIntAsync()
         {
-            var value = 0;
-            var size = 0;
-            int b;
-            while (((b = await this.ReadUnsignedByteAsync()) & 0x80) == 0x80)
+            int numRead = 0;
+            int result = 0;
+            byte read;
+            do
             {
-                value |= (b & 0x7F) << (size++ * 7);
-                if (size > 5)
+                read = await this.ReadUnsignedByteAsync();
+                int value = (read & 0b01111111);
+                result |= (value << (7 * numRead));
+
+                numRead++;
+                if (numRead > 5)
                 {
-                    throw new IOException("This VarInt is an imposter!");
+                    throw new InvalidOperationException("VarInt is too big");
                 }
-            }
-            return value | ((b & 0x7F) << (size * 7));
+            } while ((read & 0b10000000) != 0);
+
+            return result;
         }
 
         public async Task<byte[]> ReadUInt8ArrayAsync(int length)
@@ -378,18 +389,21 @@ namespace Obsidian.Net
 
         public async Task<long> ReadVarLongAsync()
         {
-            int numread = 0;
-            int result = 0;
-            sbyte read;
+            int numRead = 0;
+            long result = 0;
+            byte read;
             do
             {
-                read = await this.ReadByteAsync();
-                int value = (read & 0b0111111);
-                result |= (value << (7 * numread));
-                numread++;
-                if (numread > 10) throw new Exception("VarLong is too big");
-            }
-            while ((read & 0b10000000) != 0);
+                read = await this.ReadUnsignedByteAsync();
+                int value = (read & 0b01111111);
+                result |= (long)value << (7 * numRead);
+
+                numRead++;
+                if (numRead > 10)
+                {
+                    throw new InvalidOperationException("VarLong is too big");
+                }
+            } while ((read & 0b10000000) != 0);
 
             return result;
         }
