@@ -15,9 +15,9 @@ namespace Obsidian.Net.Packets
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync(this.SharedSecret.Length);
-                await stream.WriteUInt8ArrayAsync(this.SharedSecret);
+                await stream.WriteAsync(this.SharedSecret);
                 await stream.WriteVarIntAsync(this.VerifyToken.Length);
-                await stream.WriteUInt8ArrayAsync(this.VerifyToken);
+                await stream.WriteAsync(this.VerifyToken);
 
                 return stream.ToArray();
             }

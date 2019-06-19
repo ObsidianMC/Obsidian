@@ -23,9 +23,9 @@ namespace Obsidian.Net.Packets
             {
                 await stream.WriteStringAsync(this.ServerId ?? string.Empty);
                 await stream.WriteVarIntAsync(this.PublicKey.Length);
-                await stream.WriteUInt8ArrayAsync(this.PublicKey);
+                await stream.WriteAsync(this.PublicKey);
                 await stream.WriteVarIntAsync(4);
-                await stream.WriteUInt8ArrayAsync(this.VerifyToken);
+                await stream.WriteAsync(this.VerifyToken);
                 return stream.ToArray();
             }
         }

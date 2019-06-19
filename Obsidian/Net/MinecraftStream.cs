@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Obsidian.Chat;
 using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.IO;
 using System.Text;
@@ -114,13 +115,18 @@ namespace Obsidian.Net
                 throw new NotImplementedException("Negative values result in a loop");
             }
 
-            while ((value & 128) != 0)
+            do
             {
-                await this.WriteUnsignedByteAsync((byte)(value & 127 | 128));
-                value = (int)((uint)value) >> 7;
-            }
+                byte temp = (byte)(value & 0b01111111);
+                value = value.GetUnsignedRightShift(7);
+                if (value != 0)
+                {
+                    temp |= 0b10000000;
+                }
+                await this.WriteUnsignedByteAsync(temp);
+            } while (value != 0);
 
-            await this.WriteUnsignedByteAsync((byte)value);
+            //await this.WriteUnsignedByteAsync((byte)value);
         }
 
         /// <summary>
@@ -152,11 +158,6 @@ namespace Obsidian.Net
                     default: throw new Exception($"Can't handle {value.ToString()} ({value.GetType().ToString()})");
                 }
             }
-        }
-
-        public async Task WriteUInt8ArrayAsync(byte[] value)
-        {
-            await this.WriteAsync(value);
         }
 
         public async Task WriteLongArrayAsync(long[] value)

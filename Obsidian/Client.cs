@@ -582,7 +582,7 @@ namespace Obsidian
 
             this.State = PacketState.Play;
 
-            await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), 0, 0, 0, "default", true), this.MinecraftStream);
+            await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
             await Packet.CreateAsync(new SpawnPosition(new Location(0, 100, 0)), this.MinecraftStream);
@@ -604,9 +604,19 @@ namespace Obsidian
             for(int i = 0; i < 16; i++)
             {
                 chunkData.Data.Add(new ChunkSection());
+
             }
 
-            chunkData.Data[6].BlockStateContainer.Set(5, 3, 5, Blocks.Stone);
+            for (var x = 0; x < 16; x++)
+            {
+                for(var y = 0; y < 16; y++)
+                {
+                    for (var z = 0; z < 16; z++)
+                    {
+                        chunkData.Data[6].BlockStateContainer.Set(x, y, z, Blocks.Stone);
+                    }
+                }
+            }
 
             for (int i = 0; i < 16 * 16; i++)
             {
