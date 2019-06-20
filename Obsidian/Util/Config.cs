@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Util.Converters;
+using Obsidian.Logging;
 
 namespace Obsidian.Entities
 {
@@ -25,6 +26,13 @@ namespace Obsidian.Entities
 
         [JsonProperty("onlineMode")]
         public bool OnlineMode = true;
+
+        [JsonProperty("logLevel")]
+#if DEBUG
+        public LogLevel LogLevel = LogLevel.Debug;
+#else
+        public LogLevel LogLevel = LogLevel.Error;
+#endif
 
         [JsonProperty("debugMode")]
         public bool DebugMode = false;

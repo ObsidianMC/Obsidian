@@ -46,9 +46,10 @@ namespace Obsidian
         /// <param name="version">Version the server is running.</param>
         public Server(Config config, string version, string serverid)
         {
-            this.Logger = new Logger($"{serverid}", config);
-
             this.Config = config;
+
+            this.Logger = new Logger($"Obsidian ID: {serverid}", Config.LogLevel);
+
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverid;

@@ -15,43 +15,45 @@ namespace Obsidian.Logging
 
         private AsyncEvent<LoggerEventArgs> _messageLogged;
 
+        public LogLevel LogLevel { get; set; }
+
         private string Prefix;
 
-        private bool _debug;
-
-        internal Logger(string prefix)
+        internal Logger(string prefix, LogLevel logLevel)
         {
             this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
             this.Prefix = prefix;
+            this.LogLevel = logLevel;
         }
 
-        internal Logger(string prefix, Config config)
+        private void LogError(string eventname, Exception ex)
         {
-            this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
-            this.Prefix = prefix;
-            this._debug = config.DebugMode;
         }
 
-        private void LogError(string eventname, Exception ex) { }
+        public Task LogDebugAsync(string message) => this.LogMessageAsync(message, LogLevel.Debug);
 
-        public Task LogDebugAsync(string message)
-        {
-            if (!this._debug)
-                return Task.CompletedTask;
-
-            return this.LogMessageAsync(message, LogLevel.Debug);
-        }
         public Task LogWarningAsync(string message) => this.LogMessageAsync(message, LogLevel.Warning);
+
         public Task LogErrorAsync(string message) => this.LogMessageAsync(message, LogLevel.Error);
 
-        public async Task LogMessageAsync(string msg, LogLevel level = LogLevel.Info)
+        public async Task LogMessageAsync(string msg, LogLevel logLevel = LogLevel.Info)
         {
             var datetime = DateTimeOffset.Now;
             await _messageLogged.InvokeAsync(new LoggerEventArgs(msg, Prefix, datetime));
+
+            //checking if message should be printed or not
+            if (logLevel > LogLevel)
+            {
+                return;
+            }
+
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("[");
+
             Console.ResetColor();
-            Console.Write("{0:t} " + level.ToString(), datetime);
+
+            Console.Write("{0:t} " + logLevel.ToString(), datetime);
+
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("]");
 
@@ -59,39 +61,32 @@ namespace Obsidian.Logging
             {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("[");
+
                 Console.ResetColor();
                 Console.Write(Prefix);
+
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("] ");
             }
 
             Console.ResetColor();
-            switch (level)
+
+            switch (logLevel)
             {
                 case LogLevel.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     break;
+
                 case LogLevel.Error:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     break;
+
                 case LogLevel.Debug:
                     Console.ForegroundColor = ConsoleColor.Magenta;
                     break;
             }
+
             Console.WriteLine(msg);
         }
-
-
-    }
-
-    public enum LogLevel
-    {
-        Info,
-
-        Warning,
-
-        Error,
-
-        Debug
     }
 }
