@@ -75,7 +75,8 @@ namespace Obsidian
 
         public async Task SendKeepAliveAsync(long id)
         {
-            this.Ping = (int)(DateTime.Now.Ticks - id);
+            this.Ping = (int)(DateTime.Now.Millisecond - id);
+            await this.Logger.LogDebugAsync($"Ping: {this.Ping}ms");
             await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
         }
 
@@ -192,6 +193,7 @@ namespace Obsidian
             {
                 Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
+
 
                 if (this.State == ClientState.Play && packet.PacketData.Length < 1)
                     this.Disconnect();
@@ -320,8 +322,8 @@ namespace Obsidian
                         }
                         break;
                     case ClientState.Play:
-                        if (packet.PacketId != 0x10 || packet.PacketId != 0x11)
-                            await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
+
+                        ///await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
 
                         await PacketHandler.HandlePlayPackets(packet, this);
                         break;
