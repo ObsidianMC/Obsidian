@@ -19,6 +19,18 @@ namespace Obsidian.World
             this.Z = z;
 
             this.Blocks = new List<Block>();
+            for (int chunkX = 0; chunkX < 16; chunkX++)
+            {
+                for (int chunkY = 0; chunkY < 16; chunkY++)
+                {
+                    for (int chunkZ = 0; chunkZ < 16; chunkZ++)
+                    {
+                        var air = BlockData.Blocks.Air;
+                        air.Position = new Position(chunkX, chunkY, chunkZ);
+                        this.Blocks.Add(air);
+                    }
+                }
+            }
         }
 
         public Block GetBlock(Position position)
