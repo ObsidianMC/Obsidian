@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities
+﻿using Obsidian.Util;
+
+namespace Obsidian.Entities
 {
     public class FallingBlock : Entity
     {
