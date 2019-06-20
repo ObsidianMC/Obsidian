@@ -46,5 +46,20 @@ namespace Obsidian.Util
 
         [JsonProperty("signature")]
         public string Signature { get; set; }
+
+        public async Task<byte[]> ToArrayAsync()
+        {
+            var isSigned = this.Signature != null;
+            using (var stream = new MinecraftStream())
+            {
+                await stream.WriteStringAsync(this.Name, 32767);
+                await stream.WriteStringAsync(this.Value, 32767);
+                await stream.WriteBooleanAsync(isSigned);
+                if(isSigned)
+                    await stream.WriteStringAsync(this.Signature, 32767);
+
+                return stream.ToArray();
+            }
+        }
     }
 }

@@ -27,67 +27,8 @@ namespace Obsidian.Net.Packets
 
         public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
 
-        public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
+        public async Task WriteToStreamAsync(MinecraftStream stream)
         {
-            if (packet.Empty)
-            {
-                await packet.FillPacketDataAsync();
-            }
-            else
-            {
-                await packet.PopulateAsync();
-            }
-
-            if (stream != null)
-                await packet.WriteToStreamAsync(stream);
-
-            return (T)Convert.ChangeType(packet, typeof(T));
-        }
-
-        public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
-        {
-            int length = await stream.ReadVarIntAsync();
-            byte[] receivedData = new byte[length];
-
-            await stream.ReadAsync(receivedData, 0, length);
-
-            int packetId = 0;
-            byte[] packetData = new byte[0];
-
-            using (var packetStream = new MinecraftStream(receivedData))
-            {
-                try
-                {
-                    packetId = await packetStream.ReadVarIntAsync();
-                    int arlen = 0;
-
-                    if (length - packetId.GetVarintLength() > -1)
-                        arlen = length - packetId.GetVarintLength();
-
-                    packetData = new byte[arlen];
-                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
-                }
-                catch
-                {
-                    throw;
-                }
-            }
-
-#if PACKETLOG
-            await Program.PacketLogger.LogMessageAsync($">> 0x{packetId.ToString("x")}");
-#endif
-
-            return new EmptyPacket(packetId, packetData);
-        }
-
-        public Task SendPacketAsync(MinecraftStream stream) => this.WriteToStreamAsync(stream); 
-
-        public virtual async Task WriteToStreamAsync(MinecraftStream stream)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogMessageAsync($"<< 0x{this.PacketId.ToString("x")}");
-#endif
-
             int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
 
             byte[] data = this.PacketData;

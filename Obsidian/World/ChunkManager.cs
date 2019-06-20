@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.World
+﻿namespace Obsidian.World
 {
     class ChunkManager
     {

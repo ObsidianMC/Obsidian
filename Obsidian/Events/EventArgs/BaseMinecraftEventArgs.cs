@@ -1,6 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Logging;
-using Obsidian.Net.Packets;
+﻿using Obsidian.Logging;
 
 namespace Obsidian.Events.EventArgs
 {
@@ -19,7 +17,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// Player that invoked this event
         /// </summary>
-        public Player Player => Client.Player;
+        //public Player Player => Client.Player;
 
         /// <summary>
         /// Console logger
@@ -27,19 +25,13 @@ namespace Obsidian.Events.EventArgs
         public Logger Logger => Server.Logger;
 
         /// <summary>
-        /// Packet received to invoke this event
-        /// </summary>
-        public Packet EventPacket { get; private set; }
-
-        /// <summary>
         /// Constructs a new BaseMinecraftEventArgs object.
         /// </summary>
         /// <param name="client">Client this event came from</param>
         /// <param name="packet">Packet received to invoke this event</param>
-        internal BaseMinecraftEventArgs(Client client, Packet packet)
+        internal BaseMinecraftEventArgs(Client client)
         {
             this.Client = client;
-            this.EventPacket = packet;
         }
     }
 }

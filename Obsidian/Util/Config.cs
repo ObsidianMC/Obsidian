@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Obsidian.Util.Converters;
 using Obsidian.Logging;
 
 namespace Obsidian.Entities
@@ -12,7 +13,10 @@ namespace Obsidian.Entities
         public int Port = 25565;
 
         [JsonProperty("serverCount")]
-        public int ServerCount = 1; // for now this does nothing. every server port will be port + n
+        public int ServerCount = 1;
+
+        [JsonProperty("generator"), JsonConverter(typeof(GeneratorConverter))]
+        public Generator Generator = Generator.Normal;
 
         [JsonProperty("joinMessage")]
         public string JoinMessage = "§e{0} joined the game";
@@ -32,5 +36,14 @@ namespace Obsidian.Entities
 
         [JsonProperty("debugMode")]
         public bool DebugMode = false;
+    }
+
+    public enum Generator
+    {
+        Normal,
+
+        Superflat,
+
+        Void
     }
 }

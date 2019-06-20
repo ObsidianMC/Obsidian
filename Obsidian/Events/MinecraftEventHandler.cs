@@ -6,7 +6,7 @@ namespace Obsidian.Events
 {
     public class MinecraftEventHandler
     {
-        private AsyncEvent<BaseMinecraftEventArgs> _packetReceived;
+        private AsyncEvent<PacketReceivedEventArgs> _packetReceived;
 
         private AsyncEvent<PlayerJoinEventArgs> _playerJoin;
 
@@ -15,7 +15,7 @@ namespace Obsidian.Events
         public MinecraftEventHandler()
         {
             // Events that don't need additional arguments
-            _packetReceived = new AsyncEvent<BaseMinecraftEventArgs>(HandleException, "PacketReceived");
+            _packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
             _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
             _serverTick = new AsyncEvent(HandleException, "ServerTick");
         }
@@ -24,7 +24,7 @@ namespace Obsidian.Events
         /// Invoked when any packet gets received.
         /// Used for testing whether events work.
         /// </summary>
-        public event AsyncEventHandler<BaseMinecraftEventArgs> PacketReceived
+        public event AsyncEventHandler<PacketReceivedEventArgs> PacketReceived
         {
             add { this._packetReceived.Register(value); }
             remove { this._packetReceived.Unregister(value); }
@@ -46,7 +46,7 @@ namespace Obsidian.Events
         {
         }
 
-        internal async Task InvokePacketReceived(BaseMinecraftEventArgs eventargs)
+        internal async Task InvokePacketReceived(PacketReceivedEventArgs eventargs)
         {
             // invokes event on a new parallel task.
             await Task.Factory.StartNew(async () => { await this._packetReceived.InvokeAsync(eventargs); });

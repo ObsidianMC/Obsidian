@@ -23,5 +23,10 @@
             this.Y = y;
             this.Z = z;
         }
+
+        public bool Match(int x, int y, int z)
+        {
+            return this.X == x && this.Y == y && this.Z == z;
+        }
     }
 }

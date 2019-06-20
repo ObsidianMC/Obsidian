@@ -1,15 +1,18 @@
-﻿using Obsidian.Net.Packets;
+﻿using Obsidian.Entities;
 using System;
 
 namespace Obsidian.Events.EventArgs
 {
     public class PlayerJoinEventArgs : BaseMinecraftEventArgs
     {
-        DateTimeOffset JoinDateTime { get; }
+        public DateTimeOffset JoinDate { get; }
 
-        internal PlayerJoinEventArgs(Client client, Packet packet, DateTimeOffset join) : base(client, packet)
+        public Player Joined { get; }
+
+        internal PlayerJoinEventArgs(Client client, DateTimeOffset join) : base(client)
         {
-            this.JoinDateTime = join;
+            this.JoinDate = join;
+            this.Joined = client.Player;
         }
     }
 }

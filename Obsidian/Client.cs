@@ -26,7 +26,7 @@ namespace Obsidian
 
 
 
-        public PacketState State { get; private set; }
+        public ClientState State { get; private set; }
 
         public CancellationTokenSource Cancellation { get; private set; }
 
@@ -54,7 +54,7 @@ namespace Obsidian
 
             this.OriginServer = originServer;
             this.Cancellation = new CancellationTokenSource();
-            this.State = PacketState.Handshaking;
+            this.State = ClientState.Handshaking;
 
             this.MinecraftStream = new MinecraftStream(tcp.GetStream());
         }
@@ -64,36 +64,36 @@ namespace Obsidian
         #region Packet Sending Methods
         public async Task DisconnectAsync(Chat.ChatMessage reason)
         {
-            await Packet.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
         }
 
         public async Task SendChatAsync(string message, byte position = 0)
         {
             var chat = Chat.ChatMessage.Simple(message);
-            await Packet.CreateAsync(new ChatMessagePacket(chat, position), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new ChatMessagePacket(chat, position), this.MinecraftStream);
         }
 
         public async Task SendKeepAliveAsync(long id)
         {
             this.Ping = (int)(DateTime.Now.Ticks - id);
-            await Packet.CreateAsync(new KeepAlive(id), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
         }
 
         public async Task SendSoundEffectAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await Packet.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.MinecraftStream);
         }
 
         public async Task SendNamedSoundEffectAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await Packet.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
         }
 
         public async Task SendDeclareCommandsAsync()
         {
             await this.Logger.LogDebugAsync("Generating Declare Commands packet.");
 
-            var packet = await Packet.CreateAsync(new DeclareCommands());
+            var packet = new DeclareCommands();
 
             foreach (Qmmands.Command command in this.OriginServer.Commands.GetAllCommands())
             {
@@ -135,12 +135,12 @@ namespace Obsidian
 
             await this.Logger.LogDebugAsync("Sending Declare Commands packet.");
 
-            await packet.WriteToStreamAsync(this.MinecraftStream);
+            await PacketHandler.CreateAsync(packet, this.MinecraftStream);
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
-            await Packet.CreateAsync(new BossBar(uuid, action), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new BossBar(uuid, action), this.MinecraftStream);
         }
 
         public async Task SendPlayerInfoAsync()
@@ -169,7 +169,7 @@ namespace Obsidian
                 list.Add(action);
             }
 
-            await Packet.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
 
             await this.Logger.LogDebugAsync("Sending Player Info packet.");
         }
@@ -183,7 +183,7 @@ namespace Obsidian
 
         private async Task<Packet> GetNextPacketAsync()
         {
-            return await Packet.ReadFromStreamAsync(this.MinecraftStream);
+            return await PacketHandler.ReadFromStreamAsync(this.MinecraftStream);
         }
 
         public async Task StartConnectionAsync()
@@ -193,37 +193,37 @@ namespace Obsidian
                 Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
 
-                if (this.State == PacketState.Play && packet.PacketData.Length < 1)
+                if (this.State == ClientState.Play && packet.PacketData.Length < 1)
                     this.Disconnect();
 
                 switch (this.State)
                 {
-                    case PacketState.Status: //server ping/list
+                    case ClientState.Status: //server ping/list
                         switch (packet.PacketId)
                         {
                             case 0x00:
                                 // Request
-                                await Packet.CreateAsync(new RequestResponse(ServerStatus.DebugStatus), this.MinecraftStream);
+                                await PacketHandler.CreateAsync(new RequestResponse(ServerStatus.DebugStatus), this.MinecraftStream);
                                 break;
 
                             case 0x01:
                                 // Ping
-                                await Packet.CreateAsync(new PingPong(packet.PacketData), this.MinecraftStream);
+                                await PacketHandler.CreateAsync(new PingPong(packet.PacketData), this.MinecraftStream);
                                 this.Disconnect();
                                 break;
                         }
                         break;
-                    case PacketState.Handshaking:
+                    case ClientState.Handshaking:
                         if (packet.PacketId == 0x00)
                         {
                             if (packet == null)
                                 throw new InvalidOperationException();
 
-                            var handshake = await Packet.CreateAsync(new Handshake(packet.PacketData));
+                            var handshake = await PacketHandler.CreateAsync(new Handshake(packet.PacketData));
 
                             var nextState = handshake.NextState;
 
-                            if (nextState != PacketState.Status && nextState != PacketState.Login)
+                            if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
                                 await this.Logger.LogDebugAsync($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
                                 await this.DisconnectAsync(Chat.ChatMessage.Simple("you seem suspicious"));
@@ -237,7 +237,7 @@ namespace Obsidian
                             //Handle legacy ping stuff
                         }
                         break;
-                    case PacketState.Login:
+                    case ClientState.Login:
                         switch (packet.PacketId)
                         {
                             default:
@@ -246,7 +246,7 @@ namespace Obsidian
                                 break;
 
                             case 0x00:
-                                var loginStart = await Packet.CreateAsync(new LoginStart(packet.PacketData));
+                                var loginStart = await PacketHandler.CreateAsync(new LoginStart(packet.PacketData));
 
                                 await this.Logger.LogDebugAsync($"Received login request from user {loginStart.Username}");
 
@@ -267,21 +267,20 @@ namespace Obsidian
 
                                     this.Token = PacketCryptography.GetRandomToken();
 
-                                    returnPacket = await Packet.CreateAsync(new EncryptionRequest(pubKey, this.Token), this.MinecraftStream);
+                                    returnPacket = await PacketHandler.CreateAsync(new EncryptionRequest(pubKey, this.Token), this.MinecraftStream);
 
                                     break;
                                 }
 
                                 this.Player = new Player(Guid.NewGuid(), loginStart.Username);
-                                await ConnectAsync(this.Player.UUID, packet);
+                                await ConnectAsync(this.Player.UUID);
 
                                 break;
 
                             case 0x01:
-                                var encryptionResponse = await Packet.CreateAsync(new EncryptionResponse(packet.PacketData));
+                                var encryptionResponse = await PacketHandler.CreateAsync(new EncryptionResponse(packet.PacketData));
 
                                 JoinedResponse response;
-
 
                                 this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
 
@@ -312,7 +311,7 @@ namespace Obsidian
                                 this.EncryptionEnabled = true;
                                 this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
-                                await ConnectAsync(new Guid(response.Id), packet);
+                                await ConnectAsync(new Guid(response.Id));
                                 break;
 
                             case 0x02:
@@ -320,245 +319,11 @@ namespace Obsidian
                                 break;
                         }
                         break;
-                    case PacketState.Play:
-                        //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
-                        switch (packet.PacketId)
-                        {
-                            case 0x00:
-                                // Teleport Confirm
-                                // GET X Y Z FROM PACKET TODO
-                                //this.Player.Position = new Position((int)x, (int)y, (int)z);
-                                await this.Logger.LogDebugAsync("Received teleport confirm");
-                                break;
+                    case ClientState.Play:
+                        if (packet.PacketId != 0x10 || packet.PacketId != 0x11)
+                            await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
 
-                            case 0x01:
-                                // Query Block NBT
-                                await this.Logger.LogDebugAsync("Received query block nbt");
-                                break;
-
-                            case 0x02:
-                                // Incoming chat message
-                                var message = await Packet.CreateAsync(new IncomingChatMessage(packet.PacketData));
-                                await this.Logger.LogDebugAsync($"received chat: {message.Message}");
-
-                                await this.OriginServer.SendChatAsync(message.Message, this);
-                                break;
-
-                            case 0x03:
-                                await this.Logger.LogDebugAsync("Received client status");
-                                break;
-
-                            case 0x04:
-                                // Client Settings
-                                this.ClientSettings = await Packet.CreateAsync(new ClientSettings(packet.PacketData));
-                                await this.Logger.LogDebugAsync("Received client settings");
-                                break;
-
-                            case 0x05:
-                                // Tab-Complete
-                                await this.Logger.LogDebugAsync("Received tab-complete");
-                                break;
-
-                            case 0x06:
-                                // Confirm Transaction
-                                await this.Logger.LogDebugAsync("Received confirm transaction");
-                                break;
-
-                            case 0x07:
-                                // Enchant Item
-                                await this.Logger.LogDebugAsync("Received enchant item");
-                                break;
-
-                            case 0x08:
-                                // Click Window
-                                await this.Logger.LogDebugAsync("Received click window");
-                                break;
-
-                            case 0x09:
-                                // Close Window (serverbound)
-                                await this.Logger.LogDebugAsync("Received close window");
-                                break;
-
-                            case 0x0A:
-                                // Plugin Message (serverbound)
-                                await this.Logger.LogDebugAsync("Received plugin message");
-                                break;
-
-                            case 0x0B:
-                                // Edit Book
-                                await this.Logger.LogDebugAsync("Received edit book");
-                                break;
-
-                            case 0x0C:
-                                // Query Entity NBT
-                                await this.Logger.LogDebugAsync("Received query entity nbt");
-                                break;
-
-                            case 0x0D:
-                                // Use Entity
-                                await this.Logger.LogDebugAsync("Received use entity");
-                                break;
-
-                            case 0x0E:
-                                // Keep Alive (serverbound)
-                                var keepalive = await Packet.CreateAsync(new KeepAlive(packet.PacketData));
-
-                                await this.Logger.LogDebugAsync($"Successfully kept alive player {this.Player.Username} with ka id {keepalive.KeepAliveId}");
-                                break;
-
-                            case 0x0F:
-                                // Player
-                                var onground = BitConverter.ToBoolean(await packet.ToArrayAsync(), 0);
-                                await this.Logger.LogDebugAsync($"{this.Player.Username} on ground?: {onground}");
-                                this.Player.OnGround = onground;
-                                break;
-
-                            case 0x10:
-                                // Player Position 
-                                var pos = await Packet.CreateAsync(new PlayerPosition(packet.PacketData));
-
-                                this.Player.UpdatePosition(pos.Position, pos.OnGround);
-                                //await this.Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
-                                break;
-
-                            case 0x11:
-                                // Player Position And Look (serverbound)
-                                var ppos = await Packet.CreateAsync(new PlayerPositionLook(packet.PacketData));
-
-                                this.Player.UpdatePosition(ppos.Transform);
-                                //await this.Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
-                                break;
-
-                            case 0x12:
-                                // Player Look
-                                var look = await Packet.CreateAsync(new PlayerLook(packet.PacketData));
-
-                                this.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
-                                await this.Logger.LogDebugAsync($"Updated look for {this.Player.Username}");
-                                break;
-
-                            case 0x13:
-                                // Vehicle Move (serverbound)
-                                await this.Logger.LogDebugAsync("Received vehicle move");
-                                break;
-
-                            case 0x14:
-                                // Steer Boat
-                                await this.Logger.LogDebugAsync("Received steer boat");
-                                break;
-
-                            case 0x15:
-                                // Pick Item
-                                await this.Logger.LogDebugAsync("Received pick item");
-                                break;
-
-                            case 0x16:
-                                // Craft Recipe Request
-                                await this.Logger.LogDebugAsync("Received craft recipe request");
-                                break;
-
-                            case 0x17:
-                                // Player Abilities (serverbound)
-                                await this.Logger.LogDebugAsync("Received player abilities");
-                                break;
-
-                            case 0x18:
-                                // Player Digging
-                                await this.Logger.LogDebugAsync("Received player digging");
-                                break;
-
-                            case 0x19:
-                                // Entity Action
-                                await this.Logger.LogDebugAsync("Received entity action");
-                                break;
-
-                            case 0x1A:
-                                // Steer Vehicle
-                                await this.Logger.LogDebugAsync("Received steer vehicle");
-                                break;
-
-                            case 0x1B:
-                                // Recipe Book Data
-                                await this.Logger.LogDebugAsync("Received recipe book data");
-                                break;
-
-                            case 0x1C:
-                                // Name Item
-                                await this.Logger.LogDebugAsync("Received name item");
-                                break;
-
-                            case 0x1D:
-                                // Resource Pack Status
-                                await this.Logger.LogDebugAsync("Received resource pack status");
-                                break;
-
-                            case 0x1E:
-                                // Advancement Tab
-                                await this.Logger.LogDebugAsync("Received advancement tab");
-                                break;
-
-                            case 0x1F:
-                                // Select Trade
-                                await this.Logger.LogDebugAsync("Received select trade");
-                                break;
-
-                            case 0x20:
-                                // Set Beacon Effect
-                                await this.Logger.LogDebugAsync("Received set beacon effect");
-                                break;
-
-                            case 0x21:
-                                // Held Item Change (serverbound)
-                                await this.Logger.LogDebugAsync("Received held item change");
-                                break;
-
-                            case 0x22:
-                                // Update Command Block
-                                await this.Logger.LogDebugAsync("Received update command block");
-                                break;
-
-                            case 0x23:
-                                // Update Command Block Minecart
-                                await this.Logger.LogDebugAsync("Received update command block minecart");
-                                break;
-
-                            case 0x24:
-                                // Creative Inventory Action
-                                await this.Logger.LogDebugAsync("Received creative inventory action");
-                                break;
-
-                            case 0x25:
-                                // Update Structure Block
-                                await this.Logger.LogDebugAsync("Received update structure block");
-                                break;
-
-                            case 0x26:
-                                // Update Sign
-                                await this.Logger.LogDebugAsync("Received update sign");
-                                break;
-
-                            case 0x27:
-                                // Animation (serverbound)
-                                var serverAnim = await Packet.CreateAsync(new AnimationServerPacket(packet.PacketData));
-
-                                await this.Logger.LogDebugAsync("Received animation (serverbound)");
-                                break;
-
-                            case 0x28:
-                                // Spectate
-                                await this.Logger.LogDebugAsync("Received spectate");
-                                break;
-
-                            case 0x29:
-                                // Player Block Placement
-                                await this.Logger.LogDebugAsync("Received player block placement");
-                                break;
-
-                            case 0x2A:
-                                // Use Item
-                                await this.Logger.LogDebugAsync("Received use item");
-                                break;
-                        }
+                        await PacketHandler.HandlePlayPackets(packet, this);
                         break;
                 }
             }
@@ -571,27 +336,27 @@ namespace Obsidian
                 this.Tcp.Close();
         }
 
-        private async Task ConnectAsync(Guid uuid, Packet packet)
+        private async Task ConnectAsync(Guid uuid)
         {
             await this.Logger.LogDebugAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
 
-            await Packet.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
 
-            this.State = PacketState.Play;
+            this.State = ClientState.Play;
 
-            await Packet.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await Packet.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await Packet.CreateAsync(new PlayerPositionLook(new Transform(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
 
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
-            await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, packet, DateTimeOffset.Now));
+            await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
@@ -601,17 +366,18 @@ namespace Obsidian
             for (int i = 0; i < 16; i++)
             {
                 chunkData.Data.Add(new ChunkSection());
-
             }
 
             for (var x = 0; x < 16; x++)
             {
-                for (var y = 0; y < 16; y++)
+                for (var z = 0; z < 16; z++)
                 {
-                    for (var z = 0; z < 16; z++)
-                    {
-                        chunkData.Data[6].BlockStateContainer.Set(x, y, z, Blocks.Stone);
-                    }
+                    chunkData.Data[6].BlockStateContainer.Set(x, 0, z, Blocks.Cobblestone);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 1, z, Blocks.Dirt);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 2, z, Blocks.Dirt);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 3, z, Blocks.Dirt);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 4, z, Blocks.Dirt);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 5, z, Blocks.Grass);
                 }
             }
 
@@ -620,7 +386,7 @@ namespace Obsidian
                 chunkData.Biomes.Add(2);
             }
 
-            await Packet.CreateAsync(chunkData, this.MinecraftStream);
+            await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);
 
             await this.Logger.LogDebugAsync("Sent chunk");
         }
