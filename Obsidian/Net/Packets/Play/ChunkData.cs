@@ -1,48 +1,72 @@
 ﻿using fNbt;
-
 using Obsidian.ChunkData;
-
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
-    public class ChunkData : Packet
+    public class ChunkDataPacket : Packet
     {
         public int ChunkX { get; set; }
-        public int ChunkY { get; set; }
-        public bool FullChunk { get; set; } = false;
-        public int BitMask { get; set; } = 0;
+        public int ChunkZ { get; set; }
+        
+        public List<ChunkSection> Data { get; }
+        public List<int> Biomes { get; }
+        public List<NbtTag> BlockEntities { get; }
 
-        public List<ChunkSection> Data { get; set; } = new List<ChunkSection>();
-        public List<int> Biomes { get; set; } = new List<int>();
-        public List<NbtTag> BlockEntities { get; set; } = new List<NbtTag>();
+        public int changedSectionFilter = 0b1111111111111111;
+        public ChunkDataPacket() : base(0x22, new byte[0]) { }
 
-        public ChunkData() : base(0x22, new byte[0])
+        public ChunkDataPacket(int chunkX, int chunkZ) : base(0x22, new byte[0])
         {
+            this.ChunkX = chunkX;
+            this.ChunkZ = chunkZ;
+
+            this.Data = new List<ChunkSection>();
+            this.Biomes = new List<int>(16 * 16);
+            this.BlockEntities = new List<NbtTag>(); 
         }
 
         public override async Task<byte[]> ToArrayAsync()
         {
+            bool fullChunk = true; // changedSectionFilter == 0b1111111111111111;
+
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteIntAsync(this.ChunkX);
-                await stream.WriteIntAsync(this.ChunkY);
+                await stream.WriteIntAsync(this.ChunkZ);
 
-                await stream.WriteBooleanAsync(this.FullChunk);
-                await stream.WriteVarIntAsync(this.BitMask);
+                await stream.WriteBooleanAsync(fullChunk);
+
+                int availableSections = 0;
 
                 byte[] data;
                 using (var dataStream = new MinecraftStream())
                 {
+                    var chunkSectionY = 0;
                     foreach (ChunkSection section in Data)
                     {
-                        await dataStream.WriteAsync(await section.ToArrayAsync());
-                    }
+                        if (section == null)
+                            throw new InvalidOperationException();
 
-                    if (this.FullChunk)
+                        if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0) {
+
+                            availableSections |= 1 << chunkSectionY;
+
+                            await dataStream.WriteAsync(await section.ToArrayAsync());
+
+                        }
+                        chunkSectionY++;
+                    }
+                    if(chunkSectionY != 16)
+                        throw new InvalidOperationException();
+
+                    if (fullChunk)
                     {
+                        if(Biomes.Count != 16 * 16)
+                            throw new InvalidOperationException();
+
                         foreach (int biomeId in Biomes)
                         {
                             await dataStream.WriteIntAsync(biomeId);
@@ -51,6 +75,7 @@ namespace Obsidian.Net.Packets
 
                     data = dataStream.ToArray();
                 }
+                await stream.WriteVarIntAsync(availableSections);
 
                 await stream.WriteVarIntAsync(data.Length);
                 await stream.WriteAsync(data);
@@ -58,13 +83,16 @@ namespace Obsidian.Net.Packets
                 await stream.WriteVarIntAsync(BlockEntities.Count);
                 foreach (NbtTag entity in BlockEntities)
                 {
-                    throw new NotImplementedException("MinecraftStream.WriteNbtAsync(...) implementation is missing. Can't serialize this packet with block entities present.");
+                    await stream.WriteNbtAsync(entity);
                 }
 
                 return stream.ToArray();
             }
         }
 
-        protected override Task PopulateAsync() => throw new NotImplementedException();
+        public override Task PopulateAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

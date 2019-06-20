@@ -15,17 +15,17 @@ namespace Obsidian.Net.Packets
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync(this.SharedSecret.Length);
-                await stream.WriteUInt8ArrayAsync(this.SharedSecret);
+                await stream.WriteAsync(this.SharedSecret);
                 await stream.WriteVarIntAsync(this.VerifyToken.Length);
-                await stream.WriteUInt8ArrayAsync(this.VerifyToken);
+                await stream.WriteAsync(this.VerifyToken);
 
                 return stream.ToArray();
             }
         }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 var secretLength = await stream.ReadVarIntAsync();
                 this.SharedSecret = await stream.ReadUInt8ArrayAsync(secretLength);

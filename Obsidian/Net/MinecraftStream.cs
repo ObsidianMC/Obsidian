@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using fNbt;
+using Newtonsoft.Json;
 using Obsidian.Chat;
 using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.IO;
 using System.Text;
@@ -18,13 +20,13 @@ namespace Obsidian.Net
         public static Encoding StringEncoding;
 
         #region Writing
-        public virtual async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
+        public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
 
-        public virtual async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
+        public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
 
-        public virtual async Task WriteBooleanAsync(bool value) => await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
+        public async Task WriteBooleanAsync(bool value) => await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
 
-        public virtual async Task WriteUnsignedShortAsync(ushort value)
+        public async Task WriteUnsignedShortAsync(ushort value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -34,7 +36,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteShortAsync(short value)
+        public async Task WriteShortAsync(short value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -44,7 +46,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteIntAsync(int value)
+        public async Task WriteIntAsync(int value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -54,7 +56,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteLongAsync(long value)
+        public async Task WriteLongAsync(long value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -64,7 +66,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteFloatAsync(float value)
+        public async Task WriteFloatAsync(float value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -74,7 +76,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteDoubleAsync(double value)
+        public async Task WriteDoubleAsync(double value)
         {
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
@@ -84,7 +86,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public virtual async Task WriteStringAsync(string value, int maxLength = 0)
+        public async Task WriteStringAsync(string value, int maxLength = 0)
         {
             if (value == null)
             {
@@ -100,34 +102,39 @@ namespace Obsidian.Net
             await this.WriteAsync(bytes);
         }
 
-        public virtual async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
+        public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
-        public virtual async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString(), 32767);
+        public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString(), 32767);
 
-        public virtual async Task WriteIdentifierAsync(string value) => await this.WriteStringAsync(value, 32767);
+        public async Task WriteIdentifierAsync(string value) => await this.WriteStringAsync(value, 32767);
 
-        public virtual async Task WriteVarIntAsync(int value)
+        public async Task WriteVarIntAsync(int value)
         {
             if (value <= -1)
             {
                 throw new NotImplementedException("Negative values result in a loop");
             }
 
-            while ((value & 128) != 0)
+            do
             {
-                await this.WriteUnsignedByteAsync((byte)(value & 127 | 128));
-                value = (int)((uint)value) >> 7;
-            }
+                byte temp = (byte)(value & 0b01111111);
+                value = value.GetUnsignedRightShift(7);
+                if (value != 0)
+                {
+                    temp |= 0b10000000;
+                }
+                await this.WriteUnsignedByteAsync(temp);
+            } while (value != 0);
 
-            await this.WriteUnsignedByteAsync((byte)value);
+            //await this.WriteUnsignedByteAsync((byte)value);
         }
 
         /// <summary>
         /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
         /// </summary>
-        public virtual async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
+        public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
 
-        public virtual async Task WriteAutoAsync(params object[] values)
+        public async Task WriteAutoAsync(params object[] values)
         {
             foreach (object value in values)
             {
@@ -153,46 +160,59 @@ namespace Obsidian.Net
             }
         }
 
-        public virtual async Task WriteUInt8ArrayAsync(byte[] value)
+        public async Task WriteLongArrayAsync(long[] value)
         {
-            await this.WriteAsync(value);
+            for (var i = 0; i < value.Length; i++)
+                await this.WriteLongAsync(value[i]);
         }
 
-        public virtual async Task WriteVarLongAsync(long value)
+        public async Task WriteLongArrayAsync(ulong[] value)
+        {
+            for (var i = 0; i < value.Length; i++)
+                await this.WriteLongAsync((long)value[i]);
+        }
+
+        public async Task WriteVarLongAsync(long value)
         {
             do
             {
-                var temp = (sbyte)(value & 0b01111111);
+                byte temp = (byte)(value & 0b01111111);
                 // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-                value >>= 7;
+                value = value.GetUnsignedRightShift(7);
                 if (value != 0)
                 {
-                    temp |= 127;
+                    temp |= 0b10000000;
                 }
-                await this.WriteByteAsync(temp);
+                await this.WriteUnsignedByteAsync(temp);
             } while (value != 0);
         }
 
-        public virtual async Task WritePositionAsync(Location value)
+        public async Task WritePositionAsync(Position value)
         {
+            //this is 1.13 
             var pos = (((int)value.X & 0x3FFFFFF) << 38) | ((((int)value.Y & 0xFFF) << 26) | ((int)value.Z & 0x3FFFFFF));
+
+            if (ServerStatus.DebugStatus.Version.Protocol == ProtocolVersion.v1_14)
+                pos = (((int)value.X & 0x3FFFFFF) << 38) | (((int)value.Z & 0x3FFFFFF) << 12) | ((int)value.Y & 0xFFF);
+
             await this.WriteLongAsync(pos);
             //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
         }
 
+        public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);
         #endregion
 
         #region Reading
-        public virtual async Task<sbyte> ReadByteAsync() => (sbyte)(await this.ReadUnsignedByteAsync());
+        public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
-        public virtual async Task<byte> ReadUnsignedByteAsync()
+        public async Task<byte> ReadUnsignedByteAsync()
         {
             var buffer = new byte[1];
             await this.ReadAsync(buffer);
             return buffer[0];
         }
 
-        public virtual async Task<bool> ReadBooleanAsync()
+        public async Task<bool> ReadBooleanAsync()
         {
             var value = (int)await this.ReadByteAsync();
             if (value == 0x00)
@@ -209,7 +229,7 @@ namespace Obsidian.Net
             }
         }
 
-        public virtual async Task<ushort> ReadUnsignedShortAsync()
+        public async Task<ushort> ReadUnsignedShortAsync()
         {
             var buffer = new byte[2];
             await this.ReadAsync(buffer);
@@ -220,7 +240,7 @@ namespace Obsidian.Net
             return BitConverter.ToUInt16(buffer);
         }
 
-        public virtual async Task<short> ReadShortAsync()
+        public async Task<short> ReadShortAsync()
         {
             var buffer = new byte[2];
             await this.ReadAsync(buffer);
@@ -231,7 +251,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt16(buffer);
         }
 
-        public virtual async Task<int> ReadIntAsync()
+        public async Task<int> ReadIntAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
@@ -242,7 +262,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt32(buffer);
         }
 
-        public virtual async Task<long> ReadLongAsync()
+        public async Task<long> ReadLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
@@ -253,7 +273,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt64(buffer);
         }
 
-        public virtual async Task<ulong> ReadUnsignedLongAsync()
+        public async Task<ulong> ReadUnsignedLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
@@ -264,7 +284,7 @@ namespace Obsidian.Net
             return BitConverter.ToUInt64(buffer);
         }
 
-        public virtual async Task<float> ReadFloatAsync()
+        public async Task<float> ReadFloatAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
@@ -275,7 +295,7 @@ namespace Obsidian.Net
             return BitConverter.ToSingle(buffer);
         }
 
-        public virtual async Task<double> ReadDoubleAsync()
+        public async Task<double> ReadDoubleAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
@@ -286,7 +306,7 @@ namespace Obsidian.Net
             return BitConverter.ToDouble(buffer);
         }
 
-        public virtual async Task<string> ReadStringAsync(int maxLength = 0)
+        public async Task<string> ReadStringAsync(int maxLength = 0)
         {
             var length = await this.ReadVarIntAsync();
             var buffer = new byte[length];
@@ -304,7 +324,7 @@ namespace Obsidian.Net
             return value;
         }
 
-        public virtual async Task<ChatMessage> ReadChatAsync()
+        public async Task<ChatMessage> ReadChatAsync()
         {
             var chat = await this.ReadStringAsync();
 
@@ -316,7 +336,7 @@ namespace Obsidian.Net
             return JsonConvert.DeserializeObject<ChatMessage>(chat);
         }
 
-        public virtual async Task<string> ReadIdentifierAsync()
+        public async Task<string> ReadIdentifierAsync()
         {
             var identifier = await this.ReadStringAsync();
             if (identifier.Length > 32767) throw new ArgumentException("string provided by stream exceeded maximum length", nameof(BaseStream));
@@ -325,21 +345,26 @@ namespace Obsidian.Net
 
         public virtual async Task<int> ReadVarIntAsync()
         {
-            var value = 0;
-            var size = 0;
-            int b;
-            while (((b = await this.ReadUnsignedByteAsync()) & 0x80) == 0x80)
+            int numRead = 0;
+            int result = 0;
+            byte read;
+            do
             {
-                value |= (b & 0x7F) << (size++ * 7);
-                if (size > 5)
+                read = await this.ReadUnsignedByteAsync();
+                int value = (read & 0b01111111);
+                result |= (value << (7 * numRead));
+
+                numRead++;
+                if (numRead > 5)
                 {
-                    throw new IOException("This VarInt is an imposter!");
+                    throw new InvalidOperationException("VarInt is too big");
                 }
-            }
-            return value | ((b & 0x7F) << (size * 7));
+            } while ((read & 0b10000000) != 0);
+
+            return result;
         }
 
-        public virtual async Task<byte[]> ReadUInt8ArrayAsync(int length)
+        public async Task<byte[]> ReadUInt8ArrayAsync(int length)
         {
             var result = new byte[length];
             if (length == 0) return result;
@@ -354,7 +379,7 @@ namespace Obsidian.Net
             return result;
         }
 
-        public virtual async Task<byte> ReadUInt8Async()
+        public async Task<byte> ReadUInt8Async()
         {
             int value = await this.ReadByteAsync();
             if (value == -1)
@@ -362,31 +387,47 @@ namespace Obsidian.Net
             return (byte)value;
         }
 
-        public virtual async Task<long> ReadVarLongAsync()
+        public async Task<long> ReadVarLongAsync()
         {
-            int numread = 0;
-            int result = 0;
-            sbyte read;
+            int numRead = 0;
+            long result = 0;
+            byte read;
             do
             {
-                read = await this.ReadByteAsync();
-                int value = (read & 0b0111111);
-                result |= (value << (7 * numread));
-                numread++;
-                if (numread > 10) throw new Exception("VarLong is too big");
-            }
-            while ((read & 0b10000000) != 0);
+                read = await this.ReadUnsignedByteAsync();
+                int value = (read & 0b01111111);
+                result |= (long)value << (7 * numRead);
+
+                numRead++;
+                if (numRead > 10)
+                {
+                    throw new InvalidOperationException("VarLong is too big");
+                }
+            } while ((read & 0b10000000) != 0);
 
             return result;
         }
 
-        public virtual async Task<Location> ReadPositionAsync()
+        public async Task<Position> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
-            int x = (int)(value >> 38);
-            int y = (int)((value >> 26) & 0xFFF);
-            int z = (int)(value << 38 >> 38);
-            return new Location(x, y, z);
+            int x = (int)(value >> 38), y = (int)((value >> 26) & 0xFFF), z = (int)(value << 38 >> 38);
+
+            if (ServerStatus.DebugStatus.Version.Protocol == ProtocolVersion.v1_14)
+            {
+                x = (int)(value >> 38);
+                y = (int)value & 0xFFF;
+                z = (int)(value << 26 >> 38);
+            }
+
+            return new Position
+            {
+                X = x,
+
+                Y = y,
+
+                Z = z,
+            };
         }
 
         #endregion

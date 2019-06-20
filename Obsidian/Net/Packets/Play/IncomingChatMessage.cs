@@ -9,9 +9,9 @@ namespace Obsidian.Net.Packets
         public string Message { get; private set; }
 
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.Message = await stream.ReadStringAsync(256);
             }

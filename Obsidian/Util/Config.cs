@@ -30,5 +30,7 @@ namespace Obsidian.Entities
         public LogLevel LogLevel = LogLevel.Error;
 #endif
 
+        [JsonProperty("debugMode")]
+        public bool DebugMode = false;
     }
 }

@@ -15,12 +15,12 @@ namespace Obsidian.Net.Packets
 
         public Guid UUID { get; private set; } = Guid.Empty;
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
             if (UUID != Guid.Empty || !string.IsNullOrEmpty(this.Username))
                 return;
 
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.Username = await stream.ReadStringAsync();
                 this.UUID = Guid.Parse(await stream.ReadStringAsync());

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Obsidian.Blocks
+namespace Obsidian.World
 {
-    class BlockState
+    class ChunkManager
     {
     }
 }

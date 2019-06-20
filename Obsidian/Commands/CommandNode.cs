@@ -23,7 +23,7 @@ namespace Obsidian.Commands
 
         public async Task<byte[]> ToArrayAsync()
         {
-            using (var memoryStream = new MinecraftStream(new MemoryStream()))
+            using (var memoryStream = new MinecraftStream())
             {
                 await memoryStream.WriteByteAsync((sbyte)Type);
                 await memoryStream.WriteVarIntAsync(Children.Count);
@@ -41,13 +41,8 @@ namespace Obsidian.Commands
 
                 if (Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal))
                 {
-                    if (string.IsNullOrWhiteSpace(Name))
-                    {
-                        //HACK: Replace or add new type to replace this exception.
-                        throw new ArgumentNullException(message: "Name of a command node is null or a whitespace.", null);
-                    }
-
-                    await memoryStream.WriteStringAsync(Name);
+                    if (!string.IsNullOrWhiteSpace(Name))
+                        await memoryStream.WriteStringAsync(Name);
                 }
 
                 if (Type.HasFlag(CommandNodeType.Argument))

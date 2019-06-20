@@ -6,6 +6,7 @@ using Obsidian.Logging;
 using Obsidian.Plugins;
 using Qmmands;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -23,7 +24,7 @@ namespace Obsidian
 
     public class Server
     {
-        private ConcurrentHashSet<List<QueueChat>> _chatmessages;
+        private ConcurrentQueue<QueueChat> _chatmessages;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
 
@@ -54,7 +55,7 @@ namespace Obsidian
             this.Clients = new ConcurrentHashSet<Client>();
 
             this._cts = new CancellationTokenSource();
-            this._chatmessages = new ConcurrentHashSet<List<QueueChat>>();
+            this._chatmessages = new ConcurrentQueue<QueueChat>();
             this.Commands = new CommandService(new CommandServiceConfiguration()
             {
                 CaseSensitive = false,
@@ -64,7 +65,7 @@ namespace Obsidian
             this.Commands.AddModule<MainCommandModule>();
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(this);        
+            this.PluginManager = new PluginManager(this);
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -76,99 +77,74 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
-        
-
         private async Task ServerLoop()
         {
-            // start loop
             while (!_cts.IsCancellationRequested)
             {
-                // Loop shit
                 await Task.Delay(50);
 
                 TotalTicks++;
                 await Events.InvokeServerTick();
 
                 keepaliveticks++;
-                if (keepaliveticks - lastSentPingPacket > 40)
+                if ((long)keepaliveticks - lastSentPingPacket > 40L)
                 {
                     var keepaliveid = DateTime.Now.Ticks;
 
                     lastSentPingPacket = keepaliveticks;
                     lastPingTime = DateTime.Now.Millisecond;
 
-                    if (this.Clients.Any(c => c.State == PacketState.Play))
-                    {
-                        
-                        await Logger.LogMessageAsync($"Broadcasting keepalive {keepaliveid}");
-                        foreach (var clnt in this.Clients)
-                        {
-                            if (clnt.State == PacketState.Play)
-                            {
-                                await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });
-                            }
-                        }
-                    }
+                  
+                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
+                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
 
                     keepaliveticks = 0;
                 }
 
-                // Chat
                 if (_chatmessages.Count > 0)
                 {
-                    var msg = _chatmessages.First();
-                    foreach (var clnt in this.Clients)
-                    {
-                        if (clnt.State == PacketState.Play)
-                        {
-                            foreach (var m in msg)
-                            {
-                                await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(m.Message, m.Position); });
-                            }
-                        }
-                    }
-                    _chatmessages.TryRemove(msg);
+                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
+                        if (_chatmessages.TryDequeue(out QueueChat msg))
+                            await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }
 
                 foreach (var client in Clients)
                 {
                     if (client.Timedout)
-                    {
                         client.Disconnect();
-                    }
                     if (!client.Tcp.Connected)
-                    {
                         this.Clients.TryRemove(client);
-                    }
                 }
             }
         }
 
         public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
 
+
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {
-            // if author is null that means chat is sent by system.
             if (system)
             {
-                _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = message, Position = position } });
+                _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
                 await Logger.LogMessageAsync(message);
             }
             else
             {
                 if (!CommandUtilities.HasPrefix(message, '/', out string output))
                 {
-                    string formattedmsg = $"<{source.Player.Username}> {message}";
-                    _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = formattedmsg, Position = position } });
-                    await Logger.LogMessageAsync(formattedmsg);
+                    _chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
+                    await Logger.LogMessageAsync($"<{source.Player.Username}> {message}");
                     return;
                 }
 
                 var context = new CommandContext(source, this);
                 IResult result = await Commands.ExecuteAsync(output, context);
                 if (!result.IsSuccessful)
-                    _chatmessages.Add(new List<QueueChat> { new QueueChat() { Message = $"{MinecraftColor.Red}Command error: {(result as FailedResult).Reason}",
-                        Position = position } });
+                    _chatmessages.Enqueue(new QueueChat()
+                    {
+                        Message = $"{ChatColor.Red}Command error: {(result as FailedResult).Reason}",
+                        Position = position
+                    });
             }
         }
 
@@ -183,23 +159,23 @@ namespace Obsidian
             await Logger.LogMessageAsync($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
 
-            await Logger.LogMessageAsync($"Set start DateTimeOffset for measuring uptime.");
+            await Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
             this.StartTime = DateTimeOffset.Now;
 
             await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
-            if(!this.Config.OnlineMode)
+            if (!this.Config.OnlineMode)
                 await this.Logger.LogMessageAsync($"Server is offline mode..");
 
-            await Logger.LogMessageAsync($"Start listening for new clients");
+            await Logger.LogDebugAsync($"Start listening for new clients");
             _tcpListener.Start();
 
             while (!_cts.IsCancellationRequested)
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
 
-                await Logger.LogMessageAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}"); // it hurts when IP
+                await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
                 int newplayerid = 0;
                 if (Clients.Count > 0)
@@ -211,7 +187,7 @@ namespace Obsidian
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
             // Cancellation has been requested
-            await Logger.LogMessageAsync($"Cancellation has been requested. Stopping server...");
+            await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
             // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
         }
 

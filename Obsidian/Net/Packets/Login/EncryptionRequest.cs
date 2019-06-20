@@ -23,16 +23,16 @@ namespace Obsidian.Net.Packets
             {
                 await stream.WriteStringAsync(this.ServerId ?? string.Empty);
                 await stream.WriteVarIntAsync(this.PublicKey.Length);
-                await stream.WriteUInt8ArrayAsync(this.PublicKey);
+                await stream.WriteAsync(this.PublicKey);
                 await stream.WriteVarIntAsync(4);
-                await stream.WriteUInt8ArrayAsync(this.VerifyToken);
+                await stream.WriteAsync(this.VerifyToken);
                 return stream.ToArray();
             }
         }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
                 var keyLength = await stream.ReadVarIntAsync();

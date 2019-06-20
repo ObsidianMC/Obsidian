@@ -15,18 +15,21 @@ namespace Obsidian.Commands
         [Description("Lists available commands.")]
         public async Task HelpAsync()
         {
-            foreach(var cmd in Service.GetAllCommands())
+            foreach (var cmd in Service.GetAllCommands())
             {
-                await Context.Client.SendChatAsync($"{MinecraftColor.DarkGreen}{cmd.Name}{MinecraftColor.Reset}: {cmd.Description}");
+                await Context.Client.SendChatAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
             }
-            
+
         }
 
         [Command("plugins")]
         [Description("Lists plugins.")]
-        public Task PluginsAsync()
-            => Context.Client.SendChatAsync(string.Join('\n', Context.Server.PluginManager.Plugins.Select(x 
-                => $"{MinecraftColor.DarkGreen}{x.Info.Name} by {x.Info.Author}\n{MinecraftColor.Reset} {x.Info.Description}")));
+        public async Task PluginsAsync()
+        {
+            var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
+                => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
+            await Context.Client.SendChatAsync($"{ChatColor.Gold}List of plugins: {pls}");
+        }
 
         [Command("echo")]
         [Description("Echoes given text.")]
@@ -57,10 +60,10 @@ namespace Obsidian.Commands
         public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBarAddAction()
         {
             Color = BossBarColor.Blue,
-             Division = BossBarDivisionType.None,
-              Flags = BossBarFlags.DarkenSky,
-               Title = Chat.ChatMessage.Simple("SUCC"),
-                Health = 0.5f
+            Division = BossBarDivisionType.None,
+            Flags = BossBarFlags.DarkenSky,
+            Title = ChatMessage.Simple("SUCC"),
+            Health = 0.5f
         });
     }
 }

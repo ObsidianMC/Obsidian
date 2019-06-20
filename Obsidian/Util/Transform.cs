@@ -1,13 +1,15 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Util
 {
-    public class Location
+    public class Transform
     {
-        public Location() { }
-        public Location(double x, double y, double z)
+        public Transform() { }
+        public Transform(double x, double y, double z, float pitch = 0, float yaw = 0)
         {
             this.X = x;
             this.Y = y;
             this.Z = z;
+            this.Pitch = pitch;
+            this.Yaw = yaw;
         }
 
         public double X { get; set; } = 0;

@@ -1,66 +1,72 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.BlockData;
+using Obsidian.Net;
 using Obsidian.Util;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
     public class ChunkSection : ISerializable
     {
-        public byte BitsPerBlock => Palette == null ? (byte)0 : Palette.BitsPerBlock;
+        public BlockStateContainer BlockStateContainer = new BlockStateContainer();
+        public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
+        public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);
 
-        public ChunkPalette Palette;
-
-        /// <summary>
-        /// Calculates how many bit places are required from an array
-        /// </summary>
-        /// https://stackoverflow.com/questions/7150035/calculating-bits-required-to-store-decimal-number#7150113
-        public int GetBits(int length) => (int)(Math.Log(length) / Math.Log(2));
-
-        public long[] Data;
-        public byte[] BlockLight;
-        public byte[] SkyLight;
-
-        public ChunkPalette GetPalette(int bitsPerBlock)
-        {
-            if (bitsPerBlock <= 4)
-            {
-                //return new ChunkIndirectPalette(4, );
-            }
-            else if (bitsPerBlock <= 8)
-            {
-                //return new ChunkIndirectPalette(bitsPerBlock);
-            }
-            else
-            {
-                return new ChunkDirectPalette();
-            }
-            throw new NotImplementedException("WIP");
-        }
+        public bool Overworld = true;//TODO
 
         public async Task<byte[]> ToArrayAsync()
         {
             using (var stream = new MinecraftStream())
             {
-                await stream.WriteUnsignedByteAsync(BitsPerBlock);
+                await stream.WriteAsync(await BlockStateContainer.ToArrayAsync());
+                await stream.WriteAsync(BlockLightArray.Data);
 
-                await stream.WriteAsync(await Palette.ToArrayAsync());
-
-                await stream.WriteVarIntAsync(Data.Length);
-
-                foreach (long item in Data)
+                if (Overworld)
                 {
-                    await stream.WriteLongAsync(item);
+                    await stream.WriteAsync(SkyLightArray.Data);
                 }
 
-                await stream.WriteAsync(BlockLight);
-
-                if (SkyLight != null)
-                {
-                    await stream.WriteAsync(SkyLight);
-                }
                 return stream.ToArray();
             }
         }
     }
+
+    public class BlockStateContainer
+    {
+        private const byte BitsPerEntry = 14;
+        private DataArray BlockStorage = new DataArray(BitsPerEntry);
+
+        public void Set(int x, int y, int z, BlockState blockState)
+        {
+            this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
+        }
+
+        public BlockState Get(int x, int y, int z)
+        {
+            int storageId = this.BlockStorage[GetIndex(x, y, z)];
+            foreach (var blockState in Blocks.BLOCK_STATES)
+            {
+                if (blockState.Id == storageId)
+                    return blockState;
+            }
+            return null;
+        }
+
+        private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+
+        public async Task<byte[]> ToArrayAsync()
+        {
+            using (var stream = new MinecraftStream())
+            {
+                await stream.WriteByteAsync((sbyte)BitsPerEntry);
+
+                await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
+                await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
+
+                return stream.ToArray();
+            }
+        }
+    }
+
+    
+
 }

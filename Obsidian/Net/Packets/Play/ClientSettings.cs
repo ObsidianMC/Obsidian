@@ -16,9 +16,9 @@ namespace Obsidian.Net.Packets
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
         public int MainHand { get; private set; }
 
-        protected override async Task PopulateAsync()
+        public override async Task PopulateAsync()
         {
-            using (var stream = new MinecraftStream(this._packetData))
+            using (var stream = new MinecraftStream(this.PacketData))
             {
                 Locale = await stream.ReadStringAsync();
                 ViewDistance = await stream.ReadByteAsync();

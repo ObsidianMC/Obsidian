@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.Entities
+﻿namespace Obsidian.World
 {
-    public class Region
+    class Region
     {
     }
 }
