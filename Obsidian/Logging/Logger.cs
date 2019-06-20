@@ -1,4 +1,5 @@
-﻿using Obsidian.Events;
+﻿using Obsidian.Entities;
+using Obsidian.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,12 +16,15 @@ namespace Obsidian.Logging
         }
         private AsyncEvent<LoggerEventArgs> _messageLogged;
 
+        public LogLevel LogLevel;
+
         private string Prefix;
 
-        internal Logger(string prefix)
+        internal Logger(string prefix, LogLevel logLevel)
         {
             this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
             this.Prefix = prefix;
+            this.LogLevel = logLevel;
         }
 
         private void LogError(string eventname, Exception ex)
@@ -28,14 +32,23 @@ namespace Obsidian.Logging
 
         }
 
-        public async Task LogMessageAsync(string msg)
+        public async Task LogMessageAsync(string msg, LogLevel logLevel = LogLevel.Info)
         {
             var datetime = DateTimeOffset.Now;
             await _messageLogged.InvokeAsync(new LoggerEventArgs(msg, Prefix, datetime));
+
+            //checking if message should be printed or not
+            if (logLevel > LogLevel)
+            {
+                return;
+            }
+
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("[");
+
             Console.ResetColor();
             Console.Write(datetime.ToString());
+
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("] ");
             
@@ -43,8 +56,10 @@ namespace Obsidian.Logging
             {
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("[");
+
                 Console.ResetColor();
                 Console.Write(Prefix);
+
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write("] ");
             }
