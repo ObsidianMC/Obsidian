@@ -33,7 +33,8 @@ namespace Obsidian.PlayerData.Info
 
                 await stream.WriteVarIntAsync(Properties.Count);
 
-                //foreach (SkinProperties props in this.Properties)
+                foreach (SkinProperties props in this.Properties)
+                    await stream.WriteAsync(await props.ToArrayAsync());
 
                 await stream.WriteVarIntAsync(this.Gamemode);
 

@@ -1,5 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -22,9 +23,12 @@ namespace Obsidian.Net.Packets
         {
             using (var stream = new MinecraftStream(this.PacketData))
             {
-                this.Position.X = await stream.ReadDoubleAsync();
-                this.Position.Y = await stream.ReadDoubleAsync();
-                this.Position.Z = await stream.ReadDoubleAsync();
+                this.Position = new Position
+                {
+                    X = await stream.ReadDoubleAsync(),
+                    Y = await stream.ReadDoubleAsync(),
+                    Z = await stream.ReadDoubleAsync()
+                };
                 this.OnGround = await stream.ReadBooleanAsync();
             }
         }

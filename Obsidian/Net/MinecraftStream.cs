@@ -112,7 +112,9 @@ namespace Obsidian.Net
         {
             if (value <= -1)
             {
-                throw new NotImplementedException("Negative values result in a loop");
+                await this.WriteUnsignedByteAsync((byte)value);
+
+                return;
             }
 
             do

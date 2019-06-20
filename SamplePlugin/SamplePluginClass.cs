@@ -32,8 +32,8 @@ namespace SamplePlugin
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            await e.Server.SendChatAsync($"Player join event from sample plugin! {e.Player.Username}", e.Client, 0, true);
-            await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Player.Username}");
+            await e.Server.SendChatAsync($"Player join event from sample plugin! {e.Joined.Username}", e.Client, 0, true);
+            await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Joined.Username}");
         }
     }
 

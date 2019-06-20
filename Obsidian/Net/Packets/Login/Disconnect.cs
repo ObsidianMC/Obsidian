@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets
     {
         readonly Chat.ChatMessage Reason;
 
-        public Disconnect(Chat.ChatMessage reason, PacketState state) : base(state == PacketState.Play ? 0x1B : 0x00, new byte[0])
+        public Disconnect(Chat.ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00, new byte[0])
         {
             this.Reason = reason;
         }

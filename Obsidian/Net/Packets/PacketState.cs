@@ -1,5 +1,5 @@
 //HACK: This might have to be renamed in the coming coding of the server. PlayerState might be the right name. 
-public enum PacketState
+public enum ClientState
 {
     Handshaking = 0,
     Status = 1,

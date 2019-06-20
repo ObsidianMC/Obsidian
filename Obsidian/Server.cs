@@ -4,6 +4,8 @@ using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
 using Obsidian.Plugins;
+using Obsidian.World;
+using Obsidian.World.Generators;
 using Qmmands;
 using System;
 using System.Collections.Concurrent;
@@ -36,6 +38,8 @@ namespace Obsidian
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
 
+        public WorldGenerator WorldGenerator { get; set; }
+
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
         /// </summary>
@@ -65,6 +69,17 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.PluginManager = new PluginManager(this);
+
+            switch (config.Generator)
+            {
+                case Generator.Normal:
+                    break;
+                case Generator.Superflat:
+                    this.WorldGenerator = new SuperflatGenerator();
+                    break;
+                case Generator.Void:
+                    break;
+            }
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -94,7 +109,7 @@ namespace Obsidian
                     lastPingTime = DateTime.Now.Millisecond;
 
                   
-                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
+                    foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
                         await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
 
                     keepaliveticks = 0;
@@ -102,7 +117,7 @@ namespace Obsidian
 
                 if (_chatmessages.Count > 0)
                 {
-                    foreach (var clnt in this.Clients.Where(x => x.State == PacketState.Play).ToList())
+                    foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
                         if (_chatmessages.TryDequeue(out QueueChat msg))
                             await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }

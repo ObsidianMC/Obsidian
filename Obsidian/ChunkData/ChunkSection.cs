@@ -32,7 +32,8 @@ namespace Obsidian.ChunkData
 
     public class BlockStateContainer
     {
-        private const byte BitsPerEntry = 14;
+        private const byte BitsPerEntry = 14;//USING GLOBAL PALETTE FOR NOW
+
         private DataArray BlockStorage = new DataArray(BitsPerEntry);
 
         public void Set(int x, int y, int z, BlockState blockState)

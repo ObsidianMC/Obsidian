@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets
 
         public ushort ServerPort;
 
-        public PacketState NextState;
+        public ClientState NextState;
 
         public Handshake(byte[] data) : base(0x00, data)
         {
@@ -26,7 +26,7 @@ namespace Obsidian.Net.Packets
                 this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
                 this.ServerAddress = await stream.ReadStringAsync();
                 this.ServerPort = await stream.ReadUnsignedShortAsync();
-                this.NextState = (PacketState)await stream.ReadVarIntAsync();
+                this.NextState = (ClientState)await stream.ReadVarIntAsync();
             }
         }
 
