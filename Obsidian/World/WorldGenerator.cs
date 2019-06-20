@@ -14,6 +14,6 @@ namespace Obsidian.World
             this.Id = id;
         }
 
-        public abstract void GenerateChunk(Chunk chunk);
+        public abstract Chunk GenerateChunk(Chunk chunk);
     }
 }

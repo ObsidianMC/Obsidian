@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Plugins
+﻿using System.Threading.Tasks;
+
+namespace Obsidian.Plugins
 {
     // Plugins derive from this base class.
     public interface IPluginClass
@@ -8,7 +10,7 @@
         /// </summary>
         /// <param name="server">Server to intialize plugin in</param>
         /// <returns>The information about a plugin which will be represented in plugin listings</returns>
-        PluginInfo Initialize(Server server);
+        Task<PluginInfo> InitializeAsync(Server server);
     }
 
     public class PluginInfo
