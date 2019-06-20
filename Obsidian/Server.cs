@@ -157,6 +157,9 @@ namespace Obsidian
             await Logger.LogMessageAsync("Registering default entities");
             await RegisterDefaultAsync();
 
+            await Logger.LogMessageAsync($"Loading and Initializing plugins...");
+            await this.PluginManager.LoadPluginsAsync(this.Logger);
+
             if (WorldGenerators.FirstOrDefault(g => g.Id == Config.Generator) is WorldGenerator worldGenerator)
             {
                 this.WorldGenerator = worldGenerator;
@@ -166,9 +169,6 @@ namespace Obsidian
                 throw new Exception($"Generator ({Config.Generator}) is unknown.");
             }
             await Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
-
-            await Logger.LogMessageAsync($"Loading and Initializing plugins...");
-            await this.PluginManager.LoadPluginsAsync(this.Logger);
 
             await Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
             this.StartTime = DateTimeOffset.Now;
