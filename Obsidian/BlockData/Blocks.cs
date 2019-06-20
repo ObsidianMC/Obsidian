@@ -33,7 +33,8 @@ namespace Obsidian.BlockData
         public static Block AcaciaSapling => Add("acacia_sapling", 29); // 30
         public static Block DarkOakSapling => Add("dark_oak_sapling", 31); // 32
         public static Block Bedrock => Add("bedrock", 33);
-
+        public static Block Water => Add("water", 34);
+        public static Block Lava => Add("lava", 35);
         private static Block Add(Block block)
         {
             BLOCK_STATES.Add(block);

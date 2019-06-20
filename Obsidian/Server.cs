@@ -30,10 +30,6 @@ namespace Obsidian
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
 
-        private int keepaliveticks = 0;
-        private int lastSentPingPacket = 0;
-        private int lastPingTime = 0;
-
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
@@ -85,6 +81,7 @@ namespace Obsidian
 
         private async Task ServerLoop()
         {
+            var keepaliveticks = 0;
             while (!_cts.IsCancellationRequested)
             {
                 await Task.Delay(50);
@@ -93,12 +90,9 @@ namespace Obsidian
                 await Events.InvokeServerTick();
 
                 keepaliveticks++;
-                if ((long)keepaliveticks - lastSentPingPacket > 40L)
+                if (keepaliveticks > 200)
                 {
-                    var keepaliveid = DateTime.Now.Ticks;
-
-                    lastSentPingPacket = keepaliveticks;
-                    lastPingTime = DateTime.Now.Millisecond;
+                    var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
                         await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
