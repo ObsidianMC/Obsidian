@@ -372,7 +372,7 @@ namespace Obsidian
             {
                 for (var z = 0; z < 16; z++)
                 {
-                    chunkData.Data[6].BlockStateContainer.Set(x, 0, z, Blocks.Cobblestone);
+                    chunkData.Data[6].BlockStateContainer.Set(x, 0, z, Blocks.Bedrock);
                     chunkData.Data[6].BlockStateContainer.Set(x, 1, z, Blocks.Dirt);
                     chunkData.Data[6].BlockStateContainer.Set(x, 2, z, Blocks.Dirt);
                     chunkData.Data[6].BlockStateContainer.Set(x, 3, z, Blocks.Dirt);

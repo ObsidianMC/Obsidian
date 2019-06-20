@@ -11,7 +11,7 @@ namespace Obsidian.Util
 {
     public class PacketHandler
     {
-        private static Logger Logger = new Logger("Packets");
+        private static Logger Logger = new Logger("Packets", LogLevel.Debug);
 
         private static ProtocolVersion Protocol => ServerStatus.DebugStatus.Version.Protocol;
 
