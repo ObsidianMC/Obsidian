@@ -26,10 +26,14 @@ namespace Obsidian.Logging
             this.LogLevel = logLevel;
         }
 
-        private void LogError(string eventname, Exception ex) { }
+        private void LogError(string eventname, Exception ex)
+        {
+        }
 
         public Task LogDebugAsync(string message) => this.LogMessageAsync(message, LogLevel.Debug);
+
         public Task LogWarningAsync(string message) => this.LogMessageAsync(message, LogLevel.Warning);
+
         public Task LogErrorAsync(string message) => this.LogMessageAsync(message, LogLevel.Error);
 
         public async Task LogMessageAsync(string msg, LogLevel logLevel = LogLevel.Info)
@@ -48,7 +52,7 @@ namespace Obsidian.Logging
 
             Console.ResetColor();
 
-            Console.Write("{0:t} " + level.ToString(), datetime);
+            Console.Write("{0:t} " + logLevel.ToString(), datetime);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.Write("]");
@@ -66,18 +70,22 @@ namespace Obsidian.Logging
             }
 
             Console.ResetColor();
-            switch (level)
+
+            switch (logLevel)
             {
                 case LogLevel.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     break;
+
                 case LogLevel.Error:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     break;
+
                 case LogLevel.Debug:
                     Console.ForegroundColor = ConsoleColor.Magenta;
                     break;
             }
+
             Console.WriteLine(msg);
         }
     }
