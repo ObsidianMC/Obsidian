@@ -11,8 +11,11 @@ namespace Obsidian.Util
 {
     public class PacketHandler
     {
-        private static Logger Logger = new Logger("Packets");
-
+#if DEBUG
+        private static Logger Logger = new Logger("Packets", LogLevel.Debug);
+#else
+        private static Logger Logger = new Logger("Packets", LogLevel.Error);
+#endif
         private static ProtocolVersion Protocol => ServerStatus.DebugStatus.Version.Protocol;
 
         public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
@@ -157,7 +160,7 @@ namespace Obsidian.Util
                     client.Player.OnGround = onground;
                     break;
 
-                case 0x10:// Player Position 
+                case 0x10:// Player Position
                     var pos = await PacketHandler.CreateAsync(new PlayerPosition(packet.PacketData));
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //await Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
@@ -301,6 +304,5 @@ namespace Obsidian.Util
                     break;
             }
         }
-
     }
 }
