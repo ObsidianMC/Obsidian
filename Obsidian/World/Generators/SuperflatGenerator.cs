@@ -4,6 +4,10 @@ namespace Obsidian.World.Generators
 {
     public class SuperflatGenerator : WorldGenerator
     {
+        public SuperflatGenerator() : base("superflat")
+        {
+        }
+
         public override void GenerateChunk(Chunk chunk)
         {
             for (var x = 0; x < 16; x++)
