@@ -150,7 +150,7 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await PacketHandler.CreateAsync(new KeepAlive(packet.PacketData));
+                    var keepalive = await CreateAsync(new KeepAlive(packet.PacketData));
 
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id {keepalive.KeepAliveId}");
                     break;
@@ -162,13 +162,13 @@ namespace Obsidian.Util
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await PacketHandler.CreateAsync(new PlayerPosition(packet.PacketData));
+                    var pos = await CreateAsync(new PlayerPosition(packet.PacketData));
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //await Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await PacketHandler.CreateAsync(new PlayerPositionLook(packet.PacketData));
+                    var ppos = await CreateAsync(new PlayerPositionLook(packet.PacketData));
 
                     client.Player.UpdatePosition(ppos.Transform);
                     //await Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
@@ -176,7 +176,7 @@ namespace Obsidian.Util
 
                 case 0x12:
                     // Player Look
-                    var look = await PacketHandler.CreateAsync(new PlayerLook(packet.PacketData));
+                    var look = await CreateAsync(new PlayerLook(packet.PacketData));
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                     await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
@@ -284,7 +284,7 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Animation (serverbound)
-                    var serverAnim = await PacketHandler.CreateAsync(new AnimationServerPacket(packet.PacketData));
+                    var serverAnim = await CreateAsync(new AnimationServerPacket(packet.PacketData));
 
                     await Logger.LogDebugAsync("Received animation (serverbound)");
                     break;
