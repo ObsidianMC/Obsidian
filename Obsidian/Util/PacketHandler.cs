@@ -16,6 +16,7 @@ namespace Obsidian.Util
 #else
         private static Logger Logger = new Logger("Packets", LogLevel.Error);
 #endif
+
         private static ProtocolVersion Protocol => ServerStatus.DebugStatus.Version.Protocol;
 
         public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
