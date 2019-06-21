@@ -11,11 +11,13 @@ namespace Obsidian.Util
     public class OperatorList
     {
         private List<Operator> _ops;
+        private List<OperatorRequest> _reqs;
         private Server _server;
 
         public OperatorList(Server s)
         {
             _ops = new List<Operator>();
+            _reqs = new List<OperatorRequest>();
             _server = s;
         }
 
@@ -38,6 +40,43 @@ namespace Obsidian.Util
         {
             _ops.Add(new Operator() { Username = p.Username, UUID = _server.Config.OnlineMode ? p?.UUID : null });
             _updateList();
+        }
+
+        public bool CreateRequest(Player p)
+        {
+            if (!_server.Config.AllowOperatorRequests)
+            {
+                return false;
+            }
+
+            var result = !_reqs.Any(r => r.Player == p);
+
+            if (result)
+            {
+                var req = new OperatorRequest(p);
+
+                _server.Logger.LogWarningAsync("New operator request from {p.Username}: " + req.Code);
+
+                _reqs.Add(req);
+            }
+
+            return result;
+        }
+
+        public bool ProcessRequest(Player p, string code)
+        {
+            var result = _reqs.FirstOrDefault(r => r.Player == p && r.Code == code);
+
+            if (result == null)
+            {
+                return false;
+            }
+
+            _reqs.Remove(result);
+
+            AddOperator(p);
+
+            return true;
         }
 
         public void AddOperator(string username)
@@ -88,6 +127,32 @@ namespace Obsidian.Util
 
             [JsonIgnore]
             public bool Online => UUID != null;
+        }
+
+        private class OperatorRequest
+        {
+            public Player Player;
+            public string Code;
+
+            public OperatorRequest(Player player)
+            {
+                Player = player ?? throw new ArgumentNullException(nameof(player));
+
+                string GetCode()
+                {
+                    string code = "";
+                    var random = new Random();
+                    const string chars = "0123456789ABCDEF";
+                    for (int i = 0; i < 10; i++)
+                    {
+                        code += chars[random.Next(0, chars.Length - 1)];
+                    }
+
+                    return code;
+                }
+
+                Code = GetCode();
+            }
         }
     }
 }

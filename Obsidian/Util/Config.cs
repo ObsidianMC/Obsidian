@@ -26,6 +26,9 @@ namespace Obsidian.Entities
         [JsonProperty("onlineMode")]
         public bool OnlineMode = true;
 
+        [JsonProperty("operatorRequests")]
+        public bool AllowOperatorRequests = false;
+
         [JsonProperty("logLevel")]
 #if DEBUG
         public LogLevel LogLevel = LogLevel.Debug;
