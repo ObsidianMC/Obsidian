@@ -356,7 +356,7 @@ namespace Obsidian
 
         private async Task ConnectAsync(Guid uuid)
         {
-            await this.Logger.LogDebugAsync($"Sent Login success to User {this.Player.Username} {this.Player.UUID.ToString()}");
+            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.UUID.ToString()}");
 
             await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
 
