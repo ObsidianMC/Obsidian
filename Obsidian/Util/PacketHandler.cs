@@ -210,6 +210,15 @@ namespace Obsidian.Util
                 case 0x18:
                     // Player Digging
                     await Logger.LogDebugAsync("Received player digging");
+                    // owo, player be digging
+                    var digging = new PlayerDigging(packet.PacketData);
+                    await digging.PopulateAsync();
+                    await Logger.LogMessageAsync("Populated player digging");
+
+                    await Logger.LogMessageAsync("Enqueueuing player digging");
+                    // enqueue for server to handle
+                    await server.EnqueueDigging(digging);
+                    await Logger.LogMessageAsync("ok thas done");
                     break;
 
                 case 0x19:
@@ -296,6 +305,8 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
+                    var pbp = await CreateAsync(new PlayerBlockPlacement(packet.PacketData));
+                    await server.EnqueuePlacing(pbp);
                     await Logger.LogDebugAsync("Received player block placement");
                     break;
 

@@ -62,6 +62,13 @@ namespace Obsidian
 
         #region Packet Sending Methods
 
+        public async Task SendBlockChangeAsync(BlockChange b)
+        {
+            await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
+            await PacketHandler.CreateAsync(b, this.MinecraftStream);
+            await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
+        }
+
         public async Task DisconnectAsync(Chat.ChatMessage reason)
         {
             await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
@@ -395,7 +402,7 @@ namespace Obsidian
             await this.Logger.LogWarningAsync("Adding chunks");
             for (int i = 0; i < 16; i++)
             {
-                chunkData.Data.Add(new ChunkSection());
+                chunkData.Data.Add(new ChunkSection().FilledWithLight());
             }
 
             for (int x = 0; x < 16; x++)

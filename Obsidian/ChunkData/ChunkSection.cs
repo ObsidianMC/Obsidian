@@ -28,6 +28,21 @@ namespace Obsidian.ChunkData
                 return stream.ToArray();
             }
         }
+
+        public ChunkSection FilledWithLight()
+        {
+            for(int i = 0; i< BlockLightArray.Data.Length; i++)
+            {
+                BlockLightArray.Data[i] = 255;
+            }
+
+            for (int i = 0; i < SkyLightArray.Data.Length; i++)
+            {
+                SkyLightArray.Data[i] = 255;
+            }
+
+            return this;
+        }
     }
 
     public class BlockStateContainer

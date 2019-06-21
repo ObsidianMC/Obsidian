@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Util
+﻿using System;
+
+namespace Obsidian.Util
 {
     public class Position
     {
