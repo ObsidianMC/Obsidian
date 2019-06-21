@@ -72,7 +72,7 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.PluginManager = new PluginManager(this);
-            this.Operators = new OperatorList();
+            this.Operators = new OperatorList(this);
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
