@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.BlockData
 {
     //Plugin and such should not have access to this class
-    internal class Blocks
+    public class Blocks
     {
         public static List<Block> BLOCK_STATES = new List<Block>();
 
@@ -154,10 +154,12 @@ namespace Obsidian.BlockData
         public static Block WhiteTulip;
         public static Block PinkTulip;
         public static Block OxeyeDaisy;
+
         //public static Block Cornflower; 1.14??
         //public static Block WitherRose;
         //public static Block LilyOfTheValley;
         public static Block BrownMushroom;
+
         public static Block RedMushroom;
 
         public static Block GoldBlock;
@@ -178,6 +180,7 @@ namespace Obsidian.BlockData
         public static Block OakStairs;
 
         public static Block Chest;
+
         public static async Task RegisterAsync()
         {
             Air = await AddAsync(new BlockAir());
@@ -347,7 +350,6 @@ namespace Obsidian.BlockData
             //{
             //    await AddAsync(new Block($"{i}_block", i));
             //}
-
         }
 
         private static async Task<Block> AddAsync(Block block)
