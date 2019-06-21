@@ -139,11 +139,9 @@ namespace Obsidian
                 var context = new CommandContext(source, this);
                 IResult result = await Commands.ExecuteAsync(output, context);
                 if (!result.IsSuccessful)
-                    _chatmessages.Enqueue(new QueueChat()
-                    {
-                        Message = $"{ChatColor.Red}Command error: {(result as FailedResult).Reason}",
-                        Position = position
-                    });
+                {
+                    await context.Client.SendChatAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
+                }
             }
         }
 
