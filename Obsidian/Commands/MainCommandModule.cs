@@ -73,5 +73,28 @@ namespace Obsidian.Commands
             await Context.Client.SendChatAsync("ight homie tryna tp you (and sip dicks)");
             await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
         }
+
+        #if DEBUG
+        [Command("claimop")]
+        public async Task ClaimOpAsync()
+        {
+            Context.Server.Operators.AddOperator(Context.Player);
+            await Context.Client.SendChatAsync("You are now OP!");
+        }
+
+        [Command("unclaimop")]
+        public async Task UnclaimOpAsync()
+        {
+            Context.Server.Operators.RemoveOperator(Context.Player);
+            await Context.Client.SendChatAsync("You are no longer OP!");
+        }
+
+        [Command("breakpoint")]
+        public async Task BreakpointAsync()
+        {
+            // put a breakpoint on the return to snoop into vars..
+            return;
+        }
+        #endif
     }
 }

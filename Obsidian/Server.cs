@@ -5,6 +5,7 @@ using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
 using Obsidian.Plugins;
+using Obsidian.Util;
 using Obsidian.World;
 using Obsidian.World.Generators;
 using Qmmands;
@@ -34,6 +35,8 @@ namespace Obsidian
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
+
+        public OperatorList Operators;
 
         public List<WorldGenerator> WorldGenerators { get; } = new List<WorldGenerator>();
 
@@ -69,6 +72,7 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.PluginManager = new PluginManager(this);
+            this.Operators = new OperatorList();
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -162,6 +166,9 @@ namespace Obsidian
                 StopServer();
                 return;
             }
+
+            await Logger.LogMessageAsync($"Loading operator list...");
+            Operators.Initialize();
 
             await Logger.LogMessageAsync("Registering default entities");
             await RegisterDefaultAsync();
