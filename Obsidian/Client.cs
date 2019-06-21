@@ -368,7 +368,7 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 100, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 120, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
@@ -381,6 +381,9 @@ namespace Obsidian
             await this.SendPlayerInfoAsync();
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
             await this.Logger.LogDebugAsync("Sent chunk");
         }
