@@ -300,9 +300,9 @@ namespace Obsidian.BlockData
     {
         public byte Metadata { get; set; }
 
-        public Position Position { get; set; }
-
-        public Block(string name, int id) : base(name, id) { }
+        public Block(string name, int id) : base(name, id)
+        {
+        }
 
         public void Set(Block block)
         {

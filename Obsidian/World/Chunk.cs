@@ -1,6 +1,5 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Util;
-using System.Collections.Generic;
 
 namespace Obsidian.World
 {
@@ -11,71 +10,32 @@ namespace Obsidian.World
 
         public bool Loaded { get; }
 
-        public List<Block> Blocks { get; }
+        public Block[,,] Blocks { get; }
 
         public Chunk(int x, int z)
         {
             this.X = x;
             this.Z = z;
 
-            this.Blocks = new List<Block>();
+            this.Blocks = new Block[16, 16, 16];
             for (int chunkX = 0; chunkX < 16; chunkX++)
             {
                 for (int chunkY = 0; chunkY < 16; chunkY++)
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        var air = BlockData.Blocks.Air;
-                        air.Position = new Position(chunkX, chunkY, chunkZ);
-                        this.Blocks.Add(air);
+                        this.Blocks[chunkX, chunkY, chunkZ] = BlockData.Blocks.Air;
                     }
                 }
             }
         }
 
-        public Block GetBlock(Position position)
-        {
-            var index = this.Blocks.FindIndex(x => x.Position == position);
+        public Block GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
 
-            return this.Blocks[index];
-        }
+        public Block GetBlock(int x, int y, int z) => this.Blocks[x, y, z];
 
-        public Block GetBlock(int x, int y, int z)
-        {
-            var index = this.Blocks.FindIndex(b => b.Position.Match(x, y, z));
+        public void SetBlock(Position position, Block block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
-            return this.Blocks[index];
-        }
-
-        public void SetBlock(Position position, Block block)
-        {
-            try
-            {
-                var index = this.Blocks.FindIndex(b => b.Position == position);
-
-                this.Blocks[index].Set(block);
-            }
-            catch
-            {
-                block.Position = position;
-                this.Blocks[this.Blocks.Count + 1].Set(block);
-            }
-        }
-
-        public void SetBlock(int x, int y, int z, Block block)
-        {
-            try
-            {
-                var index = this.Blocks.FindIndex(b => b.Position.Match(x, y, z));
-
-                this.Blocks[index].Set(block);
-            }
-            catch
-            {
-                block.Position = new Position(x, y, z);
-                this.Blocks[this.Blocks.Count + 1].Set(block);
-            }
-
-        }
+        public void SetBlock(int x, int y, int z, Block block) => Blocks[x, y, z] = block;
     }
 }
