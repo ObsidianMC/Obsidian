@@ -96,6 +96,11 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new PlayerPositionLook(poslook, posflags, tpid), this.MinecraftStream);
         }
 
+        public async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
+        {
+            await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
+        }
+
         public async Task SendDeclareCommandsAsync()
         {
             await this.Logger.LogDebugAsync("Generating Declare Commands packet.");
@@ -383,6 +388,23 @@ namespace Obsidian
 
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
+
+            foreach (Client client in this.OriginServer.Clients)
+            {
+                if (client == this)
+                {
+                    continue;
+                }
+
+                await client.SendSpawnMobAsync(0, this.Player.UUID, 92, new Transform()
+                {
+                    X = 0,
+                    Y = 100,
+                    Z = 0,
+                    Pitch = 0,
+                    Yaw = 0
+                }, 0, new Velocity(0, 0, 0), new Entities.Player(this.Player.UUID, this.Player.Username));
+            }
 
             // TODO fix
             //await this.SendDeclareCommandsAsync();
