@@ -36,5 +36,11 @@ namespace Obsidian.Entities
 
         [JsonProperty("debugMode")]
         public bool DebugMode = false;
+
+        /// <summary>
+        /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
+        /// </summary>
+        [JsonProperty("multiplayerDebugMode")]
+        public bool MulitplayerDebugMode = false;
     }
 }

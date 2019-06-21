@@ -155,6 +155,14 @@ namespace Obsidian
         {
             await Logger.LogMessageAsync($"Launching Obsidian Server v {Version} with ID {Id}");
 
+            //Check if MPDM and OM are enabled, if so, we can't handle connections
+            if (Config.MulitplayerDebugMode && Config.OnlineMode)
+            {
+                await Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+                StopServer();
+                return;
+            }
+
             await Logger.LogMessageAsync("Registering default entities");
             await RegisterDefaultAsync();
 

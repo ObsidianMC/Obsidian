@@ -251,10 +251,18 @@ namespace Obsidian
                             case 0x00:
                                 var loginStart = await PacketHandler.CreateAsync(new LoginStart(packet.PacketData));
 
+                                string username = loginStart.Username;
+
+                                if (Config.MulitplayerDebugMode)
+                                {
+                                    username = $"Player{new Random().Next(1, 999)}";
+                                    await this.Logger.LogDebugAsync($"Overriding username from {loginStart.Username} to {username}");
+                                }
+
                                 await this.Logger.LogDebugAsync($"Received login request from user {loginStart.Username}");
 
-                                if (this.OriginServer.CheckPlayerOnline(loginStart.Username))
-                                    await this.OriginServer.Clients.FirstOrDefault(c => c.Player.Username == loginStart.Username).DisconnectAsync(Chat.ChatMessage.Simple("Logged in from another location"));
+                                if (this.OriginServer.CheckPlayerOnline(username))
+                                    await this.OriginServer.Clients.FirstOrDefault(c => c.Player.Username == username).DisconnectAsync(Chat.ChatMessage.Simple("Logged in from another location"));
 
                                 if (this.Config.OnlineMode)
                                 {
@@ -275,7 +283,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.Player = new Player(Guid.NewGuid(), loginStart.Username);
+                                this.Player = new Player(Guid.NewGuid(), username);
                                 await ConnectAsync(this.Player.UUID);
 
                                 break;
@@ -333,6 +341,7 @@ namespace Obsidian
             }
 
             await Logger.LogMessageAsync($"Disconnected client");
+
             if (this.Player != null)
                 await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
 
@@ -388,7 +397,7 @@ namespace Obsidian
                 if (block is BlockAir || block is BlockBed)
                     continue;
 
-                if(countX == 15)
+                if (countX == 15)
                 {
                     countX = 0;
                     countZ++;
@@ -397,8 +406,6 @@ namespace Obsidian
                 chunkData.Data[6].BlockStateContainer.Set(countX, 1, countZ, block);
                 countX++;
             }
-            
-
 
             for (int i = 0; i < 16 * 16; i++)
             {
