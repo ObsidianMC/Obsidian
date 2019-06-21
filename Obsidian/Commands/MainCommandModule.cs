@@ -103,6 +103,8 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         public async Task BreakpointAsync()
         {
+            await Context.Server.SendChatAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!", null, 0, true);
+            await Task.Delay(3000);
             Debugger.Break();
         }
 
