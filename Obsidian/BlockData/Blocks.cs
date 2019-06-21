@@ -1,11 +1,11 @@
 ﻿using Obsidian.Logging;
-using Obsidian.Util;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.BlockData
 {
-    public class Blocks
+    //Plugin and such should not have access to this class
+    internal class Blocks
     {
         public static List<Block> BLOCK_STATES = new List<Block>();
 
@@ -142,6 +142,42 @@ namespace Obsidian.BlockData
         public static Block RedWool;
         public static Block BlackWool;
 
+        public static Block MovingPiston;
+
+        public static Block Dandelion;
+        public static Block Poppy;
+        public static Block BlueOrchid;
+        public static Block Allium;
+        public static Block AzureBluet;
+        public static Block RedTulip;
+        public static Block OrangeTulip;
+        public static Block WhiteTulip;
+        public static Block PinkTulip;
+        public static Block OxeyeDaisy;
+        //public static Block Cornflower; 1.14??
+        //public static Block WitherRose;
+        //public static Block LilyOfTheValley;
+        public static Block BrownMushroom;
+        public static Block RedMushroom;
+
+        public static Block GoldBlock;
+        public static Block IronBlock;
+
+        public static Block Bricks;
+        public static Block Tnt;
+        public static Block Bookshelf;
+        public static Block MossyCobblestone;
+        public static Block Obsidian;
+
+        public static Block Torch;
+        public static Block WallTorch;
+
+        public static Block Fire;
+        public static Block Spawner;
+
+        public static Block OakStairs;
+
+        public static Block Chest;
         public static async Task RegisterAsync()
         {
             Air = await AddAsync(new BlockAir());
@@ -274,10 +310,44 @@ namespace Obsidian.BlockData
             RedWool = await AddAsync(new Block("red_wool", 1097));
             BlackWool = await AddAsync(new Block("black_wool", 1098));
 
-            // for (int i = 1059; i < 1100; i++)
-            // {
+            MovingPiston = await AddAsync(new Block("moving_piston", 1099)); // +12
+
+            Dandelion = await AddAsync(new BlockFlower("dandelion", 1111));
+            Poppy = await AddAsync(new BlockFlower("poppy", 1112));
+            BlueOrchid = await AddAsync(new BlockFlower("blue_orchid", 1113));
+            Allium = await AddAsync(new BlockFlower("allium", 1114));
+            AzureBluet = await AddAsync(new BlockFlower("azure_bluet", 1115));
+            RedTulip = await AddAsync(new BlockFlower("red_tulip", 1116));
+            OrangeTulip = await AddAsync(new BlockFlower("orange_tulip", 1117));
+            WhiteTulip = await AddAsync(new BlockFlower("white_tulip", 1118));
+            PinkTulip = await AddAsync(new BlockFlower("dandelion", 1119));
+            OxeyeDaisy = await AddAsync(new BlockFlower("oxeye_daisy", 1120));
+            BrownMushroom = await AddAsync(new BlockMushroom("brown_mushroom", 1121));
+            RedMushroom = await AddAsync(new BlockMushroom("brown_mushroom", 1122));
+
+            GoldBlock = await AddAsync(new Block("gold_block", 1123));
+            IronBlock = await AddAsync(new Block("iron_block", 1124));
+
+            Bricks = await AddAsync(new Block("bricks", 1125));
+            Tnt = await AddAsync(new Block("tnt", 1126)); // +1
+            Bookshelf = await AddAsync(new Block("bookshelf", 1128));
+            MossyCobblestone = await AddAsync(new Block("mossy_cobblestone", 1129));
+            Obsidian = await AddAsync(new Block("obsidian", 1130));
+
+            Torch = await AddAsync(new BlockTorch("torch", 1131)); // + 2
+            WallTorch = await AddAsync(new BlockWallTorch("wall_torch", 1133)); // + 3
+
+            Fire = await AddAsync(new BlockFire("fire", 1136)); // + 514
+            Spawner = await AddAsync(new BlockMobSpawner("spawner", 1648));
+
+            OakStairs = await AddAsync(new BlockStairs("oak_stairs", 1649)); // +79
+
+            Chest = await AddAsync(new BlockChest("chest", 1729)); // + 23
+            //for (int i = 1753; i < 1876; i++)
+            //{
             //    await AddAsync(new Block($"{i}_block", i));
             //}
+
         }
 
         private static async Task<Block> AddAsync(Block block)
@@ -293,38 +363,6 @@ namespace Obsidian.BlockData
             BLOCK_STATES.Add(block);
             await Logger.LogDebugAsync($"Registered: {name} with id {id}");
             return block;
-        }
-    }
-
-    public class Block : BlockState
-    {
-        public byte Metadata { get; set; }
-
-        public Block(string name, int id) : base(name, id)
-        {
-        }
-
-        public void Set(Block block)
-        {
-            this.Id = block.Id;
-        }
-    }
-
-    public class BlockState
-    {
-        public int Id = 0;
-
-        public string UnlocalizedName { get; }
-
-        public BlockState(int id)
-        {
-            this.Id = id;
-        }
-
-        public BlockState(string unlocalizedName, int Id)
-        {
-            this.Id = Id;
-            this.UnlocalizedName = unlocalizedName;
         }
     }
 }

@@ -403,9 +403,6 @@ namespace Obsidian
                     {
                         var block = chunk.Blocks[x, y, z];
 
-                        if (block is BlockAir || block is BlockBed)
-                            continue;
-
                         chunkData.Data[6].BlockStateContainer.Set(x, y, z, block);
                     }
                 }
