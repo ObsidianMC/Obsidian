@@ -41,6 +41,11 @@ namespace Obsidian.ChunkData
             this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
         }
 
+        public void Set(double x, double y, double z, BlockState blockState)
+        {
+            this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
+        }
+
         public BlockState Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[GetIndex(x, y, z)];

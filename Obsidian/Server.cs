@@ -217,6 +217,7 @@ namespace Obsidian
         private async Task RegisterDefaultAsync()
         {
             await RegisterAsync(new SuperflatGenerator());
+            await RegisterAsync(new TestBlocksGenerator());
         }
 
         public async Task RegisterAsync(params object[] input)

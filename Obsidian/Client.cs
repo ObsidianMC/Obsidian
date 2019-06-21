@@ -380,25 +380,10 @@ namespace Obsidian
                 chunkData.Data.Add(new ChunkSection());
             }
 
-            int countX = 0;
-            int countZ = 0;
-
-            foreach (var block in Blocks.BLOCK_STATES)
+            foreach(var block in chunk.Blocks)
             {
-                if (block is BlockAir || block is BlockBed)
-                    continue;
-
-                if(countX == 15)
-                {
-                    countX = 0;
-                    countZ++;
-                }
-
-                chunkData.Data[6].BlockStateContainer.Set(countX, 1, countZ, block);
-                countX++;
+                chunkData.Data[6].BlockStateContainer.Set(block.Position.X, block.Position.Y, block.Position.Z, block);
             }
-            
-
 
             for (int i = 0; i < 16 * 16; i++)
             {

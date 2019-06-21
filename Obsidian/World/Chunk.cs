@@ -49,15 +49,33 @@ namespace Obsidian.World
 
         public void SetBlock(Position position, Block block)
         {
-            var index = this.Blocks.FindIndex(x => x.Position == position);
-            this.Blocks[index].Set(block);
+            try
+            {
+                var index = this.Blocks.FindIndex(b => b.Position == position);
+
+                this.Blocks[index].Set(block);
+            }
+            catch
+            {
+                block.Position = position;
+                this.Blocks[this.Blocks.Count + 1].Set(block);
+            }
         }
 
         public void SetBlock(int x, int y, int z, Block block)
         {
-            var index = this.Blocks.FindIndex(b => b.Position.Match(x, y, z));
+            try
+            {
+                var index = this.Blocks.FindIndex(b => b.Position.Match(x, y, z));
 
-            this.Blocks[index].Set(block);
+                this.Blocks[index].Set(block);
+            }
+            catch
+            {
+                block.Position = new Position(x, y, z);
+                this.Blocks[this.Blocks.Count + 1].Set(block);
+            }
+
         }
     }
 }
