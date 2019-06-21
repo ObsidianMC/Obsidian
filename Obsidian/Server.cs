@@ -1,4 +1,5 @@
-﻿using Obsidian.Commands;
+﻿using Obsidian.BlockData;
+using Obsidian.Commands;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
@@ -174,10 +175,12 @@ namespace Obsidian
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
             if (!this.Config.OnlineMode)
-                await this.Logger.LogMessageAsync($"Server is offline mode..");
+                await this.Logger.LogMessageAsync($"Server is in offline mode..");
 
             await Logger.LogDebugAsync($"Start listening for new clients");
             _tcpListener.Start();
+
+            await Blocks.RegisterAsync();
 
             while (!_cts.IsCancellationRequested)
             {

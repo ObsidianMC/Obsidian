@@ -365,23 +365,31 @@ namespace Obsidian
 
             var chunkData = new ChunkDataPacket(0, 0);
 
+            await this.Logger.LogWarningAsync("Adding chunks");
             for (int i = 0; i < 16; i++)
             {
                 chunkData.Data.Add(new ChunkSection());
             }
 
-            for (var x = 0; x < 16; x++)
+            int countX = 0;
+            int countZ = 0;
+
+            foreach (var block in Blocks.BLOCK_STATES)
             {
-                for (var z = 0; z < 16; z++)
+                if (block is BlockAir || block is BlockBed)
+                    continue;
+
+                if(countX == 15)
                 {
-                    chunkData.Data[6].BlockStateContainer.Set(x, 0, z, Blocks.Bedrock);
-                    chunkData.Data[6].BlockStateContainer.Set(x, 1, z, Blocks.Dirt);
-                    chunkData.Data[6].BlockStateContainer.Set(x, 2, z, Blocks.Dirt);
-                    chunkData.Data[6].BlockStateContainer.Set(x, 3, z, Blocks.Dirt);
-                    chunkData.Data[6].BlockStateContainer.Set(x, 4, z, Blocks.Dirt);
-                    chunkData.Data[6].BlockStateContainer.Set(x, 5, z, Blocks.Grass);
+                    countX = 0;
+                    countZ++;
                 }
+
+                chunkData.Data[6].BlockStateContainer.Set(countX, 1, countZ, block);
+                countX++;
             }
+            
+
 
             for (int i = 0; i < 16 * 16; i++)
             {
