@@ -10,6 +10,7 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
+using Obsidian.World;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,8 +24,6 @@ namespace Obsidian
     {
         private readonly bool Compressed = false;
         public MinecraftStream MinecraftStream { get; set; }
-
-
 
         public ClientState State { get; private set; }
 
@@ -62,6 +61,7 @@ namespace Obsidian
         public Logger Logger => this.OriginServer.Logger;
 
         #region Packet Sending Methods
+
         public async Task DisconnectAsync(Chat.ChatMessage reason)
         {
             await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
@@ -175,7 +175,7 @@ namespace Obsidian
             await this.Logger.LogDebugAsync("Sending Player Info packet.");
         }
 
-        #endregion
+        #endregion Packet Sending Methods
 
         private async Task<CompressedPacket> GetNextCompressedPacketAsync()
         {
@@ -193,7 +193,6 @@ namespace Obsidian
             {
                 Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
-
 
                 if (this.State == ClientState.Play && packet.PacketData.Length < 1)
                     this.Disconnect();
@@ -215,6 +214,7 @@ namespace Obsidian
                                 break;
                         }
                         break;
+
                     case ClientState.Handshaking:
                         if (packet.PacketId == 0x00)
                         {
@@ -239,6 +239,7 @@ namespace Obsidian
                             //Handle legacy ping stuff
                         }
                         break;
+
                     case ClientState.Login:
                         switch (packet.PacketId)
                         {
@@ -321,6 +322,7 @@ namespace Obsidian
                                 break;
                         }
                         break;
+
                     case ClientState.Play:
 
                         ///await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
@@ -363,7 +365,14 @@ namespace Obsidian
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
 
-            var chunkData = new ChunkDataPacket(0, 0);
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
+
+            await this.Logger.LogDebugAsync("Sent chunk");
+        }
+
+        private async Task SendChunkAsync(Chunk chunk)
+        {
+            var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
             await this.Logger.LogWarningAsync("Adding chunks");
             for (int i = 0; i < 16; i++)
@@ -393,12 +402,10 @@ namespace Obsidian
 
             for (int i = 0; i < 16 * 16; i++)
             {
-                chunkData.Biomes.Add(2);
+                chunkData.Biomes.Add(2); //TODO: Add proper biomes
             }
 
             await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);
-
-            await this.Logger.LogDebugAsync("Sent chunk");
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();

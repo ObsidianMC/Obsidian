@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Threading.Tasks;
 
 namespace Obsidian.Plugins
 {
@@ -11,25 +9,25 @@ namespace Obsidian.Plugins
         /// Initializes a plugin, and returns a new PluginInfo object.
         /// </summary>
         /// <param name="server">Server to intialize plugin in</param>
-        /// <returns></returns>
-        PluginInfo Initialize(Server server);
+        /// <returns>The information about a plugin which will be represented in plugin listings</returns>
+        Task<PluginInfo> InitializeAsync(Server server);
     }
 
     public class PluginInfo
     {
-        public string Name { get; private set; }
-        public string Author { get; private set; }
-        public string Version { get; private set; }
-        public string Description { get; private set; }
-        public string ProjectUrl { get; private set; }
+        public string Name { get; }
+        public string Author { get; }
+        public string Version { get; }
+        public string Description { get; }
+        public string ProjectUrl { get; }
 
-        public PluginInfo(string name, string author, string version, string description, string projecturl)
+        public PluginInfo(string name, string author, string version, string description, string projectUrl)
         {
             this.Name = name;
             this.Author = author;
             this.Version = version;
             this.Description = description;
-            this.ProjectUrl = projecturl;
+            this.ProjectUrl = projectUrl;
         }
     }
 }

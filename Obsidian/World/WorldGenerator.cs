@@ -6,11 +6,14 @@ namespace Obsidian.World
     {
         public List<Chunk> Chunks { get; }
 
-        public WorldGenerator()
+        public string Id { get; }
+
+        public WorldGenerator(string id)
         {
             this.Chunks = new List<Chunk>();
+            this.Id = id;
         }
-        
-        public abstract void GenerateChunk(Chunk chunk);
+
+        public abstract Chunk GenerateChunk(Chunk chunk);
     }
 }

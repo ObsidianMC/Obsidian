@@ -11,15 +11,17 @@ namespace SamplePlugin
 {
     public class SamplePluginClass : IPluginClass
     {
-        Server server;
+        private Server server;
 
-        public PluginInfo Initialize(Server server)
+        public async Task<PluginInfo> InitializeAsync(Server server)
         {
             this.server = server;
 
             server.Commands.AddModule<SamplePluginCommands>();
 
             server.Events.PlayerJoin += OnPlayerJoin;
+
+            await server.RegisterAsync(new DickWorldGenerator());
 
             return new PluginInfo(
                 "SamplePlugin",
@@ -45,7 +47,6 @@ namespace SamplePlugin
         [Description("A sample command added by a sample plugin!")]
         public async Task SampleCommandAsync()
         {
-
             await Context.Server.SendChatAsync($"Sample command executed by {Context.Player.Username}" +
                 $" from within a sample plugin!!!1", Context.Client, 0, false);
         }

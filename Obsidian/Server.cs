@@ -35,7 +35,9 @@ namespace Obsidian
         public PluginManager PluginManager;
         public DateTimeOffset StartTime;
 
-        public WorldGenerator WorldGenerator { get; set; }
+        public List<WorldGenerator> WorldGenerators { get; } = new List<WorldGenerator>();
+
+        public WorldGenerator WorldGenerator { get; private set; }
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -67,17 +69,6 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.PluginManager = new PluginManager(this);
-
-            switch (config.Generator)
-            {
-                case Generator.Normal:
-                    break;
-                case Generator.Superflat:
-                    this.WorldGenerator = new SuperflatGenerator();
-                    break;
-                case Generator.Void:
-                    break;
-            }
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -129,7 +120,6 @@ namespace Obsidian
 
         public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
 
-
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {
             if (system)
@@ -165,8 +155,21 @@ namespace Obsidian
         {
             await Logger.LogMessageAsync($"Launching Obsidian Server v {Version} with ID {Id}");
 
+            await Logger.LogMessageAsync("Registering default entities");
+            await RegisterDefaultAsync();
+
             await Logger.LogMessageAsync($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
+
+            if (WorldGenerators.FirstOrDefault(g => g.Id == Config.Generator) is WorldGenerator worldGenerator)
+            {
+                this.WorldGenerator = worldGenerator;
+            }
+            else
+            {
+                throw new Exception($"Generator ({Config.Generator}) is unknown.");
+            }
+            await Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
 
             await Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
             this.StartTime = DateTimeOffset.Now;
@@ -204,7 +207,33 @@ namespace Obsidian
 
         public void StopServer()
         {
+            this.WorldGenerators.Clear(); //Clean up for memory and next boot
             this._cts.Cancel();
+        }
+
+        /// <summary>
+        /// Registers the "obsidian-vanilla" entities and objects
+        /// </summary>
+        private async Task RegisterDefaultAsync()
+        {
+            await RegisterAsync(new SuperflatGenerator());
+        }
+
+        public async Task RegisterAsync(params object[] input)
+        {
+            foreach (object item in input)
+            {
+                switch (item)
+                {
+                    default:
+                        throw new Exception($"Input ({item.GetType().ToString()}) can't be handled by RegisterAsync.");
+
+                    case WorldGenerator generator:
+                        await Logger.LogDebugAsync($"Registering {generator.Id}...");
+                        WorldGenerators.Add(generator);
+                        break;
+                }
+            }
         }
     }
 }

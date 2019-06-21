@@ -4,7 +4,11 @@ namespace Obsidian.World.Generators
 {
     public class SuperflatGenerator : WorldGenerator
     {
-        public override void GenerateChunk(Chunk chunk)
+        public SuperflatGenerator() : base("superflat")
+        {
+        }
+
+        public override Chunk GenerateChunk(Chunk chunk)
         {
             for (var x = 0; x < 16; x++)
             {
@@ -18,6 +22,8 @@ namespace Obsidian.World.Generators
                     chunk.SetBlock(x, 5, z, Blocks.Cobblestone);
                 }
             }
+
+            return chunk;
         }
     }
 }

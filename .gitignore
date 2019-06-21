@@ -331,3 +331,5 @@ ASALocalRun/
 Obsidian/.vscode/launch.json
 Obsidian/.vscode/tasks.json
 Obsidian/config.json
+.vscode/launch.json
+.vscode/tasks.json

@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Util.Converters;
 using Obsidian.Logging;
 
 namespace Obsidian.Entities
@@ -15,8 +14,8 @@ namespace Obsidian.Entities
         [JsonProperty("serverCount")]
         public int ServerCount = 1;
 
-        [JsonProperty("generator"), JsonConverter(typeof(GeneratorConverter))]
-        public Generator Generator = Generator.Normal;
+        [JsonProperty("generator")]
+        public string Generator = "superflat";
 
         [JsonProperty("joinMessage")]
         public string JoinMessage = "§e{0} joined the game";
@@ -30,20 +29,12 @@ namespace Obsidian.Entities
         [JsonProperty("logLevel")]
 #if DEBUG
         public LogLevel LogLevel = LogLevel.Debug;
+
 #else
         public LogLevel LogLevel = LogLevel.Error;
 #endif
 
         [JsonProperty("debugMode")]
         public bool DebugMode = false;
-    }
-
-    public enum Generator
-    {
-        Normal,
-
-        Superflat,
-
-        Void
     }
 }
