@@ -392,7 +392,7 @@ namespace Obsidian
             int countX = 0;
             int countZ = 0;
 
-            foreach (var block in Blocks.BLOCK_STATES)
+            foreach (var block in chunk.Blocks)
             {
                 if (block is BlockAir || block is BlockBed)
                     continue;
