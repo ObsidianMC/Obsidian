@@ -26,6 +26,9 @@ namespace Obsidian.Entities
         [JsonProperty("onlineMode")]
         public bool OnlineMode = true;
 
+        [JsonProperty("operatorRequests")]
+        public bool AllowOperatorRequests = false;
+
         [JsonProperty("logLevel")]
 #if DEBUG
         public LogLevel LogLevel = LogLevel.Debug;
@@ -42,5 +45,11 @@ namespace Obsidian.Entities
         /// </summary>
         [JsonProperty("multiplayerDebugMode")]
         public bool MulitplayerDebugMode = false;
+
+        [JsonProperty("header")]
+        public string Header = "§dObsidian > All other servers";
+
+        [JsonProperty("footer")]
+        public string Footer = "§5tiddies §l§d( §c. §d)( §c. §d)";
     }
 }

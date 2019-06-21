@@ -1,5 +1,6 @@
 ﻿using Obsidian.Boss;
 using Obsidian.Chat;
+using Obsidian.Entities;
 using Qmmands;
 using System;
 using System.Diagnostics;
@@ -20,7 +21,6 @@ namespace Obsidian.Commands
             {
                 await Context.Client.SendChatAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
             }
-
         }
 
         [Command("plugins")]
@@ -64,20 +64,79 @@ namespace Obsidian.Commands
             await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
         }
 
-        #if DEBUG
-        [Command("claimop")]
-        public async Task ClaimOpAsync()
+        [Command("op")]
+        [RequireOperator]
+        public async Task GiveOpAsync(string username)
         {
-            Context.Server.Operators.AddOperator(Context.Player);
-            await Context.Client.SendChatAsync("You are now OP!");
+            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
+            if (client != null)
+            {
+                Context.Server.Operators.AddOperator(client.Player);
+            }
+            else
+            {
+                Context.Server.Operators.AddOperator(username);
+            }
+
+            await Context.Client.SendChatAsync($"Made {username} a server operator");
         }
 
-        [Command("unclaimop")]
-        public async Task UnclaimOpAsync()
+        [Command("deop")]
+        [RequireOperator]
+        public async Task UnclaimOpAsync(string username)
         {
-            Context.Server.Operators.RemoveOperator(Context.Player);
-            await Context.Client.SendChatAsync("You are no longer OP!");
+            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
+            if (client != null)
+            {
+                Context.Server.Operators.AddOperator(client.Player);
+            }
+            else
+            {
+                Context.Server.Operators.AddOperator(username);
+            }
+
+            await Context.Client.SendChatAsync($"Made {username} no longer a server operator");
         }
+
+        [Command("oprequest", "opreq")]
+        public async Task RequestOpAsync()
+        {
+            if (!Context.Server.Config.AllowOperatorRequests)
+            {
+                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                return;
+            }
+
+            if (Context.Server.Operators.CreateRequest(Context.Player))
+            {
+                await Context.Client.SendChatAsync("A request has been to the server console");
+            }
+            else
+            {
+                await Context.Client.SendChatAsync("§cYou have already sent a request");
+            }
+        }
+
+        [Command("oprequest", "opreq")]
+        public async Task RequestOpAsync(string code)
+        {
+            if (!Context.Server.Config.AllowOperatorRequests)
+            {
+                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                return;
+            }
+
+            if (Context.Server.Operators.ProcessRequest(Context.Player, code))
+            {
+                await Context.Client.SendChatAsync("Your request has been accepted");
+            }
+            else
+            {
+                await Context.Client.SendChatAsync("§cInvalid request");
+            }
+        }
+
+#if DEBUG
 
         [Command("breakpoint")]
         public async Task BreakpointAsync()
@@ -86,6 +145,7 @@ namespace Obsidian.Commands
             await Task.Delay(3000);
             Debugger.Break();
         }
-        #endif
+
+#endif
     }
 }
