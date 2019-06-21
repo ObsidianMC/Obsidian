@@ -2,6 +2,7 @@
 using Obsidian.Chat;
 using Qmmands;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -81,8 +82,7 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         public async Task BreakpointAsync()
         {
-            // put a breakpoint on the return to snoop into vars..
-            return;
+            Debugger.Break();
         }
         #endif
     }
