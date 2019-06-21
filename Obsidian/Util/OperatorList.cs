@@ -40,15 +40,33 @@ namespace Obsidian.Util
             _updateList();
         }
 
+        public void AddOperator(string username)
+        {
+            _ops.Add(new Operator() { Username = username, UUID = null });
+            _updateList();
+        }
+
         public void RemoveOperator(Player p)
         {
             _ops.RemoveAll(x => x.UUID == p.UUID || x.Username == p.Username);
             _updateList();
         }
 
+        public void RemoveOperator(string username)
+        {
+            _ops.RemoveAll(x => x.Username == username);
+            _updateList();
+        }
+
+        public void RemoveOperator(Guid uuid)
+        {
+            _ops.RemoveAll(x => x.UUID == uuid);
+            _updateList();
+        }
+
         public bool IsOperator(Player p)
         {
-            return _ops.Any(x => 
+            return _ops.Any(x =>
                 (x.Username == p.Username || p.UUID == x.UUID)
                  && x.Online == _server.Config.OnlineMode
                  );
