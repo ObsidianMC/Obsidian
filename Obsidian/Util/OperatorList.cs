@@ -11,10 +11,12 @@ namespace Obsidian.Util
     public class OperatorList
     {
         private List<Operator> _ops;
+        private Server _server;
 
-        public OperatorList()
+        public OperatorList(Server s)
         {
             _ops = new List<Operator>();
+            _server = s;
         }
 
         public void Initialize()
@@ -34,21 +36,22 @@ namespace Obsidian.Util
 
         public void AddOperator(Player p)
         {
-            _ops.Add(new Operator() { Username = p.Username, UUID = p.UUID });
+            _ops.Add(new Operator() { Username = p.Username, UUID = _server.Config.OnlineMode ? p?.UUID : null });
             _updateList();
         }
 
         public void RemoveOperator(Player p)
         {
-            if(_ops.Any(x => x.UUID == p.UUID))
-            {
-                _ops.RemoveAll(x => x.UUID == p.UUID);
-            }
-            else
-            {
-                _ops.RemoveAll(x => x.Username == p.Username);
-            }
+            _ops.RemoveAll(x => x.UUID == p.UUID || x.Username == p.Username);
             _updateList();
+        }
+
+        public bool IsOperator(Player p)
+        {
+            return _ops.Any(x => 
+                (x.Username == p.Username || p.UUID == x.UUID)
+                 && x.Online == _server.Config.OnlineMode
+                 );
         }
 
         private void _updateList()
@@ -61,8 +64,12 @@ namespace Obsidian.Util
         {
             [JsonProperty("username")]
             public string Username;
+
             [JsonProperty("uuid")]
             public Guid? UUID;
+
+            [JsonIgnore]
+            public bool Online => UUID != null;
         }
     }
 }
