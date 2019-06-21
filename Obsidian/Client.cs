@@ -1,5 +1,6 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Boss;
+using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -175,9 +176,16 @@ namespace Obsidian
                 list.Add(action);
             }
 
-            await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
-
             await this.Logger.LogDebugAsync("Sending Player Info packet.");
+
+            await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
+        }
+
+        public async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
+        {
+            await this.Logger.LogDebugAsync("Sending Player List Footer Header packet.");
+
+            await PacketHandler.CreateAsync(new PlayerListHeaderFooter(header, footer), this.MinecraftStream);
         }
 
         #endregion Packet Sending Methods
@@ -379,6 +387,9 @@ namespace Obsidian
             // TODO fix
             //await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
+
+            await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
+                                                       string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
