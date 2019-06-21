@@ -65,5 +65,13 @@ namespace Obsidian.Commands
             Title = ChatMessage.Simple("SUCC"),
             Health = 0.5f
         });
+
+        [Command("tp")]
+        [Description("teleports you to a location")]
+        public async Task TeleportAsync(double x, double y, double z)
+        {
+            await Context.Client.SendChatAsync("ight homie tryna tp you (and sip dicks)");
+            await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
+        }
     }
 }

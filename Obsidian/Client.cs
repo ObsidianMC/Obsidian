@@ -90,6 +90,11 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
         }
 
+        public async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
+        {
+            await PacketHandler.CreateAsync(new PlayerPositionLook(poslook, posflags, tpid), this.MinecraftStream);
+        }
+
         public async Task SendDeclareCommandsAsync()
         {
             await this.Logger.LogDebugAsync("Generating Declare Commands packet.");
@@ -371,7 +376,8 @@ namespace Obsidian
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            await this.SendDeclareCommandsAsync();
+            // TODO fix
+            //await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
