@@ -30,5 +30,10 @@ namespace Obsidian.Util
         {
             return this.X == x && this.Y == y && this.Z == z;
         }
+
+        public override string ToString()
+        {
+            return $"X{X} Y{Y} Z{Z}";
+        }
     }
 }

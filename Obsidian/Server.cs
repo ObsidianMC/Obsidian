@@ -163,6 +163,15 @@ namespace Obsidian
                         client.Disconnect();
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
+
+                    if(Config.Baah.HasValue)
+                    {
+                        if (client.State == ClientState.Play)
+                        {
+                            var pos = new Position(client.Player.Transform.X * 8, client.Player.Transform.Y * 8, client.Player.Transform.Z * 8);
+                            await client.SendSoundEffectAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
+                        }
+                    }
                 }
             }
         }

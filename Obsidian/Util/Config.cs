@@ -51,5 +51,8 @@ namespace Obsidian.Entities
 
         [JsonProperty("footer")]
         public string Footer = "§5tiddies §l§d( §c. §d)( §c. §d)";
+
+        [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? Baah = null;
     }
 }
