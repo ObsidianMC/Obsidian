@@ -55,17 +55,6 @@ namespace Obsidian.Commands
         [Description("Debug command for testing the Declare Commands packet")]
         public Task DeclareCommandsTestAsync() => Context.Client.SendDeclareCommandsAsync();
 
-        [Command("bossbar")]
-        [Description("Debug command")]
-        public Task TestBossBarAsync() => Context.Client.SendBossBarAsync(Guid.NewGuid(), new BossBarAddAction()
-        {
-            Color = BossBarColor.Blue,
-            Division = BossBarDivisionType.None,
-            Flags = BossBarFlags.DarkenSky,
-            Title = ChatMessage.Simple("SUCC"),
-            Health = 0.5f
-        });
-
         [Command("tp")]
         [Description("teleports you to a location")]
         public async Task TeleportAsync(double x, double y, double z)
