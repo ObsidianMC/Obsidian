@@ -11,9 +11,6 @@ namespace Obsidian.Entities
         [JsonProperty("port")]
         public int Port = 25565;
 
-        [JsonProperty("serverCount")]
-        public int ServerCount = 1;
-
         [JsonProperty("generator")]
         public string Generator = "superflat";
 
@@ -28,17 +25,6 @@ namespace Obsidian.Entities
 
         [JsonProperty("operatorRequests")]
         public bool AllowOperatorRequests = false;
-
-        [JsonProperty("logLevel")]
-#if DEBUG
-        public LogLevel LogLevel = LogLevel.Debug;
-
-#else
-        public LogLevel LogLevel = LogLevel.Error;
-#endif
-
-        [JsonProperty("debugMode")]
-        public bool DebugMode = false;
 
         /// <summary>
         /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.

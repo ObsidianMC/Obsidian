@@ -24,7 +24,7 @@ namespace Obsidian.Util.Registry
 
             if (file == null)
             {
-                await Logger.LogErrorAsync("file is null");
+                Logger.LogError("file is null");
                 return;
             }
             if (file.Exists)
@@ -56,7 +56,7 @@ namespace Obsidian.Util.Registry
                         if (Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
                         {
                             int id = states.States.FirstOrDefault().Id;
-                            await Logger.LogWarningAsync($"Registered block: {material.ToString()} with id: {id.ToString()}");
+                            Logger.LogWarning($"Registered block: {material.ToString()} with id: {id.ToString()}");
 
                             switch (material)
                             {
@@ -791,14 +791,14 @@ namespace Obsidian.Util.Registry
                     }
                 }
 
-                await Logger.LogDebugAsync($"Successfully registered {registered} blocks..");
+                Logger.LogDebug($"Successfully registered {registered} blocks..");
             }
         }
 
         public static async Task<Block> RegisterAsync(Block block)
         {
             //BLOCK_STATES.Add(block);
-            //await Logger.LogDebugAsync($"Registered: {block.UnlocalizedName} with id {block.Id}");
+            //Logger.LogDebugAsync($"Registered: {block.UnlocalizedName} with id {block.Id}");
             return block;
         }
 
@@ -806,7 +806,7 @@ namespace Obsidian.Util.Registry
         {
             var block = new Block(name, id);
             //BLOCK_STATES.Add(block);
-            //await Logger.LogDebugAsync($"Registered: {name} with id {id}");
+            //Logger.LogDebugAsync($"Registered: {name} with id {id}");
             return block;
         }
 

@@ -136,6 +136,13 @@ namespace Obsidian.Commands
             }
         }
 
+        [Command("obsidian")]
+        [Description("Shows obsidian popup")]
+        public async Task ObsidianAsync()
+        {
+            await Context.Client.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+        }
+
 #if DEBUG
 
         [Command("breakpoint")]

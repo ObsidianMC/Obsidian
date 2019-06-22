@@ -13,21 +13,23 @@ namespace Obsidian.Plugins
     public class PluginManager
     {
         public ConcurrentHashSet<Plugin> Plugins { get; private set; }
-        private Server OriginServer;
+        private Server Server;
+        private string Path => System.IO.Path.Combine(Server.Path, "plugins");
 
         internal PluginManager(Server server)
         {
             this.Plugins = new ConcurrentHashSet<Plugin>();
-            this.OriginServer = server;
+            this.Server = server;
         }
 
         internal async Task LoadPluginsAsync(Logger logger)
         {
-            if (!Directory.Exists("plugins"))
+            if (!Directory.Exists(Path))
             {
-                Directory.CreateDirectory("plugins");
+                Directory.CreateDirectory(Path);
             }
-            var files = Directory.GetFiles(Path.GetFullPath("plugins"), "*.dll");
+
+            string[] files = Directory.GetFiles(Path, "*.dll");
             // I don't do File IO often, I just know how to do reflection from a dll
             foreach (var file in files) // don't touch pls
             {
@@ -37,11 +39,11 @@ namespace Obsidian.Plugins
                 foreach (var ptype in pluginclasses)
                 {
                     var pluginClass = (IPluginClass)Activator.CreateInstance(ptype);
-                    var pluginInfo = await pluginClass.InitializeAsync(OriginServer);
+                    var pluginInfo = await pluginClass.InitializeAsync(Server);
                     var plugin = new Plugin(pluginInfo, pluginClass);
 
                     Plugins.Add(plugin);
-                    await logger.LogMessageAsync($"Loaded plugin: {pluginInfo.Name} by {pluginInfo.Author}");
+                    logger.LogMessage($"Loaded plugin: {pluginInfo.Name} by {pluginInfo.Author}");
                 }
             }
         }
