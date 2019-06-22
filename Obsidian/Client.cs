@@ -439,6 +439,12 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             this.Logger.LogDebug("Sent Position packet.");
 
+            using (var stream = new MinecraftStream())
+            {
+                await stream.WriteStringAsync("obsidian");
+                await PacketHandler.CreateAsync(new PluginMessage("minecraft:brand", stream.ToArray()), this.MinecraftStream);
+            }
+
             this.Player.BitMask = EntityBitMask.None;
 
             if (this.OriginServer.Config.OnlineMode)
