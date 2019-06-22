@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets
         {
             Location = loc;
             Face = face;
-            hand = Hand;
+            Hand = hand;
             CursorX = cursorx;
             CursorY = cursory;
             CursorZ = cursorz;

@@ -13,6 +13,8 @@ namespace Obsidian.Entities
         // ETC
         public Guid UUID { get; set; }
 
+        public string Uuid3 { get; }
+
         // Properties set by Minecraft (official)
         public Transform Transform { get; set; }
 
@@ -64,6 +66,8 @@ namespace Obsidian.Entities
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
             this.Transform = new Transform();
+
+            this.Uuid3 = $"OfflinePlayer:{username}";
         }
 
         public void UpdatePosition(Position pos, bool? onGround = null)

@@ -192,8 +192,8 @@ namespace Obsidian.Net
         public async Task WritePositionAsync(Position value)
         {
             //this is 1.13 
-            var pos = (((int)value.X & 0x3FFFFFF) << 38) | ((((int)value.Y & 0xFFF) << 26) | ((int)value.Z & 0x3FFFFFF));
-
+            long pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
+            
             await this.WriteLongAsync(pos);
             //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
         }

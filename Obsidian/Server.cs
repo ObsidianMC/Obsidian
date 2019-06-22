@@ -90,6 +90,8 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
+
+
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
@@ -106,7 +108,7 @@ namespace Obsidian
                     var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
+                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });//.ContinueWith(t => { //if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
 
                     keepaliveticks = 0;
                 }
@@ -118,43 +120,30 @@ namespace Obsidian
                             await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }
 
-                while(_diggers.Count > 0)
+                if (_diggers.Count > 0)
                 {
-                    if(_diggers.TryDequeue(out PlayerDigging d))
+                    if (_diggers.TryDequeue(out PlayerDigging d))
                     {
                         foreach (var clnt in Clients)
                         {
-                            await Logger.LogMessageAsync($"Broadcasting a block break at X{d.Location.X} Y{d.Location.Y} Z{d.Location.Z}");
-                            var b = new BlockChange(d.Location, Blocks.Air.Id);
+                            var b = new BlockChange(d.Location, BlockRegistry.G(Materials.Air).Id);
 
-                            await Logger.LogMessageAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
                             await clnt.SendBlockChangeAsync(b);
-                            await clnt.SendChatAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
                         }
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
 
-                while (_placed.Count > 0)
+                if (_placed.Count > 0)
                 {
                     if (_placed.TryDequeue(out PlayerBlockPlacement pbp))
                     {
                         foreach (var clnt in Clients)
                         {
-                            await Logger.LogMessageAsync($"Broadcasting a block place at X{pbp.Location.X} Y{pbp.Location.Y} Z{pbp.Location.Z}");
-                            var b = new BlockChange(pbp.Location, Blocks.IronBlock.Id);
+                            var location = pbp.Location;
 
-                            await Logger.LogMessageAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
+                            var b = new BlockChange(pbp.Location, BlockRegistry.G(Materials.Cobblestone).Id);
                             await clnt.SendBlockChangeAsync(b);
-                            await clnt.SendChatAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
                         }
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
 
@@ -165,7 +154,7 @@ namespace Obsidian
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
 
-                    if(Config.Baah.HasValue)
+                    if (Config.Baah.HasValue)
                     {
                         if (client.State == ClientState.Play)
                         {
@@ -179,14 +168,27 @@ namespace Obsidian
 
         public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
 
-        public async Task EnqueueDigging(PlayerDigging d)
+        public void EnqueueDigging(PlayerDigging d)
         {
             _diggers.Enqueue(d);
         }
 
-        public async Task EnqueuePlacing(PlayerBlockPlacement pbp)
+        public void EnqueuePlacing(PlayerBlockPlacement pbp)
         {
             _placed.Enqueue(pbp);
+        }
+
+        public async Task SendNewPlayer(int id, Guid uuid, Transform position)
+        {
+            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
+                await clnt.SendPlayerAsync(id, uuid, position);
+
+        }
+
+        public async Task SendNewPlayer(int id, string uuid, Transform position)
+        {
+            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
+                await clnt.SendPlayerAsync(id, uuid, position);
         }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)

@@ -7,6 +7,7 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
@@ -69,7 +70,7 @@ namespace Obsidian
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
         }
 
-        public async Task DisconnectAsync(Chat.ChatMessage reason)
+        public async Task DisconnectAsync(ChatMessage reason)
         {
             await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
         }
@@ -134,7 +135,7 @@ namespace Obsidian
                     if (type == typeof(string)) parameterNode.Identifier = "brigadier:string";
                     else if (type == typeof(int)) parameterNode.Identifier = "brigadier:integer";
                     else if (type == typeof(bool)) parameterNode.Identifier = "brigadier:bool";
-                    else throw new NotImplementedException("Not supported parameter");
+                    else continue;
 
                     commandNode.Children.Add(parameterNode);
                 }
@@ -190,6 +191,33 @@ namespace Obsidian
             await this.Logger.LogDebugAsync("Sending Player Info packet.");
 
             await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
+        }
+
+        internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
+        {
+            await PacketHandler.CreateAsync(new SpawnPlayer
+            {
+                Id = id,
+
+                Uuid = uuid,
+
+                Tranform = pos
+            }, this.MinecraftStream);
+
+            await this.Logger.LogDebugAsync("New player spawned!");
+        }
+
+        internal async Task SendPlayerAsync(int id, string uuid, Transform pos)
+        {
+            await PacketHandler.CreateAsync(new SpawnPlayer
+            {
+                Id = id,
+
+                Uuid3 = uuid,
+
+                Tranform = pos
+            }, this.MinecraftStream);
+            await this.Logger.LogDebugAsync("New player spawned!");
         }
 
         public async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
@@ -373,6 +401,8 @@ namespace Obsidian
                 this.Tcp.Close();
         }
 
+
+
         private async Task ConnectAsync(Guid uuid)
         {
             await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.UUID.ToString()}");
@@ -382,6 +412,7 @@ namespace Obsidian
             this.State = ClientState.Play;
 
             this.Player.Gamemode = Gamemode.Creative;
+
             await PacketHandler.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
@@ -396,34 +427,17 @@ namespace Obsidian
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            foreach (Client client in this.OriginServer.Clients)
-            {
-                if (client == this)
-                {
-                    continue;
-                }
-
-                await client.SendSpawnMobAsync(0, this.Player.UUID, 92, new Transform()
-                {
-                    X = 0,
-                    Y = 100,
-                    Z = 0,
-                    Pitch = 0,
-                    Yaw = 0
-                }, 0, new Velocity(0, 0, 0), new Entities.Player(this.Player.UUID, this.Player.Username));
-            }
-
             // TODO fix
-            //await this.SendDeclareCommandsAsync();
+            await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
 
             await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
                                                        string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
             await this.Logger.LogDebugAsync("Sent chunk");
         }
