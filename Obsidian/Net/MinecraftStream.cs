@@ -44,6 +44,7 @@ namespace Obsidian.Net
 
         Particle
     }
+
     public partial class MinecraftStream
     {
         static MinecraftStream()
@@ -54,6 +55,7 @@ namespace Obsidian.Net
         public static Encoding StringEncoding;
 
         #region Writing
+
         public async Task WriteAsEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
             await this.WriteUnsignedByteAsync(index);
@@ -63,50 +65,66 @@ namespace Obsidian.Net
                 case EntityMetadataType.Byte:
                     await this.WriteUnsignedByteAsync((byte)value);
                     break;
+
                 case EntityMetadataType.VarInt:
                     await this.WriteVarIntAsync((int)value);
                     break;
+
                 case EntityMetadataType.Float:
                     await this.WriteFloatAsync((float)value);
                     break;
+
                 case EntityMetadataType.String:
                     await this.WriteStringAsync((string)value, 3276);
                     break;
+
                 case EntityMetadataType.Chat:
                     await this.WriteChatAsync((ChatMessage)value);
                     break;
+
                 case EntityMetadataType.OptChat:
                     await this.WriteBooleanAsync(optional);
                     await this.WriteChatAsync((ChatMessage)value);
                     break;
+
                 case EntityMetadataType.Slot:
                     await this.WriteUnsignedByteAsync((byte)value);
                     break;
+
                 case EntityMetadataType.Boolean:
                     await this.WriteBooleanAsync((bool)value);
                     break;
+
                 case EntityMetadataType.Rotation:
                     break;
+
                 case EntityMetadataType.Position:
                     await this.WritePositionAsync((Position)value);
                     break;
+
                 case EntityMetadataType.OptPosition:
                     await this.WriteBooleanAsync(optional);
                     await this.WritePositionAsync((Position)value);
                     break;
+
                 case EntityMetadataType.Direction:
                     break;
+
                 case EntityMetadataType.OptUuid:
                     await this.WriteBooleanAsync(optional);
                     await this.WriteUuidAsync((Guid)value);
                     break;
+
                 case EntityMetadataType.OptBlockId:
                     await this.WriteVarIntAsync((int)value);
                     break;
+
                 case EntityMetadataType.Nbt:
                     break;
+
                 case EntityMetadataType.Particle:
                     break;
+
                 default:
                     break;
             }
@@ -283,17 +301,19 @@ namespace Obsidian.Net
 
         public async Task WritePositionAsync(Position value)
         {
-            //this is 1.13 
+            //this is 1.13
             long pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
-            
+
             await this.WriteLongAsync(pos);
             //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
         }
 
         public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);
-        #endregion
+
+        #endregion Writing
 
         #region Reading
+
         public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
         public async Task<byte> ReadUnsignedByteAsync()
@@ -525,6 +545,6 @@ namespace Obsidian.Net
             };
         }
 
-        #endregion
+        #endregion Reading
     }
 }
