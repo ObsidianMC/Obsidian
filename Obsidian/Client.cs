@@ -274,7 +274,8 @@ namespace Obsidian
                         {
                             case 0x00:
                                 // Request
-                                await PacketHandler.CreateAsync(new RequestResponse(ServerStatus.DebugStatus), this.MinecraftStream);
+                                var status = new ServerStatus(OriginServer);
+                                await PacketHandler.CreateAsync(new RequestResponse(status), this.MinecraftStream);
                                 break;
 
                             case 0x01:

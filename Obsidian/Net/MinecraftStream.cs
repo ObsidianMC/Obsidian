@@ -504,7 +504,7 @@ namespace Obsidian.Net
             ulong value = await this.ReadUnsignedLongAsync();
             int x = (int)(value >> 38), y = (int)((value >> 26) & 0xFFF), z = (int)(value << 38 >> 38);
 
-            if (ServerStatus.DebugStatus.Version.Protocol == ProtocolVersion.v1_14)
+            if (PacketHandler.Protocol == ProtocolVersion.v1_14)
             {
                 x = (int)(value >> 38);
                 y = (int)value & 0xFFF;
