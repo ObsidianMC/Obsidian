@@ -56,7 +56,7 @@ namespace Obsidian.Util
             {
                 var req = new OperatorRequest(p);
 
-                _server.Logger.LogWarningAsync("New operator request from {p.Username}: " + req.Code);
+                _server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
 
                 _reqs.Add(req);
             }
