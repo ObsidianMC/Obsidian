@@ -92,8 +92,6 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
-
-
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
@@ -190,8 +188,6 @@ namespace Obsidian
                 await clnt.SendEntity(new EntityPacket { Id = id });
                 await clnt.SendSpawnMobAsync(id, uuid, 92, position, 1, new Velocity(1, 1, 1), player);
             }
-
-
         }
 
         public async Task SendNewPlayer(int id, string uuid, Transform position, Player player)
@@ -203,8 +199,6 @@ namespace Obsidian
                 await clnt.SendEntity(new EntityPacket { Id = id });
                 await clnt.SendSpawnMobAsync(id, uuid, 92, position, 0, new Velocity(1, 1, 1), player);
             }
-
-
         }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
@@ -287,7 +281,7 @@ namespace Obsidian
 
                 await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = this.Clients.Count + 1;
+                int newplayerid = this.Clients.Count <= 0 ? 0 : this.Clients.Count + 1;
                     
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
