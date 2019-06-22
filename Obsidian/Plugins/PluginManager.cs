@@ -43,7 +43,7 @@ namespace Obsidian.Plugins
                     var plugin = new Plugin(pluginInfo, pluginClass);
 
                     Plugins.Add(plugin);
-                    await logger.LogMessageAsync($"Loaded plugin: {pluginInfo.Name} by {pluginInfo.Author}");
+                    logger.LogMessage($"Loaded plugin: {pluginInfo.Name} by {pluginInfo.Author}");
                 }
             }
         }

@@ -41,7 +41,7 @@ namespace Obsidian.Util
         {
             if (_server.Config.OnlineMode)
             {
-                _ops.Add(new Operator() { Username = p.Username, Uuid =  p?.Uuid });
+                _ops.Add(new Operator() { Username = p.Username, Uuid = p?.Uuid });
             }
             else
             {
@@ -63,7 +63,7 @@ namespace Obsidian.Util
             {
                 var req = new OperatorRequest(p);
 
-                _server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
+                _server.Logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
 
                 _reqs.Add(req);
             }

@@ -94,8 +94,6 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
-
-
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
@@ -113,7 +111,6 @@ namespace Obsidian
 
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
                         await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });//.ContinueWith(t => { //if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
-
                     keepaliveticks = 0;
                 }
 
@@ -192,8 +189,6 @@ namespace Obsidian
                 await clnt.SendEntity(new EntityPacket { Id = id });
                 await clnt.SendSpawnMobAsync(id, uuid, 92, position, 1, new Velocity(1, 1, 1), player);
             }
-
-
         }
 
         public async Task SendNewPlayer(int id, string uuid, Transform position, Player player)
@@ -205,8 +200,6 @@ namespace Obsidian
                 await clnt.SendEntity(new EntityPacket { Id = id });
                 await clnt.SendSpawnMobAsync(id, uuid, 92, position, 0, new Velocity(1, 1, 1), player);
             }
-
-
         }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
@@ -214,14 +207,14 @@ namespace Obsidian
             if (system)
             {
                 _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
-                await Logger.LogMessageAsync(message);
+                Logger.LogMessage(message);
             }
             else
             {
                 if (!CommandUtilities.HasPrefix(message, '/', out string output))
                 {
                     _chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
-                    await Logger.LogMessageAsync($"<{source.Player.Username}> {message}");
+                    Logger.LogMessage($"<{source.Player.Username}> {message}");
                     return;
                 }
 
@@ -240,23 +233,23 @@ namespace Obsidian
         /// <returns></returns>
         public async Task StartServer()
         {
-            await Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
+            Logger.LogMessage($"Launching Obsidian Server v{Version} with ID {Id}");
 
             //Check if MPDM and OM are enabled, if so, we can't handle connections
             if (Config.MulitplayerDebugMode && Config.OnlineMode)
             {
-                await Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+                Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
                 StopServer();
                 return;
             }
 
-            await Logger.LogMessageAsync($"Loading operator list...");
+            Logger.LogMessage($"Loading operator list...");
             Operators.Initialize();
 
-            await Logger.LogMessageAsync("Registering default entities");
+            Logger.LogMessage("Registering default entities");
             await RegisterDefaultAsync();
 
-            await Logger.LogMessageAsync($"Loading and Initializing plugins...");
+            Logger.LogMessage($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
 
             if (WorldGenerators.FirstOrDefault(g => g.Id == Config.Generator) is WorldGenerator worldGenerator)
@@ -267,18 +260,18 @@ namespace Obsidian
             {
                 throw new Exception($"Generator ({Config.Generator}) is unknown.");
             }
-            await Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
+            Logger.LogMessage($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
 
-            await Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
+            Logger.LogDebug($"Set start DateTimeOffset for measuring uptime.");
             this.StartTime = DateTimeOffset.Now;
 
-            await Logger.LogMessageAsync("Starting server backend...");
+            Logger.LogMessage("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
             if (!this.Config.OnlineMode)
-                await this.Logger.LogMessageAsync($"Server is in offline mode..");
+                this.Logger.LogMessage($"Server is in offline mode..");
 
-            await Logger.LogDebugAsync($"Start listening for new clients");
+            Logger.LogDebug($"Start listening for new clients");
             _tcpListener.Start();
 
             await BlockRegistry.RegisterAll();
@@ -287,17 +280,17 @@ namespace Obsidian
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
 
-                await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
+                Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
                 int newplayerid = this.Clients.Count + 1;
-                    
+
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
             // Cancellation has been requested
-            await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
+            Logger.LogWarning($"Cancellation has been requested. Stopping server...");
             // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
         }
 
@@ -331,7 +324,7 @@ namespace Obsidian
                         throw new Exception($"Input ({item.GetType().ToString()}) can't be handled by RegisterAsync.");
 
                     case WorldGenerator generator:
-                        await Logger.LogDebugAsync($"Registering {generator.Id}...");
+                        Logger.LogDebug($"Registering {generator.Id}...");
                         WorldGenerators.Add(generator);
                         break;
                 }

@@ -1,6 +1,7 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Events;
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
 namespace Obsidian.Logging
@@ -17,6 +18,8 @@ namespace Obsidian.Logging
 
         public LogLevel LogLevel { get; set; }
 
+        private readonly ConcurrentQueue<LogMessage> _messages = new ConcurrentQueue<LogMessage>();
+
         private string Prefix;
 
         internal Logger(string prefix, LogLevel logLevel)
@@ -24,22 +27,34 @@ namespace Obsidian.Logging
             this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
             this.Prefix = prefix;
             this.LogLevel = logLevel;
+
+            Task.Run(async delegate () //HACK: Please oversee this, and do any changes if necessary.
+            {
+                while (true)
+                {
+                    if (_messages.TryDequeue(out LogMessage message))
+                    {
+                        await LogMessageAsync(message.Message, message.Level, message.DateTime);
+                    }
+                }
+            });
         }
 
         private void LogError(string eventname, Exception ex)
         {
         }
 
-        public Task LogDebugAsync(string message) => this.LogMessageAsync(message, LogLevel.Debug);
+        public void LogDebug(string message) => this.LogMessage(message, LogLevel.Debug);
 
-        public Task LogWarningAsync(string message) => this.LogMessageAsync(message, LogLevel.Warning);
+        public void LogWarning(string message) => this.LogMessage(message, LogLevel.Warning);
 
-        public Task LogErrorAsync(string message) => this.LogMessageAsync(message, LogLevel.Error);
+        public void LogError(string message) => this.LogMessage(message, LogLevel.Error);
 
-        public async Task LogMessageAsync(string msg, LogLevel logLevel = LogLevel.Info)
+        public void LogMessage(string msg, LogLevel logLevel = LogLevel.Info) => _messages.Enqueue(new LogMessage(msg, logLevel, DateTimeOffset.Now));
+
+        private async Task LogMessageAsync(string msg, LogLevel logLevel, DateTimeOffset dateTime)
         {
-            var datetime = DateTimeOffset.Now;
-            await _messageLogged.InvokeAsync(new LoggerEventArgs(msg, Prefix, datetime));
+            await _messageLogged.InvokeAsync(new LoggerEventArgs(msg, Prefix, dateTime));
 
             //checking if message should be printed or not
             if (logLevel > LogLevel)
@@ -47,46 +62,45 @@ namespace Obsidian.Logging
                 return;
             }
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("[");
+            string line = "";
 
-            Console.ResetColor();
-
-            Console.Write("{0:t} " + logLevel.ToString(), datetime);
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("]");
+            line += string.Format("[{0:t}] " + logLevel.ToString() + " ", dateTime);
 
             if (Prefix != "")
             {
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Write("[");
-
-                Console.ResetColor();
-                Console.Write(Prefix);
-
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Write("] ");
+                line += $"[{Prefix}] ";
             }
 
-            Console.ResetColor();
+            line += msg;
 
+            Console.ForegroundColor = GetConsoleColor(logLevel);
+            Console.WriteLine(line);
+        }
+
+        private static ConsoleColor GetConsoleColor(LogLevel logLevel)
+        {
             switch (logLevel)
             {
-                case LogLevel.Warning:
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    break;
-
-                case LogLevel.Error:
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    break;
-
-                case LogLevel.Debug:
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    break;
+                case LogLevel.Info: return ConsoleColor.Cyan;
+                case LogLevel.Warning: return ConsoleColor.Yellow;
+                case LogLevel.Error: return ConsoleColor.DarkRed;
+                case LogLevel.Debug: return ConsoleColor.Magenta;
+                default: return ConsoleColor.Gray;
             }
+        }
+    }
 
-            Console.WriteLine(msg);
+    public struct LogMessage
+    {
+        public LogLevel Level;
+        public DateTimeOffset DateTime;
+        public string Message;
+
+        public LogMessage(string message, LogLevel level, DateTimeOffset dateTime)
+        {
+            Message = message ?? throw new ArgumentNullException(nameof(message));
+            Level = level;
+            DateTime = dateTime;
         }
     }
 }
