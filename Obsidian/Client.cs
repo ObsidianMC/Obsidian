@@ -151,9 +151,11 @@ namespace Obsidian
 
                     Type type = parameter.Type;
 
-                    if (type == typeof(string)) parameterNode.Identifier = "brigadier:string";
-                    else if (type == typeof(int)) parameterNode.Identifier = "brigadier:integer";
-                    else if (type == typeof(bool)) parameterNode.Identifier = "brigadier:bool";
+                    if (type == typeof(string)) parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                    else if (type == typeof(double)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:double");
+                    else if (type == typeof(float)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:float");
+                    else if (type == typeof(int)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:integer");
+                    else if (type == typeof(bool)) parameterNode.Parser = new CommandParser("brigadier:bool");
                     else continue;
 
                     commandNode.Children.Add(parameterNode);

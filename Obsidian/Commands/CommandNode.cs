@@ -1,4 +1,5 @@
 ﻿using Obsidian.Net;
+using Obsidian.Net.Packets;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,48 +14,46 @@ namespace Obsidian.Commands
     {
         public CommandNodeType Type;
 
-        public List<int> ChildrenIndices = new List<int>();
-
         public List<CommandNode> Children = new List<CommandNode>();
 
         public string Name;
 
-        public string Identifier;
+        public DeclareCommands Owner;
+
+        public int Index => Owner.Nodes.IndexOf(this);
+
+        public CommandParser Parser;
 
         public async Task<byte[]> ToArrayAsync()
         {
-            using (var memoryStream = new MinecraftStream())
+            using (var stream = new MinecraftStream())
             {
-                await memoryStream.WriteByteAsync((sbyte)Type);
-                await memoryStream.WriteVarIntAsync(Children.Count);
+                await stream.WriteByteAsync((sbyte)Type);
+                await stream.WriteVarIntAsync(Children.Count);
 
-                for (int i = 0; i < this.Children.Count; i++)
-                    await memoryStream.WriteVarIntAsync(i);
-
+                foreach (CommandNode childNode in Children)
+                {
+                    await stream.WriteVarIntAsync(childNode.Index);
+                }
 
                 if (Type.HasFlag(CommandNodeType.HasRedirect))
                 {
                     //TODO: Add redirect functionality if needed
-                    await memoryStream.WriteVarIntAsync(0);
+                    await stream.WriteVarIntAsync(0);
                 }
 
                 if (Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal))
                 {
                     if (!string.IsNullOrWhiteSpace(Name))
-                        await memoryStream.WriteStringAsync(Name);
+                        await stream.WriteStringAsync(Name);
                 }
 
                 if (Type.HasFlag(CommandNodeType.Argument))
                 {
-                    await memoryStream.WriteIdentifierAsync(Identifier);
-                    if (Identifier.Equals("brigadier:string", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        //HACK: for debug, first test, please remove if better arguments have been aded.
-                        await memoryStream.WriteVarIntAsync(1);
-                    }
+                    await Parser.WriteAsync(stream);
                 }
 
-                return memoryStream.ToArray();
+                return stream.ToArray();
             }
         }
     }
