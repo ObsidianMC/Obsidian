@@ -157,7 +157,7 @@ namespace Obsidian
         /// <returns></returns>
         public async Task StartServer()
         {
-            await Logger.LogMessageAsync($"Launching Obsidian Server v {Version} with ID {Id}");
+            await Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
 
             //Check if MPDM and OM are enabled, if so, we can't handle connections
             if (Config.MulitplayerDebugMode && Config.OnlineMode)
@@ -235,6 +235,11 @@ namespace Obsidian
             await RegisterAsync(new TestBlocksGenerator());
         }
 
+        /// <summary>
+        /// Registers a new entity to the server
+        /// </summary>
+        /// <param name="input">A compatible entry</param>
+        /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
         public async Task RegisterAsync(params object[] input)
         {
             foreach (object item in input)
