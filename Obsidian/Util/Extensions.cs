@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Util
+﻿using System.Collections.Generic;
+
+namespace Obsidian.Util
 {
     public static class Extensions
     {

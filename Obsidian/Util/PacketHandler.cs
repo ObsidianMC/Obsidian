@@ -4,7 +4,6 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -68,6 +67,7 @@ namespace Obsidian.Util
             return new EmptyPacket(packetId, packetData);
         }
 
+        public const float MaxDiggingRadius = 6;
         public static async Task HandlePlayPackets(Packet packet, Client client)
         {
             Server server = client.OriginServer;
@@ -164,7 +164,7 @@ namespace Obsidian.Util
                 case 0x10:// Player Position
                     var pos = await CreateAsync(new PlayerPosition(packet.PacketData));
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    //await Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
+                    //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
@@ -210,6 +210,10 @@ namespace Obsidian.Util
                 case 0x18:
                     // Player Digging
                     await Logger.LogDebugAsync("Received player digging");
+
+                    var digging = await CreateAsync(new PlayerDigging(packet.PacketData));
+
+                    server.EnqueueDigging(digging);
                     break;
 
                 case 0x19:
@@ -296,7 +300,12 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
+                    var pbp = await CreateAsync(new PlayerBlockPlacement(packet.PacketData));
+
+                    server.EnqueuePlacing(pbp);
                     await Logger.LogDebugAsync("Received player block placement");
+
+
                     break;
 
                 case 0x2A:

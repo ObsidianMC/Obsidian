@@ -85,14 +85,14 @@ namespace Obsidian.Entities
                 Air = playercompound["Air"].ShortValue,
                 AttackTime = playercompound["AttackTime"].ShortValue,
                 DeathTime = playercompound["DeathTime"].ShortValue,
-                Fire = playercompound["Fire"].ShortValue,
+                //Fire = playercompound["Fire"].ShortValue,
                 Health = playercompound["Health"].ShortValue,
                 HurtTime = playercompound["HurtTime"].ShortValue,
                 SleepTimer = playercompound["SleepTimer"].ShortValue,
                 Dimension = playercompound["Dimension"].IntValue,
                 FoodLevel = playercompound["foodLevel"].IntValue,
                 FoodTickTimer = playercompound["foodTickTimer"].IntValue,
-                PlayerGameType = playercompound["playerGameType"].IntValue,
+                Gamemode = (Gamemode)playercompound["playerGameType"].IntValue,
                 XpLevel = playercompound["XpLevel"].IntValue,
                 XpTotal = playercompound["XpTotal"].IntValue,
                 FallDistance = playercompound["FallDistance"].FloatValue,
@@ -108,7 +108,7 @@ namespace Obsidian.Entities
         public void UnloadPlayer(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
-            this.Players.RemoveAll(x => x.UUID == uuid);
+            this.Players.RemoveAll(x => x.Uuid == uuid);
         }
     }
 

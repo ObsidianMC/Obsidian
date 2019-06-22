@@ -1,4 +1,6 @@
 ﻿using Obsidian.Net;
+using Obsidian.Util.Registry;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.BlockData
@@ -17,12 +19,12 @@ namespace Obsidian.BlockData
 
         public int IdFromState(Block blockState)
         {
-            return Blocks.BLOCK_STATES.IndexOf(blockState);
+            return BlockRegistry.BLOCK_STATES.Values.ToList().IndexOf(blockState);
         }
 
         public BlockState StateFromIndex(int index)
         {
-            return Blocks.BLOCK_STATES[index];
+            return BlockRegistry.BLOCK_STATES.Values.ToList()[index];
         }
 
         public Task<byte[]> ToArrayAsync()
@@ -53,7 +55,7 @@ namespace Obsidian.BlockData
                 }
             }
 
-            if(this.IsFull)
+            if (this.IsFull)
             {
                 return -1;
             }
@@ -75,7 +77,7 @@ namespace Obsidian.BlockData
             {
                 await stream.WriteVarIntAsync(BlockStateCount);
 
-                for(int i  = 0; i < BlockStateCount; i++)
+                for (int i = 0; i < BlockStateCount; i++)
                 {
                     await stream.WriteVarIntAsync(BlockStateArray[i].Id);
                 }

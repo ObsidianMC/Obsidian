@@ -39,7 +39,14 @@ namespace Obsidian.Util
 
         public void AddOperator(Player p)
         {
-            _ops.Add(new Operator() { Username = p.Username, UUID = _server.Config.OnlineMode ? p?.UUID : null });
+            if (_server.Config.OnlineMode)
+            {
+                _ops.Add(new Operator() { Username = p.Username, Uuid =  p?.Uuid });
+            }
+            else
+            {
+                _ops.Add(new Operator() { Username = p.Username, Uuid3 = p?.Uuid3 });
+            }
             _updateList();
         }
 
@@ -82,13 +89,13 @@ namespace Obsidian.Util
 
         public void AddOperator(string username)
         {
-            _ops.Add(new Operator() { Username = username, UUID = null });
+            _ops.Add(new Operator() { Username = username, Uuid = null });
             _updateList();
         }
 
         public void RemoveOperator(Player p)
         {
-            _ops.RemoveAll(x => x.UUID == p.UUID || x.Username == p.Username);
+            _ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
             _updateList();
         }
 
@@ -100,14 +107,14 @@ namespace Obsidian.Util
 
         public void RemoveOperator(Guid uuid)
         {
-            _ops.RemoveAll(x => x.UUID == uuid);
+            _ops.RemoveAll(x => x.Uuid == uuid);
             _updateList();
         }
 
         public bool IsOperator(Player p)
         {
             return _ops.Any(x =>
-                (x.Username == p.Username || p.UUID == x.UUID)
+                (x.Username == p.Username || p.Uuid == x.Uuid)
                  && x.Online == _server.Config.OnlineMode
                  );
         }
@@ -124,10 +131,13 @@ namespace Obsidian.Util
             public string Username;
 
             [JsonProperty("uuid")]
-            public Guid? UUID;
+            public Guid? Uuid;
+
+            [JsonProperty("uuid3")]
+            public string Uuid3;
 
             [JsonIgnore]
-            public bool Online => UUID != null;
+            public bool Online => Uuid != null;
         }
 
         private class OperatorRequest

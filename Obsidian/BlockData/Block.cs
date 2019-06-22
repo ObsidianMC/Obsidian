@@ -4,9 +4,11 @@
     {
         public byte Metadata { get; set; }
 
-        public Block(string name, int id) : base(name, id)
+        internal Block(string name, int id) : base(name, id)
         {
         }
+
+        
 
         public void Set(Block block)
         {

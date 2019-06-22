@@ -10,6 +10,40 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net
 {
+    public enum EntityMetadataType : int
+    {
+        Byte,
+
+        VarInt,
+
+        Float,
+
+        String,
+
+        Chat,
+
+        OptChat,
+
+        Slot,
+
+        Boolean,
+
+        Rotation,
+
+        Position,
+
+        OptPosition,
+
+        Direction,
+
+        OptUuid,
+
+        OptBlockId,
+
+        Nbt,
+
+        Particle
+    }
     public partial class MinecraftStream
     {
         static MinecraftStream()
@@ -20,6 +54,64 @@ namespace Obsidian.Net
         public static Encoding StringEncoding;
 
         #region Writing
+        public async Task WriteAsEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
+        {
+            await this.WriteUnsignedByteAsync(index);
+            await this.WriteVarIntAsync((int)type);
+            switch (type)
+            {
+                case EntityMetadataType.Byte:
+                    await this.WriteUnsignedByteAsync((byte)value);
+                    break;
+                case EntityMetadataType.VarInt:
+                    await this.WriteVarIntAsync((int)value);
+                    break;
+                case EntityMetadataType.Float:
+                    await this.WriteFloatAsync((float)value);
+                    break;
+                case EntityMetadataType.String:
+                    await this.WriteStringAsync((string)value, 3276);
+                    break;
+                case EntityMetadataType.Chat:
+                    await this.WriteChatAsync((ChatMessage)value);
+                    break;
+                case EntityMetadataType.OptChat:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WriteChatAsync((ChatMessage)value);
+                    break;
+                case EntityMetadataType.Slot:
+                    await this.WriteUnsignedByteAsync((byte)value);
+                    break;
+                case EntityMetadataType.Boolean:
+                    await this.WriteBooleanAsync((bool)value);
+                    break;
+                case EntityMetadataType.Rotation:
+                    break;
+                case EntityMetadataType.Position:
+                    await this.WritePositionAsync((Position)value);
+                    break;
+                case EntityMetadataType.OptPosition:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WritePositionAsync((Position)value);
+                    break;
+                case EntityMetadataType.Direction:
+                    break;
+                case EntityMetadataType.OptUuid:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WriteUuidAsync((Guid)value);
+                    break;
+                case EntityMetadataType.OptBlockId:
+                    await this.WriteVarIntAsync((int)value);
+                    break;
+                case EntityMetadataType.Nbt:
+                    break;
+                case EntityMetadataType.Particle:
+                    break;
+                default:
+                    break;
+            }
+        }
+
         public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
 
         public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
@@ -192,11 +284,8 @@ namespace Obsidian.Net
         public async Task WritePositionAsync(Position value)
         {
             //this is 1.13 
-            var pos = (((int)value.X & 0x3FFFFFF) << 38) | ((((int)value.Y & 0xFFF) << 26) | ((int)value.Z & 0x3FFFFFF));
-
-            if (ServerStatus.DebugStatus.Version.Protocol == ProtocolVersion.v1_14)
-                pos = (((int)value.X & 0x3FFFFFF) << 38) | (((int)value.Z & 0x3FFFFFF) << 12) | ((int)value.Y & 0xFFF);
-
+            long pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
+            
             await this.WriteLongAsync(pos);
             //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
         }
@@ -421,6 +510,10 @@ namespace Obsidian.Net
                 y = (int)value & 0xFFF;
                 z = (int)(value << 26 >> 38);
             }
+
+            if (x >= Math.Pow(2, 25)) { x -= (int)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11)) { y -= (int)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25)) { z -= (int)Math.Pow(2, 26); }
 
             return new Position
             {

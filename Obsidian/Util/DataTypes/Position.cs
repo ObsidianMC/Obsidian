@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Util
+﻿using System;
+
+namespace Obsidian.Util
 {
     public class Position
     {
@@ -27,6 +29,11 @@
         public bool Match(int x, int y, int z)
         {
             return this.X == x && this.Y == y && this.Z == z;
+        }
+
+        public override string ToString()
+        {
+            return $"X{X} Y{Y} Z{Z}";
         }
     }
 }

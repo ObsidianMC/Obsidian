@@ -4,8 +4,11 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
+using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
 using Obsidian.Plugins;
 using Obsidian.Util;
+using Obsidian.Util.Registry;
 using Obsidian.World;
 using Obsidian.World.Generators;
 using Qmmands;
@@ -29,6 +32,9 @@ namespace Obsidian
     public class Server
     {
         private ConcurrentQueue<QueueChat> _chatmessages;
+        private ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
+        private ConcurrentQueue<PlayerBlockPlacement> _placed;
+
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
 
@@ -64,6 +70,8 @@ namespace Obsidian
 
             this._cts = new CancellationTokenSource();
             this._chatmessages = new ConcurrentQueue<QueueChat>();
+            this._diggers = new ConcurrentQueue<PlayerDigging>();
+            this._placed = new ConcurrentQueue<PlayerBlockPlacement>();
             this.Commands = new CommandService(new CommandServiceConfiguration()
             {
                 CaseSensitive = false,
@@ -86,6 +94,8 @@ namespace Obsidian
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
 
+
+
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
@@ -102,7 +112,7 @@ namespace Obsidian
                     var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); }).ContinueWith(t => { if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
+                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });//.ContinueWith(t => { //if (t.IsCompleted) Logger.LogDebugAsync($"Broadcasting keepalive {keepaliveid}"); });
 
                     keepaliveticks = 0;
                 }
@@ -114,17 +124,90 @@ namespace Obsidian
                             await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }
 
+                if (_diggers.Count > 0)
+                {
+                    if (_diggers.TryDequeue(out PlayerDigging d))
+                    {
+                        foreach (var clnt in Clients)
+                        {
+                            var b = new BlockChange(d.Location, BlockRegistry.G(Materials.Air).Id);
+
+                            await clnt.SendBlockChangeAsync(b);
+                        }
+                    }
+                }
+
+                if (_placed.Count > 0)
+                {
+                    if (_placed.TryDequeue(out PlayerBlockPlacement pbp))
+                    {
+                        foreach (var clnt in Clients)
+                        {
+                            var location = pbp.Location;
+
+                            var b = new BlockChange(pbp.Location, BlockRegistry.G(Materials.Cobblestone).Id);
+                            await clnt.SendBlockChangeAsync(b);
+                        }
+                    }
+                }
+
                 foreach (var client in Clients)
                 {
                     if (client.Timedout)
                         client.Disconnect();
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
+
+                    if (Config.Baah.HasValue)
+                    {
+                        if (client.State == ClientState.Play)
+                        {
+                            var pos = new Position(client.Player.Transform.X * 8, client.Player.Transform.Y * 8, client.Player.Transform.Z * 8);
+                            await client.SendSoundEffectAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
+                        }
+                    }
                 }
             }
         }
 
         public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
+
+        public void EnqueueDigging(PlayerDigging d)
+        {
+            _diggers.Enqueue(d);
+        }
+
+        public void EnqueuePlacing(PlayerBlockPlacement pbp)
+        {
+            _placed.Enqueue(pbp);
+        }
+
+        public async Task SendNewPlayer(int id, Guid uuid, Transform position, Player player)
+        {
+            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
+            {
+                if (clnt.PlayerId == id)
+                    continue;
+
+                await clnt.SendEntity(new EntityPacket { Id = id });
+                await clnt.SendSpawnMobAsync(id, uuid, 92, position, 1, new Velocity(1, 1, 1), player);
+            }
+
+
+        }
+
+        public async Task SendNewPlayer(int id, string uuid, Transform position, Player player)
+        {
+            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
+            {
+                if (clnt.PlayerId == id)
+                    continue;
+                await clnt.SendEntity(new EntityPacket { Id = id });
+                await clnt.SendSpawnMobAsync(id, uuid, 92, position, 0, new Velocity(1, 1, 1), player);
+            }
+
+
+        }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {
@@ -198,7 +281,7 @@ namespace Obsidian
             await Logger.LogDebugAsync($"Start listening for new clients");
             _tcpListener.Start();
 
-            await Blocks.RegisterAsync();
+            await BlockRegistry.RegisterAll();
 
             while (!_cts.IsCancellationRequested)
             {
@@ -206,10 +289,8 @@ namespace Obsidian
 
                 await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = 0;
-                if (Clients.Count > 0)
-                    newplayerid = this.Clients.Max(x => x.PlayerId);
-
+                int newplayerid = this.Clients.Count + 1;
+                    
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
 
