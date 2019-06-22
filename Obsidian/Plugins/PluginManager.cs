@@ -14,6 +14,7 @@ namespace Obsidian.Plugins
     {
         public ConcurrentHashSet<Plugin> Plugins { get; private set; }
         private Server Server;
+        private string Path => System.IO.Path.Combine(Server.Path, "plugins");
 
         internal PluginManager(Server server)
         {
@@ -23,11 +24,12 @@ namespace Obsidian.Plugins
 
         internal async Task LoadPluginsAsync(Logger logger)
         {
-            if (!Directory.Exists("plugins"))
+            if (!Directory.Exists(Path))
             {
-                Directory.CreateDirectory("plugins");
+                Directory.CreateDirectory(Path);
             }
-            var files = Directory.GetFiles(Path.GetFullPath("plugins"), "*.dll");
+
+            string[] files = Directory.GetFiles(Path, "*.dll");
             // I don't do File IO often, I just know how to do reflection from a dll
             foreach (var file in files) // don't touch pls
             {

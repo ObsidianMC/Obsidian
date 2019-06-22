@@ -42,6 +42,8 @@ namespace Obsidian
 
         public WorldGenerator WorldGenerator { get; private set; }
 
+        public string Path => System.IO.Path.GetFullPath(Id.ToString());
+
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
         /// </summary>

@@ -13,6 +13,7 @@ namespace Obsidian.Util
         private List<Operator> _ops;
         private List<OperatorRequest> _reqs;
         private Server _server;
+        private string path => Path.Combine(_server.Path, "ops.json");
 
         public OperatorList(Server s)
         {
@@ -23,16 +24,16 @@ namespace Obsidian.Util
 
         public void Initialize()
         {
-            if (!File.Exists("ops.json"))
+            if (!File.Exists(path))
             {
-                using (var opfile = File.CreateText("ops.json"))
+                using (var opfile = File.CreateText(path))
                 {
                     opfile.Write(JsonConvert.SerializeObject(_ops));
                 }
             }
             else
             {
-                _ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText("ops.json"));
+                _ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(path));
             }
         }
 
@@ -113,7 +114,7 @@ namespace Obsidian.Util
 
         private void _updateList()
         {
-            File.WriteAllText("ops.json", JsonConvert.SerializeObject(_ops));
+            File.WriteAllText(path, JsonConvert.SerializeObject(_ops));
         }
 
         // we only use this in this class
