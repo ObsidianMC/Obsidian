@@ -13,12 +13,12 @@ namespace Obsidian.Plugins
     public class PluginManager
     {
         public ConcurrentHashSet<Plugin> Plugins { get; private set; }
-        private Server OriginServer;
+        private Server Server;
 
         internal PluginManager(Server server)
         {
             this.Plugins = new ConcurrentHashSet<Plugin>();
-            this.OriginServer = server;
+            this.Server = server;
         }
 
         internal async Task LoadPluginsAsync(Logger logger)
@@ -37,7 +37,7 @@ namespace Obsidian.Plugins
                 foreach (var ptype in pluginclasses)
                 {
                     var pluginClass = (IPluginClass)Activator.CreateInstance(ptype);
-                    var pluginInfo = await pluginClass.InitializeAsync(OriginServer);
+                    var pluginInfo = await pluginClass.InitializeAsync(Server);
                     var plugin = new Plugin(pluginInfo, pluginClass);
 
                     Plugins.Add(plugin);
