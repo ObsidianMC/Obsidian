@@ -143,7 +143,7 @@ namespace Obsidian.Util
                 {
                     string code = "";
                     var random = new Random();
-                    const string chars = "0123456789ABCDEF";
+                    const string chars = "0123456789ABCDEFabcdef";
                     for (int i = 0; i < 10; i++)
                     {
                         code += chars[random.Next(0, chars.Length - 1)];
