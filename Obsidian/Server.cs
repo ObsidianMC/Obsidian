@@ -48,15 +48,15 @@ namespace Obsidian
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
         /// </summary>
         /// <param name="version">Version the server is running.</param>
-        public Server(Config config, string version, string serverid)
+        public Server(Config config, string version, int serverId)
         {
             this.Config = config;
 
-            this.Logger = new Logger($"Obsidian ID: {serverid}", Config.LogLevel);
+            this.Logger = new Logger($"Obsidian ID: {serverId}", Program.Config.LogLevel);
 
             this.Port = config.Port;
             this.Version = version;
-            this.Id = serverid;
+            this.Id = serverId;
 
             this._tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
@@ -81,7 +81,7 @@ namespace Obsidian
         public CommandService Commands { get; }
         public Config Config { get; }
         public Logger Logger { get; }
-        public string Id { get; private set; }
+        public int Id { get; private set; }
         public string Version { get; }
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
