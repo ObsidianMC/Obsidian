@@ -419,6 +419,10 @@ namespace Obsidian.Net
                 z = (int)(value << 26 >> 38);
             }
 
+            if (x >= Math.Pow(2, 25)) { x -= (int)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11)) { y -= (int)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25)) { z -= (int)Math.Pow(2, 26); }
+
             return new Position
             {
                 X = x,

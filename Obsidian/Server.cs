@@ -4,6 +4,7 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
+using Obsidian.Net.Packets;
 using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Registry;
@@ -30,6 +31,8 @@ namespace Obsidian
     public class Server
     {
         private ConcurrentQueue<QueueChat> _chatmessages;
+        private ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
+        private ConcurrentQueue<PlayerBlockPlacement> _placed;
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
 
@@ -63,6 +66,8 @@ namespace Obsidian
 
             this._cts = new CancellationTokenSource();
             this._chatmessages = new ConcurrentQueue<QueueChat>();
+            this._diggers = new ConcurrentQueue<PlayerDigging>();
+            this._placed = new ConcurrentQueue<PlayerBlockPlacement>();
             this.Commands = new CommandService(new CommandServiceConfiguration()
             {
                 CaseSensitive = false,
@@ -113,17 +118,76 @@ namespace Obsidian
                             await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
                 }
 
+                while(_diggers.Count > 0)
+                {
+                    if(_diggers.TryDequeue(out PlayerDigging d))
+                    {
+                        foreach (var clnt in Clients)
+                        {
+                            await Logger.LogMessageAsync($"Broadcasting a block break at X{d.Location.X} Y{d.Location.Y} Z{d.Location.Z}");
+                            var b = new BlockChange(d.Location, Blocks.Air.Id);
+
+                            await Logger.LogMessageAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
+                            await clnt.SendBlockChangeAsync(b);
+                            await clnt.SendChatAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                while (_placed.Count > 0)
+                {
+                    if (_placed.TryDequeue(out PlayerBlockPlacement pbp))
+                    {
+                        foreach (var clnt in Clients)
+                        {
+                            await Logger.LogMessageAsync($"Broadcasting a block place at X{pbp.Location.X} Y{pbp.Location.Y} Z{pbp.Location.Z}");
+                            var b = new BlockChange(pbp.Location, Blocks.IronBlock.Id);
+
+                            await Logger.LogMessageAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
+                            await clnt.SendBlockChangeAsync(b);
+                            await clnt.SendChatAsync($"Packet loc X{b.Location.X} Y{b.Location.Y} Z{b.Location.Z}");
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
                 foreach (var client in Clients)
                 {
                     if (client.Timedout)
                         client.Disconnect();
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
+
+                    if(Config.Baah.HasValue)
+                    {
+                        if (client.State == ClientState.Play)
+                        {
+                            var pos = new Position(client.Player.Transform.X * 8, client.Player.Transform.Y * 8, client.Player.Transform.Z * 8);
+                            await client.SendSoundEffectAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
+                        }
+                    }
                 }
             }
         }
 
         public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
+
+        public async Task EnqueueDigging(PlayerDigging d)
+        {
+            _diggers.Enqueue(d);
+        }
+
+        public async Task EnqueuePlacing(PlayerBlockPlacement pbp)
+        {
+            _placed.Enqueue(pbp);
+        }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
         {

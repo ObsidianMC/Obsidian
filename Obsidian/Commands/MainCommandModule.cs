@@ -64,8 +64,6 @@ namespace Obsidian.Commands
             await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
         }
 
-#if DEBUG
-
         [Command("op")]
         [RequireOperator]
         public async Task GiveOpAsync(string username)
@@ -99,6 +97,46 @@ namespace Obsidian.Commands
 
             await Context.Client.SendChatAsync($"Made {username} no longer a server operator");
         }
+
+        [Command("oprequest", "opreq")]
+        public async Task RequestOpAsync()
+        {
+            if (!Context.Server.Config.AllowOperatorRequests)
+            {
+                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                return;
+            }
+
+            if (Context.Server.Operators.CreateRequest(Context.Player))
+            {
+                await Context.Client.SendChatAsync("A request has been to the server console");
+            }
+            else
+            {
+                await Context.Client.SendChatAsync("§cYou have already sent a request");
+            }
+        }
+
+        [Command("oprequest", "opreq")]
+        public async Task RequestOpAsync(string code)
+        {
+            if (!Context.Server.Config.AllowOperatorRequests)
+            {
+                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                return;
+            }
+
+            if (Context.Server.Operators.ProcessRequest(Context.Player, code))
+            {
+                await Context.Client.SendChatAsync("Your request has been accepted");
+            }
+            else
+            {
+                await Context.Client.SendChatAsync("§cInvalid request");
+            }
+        }
+
+#if DEBUG
 
         [Command("breakpoint")]
         public async Task BreakpointAsync()
