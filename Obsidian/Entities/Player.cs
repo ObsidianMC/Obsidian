@@ -1,6 +1,7 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Obsidian.Concurrency;
+using Obsidian.PlayerData;
 using Obsidian.Util;
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ namespace Obsidian.Entities
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
-        public int PlayerGameType { get; set; }
+        public Gamemode Gamemode { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
 

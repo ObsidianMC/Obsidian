@@ -1,5 +1,6 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Util;
+using Obsidian.Util.Registry;
 
 namespace Obsidian.World
 {
@@ -24,7 +25,7 @@ namespace Obsidian.World
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        this.Blocks[chunkX, chunkY, chunkZ] = BlockData.Blocks.Air;
+                        this.Blocks[chunkX, chunkY, chunkZ] = BlockRegistry.G(Materials.Air);
                     }
                 }
             }

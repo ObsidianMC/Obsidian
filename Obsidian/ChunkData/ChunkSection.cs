@@ -1,6 +1,8 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Net;
 using Obsidian.Util;
+using Obsidian.Util.Registry;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -32,9 +34,11 @@ namespace Obsidian.ChunkData
 
     public class BlockStateContainer
     {
-        private const byte BitsPerEntry = 14;//USING GLOBAL PALETTE FOR NOW
+        private const byte BitsPerEntry = 14;
 
         private DataArray BlockStorage = new DataArray(BitsPerEntry);
+
+        private IBlockStatePalette Palette { get; }
 
         public void Set(int x, int y, int z, BlockState blockState)
         {
@@ -49,7 +53,8 @@ namespace Obsidian.ChunkData
         public BlockState Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[GetIndex(x, y, z)];
-            foreach (var blockState in Blocks.BLOCK_STATES)
+
+            foreach (var blockState in BlockRegistry.BLOCK_STATES.Values)
             {
                 if (blockState.Id == storageId)
                     return blockState;
@@ -73,6 +78,6 @@ namespace Obsidian.ChunkData
         }
     }
 
-    
+
 
 }

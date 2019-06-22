@@ -1,12 +1,10 @@
-﻿using Obsidian.BlockData;
-using Obsidian.Boss;
+﻿using Obsidian.Boss;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
@@ -168,7 +166,7 @@ namespace Obsidian
                     Name = client.Player.Username,
                     UUID = client.Player.UUID,
                     Ping = this.Ping,
-                    Gamemode = client.Player.PlayerGameType
+                    Gamemode = (int)client.Player.Gamemode
                 };
                 //action.Properties.AddRange(skinProperties.Properties);
 
@@ -362,6 +360,7 @@ namespace Obsidian
 
             this.State = ClientState.Play;
 
+            this.Player.Gamemode = Gamemode.Creative;
             await PacketHandler.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
@@ -381,9 +380,9 @@ namespace Obsidian
             await this.SendPlayerInfoAsync();
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
+            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
+            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
+            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
             await this.Logger.LogDebugAsync("Sent chunk");
         }
@@ -392,7 +391,6 @@ namespace Obsidian
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
-            await this.Logger.LogWarningAsync("Adding chunks");
             for (int i = 0; i < 16; i++)
             {
                 chunkData.Data.Add(new ChunkSection());

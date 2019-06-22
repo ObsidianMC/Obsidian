@@ -6,6 +6,7 @@ using Obsidian.Events;
 using Obsidian.Logging;
 using Obsidian.Plugins;
 using Obsidian.Util;
+using Obsidian.Util.Registry;
 using Obsidian.World;
 using Obsidian.World.Generators;
 using Qmmands;
@@ -196,7 +197,7 @@ namespace Obsidian
             await Logger.LogDebugAsync($"Start listening for new clients");
             _tcpListener.Start();
 
-            await Blocks.RegisterAsync();
+            await BlockRegistry.RegisterAll();
 
             while (!_cts.IsCancellationRequested)
             {

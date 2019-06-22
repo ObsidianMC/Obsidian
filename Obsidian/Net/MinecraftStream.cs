@@ -194,9 +194,6 @@ namespace Obsidian.Net
             //this is 1.13 
             var pos = (((int)value.X & 0x3FFFFFF) << 38) | ((((int)value.Y & 0xFFF) << 26) | ((int)value.Z & 0x3FFFFFF));
 
-            if (ServerStatus.DebugStatus.Version.Protocol == ProtocolVersion.v1_14)
-                pos = (((int)value.X & 0x3FFFFFF) << 38) | (((int)value.Z & 0x3FFFFFF) << 12) | ((int)value.Y & 0xFFF);
-
             await this.WriteLongAsync(pos);
             //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
         }

@@ -4,7 +4,6 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -209,7 +208,8 @@ namespace Obsidian.Util
 
                 case 0x18:
                     // Player Digging
-                    await Logger.LogDebugAsync("Received player digging");
+
+                    await Logger.LogDebugAsync($"Received player digging");
                     break;
 
                 case 0x19:

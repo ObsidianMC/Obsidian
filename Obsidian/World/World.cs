@@ -92,7 +92,7 @@ namespace Obsidian.Entities
                 Dimension = playercompound["Dimension"].IntValue,
                 FoodLevel = playercompound["foodLevel"].IntValue,
                 FoodTickTimer = playercompound["foodTickTimer"].IntValue,
-                PlayerGameType = playercompound["playerGameType"].IntValue,
+                Gamemode = (Gamemode)playercompound["playerGameType"].IntValue,
                 XpLevel = playercompound["XpLevel"].IntValue,
                 XpTotal = playercompound["XpTotal"].IntValue,
                 FallDistance = playercompound["FallDistance"].FloatValue,

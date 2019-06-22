@@ -1,4 +1,5 @@
 ﻿using Obsidian.BlockData;
+using Obsidian.Util.Registry;
 
 namespace Obsidian.World.Generators
 {
@@ -13,18 +14,19 @@ namespace Obsidian.World.Generators
             int countX = 0;
             int countZ = 0;
 
-            foreach (var block in Blocks.BLOCK_STATES)
+            foreach (var block in BlockRegistry.BLOCK_STATES.Values)
             {
                 if (block is BlockAir || block is BlockBed)
                     continue;
 
-                if (countX == 15)
+                if (countX == 16)
                 {
                     countX = 0;
                     countZ++;
                 }
 
                 chunk.SetBlock(countX, 1, countZ, block);
+
                 countX++;
             }
 
