@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian", "Obsidian\Obsidi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SamplePlugin", "SamplePlugin\SamplePlugin.csproj", "{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.ConversionUtility", "Obsidian.ConversionUtility\Obsidian.ConversionUtility.csproj", "{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D2E17C9-1357-40F2-BC69-A2924DC02C5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
