@@ -1,4 +1,5 @@
-﻿using Obsidian.Util;
+﻿using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
 
@@ -13,6 +14,8 @@ namespace Obsidian.Net.Packets.Play
         public string Uuid3 { get; set; }
 
         public Transform Tranform { get; set; }
+
+        public Player Player { get; set; }
 
         public SpawnPlayer() : base (0x05, new byte[0]) { }
 
@@ -40,8 +43,10 @@ namespace Obsidian.Net.Packets.Play
                 await stream.WriteDoubleAsync(this.Tranform.Y);
                 await stream.WriteDoubleAsync(this.Tranform.Z);
 
-                //await stream.WriteDoubleAsync(this.Tranform.Yaw);
-                //await stream.WriteDoubleAsync(this.Tranform.Pitch);
+                await stream.WriteUnsignedByteAsync((byte)this.Tranform.Yaw);
+                await stream.WriteDoubleAsync((byte)this.Tranform.Pitch);
+
+                await Player.WriteAsync(stream);
 
                 return stream.ToArray();
             }

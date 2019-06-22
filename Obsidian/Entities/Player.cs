@@ -10,8 +10,7 @@ namespace Obsidian.Entities
 {
     public class Player : Living
     {
-        // ETC
-        public Guid UUID { get; set; }
+        public Guid Uuid { get; set; }
 
         public string Uuid3 { get; }
 
@@ -21,10 +20,8 @@ namespace Obsidian.Entities
         public bool OnGround { get; set; }
         public bool Sleeping { get; set; }
 
-        public short Air { get; set; }
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
-        public short Fire { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
 
@@ -40,7 +37,7 @@ namespace Obsidian.Entities
         public float FoodSaturationLevel { get; set; }
         public float XpP { get; set; } // idfk, xp points?
 
-        public object MainHand { get; set; }
+        public Hand MainHand { get; set; }
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
@@ -62,7 +59,7 @@ namespace Obsidian.Entities
 
         public Player(Guid uuid, string username)
         {
-            this.UUID = uuid;
+            this.Uuid = uuid;
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
             this.Transform = new Transform();

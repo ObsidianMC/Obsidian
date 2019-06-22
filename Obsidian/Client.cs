@@ -106,6 +106,21 @@ namespace Obsidian
         public async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
             await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
+
+            await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
+        }
+
+        public async Task SendSpawnMobAsync(int id, string uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
+        {
+            await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
+            await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
+        }
+
+        public async Task SendEntity(EntityPacket packet)
+        {
+
+            await PacketHandler.CreateAsync(packet, this.MinecraftStream);
+            await this.Logger.LogDebugAsync($"Sent entity with id {packet.Id} for player {this.Player.Username}");
         }
 
         public async Task SendDeclareCommandsAsync()
@@ -179,7 +194,7 @@ namespace Obsidian
                 var action = new PlayerInfoAddAction()
                 {
                     Name = client.Player.Username,
-                    UUID = client.Player.UUID,
+                    UUID = client.Player.Uuid,
                     Ping = this.Ping,
                     Gamemode = (int)client.Player.Gamemode
                 };
@@ -201,7 +216,9 @@ namespace Obsidian
 
                 Uuid = uuid,
 
-                Tranform = pos
+                Tranform = pos,
+
+                Player = this.Player
             }, this.MinecraftStream);
 
             await this.Logger.LogDebugAsync("New player spawned!");
@@ -215,7 +232,9 @@ namespace Obsidian
 
                 Uuid3 = uuid,
 
-                Tranform = pos
+                Tranform = pos,
+
+                Player = this.Player
             }, this.MinecraftStream);
             await this.Logger.LogDebugAsync("New player spawned!");
         }
@@ -336,7 +355,7 @@ namespace Obsidian
                                 }
 
                                 this.Player = new Player(Guid.NewGuid(), username);
-                                await ConnectAsync(this.Player.UUID);
+                                await ConnectAsync(this.Player.Uuid);
 
                                 break;
 
@@ -401,11 +420,9 @@ namespace Obsidian
                 this.Tcp.Close();
         }
 
-
-
         private async Task ConnectAsync(Guid uuid)
         {
-            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.UUID.ToString()}");
+            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
 
             await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
 
@@ -419,8 +436,41 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 120, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             await this.Logger.LogDebugAsync("Sent Position packet.");
+
+            this.Player.BitMask = EntityBitMask.None;
+
+            if (this.OriginServer.Config.OnlineMode)
+            {
+                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
+                {
+                    X = 0,
+
+                    Y = 100,
+
+                    Z = 0,
+
+                    Pitch = 0,
+
+                    Yaw = 0
+                }, this.Player);
+            }
+            else
+            {
+                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
+                {
+                    X = 0,
+
+                    Y = 100,
+
+                    Z = 0,
+
+                    Pitch = 0,
+
+                    Yaw = 0
+                }, this.Player);
+            }
 
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
 

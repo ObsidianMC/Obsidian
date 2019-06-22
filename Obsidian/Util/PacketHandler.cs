@@ -164,7 +164,7 @@ namespace Obsidian.Util
                 case 0x10:// Player Position
                     var pos = await CreateAsync(new PlayerPosition(packet.PacketData));
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    //await Logger.LogDebugAsync($"Updated position for {this.Player.Username}");
+                    //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)

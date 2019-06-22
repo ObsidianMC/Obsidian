@@ -20,8 +20,20 @@ namespace Obsidian.Net.Packets.Play
             this.Entity = entity ?? throw new ArgumentNullException(nameof(entity));
         }
 
+        public SpawnMob(int id, string uuid3, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity) : base(0x03)
+        {
+            this.Id = id;
+            this.Uuid3 = uuid3;
+            this.Type = type;
+            this.Transform = transform ?? throw new ArgumentNullException(nameof(transform));
+            this.HeadPitch = headPitch;
+            this.Velocity = velocity;
+            this.Entity = entity ?? throw new ArgumentNullException(nameof(entity));
+        }
+
         public int Id { get; }
         public Guid Uuid { get; }
+        public string Uuid3 { get; }
         public int Type { get; }
         public Transform Transform { get; }
         public byte HeadPitch { get; }
@@ -35,8 +47,24 @@ namespace Obsidian.Net.Packets.Play
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync(Id);
-                await stream.WriteUuidAsync(Uuid);
-                await stream.WritePositionAsync(Transform.Position);
+                if (Uuid3 != null)
+                {
+                    await stream.WriteStringAsync(Uuid3);
+                }
+                else
+                {
+                    await stream.WriteUuidAsync(Uuid);
+                }
+                await stream.WriteVarIntAsync(this.Id);
+
+                //await stream.WritePositionAsync();
+                await stream.WriteDoubleAsync(Transform.Position.X);
+                await stream.WriteDoubleAsync(Transform.Position.Y);
+                await stream.WriteDoubleAsync(Transform.Position.Z);
+
+                await stream.WriteUnsignedByteAsync((byte)Transform.Yaw);
+                await stream.WriteUnsignedByteAsync((byte)Transform.Pitch);
+
                 await stream.WriteUnsignedByteAsync(HeadPitch);
                 await stream.WriteShortAsync(Velocity.X);
                 await stream.WriteShortAsync(Velocity.Y);

@@ -5,6 +5,7 @@ using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
 using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Registry;
@@ -33,6 +34,7 @@ namespace Obsidian
         private ConcurrentQueue<QueueChat> _chatmessages;
         private ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
         private ConcurrentQueue<PlayerBlockPlacement> _placed;
+
         private CancellationTokenSource _cts;
         private TcpListener _tcpListener;
 
@@ -178,17 +180,31 @@ namespace Obsidian
             _placed.Enqueue(pbp);
         }
 
-        public async Task SendNewPlayer(int id, Guid uuid, Transform position)
+        public async Task SendNewPlayer(int id, Guid uuid, Transform position, Player player)
         {
             foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                await clnt.SendPlayerAsync(id, uuid, position);
+            {
+                if (clnt.PlayerId == id)
+                    continue;
+
+                await clnt.SendEntity(new EntityPacket { Id = id });
+                await clnt.SendSpawnMobAsync(id, uuid, 92, position, 1, new Velocity(1, 1, 1), player);
+            }
+
 
         }
 
-        public async Task SendNewPlayer(int id, string uuid, Transform position)
+        public async Task SendNewPlayer(int id, string uuid, Transform position, Player player)
         {
             foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                await clnt.SendPlayerAsync(id, uuid, position);
+            {
+                if (clnt.PlayerId == id)
+                    continue;
+                await clnt.SendEntity(new EntityPacket { Id = id });
+                await clnt.SendSpawnMobAsync(id, uuid, 92, position, 0, new Velocity(1, 1, 1), player);
+            }
+
+
         }
 
         public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
@@ -271,10 +287,8 @@ namespace Obsidian
 
                 await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = 0;
-                if (Clients.Count > 0)
-                    newplayerid = this.Clients.Max(x => x.PlayerId);
-
+                int newplayerid = this.Clients.Count + 1;
+                    
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
 

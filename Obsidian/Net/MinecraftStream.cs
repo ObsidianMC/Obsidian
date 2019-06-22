@@ -10,6 +10,40 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net
 {
+    public enum EntityMetadataType : int
+    {
+        Byte,
+
+        VarInt,
+
+        Float,
+
+        String,
+
+        Chat,
+
+        OptChat,
+
+        Slot,
+
+        Boolean,
+
+        Rotation,
+
+        Position,
+
+        OptPosition,
+
+        Direction,
+
+        OptUuid,
+
+        OptBlockId,
+
+        Nbt,
+
+        Particle
+    }
     public partial class MinecraftStream
     {
         static MinecraftStream()
@@ -20,6 +54,64 @@ namespace Obsidian.Net
         public static Encoding StringEncoding;
 
         #region Writing
+        public async Task WriteAsEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
+        {
+            await this.WriteUnsignedByteAsync(index);
+            await this.WriteVarIntAsync((int)type);
+            switch (type)
+            {
+                case EntityMetadataType.Byte:
+                    await this.WriteUnsignedByteAsync((byte)value);
+                    break;
+                case EntityMetadataType.VarInt:
+                    await this.WriteVarIntAsync((int)value);
+                    break;
+                case EntityMetadataType.Float:
+                    await this.WriteFloatAsync((float)value);
+                    break;
+                case EntityMetadataType.String:
+                    await this.WriteStringAsync((string)value, 3276);
+                    break;
+                case EntityMetadataType.Chat:
+                    await this.WriteChatAsync((ChatMessage)value);
+                    break;
+                case EntityMetadataType.OptChat:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WriteChatAsync((ChatMessage)value);
+                    break;
+                case EntityMetadataType.Slot:
+                    await this.WriteUnsignedByteAsync((byte)value);
+                    break;
+                case EntityMetadataType.Boolean:
+                    await this.WriteBooleanAsync((bool)value);
+                    break;
+                case EntityMetadataType.Rotation:
+                    break;
+                case EntityMetadataType.Position:
+                    await this.WritePositionAsync((Position)value);
+                    break;
+                case EntityMetadataType.OptPosition:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WritePositionAsync((Position)value);
+                    break;
+                case EntityMetadataType.Direction:
+                    break;
+                case EntityMetadataType.OptUuid:
+                    await this.WriteBooleanAsync(optional);
+                    await this.WriteUuidAsync((Guid)value);
+                    break;
+                case EntityMetadataType.OptBlockId:
+                    await this.WriteVarIntAsync((int)value);
+                    break;
+                case EntityMetadataType.Nbt:
+                    break;
+                case EntityMetadataType.Particle:
+                    break;
+                default:
+                    break;
+            }
+        }
+
         public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
 
         public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });

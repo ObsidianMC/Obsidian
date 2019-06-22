@@ -26,17 +26,23 @@ namespace Obsidian.Entities
 
         public async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUnsignedByteAsync((byte)BitMask);
+            await stream.WriteAsEntityMetdata(0, EntityMetadataType.Byte, (byte)BitMask);
 
-            var hasName = CustomName == null;
-            await stream.WriteBooleanAsync(hasName);
-            if (hasName)
+            await stream.WriteAsEntityMetdata(1, EntityMetadataType.VarInt, Air);
+
+            if (CustomName == null)
             {
-                await stream.WriteChatAsync(CustomName);
+                await stream.WriteAsEntityMetdata(2, EntityMetadataType.String, "test");
             }
-            await stream.WriteBooleanAsync(CustomNameVisible);
-            await stream.WriteBooleanAsync(Silent);
-            await stream.WriteBooleanAsync(NoGravity);
+            else
+            {
+                await stream.WriteAsEntityMetdata(2, EntityMetadataType.Chat, CustomName);
+            }
+
+
+            await stream.WriteAsEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
+            await stream.WriteAsEntityMetdata(4, EntityMetadataType.Boolean, Silent);
+            await stream.WriteAsEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
         }
     }
 
