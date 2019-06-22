@@ -28,10 +28,9 @@ namespace Obsidian.Commands
                 await memoryStream.WriteByteAsync((sbyte)Type);
                 await memoryStream.WriteVarIntAsync(Children.Count);
 
-                foreach (int index in ChildrenIndices)
-                {
-                    await memoryStream.WriteVarIntAsync(index);
-                }
+                for (int i = 0; i < this.Children.Count; i++)
+                    await memoryStream.WriteVarIntAsync(i);
+
 
                 if (Type.HasFlag(CommandNodeType.HasRedirect))
                 {
