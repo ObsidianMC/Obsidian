@@ -134,6 +134,7 @@ namespace Obsidian
                     }
                 }
 
+                // TODO use blockface values to determine where block should be placed
                 if (_placed.Count > 0)
                 {
                     if (_placed.TryDequeue(out PlayerBlockPlacement pbp))

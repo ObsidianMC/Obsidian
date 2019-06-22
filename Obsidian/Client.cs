@@ -515,7 +515,7 @@ namespace Obsidian
 
             for (int i = 0; i < 16 * 16; i++)
             {
-                chunkData.Biomes.Add(2); //TODO: Add proper biomes
+                chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
             await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);

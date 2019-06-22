@@ -1,4 +1,5 @@
 ﻿using Obsidian.Util;
+using Obsidian.Util.DataTypes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -6,13 +7,13 @@ namespace Obsidian.Net.Packets
     public class PlayerBlockPlacement : Packet
     {
         public Position Location { get; private set; }
-        public int Face { get; private set; } // enum with face
+        public BlockFace Face { get; private set; } // enum with face
         public int Hand { get; private set; } // hand it was placed from. 0 is main, 1 is off
         public float CursorX { get; private set; }
         public float CursorY { get; private set; }
         public float CursorZ { get; private set; }
 
-        public PlayerBlockPlacement(Position loc, int face, int hand, float cursorx, float cursory, float cursorz) : base(0x29, new byte[0])
+        public PlayerBlockPlacement(Position loc, BlockFace face, int hand, float cursorx, float cursory, float cursorz) : base(0x29, new byte[0])
         {
             Location = loc;
             Face = face;
@@ -29,7 +30,7 @@ namespace Obsidian.Net.Packets
             using (var stream = new MinecraftStream(this.PacketData))
             {
                 Location = await stream.ReadPositionAsync();
-                Face = await stream.ReadVarIntAsync();
+                Face = (BlockFace)await stream.ReadByteAsync();
                 Hand = await stream.ReadVarIntAsync();
                 CursorX = await stream.ReadFloatAsync();
                 CursorY = await stream.ReadFloatAsync();
