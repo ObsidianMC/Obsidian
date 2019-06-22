@@ -153,6 +153,7 @@ namespace Obsidian
                     }
                 }
 
+                // TODO use blockface values to determine where block should be placed
                 if (_placed.Count > 0)
                 {
                     if (_placed.TryDequeue(out PlayerBlockPlacement pbp))
@@ -252,6 +253,7 @@ namespace Obsidian
         /// <returns></returns>
         public async Task StartServer()
         {
+            Console.CancelKeyPress += this.Console_CancelKeyPress;
             Logger.LogMessage($"Launching Obsidian Server v{Version} with ID {Id}");
 
             //Check if MPDM and OM are enabled, if so, we can't handle connections
@@ -266,7 +268,7 @@ namespace Obsidian
             Operators.Initialize();
 
             Logger.LogMessage("Registering default entities");
-            await RegisterDefaultAsync();
+            RegisterDefault();
 
             Logger.LogMessage($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
@@ -277,8 +279,10 @@ namespace Obsidian
             }
             else
             {
-                throw new Exception($"Generator ({Config.Generator}) is unknown.");
+                this.Logger.LogWarning($"Generator ({Config.Generator}) is unknown. Using default generator");
+                this.WorldGenerator = new SuperflatGenerator();
             }
+
             Logger.LogMessage($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
 
             Logger.LogDebug($"Set start DateTimeOffset for measuring uptime.");
@@ -288,7 +292,7 @@ namespace Obsidian
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
             if (!this.Config.OnlineMode)
-                this.Logger.LogMessage($"Server is in offline mode..");
+                this.Logger.LogMessage($"Server started in offline mode..");
 
             Logger.LogDebug($"Start listening for new clients");
             _tcpListener.Start();
@@ -301,16 +305,21 @@ namespace Obsidian
 
                 Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = this.Clients.Count + 1;
-
+                int newplayerid = this.Clients.Count <= 0 ? 0 : this.Clients.Count + 1;
+                    
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
-            // Cancellation has been requested
             Logger.LogWarning($"Cancellation has been requested. Stopping server...");
+        }
+
+        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
             // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
+            Console.WriteLine("shutting down..");
+            StopServer();
         }
 
         public void StopServer()
@@ -322,10 +331,10 @@ namespace Obsidian
         /// <summary>
         /// Registers the "obsidian-vanilla" entities and objects
         /// </summary>
-        private async Task RegisterDefaultAsync()
+        private void RegisterDefault()
         {
-            await RegisterAsync(new SuperflatGenerator());
-            await RegisterAsync(new TestBlocksGenerator());
+            Register(new SuperflatGenerator());
+            Register(new TestBlocksGenerator());
         }
 
         /// <summary>
@@ -333,7 +342,7 @@ namespace Obsidian
         /// </summary>
         /// <param name="input">A compatible entry</param>
         /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
-        public async Task RegisterAsync(params object[] input)
+        public void Register(params object[] input)
         {
             foreach (object item in input)
             {

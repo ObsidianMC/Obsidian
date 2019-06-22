@@ -2,6 +2,7 @@
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
+using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
@@ -128,20 +129,24 @@ namespace Obsidian
 
             var packet = new DeclareCommands();
 
+            var node = new CommandNode()
+            {
+                Type = CommandNodeType.Root
+            };
             foreach (Qmmands.Command command in this.OriginServer.Commands.GetAllCommands())
             {
-                var commandNode = new Commands.CommandNode()
+                var commandNode = new CommandNode()
                 {
                     Name = command.Name,
-                    Type = Commands.CommandNodeType.Literal
+                    Type = CommandNodeType.Literal
                 };
 
                 foreach (Qmmands.Parameter parameter in command.Parameters)
                 {
-                    var parameterNode = new Commands.CommandNode()
+                    var parameterNode = new CommandNode()
                     {
                         Name = parameter.Name,
-                        Type = Commands.CommandNodeType.Argument,
+                        Type = CommandNodeType.Argument,
                     };
 
                     Type type = parameter.Type;
@@ -156,14 +161,16 @@ namespace Obsidian
 
                 if (commandNode.Children.Count > 0)
                 {
-                    commandNode.Children[0].Type |= Commands.CommandNodeType.IsExecutabe;
+                    commandNode.Children[0].Type |= CommandNodeType.IsExecutabe;
                 }
                 else
                 {
-                    commandNode.Type |= Commands.CommandNodeType.IsExecutabe;
+                    commandNode.Type |= CommandNodeType.IsExecutabe;
                 }
 
-                packet.AddNode(commandNode);
+                node.Children.Add(commandNode);
+
+                packet.AddNode(node);
             }
 
             this.Logger.LogDebug("Sending Declare Commands packet.");
@@ -453,7 +460,7 @@ namespace Obsidian
                 {
                     X = 0,
 
-                    Y = 100,
+                    Y = 105,
 
                     Z = 0,
 
@@ -468,7 +475,7 @@ namespace Obsidian
                 {
                     X = 0,
 
-                    Y = 100,
+                    Y = 105,
 
                     Z = 0,
 
@@ -522,7 +529,7 @@ namespace Obsidian
 
             for (int i = 0; i < 16 * 16; i++)
             {
-                chunkData.Biomes.Add(2); //TODO: Add proper biomes
+                chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
             await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);

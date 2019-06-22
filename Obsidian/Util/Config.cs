@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Logging;
 
 namespace Obsidian.Entities
 {

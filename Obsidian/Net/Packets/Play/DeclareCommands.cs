@@ -10,25 +10,20 @@ namespace Obsidian.Net.Packets
     /// </summary>
     public class DeclareCommands : Packet
     {
-        public DeclareCommands() : base(0x11, new byte[0])
-        {
-            this.RootIndex = 0;
-            this.Nodes.Add(new CommandNode()
-            {
-                Type = CommandNodeType.Root
-            });
-        }
-
-        public int Count => Nodes.Count;
         public List<CommandNode> Nodes { get; set; } = new List<CommandNode>();
 
         public int RootIndex;
+
+        public DeclareCommands() : base(0x11, new byte[0])
+        {
+            this.RootIndex = 0;
+        }
 
         public override async Task<byte[]> ToArrayAsync()
         {
             using (var ms = new MinecraftStream())
             {
-                await ms.WriteVarIntAsync(this.Count);
+                await ms.WriteVarIntAsync(this.Nodes.Count);
 
                 foreach (CommandNode node in Nodes)
                 {
@@ -49,16 +44,10 @@ namespace Obsidian.Net.Packets
         {
             Nodes.Add(node);
 
-            int startIndex = Nodes.Count;
-            int index = startIndex;
-
-            foreach (CommandNode childNode in node.Children)
+            foreach (var childs in node.Children)
             {
-                Nodes.Add(childNode);
-                node.ChildrenIndices.Add(index);
-                index++;
+                Nodes.Add(childs);
             }
-
         }
 
         public override Task PopulateAsync() => throw new NotImplementedException();

@@ -21,7 +21,7 @@ namespace SamplePlugin
 
             server.Events.PlayerJoin += OnPlayerJoin;
 
-            await server.RegisterAsync(new DickWorldGenerator());
+            await server.Register(new DickWorldGenerator());
 
             return new PluginInfo(
                 "SamplePlugin",
