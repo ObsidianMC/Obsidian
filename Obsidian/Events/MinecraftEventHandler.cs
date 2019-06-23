@@ -9,6 +9,7 @@ namespace Obsidian.Events
         private AsyncEvent<PacketReceivedEventArgs> _packetReceived;
 
         private AsyncEvent<PlayerJoinEventArgs> _playerJoin;
+        private AsyncEvent<PlayerLeaveEventArgs> _playerLeave;
 
         private AsyncEvent _serverTick;
 
@@ -17,6 +18,7 @@ namespace Obsidian.Events
             // Events that don't need additional arguments
             _packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
             _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
+            _playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
             _serverTick = new AsyncEvent(HandleException, "ServerTick");
         }
 
@@ -40,6 +42,12 @@ namespace Obsidian.Events
         {
             add { this._serverTick.Register(value); }
             remove { this._serverTick.Unregister(value); }
+        }
+
+        public event AsyncEventHandler<PlayerLeaveEventArgs> PlayerLeave
+        {
+            add { this._playerLeave.Register(value); }
+            remove { this._playerLeave.Unregister(value); }
         }
 
         private void HandleException(string eventname, Exception ex)

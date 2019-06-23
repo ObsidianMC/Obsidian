@@ -5,7 +5,7 @@ namespace Obsidian.Chat
     public class TextComponent
     {
         [JsonProperty("action")]
-        public TextAction Action;
+        public ETextAction Action;
 
         [JsonProperty("value")]
         public string Value;
@@ -14,7 +14,7 @@ namespace Obsidian.Chat
         public string Translate;
     }
 
-    public enum TextAction
+    public enum ETextAction
     {
         /// <summary>
         /// Opens the given URL in the default web browser. Ignored if the player has opted to disable links in chat;
