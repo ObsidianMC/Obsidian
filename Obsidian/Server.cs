@@ -1,4 +1,5 @@
-﻿using Obsidian.BlockData;
+﻿using Newtonsoft.Json;
+using Obsidian.BlockData;
 using Obsidian.Commands;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -199,6 +200,32 @@ namespace Obsidian
             _placed.Enqueue(pbp);
         }
 
+        public T LoadConfig<T>(IPluginClass plugin)
+        {
+            string path = GetPath(plugin);
+
+            if (!System.IO.File.Exists(path))
+            {
+                SaveConfig(plugin, default(T));
+            }
+
+            string json = System.IO.File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        public void SaveConfig(IPluginClass plugin, object config)
+        {
+            string path = GetPath(plugin);
+            string json = JsonConvert.SerializeObject(config);
+            System.IO.File.WriteAllText(path, json);
+        }
+
+        private string GetPath(IPluginClass plugin)
+        {
+            string path = plugin.GetType().Assembly.Location;
+            return System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), System.IO.Path.GetFileNameWithoutExtension(path) + ".json");
+        }
+
         public async Task SendNewPlayer(int id, Guid uuid, Transform position, Player player)
         {
             foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
@@ -306,7 +333,7 @@ namespace Obsidian
                 Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
                 int newplayerid = this.Clients.Count <= 0 ? 0 : this.Clients.Count + 1;
-                    
+
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);
 
