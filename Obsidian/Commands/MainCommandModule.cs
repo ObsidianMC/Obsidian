@@ -1,6 +1,7 @@
 ﻿using Obsidian.Chat;
 using Qmmands;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,9 +26,38 @@ namespace Obsidian.Commands
         [Description("Lists plugins.")]
         public async Task PluginsAsync()
         {
-            var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
-                => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
-            await Context.Player.SendMessageAsync($"{ChatColor.Gold}List of plugins: {pls}");
+            //var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
+            //  => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
+
+            var firstPlugin = Context.Server.PluginManager.Plugins.First();
+
+            var message = new ChatMessage
+            {
+                Text = $"{ChatColor.Gold}List of plugins: {ChatColor.DarkGreen}{firstPlugin.Info.Name}, ",
+                ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = firstPlugin.Info.ProjectUrl }
+            };
+
+            var messages = new List<ChatMessage>();
+
+            foreach (var pls in Context.Server.PluginManager.Plugins)
+            {
+                if (pls.Info.Name != firstPlugin.Info.Name)
+                {
+                    messages.Add(new ChatMessage
+                    {
+                        Text = ChatColor.DarkGreen + pls.Info.Name + ", ",
+                        ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
+                    });
+                }
+            }
+
+            if (messages.Count > 0)
+                message.AddExtra(messages);
+
+            Console.WriteLine(message.ToString());
+
+            await Context.Player.SendMessageAsync(message);
+            //await Context.Player.SendMessageAsync(pls);
         }
 
         [Command("spawnmob")]
@@ -44,7 +74,7 @@ namespace Obsidian.Commands
                 Pitch = 0,
 
                 Yaw = 0
-            }, 0, new Util.Velocity(0,0,0), Context.Client.Player);
+            }, 0, new Util.Velocity(0, 0, 0), Context.Client.Player);
 
             await Context.Player.SendMessageAsync("Spawning mob?");
         }

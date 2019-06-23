@@ -1,7 +1,5 @@
 ﻿using Obsidian.Chat;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
@@ -12,24 +10,12 @@ namespace Obsidian.Net.Packets.Play
         {
             this.Header = header ?? new ChatMessage()
             {
-                Components = new List<TextComponent>()
-                {
-                    new TextComponent()
-                    {
-                        Translate = ""
-                    }
-                }
+                HoverEvent = new TextComponent { Translate = "" }
             };
 
             this.Footer = footer ?? new ChatMessage()
             {
-                Components = new List<TextComponent>()
-                {
-                    new TextComponent()
-                    {
-                        Translate = ""
-                    }
-                }
+                HoverEvent = new TextComponent { Translate = "" }
             };
         }
 

@@ -119,6 +119,11 @@ namespace Obsidian.Entities
             await PacketHandler.CreateAsync(new ChatMessagePacket(chat, position), this.Client.MinecraftStream);
         }
 
+        public async Task SendMessageAsync(ChatMessage message)
+        {
+            await PacketHandler.CreateAsync(new ChatMessagePacket(message, 0), this.Client.MinecraftStream);
+        }
+
         public async Task SendSoundAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
             await PacketHandler.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.Client.MinecraftStream);
@@ -132,6 +137,11 @@ namespace Obsidian.Entities
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
             await PacketHandler.CreateAsync(new BossBar(uuid, action), this.Client.MinecraftStream);
+        }
+
+        public async Task KickAsync(string reason)
+        {
+            await this.Client.DisconnectAsync(ChatMessage.Simple(reason));
         }
 
         public void LoadPerms(List<string> permissions)

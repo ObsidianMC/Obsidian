@@ -240,13 +240,11 @@ namespace Obsidian
                         switch (packet.PacketId)
                         {
                             case 0x00:
-                                // Request
                                 var status = new ServerStatus(OriginServer);
                                 await PacketHandler.CreateAsync(new RequestResponse(status), this.MinecraftStream);
                                 break;
 
                             case 0x01:
-                                // Ping
                                 await PacketHandler.CreateAsync(new PingPong(packet.PacketData), this.MinecraftStream);
                                 this.Disconnect();
                                 break;
@@ -282,8 +280,8 @@ namespace Obsidian
                         switch (packet.PacketId)
                         {
                             default:
-                                this.Logger.LogDebug($"Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
-                                await this.DisconnectAsync(Chat.ChatMessage.Simple(this.Config.JoinMessage));
+                                this.Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
+                                await this.DisconnectAsync(ChatMessage.Simple("Unknown Packet Id."));
                                 break;
 
                             case 0x00:
