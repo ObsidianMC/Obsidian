@@ -1,4 +1,5 @@
 ﻿using Obsidian.PlayerData.Info;
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -23,9 +24,10 @@ namespace Obsidian.Net.Packets
             {
                 await stream.WriteVarIntAsync(Action);
                 await stream.WriteVarIntAsync(Actions.Count);
+
                 foreach (PlayerInfoAction action in Actions)
-                    await stream.WriteAsync(await action.ToArrayAsync());
-                
+                    await action.WriteAsync(stream);
+
                 return stream.ToArray();
             }
         }

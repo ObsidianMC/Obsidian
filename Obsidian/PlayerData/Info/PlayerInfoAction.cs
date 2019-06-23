@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Obsidian.Net;
+
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -7,6 +9,6 @@ namespace Obsidian.PlayerData.Info
     {
         public Guid Uuid { get; set; }
 
-        public abstract Task<byte[]> ToArrayAsync();
+        public abstract Task WriteAsync(MinecraftStream stream);
     }
 }
