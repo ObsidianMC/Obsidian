@@ -88,21 +88,7 @@ namespace Obsidian
 
         public ConcurrentHashSet<Client> Clients { get; }
 
-        public List<Player> OnlinePlayers
-        {
-            get
-            {
-                var list = new List<Player>(Clients.Count);
-                foreach (Client client in Clients.Where(x => x.State == ClientState.Play))
-                {
-                    if (client.Player == null)
-                        continue;
-
-                    list.Add(client.Player);
-                }
-                return list;
-            }
-        }
+        public List<Player> OnlinePlayers => Clients.Where(c => c.State == ClientState.Play && c.Player != null).Select(c => c.Player).ToList();
 
         public CommandService Commands { get; }
         public Config Config { get; }
