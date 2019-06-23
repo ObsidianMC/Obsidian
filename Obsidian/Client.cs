@@ -75,6 +75,21 @@ namespace Obsidian
         {
             this.Ping = (int)(DateTime.Now.Millisecond - id);
             await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
+
+            //Sending ping change in background
+            await Task.Run(async delegate ()
+            {
+                foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
+                {
+                    await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
+                    {
+                        new PlayerInfoUpdatePingAction()
+                        {
+                            Ping = this.Ping
+                        }
+                    }), this.MinecraftStream);
+                }
+            }).ConfigureAwait(false);
         }
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
