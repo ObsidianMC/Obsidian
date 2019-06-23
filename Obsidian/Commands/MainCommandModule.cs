@@ -26,30 +26,19 @@ namespace Obsidian.Commands
         [Description("Lists plugins.")]
         public async Task PluginsAsync()
         {
-            //var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
-            //  => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
-
-            var firstPlugin = Context.Server.PluginManager.Plugins.First();
-
             var message = new ChatMessage
             {
-                Text = $"{ChatColor.Gold}List of plugins: {ChatColor.DarkGreen}{firstPlugin.Info.Name}, ",
-                ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = firstPlugin.Info.ProjectUrl }
+                Text = $"{ChatColor.Gold}List of plugins: ",
             };
 
             var messages = new List<ChatMessage>();
 
             foreach (var pls in Context.Server.PluginManager.Plugins)
-            {
-                if (pls.Info.Name != firstPlugin.Info.Name)
+                messages.Add(new ChatMessage
                 {
-                    messages.Add(new ChatMessage
-                    {
-                        Text = ChatColor.DarkGreen + pls.Info.Name + ", ",
-                        ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
-                    });
-                }
-            }
+                    Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
+                    ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
+                });
 
             if (messages.Count > 0)
                 message.AddExtra(messages);
