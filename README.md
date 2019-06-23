@@ -8,5 +8,5 @@
 
 ## The Obsidian Team
 - [Naamloos](https://github.com/NaamloosDT) (creator)
-- [Tides](https://github.com/Tides) (developer)
+- [Tides](https://github.com/TidesVI) (developer)
 - [Craftplacer](https://github.com/Craftplacer/) (developer)
