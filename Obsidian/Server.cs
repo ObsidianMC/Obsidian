@@ -184,8 +184,6 @@ namespace Obsidian
 
                 foreach (var client in Clients)
                 {
-                    if (client.Timedout)
-                        client.Disconnect();
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
                 }

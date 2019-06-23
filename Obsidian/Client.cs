@@ -44,7 +44,6 @@ namespace Obsidian
 
         public byte[] SharedKey = null;
 
-        public bool Timedout = false;
         public bool EncryptionEnabled = false;
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
@@ -378,8 +377,10 @@ namespace Obsidian
 
             Logger.LogMessage($"Disconnected client");
 
-            if (this.Player != null)
-                this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
+            await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
+            this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
+
+            this.Player = null;
 
             if (Tcp.Connected)
                 this.Tcp.Close();

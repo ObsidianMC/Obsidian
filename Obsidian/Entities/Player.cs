@@ -15,6 +15,8 @@ namespace Obsidian.Entities
 {
     public class Player : Living
     {
+        private Client Client;
+
         public Guid Uuid { get; set; }
 
         public string Uuid3 { get; }
@@ -31,7 +33,6 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-
 
         public Gamemode Gamemode { get; set; }
 
@@ -52,7 +53,10 @@ namespace Obsidian.Entities
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
 
-        private Client Client;
+        /// <summary>
+        /// This is a temporary solution will be removed when I am able to think of a workaround.
+        /// </summary>
+        public bool Connected => this.Client.Tcp.Connected;
 
         /* Missing for now:
             NbtCompound(inventory)
