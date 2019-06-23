@@ -87,17 +87,16 @@ namespace Obsidian
 
         public ConcurrentHashSet<Client> Clients { get; }
 
-        public List<Player> Players
+        public List<Player> OnlinePlayers
         {
             get
             {
                 var list = new List<Player>(Clients.Count);
-                foreach (Client client in Clients)
+                foreach (Client client in Clients.Where(x => x.State == ClientState.Play))
                 {
                     if (client.Player == null)
-                    {
                         continue;
-                    }
+
 
                     list.Add(client.Player);
                 }
@@ -129,16 +128,16 @@ namespace Obsidian
                     var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                        await Task.Factory.StartNew(async () => { await clnt.SendKeepAliveAsync(keepaliveid); });
+                        await Task.Factory.StartNew(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
                     keepaliveticks = 0;
                 }
 
                 if (_chatmessages.Count > 0)
                 {
-                    foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
+                    foreach (var players in this.OnlinePlayers)
                     {
                         if (_chatmessages.TryPeek(out QueueChat msg))
-                            await Task.Factory.StartNew(async () => { await clnt.SendChatAsync(msg.Message, msg.Position); });
+                            await Task.Factory.StartNew(async () => { await players.SendMessageAsync(msg.Message, msg.Position); });
                     }
                     _chatmessages.TryDequeue(out QueueChat chat);
                 }
@@ -174,21 +173,24 @@ namespace Obsidian
                     _placed.TryDequeue(out PlayerBlockPlacement pbpn);
                 }
 
+                if (Config.Baah.HasValue)
+                {
+
+                    foreach (var player in this.OnlinePlayers)
+                    {
+                        var pos = new Position(player.Transform.X * 8, player.Transform.Y * 8, player.Transform.Z * 8);
+                        await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
+                    }
+
+
+                }
+
                 foreach (var client in Clients)
                 {
                     if (client.Timedout)
                         client.Disconnect();
                     if (!client.Tcp.Connected)
                         this.Clients.TryRemove(client);
-
-                    if (Config.Baah.HasValue)
-                    {
-                        if (client.State == ClientState.Play)
-                        {
-                            var pos = new Position(client.Player.Transform.X * 8, client.Player.Transform.Y * 8, client.Player.Transform.Z * 8);
-                            await client.SendSoundEffectAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
-                        }
-                    }
                 }
             }
         }
@@ -217,17 +219,6 @@ namespace Obsidian
             }
         }
 
-        public async Task AddPlayer(int id)
-        {
-            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-            {
-                if (clnt.PlayerId == id)
-                    continue;
-
-                await clnt.SendPlayerInfoAsync(true);
-            }
-        }
-
         public async Task SendNewPlayer(int id, string uuid, Transform position)
         {
             foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
@@ -239,29 +230,41 @@ namespace Obsidian
             }
         }
 
-        public async Task SendChatAsync(string message, Client source, byte position = 0, bool system = false)
+        public async Task AddPlayer(int id)
         {
-            if (system)
+            foreach (var clnt in this.Clients.Where(x => x.PlayerId != id))
             {
-                _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
-                Logger.LogMessage(message);
-            }
-            else
-            {
-                if (!CommandUtilities.HasPrefix(message, '/', out string output))
+                if (clnt.PlayerId == id)
                 {
-                    _chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
-                    Logger.LogMessage($"<{source.Player.Username}> {message}");
-                    return;
+                    Logger.LogError($"YOure not suppose to get this packet :( {id}");
+                    continue;
                 }
 
-                var context = new CommandContext(source, this);
-                IResult result = await Commands.ExecuteAsync(output, context);
-                if (!result.IsSuccessful)
-                {
-                    await context.Client.SendChatAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
-                }
+                await clnt.SendPlayerInfoAsync();
             }
+        }
+
+        public async Task ParseMessage(string message, Client source, byte position = 0)
+        {
+            if (!CommandUtilities.HasPrefix(message, '/', out string output))
+            {
+                _chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
+                Logger.LogMessage($"<{source.Player.Username}> {message}");
+                return;
+            }
+
+            var context = new CommandContext(source, this);
+            IResult result = await Commands.ExecuteAsync(output, context);
+            if (!result.IsSuccessful)
+            {
+                await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
+            }
+        }
+
+        public void Broadcast(string message, byte position = 0)
+        {
+            _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
+            Logger.LogMessage(message);
         }
 
         /// <summary>
@@ -322,7 +325,7 @@ namespace Obsidian
 
                 Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = this.Clients.Count <= 0 ? 0 : this.Clients.Count + 1;
+                int newplayerid = Math.Max(0, this.Clients.Count);
 
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
                 Clients.Add(clnt);

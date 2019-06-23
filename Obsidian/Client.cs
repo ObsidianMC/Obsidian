@@ -64,69 +64,44 @@ namespace Obsidian
 
         #region Packet Sending Methods
 
-        public async Task SendBlockChangeAsync(BlockChange b)
+        internal async Task DisconnectAsync(ChatMessage reason)
+        {
+            await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
+        }
+
+        internal async Task ProcessKeepAlive(long id)
+        {
+            this.Ping = (int)(DateTime.Now.Millisecond - id);
+            await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
+        }
+
+        internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
+        {
+            await PacketHandler.CreateAsync(new PlayerPositionLook(poslook, posflags, tpid), this.MinecraftStream);
+        }
+
+        internal async Task SendBlockChangeAsync(BlockChange b)
         {
             this.Logger.LogMessage($"Sending block change to {Player.Username}");
             await PacketHandler.CreateAsync(b, this.MinecraftStream);
             this.Logger.LogMessage($"Block change sent to {Player.Username}");
         }
 
-        public async Task DisconnectAsync(ChatMessage reason)
-        {
-            await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
-        }
-
-        public async Task SendChatAsync(string message, byte position = 0)
-        {
-            var chat = Chat.ChatMessage.Simple(message);
-            await PacketHandler.CreateAsync(new ChatMessagePacket(chat, position), this.MinecraftStream);
-        }
-
-        public async Task SendKeepAliveAsync(long id)
-        {
-            this.Ping = (int)(DateTime.Now.Millisecond - id);
-            this.Logger.LogDebug($"Ping: {this.Ping}ms");
-            await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
-        }
-
-        public async Task SendSoundEffectAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await PacketHandler.CreateAsync(new SoundEffect(soundId, location, category, pitch, volume), this.MinecraftStream);
-        }
-
-        public async Task SendNamedSoundEffectAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await PacketHandler.CreateAsync(new NamedSoundEffect(name, location, category, pitch, volume), this.MinecraftStream);
-        }
-
-        public async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
-        {
-            await PacketHandler.CreateAsync(new PlayerPositionLook(poslook, posflags, tpid), this.MinecraftStream);
-        }
-
-        public async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
+        internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
             await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
 
             this.Logger.LogDebug($"Spawned entity with id {id} for player {this.Player.Username}");
         }
 
-        public async Task SendSpawnMobAsync(int id, string uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
-        {
-            await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
-            this.Logger.LogDebug($"Spawned entity with id {id} for player {this.Player.Username}");
-        }
-
-        public async Task SendEntity(EntityPacket packet)
+        internal async Task SendEntity(EntityPacket packet)
         {
             await PacketHandler.CreateAsync(packet, this.MinecraftStream);
             this.Logger.LogDebug($"Sent entity with id {packet.Id} for player {this.Player.Username}");
         }
 
-        public async Task SendDeclareCommandsAsync()
+        internal async Task SendDeclareCommandsAsync()
         {
-            this.Logger.LogDebug("Generating Declare Commands packet.");
-
             var packet = new DeclareCommands();
 
             var node = new CommandNode()
@@ -175,60 +150,29 @@ namespace Obsidian
                 packet.AddNode(node);
             }
 
-            this.Logger.LogDebug("Sending Declare Commands packet.");
-
             await PacketHandler.CreateAsync(packet, this.MinecraftStream);
+            this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
-        public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
+        internal async Task SendPlayerInfoAsync()
         {
-            await PacketHandler.CreateAsync(new BossBar(uuid, action), this.MinecraftStream);
-        }
-
-        public async Task SendPlayerInfoAsync(bool isNewPlayer = false)
-        {
-            this.Logger.LogDebug("Generating Player Info packet.");
-
             var list = new List<PlayerInfoAction>();
 
             foreach (Client client in this.OriginServer.Clients)
             {
                 var player = client.Player;
-                MojangUserAndSkin skinProperties = null;
-                if (this.OriginServer.Config.OnlineMode)
-                    skinProperties = await MinecraftAPI.GetUserAndSkin(player.Uuid.ToString().Replace("-", ""));
 
-                var action = new PlayerInfoAddAction()
+                list.Add(new PlayerInfoAddAction()
                 {
                     Name = player.Username,
                     Uuid = player.Uuid,
                     Ping = client.Ping,
-                    Gamemode = (int)player.Gamemode
-                };
-
-                if (!this.OriginServer.Config.OnlineMode)
-                {
-                    action = new PlayerInfoAddAction()
-                    {
-                        Name = player.Username,
-                        Uuid3 = player.Uuid3,
-                        Ping = client.Ping,
-                        Gamemode = (int)Player.Gamemode
-                    };
-                }
-                else
-                {
-                    action.Properties.AddRange(skinProperties.Properties);
-                }
-
-                this.Logger.LogDebug($"Added {player.Username} to actions");
-
-
-                list.Add(action);
+                    Gamemode = (int)Player.Gamemode
+                });
             }
 
             await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
-            this.Logger.LogDebug("Sent Player Info packet.");
+            this.Logger.LogDebug($"Sent Player Info packet. from {this.Player.Username}");
         }
 
         internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
@@ -262,11 +206,10 @@ namespace Obsidian
             this.Logger.LogDebug("New player spawned!");
         }
 
-        public async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
+        internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
         {
-            this.Logger.LogDebug("Sending Player List Footer Header packet.");
-
             await PacketHandler.CreateAsync(new PlayerListHeaderFooter(header, footer), this.MinecraftStream);
+            this.Logger.LogDebug("Sent Player List Footer Header packet.");
         }
 
         #endregion Packet Sending Methods
@@ -365,7 +308,7 @@ namespace Obsidian
                                     var uid = users.FirstOrDefault();
 
                                     var uuid = Guid.Parse(uid.Id);
-                                    this.Player = new Player(uuid, loginStart.Username);
+                                    this.Player = new Player(uuid, loginStart.Username, this);
 
                                     PacketCryptography.GenerateKeyPair();
 
@@ -378,7 +321,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.Player = new Player(Guid.NewGuid(), username);
+                                this.Player = new Player(Guid.NewGuid(), username, this);
                                 await ConnectAsync(this.Player.Uuid);
 
                                 break;
@@ -438,7 +381,7 @@ namespace Obsidian
             Logger.LogMessage($"Disconnected client");
 
             if (this.Player != null)
-                await this.OriginServer.SendChatAsync(string.Format(this.Config.LeaveMessage, this.Player.Username), this, 0, true);
+                this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
 
             if (Tcp.Connected)
                 this.Tcp.Close();
@@ -469,17 +412,13 @@ namespace Obsidian
                 await PacketHandler.CreateAsync(new PluginMessage("minecraft:brand", stream.ToArray()), this.MinecraftStream);
             }
 
-            this.Player.BitMask = EntityBitMask.None;
+            await this.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
 
-            await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
-
-            await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
+            this.OriginServer.Broadcast(string.Format(this.Config.JoinMessage, this.Player.Username));
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
-
-            //await this.OriginServer.AddPlayer(this.PlayerId);
 
             await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
                                                        string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
@@ -491,36 +430,36 @@ namespace Obsidian
 
             this.Logger.LogDebug("Sent chunk");
 
-            //if (this.OriginServer.Config.OnlineMode)
-            //{
-            //    await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
-            //    {
-            //        X = 0,
+            /*if (this.OriginServer.Config.OnlineMode)
+            {
+                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
+                {
+                    X = 0,
 
-            //        Y = 105,
+                    Y = 105,
 
-            //        Z = 0,
+                    Z = 0,
 
-            //        Pitch = 0,
+                    Pitch = 1,
 
-            //        Yaw = 0
-            //    });
-            //}
-            //else
-            //{
-            //    await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
-            //    {
-            //        X = 0,
+                    Yaw = 1
+                });
+            }
+            else
+            {
+                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
+                {
+                    X = 0,
 
-            //        Y = 105,
+                    Y = 105,
 
-            //        Z = 0,
+                    Z = 0,
 
-            //        Pitch = 0,
+                    Pitch = 1,
 
-            //        Yaw = 0
-            //    });
-            //}
+                    Yaw = 1
+                });
+            }*/
         }
 
         private async Task SendChunkAsync(Chunk chunk)
