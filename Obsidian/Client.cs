@@ -31,6 +31,8 @@ namespace Obsidian
 
         public CancellationTokenSource Cancellation { get; private set; }
 
+        public bool IsPlaying => this.State == ClientState.Play && this.Player != null; //HACK: Suggest better property name lol -Craftplacer
+
         private byte[] Token { get; set; }
 
         public Server OriginServer;
