@@ -394,7 +394,9 @@ namespace Obsidian
 
             Logger.LogMessage($"Disconnected client");
 
-            await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
+            if (this.IsPlaying)
+                await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
+
             this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
 
             this.Player = null;
