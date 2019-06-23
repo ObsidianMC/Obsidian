@@ -10,13 +10,17 @@ namespace Obsidian.Net.Packets
     /// </summary>
     public class DeclareCommands : Packet
     {
-        public List<CommandNode> Nodes { get; set; } = new List<CommandNode>();
+        public CommandNode RootNode;
 
-        public int RootIndex;
+        public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
         public DeclareCommands() : base(0x11, new byte[0])
         {
-            this.RootIndex = 0;
+            this.RootNode = new CommandNode()
+            {
+                Type = CommandNodeType.Root,
+                Owner = this,
+            };
         }
 
         public override async Task<byte[]> ToArrayAsync()
@@ -30,7 +34,8 @@ namespace Obsidian.Net.Packets
                     await ms.WriteAsync(await node.ToArrayAsync());
                 }
 
-                await ms.WriteVarIntAsync(this.RootIndex);
+                //Constant root node index
+                await ms.WriteVarIntAsync(0);
 
                 return ms.ToArray();
             }
@@ -42,11 +47,12 @@ namespace Obsidian.Net.Packets
         /// <param name="node"></param>
         public void AddNode(CommandNode node)
         {
+            node.Owner = this;
             Nodes.Add(node);
 
             foreach (var childs in node.Children)
             {
-                Nodes.Add(childs);
+                AddNode(childs);
             }
         }
 

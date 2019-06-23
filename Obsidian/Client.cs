@@ -151,9 +151,11 @@ namespace Obsidian
 
                     Type type = parameter.Type;
 
-                    if (type == typeof(string)) parameterNode.Identifier = "brigadier:string";
-                    else if (type == typeof(int)) parameterNode.Identifier = "brigadier:integer";
-                    else if (type == typeof(bool)) parameterNode.Identifier = "brigadier:bool";
+                    if (type == typeof(string)) parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                    else if (type == typeof(double)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:double");
+                    else if (type == typeof(float)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:float");
+                    else if (type == typeof(int)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:integer");
+                    else if (type == typeof(bool)) parameterNode.Parser = new CommandParser("brigadier:bool");
                     else continue;
 
                     commandNode.Children.Add(parameterNode);
@@ -296,7 +298,8 @@ namespace Obsidian
                         {
                             case 0x00:
                                 // Request
-                                await PacketHandler.CreateAsync(new RequestResponse(ServerStatus.DebugStatus), this.MinecraftStream);
+                                var status = new ServerStatus(OriginServer);
+                                await PacketHandler.CreateAsync(new RequestResponse(status), this.MinecraftStream);
                                 break;
 
                             case 0x01:
@@ -459,6 +462,12 @@ namespace Obsidian
 
             await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0), this.MinecraftStream);
             this.Logger.LogDebug("Sent Position packet.");
+
+            using (var stream = new MinecraftStream())
+            {
+                await stream.WriteStringAsync("obsidian");
+                await PacketHandler.CreateAsync(new PluginMessage("minecraft:brand", stream.ToArray()), this.MinecraftStream);
+            }
 
             this.Player.BitMask = EntityBitMask.None;
 

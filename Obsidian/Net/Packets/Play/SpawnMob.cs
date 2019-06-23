@@ -58,9 +58,9 @@ namespace Obsidian.Net.Packets.Play
                 await stream.WriteVarIntAsync(this.Id);
 
                 //await stream.WritePositionAsync();
-                await stream.WriteDoubleAsync(Transform.Position.X);
-                await stream.WriteDoubleAsync(Transform.Position.Y);
-                await stream.WriteDoubleAsync(Transform.Position.Z);
+                await stream.WriteDoubleAsync(Transform.X);
+                await stream.WriteDoubleAsync(Transform.Y);
+                await stream.WriteDoubleAsync(Transform.Z);
 
                 await stream.WriteUnsignedByteAsync((byte)Transform.Yaw);
                 await stream.WriteUnsignedByteAsync((byte)Transform.Pitch);

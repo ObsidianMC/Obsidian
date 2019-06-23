@@ -86,6 +86,25 @@ namespace Obsidian
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
+
+        public List<Player> Players
+        {
+            get
+            {
+                var list = new List<Player>(Clients.Count);
+                foreach (Client client in Clients)
+                {
+                    if (client.Player == null)
+                    {
+                        continue;
+                    }
+
+                    list.Add(client.Player);
+                }
+                return list;
+            }
+        }
+
         public CommandService Commands { get; }
         public Config Config { get; }
         public Logger Logger { get; }

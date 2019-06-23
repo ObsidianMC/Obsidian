@@ -32,10 +32,11 @@ namespace Obsidian.Logging
             {
                 while (true)
                 {
-                    if (_messages.TryDequeue(out LogMessage message))
+                    while (_messages.TryDequeue(out LogMessage message))
                     {
                         await LogMessageAsync(message.Message, message.Level, message.DateTime);
                     }
+                    await Task.Delay(100);
                 }
             });
         }
