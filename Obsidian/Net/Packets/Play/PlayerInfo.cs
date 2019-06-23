@@ -25,8 +25,7 @@ namespace Obsidian.Net.Packets
                 await stream.WriteVarIntAsync(Actions.Count);
                 foreach (PlayerInfoAction action in Actions)
                 {
-                    var array = await action.ToArrayAsync();
-                    await stream.WriteAsync(array);
+                    await stream.WriteAsync(await action.ToArrayAsync());
                 }
                 return stream.ToArray();
             }

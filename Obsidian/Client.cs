@@ -183,7 +183,7 @@ namespace Obsidian
             await PacketHandler.CreateAsync(new BossBar(uuid, action), this.MinecraftStream);
         }
 
-        public async Task SendPlayerInfoAsync()
+        public async Task SendPlayerInfoAsync(bool isNewPlayer = false)
         {
             this.Logger.LogDebug("Generating Player Info packet.");
 
@@ -191,27 +191,42 @@ namespace Obsidian
 
             foreach (Client client in this.OriginServer.Clients)
             {
-                //BUG: Clients still has disconnected clients this HAS to be fixed.
-                if (client.Player == null)
-                    continue;
-
-                //MojangUserAndSkin skinProperties = await MinecraftAPI.GetUserAndSkin(client.Player.UUID.ToString().Replace("-", ""));
+                var player = client.Player;
+                MojangUserAndSkin skinProperties = null;
+                if (this.OriginServer.Config.OnlineMode)
+                    skinProperties = await MinecraftAPI.GetUserAndSkin(player.Uuid.ToString().Replace("-", ""));
 
                 var action = new PlayerInfoAddAction()
                 {
-                    Name = client.Player.Username,
-                    UUID = client.Player.Uuid,
-                    Ping = this.Ping,
-                    Gamemode = (int)client.Player.Gamemode
+                    Name = player.Username,
+                    Uuid = player.Uuid,
+                    Ping = client.Ping,
+                    Gamemode = (int)player.Gamemode
                 };
-                //action.Properties.AddRange(skinProperties.Properties);
+
+                if (!this.OriginServer.Config.OnlineMode)
+                {
+                    action = new PlayerInfoAddAction()
+                    {
+                        Name = player.Username,
+                        Uuid3 = player.Uuid3,
+                        Ping = client.Ping,
+                        Gamemode = (int)Player.Gamemode
+                    };
+                }
+                else
+                {
+                    action.Properties.AddRange(skinProperties.Properties);
+                }
+
+                this.Logger.LogDebug($"Added {player.Username} to actions");
+
 
                 list.Add(action);
             }
 
-            this.Logger.LogDebug("Sending Player Info packet.");
-
             await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
+            this.Logger.LogDebug("Sent Player Info packet.");
         }
 
         internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
@@ -447,45 +462,15 @@ namespace Obsidian
 
             this.Player.BitMask = EntityBitMask.None;
 
-            if (this.OriginServer.Config.OnlineMode)
-            {
-                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
-                {
-                    X = 0,
-
-                    Y = 105,
-
-                    Z = 0,
-
-                    Pitch = 0,
-
-                    Yaw = 0
-                }, this.Player);
-            }
-            else
-            {
-                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
-                {
-                    X = 0,
-
-                    Y = 105,
-
-                    Z = 0,
-
-                    Pitch = 0,
-
-                    Yaw = 0
-                }, this.Player);
-            }
-
             await this.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
 
             await this.OriginServer.SendChatAsync(string.Format(this.Config.JoinMessage, this.Player.Username), this, system: true);
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            // TODO fix
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
+
+            //await this.OriginServer.AddPlayer(this.PlayerId);
 
             await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
                                                        string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
@@ -496,6 +481,37 @@ namespace Obsidian
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
             this.Logger.LogDebug("Sent chunk");
+
+            //if (this.OriginServer.Config.OnlineMode)
+            //{
+            //    await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
+            //    {
+            //        X = 0,
+
+            //        Y = 105,
+
+            //        Z = 0,
+
+            //        Pitch = 0,
+
+            //        Yaw = 0
+            //    });
+            //}
+            //else
+            //{
+            //    await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
+            //    {
+            //        X = 0,
+
+            //        Y = 105,
+
+            //        Z = 0,
+
+            //        Pitch = 0,
+
+            //        Yaw = 0
+            //    });
+            //}
         }
 
         private async Task SendChunkAsync(Chunk chunk)

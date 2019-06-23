@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play
     {
         public int Id { get; set; }
 
-        public Guid Uuid { get; set; }
+        public Guid? Uuid { get; set; }
 
         public string Uuid3 { get; set; }
 
@@ -29,14 +29,16 @@ namespace Obsidian.Net.Packets.Play
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync(this.Id);
-                if (string.IsNullOrEmpty(Uuid3))
+                if (this.Uuid.HasValue)
                 {
-                    await stream.WriteUuidAsync(this.Uuid);
+                    await stream.WriteUuidAsync(this.Uuid.Value);
+                    Console.WriteLine("UUID is not null");
 
                 }
                 else
                 {
-                    await stream.WriteStringAsync(this.Uuid3);
+                    Console.WriteLine("UUID is null");
+                    await stream.WriteStringAsync(this.Uuid3, 16);
                 }
 
                 await stream.WriteDoubleAsync(this.Tranform.X);
