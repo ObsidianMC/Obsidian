@@ -1,4 +1,5 @@
-﻿using Obsidian.BlockData;
+﻿using Newtonsoft.Json;
+using Obsidian.BlockData;
 using Obsidian.Commands;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -97,7 +98,6 @@ namespace Obsidian
                     if (client.Player == null)
                         continue;
 
-
                     list.Add(client.Player);
                 }
                 return list;
@@ -175,14 +175,11 @@ namespace Obsidian
 
                 if (Config.Baah.HasValue)
                 {
-
                     foreach (var player in this.OnlinePlayers)
                     {
                         var pos = new Position(player.Transform.X * 8, player.Transform.Y * 8, player.Transform.Z * 8);
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
-
-
                 }
 
                 foreach (var client in Clients)
@@ -205,6 +202,32 @@ namespace Obsidian
         public void EnqueuePlacing(PlayerBlockPlacement pbp)
         {
             _placed.Enqueue(pbp);
+        }
+
+        public T LoadConfig<T>(IPluginClass plugin)
+        {
+            string path = GetPath(plugin);
+
+            if (!System.IO.File.Exists(path))
+            {
+                SaveConfig(plugin, default(T));
+            }
+
+            string json = System.IO.File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        public void SaveConfig(IPluginClass plugin, object config)
+        {
+            string path = GetPath(plugin);
+            string json = JsonConvert.SerializeObject(config);
+            System.IO.File.WriteAllText(path, json);
+        }
+
+        private string GetPath(IPluginClass plugin)
+        {
+            string path = plugin.GetType().Assembly.Location;
+            return System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), System.IO.Path.GetFileNameWithoutExtension(path) + ".json");
         }
 
         public async Task SendNewPlayer(int id, Guid uuid, Transform position)
