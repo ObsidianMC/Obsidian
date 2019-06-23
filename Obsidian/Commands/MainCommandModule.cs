@@ -1,6 +1,4 @@
-﻿using Obsidian.Boss;
-using Obsidian.Chat;
-using Obsidian.Entities;
+﻿using Obsidian.Chat;
 using Qmmands;
 using System;
 using System.Diagnostics;
@@ -19,7 +17,7 @@ namespace Obsidian.Commands
         {
             foreach (var cmd in Service.GetAllCommands())
             {
-                await Context.Client.SendChatAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
+                await Context.Player.SendMessageAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
             }
         }
 
@@ -29,18 +27,45 @@ namespace Obsidian.Commands
         {
             var pls = string.Join(", ", Context.Server.PluginManager.Plugins.Select(x
                 => $"{ChatColor.DarkGreen}{x.Info.Name}{ChatColor.Reset}"));
-            await Context.Client.SendChatAsync($"{ChatColor.Gold}List of plugins: {pls}");
+            await Context.Player.SendMessageAsync($"{ChatColor.Gold}List of plugins: {pls}");
+        }
+
+        [Command("spawnmob")]
+        public async Task SpawnMob()
+        {
+            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Util.Transform
+            {
+                X = 0,
+
+                Y = 105,
+
+                Z = 0,
+
+                Pitch = 0,
+
+                Yaw = 0
+            }, 0, new Util.Velocity(0,0,0), Context.Client.Player);
+
+            await Context.Player.SendMessageAsync("Spawning mob?");
         }
 
         [Command("echo")]
         [Description("Echoes given text.")]
         public Task EchoAsync([Remainder] string text)
-            => Context.Server.SendChatAsync(text, Context.Client, system: true);
+        {
+            Context.Server.Broadcast(text);
+
+            return Task.CompletedTask;
+        }
 
         [Command("announce")]
         [Description("makes an announcement")]
         public Task AnnounceAsync([Remainder] string text)
-            => Context.Server.SendChatAsync(text, Context.Client, 2, true);
+        {
+            Context.Server.Broadcast(text, 2);
+
+            return Task.CompletedTask;
+        }
 
         [Command("leave", "kickme")]
         [Description("kicks you")]
@@ -50,7 +75,7 @@ namespace Obsidian.Commands
         [Command("uptime", "up")]
         [Description("Gets current uptime")]
         public Task UptimeAsync()
-            => Context.Client.SendChatAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime).ToString()}");
+            => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime).ToString()}");
 
         [Command("declarecmds", "declarecommands")]
         [Description("Debug command for testing the Declare Commands packet")]
@@ -60,7 +85,7 @@ namespace Obsidian.Commands
         [Description("teleports you to a location")]
         public async Task TeleportAsync(double x, double y, double z)
         {
-            await Context.Client.SendChatAsync("ight homie tryna tp you (and sip dicks)");
+            await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
             await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
         }
 
@@ -78,7 +103,7 @@ namespace Obsidian.Commands
                 Context.Server.Operators.AddOperator(username);
             }
 
-            await Context.Client.SendChatAsync($"Made {username} a server operator");
+            await Context.Player.SendMessageAsync($"Made {username} a server operator");
         }
 
         [Command("deop")]
@@ -95,7 +120,7 @@ namespace Obsidian.Commands
                 Context.Server.Operators.AddOperator(username);
             }
 
-            await Context.Client.SendChatAsync($"Made {username} no longer a server operator");
+            await Context.Player.SendMessageAsync($"Made {username} no longer a server operator");
         }
 
         [Command("oprequest", "opreq")]
@@ -103,17 +128,17 @@ namespace Obsidian.Commands
         {
             if (!Context.Server.Config.AllowOperatorRequests)
             {
-                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                await Context.Player.SendMessageAsync("§cOperator requests are disabled on this server.");
                 return;
             }
 
             if (Context.Server.Operators.CreateRequest(Context.Player))
             {
-                await Context.Client.SendChatAsync("A request has been to the server console");
+                await Context.Player.SendMessageAsync("A request has been to the server console");
             }
             else
             {
-                await Context.Client.SendChatAsync("§cYou have already sent a request");
+                await Context.Player.SendMessageAsync("§cYou have already sent a request");
             }
         }
 
@@ -122,17 +147,17 @@ namespace Obsidian.Commands
         {
             if (!Context.Server.Config.AllowOperatorRequests)
             {
-                await Context.Client.SendChatAsync("§cOperator requests are disabled on this server.");
+                await Context.Player.SendMessageAsync("§cOperator requests are disabled on this server.");
                 return;
             }
 
             if (Context.Server.Operators.ProcessRequest(Context.Player, code))
             {
-                await Context.Client.SendChatAsync("Your request has been accepted");
+                await Context.Player.SendMessageAsync("Your request has been accepted");
             }
             else
             {
-                await Context.Client.SendChatAsync("§cInvalid request");
+                await Context.Player.SendMessageAsync("§cInvalid request");
             }
         }
 
@@ -140,7 +165,7 @@ namespace Obsidian.Commands
         [Description("Shows obsidian popup")]
         public async Task ObsidianAsync()
         {
-            await Context.Client.SendChatAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+            await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
         }
 
 #if DEBUG
@@ -148,7 +173,7 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         public async Task BreakpointAsync()
         {
-            await Context.Server.SendChatAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!", null, 0, true);
+            Context.Server.Broadcast("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);
             Debugger.Break();
         }

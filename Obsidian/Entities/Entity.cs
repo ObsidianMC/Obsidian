@@ -14,7 +14,7 @@ namespace Obsidian.Entities
         {
         }
 
-        public EntityBitMask BitMask { get; set; }
+        public EntityBitMask EntityBitMask { get; set; }
 
         public int Air { get; set; } = 300;
 
@@ -24,25 +24,18 @@ namespace Obsidian.Entities
         public bool Silent { get; private set; }
         public bool NoGravity { get; set; }
 
-        public async Task WriteAsync(MinecraftStream stream)
+        public virtual async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteAsEntityMetdata(0, EntityMetadataType.Byte, (byte)BitMask);
+            await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)EntityBitMask);
 
-            await stream.WriteAsEntityMetdata(1, EntityMetadataType.VarInt, Air);
+            await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
 
-            if (CustomName == null)
-            {
-                await stream.WriteAsEntityMetdata(2, EntityMetadataType.String, "test");
-            }
-            else
-            {
-                await stream.WriteAsEntityMetdata(2, EntityMetadataType.Chat, CustomName);
-            }
+            if (CustomName != null)
+                await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, CustomName);
 
-
-            await stream.WriteAsEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
-            await stream.WriteAsEntityMetdata(4, EntityMetadataType.Boolean, Silent);
-            await stream.WriteAsEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
+            await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
+            await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
+            await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
         }
     }
 

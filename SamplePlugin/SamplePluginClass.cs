@@ -32,10 +32,12 @@ namespace SamplePlugin
             );
         }
 
-        private async Task OnPlayerJoin(PlayerJoinEventArgs e)
+        private Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            await e.Server.SendChatAsync($"Player join event from sample plugin! {e.Joined.Username}", e.Client, 0, true);
+            e.Server.Broadcast($"Player join event from sample plugin! {e.Joined.Username}");
             e.Logger.LogMessage($"Player join event to logger from sample plugin! {e.Joined.Username}");
+
+            return Task.CompletedTask;
         }
     }
 
@@ -45,10 +47,11 @@ namespace SamplePlugin
 
         [Command("samplecommand")]
         [Description("A sample command added by a sample plugin!")]
-        public async Task SampleCommandAsync()
+        public Task SampleCommandAsync()
         {
-            await Context.Server.SendChatAsync($"Sample command executed by {Context.Player.Username}" +
-                $" from within a sample plugin!!!1", Context.Client, 0, false);
+            Context.Server.Broadcast($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
+
+            return Task.CompletedTask;
         }
     }
 }

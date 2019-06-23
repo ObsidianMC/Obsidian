@@ -1,15 +1,18 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Util;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
 {
     public class PlayerInfoAddAction : PlayerInfoAction
     {
-        public Guid UUID { get; set; }
+        private Logger logger = new Logger("Player Info", LogLevel.Debug);
+
 
         public string Name { get; set; }
 
@@ -27,14 +30,14 @@ namespace Obsidian.PlayerData.Info
         {
             using (var stream = new MinecraftStream())
             {
-                await stream.WriteUuidAsync(this.UUID);
+
+                await stream.WriteUuidAsync(this.Uuid);
 
                 await stream.WriteStringAsync(this.Name, 16);
 
-                await stream.WriteVarIntAsync(Properties.Count);
-
-                foreach (SkinProperties props in this.Properties)
-                    await stream.WriteAsync(await props.ToArrayAsync());
+                await stream.WriteVarIntAsync(0);
+                //foreach (SkinProperties props in this.Properties)
+                //    await stream.WriteAsync(await props.ToArrayAsync());
 
                 await stream.WriteVarIntAsync(this.Gamemode);
 

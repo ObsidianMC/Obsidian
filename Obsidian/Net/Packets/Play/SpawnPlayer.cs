@@ -1,6 +1,7 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
@@ -17,7 +18,7 @@ namespace Obsidian.Net.Packets.Play
 
         public Player Player { get; set; }
 
-        public SpawnPlayer() : base (0x05, new byte[0]) { }
+        public SpawnPlayer() : base(0x05, new byte[0]) { }
 
         public override Task PopulateAsync()
         {
@@ -29,22 +30,23 @@ namespace Obsidian.Net.Packets.Play
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteVarIntAsync(this.Id);
-                if (string.IsNullOrEmpty(Uuid3))
+                if (this.Uuid3 != null)
                 {
-                    await stream.WriteUuidAsync(this.Uuid);
-
+                    await stream.WriteAsync(Encoding.UTF8.GetBytes(this.Uuid3));
+                    Console.WriteLine("UUID is  null");
                 }
                 else
                 {
-                    await stream.WriteStringAsync(this.Uuid3);
+                    Console.WriteLine("UUID is not null");
+                    await stream.WriteUuidAsync(this.Uuid);
                 }
 
                 await stream.WriteDoubleAsync(this.Tranform.X);
                 await stream.WriteDoubleAsync(this.Tranform.Y);
                 await stream.WriteDoubleAsync(this.Tranform.Z);
 
-                await stream.WriteUnsignedByteAsync((byte)this.Tranform.Yaw);
-                await stream.WriteDoubleAsync((byte)this.Tranform.Pitch);
+                await stream.WriteAngleAsync(this.Tranform.Yaw);
+                await stream.WriteAngleAsync(this.Tranform.Pitch);
 
                 await Player.WriteAsync(stream);
 

@@ -77,8 +77,8 @@ namespace Obsidian.Entities
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
             var playercompound = PFile.RootTag;
-            // filenames are player UUIDs.
-            var player = new Player(uuid, Path.GetFileNameWithoutExtension(playerfile))//TODO: changes
+            // filenames are player UUIDs. ???
+            var player = new Player(uuid, Path.GetFileNameWithoutExtension(playerfile), null)//TODO: changes
             {
                 OnGround = playercompound["OnGround"].ByteValue == 1,
                 Sleeping = playercompound["Sleeping"].ByteValue == 1,

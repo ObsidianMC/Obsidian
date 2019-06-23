@@ -56,7 +56,12 @@ namespace Obsidian.Net
 
         #region Writing
 
-        public async Task WriteAsEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
+        public async Task WriteAngleAsync(Angle angle)
+        {
+            await this.WriteUnsignedByteAsync(angle.Value);
+        }
+
+        public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
             await this.WriteUnsignedByteAsync(index);
             await this.WriteVarIntAsync((int)type);

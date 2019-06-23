@@ -53,8 +53,8 @@ namespace Obsidian.Net.Packets
                 await stream.WriteDoubleAsync(this.Transform.X);
                 await stream.WriteDoubleAsync(this.Transform.Y);
                 await stream.WriteDoubleAsync(this.Transform.Z);
-                await stream.WriteFloatAsync(this.Transform.Yaw);
-                await stream.WriteFloatAsync(this.Transform.Pitch);
+                await stream.WriteFloatAsync(this.Transform.Yaw.Degrees);
+                await stream.WriteFloatAsync(this.Transform.Pitch.Degrees);
                 await stream.WriteByteAsync((sbyte)this.Flags);
                 await stream.WriteVarIntAsync(this.TeleportId);
                 return stream.ToArray();

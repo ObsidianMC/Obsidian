@@ -63,59 +63,11 @@ namespace Obsidian.Util.Registry
                                 case Materials.Air:
                                     BLOCK_STATES.Add(material, new BlockAir());
                                     break;
-                                case Materials.Stone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Granite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.PolishedGranite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Diorite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.PolishedDiorite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Andesite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.PolishedAndesite:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.GrassBlock:
                                     BLOCK_STATES.Add(material, new BlockGrass(blockName, id));
                                     break;
-                                case Materials.Dirt:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.CoarseDirt:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.Podzol:
                                     BLOCK_STATES.Add(material, new BlockDirtSnow());
-                                    break;
-                                case Materials.Cobblestone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.OakPlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.SprucePlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.BirchPlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.JunglePlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.AcaciaPlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.DarkOakPlanks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.OakSapling:
                                     BLOCK_STATES.Add(material, new BlockSapling(blockName, id));
@@ -135,32 +87,11 @@ namespace Obsidian.Util.Registry
                                 case Materials.DarkOakSapling:
                                     BLOCK_STATES.Add(material, new BlockSapling(blockName, id));
                                     break;
-                                case Materials.Bedrock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.Water:
                                     BLOCK_STATES.Add(material, new BlockFluid(blockName, id));
                                     break;
                                 case Materials.Lava:
                                     BLOCK_STATES.Add(material, new BlockFluid(blockName, id));
-                                    break;
-                                case Materials.Sand:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.RedSand:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Gravel:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.GoldOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.IronOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.CoalOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.OakLog:
                                     BLOCK_STATES.Add(material, new BlockLog(blockName, id));
@@ -258,26 +189,8 @@ namespace Obsidian.Util.Registry
                                 case Materials.WetSponge:
                                     BLOCK_STATES.Add(material, new BlockSponge(blockName, id));
                                     break;
-                                case Materials.Glass:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.LapisOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.LapisBlock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.Dispenser:
                                     BLOCK_STATES.Add(material, new BlockDispenser(blockName, id));
-                                    break;
-                                case Materials.Sandstone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.ChiseledSandstone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.CutSandstone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.NoteBlock:
                                     BLOCK_STATES.Add(material, new BlockNote(blockName, id));
@@ -363,54 +276,6 @@ namespace Obsidian.Util.Registry
                                 case Materials.PistonHead:
                                     BLOCK_STATES.Add(material, new BlockPistonExtension(blockName, id));
                                     break;
-                                case Materials.WhiteWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.OrangeWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.MagentaWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.LightBlueWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.YellowWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.LimeWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.PinkWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.GrayWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.LightGrayWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.CyanWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.PurpleWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.BlueWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.BrownWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.GreenWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.RedWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.BlackWool:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.MovingPiston:
                                     BLOCK_STATES.Add(material, new BlockPiston(blockName, id));
                                     break;
@@ -450,26 +315,8 @@ namespace Obsidian.Util.Registry
                                 case Materials.RedMushroom:
                                     BLOCK_STATES.Add(material, new BlockMushroom(blockName, id));
                                     break;
-                                case Materials.GoldBlock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.IronBlock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Bricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.Tnt:
                                     BLOCK_STATES.Add(material, new BlockTnt(blockName, id));
-                                    break;
-                                case Materials.Bookshelf:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.MossyCobblestone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.Obsidian:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.Torch:
                                     BLOCK_STATES.Add(material, new BlockTorch(blockName, id));
@@ -491,12 +338,6 @@ namespace Obsidian.Util.Registry
                                     break;
                                 case Materials.RedstoneWire:
                                     BLOCK_STATES.Add(material, new BlockRedstoneWire(blockName, id));
-                                    break;
-                                case Materials.DiamondOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.DiamondBlock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.CraftingTable:
                                     BLOCK_STATES.Add(material, new BlockWorkbench(blockName, id));
@@ -555,9 +396,6 @@ namespace Obsidian.Util.Registry
                                 case Materials.DarkOakPressurePlate:
                                     BLOCK_STATES.Add(material, new BlockPressurePlate(blockName, id));
                                     break;
-                                case Materials.RedstoneOre:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.RedstoneTorch:
                                     BLOCK_STATES.Add(material, new BlockRedstoneTorch(blockName, id));
                                     break;
@@ -572,9 +410,6 @@ namespace Obsidian.Util.Registry
                                     break;
                                 case Materials.Ice:
                                     BLOCK_STATES.Add(material, new BlockIce(blockName, id));
-                                    break;
-                                case Materials.SnowBlock:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.Cactus:
                                     BLOCK_STATES.Add(material, new BlockCactus(blockName, id));
@@ -594,14 +429,8 @@ namespace Obsidian.Util.Registry
                                 case Materials.Pumpkin:
                                     BLOCK_STATES.Add(material, new BlockPumpkin(blockName, id));
                                     break;
-                                case Materials.Netherrack:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.SoulSand:
                                     BLOCK_STATES.Add(material, new BlockSlowSand(blockName, id));
-                                    break;
-                                case Materials.Glowstone:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                                 case Materials.NetherPortal:
                                     BLOCK_STATES.Add(material, new BlockPortal(blockName, id));
@@ -702,18 +531,6 @@ namespace Obsidian.Util.Registry
                                 case Materials.InfestedChiseledStoneBricks:
                                     BLOCK_STATES.Add(material, new BlockMonsterEggs(blockName, id));
                                     break;
-                                case Materials.StoneBricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.MossyStoneBricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.CrackedStoneBricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
-                                case Materials.ChiseledStoneBricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.BrownMushroomBlock:
                                     BLOCK_STATES.Add(material, new BlockHugeMushroom(blockName, id));
                                     break;
@@ -762,9 +579,6 @@ namespace Obsidian.Util.Registry
                                 case Materials.LilyPad:
                                     BLOCK_STATES.Add(material, new BlockWaterLily(blockName, id));
                                     break;
-                                case Materials.NetherBricks:
-                                    BLOCK_STATES.Add(material, new Block(blockName, id));
-                                    break;
                                 case Materials.NetherBrickFence:
                                     BLOCK_STATES.Add(material, new BlockFence(blockName, id));
                                     break;
@@ -784,6 +598,7 @@ namespace Obsidian.Util.Registry
                                     BLOCK_STATES.Add(material, new BlockCauldron(blockName, id));
                                     break;
                                 default:
+                                    BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
                             }
                             registered++;
@@ -817,12 +632,6 @@ namespace Obsidian.Util.Registry
 
             return null;
         }
-    }
-
-    public class BlocksJson
-    {
-        public string Name { get; set; }
-        public BlockJson[] Blocks { get; set; }
     }
 
     public class BlockJson

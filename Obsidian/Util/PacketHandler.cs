@@ -91,7 +91,7 @@ namespace Obsidian.Util
                     var message = await CreateAsync(new IncomingChatMessage(packet.PacketData));
                     Logger.LogDebug($"received chat: {message.Message}");
 
-                    await server.SendChatAsync(message.Message, client);
+                    await server.ParseMessage(message.Message, client);
                     break;
 
                 case 0x03:
