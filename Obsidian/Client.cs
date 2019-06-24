@@ -480,7 +480,7 @@ namespace Obsidian
             }*/
         }
 
-        private async Task SendChunkAsync(Chunk chunk)
+        public async Task SendChunkAsync(Chunk chunk)
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 

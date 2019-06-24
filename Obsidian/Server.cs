@@ -84,6 +84,8 @@ namespace Obsidian
 
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
+
+            this.world = new Entities.World("", WorldGenerator);
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -97,6 +99,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
         public int TotalTicks { get; private set; } = 0;
+        public Entities.World world;
 
         private async Task ServerLoop()
         {
@@ -171,7 +174,11 @@ namespace Obsidian
                 foreach (var client in Clients)
                 {
                     if (!client.Tcp.Connected)
+                    {
                         this.Clients.TryRemove(client);
+                        continue;
+                    }
+                    await world.UpdateChunksForClient(client);
                 }
             }
         }
