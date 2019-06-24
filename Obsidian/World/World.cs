@@ -43,18 +43,18 @@ namespace Obsidian.Entities
 
         public async Task UpdateChunksForClient(Client c)
         {
-            int dist = (int)c.ClientSettings.ViewDistance;
+            int dist = (int)(c.ClientSettings?.ViewDistance ?? 1);
 
-            int oldchunkx = transformToChunk(c.Player.PreviousTransform.X);
-            int chunkx = transformToChunk(c.Player.Transform.X);
+            int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? 0);
+            int chunkx = transformToChunk(c.Player.Transform?.X ?? 0);
 
-            int oldchunkz = transformToChunk(c.Player.PreviousTransform.Z);
-            int chunkz = transformToChunk(c.Player.Transform.Z);
+            int oldchunkz = transformToChunk(c.Player.PreviousTransform?.Z ?? 0);
+            int chunkz = transformToChunk(c.Player.Transform?.Z ?? 0);
 
-            if(Math.Abs(chunkz - oldchunkz) > 1 || Math.Abs(chunkx - oldchunkx) > 1)
+            if(Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
             {
                 // This is a teleport!!!1 Send full new chunk data.
-                await resendChunkAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                await resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
                 return;
             }
 
@@ -65,7 +65,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx - dist), i);
 
-                    await c.SendChunkAsync(getChunk((chunkx + dist), i));
+                    await c.SendChunkAsync(getChunk((chunkx + dist), i, c));
                 }
             }
 
@@ -76,7 +76,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                    await c.SendChunkAsync(getChunk((chunkx - dist), i));
+                    await c.SendChunkAsync(getChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -87,7 +87,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
 
-                    await c.SendChunkAsync(getChunk(i, (chunkz + dist)));
+                    await c.SendChunkAsync(getChunk(i, (chunkz + dist), c));
                 }
             }
 
@@ -98,36 +98,38 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
 
-                    await c.SendChunkAsync(getChunk(i, (chunkz - dist)));
+                    await c.SendChunkAsync(getChunk(i, (chunkz - dist), c));
                 }
             }
         }
 
-        private async Task resendChunkAsync(int dist, int oldx, int oldz, int x, int z, Client c)
+        public async Task resendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
         {
             // unload old chunks
-            for(int cx = oldx - dist; cx > cx + dist; cx++)
+            for (int cx = oldx - dist; cx < oldx + dist; cx++)
             {
-                for (int cz = oldz - dist; cz > cz + dist; cz++)
+                for (int cz = oldz - dist; cz < oldz + dist; cz++)
                 {
                     //await c.UnloadChunkAsync(cx, cz);
                 }
             }
 
             // load new chunks
-            for (int cx = oldx - dist; cx > cx + dist; cx++)
+            for (int cx = (x - dist); cx < (x + dist); cx++)
             {
-                for (int cz = oldz - dist; cz > cz + dist; cz++)
+                for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    await c.SendChunkAsync(getChunk(cx, cz));
+                    await c.SendChunkAsync(getChunk(cx, cz, c));
                 }
             }
+
+            c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
-        private Chunk getChunk(int x, int z)
+        private Chunk getChunk(int x, int z, Client c)
         {
             // TODO: loading existing chunks
-            return worldgen.GenerateChunk(new Chunk(x, z));
+            return c.OriginServer.WorldGenerator.GenerateChunk(new Chunk(x, z));
         }
 
         private int transformToChunk(double input)

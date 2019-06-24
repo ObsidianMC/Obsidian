@@ -178,7 +178,8 @@ namespace Obsidian
                         this.Clients.TryRemove(client);
                         continue;
                     }
-                    await world.UpdateChunksForClient(client);
+                    if(client.State == ClientState.Play)
+                        await world.UpdateChunksForClient(client);
                 }
             }
         }
