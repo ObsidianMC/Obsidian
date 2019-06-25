@@ -21,8 +21,15 @@ namespace Obsidian.Entities
 
         public string Uuid3 { get; }
 
+        public Transform PreviousTransform { get; set; }
+
         // Properties set by Minecraft (official)
-        public Transform Transform { get; set; }
+        public Transform Transform {
+            get { return _transform; }
+            set { PreviousTransform = _transform; _transform = value; }
+        } // making sure PreviousTransform gets set on update, for comparison in world class.
+
+        private Transform _transform;
 
         public PlayerBitMask PlayerBitMask { get; set; }
 

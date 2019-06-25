@@ -436,15 +436,17 @@ namespace Obsidian
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
-            await this.SendPlayerInfoAsync();
+            //await this.SendPlayerInfoAsync();
 
             await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
                                                        string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
 
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
+            /*await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));*/
+
+            await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
 
             this.Logger.LogDebug("Sent chunk");
 
@@ -480,7 +482,7 @@ namespace Obsidian
             }*/
         }
 
-        private async Task SendChunkAsync(Chunk chunk)
+        public async Task SendChunkAsync(Chunk chunk)
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
