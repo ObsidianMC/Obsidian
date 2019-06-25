@@ -23,13 +23,20 @@ namespace Obsidian.Net.Packets
             this.PacketData = data;
         }
 
-        internal Packet() { /* Only for the static method to _not_ error */ }
+        internal Packet()
+        {
+            /* Only for the static method to _not_ error */
+        }
 
         public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
 
         public async Task WriteToStreamAsync(MinecraftStream stream)
         {
             int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
+
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
+#endif
 
             byte[] data = this.PacketData;
 
@@ -39,12 +46,15 @@ namespace Obsidian.Net.Packets
         }
 
         public abstract Task<byte[]> ToArrayAsync();
+
         public abstract Task PopulateAsync();
     }
 
     public class EmptyPacket : Packet
     {
-        public EmptyPacket(int packetId, byte[] data) : base(packetId, data) { }
+        public EmptyPacket(int packetId, byte[] data) : base(packetId, data)
+        {
+        }
 
         public override Task PopulateAsync()
         {

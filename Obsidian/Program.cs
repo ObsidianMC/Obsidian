@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Entities;
+using Obsidian.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ namespace Obsidian
         public static GlobalConfig Config;
 
 #if PACKETLOG
-        public static Logger PacketLogger = new Logger($"Packet Logger");
+        public static Logger PacketLogger = new Logger("Packet Logger", LogLevel.Debug);
 #endif
 
         private static async Task Main(string[] args)
