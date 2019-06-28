@@ -43,7 +43,7 @@ namespace Obsidian.Util
         [NbtIgnore]
         public byte this[int index]
         {
-            get { return (byte)(Data[index / 2] >> ((index) % 2 * 4) & 0xF); }
+            get => (byte)((Data[index / 2] >> (index % 2 * 4)) & 0xF);
             set
             {
                 value &= 0xF;
@@ -72,10 +72,7 @@ namespace Obsidian.Util
             NibbleArray = array;
         }
 
-        public byte this[int index]
-        {
-            get { return NibbleArray[index]; }
-        }
+        public byte this[int index] => NibbleArray[index];
 
         public ReadOnlyCollection<byte> Data
         {
