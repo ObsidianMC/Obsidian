@@ -31,7 +31,7 @@ namespace Obsidian.Tests
                 var random = new Random();
                 var values = new List<object[]>();
 
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     string value = "";
 
