@@ -16,7 +16,10 @@ namespace Obsidian.Tests
 
             await stream.WriteVarLongAsync(input);
 
-            Assert.Equal(bytes, stream.ToArray());
+            byte[] actualBytes = stream.ToArray();
+
+            Assert.InRange(actualBytes.Length, 1, 10);
+            Assert.Equal(bytes, actualBytes);
         }
 
         [MemberData(nameof(VarLongData))]
