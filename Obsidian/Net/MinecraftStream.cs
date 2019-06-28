@@ -225,25 +225,21 @@ namespace Obsidian.Net
 
         public async Task WriteVarIntAsync(int value)
         {
-            if (value <= -1)
-            {
-                await this.WriteUnsignedByteAsync((byte)value);
-
-                return;
-            }
+            uint v = (uint)value;
 
             do
             {
-                byte temp = (byte)(value & 0b01111111);
-                value = value.GetUnsignedRightShift(7);
-                if (value != 0)
+                byte temp = (byte)(v & 127);
+
+                v >>= 7;
+
+                if (v != 0)
                 {
                     temp |= 128;
                 }
-                await this.WriteUnsignedByteAsync(temp);
-            } while (value != 0);
 
-            //await this.WriteUnsignedByteAsync((byte)value);
+                await this.WriteUnsignedByteAsync(temp);
+            } while (v != 0);
         }
 
         /// <summary>
@@ -291,17 +287,21 @@ namespace Obsidian.Net
 
         public async Task WriteVarLongAsync(long value)
         {
+            ulong v = (ulong)value;
+
             do
             {
-                byte temp = (byte)(value & 0b01111111);
-                // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
-                value = value.GetUnsignedRightShift(7);
-                if (value != 0)
+                byte temp = (byte)(v & 127);
+
+                v >>= 7;
+
+                if (v != 0)
                 {
                     temp |= 128;
                 }
+
                 await this.WriteUnsignedByteAsync(temp);
-            } while (value != 0);
+            } while (v != 0);
         }
 
         public async Task WritePositionAsync(Position value)
