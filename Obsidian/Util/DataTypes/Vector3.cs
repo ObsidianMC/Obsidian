@@ -221,7 +221,7 @@ namespace Obsidian.Util
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (obj.GetType() != typeof(Vector3)) return false;
             return Equals((Vector3)obj);
         }
@@ -259,6 +259,6 @@ namespace Obsidian.Util
         public static readonly Vector3 North = new Vector3(0, 0, -1);
         public static readonly Vector3 South = new Vector3(0, 0, 1);
 
-        #endregion
+        #endregion Constants
     }
 }

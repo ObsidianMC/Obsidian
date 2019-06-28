@@ -13,7 +13,7 @@ namespace Obsidian.Plugins
     public class PluginManager
     {
         public ConcurrentHashSet<Plugin> Plugins { get; private set; }
-        private Server Server;
+        private readonly Server Server;
         private string Path => System.IO.Path.Combine(Server.Path, "plugins");
 
         internal PluginManager(Server server)

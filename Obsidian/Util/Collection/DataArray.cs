@@ -6,8 +6,8 @@ namespace Obsidian.Util
 
     public sealed class DataArray
     {
-        private byte BitsPerBlock;
-        private ulong BlockMask;
+        private readonly byte BitsPerBlock;
+        private readonly ulong BlockMask;
 
         public ulong[] Storage { get; }
 

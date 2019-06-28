@@ -11,8 +11,8 @@ namespace Obsidian.Util
     public class OperatorList
     {
         private List<Operator> _ops;
-        private List<OperatorRequest> _reqs;
-        private Server _server;
+        private readonly List<OperatorRequest> _reqs;
+        private readonly Server _server;
         private string path => Path.Combine(_server.Path, "ops.json");
 
         public OperatorList(Server s)

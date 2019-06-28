@@ -238,7 +238,7 @@ namespace Obsidian.Net
                 value = value.GetUnsignedRightShift(7);
                 if (value != 0)
                 {
-                    temp |= 0b10000000;
+                    temp |= 128;
                 }
                 await this.WriteUnsignedByteAsync(temp);
             } while (value != 0);
@@ -298,7 +298,7 @@ namespace Obsidian.Net
                 value = value.GetUnsignedRightShift(7);
                 if (value != 0)
                 {
-                    temp |= 0b10000000;
+                    temp |= 128;
                 }
                 await this.WriteUnsignedByteAsync(temp);
             } while (value != 0);
@@ -467,8 +467,8 @@ namespace Obsidian.Net
             do
             {
                 read = await this.ReadUnsignedByteAsync();
-                int value = (read & 0b01111111);
-                result |= (value << (7 * numRead));
+                int value = read & 0b01111111;
+                result |= value << (7 * numRead);
 
                 numRead++;
                 if (numRead > 5)

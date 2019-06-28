@@ -17,23 +17,27 @@ namespace Obsidian.Entities
 
         public List<Player> Players { get; }
 
-        // This one later comes back in the regions, 
+        // This one later comes back in the regions,
         // but might be easier for internal management purposes
         public List<object> Entities { get; }
 
         internal string folder { get; }
         internal bool Loaded { get; set; }
 
-        ConcurrentHashSet<Chunk> LoadedChunks;
-        private WorldGenerator worldgen;
+        private readonly ConcurrentHashSet<Chunk> LoadedChunks;
+        private readonly WorldGenerator worldgen;
 
         public World(string folder, WorldGenerator worldgen)
         {
-            this.WorldData = new Level();
-            this.WorldData.Time = 1200;
+            this.WorldData = new Level
+            {
+                Time = 1200,
+                Gametype = (int)Gamemode.Survival,
+                GeneratorName = WorldType.Default.ToString()
+            };
+
             this.Players = new List<Player>();
-            this.WorldData.Gametype = (int)Gamemode.Survival;
-            this.WorldData.GeneratorName = WorldType.Default.ToString();
+
             this.Entities = new List<object>();
             this.folder = folder;
 
@@ -43,7 +47,7 @@ namespace Obsidian.Entities
 
         public async Task UpdateChunksForClient(Client c)
         {
-            int dist = (int)(c.ClientSettings?.ViewDistance ?? 1);
+            int dist = c.ClientSettings?.ViewDistance ?? 1;
 
             int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? 0);
             int chunkx = transformToChunk(c.Player.Transform?.X ?? 0);
@@ -51,16 +55,16 @@ namespace Obsidian.Entities
             int oldchunkz = transformToChunk(c.Player.PreviousTransform?.Z ?? 0);
             int chunkz = transformToChunk(c.Player.Transform?.Z ?? 0);
 
-            if(Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
+            if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
             {
                 // This is a teleport!!!1 Send full new chunk data.
                 await resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
                 return;
             }
 
-            if(chunkx > oldchunkx)
+            if (chunkx > oldchunkx)
             {
-                for(int i = (chunkz - dist); i < (chunkz + dist); i++)
+                for (int i = (chunkz - dist); i < (chunkz + dist); i++)
                 {
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx - dist), i);
@@ -173,6 +177,7 @@ namespace Obsidian.Entities
         public void SetTime(long newTime) => this.WorldData.Time = newTime;
 
         public void AddPlayer(Player player) => this.Players.Add(player);
+
         public void RemovePlayer(Player player) => this.Players.Remove(player);
 
         //TODO
@@ -232,7 +237,7 @@ namespace Obsidian.Entities
     {
         Nether = -1,
 
-        Overworld, 
+        Overworld,
 
         End
     }

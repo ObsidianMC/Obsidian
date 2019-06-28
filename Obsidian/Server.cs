@@ -32,12 +32,12 @@ namespace Obsidian
 
     public class Server
     {
-        private ConcurrentQueue<QueueChat> _chatmessages;
-        private ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
-        private ConcurrentQueue<PlayerBlockPlacement> _placed;
+        private readonly ConcurrentQueue<QueueChat> _chatmessages;
+        private readonly ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
+        private readonly ConcurrentQueue<PlayerBlockPlacement> _placed;
 
-        private CancellationTokenSource _cts;
-        private TcpListener _tcpListener;
+        private readonly CancellationTokenSource _cts;
+        private readonly TcpListener _tcpListener;
 
         public MinecraftEventHandler Events;
         public PluginManager PluginManager;

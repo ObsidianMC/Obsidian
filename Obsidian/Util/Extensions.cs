@@ -5,10 +5,7 @@ namespace Obsidian.Util
     public static class Extensions
     {
         //this is for ints
-        public static int GetUnsignedRightShift(this int value, int s)
-        {
-            return (int)((uint)value) >> s;
-        }
+        public static int GetUnsignedRightShift(this int value, int s) => value >> s;
 
         //this is for longs
 
