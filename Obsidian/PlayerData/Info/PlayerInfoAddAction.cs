@@ -1,10 +1,8 @@
 ﻿using Obsidian.Chat;
-using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Util;
-using System;
+
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -29,9 +27,10 @@ namespace Obsidian.PlayerData.Info
 
             await stream.WriteStringAsync(this.Name, 16);
 
-            await stream.WriteVarIntAsync(0);
-            //foreach (SkinProperties props in this.Properties)
-            //    await stream.WriteAsync(await props.ToArrayAsync());
+            await stream.WriteVarIntAsync(this.Properties.Count);
+
+            foreach (SkinProperties props in this.Properties)
+                await stream.WriteAsync(await props.ToArrayAsync());
 
             await stream.WriteVarIntAsync(this.Gamemode);
 

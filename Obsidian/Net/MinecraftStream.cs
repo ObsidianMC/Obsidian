@@ -135,14 +135,39 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteByteAsync(sbyte value) => await this.WriteUnsignedByteAsync((byte)value);
+        public async Task WriteByteAsync(sbyte value)
+        {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Byte (0x{value.ToString("X")})");
+#endif
 
-        public async Task WriteUnsignedByteAsync(byte value) => await this.WriteAsync(new[] { value });
+            await this.WriteUnsignedByteAsync((byte)value);
+        }
 
-        public async Task WriteBooleanAsync(bool value) => await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
+        public async Task WriteUnsignedByteAsync(byte value)
+        {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing unsigned Byte (0x{value.ToString("X")})");
+#endif
+
+            await this.WriteAsync(new[] { value });
+        }
+
+        public async Task WriteBooleanAsync(bool value)
+        {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Boolean ({value})");
+#endif
+
+            await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
+        }
 
         public async Task WriteUnsignedShortAsync(ushort value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing unsigned Short ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -153,6 +178,10 @@ namespace Obsidian.Net
 
         public async Task WriteShortAsync(short value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Short ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -163,6 +192,10 @@ namespace Obsidian.Net
 
         public async Task WriteIntAsync(int value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Int ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -173,6 +206,10 @@ namespace Obsidian.Net
 
         public async Task WriteLongAsync(long value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Long ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -183,6 +220,10 @@ namespace Obsidian.Net
 
         public async Task WriteFloatAsync(float value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Float ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -193,6 +234,10 @@ namespace Obsidian.Net
 
         public async Task WriteDoubleAsync(double value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing Double ({value})");
+#endif
+
             var write = BitConverter.GetBytes(value);
             if (BitConverter.IsLittleEndian)
             {
@@ -203,6 +248,10 @@ namespace Obsidian.Net
 
         public async Task WriteStringAsync(string value, int maxLength = 0)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing String ({value})");
+#endif
+
             if (value == null)
             {
                 throw new ArgumentNullException(nameof(value));
@@ -225,6 +274,10 @@ namespace Obsidian.Net
 
         public async Task WriteVarIntAsync(int value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing VarInt ({value})");
+#endif
+
             uint v = (uint)value;
 
             do
@@ -287,6 +340,10 @@ namespace Obsidian.Net
 
         public async Task WriteVarLongAsync(long value)
         {
+#if PACKETLOG
+            Program.PacketLogger.LogDebug($"Writing VarLong ({value})");
+#endif
+
             ulong v = (ulong)value;
 
             do

@@ -78,7 +78,7 @@ namespace Obsidian.Util
                     // Teleport Confirm
                     // GET X Y Z FROM PACKET TODO
                     //this.Player.Position = new Position((int)x, (int)y, (int)z);
-                    Logger.LogDebug("Received teleport confirm");
+                    //Logger.LogDebug("Received teleport confirm");
                     break;
 
                 case 0x01:

@@ -36,6 +36,7 @@ namespace Obsidian.Net.Packets
 
 #if PACKETLOG
             Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
+            Program.PacketLogger.LogDebug("====================================");
 #endif
 
             byte[] data = this.PacketData;
@@ -56,14 +57,8 @@ namespace Obsidian.Net.Packets
         {
         }
 
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public override Task PopulateAsync() => throw new NotImplementedException();
 
-        public override Task<byte[]> ToArrayAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
     }
 }

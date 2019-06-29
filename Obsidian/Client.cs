@@ -75,20 +75,20 @@ namespace Obsidian
             this.Ping = (int)(DateTime.Now.Millisecond - id);
             await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
 
-            //Sending ping change in background
-            await Task.Run(async delegate ()
-            {
-                foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
-                {
-                    await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
-                    {
-                        new PlayerInfoUpdatePingAction()
-                        {
-                            Ping = this.Ping
-                        }
-                    }), this.MinecraftStream);
-                }
-            }).ConfigureAwait(false);
+            /////Sending ping change in background
+            ///await Task.Run(async delegate ()
+            ///{
+            ///    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
+            ///    {
+            ///        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
+            ///        {
+            ///            new PlayerInfoUpdatePingAction()
+            ///            {
+            ///                Ping = this.Ping
+            ///            }
+            ///        }), this.MinecraftStream);
+            ///    }
+            ///}).ConfigureAwait(false);
         }
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
@@ -176,19 +176,25 @@ namespace Obsidian
 
             foreach (Client client in this.OriginServer.Clients)
             {
-                var player = client.Player;
+                if (!client.IsPlaying)
+                {
+                    continue;
+                }
+
+                Player player = client.Player;
 
                 list.Add(new PlayerInfoAddAction()
                 {
                     Name = player.Username,
                     Uuid = player.Uuid,
                     Ping = client.Ping,
-                    Gamemode = (int)Player.Gamemode
+                    Gamemode = (int)Player.Gamemode,
+                    DisplayName = ChatMessage.Simple(player.Username)
                 });
             }
 
             await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
-            this.Logger.LogDebug($"Sent Player Info packet. from {this.Player.Username}");
+            this.Logger.LogDebug($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
@@ -407,12 +413,10 @@ namespace Obsidian
 
         private async Task ConnectAsync(Guid uuid)
         {
+            await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
 
-            await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
-
             this.State = ClientState.Play;
-
             this.Player.Gamemode = Gamemode.Creative;
 
             await PacketHandler.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
@@ -429,24 +433,24 @@ namespace Obsidian
                 await stream.WriteStringAsync("obsidian");
                 await PacketHandler.CreateAsync(new PluginMessage("minecraft:brand", stream.ToArray()), this.MinecraftStream);
             }
-
-            await this.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+            this.Logger.LogDebug("Sent server brand.");
 
             this.OriginServer.Broadcast(string.Format(this.Config.JoinMessage, this.Player.Username));
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
-            //await this.SendPlayerInfoAsync();
+            await this.SendPlayerInfoAsync();
 
             await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
                                                        string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
+            this.Logger.LogDebug("Sent player list decoration");
 
-            /*await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
-            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));*/
+            await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
-            await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
+            //await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
 
             this.Logger.LogDebug("Sent chunk");
 
