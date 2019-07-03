@@ -5,17 +5,17 @@ namespace Obsidian.Net.Packets
 {
     public class Handshake : Packet
     {
-        [Variable(VariableType.VarInt)]
-        public ProtocolVersion Version;
+        [Variable(VariableType.VarInt, 0)]
+        public ProtocolVersion Version { get; set; }
 
-        [Variable(VariableType.String)]
-        public string ServerAddress;
+        [Variable(VariableType.String, 1)]
+        public string ServerAddress { get; set; }
 
-        [Variable(VariableType.UnsignedShort)]
-        public ushort ServerPort;
+        [Variable(VariableType.UnsignedShort, 2)]
+        public ushort ServerPort { get; set; }
 
-        [Variable(VariableType.VarInt)]
-        public ClientState NextState;
+        [Variable(VariableType.VarInt, 3)]
+        public ClientState NextState { get; set; }
 
         public Handshake(byte[] data) : base(0x00, data)
         {
