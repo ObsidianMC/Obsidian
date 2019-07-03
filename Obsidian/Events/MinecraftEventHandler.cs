@@ -6,12 +6,12 @@ namespace Obsidian.Events
 {
     public class MinecraftEventHandler
     {
-        private AsyncEvent<PacketReceivedEventArgs> _packetReceived;
+        private readonly AsyncEvent<PacketReceivedEventArgs> _packetReceived;
 
-        private AsyncEvent<PlayerJoinEventArgs> _playerJoin;
-        private AsyncEvent<PlayerLeaveEventArgs> _playerLeave;
+        private readonly AsyncEvent<PlayerJoinEventArgs> _playerJoin;
+        private readonly AsyncEvent<PlayerLeaveEventArgs> _playerLeave;
 
-        private AsyncEvent _serverTick;
+        private readonly AsyncEvent _serverTick;
 
         public MinecraftEventHandler()
         {

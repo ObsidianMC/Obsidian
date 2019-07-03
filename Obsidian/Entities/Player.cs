@@ -15,7 +15,7 @@ namespace Obsidian.Entities
 {
     public class Player : Living
     {
-        private Client Client;
+        private readonly Client Client;
 
         public Guid Uuid { get; set; }
 
@@ -24,8 +24,9 @@ namespace Obsidian.Entities
         public Transform PreviousTransform { get; set; }
 
         // Properties set by Minecraft (official)
-        public Transform Transform {
-            get { return _transform; }
+        public Transform Transform
+        {
+            get => _transform;
             set { PreviousTransform = _transform; _transform = value; }
         } // making sure PreviousTransform gets set on update, for comparison in world class.
 

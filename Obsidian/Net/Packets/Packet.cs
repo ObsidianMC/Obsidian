@@ -34,6 +34,7 @@ namespace Obsidian.Net.Packets
 
 #if PACKETLOG
             Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
+            Program.PacketLogger.LogDebug("====================================");
 #endif
 
             //byte[] data = this.PacketData;

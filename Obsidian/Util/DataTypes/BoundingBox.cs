@@ -59,7 +59,6 @@ namespace Obsidian.Util
                 || box.Min.Z > Max.Z)
                 return ContainmentType.Disjoint;
 
-
             if (box.Min.X >= Min.X
                 && box.Max.X <= Max.X
                 && box.Min.Y >= Min.Y
@@ -130,8 +129,7 @@ namespace Obsidian.Util
 
         public bool Intersects(BoundingBox box)
         {
-            bool result;
-            Intersects(ref box, out result);
+            this.Intersects(ref box, out bool result);
             return result;
         }
 

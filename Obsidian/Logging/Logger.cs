@@ -14,13 +14,13 @@ namespace Obsidian.Logging
             remove { this._messageLogged.Unregister(value); }
         }
 
-        private AsyncEvent<LoggerEventArgs> _messageLogged;
+        private readonly AsyncEvent<LoggerEventArgs> _messageLogged;
 
         public LogLevel LogLevel { get; set; }
 
         private readonly ConcurrentQueue<LogMessage> _messages = new ConcurrentQueue<LogMessage>();
 
-        private string Prefix;
+        private readonly string Prefix;
 
         internal Logger(string prefix, LogLevel logLevel)
         {

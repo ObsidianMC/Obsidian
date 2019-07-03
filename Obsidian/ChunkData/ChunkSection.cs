@@ -33,7 +33,7 @@ namespace Obsidian.ChunkData
 
         public ChunkSection FilledWithLight()
         {
-            for(int i = 0; i< BlockLightArray.Data.Length; i++)
+            for (int i = 0; i < BlockLightArray.Data.Length; i++)
             {
                 BlockLightArray.Data[i] = 255;
             }
@@ -51,7 +51,7 @@ namespace Obsidian.ChunkData
     {
         private const byte BitsPerEntry = 14;
 
-        private DataArray BlockStorage = new DataArray(BitsPerEntry);
+        private readonly DataArray BlockStorage = new DataArray(BitsPerEntry);
 
         private IBlockStatePalette Palette { get; }
 
@@ -92,7 +92,4 @@ namespace Obsidian.ChunkData
             }
         }
     }
-
-
-
 }
