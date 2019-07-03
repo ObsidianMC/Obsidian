@@ -26,10 +26,7 @@ namespace Obsidian.Util
 
         public static async Task SerializeAsync(Packet packet, MinecraftStream outStream)
         {
-            var properties = from p in packet.GetType().GetProperties()
-                             let attrs = p.GetCustomAttributes(typeof(VariableAttribute), false)
-                             where attrs.Length == 1
-                             select new { Property = p, Attribute = attrs.First() as VariableAttribute };
+            var properties = GetProperties(packet);
 
             using (var stream = new MinecraftStream())
             {
@@ -61,12 +58,27 @@ namespace Obsidian.Util
             }
         }
 
+        private static IOrderedEnumerable<dynamic> GetProperties<T>(T packet) where T : Packet
+        {
+            var properties = new List<dynamic>();
+
+            foreach (var property in packet.GetType().GetProperties())
+            {
+                var attributes = property.GetCustomAttributes(typeof(VariableAttribute), false);
+
+                if (attributes.Length != 1) {
+                    continue;
+                }
+
+                properties.Add(new { Property = property, Attribute = (VariableAttribute)attributes[0] });
+            }
+
+            return properties.OrderBy(p => p.Attribute.Order);
+        }
+
         public static async Task<T> DeserializeAsync<T>(T packet) where T : Packet
         {
-            var properties = from p in packet.GetType().GetProperties()
-                             let attrs = p.GetCustomAttributes(typeof(VariableAttribute), false)
-                             where attrs.Length == 1
-                             select new { Property = p, Attribute = attrs.First() as VariableAttribute };
+            var properties = GetProperties(packet);
 
             using (var stream = new MinecraftStream(packet.PacketData))
             {
