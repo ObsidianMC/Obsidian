@@ -28,9 +28,7 @@ namespace Obsidian.Net.Packets
             /* Only for the static method to _not_ error */
         }
 
-        public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
-
-        public async Task WriteToStreamAsync(MinecraftStream stream)
+        public async Task WriteToStreamAsync(MinecraftStream inStream, MinecraftStream outStream)
         {
             int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
 
@@ -38,32 +36,20 @@ namespace Obsidian.Net.Packets
             Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
 #endif
 
-            byte[] data = this.PacketData;
+            //byte[] data = this.PacketData;
 
-            await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(PacketId);
-            await stream.WriteAsync(data);
+            await outStream.WriteVarIntAsync(packetLength);
+            await outStream.WriteVarIntAsync(PacketId);
+            await inStream.CopyToAsync(outStream);
         }
 
-        public abstract Task<byte[]> ToArrayAsync();
+        public virtual Task DeserializeAsync() => Task.CompletedTask;
 
-        public abstract Task PopulateAsync();
+        public virtual Task<byte[]> SerializeAsync() => Task.FromResult(new byte[0]);
     }
 
     public class EmptyPacket : Packet
     {
-        public EmptyPacket(int packetId, byte[] data) : base(packetId, data)
-        {
-        }
-
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Task<byte[]> ToArrayAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public EmptyPacket(int packetId, byte[] data) : base(packetId, data) { }
     }
 }

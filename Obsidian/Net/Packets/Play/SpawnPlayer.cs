@@ -20,12 +20,7 @@ namespace Obsidian.Net.Packets.Play
 
         public SpawnPlayer() : base(0x05, new byte[0]) { }
 
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> SerializeAsync()
         {
             using (var stream = new MinecraftStream())
             {

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using Obsidian.Util;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,8 +12,10 @@ namespace Obsidian.Net.Packets
             new MinecraftBrand()
         };
 
+        [Variable]
         public string Channel { get; private set; }
 
+        [Variable]
         public byte[] Data { get; private set; }
 
         public PluginMessage(string channel, byte[] data) : base(0x19, new byte[0])
@@ -23,23 +25,13 @@ namespace Obsidian.Net.Packets
             this.Data = data;
         }
 
-        public async override Task PopulateAsync()
+        public async override Task DeserializeAsync()
         {
             using (var stream = new MinecraftStream(this.PacketData))
             {
                 this.Channel = await stream.ReadIdentifierAsync();
 
                 await Handlers.First(h => h.Channel == this.Channel).HandleAsync(stream);
-            }
-        }
-
-        public async override Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteIdentifierAsync(Channel);
-                await stream.WriteAsync(Data);
-                return stream.ToArray();
             }
         }
     }

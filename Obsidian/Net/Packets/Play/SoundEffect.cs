@@ -1,7 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
-using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
@@ -10,36 +8,43 @@ namespace Obsidian.Net.Packets
         public SoundEffect(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, new byte[0])
         {
             this.SoundId = soundId;
-            this.Location = location;
+            this.X = (int)location.X;
+            this.Y = (int)location.Y;
+            this.Z = (int)location.Z;
             this.Category = category;
             this.Pitch = pitch;
             this.Volume = volume;
         }
 
-        public SoundCategory Category { get; set; }
-        public float Pitch { get; set; }
-        public Position Location { get; set; }
+        [Variable]
         public int SoundId { get; set; }
+
+        [Variable]
+        public SoundCategory Category { get; set; }
+
+        [Variable]
+        public int X { get; set; }
+
+        [Variable]
+        public int Y { get; set; }
+
+        [Variable]
+        public int Z { get; set; }
+
+        [Variable]
         public float Volume { get; set; }
 
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
+        [Variable]
+        public float Pitch { get; set; }
 
-        public override async Task<byte[]> ToArrayAsync()
+
+        public Position Location => new Position
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(this.SoundId);
-                await stream.WriteVarIntAsync((int)this.Category);
-                await stream.WriteIntAsync((int)this.Location.X);
-                await stream.WriteIntAsync((int)this.Location.Y);
-                await stream.WriteIntAsync((int)this.Location.Z);
-                await stream.WriteFloatAsync(this.Volume);
-                await stream.WriteFloatAsync(this.Pitch);
-                return stream.ToArray();
-            }
-        }
+            X = this.X,
+
+            Y = this.Y,
+
+            Z = this.Z
+        };
     }
 }

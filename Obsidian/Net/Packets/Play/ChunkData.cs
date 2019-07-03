@@ -28,7 +28,7 @@ namespace Obsidian.Net.Packets
             this.BlockEntities = new List<NbtTag>(); 
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> SerializeAsync()
         {
             bool fullChunk = true; // changedSectionFilter == 0b1111111111111111;
 
@@ -88,11 +88,6 @@ namespace Obsidian.Net.Packets
 
                 return stream.ToArray();
             }
-        }
-
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
         }
     }
 }

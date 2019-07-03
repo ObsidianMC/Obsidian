@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Util;
 
 namespace Obsidian.Net.Packets
 {
@@ -11,23 +11,7 @@ namespace Obsidian.Net.Packets
 
         public KeepAlive(byte[] data) : base(0x21, data) { }
 
+        [Variable(VariableType.Long)]
         public long KeepAliveId { get; set; }
-
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.KeepAliveId = await stream.ReadLongAsync();
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteLongAsync(this.KeepAliveId);
-                return stream.ToArray();
-            }
-        }
     }
 }

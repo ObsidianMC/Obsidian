@@ -1,5 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Util;
+using System;
 
 namespace Obsidian.Net.Packets
 {
@@ -11,31 +11,10 @@ namespace Obsidian.Net.Packets
             this.UUID = uuid;
         }
 
-        public string Username { get; private set; }
-
+        [Variable]
         public Guid UUID { get; private set; } = Guid.Empty;
 
-        public override async Task PopulateAsync()
-        {
-            if (UUID != Guid.Empty || !string.IsNullOrEmpty(this.Username))
-                return;
-
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Username = await stream.ReadStringAsync();
-                this.UUID = Guid.Parse(await stream.ReadStringAsync());
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.UUID.ToString());
-                await stream.WriteStringAsync(this.Username);
-                return stream.ToArray();
-            }
-        }
-
+        [Variable]
+        public string Username { get; private set; }
     }
 }

@@ -1,3 +1,4 @@
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -9,39 +10,22 @@ namespace Obsidian.Net.Packets
             
         }
 
+        [Variable(VariableType.String)]
         public string Locale { get; private set; }
+
+        [Variable(VariableType.Byte)]
         public sbyte ViewDistance { get; private set; }
+
+        [Variable(VariableType.Int)]
         public int ChatMode { get; private set; }
+
+        [Variable(VariableType.Boolean)]
         public bool ChatColors { get; private set; }
+
+        [Variable(VariableType.UnsignedByte)]
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
+
+        [Variable(VariableType.VarInt)]
         public int MainHand { get; private set; }
-
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                Locale = await stream.ReadStringAsync();
-                ViewDistance = await stream.ReadByteAsync();
-                ChatMode = await stream.ReadIntAsync();
-                ChatColors = await stream.ReadBooleanAsync();
-                SkinParts = await stream.ReadUnsignedByteAsync();
-                MainHand = await stream.ReadVarIntAsync();
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                // afaik these never get sent but that's OK
-                await stream.WriteStringAsync(Locale);
-                await stream.WriteByteAsync(ViewDistance);
-                await stream.WriteIntAsync(ChatMode);
-                await stream.WriteBooleanAsync(ChatColors);
-                await stream.WriteUnsignedByteAsync(SkinParts);
-                await stream.WriteVarIntAsync(MainHand);
-                return stream.ToArray();
-            }
-        }
     }
 }

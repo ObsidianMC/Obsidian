@@ -1,7 +1,6 @@
 ﻿using Obsidian.Commands;
-using System;
+using Obsidian.Util;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
@@ -12,7 +11,11 @@ namespace Obsidian.Net.Packets
     {
         public CommandNode RootNode;
 
+        [Variable]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
+
+        [Variable]
+        public int RootNodeIndex = 0;
 
         public DeclareCommands() : base(0x11, new byte[0])
         {
@@ -21,24 +24,6 @@ namespace Obsidian.Net.Packets
                 Type = CommandNodeType.Root,
                 Owner = this,
             };
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var ms = new MinecraftStream())
-            {
-                await ms.WriteVarIntAsync(this.Nodes.Count);
-
-                foreach (CommandNode node in Nodes)
-                {
-                    await ms.WriteAsync(await node.ToArrayAsync());
-                }
-
-                //Constant root node index
-                await ms.WriteVarIntAsync(0);
-
-                return ms.ToArray();
-            }
         }
 
         /// <summary>
@@ -55,7 +40,5 @@ namespace Obsidian.Net.Packets
                 AddNode(childs);
             }
         }
-
-        public override Task PopulateAsync() => throw new NotImplementedException();
     }
 }

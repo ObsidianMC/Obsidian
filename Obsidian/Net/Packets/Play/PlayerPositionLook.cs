@@ -1,7 +1,5 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
+﻿using Obsidian.Util;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
@@ -28,37 +26,13 @@ namespace Obsidian.Net.Packets
 
         public PlayerPositionLook(byte[] data) : base(0x32, data) { }
 
+        [Variable(VariableType.Tranform)]
         public Transform Transform { get; set; }
 
+        [Variable(VariableType.Byte)]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
+        [Variable(VariableType.VarInt)]
         public int TeleportId { get; private set; } = 0;
-
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Transform = new Transform(await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(), await stream.ReadDoubleAsync(), await stream.ReadFloatAsync(), await stream.ReadFloatAsync());
-
-                this.Flags = (PositionFlags)await stream.ReadByteAsync();
-
-                this.TeleportId = await stream.ReadVarIntAsync();
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteDoubleAsync(this.Transform.X);
-                await stream.WriteDoubleAsync(this.Transform.Y);
-                await stream.WriteDoubleAsync(this.Transform.Z);
-                await stream.WriteFloatAsync(this.Transform.Yaw.Degrees);
-                await stream.WriteFloatAsync(this.Transform.Pitch.Degrees);
-                await stream.WriteByteAsync((sbyte)this.Flags);
-                await stream.WriteVarIntAsync(this.TeleportId);
-                return stream.ToArray();
-            }
-        }
     }
 }

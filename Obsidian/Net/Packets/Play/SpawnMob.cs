@@ -1,9 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -20,41 +17,25 @@ namespace Obsidian.Net.Packets.Play
             this.Entity = entity ?? throw new ArgumentNullException(nameof(entity));
         }
 
+        [Variable]
         public int Id { get; }
+
+        [Variable]
         public Guid Uuid { get; }
+
+        [Variable]
         public int Type { get; }
+
+        [Variable]
         public Transform Transform { get; }
+
+        [Variable]
         public float HeadPitch { get; }
+
+        [Variable]
         public Velocity Velocity { get; }
+
+        [Variable]
         public Entity Entity { get; }
-
-        public override Task PopulateAsync() => throw new NotImplementedException();
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(Id);
-
-                await stream.WriteUuidAsync(Uuid);
-
-                await stream.WriteVarIntAsync(this.Type);
-
-                await stream.WriteDoubleAsync(Transform.X);
-                await stream.WriteDoubleAsync(Transform.Y);
-                await stream.WriteDoubleAsync(Transform.Z);
-
-                stream.WriteByte(0);
-                stream.WriteByte(0);
-                stream.WriteByte(0);
-
-                await stream.WriteShortAsync(Velocity.X);
-                await stream.WriteShortAsync(Velocity.Y);
-                await stream.WriteShortAsync(Velocity.Z);
-                //await Entity.WriteAsync(stream);
-
-                return stream.ToArray();
-            }
-        }
     }
 }

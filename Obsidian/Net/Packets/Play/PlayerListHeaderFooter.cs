@@ -1,6 +1,5 @@
 ﻿using Obsidian.Chat;
-using System;
-using System.Threading.Tasks;
+using Obsidian.Util;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -19,21 +18,10 @@ namespace Obsidian.Net.Packets.Play
             };
         }
 
+        [Variable]
         public ChatMessage Header { get; }
 
+        [Variable]
         public ChatMessage Footer { get; }
-
-        public override Task PopulateAsync() => throw new NotImplementedException();
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteChatAsync(Header);
-                await stream.WriteChatAsync(Footer);
-
-                return stream.ToArray();
-            }
-        }
     }
 }

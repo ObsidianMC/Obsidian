@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using Obsidian.Util;
 
 namespace Obsidian.Net.Packets
 {
@@ -6,24 +6,7 @@ namespace Obsidian.Net.Packets
     {
         public IncomingChatMessage(byte[] data) : base(0x02, data) { }
 
+        [Variable(VariableType.String)]
         public string Message { get; private set; }
-
-
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Message = await stream.ReadStringAsync(256);
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var ms = new MinecraftStream())
-            {
-                await ms.WriteStringAsync(this.Message);
-                return ms.ToArray();
-            }
-        }
     }
 }

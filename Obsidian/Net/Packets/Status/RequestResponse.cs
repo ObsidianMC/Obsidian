@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
-using System.Threading.Tasks;
+using Obsidian.Util;
 
 namespace Obsidian.Net.Packets
 {
@@ -10,25 +10,7 @@ namespace Obsidian.Net.Packets
 
         public RequestResponse(ServerStatus status) : base(0x00, new byte[0]) => this.Json = JsonConvert.SerializeObject(status);
 
+        [Variable(VariableType.String)]
         public string Json;
-
-        public override async Task PopulateAsync()
-        {
-            await Task.Yield();
-            using(var stream = new MinecraftStream(this.PacketData))
-            {
-
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.Json);
-
-                return stream.ToArray();
-            }
-        }
     }
 }

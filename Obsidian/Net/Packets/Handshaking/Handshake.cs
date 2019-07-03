@@ -1,15 +1,20 @@
+using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
     public class Handshake : Packet
     {
+        [Variable(VariableType.VarInt)]
         public ProtocolVersion Version;
-        
+
+        [Variable(VariableType.String)]
         public string ServerAddress;
 
+        [Variable(VariableType.UnsignedShort)]
         public ushort ServerPort;
 
+        [Variable(VariableType.VarInt)]
         public ClientState NextState;
 
         public Handshake(byte[] data) : base(0x00, data)
@@ -19,7 +24,7 @@ namespace Obsidian.Net.Packets
 
         public Handshake() : base(0x00, null){}
 
-        public override async Task PopulateAsync()
+        public override async Task DeserializeAsync()
         {
             using(var stream = new MinecraftStream(this.PacketData))
             {
@@ -27,20 +32,6 @@ namespace Obsidian.Net.Packets
                 this.ServerAddress = await stream.ReadStringAsync();
                 this.ServerPort = await stream.ReadUnsignedShortAsync();
                 this.NextState = (ClientState)await stream.ReadVarIntAsync();
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync((int)this.Version);
-                //TODO: add string length check
-                await stream.WriteStringAsync(this.ServerAddress);
-                await stream.WriteUnsignedShortAsync(this.ServerPort);
-                await stream.WriteVarIntAsync((int)this.NextState);
-
-                return stream.ToArray();
             }
         }
 

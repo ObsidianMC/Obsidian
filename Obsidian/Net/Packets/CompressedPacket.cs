@@ -77,12 +77,12 @@ namespace Obsidian.Net.Packets
 
         }
 
-        public override Task<byte[]> ToArrayAsync()
+        public override Task<byte[]> SerializeAsync()
         {
             throw new NotImplementedException();
         }
 
-        public override Task PopulateAsync()
+        public override Task DeserializeAsync()
         {
             throw new NotImplementedException();
         }

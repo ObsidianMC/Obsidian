@@ -1,7 +1,6 @@
 ﻿using fNbt;
 using Newtonsoft.Json;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Util;
 using System;
 using System.IO;
@@ -258,7 +257,7 @@ namespace Obsidian.Net
                 switch (value)
                 {
                     case int intValue: await this.WriteVarIntAsync(intValue); break;
-                    case string stringValue: await this.WriteStringAsync(stringValue); break;
+                    case string stringValue: await this.WriteStringAsync(stringValue ?? string.Empty); break;
                     case float floatValue: await this.WriteFloatAsync(floatValue); break;
                     case double doubleValue: await this.WriteDoubleAsync(doubleValue); break;
                     case short shortValue: await this.WriteShortAsync(shortValue); break;
@@ -547,6 +546,22 @@ namespace Obsidian.Net
                 Y = y,
 
                 Z = z,
+            };
+        }
+
+        public async Task<Transform> ReadTransformAsync()
+        {
+            return new Transform
+            {
+                X = await this.ReadDoubleAsync(),
+
+                Y = await this.ReadDoubleAsync(),
+
+                Z = await this.ReadDoubleAsync(),
+
+                Pitch = await this.ReadFloatAsync(),
+
+                Yaw = await this.ReadFloatAsync()
             };
         }
 

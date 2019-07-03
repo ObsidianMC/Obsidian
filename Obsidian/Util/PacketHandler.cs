@@ -4,6 +4,10 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -16,21 +20,113 @@ namespace Obsidian.Util
         private static Logger Logger = new Logger("Packets", LogLevel.Error);
 #endif
 
+        private ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
+
         public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
 
-        public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
+        public static async Task SerializeAsync(Packet packet, MinecraftStream outStream)
         {
-            if (packet.Empty)
-            {
-                await packet.FillPacketDataAsync();
-            }
-            else
-            {
-                await packet.PopulateAsync();
-            }
+            var properties = from p in packet.GetType().GetProperties()
+                             let attrs = p.GetCustomAttributes(typeof(VariableAttribute), false)
+                             where attrs.Length == 1
+                             select new { Property = p, Attribute = attrs.First() as VariableAttribute };
 
-            if (stream != null)
-                await packet.WriteToStreamAsync(stream);
+            using (var stream = new MinecraftStream())
+            {
+                foreach (var prop in properties)
+                {
+                    var value = prop.Property.GetValue(packet);
+
+                    switch (prop.Attribute.Type)
+                    {
+                        case VariableType.Int:
+                            await stream.WriteIntAsync((int)value);
+                            break;
+                        case VariableType.Long:
+                            await stream.WriteLongAsync((long)value);
+                            break;
+                        case VariableType.VarInt:
+                            await stream.WriteVarIntAsync((int)value);
+                            break;
+                        case VariableType.VarLong:
+                            await stream.WriteVarLongAsync((long)value);
+                            break;
+                        default:
+                            await stream.WriteAutoAsync(value);
+                            break;
+                    }
+                }
+
+                await stream.CopyToAsync(outStream);
+            }
+        }
+
+        public static async Task<T> DeserializeAsync<T>(T packet) where T : Packet
+        {
+            var properties = from p in packet.GetType().GetProperties()
+                             let attrs = p.GetCustomAttributes(typeof(VariableAttribute), false)
+                             where attrs.Length == 1
+                             select new { Property = p, Attribute = attrs.First() as VariableAttribute };
+
+            using (var stream = new MinecraftStream(packet.PacketData))
+            {
+                foreach (var prop in properties)
+                {
+                    var value = prop.Property.GetValue(packet);
+
+                    switch (prop.Attribute.Type)
+                    {
+                        case VariableType.Int:
+                            prop.Property.SetValue(packet, await stream.ReadIntAsync());
+                            break;
+                        case VariableType.Long:
+                            prop.Property.SetValue(packet, await stream.ReadLongAsync());
+                            break;
+                        case VariableType.VarInt:
+                            prop.Property.SetValue(packet, await stream.ReadVarIntAsync());
+                            break;
+                        case VariableType.VarLong:
+                            prop.Property.SetValue(packet, await stream.ReadVarLongAsync());
+                            break;
+                        case VariableType.UnsignedByte:
+                            prop.Property.SetValue(packet, await stream.ReadUnsignedByteAsync());
+                            break;
+                        case VariableType.Byte:
+                            prop.Property.SetValue(packet, await stream.ReadByteAsync());
+                            break;
+                        case VariableType.Short:
+                            prop.Property.SetValue(packet, await stream.ReadShortAsync());
+                            break;
+                        case VariableType.UnsignedShort:
+                            prop.Property.SetValue(packet, await stream.ReadUnsignedShortAsync());
+                            break;
+                        case VariableType.String:
+                            prop.Property.SetValue(packet, await stream.ReadStringAsync());
+                            break;
+                        case VariableType.Array:
+                            prop.Property.SetValue(packet, await stream.ReadUInt8ArrayAsync(prop.Attribute.Size));
+                            break;
+                        case VariableType.List:
+                            //TODO
+                            break;
+                        case VariableType.Position:
+                            prop.Property.SetValue(packet, await stream.ReadPositionAsync());
+                            break;
+                        case VariableType.Boolean:
+                            prop.Property.SetValue(packet, await stream.ReadBooleanAsync());
+                            break;
+                        case VariableType.Float:
+                            prop.Property.SetValue(packet, await stream.ReadFloatAsync());
+                            break;
+                        case VariableType.Double:
+                            prop.Property.SetValue(packet, await stream.ReadDoubleAsync());
+                            break;
+                        case VariableType.Tranform:
+                            prop.Property.SetValue(packet, await stream.ReadTransformAsync());
+                            break;
+                    }
+                }
+            }
 
             return (T)Convert.ChangeType(packet, typeof(T));
         }
@@ -88,7 +184,7 @@ namespace Obsidian.Util
 
                 case 0x02:
                     // Incoming chat message
-                    var message = await CreateAsync(new IncomingChatMessage(packet.PacketData));
+                    var message = new IncomingChatMessage(packet.PacketData);
                     Logger.LogDebug($"received chat: {message.Message}");
 
                     await server.ParseMessage(message.Message, client);
@@ -100,7 +196,7 @@ namespace Obsidian.Util
 
                 case 0x04:
                     // Client Settings
-                    client.ClientSettings = await CreateAsync(new ClientSettings(packet.PacketData));
+                    client.ClientSettings = await DeserializeAsync(new ClientSettings(packet.PacketData));
                     Logger.LogDebug("Received client settings");
                     break;
 
@@ -151,25 +247,25 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await CreateAsync(new KeepAlive(packet.PacketData));
+                    var keepalive = await DeserializeAsync(new KeepAlive(packet.PacketData));
 
                     Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id {keepalive.KeepAliveId}");
                     break;
 
                 case 0x0F: // Player
-                    var onground = BitConverter.ToBoolean(await packet.ToArrayAsync(), 0);
+                    var onground = BitConverter.ToBoolean(await packet.SerializeAsync(), 0);
                     Logger.LogDebug($"{client.Player.Username} on ground?: {onground}");
                     client.Player.OnGround = onground;
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await CreateAsync(new PlayerPosition(packet.PacketData));
+                    var pos = await DeserializeAsync(new PlayerPosition(packet.PacketData));
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await CreateAsync(new PlayerPositionLook(packet.PacketData));
+                    var ppos = await DeserializeAsync(new PlayerPositionLook(packet.PacketData));
 
                     client.Player.UpdatePosition(ppos.Transform);
                     //Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
@@ -177,7 +273,7 @@ namespace Obsidian.Util
 
                 case 0x12:
                     // Player Look
-                    var look = await CreateAsync(new PlayerLook(packet.PacketData));
+                    var look = await DeserializeAsync(new PlayerLook(packet.PacketData));
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                     Logger.LogDebug($"Updated look for {client.Player.Username}");
@@ -212,7 +308,7 @@ namespace Obsidian.Util
                     // Player Digging
                     Logger.LogDebug("Received player digging");
 
-                    var digging = await CreateAsync(new PlayerDigging(packet.PacketData));
+                    var digging = await DeserializeAsync(new PlayerDigging(packet.PacketData));
 
                     server.EnqueueDigging(digging);
                     break;
@@ -289,7 +385,7 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Animation (serverbound)
-                    var serverAnim = await CreateAsync(new AnimationServerPacket(packet.PacketData));
+                    var serverAnim = await DeserializeAsync(new AnimationServerPacket(packet.PacketData));
 
                     Logger.LogDebug("Received animation (serverbound)");
                     break;
@@ -301,7 +397,7 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
-                    var pbp = await CreateAsync(new PlayerBlockPlacement(packet.PacketData));
+                    var pbp = await DeserializeAsync(new PlayerBlockPlacement(packet.PacketData));
 
                     server.EnqueuePlacing(pbp);
                     Logger.LogDebug("Received player block placement");

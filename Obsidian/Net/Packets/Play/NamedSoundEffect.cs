@@ -21,19 +21,22 @@ namespace Obsidian.Net.Packets
             this.Pitch = pitch;
         }
 
+        [Variable]
         public string Name { get; }
 
+        [Variable]
         public SoundCategory Category { get; }
 
+        [Variable]
         public Position Location { get; }
 
+        [Variable]
         public float Volume { get; }
 
+        [Variable]
         public float Pitch { get; }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
-
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task<byte[]> SerializeAsync()
         {
             using (var stream = new MinecraftStream())
             {

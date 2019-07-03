@@ -1,6 +1,6 @@
 ﻿using Obsidian.Boss;
+using Obsidian.Util;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
@@ -12,23 +12,10 @@ namespace Obsidian.Net.Packets
             this.Action = action ?? throw new ArgumentNullException(nameof(action));
         }
 
+        [Variable]
         public Guid UUID { get; private set; }
+
+        [Variable]
         public BossBarAction Action { get; private set; }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            //NOTE: Uncomment if set should be made public
-            //if (Action == null) throw new Exception("Action is null!");
-
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteUuidAsync(this.UUID);
-                await stream.WriteVarIntAsync(this.Action.Action);
-                await stream.WriteAsync(await this.Action.ToArrayAsync());
-                return stream.ToArray();
-            }
-        }
-
-        public override Task PopulateAsync() => throw new NotImplementedException();
     }
 }

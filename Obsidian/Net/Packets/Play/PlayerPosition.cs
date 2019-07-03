@@ -1,7 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
-using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Util;
 
 namespace Obsidian.Net.Packets
 {
@@ -9,40 +6,34 @@ namespace Obsidian.Net.Packets
     {
         public PlayerPosition(Position pos, bool onground) : base(0x10, new byte[0])
         {
-            this.Position = pos;
+            this.X = pos.X;
+            this.Y = pos.Y;
+            this.Z = pos.Z;
             this.OnGround = onground;
         }
 
         public PlayerPosition(byte[] data) : base(0x10, data) { }
 
-        public Position Position { get; set; }
+        [Variable(VariableType.Double)]
+        public double X { get; set; }
 
+        [Variable(VariableType.Double)]
+        public double Y { get; set; }
+
+        [Variable(VariableType.Double)]
+        public double Z { get; set; }
+
+        [Variable(VariableType.Boolean)]
         public bool OnGround { get; private set; } = false;
 
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Position = new Position
-                {
-                    X = await stream.ReadDoubleAsync(),
-                    Y = await stream.ReadDoubleAsync(),
-                    Z = await stream.ReadDoubleAsync()
-                };
-                this.OnGround = await stream.ReadBooleanAsync();
-            }
-        }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public Position Position => new Position
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteDoubleAsync(this.Position.X);
-                await stream.WriteDoubleAsync(this.Position.Y);
-                await stream.WriteDoubleAsync(this.Position.Z);
-                await stream.WriteBooleanAsync(this.OnGround);
-                return stream.ToArray();
-            }
-        }
+            X = this.X,
+
+            Y = this.Y,
+
+            Z = this.Z
+        };
     }
 }

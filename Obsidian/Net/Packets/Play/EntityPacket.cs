@@ -1,26 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Util;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class EntityPacket : Packet
     {
+        [Variable]
         public int Id { get; set; }
 
         public EntityPacket() : base(0x27, new byte[0]) { }
-
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(this.Id);
-                return stream.ToArray();
-            }
-        }
     }
 }
