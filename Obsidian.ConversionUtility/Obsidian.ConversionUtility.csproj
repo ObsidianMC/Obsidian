@@ -3,6 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
+    <Authors>Craftplacer</Authors>
+    <Description>Converts Minecraft vanilla server files to JSON/Obsidian ones</Description>
+    <RepositoryUrl>https://github.com/NaamloosDT/Obsidian</RepositoryUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Product>Obsidian Conversion Utility</Product>
+    <Company>Obsidian Team</Company>
   </PropertyGroup>
 
   <ItemGroup>
