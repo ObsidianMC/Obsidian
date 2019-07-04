@@ -47,8 +47,15 @@ namespace Obsidian.Util
 
         Unknown,
         Boolean,
+
         Float,
+
         Double,
         Tranform
+
+
+        UUID,
+
+        Chat
     }
 }

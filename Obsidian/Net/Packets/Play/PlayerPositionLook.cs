@@ -24,15 +24,17 @@ namespace Obsidian.Net.Packets
             this.TeleportId = tpId;
         }
 
-        public PlayerPositionLook(byte[] data) : base(0x32, data) { }
+        public PlayerPositionLook(byte[] data) : base(0x32, data)
+        {
+        }
 
-        [Variable(VariableType.Tranform)]
+        [Variable]
         public Transform Transform { get; set; }
 
-        [Variable(VariableType.Byte)]
+        [Variable]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [Variable(VariableType.VarInt)]
+        [Variable]
         public int TeleportId { get; private set; } = 0;
     }
 }

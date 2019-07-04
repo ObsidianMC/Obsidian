@@ -7,25 +7,24 @@ namespace Obsidian.Net.Packets
     {
         public ClientSettings(byte[] data) : base(0x04, data)
         {
-            
         }
 
-        [Variable(VariableType.String)]
+        [Variable]
         public string Locale { get; private set; }
 
-        [Variable(VariableType.Byte)]
+        [Variable]
         public sbyte ViewDistance { get; private set; }
 
         [Variable(VariableType.Int)]
         public int ChatMode { get; private set; }
 
-        [Variable(VariableType.Boolean)]
+        [Variable]
         public bool ChatColors { get; private set; }
 
-        [Variable(VariableType.UnsignedByte)]
+        [Variable]
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
 
-        [Variable(VariableType.VarInt)]
+        [Variable]
         public int MainHand { get; private set; }
     }
 }

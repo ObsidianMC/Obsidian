@@ -18,16 +18,18 @@ namespace Obsidian.Net.Packets
         [Variable(VariableType.UnsignedByte)]
         public Difficulty Difficulty { get; private set; } = Difficulty.Peaceful;
 
-        [Variable(VariableType.UnsignedByte)]
+        [Variable]
         public byte MaxPlayers { get; private set; } = 0; // Gets ignored by client
 
-        [Variable(VariableType.String)]
+        [Variable]
         public string LevelType { get; private set; } = "default";
 
-        [Variable(VariableType.Boolean)]
+        [Variable]
         public bool ReducedDebugInfo { get; private set; } = false;
 
-        public JoinGame(byte[] data) : base(0x25, data) { }
+        public JoinGame(byte[] data) : base(0x25, data)
+        {
+        }
 
         public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, string leveltype, bool debugging) : base(0x25, new byte[0])
         {

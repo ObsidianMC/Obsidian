@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets
     {
         public SpawnPosition(Position location) : base(0x49, new byte[0]) => Location = location;
 
-        [Variable(VariableType.Position)]
+        [Variable]
         public Position Location { get; private set; }
     }
 }

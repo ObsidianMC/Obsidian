@@ -4,9 +4,11 @@ namespace Obsidian.Net.Packets
 {
     public class IncomingChatMessage : Packet
     {
-        public IncomingChatMessage(byte[] data) : base(0x02, data) { }
+        public IncomingChatMessage(byte[] data) : base(0x02, data)
+        {
+        }
 
-        [Variable(VariableType.String)]
+        [Variable]
         public string Message { get; private set; }
     }
 }

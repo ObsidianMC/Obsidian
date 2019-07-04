@@ -18,6 +18,5 @@ namespace Obsidian.Net.Packets
         {
             return Task.CompletedTask;
         }
-
     }
 }

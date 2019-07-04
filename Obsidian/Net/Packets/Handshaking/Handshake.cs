@@ -8,10 +8,10 @@ namespace Obsidian.Net.Packets
         [Variable(VariableType.VarInt, 0)]
         public ProtocolVersion Version { get; set; }
 
-        [Variable(VariableType.String, 1)]
+        [Variable(order: 1)]
         public string ServerAddress { get; set; }
 
-        [Variable(VariableType.UnsignedShort, 2)]
+        [Variable(order: 2)]
         public ushort ServerPort { get; set; }
 
         [Variable(VariableType.VarInt, 3)]
@@ -19,21 +19,10 @@ namespace Obsidian.Net.Packets
 
         public Handshake(byte[] data) : base(0x00, data)
         {
-    
         }
 
-        public Handshake() : base(0x00, null){}
-
-        public override async Task DeserializeAsync()
+        public Handshake() : base(0x00, null)
         {
-            using(var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
-                this.ServerAddress = await stream.ReadStringAsync();
-                this.ServerPort = await stream.ReadUnsignedShortAsync();
-                this.NextState = (ClientState)await stream.ReadVarIntAsync();
-            }
         }
-
     }
 }

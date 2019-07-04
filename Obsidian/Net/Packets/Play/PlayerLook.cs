@@ -11,15 +11,17 @@ namespace Obsidian.Net.Packets
             this.OnGround = onground;
         }*/
 
-        public PlayerLook(byte[] data) : base(0x00, data) { }
+        public PlayerLook(byte[] data) : base(0x00, data)
+        {
+        }
 
-        [Variable(VariableType.Float)]
+        [Variable]
         public float Yaw { get; private set; } = 0;
 
-        [Variable(VariableType.Float)]
+        [Variable]
         public float Pitch { get; private set; } = 0;
 
-        [Variable(VariableType.Boolean)]
+        [Variable]
         public bool OnGround { get; private set; } = false;
     }
 }

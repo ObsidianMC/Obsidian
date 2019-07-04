@@ -9,9 +9,11 @@ namespace Obsidian.Net.Packets
             this.KeepAliveId = id;
         }
 
-        public KeepAlive(byte[] data) : base(0x21, data) { }
+        public KeepAlive(byte[] data) : base(0x21, data)
+        {
+        }
 
-        [Variable(VariableType.Long)]
+        [Variable]
         public long KeepAliveId { get; set; }
     }
 }

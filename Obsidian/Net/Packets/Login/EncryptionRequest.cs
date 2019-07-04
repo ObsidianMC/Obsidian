@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets
 {
     public class EncryptionRequest : Packet
     {
-        [Variable]
+        [Variable(VariableType.String)]
         public string ServerId { get; private set; }
 
         [Variable]

@@ -12,20 +12,21 @@ namespace Obsidian.Net.Packets
             this.OnGround = onground;
         }
 
-        public PlayerPosition(byte[] data) : base(0x10, data) { }
+        public PlayerPosition(byte[] data) : base(0x10, data)
+        {
+        }
 
-        [Variable(VariableType.Double)]
+        [Variable]
         public double X { get; set; }
 
-        [Variable(VariableType.Double)]
+        [Variable]
         public double Y { get; set; }
 
-        [Variable(VariableType.Double)]
+        [Variable]
         public double Z { get; set; }
 
-        [Variable(VariableType.Boolean)]
+        [Variable]
         public bool OnGround { get; private set; } = false;
-
 
         public Position Position => new Position
         {
