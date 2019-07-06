@@ -107,7 +107,7 @@ namespace Obsidian.Util
             }
         }
 
-        private static async Task<dynamic> ReadAsync(MinecraftStream stream, VariableAttribute attribute, VariableType type)
+        private static async Task<object> ReadAsync(MinecraftStream stream, VariableAttribute attribute, VariableType type)
         {
             switch (type)
             {
