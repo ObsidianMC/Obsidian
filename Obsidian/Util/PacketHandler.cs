@@ -6,9 +6,11 @@ using Obsidian.Net.Packets.Play;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using static Obsidian.Util.PacketSerializer;
 
 namespace Obsidian.Util
 {
@@ -23,157 +25,6 @@ namespace Obsidian.Util
         private ArrayPool<byte> _pool = ArrayPool<byte>.Shared;
 
         public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
-
-        public static async Task SerializeAsync(Packet packet, MinecraftStream outStream)
-        {
-            var properties = GetProperties(packet);
-
-            using (var stream = new MinecraftStream())
-            {
-                foreach (var prop in properties)
-                {
-                    var value = prop.Property.GetValue(packet);
-
-                    switch (prop.Attribute.Type)
-                    {
-                        case VariableType.Int:
-                            await stream.WriteIntAsync((int)value);
-                            break;
-                        case VariableType.Long:
-                            await stream.WriteLongAsync((long)value);
-                            break;
-                        case VariableType.VarInt:
-                            await stream.WriteVarIntAsync((int)value);
-                            break;
-                        case VariableType.VarLong:
-                            await stream.WriteVarLongAsync((long)value);
-                            break;
-                        default:
-                            await stream.WriteAutoAsync(value);
-                            break;
-                    }
-                }
-
-                await stream.CopyToAsync(outStream);
-            }
-        }
-
-        private static IOrderedEnumerable<dynamic> GetProperties<T>(T packet) where T : Packet
-        {
-            var properties = new List<dynamic>();
-
-            foreach (var property in packet.GetType().GetProperties())
-            {
-                var attributes = property.GetCustomAttributes(typeof(VariableAttribute), false);
-
-                if (attributes.Length != 1) {
-                    continue;
-                }
-
-                properties.Add(new { Property = property, Attribute = (VariableAttribute)attributes[0] });
-            }
-
-            return properties.OrderBy(p => p.Attribute.Order);
-        }
-
-        public static async Task<T> DeserializeAsync<T>(T packet) where T : Packet
-        {
-            var properties = GetProperties(packet);
-
-            using (var stream = new MinecraftStream(packet.PacketData))
-            {
-                foreach (var prop in properties)
-                {
-                    var value = prop.Property.GetValue(packet);
-
-                    switch (prop.Attribute.Type)
-                    {
-                        case VariableType.Int:
-                            prop.Property.SetValue(packet, await stream.ReadIntAsync());
-                            break;
-                        case VariableType.Long:
-                            prop.Property.SetValue(packet, await stream.ReadLongAsync());
-                            break;
-                        case VariableType.VarInt:
-                            prop.Property.SetValue(packet, await stream.ReadVarIntAsync());
-                            break;
-                        case VariableType.VarLong:
-                            prop.Property.SetValue(packet, await stream.ReadVarLongAsync());
-                            break;
-                        case VariableType.UnsignedByte:
-                            prop.Property.SetValue(packet, await stream.ReadUnsignedByteAsync());
-                            break;
-                        case VariableType.Byte:
-                            prop.Property.SetValue(packet, await stream.ReadByteAsync());
-                            break;
-                        case VariableType.Short:
-                            prop.Property.SetValue(packet, await stream.ReadShortAsync());
-                            break;
-                        case VariableType.UnsignedShort:
-                            prop.Property.SetValue(packet, await stream.ReadUnsignedShortAsync());
-                            break;
-                        case VariableType.String:
-                            prop.Property.SetValue(packet, await stream.ReadStringAsync());
-                            break;
-                        case VariableType.Array:
-                            prop.Property.SetValue(packet, await stream.ReadUInt8ArrayAsync(prop.Attribute.Size));
-                            break;
-                        case VariableType.List:
-                            //TODO
-                            break;
-                        case VariableType.Position:
-                            prop.Property.SetValue(packet, await stream.ReadPositionAsync());
-                            break;
-                        case VariableType.Boolean:
-                            prop.Property.SetValue(packet, await stream.ReadBooleanAsync());
-                            break;
-                        case VariableType.Float:
-                            prop.Property.SetValue(packet, await stream.ReadFloatAsync());
-                            break;
-                        case VariableType.Double:
-                            prop.Property.SetValue(packet, await stream.ReadDoubleAsync());
-                            break;
-                        case VariableType.Tranform:
-                            prop.Property.SetValue(packet, await stream.ReadTransformAsync());
-                            break;
-                    }
-                }
-            }
-
-            return (T)Convert.ChangeType(packet, typeof(T));
-        }
-
-        public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
-        {
-            int length = await stream.ReadVarIntAsync();
-            byte[] receivedData = new byte[length];
-
-            await stream.ReadAsync(receivedData, 0, length);
-
-            int packetId = 0;
-            byte[] packetData = new byte[0];
-
-            using (var packetStream = new MinecraftStream(receivedData))
-            {
-                try
-                {
-                    packetId = await packetStream.ReadVarIntAsync();
-                    int arlen = 0;
-
-                    if (length - packetId.GetVarintLength() > -1)
-                        arlen = length - packetId.GetVarintLength();
-
-                    packetData = new byte[arlen];
-                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
-                }
-                catch
-                {
-                    throw;
-                }
-            }
-
-            return new EmptyPacket(packetId, packetData);
-        }
 
         public const float MaxDiggingRadius = 6;
 

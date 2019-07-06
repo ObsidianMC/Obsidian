@@ -1,6 +1,4 @@
-﻿using Obsidian.BlockData;
-using Obsidian.Boss;
-using Obsidian.Chat;
+﻿using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -13,6 +11,7 @@ using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.World;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -241,7 +240,7 @@ namespace Obsidian
 
         private async Task<Packet> GetNextPacketAsync()
         {
-            return await PacketHandler.ReadFromStreamAsync(this.MinecraftStream);
+            return await PacketSerializer.ReadFromStreamAsync(this.MinecraftStream);
         }
 
         public async Task StartConnectionAsync()
@@ -277,13 +276,13 @@ namespace Obsidian
                             if (packet == null)
                                 throw new InvalidOperationException();
 
-                            var handshake = await PacketHandler.DeserializeAsync(new Handshake(packet.PacketData));
+                            var handshake = await PacketSerializer.DeserializeAsync(new Handshake(packet.PacketData));
 
                             var nextState = handshake.NextState;
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
-                                this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
+                                this.Logger.LogDebug($"Client sent unexpected state ({nextState}), forcing it to disconnect");
                                 await this.DisconnectAsync(ChatMessage.Simple("you seem suspicious"));
                             }
 
@@ -345,7 +344,7 @@ namespace Obsidian
                                 break;
 
                             case 0x01:
-                                var encryptionResponse = await PacketHandler.DeserializeAsync(new EncryptionResponse(packet.PacketData));
+                                var encryptionResponse = await PacketSerializer.DeserializeAsync(new EncryptionResponse(packet.PacketData));
 
                                 JoinedResponse response;
 
@@ -541,12 +540,12 @@ namespace Obsidian
 
                 using (var stream = new MinecraftStream())
                 {
-                    await PacketHandler.SerializeAsync(packet, stream);
+                    await PacketSerializer.SerializeAsync(packet, stream);
 
                     await packet.WriteToStreamAsync(stream, this.MinecraftStream);
                 }
 
-            skip:
+                skip:
                 return;
             }
         }
