@@ -32,7 +32,7 @@ namespace Obsidian.Util
             if (stream != null)
                 await packet.WriteToStreamAsync(stream);
 
-            return (T)Convert.ChangeType(packet, typeof(T));
+            return (T)packet;
         }
 
         public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
