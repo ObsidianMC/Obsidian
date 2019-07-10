@@ -7,6 +7,6 @@
 [WIP] A C# implementation of the Minecraft server protocol. (NET Core)
 
 ## The Obsidian Team
-- [Naamloos](https://github.com/NaamloosDT) (creator)
-- [Tides](https://github.com/TidesVI) (developer)
+- [Naamloos](https://github.com/Naamloos) (creator)
+- [Tides](https://github.com/Tides) (developer)
 - [Craftplacer](https://github.com/Craftplacer/) (developer)
