@@ -41,6 +41,7 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
+        public short HeldItemSlot { get; set; }
 
         public Gamemode Gamemode { get; set; }
 
@@ -55,7 +56,7 @@ namespace Obsidian.Entities
         public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
         public float XpP { get; set; } = 0; // idfk, xp points?
-
+        
         public Hand MainHand { get; set; }
 
         public Entity LeftShoulder { get; set; }

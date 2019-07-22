@@ -67,7 +67,7 @@ namespace Obsidian.Entities
                 for (int i = (chunkz - dist); i < (chunkz + dist); i++)
                 {
                     // TODO: implement
-                    //await c.UnloadChunkAsync((chunkx - dist), i);
+//                    await c.UnloadChunkAsync((chunkx - dist), i);
 
                     await c.SendChunkAsync(getChunk((chunkx + dist), i, c));
                 }

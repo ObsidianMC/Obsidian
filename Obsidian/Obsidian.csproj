@@ -23,4 +23,8 @@
     <Folder Include="PluginMessages\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

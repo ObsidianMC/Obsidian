@@ -21,6 +21,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using BlockFace = Obsidian.Util.DataTypes.BlockFace;
 
 namespace Obsidian
 {
@@ -49,7 +50,7 @@ namespace Obsidian
 
         public WorldGenerator WorldGenerator { get; private set; }
 
-        public string Path => System.IO.Path.GetFullPath(Id.ToString());
+        public string Path => System.IO.Path.GetFullPath($"Server{Id}");
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -145,7 +146,7 @@ namespace Obsidian
                     _diggers.TryDequeue(out PlayerDigging dd);
                 }
 
-                // TODO use blockface values to determine where block should be placed
+                // (DONE ?) TODO use blockface values to determine where block should be placed 
                 if (_placed.Count > 0)
                 {
                     if (_placed.TryPeek(out PlayerBlockPlacement pbp))
@@ -153,9 +154,64 @@ namespace Obsidian
                         foreach (var clnt in Clients)
                         {
                             var location = pbp.Location;
+                            var face = pbp.Face;
 
-                            var b = new BlockChange(pbp.Location, BlockRegistry.G(Materials.Cobblestone).Id);
-                            await clnt.SendBlockChangeAsync(b);
+                            BlockChange blockChange;
+                            Block block = BlockRegistry.G(Materials.Cobblestone);
+
+                            #if DEBUG
+                            switch (clnt.Player.HeldItemSlot) {
+                                case 0:
+                                    block = BlockRegistry.G(Materials.Cobblestone);
+                                    break;
+                                case 1:
+                                    block = BlockRegistry.G(Materials.Dirt);
+                                    break;
+                                case 2:
+                                    block = BlockRegistry.G(Materials.Glass);
+                                    break;
+                                case 3:
+                                    block = BlockRegistry.G(Materials.SpruceLog);
+                                    break;
+                                case 4:
+                                    block = BlockRegistry.G(Materials.Bricks);
+                                    break;
+                                case 5:
+                                    block = BlockRegistry.G(Materials.IronBlock);
+                                    break;
+                                case 6:
+                                    block = BlockRegistry.G(Materials.SpruceLeaves);
+                                    break;
+                                case 7:
+                                    block = BlockRegistry.G(Materials.Bedrock);
+                                    break;
+                            }
+                            #endif
+                            
+                            switch (face) {
+                                case BlockFace.Top:
+                                    blockChange = new BlockChange(new Position(location.X, location.Y + 1, location.Z), block.Id);
+                                    break;
+                                case BlockFace.Bottom:
+                                    blockChange = new BlockChange(new Position(location.X, location.Y - 1, location.Z), block.Id);
+                                    break;
+                                case BlockFace.East:
+                                    blockChange = new BlockChange(new Position(location.X + 1, location.Y, location.Z), block.Id);
+                                    break;
+                                case BlockFace.West:
+                                    blockChange = new BlockChange(new Position(location.X - 1, location.Y, location.Z), block.Id);
+                                    break;
+                                case BlockFace.South:
+                                    blockChange = new BlockChange(new Position(location.X, location.Y, location.Z + 1), block.Id);
+                                    break;
+                                case BlockFace.North:
+                                    blockChange = new BlockChange(new Position(location.X, location.Y, location.Z - 1), block.Id);
+                                    break;
+                                default:
+                                    blockChange = new BlockChange(location, block.Id);
+                                    break;
+                            }
+                            await clnt.SendBlockChangeAsync(blockChange);
                         }
                     }
 
@@ -179,8 +235,10 @@ namespace Obsidian
                         continue;
                     }
 
-                    //if (client.State == ClientState.Play)
-                    //    await world.UpdateChunksForClient(client);
+                    if (client.State == ClientState.Play) {
+                        await world.UpdateChunksForClient(client);
+                        
+                    }
                 }
             }
         }
