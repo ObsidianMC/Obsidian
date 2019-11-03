@@ -15,20 +15,13 @@ namespace Obsidian.Net.Packets
         public Guid UUID { get; private set; }
         public BossBarAction Action { get; private set; }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            //NOTE: Uncomment if set should be made public
-            //if (Action == null) throw new Exception("Action is null!");
-
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteUuidAsync(this.UUID);
-                await stream.WriteVarIntAsync(this.Action.Action);
-                await stream.WriteAsync(await this.Action.ToArrayAsync());
-                return stream.ToArray();
-            }
+            await stream.WriteUuidAsync(this.UUID);
+            await stream.WriteVarIntAsync(this.Action.Action);
+            await stream.WriteAsync(await this.Action.ToArrayAsync());
         }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

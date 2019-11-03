@@ -29,7 +29,7 @@ namespace Obsidian.BlockData
 
         public Task<byte[]> ToArrayAsync()
         {
-            return Task.FromResult(new byte[0]);
+            return Task.FromResult(System.Array.Empty<byte>());
         }
     }
 

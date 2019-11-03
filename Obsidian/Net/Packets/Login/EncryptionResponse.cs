@@ -8,31 +8,26 @@ namespace Obsidian.Net.Packets
 
         public byte[] VerifyToken { get; set; }
 
-        public EncryptionResponse(byte[] data) : base(0x01, data) { }
-
-        public override async Task<byte[]> ToArrayAsync()
+        public EncryptionResponse(byte[] data) : base(0x01, data)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(this.SharedSecret.Length);
-                await stream.WriteAsync(this.SharedSecret);
-                await stream.WriteVarIntAsync(this.VerifyToken.Length);
-                await stream.WriteAsync(this.VerifyToken);
-
-                return stream.ToArray();
-            }
         }
 
-        public override async Task PopulateAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                var secretLength = await stream.ReadVarIntAsync();
-                this.SharedSecret = await stream.ReadUInt8ArrayAsync(secretLength);
+            await stream.WriteVarIntAsync(this.SharedSecret.Length);
+            await stream.WriteAsync(this.SharedSecret);
 
-                var tokenLength = await stream.ReadVarIntAsync();
-                this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
-            }
+            await stream.WriteVarIntAsync(this.VerifyToken.Length);
+            await stream.WriteAsync(this.VerifyToken);
+        }
+
+        protected override async Task PopulateAsync(MinecraftStream stream)
+        {
+            var secretLength = await stream.ReadVarIntAsync();
+            this.SharedSecret = await stream.ReadUInt8ArrayAsync(secretLength);
+
+            var tokenLength = await stream.ReadVarIntAsync();
+            this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
         }
     }
 }

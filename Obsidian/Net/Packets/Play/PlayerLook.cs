@@ -11,7 +11,9 @@ namespace Obsidian.Net.Packets
             this.OnGround = onground;
         }*/
 
-        public PlayerLook(byte[] data) : base(0x00, data) { }
+        public PlayerLook(byte[] data) : base(0x00, data)
+        {
+        }
 
         public float Yaw { get; private set; } = 0;
 
@@ -19,25 +21,18 @@ namespace Obsidian.Net.Packets
 
         public bool OnGround { get; private set; } = false;
 
-        public override async Task PopulateAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Yaw = await stream.ReadFloatAsync();
-                this.Pitch = await stream.ReadFloatAsync();
-                this.OnGround = await stream.ReadBooleanAsync();
-            }
+            this.Yaw = await stream.ReadFloatAsync();
+            this.Pitch = await stream.ReadFloatAsync();
+            this.OnGround = await stream.ReadBooleanAsync();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteFloatAsync(this.Yaw);
-                await stream.WriteFloatAsync(this.Pitch);
-                await stream.WriteBooleanAsync(this.OnGround);
-                return stream.ToArray();
-            }
+            await stream.WriteFloatAsync(this.Yaw);
+            await stream.WriteFloatAsync(this.Pitch);
+            await stream.WriteBooleanAsync(this.OnGround);
         }
     }
 }

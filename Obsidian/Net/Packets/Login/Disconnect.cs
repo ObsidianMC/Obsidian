@@ -5,26 +5,15 @@ namespace Obsidian.Net.Packets
 {
     public class Disconnect : Packet
     {
-        readonly Chat.ChatMessage Reason;
+        private readonly Chat.ChatMessage Reason;
 
-        public Disconnect(Chat.ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00, new byte[0])
+        public Disconnect(Chat.ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00, Array.Empty<byte>())
         {
             this.Reason = reason;
         }
 
-        public override async Task PopulateAsync()
-        {
-            await Task.Yield();
-            throw new NotImplementedException();
-        }
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteChatAsync(this.Reason);
-                return stream.ToArray();
-            }
-        }
+        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteChatAsync(this.Reason);
     }
 }
