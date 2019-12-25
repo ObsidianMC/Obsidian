@@ -22,7 +22,7 @@ namespace Obsidian.Plugins
             this.Server = server;
         }
 
-        internal async Task LoadPluginsAsync(Logger logger)
+        internal async Task LoadPluginsAsync(AsyncLogger logger)
         {
             if (!Directory.Exists(Path))
             {

@@ -1,4 +1,5 @@
 ﻿using Obsidian.BlockData;
+using Obsidian.Util.Registry;
 using Obsidian.World;
 
 namespace SamplePlugin
@@ -31,7 +32,7 @@ namespace SamplePlugin
                     {
                         if ((y == 0 && x >= 3 && x <= 5) || (x == 4 && y >= 0 && y <= 2))
                         {
-                            //SetBlock2(x * 2, y * 2, z * 2, BlockRegistry.Stone);
+                            SetBlock2(x * 2, y * 2, z * 2, BlockRegistry.G(Materials.Stone));
                         }
                     }
                 }

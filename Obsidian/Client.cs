@@ -1,6 +1,4 @@
-﻿using Obsidian.BlockData;
-using Obsidian.Boss;
-using Obsidian.Chat;
+﻿using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -13,7 +11,6 @@ using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.World;
-using Org.BouncyCastle.Crypto.Prng.Drbg;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +59,7 @@ namespace Obsidian
             this.MinecraftStream = new MinecraftStream(tcp.GetStream());
         }
 
-        public Logger Logger => this.OriginServer.Logger;
+        public AsyncLogger Logger => this.OriginServer.Logger;
 
         #region Packet Sending Methods
 
@@ -405,8 +402,6 @@ namespace Obsidian
             if (this.IsPlaying)
                 await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
 
-            this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
-
             this.Player = null;
 
             if (Tcp.Connected)
@@ -437,7 +432,6 @@ namespace Obsidian
             }
             this.Logger.LogDebug("Sent server brand.");
 
-            this.OriginServer.Broadcast(string.Format(this.Config.JoinMessage, this.Player.Username));
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();

@@ -23,4 +23,10 @@
     <Folder Include="PluginMessages\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="blocks.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

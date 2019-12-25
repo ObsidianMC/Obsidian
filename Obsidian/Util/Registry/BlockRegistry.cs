@@ -16,17 +16,12 @@ namespace Obsidian.Util.Registry
     {
         public static Dictionary<Materials, Block> BLOCK_STATES = new Dictionary<Materials, Block>();
 
-        private static readonly Logger Logger = new Logger("Registry", LogLevel.Debug);
+        private static readonly AsyncLogger Logger = new AsyncLogger("Registry", LogLevel.Debug);
 
         public static async Task RegisterAll()
         {
             var file = new FileInfo("blocks.json");
 
-            if (file == null)
-            {
-                Logger.LogError("file is null");
-                return;
-            }
             if (file.Exists)
             {
                 var json = "";
@@ -56,7 +51,7 @@ namespace Obsidian.Util.Registry
                         if (Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
                         {
                             int id = states.States.FirstOrDefault().Id;
-                            Logger.LogWarning($"Registered block: {material.ToString()} with id: {id.ToString()}");
+                            await Logger.LogMessageAsync($"Registered block: {material.ToString()} with id: {id.ToString()}", LogLevel.Debug, ConsoleColor.White);
 
                             switch (material)
                             {
@@ -608,21 +603,10 @@ namespace Obsidian.Util.Registry
 
                 Logger.LogDebug($"Successfully registered {registered} blocks..");
             }
-        }
-
-        public static async Task<Block> RegisterAsync(Block block)
-        {
-            //BLOCK_STATES.Add(block);
-            //Logger.LogDebugAsync($"Registered: {block.UnlocalizedName} with id {block.Id}");
-            return block;
-        }
-
-        public static async Task<Block> RegisterAsync(string name, int id)
-        {
-            var block = new Block(name, id);
-            //BLOCK_STATES.Add(block);
-            //Logger.LogDebugAsync($"Registered: {name} with id {id}");
-            return block;
+            else
+            {
+                throw new InvalidOperationException("Failed to find blocks.json for registering block data.");
+            }
         }
 
         public static Block G(Materials mat)

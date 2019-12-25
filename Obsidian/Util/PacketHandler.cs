@@ -11,7 +11,7 @@ namespace Obsidian.Util
     public class PacketHandler
     {
 #if DEBUG
-        private static readonly Logger Logger = new Logger("Packets", LogLevel.Debug);
+        private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug);
 #else
         private static Logger Logger = new Logger("Packets", LogLevel.Error);
 #endif

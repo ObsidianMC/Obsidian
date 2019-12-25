@@ -1,9 +1,6 @@
-﻿using Obsidian.Util.Registry;
-using System.Threading.Tasks;
-
-namespace Obsidian.BlockData
+﻿namespace Obsidian.BlockData
 {
-    internal class Blocks
+    /*internal class Blocks
     {
         public static Block Air;
 
@@ -416,5 +413,5 @@ namespace Obsidian.BlockData
         }
 
         
-    }
+    }*/
 }
