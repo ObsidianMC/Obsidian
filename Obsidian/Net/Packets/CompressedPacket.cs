@@ -15,29 +15,32 @@ namespace Obsidian.Net.Packets
             this.Length = dataLen;
         }
 
-        private CompressedPacket() { /* Only for the static method to _not_ error*/ }
+        private CompressedPacket()
+        {
+            /* Only for the static method to _not_ error*/
+        }
 
         //Are we ever gonna use this?
-        public new async Task WriteToStreamAsync(MinecraftStream stream)
-        {
-            var packetLength = this.PacketId.GetVarintLength() + this.PacketData.Length;
-            // compress data
-            using (var memstr = new MinecraftStream())
-            {
-                await memstr.WriteVarIntAsync(PacketId);
-                await memstr.WriteAsync(this.PacketData);
-
-                using (var inflate = new InflaterInputStream(memstr))
-                {
-                    byte[] compdata = new byte[inflate.Length];
-                    await inflate.ReadAsync(compdata, 0, compdata.Length);
-
-                    await stream.WriteVarIntAsync(packetLength);
-                    await stream.WriteVarIntAsync(compdata.Length);
-                    await stream.WriteAsync(compdata, 0, compdata.Length);
-                }
-            }
-        }
+        //public new async Task WriteToStreamAsync(MinecraftStream stream)
+        //{
+        //    var packetLength = this.PacketId.GetVarintLength() + this.PacketData.Length;
+        //    // compress data
+        //    using (var memstr = new MinecraftStream())
+        //    {
+        //        await memstr.WriteVarIntAsync(PacketId);
+        //        await memstr.WriteAsync(this.PacketData);
+        //
+        //        using (var inflate = new InflaterInputStream(memstr))
+        //        {
+        //            byte[] compdata = new byte[inflate.Length];
+        //            await inflate.ReadAsync(compdata, 0, compdata.Length);
+        //
+        //            await stream.WriteVarIntAsync(packetLength);
+        //            await stream.WriteVarIntAsync(compdata.Length);
+        //            await stream.WriteAsync(compdata, 0, compdata.Length);
+        //        }
+        //    }
+        //}
 
         public static async Task<CompressedPacket> ReadFromStreamAsync(Stream stream)
         {
@@ -74,17 +77,10 @@ namespace Obsidian.Net.Packets
             }
 
             return new CompressedPacket(packetId, theData, dataLen);
-
         }
 
-        public override Task<byte[]> ToArrayAsync()
-        {
-            throw new NotImplementedException();
-        }
+        protected override Task ComposeAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

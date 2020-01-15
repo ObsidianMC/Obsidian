@@ -1,6 +1,4 @@
-﻿using Obsidian.BlockData;
-using Obsidian.Boss;
-using Obsidian.Chat;
+﻿using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -63,19 +61,19 @@ namespace Obsidian
             this.MinecraftStream = new MinecraftStream(tcp.GetStream());
         }
 
-        public Logger Logger => this.OriginServer.Logger;
+        public AsyncLogger Logger => this.OriginServer.Logger;
 
         #region Packet Sending Methods
 
         internal async Task DisconnectAsync(ChatMessage reason)
         {
-            await PacketHandler.CreateAsync(new Disconnect(reason, this.State), this.MinecraftStream);
+            await new Disconnect(reason, this.State).WriteAsync(this.MinecraftStream);
         }
 
         internal async Task ProcessKeepAlive(long id)
         {
             this.Ping = (int)(DateTime.Now.Millisecond - id);
-            await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
+            await new KeepAlive(id).WriteAsync(this.MinecraftStream);
             MissedKeepalives += 1; // This will be decreased after an answer is received.
             if(MissedKeepalives > this.Config.MaxMissedKeepalives)
             {
@@ -101,26 +99,26 @@ namespace Obsidian
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
         {
-            await PacketHandler.CreateAsync(new PlayerPositionLook(poslook, posflags, tpid), this.MinecraftStream);
+            await new PlayerPositionLook(poslook, posflags, tpid).WriteAsync(this.MinecraftStream);
         }
 
         internal async Task SendBlockChangeAsync(BlockChange b)
         {
             this.Logger.LogMessage($"Sending block change to {Player.Username}");
-            await PacketHandler.CreateAsync(b, this.MinecraftStream);
+            await b.WriteAsync(this.MinecraftStream);
             this.Logger.LogMessage($"Block change sent to {Player.Username}");
         }
 
         internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
-            await PacketHandler.CreateAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity), this.MinecraftStream);
+            await new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity).WriteAsync(this.MinecraftStream);
 
             this.Logger.LogDebug($"Spawned entity with id {id} for player {this.Player.Username}");
         }
 
         internal async Task SendEntity(EntityPacket packet)
         {
-            await PacketHandler.CreateAsync(packet, this.MinecraftStream);
+            await packet.WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug($"Sent entity with id {packet.Id} for player {this.Player.Username}");
         }
 
@@ -174,7 +172,7 @@ namespace Obsidian
                 packet.AddNode(node);
             }
 
-            await PacketHandler.CreateAsync(packet, this.MinecraftStream);
+            await packet.WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
@@ -201,13 +199,13 @@ namespace Obsidian
                 });
             }
 
-            await PacketHandler.CreateAsync(new PlayerInfo(0, list), this.MinecraftStream);
+            await new PlayerInfo(0, list).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
         {
-            await PacketHandler.CreateAsync(new SpawnPlayer
+            var packet = new SpawnPlayer
             {
                 Id = id,
 
@@ -216,14 +214,16 @@ namespace Obsidian
                 Tranform = pos,
 
                 Player = this.Player
-            }, this.MinecraftStream);
+            };
+
+            await packet.WriteAsync(this.MinecraftStream);
 
             this.Logger.LogDebug("New player spawned!");
         }
 
         internal async Task SendPlayerAsync(int id, string uuid, Transform pos)
         {
-            await PacketHandler.CreateAsync(new SpawnPlayer
+            var packet = new SpawnPlayer
             {
                 Id = id,
 
@@ -232,27 +232,22 @@ namespace Obsidian
                 Tranform = pos,
 
                 Player = this.Player
-            }, this.MinecraftStream);
+            };
+            await packet.WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("New player spawned!");
         }
 
         internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
         {
-            await PacketHandler.CreateAsync(new PlayerListHeaderFooter(header, footer), this.MinecraftStream);
+            await new PlayerListHeaderFooter(header, footer).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("Sent Player List Footer Header packet.");
         }
 
         #endregion Packet Sending Methods
 
-        private async Task<CompressedPacket> GetNextCompressedPacketAsync()
-        {
-            return await CompressedPacket.ReadFromStreamAsync(this.MinecraftStream);
-        }
+        private async Task<CompressedPacket> GetNextCompressedPacketAsync() => await CompressedPacket.ReadFromStreamAsync(this.MinecraftStream);
 
-        private async Task<Packet> GetNextPacketAsync()
-        {
-            return await PacketHandler.ReadFromStreamAsync(this.MinecraftStream);
-        }
+        private async Task<Packet> GetNextPacketAsync() => await PacketHandler.ReadFromStreamAsync(this.MinecraftStream);
 
         public async Task StartConnectionAsync()
         {
@@ -271,11 +266,11 @@ namespace Obsidian
                         {
                             case 0x00:
                                 var status = new ServerStatus(OriginServer);
-                                await PacketHandler.CreateAsync(new RequestResponse(status), this.MinecraftStream);
+                                await new RequestResponse(status).WriteAsync(this.MinecraftStream);
                                 break;
 
                             case 0x01:
-                                await PacketHandler.CreateAsync(new PingPong(packet.PacketData), this.MinecraftStream);
+                                await new PingPong(packet.PacketData).WriteAsync(this.MinecraftStream);
                                 this.Disconnect();
                                 break;
                         }
@@ -287,7 +282,8 @@ namespace Obsidian
                             if (packet == null)
                                 throw new InvalidOperationException();
 
-                            var handshake = await PacketHandler.CreateAsync(new Handshake(packet.PacketData));
+                            var handshake = new Handshake(packet.PacketData);
+                            await handshake.ReadAsync(packet.PacketData);
 
                             var nextState = handshake.NextState;
 
@@ -315,7 +311,8 @@ namespace Obsidian
                                 break;
 
                             case 0x00:
-                                var loginStart = await PacketHandler.CreateAsync(new LoginStart(packet.PacketData));
+                                var loginStart = new LoginStart(packet.PacketData);
+                                await loginStart.ReadAsync(packet.PacketData);
 
                                 string username = loginStart.Username;
 
@@ -344,7 +341,8 @@ namespace Obsidian
 
                                     this.Token = PacketCryptography.GetRandomToken();
 
-                                    returnPacket = await PacketHandler.CreateAsync(new EncryptionRequest(pubKey, this.Token), this.MinecraftStream);
+                                    returnPacket = new EncryptionRequest(pubKey, this.Token);
+                                    await returnPacket.WriteAsync(this.MinecraftStream);
 
                                     break;
                                 }
@@ -355,7 +353,8 @@ namespace Obsidian
                                 break;
 
                             case 0x01:
-                                var encryptionResponse = await PacketHandler.CreateAsync(new EncryptionResponse(packet.PacketData));
+                                var encryptionResponse = new EncryptionResponse(packet.PacketData);
+                                await encryptionResponse.ReadAsync(packet.PacketData);
 
                                 JoinedResponse response;
 
@@ -411,8 +410,6 @@ namespace Obsidian
             if (this.IsPlaying)
                 await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
 
-            this.OriginServer.Broadcast(string.Format(this.Config.LeaveMessage, this.Player.Username));
-
             this.Player = null;
 
             if (Tcp.Connected)
@@ -421,37 +418,36 @@ namespace Obsidian
 
         private async Task ConnectAsync(Guid uuid)
         {
-            await PacketHandler.CreateAsync(new LoginSuccess(uuid, this.Player.Username), this.MinecraftStream);
+            await new LoginSuccess(uuid, this.Player.Username).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
 
             this.State = ClientState.Play;
             this.Player.Gamemode = Gamemode.Creative;
 
-            await PacketHandler.CreateAsync(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true), this.MinecraftStream);
+            await new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            await PacketHandler.CreateAsync(new SpawnPosition(new Position(0, 100, 0)), this.MinecraftStream);
+            await new SpawnPosition(new Position(0, 100, 0)).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            await PacketHandler.CreateAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0), this.MinecraftStream);
+            await new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0).WriteAsync(this.MinecraftStream);
             this.Logger.LogDebug("Sent Position packet.");
 
             using (var stream = new MinecraftStream())
             {
                 await stream.WriteStringAsync("obsidian");
-                await PacketHandler.CreateAsync(new PluginMessage("minecraft:brand", stream.ToArray()), this.MinecraftStream);
+                await new PluginMessage("minecraft:brand", stream.ToArray()).WriteAsync(this.MinecraftStream);
             }
             this.Logger.LogDebug("Sent server brand.");
 
-            this.OriginServer.Broadcast(string.Format(this.Config.JoinMessage, this.Player.Username));
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
 
-            await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
-                                                       string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
-            this.Logger.LogDebug("Sent player list decoration");
+            //await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
+            //                                           string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
+            //this.Logger.LogDebug("Sent player list decoration");
 
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
             await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
@@ -521,9 +517,7 @@ namespace Obsidian
                 chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
-            
-
-            await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);
+            await chunkData.WriteAsync(this.MinecraftStream);
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();

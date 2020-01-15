@@ -6,6 +6,6 @@ namespace Obsidian.Boss
     {
         public override int Action => 1;
 
-        public override Task<byte[]> ToArrayAsync() => Task.FromResult(new byte[0]);
+        public override Task<byte[]> ToArrayAsync() => Task.FromResult(System.Array.Empty<byte>());
     }
 }

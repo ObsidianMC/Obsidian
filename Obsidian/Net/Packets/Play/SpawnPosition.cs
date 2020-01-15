@@ -5,25 +5,12 @@ namespace Obsidian.Net.Packets
 {
     public class SpawnPosition : Packet
     {
-        public SpawnPosition(Position location) : base(0x49, new byte[0]) => Location = location;
+        public SpawnPosition(Position location) : base(0x49, System.Array.Empty<byte>()) => Location = location;
 
         public Position Location { get; private set; }
 
-        public override async Task PopulateAsync()
-        {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Location = await stream.ReadPositionAsync();
-            }
-        }
+        protected override async Task PopulateAsync(MinecraftStream stream) => this.Location = await stream.ReadPositionAsync();
 
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WritePositionAsync(this.Location);
-                return stream.ToArray();
-            }
-        }
+        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WritePositionAsync(this.Location);
     }
 }

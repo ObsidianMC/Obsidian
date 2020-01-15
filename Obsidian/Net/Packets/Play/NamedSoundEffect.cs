@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
 {
-    class NamedSoundEffect : Packet
+    internal class NamedSoundEffect : Packet
     {
         public NamedSoundEffect(string name, Position location, SoundCategory category, float pitch, float volume) : base(0x1A)
         {
@@ -31,21 +31,17 @@ namespace Obsidian.Net.Packets
 
         public float Pitch { get; }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.Name);
-                await stream.WriteVarIntAsync(this.Category);
-                await stream.WriteIntAsync((int)this.Location.X * 8);
-                await stream.WriteIntAsync((int)this.Location.Y * 8);
-                await stream.WriteIntAsync((int)this.Location.Z * 8);
-                await stream.WriteFloatAsync(this.Volume);
-                await stream.WriteFloatAsync(this.Pitch);
-                return stream.ToArray();
-            }
+            await stream.WriteStringAsync(this.Name);
+            await stream.WriteVarIntAsync(this.Category);
+            await stream.WriteIntAsync((int)this.Location.X * 8);
+            await stream.WriteIntAsync((int)this.Location.Y * 8);
+            await stream.WriteIntAsync((int)this.Location.Z * 8);
+            await stream.WriteFloatAsync(this.Volume);
+            await stream.WriteFloatAsync(this.Pitch);
         }
     }
 }

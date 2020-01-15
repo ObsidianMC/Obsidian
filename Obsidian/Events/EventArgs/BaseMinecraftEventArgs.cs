@@ -22,7 +22,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// Console logger
         /// </summary>
-        public Logger Logger => Server.Logger;
+        public AsyncLogger Logger => Server.Logger;
 
         /// <summary>
         /// Constructs a new BaseMinecraftEventArgs object.

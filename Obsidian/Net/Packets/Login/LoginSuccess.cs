@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets
 {
     public class LoginSuccess : Packet
     {
-        public LoginSuccess(Guid uuid, string username) : base(0x02, new byte[0])
+        public LoginSuccess(Guid uuid, string username) : base(0x02, Array.Empty<byte>())
         {
             this.Username = username;
             this.UUID = uuid;
@@ -15,27 +15,19 @@ namespace Obsidian.Net.Packets
 
         public Guid UUID { get; private set; } = Guid.Empty;
 
-        public override async Task PopulateAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
             if (UUID != Guid.Empty || !string.IsNullOrEmpty(this.Username))
                 return;
 
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Username = await stream.ReadStringAsync();
-                this.UUID = Guid.Parse(await stream.ReadStringAsync());
-            }
+            this.Username = await stream.ReadStringAsync();
+            this.UUID = Guid.Parse(await stream.ReadStringAsync());
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.UUID.ToString());
-                await stream.WriteStringAsync(this.Username);
-                return stream.ToArray();
-            }
+            await stream.WriteStringAsync(this.UUID.ToString());
+            await stream.WriteStringAsync(this.Username);
         }
-
     }
 }

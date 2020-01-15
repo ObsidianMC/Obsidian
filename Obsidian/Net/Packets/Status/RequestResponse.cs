@@ -6,29 +6,14 @@ namespace Obsidian.Net.Packets
 {
     public class RequestResponse : Packet
     {
-        public RequestResponse(string json) : base(0x00, new byte[0]) => this.Json = json;
+        public RequestResponse(string json) : base(0x00, System.Array.Empty<byte>()) => this.Json = json;
 
-        public RequestResponse(ServerStatus status) : base(0x00, new byte[0]) => this.Json = JsonConvert.SerializeObject(status);
+        public RequestResponse(ServerStatus status) : base(0x00, System.Array.Empty<byte>()) => this.Json = JsonConvert.SerializeObject(status);
 
         public string Json;
 
-        public override async Task PopulateAsync()
-        {
-            await Task.Yield();
-            using(var stream = new MinecraftStream(this.PacketData))
-            {
+        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteStringAsync(this.Json);
 
-            }
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.Json);
-
-                return stream.ToArray();
-            }
-        }
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new System.NotImplementedException();
     }
 }
