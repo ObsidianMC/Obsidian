@@ -59,7 +59,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.Logger = new Logger($"Obsidian ID: {serverId}", Program.Config.LogLevel);
+            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}", Program.Config.LogLevel);
 
             this.Port = config.Port;
             this.Version = version;
@@ -86,6 +86,9 @@ namespace Obsidian
             this.Operators = new OperatorList(this);
 
             this.world = new Entities.World("", WorldGenerator);
+
+            this.Events.PlayerLeave += this.Events_PlayerLeave;
+            this.Events.PlayerJoin += this.Events_PlayerJoin;
         }
 
         public ConcurrentHashSet<Client> Clients { get; }
@@ -94,7 +97,7 @@ namespace Obsidian
 
         public CommandService Commands { get; }
         public Config Config { get; }
-        public Logger Logger { get; }
+        public AsyncLogger Logger { get; }
         public int Id { get; private set; }
         public string Version { get; }
         public int Port { get; }
@@ -302,6 +305,9 @@ namespace Obsidian
                 return;
             }
 
+            Logger.LogDebug("Registering blocks..");
+            await BlockRegistry.RegisterAll();
+
             Logger.LogMessage($"Loading operator list...");
             Operators.Initialize();
 
@@ -334,8 +340,6 @@ namespace Obsidian
 
             Logger.LogDebug($"Start listening for new clients");
             _tcpListener.Start();
-
-            await BlockRegistry.RegisterAll();
 
             while (!_cts.IsCancellationRequested)
             {
@@ -396,5 +400,22 @@ namespace Obsidian
                 }
             }
         }
+
+        #region events
+        private Task Events_PlayerLeave(Events.EventArgs.PlayerLeaveEventArgs e)
+        {
+            this.Broadcast(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
+
+            return Task.CompletedTask;
+        }
+
+        private Task Events_PlayerJoin(Events.EventArgs.PlayerJoinEventArgs e)
+        {
+            this.Broadcast(string.Format(this.Config.JoinMessage, e.Joined.Username));
+
+            return Task.CompletedTask;
+        }
+
+        #endregion
     }
 }

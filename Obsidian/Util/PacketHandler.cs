@@ -11,29 +11,29 @@ namespace Obsidian.Util
     public class PacketHandler
     {
 #if DEBUG
-        private static readonly Logger Logger = new Logger("Packets", LogLevel.Debug);
+        private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug);
 #else
         private static Logger Logger = new Logger("Packets", LogLevel.Error);
 #endif
 
         public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
 
-        public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
-        {
-            if (packet.Empty)
-            {
-                await packet.FillPacketDataAsync();
-            }
-            else
-            {
-                await packet.PopulateAsync();
-            }
-
-            if (stream != null)
-                await packet.WriteToStreamAsync(stream);
-
-            return (T)packet;
-        }
+        //public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
+        //{
+        //    if (packet.Empty)
+        //    {
+        //        await packet.FillPacketDataAsync();
+        //    }
+        //    else
+        //    {
+        //        await packet.PopulateAsync();
+        //    }
+        //
+        //    if (stream != null)
+        //        await packet.WriteToStreamAsync(stream);
+        //
+        //    return (T)packet;
+        //}
 
         public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
         {
@@ -43,7 +43,7 @@ namespace Obsidian.Util
             await stream.ReadAsync(receivedData, 0, length);
 
             int packetId = 0;
-            byte[] packetData = new byte[0];
+            byte[] packetData = Array.Empty<byte>();
 
             using (var packetStream = new MinecraftStream(receivedData))
             {
@@ -88,7 +88,8 @@ namespace Obsidian.Util
 
                 case 0x02:
                     // Incoming chat message
-                    var message = await CreateAsync(new IncomingChatMessage(packet.PacketData));
+                    var message = new IncomingChatMessage(packet.PacketData);
+                    await message.ReadAsync(packet.PacketData);
                     Logger.LogDebug($"received chat: {message.Message}");
 
                     await server.ParseMessage(message.Message, client);
@@ -100,7 +101,8 @@ namespace Obsidian.Util
 
                 case 0x04:
                     // Client Settings
-                    client.ClientSettings = await CreateAsync(new ClientSettings(packet.PacketData));
+                    client.ClientSettings = new ClientSettings(packet.PacketData);
+                    await client.ClientSettings.ReadAsync(packet.PacketData);
                     Logger.LogDebug("Received client settings");
                     break;
 
@@ -151,7 +153,8 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await CreateAsync(new KeepAlive(packet.PacketData));
+                    var keepalive = new KeepAlive(packet.PacketData);
+                await keepalive.ReadAsync(packet.PacketData);
                     Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.MissedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
@@ -159,19 +162,22 @@ namespace Obsidian.Util
                     break;
 
                 case 0x0F: // Player
-                    var onground = BitConverter.ToBoolean(await packet.ToArrayAsync(), 0);
-                    Logger.LogDebug($"{client.Player.Username} on ground?: {onground}");
-                    client.Player.OnGround = onground;
+                    //TODO: Please rewrite.
+                    //var onground = BitConverter.ToBoolean(await packet.ToArrayAsync(), 0);
+                    //Logger.LogDebug($"{client.Player.Username} on ground?: {onground}");
+                    //client.Player.OnGround = onground;
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await CreateAsync(new PlayerPosition(packet.PacketData));
+                    var pos = new PlayerPosition(packet.PacketData);
+                    await pos.ReadAsync(packet.PacketData);
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await CreateAsync(new PlayerPositionLook(packet.PacketData));
+                    var ppos = new PlayerPositionLook(packet.PacketData);
+                    await ppos.ReadAsync(packet.PacketData);
 
                     client.Player.UpdatePosition(ppos.Transform);
                     //Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
@@ -179,7 +185,8 @@ namespace Obsidian.Util
 
                 case 0x12:
                     // Player Look
-                    var look = await CreateAsync(new PlayerLook(packet.PacketData));
+                    var look = new PlayerLook(packet.PacketData);
+                    await look.ReadAsync(packet.PacketData);
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                     Logger.LogDebug($"Updated look for {client.Player.Username}");
@@ -214,7 +221,8 @@ namespace Obsidian.Util
                     // Player Digging
                     Logger.LogDebug("Received player digging");
 
-                    var digging = await CreateAsync(new PlayerDigging(packet.PacketData));
+                    var digging = new PlayerDigging(packet.PacketData);
+                    await digging.ReadAsync(packet.PacketData);
 
                     server.EnqueueDigging(digging);
                     break;
@@ -291,7 +299,8 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Animation (serverbound)
-                    var serverAnim = await CreateAsync(new AnimationServerPacket(packet.PacketData));
+                    var serverAnim = new AnimationServerPacket(packet.PacketData);
+                    await serverAnim.ReadAsync(packet.PacketData);
 
                     Logger.LogDebug("Received animation (serverbound)");
                     break;
@@ -303,7 +312,9 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
-                    var pbp = await CreateAsync(new PlayerBlockPlacement(packet.PacketData));
+                    var pbp = new PlayerBlockPlacement(packet.PacketData);
+
+                    await pbp.ReadAsync(packet.PacketData);
 
                     server.EnqueuePlacing(pbp);
                     Logger.LogDebug("Received player block placement");

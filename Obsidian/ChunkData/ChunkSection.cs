@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
-    public class ChunkSection : ISerializable
+    public class ChunkSection
     {
         public BlockStateContainer BlockStateContainer = new BlockStateContainer();
         public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
@@ -15,19 +15,14 @@ namespace Obsidian.ChunkData
 
         public bool Overworld = true;//TODO
 
-        public async Task<byte[]> ToArrayAsync()
+        public async Task WriteAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
+            await BlockStateContainer.WriteAsync(stream);
+            await stream.WriteAsync(BlockLightArray.Data);
+
+            if (Overworld)
             {
-                await stream.WriteAsync(await BlockStateContainer.ToArrayAsync());
-                await stream.WriteAsync(BlockLightArray.Data);
-
-                if (Overworld)
-                {
-                    await stream.WriteAsync(SkyLightArray.Data);
-                }
-
-                return stream.ToArray();
+                await stream.WriteAsync(SkyLightArray.Data);
             }
         }
 
@@ -79,17 +74,12 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
-        public async Task<byte[]> ToArrayAsync()
+        public async Task WriteAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteByteAsync((sbyte)BitsPerEntry);
+            await stream.WriteByteAsync((sbyte)BitsPerEntry);
 
-                await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
-                await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
-
-                return stream.ToArray();
-            }
+            await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
+            await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
         }
     }
 }

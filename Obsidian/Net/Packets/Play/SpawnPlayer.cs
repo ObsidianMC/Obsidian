@@ -18,40 +18,34 @@ namespace Obsidian.Net.Packets.Play
 
         public Player Player { get; set; }
 
-        public SpawnPlayer() : base(0x05, new byte[0]) { }
-
-        public override Task PopulateAsync()
+        public SpawnPlayer() : base(0x05, Array.Empty<byte>())
         {
-            throw new NotImplementedException();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
+            await stream.WriteVarIntAsync(this.Id);
+            if (this.Uuid3 != null)
             {
-                await stream.WriteVarIntAsync(this.Id);
-                if (this.Uuid3 != null)
-                {
-                    await stream.WriteAsync(Encoding.UTF8.GetBytes(this.Uuid3));
-                    Console.WriteLine("UUID is  null");
-                }
-                else
-                {
-                    Console.WriteLine("UUID is not null");
-                    await stream.WriteUuidAsync(this.Uuid);
-                }
-
-                await stream.WriteDoubleAsync(this.Tranform.X);
-                await stream.WriteDoubleAsync(this.Tranform.Y);
-                await stream.WriteDoubleAsync(this.Tranform.Z);
-
-                await stream.WriteAngleAsync(this.Tranform.Yaw);
-                await stream.WriteAngleAsync(this.Tranform.Pitch);
-
-                await Player.WriteAsync(stream);
-
-                return stream.ToArray();
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(this.Uuid3));
+                Console.WriteLine("UUID is  null");
             }
+            else
+            {
+                Console.WriteLine("UUID is not null");
+                await stream.WriteUuidAsync(this.Uuid);
+            }
+
+            await stream.WriteDoubleAsync(this.Tranform.X);
+            await stream.WriteDoubleAsync(this.Tranform.Y);
+            await stream.WriteDoubleAsync(this.Tranform.Z);
+
+            await stream.WriteAngleAsync(this.Tranform.Yaw);
+            await stream.WriteAngleAsync(this.Tranform.Pitch);
+
+            await Player.WriteAsync(stream);
         }
+
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

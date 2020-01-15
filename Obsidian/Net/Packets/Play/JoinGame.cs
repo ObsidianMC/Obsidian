@@ -6,14 +6,13 @@ namespace Obsidian.Net.Packets
 {
     public class JoinGame : Packet
     {
-
         public int EntityId { get; private set; }
 
         public Gamemode GameMode { get; private set; } = Gamemode.Survival;
 
-        public Dimension Dimension { get; private set; } = Dimension.Overworld; 
+        public Dimension Dimension { get; private set; } = Dimension.Overworld;
 
-        public Difficulty Difficulty { get; private set; } = Difficulty.Peaceful; 
+        public Difficulty Difficulty { get; private set; } = Difficulty.Peaceful;
 
         public byte MaxPlayers { get; private set; } = 0; // Gets ignored by client
 
@@ -21,9 +20,11 @@ namespace Obsidian.Net.Packets
 
         public bool ReducedDebugInfo { get; private set; } = false;
 
-        public JoinGame(byte[] data) : base(0x25, data) { }
+        public JoinGame(byte[] data) : base(0x25, data)
+        {
+        }
 
-        public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, string leveltype, bool debugging) : base(0x25, new byte[0])
+        public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, string leveltype, bool debugging) : base(0x25, System.Array.Empty<byte>())
         {
             this.EntityId = entityid;
             this.GameMode = gamemode;
@@ -33,33 +34,26 @@ namespace Obsidian.Net.Packets
             this.ReducedDebugInfo = !debugging;
         }
 
-        public override async Task PopulateAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.EntityId = await stream.ReadVarIntAsync();
-                this.GameMode = (Gamemode)await stream.ReadUnsignedByteAsync();
-                this.Dimension = (Dimension)await stream.ReadIntAsync();
-                this.Difficulty = (Difficulty)await stream.ReadUnsignedByteAsync();
-                this.MaxPlayers = await stream.ReadUnsignedByteAsync();
-                this.LevelType = await stream.ReadStringAsync();
-                this.ReducedDebugInfo = await stream.ReadBooleanAsync();
-            }
+            await stream.WriteIntAsync(this.EntityId);
+            await stream.WriteUnsignedByteAsync((byte)this.GameMode);
+            await stream.WriteIntAsync((int)this.Dimension);
+            await stream.WriteUnsignedByteAsync((byte)this.Difficulty);
+            await stream.WriteUnsignedByteAsync(this.MaxPlayers);
+            await stream.WriteStringAsync(this.LevelType);
+            await stream.WriteBooleanAsync(this.ReducedDebugInfo);
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteIntAsync(this.EntityId);
-                await stream.WriteUnsignedByteAsync((byte)this.GameMode);
-                await stream.WriteIntAsync((int)this.Dimension);
-                await stream.WriteUnsignedByteAsync((byte)this.Difficulty);
-                await stream.WriteUnsignedByteAsync(this.MaxPlayers);
-                await stream.WriteStringAsync(this.LevelType);
-                await stream.WriteBooleanAsync(this.ReducedDebugInfo);
-                return stream.ToArray();
-            }
+            this.EntityId = await stream.ReadVarIntAsync();
+            this.GameMode = (Gamemode)await stream.ReadUnsignedByteAsync();
+            this.Dimension = (Dimension)await stream.ReadIntAsync();
+            this.Difficulty = (Difficulty)await stream.ReadUnsignedByteAsync();
+            this.MaxPlayers = await stream.ReadUnsignedByteAsync();
+            this.LevelType = await stream.ReadStringAsync();
+            this.ReducedDebugInfo = await stream.ReadBooleanAsync();
         }
     }
 }

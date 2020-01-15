@@ -13,7 +13,7 @@ namespace SamplePlugin
     {
         private Server server;
 
-        public async Task<PluginInfo> InitializeAsync(Server server)
+        public Task<PluginInfo> InitializeAsync(Server server)
         {
             this.server = server;
 
@@ -23,13 +23,13 @@ namespace SamplePlugin
 
             server.Register(new DickWorldGenerator());
 
-            return new PluginInfo(
+            return Task.FromResult(new PluginInfo(
                 "SamplePlugin",
                 "Obsidian Team",
                 "0.1",
                 "A Sample Plugin! <3",
                 "https://github.com/NaamloosDT/Obsidian"
-            );
+            ));
         }
 
         private Task OnPlayerJoin(PlayerJoinEventArgs e)

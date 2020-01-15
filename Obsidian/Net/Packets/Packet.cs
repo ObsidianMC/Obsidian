@@ -1,5 +1,6 @@
 using Obsidian.Util;
 using System;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -28,27 +29,31 @@ namespace Obsidian.Net.Packets
             /* Only for the static method to _not_ error */
         }
 
-        public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
-
-        public async Task WriteToStreamAsync(MinecraftStream stream)
+        public async Task WriteAsync(MinecraftStream stream)
         {
-            int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
+            using (var dataStream = new MinecraftStream())
+            {
+                await ComposeAsync(dataStream);
 
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
-            Program.PacketLogger.LogDebug("====================================");
-#endif
+                int packetLength = (int)dataStream.Length + this.PacketId.GetVarintLength();
+                await stream.WriteVarIntAsync(packetLength);
+                await stream.WriteVarIntAsync(PacketId);
 
-            byte[] data = this.PacketData;
-
-            await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(PacketId);
-            await stream.WriteAsync(data);
+                dataStream.Position = 0;
+                await dataStream.CopyToAsync(stream);
+            }
         }
 
-        public abstract Task<byte[]> ToArrayAsync();
+        public async Task ReadAsync(byte[] data)
+        {
+            //TODO: Please look into this.
+            using (var stream = new MinecraftStream(data))
+                await PopulateAsync(stream);
+        }
 
-        public abstract Task PopulateAsync();
+        protected abstract Task ComposeAsync(MinecraftStream stream);
+
+        protected abstract Task PopulateAsync(MinecraftStream stream);
     }
 
     public class EmptyPacket : Packet
@@ -57,8 +62,8 @@ namespace Obsidian.Net.Packets
         {
         }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
+        protected override Task ComposeAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

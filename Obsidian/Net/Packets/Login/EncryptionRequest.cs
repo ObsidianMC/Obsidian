@@ -10,37 +10,30 @@ namespace Obsidian.Net.Packets
 
         public byte[] VerifyToken { get; private set; }
 
-        public EncryptionRequest(byte[] publicKey, byte[] verifyToken) : base(0x01, new byte[0])
+        public EncryptionRequest(byte[] publicKey, byte[] verifyToken) : base(0x01, System.Array.Empty<byte>())
         {
             this.PublicKey = publicKey;
 
             this.VerifyToken = verifyToken;
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.ServerId ?? string.Empty);
-                await stream.WriteVarIntAsync(this.PublicKey.Length);
-                await stream.WriteAsync(this.PublicKey);
-                await stream.WriteVarIntAsync(4);
-                await stream.WriteAsync(this.VerifyToken);
-                return stream.ToArray();
-            }
+            await stream.WriteStringAsync(this.ServerId ?? string.Empty);
+            await stream.WriteVarIntAsync(this.PublicKey.Length);
+            await stream.WriteAsync(this.PublicKey);
+            await stream.WriteVarIntAsync(4);
+            await stream.WriteAsync(this.VerifyToken);
         }
 
-        public override async Task PopulateAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
-                var keyLength = await stream.ReadVarIntAsync();
-                this.PublicKey = await stream.ReadUInt8ArrayAsync(keyLength);
+            this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
+            var keyLength = await stream.ReadVarIntAsync();
+            this.PublicKey = await stream.ReadUInt8ArrayAsync(keyLength);
 
-                var tokenLength = await stream.ReadVarIntAsync();
-                this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
-            }
+            var tokenLength = await stream.ReadVarIntAsync();
+            this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
         }
     }
 }
