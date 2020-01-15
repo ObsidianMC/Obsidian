@@ -112,7 +112,7 @@ namespace Obsidian
                 await Events.InvokeServerTick();
 
                 keepaliveticks++;
-                if (keepaliveticks > 200)
+                if (keepaliveticks > 50)
                 {
                     var keepaliveid = DateTime.Now.Millisecond;
 

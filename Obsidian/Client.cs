@@ -521,6 +521,8 @@ namespace Obsidian
                 chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
+            
+
             await PacketHandler.CreateAsync(chunkData, this.MinecraftStream);
         }
 
