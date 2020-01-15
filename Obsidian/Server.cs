@@ -116,8 +116,9 @@ namespace Obsidian
                 {
                     var keepaliveid = DateTime.Now.Millisecond;
 
+                    Task t; // remove nasty squigglies
                     foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                        await Task.Factory.StartNew(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
+                        t = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
                     keepaliveticks = 0;
                 }
 
@@ -125,10 +126,11 @@ namespace Obsidian
                 {
                     foreach (var players in this.OnlinePlayers)
                     {
-                        if (_chatmessages.TryPeek(out QueueChat msg))
-                            await Task.Factory.StartNew(async () => { await players.SendMessageAsync(msg.Message, msg.Position); });
+                        Task t; // Remove dem squigglies lines
+                        if (_chatmessages.TryDequeue(out QueueChat msg))
+                            t = Task.Run(async () => { await players.SendMessageAsync(msg.Message, msg.Position); });
                     }
-                    _chatmessages.TryDequeue(out QueueChat chat);
+                    //_chatmessages.TryDequeue(out QueueChat chat);
                 }
 
                 if (_diggers.Count > 0)

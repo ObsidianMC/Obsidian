@@ -35,6 +35,8 @@ namespace Obsidian
 
         private byte[] Token { get; set; }
 
+        public int MissedKeepalives = 0;
+
         public Server OriginServer;
         public TcpClient Tcp;
         public Player Player;
@@ -74,6 +76,12 @@ namespace Obsidian
         {
             this.Ping = (int)(DateTime.Now.Millisecond - id);
             await PacketHandler.CreateAsync(new KeepAlive(id), this.MinecraftStream);
+            MissedKeepalives += 1; // This will be decreased after an answer is received.
+            if(MissedKeepalives > this.Config.MaxMissedKeepalives)
+            {
+                // Too many keepalives missed, kill this connection.
+                Cancellation.Cancel();
+            }
 
             /////Sending ping change in background
             ///await Task.Run(async delegate ()
