@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian
 {
-    public class Client
+    public class Client : IDisposable
     {
         private readonly bool Compressed = false;
         public MinecraftStream MinecraftStream { get; set; }
@@ -48,6 +48,8 @@ namespace Obsidian
 
         public bool EncryptionEnabled = false;
 
+        private bool Disposed = false;
+
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
             this.Tcp = tcp;
@@ -59,6 +61,11 @@ namespace Obsidian
             this.State = ClientState.Handshaking;
 
             this.MinecraftStream = new MinecraftStream(tcp.GetStream());
+        }
+
+        ~Client()
+        {
+            Dispose(false);
         }
 
         public AsyncLogger Logger => this.OriginServer.Logger;
@@ -283,7 +290,7 @@ namespace Obsidian
                                 throw new InvalidOperationException();
 
                             var handshake = new Handshake(packet.PacketData);
-                            await handshake.ReadAsync(packet.PacketData);
+                            await handshake.ReadAsync();
 
                             var nextState = handshake.NextState;
 
@@ -362,13 +369,13 @@ namespace Obsidian
 
                                 var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-                                var dec2Base64 = Convert.ToBase64String(dec2);
+                                var decBase64 = Convert.ToBase64String(dec2);
 
                                 var tokenBase64 = Convert.ToBase64String(this.Token);
 
-                                if (!dec2Base64.Equals(tokenBase64))
+                                if (!decBase64.Equals(tokenBase64))
                                 {
-                                    await this.DisconnectAsync(Chat.ChatMessage.Simple("Invalid token.."));
+                                    await this.DisconnectAsync(ChatMessage.Simple("Invalid token.."));
                                     break;
                                 }
 
@@ -381,13 +388,13 @@ namespace Obsidian
                                 if (response is null)
                                 {
                                     this.Logger.LogWarning($"Failed to auth {this.Player.Username}");
-                                    await this.DisconnectAsync(Chat.ChatMessage.Simple("Unable to authenticate.."));
+                                    await this.DisconnectAsync(ChatMessage.Simple("Unable to authenticate.."));
                                     break;
                                 }
                                 this.EncryptionEnabled = true;
                                 this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
-                                await ConnectAsync(new Guid(response.Id));
+                                await ConnectAsync(this.Player.Uuid);
                                 break;
 
                             case 0x02:
@@ -446,7 +453,7 @@ namespace Obsidian
             //await this.SendPlayerInfoAsync();
 
             //await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
-            //                                           string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
+            //                                         string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
             //this.Logger.LogDebug("Sent player list decoration");
 
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
@@ -521,5 +528,43 @@ namespace Obsidian
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
+
+        #region dispose methods
+        protected virtual void Dispose(bool disposing)
+        {
+            if (this.Disposed)
+                return;
+
+            if (disposing)
+            {
+                this.MinecraftStream.Dispose();
+                this.Tcp.Dispose();
+
+                if (this.Cancellation != null)
+                    this.Cancellation.Dispose();
+            }
+
+            this.MinecraftStream = null;
+            this.Tcp = null;
+            this.Cancellation = null;
+
+            this.Token = null;
+            this.SharedKey = null;
+            this.Player = null;
+            this.ClientSettings = null;
+            this.Config = null;
+            this.OriginServer = null;
+
+            this.Disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
     }
 }

@@ -181,6 +181,7 @@ namespace Obsidian
                     if (!client.Tcp.Connected)
                     {
                         this.Clients.TryRemove(client);
+
                         continue;
                     }
 

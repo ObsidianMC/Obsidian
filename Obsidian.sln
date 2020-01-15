@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SamplePlugin", "SamplePlugi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.ConversionUtility", "Obsidian.ConversionUtility\Obsidian.ConversionUtility.csproj", "{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.Tests", "Obsidian.Tests\Obsidian.Tests.csproj", "{4C32F58F-E0EE-470C-8003-A7883105557F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.Tests", "Obsidian.Tests\Obsidian.Tests.csproj", "{4C32F58F-E0EE-470C-8003-A7883105557F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

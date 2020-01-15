@@ -31,26 +31,26 @@ namespace Obsidian.Net.Packets
 
         public async Task WriteAsync(MinecraftStream stream)
         {
-            using (var dataStream = new MinecraftStream())
-            {
-                stream.semaphore.WaitOne();
-                await ComposeAsync(dataStream);
 
-                int packetLength = (int)dataStream.Length + this.PacketId.GetVarintLength();
-                await stream.WriteVarIntAsync(packetLength);
-                await stream.WriteVarIntAsync(PacketId);
+            stream.semaphore.WaitOne();
+            using var dataStream = new MinecraftStream();
+            await ComposeAsync(dataStream);
 
-                dataStream.Position = 0;
-                await dataStream.CopyToAsync(stream);
-                stream.semaphore.Release();
-            }
+            int packetLength = (int)dataStream.Length + this.PacketId.GetVarintLength();
+            await stream.WriteVarIntAsync(packetLength);
+            await stream.WriteVarIntAsync(PacketId);
+
+
+            dataStream.Position = 0;
+            await dataStream.CopyToAsync(stream);
+            stream.semaphore.Release();
         }
 
-        public async Task ReadAsync(byte[] data)
+        public async Task ReadAsync(byte[] data = null)
         {
             //TODO: Please look into this.
-            using (var stream = new MinecraftStream(data))
-                await PopulateAsync(stream);
+            using var stream = new MinecraftStream(data ?? this.PacketData);
+            await PopulateAsync(stream);
         }
 
         protected abstract Task ComposeAsync(MinecraftStream stream);

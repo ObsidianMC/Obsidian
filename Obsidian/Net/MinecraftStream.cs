@@ -1,7 +1,6 @@
 ﻿using fNbt;
 using Newtonsoft.Json;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Util;
 using System;
 using System.IO;
