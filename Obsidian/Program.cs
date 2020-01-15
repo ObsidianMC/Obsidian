@@ -1,8 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Entities;
-using Obsidian.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 

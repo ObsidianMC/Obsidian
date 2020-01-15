@@ -4,7 +4,7 @@ namespace Obsidian.Util
 {
     public class VariableValueArray
     {
-        public long[] Backing { get; }
+        public long[] Backing;
 
         public int Capacity { get; }
         public int BitsPerValue { get; }
