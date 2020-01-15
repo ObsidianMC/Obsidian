@@ -33,6 +33,7 @@ namespace Obsidian.Net.Packets
         {
             using (var dataStream = new MinecraftStream())
             {
+                stream.semaphore.WaitOne();
                 await ComposeAsync(dataStream);
 
                 int packetLength = (int)dataStream.Length + this.PacketId.GetVarintLength();
@@ -41,6 +42,7 @@ namespace Obsidian.Net.Packets
 
                 dataStream.Position = 0;
                 await dataStream.CopyToAsync(stream);
+                stream.semaphore.Release();
             }
         }
 

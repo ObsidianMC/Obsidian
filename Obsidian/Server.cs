@@ -184,8 +184,11 @@ namespace Obsidian
                         continue;
                     }
 
-                    //if (client.State == ClientState.Play)
-                    //    await world.UpdateChunksForClient(client);
+                    if (client.State == ClientState.Play)
+                    {
+                        await world.UpdateChunksForClient(client);
+                    }
+
                 }
             }
         }

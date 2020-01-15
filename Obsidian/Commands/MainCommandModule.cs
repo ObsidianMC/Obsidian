@@ -68,6 +68,23 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync("Spawning mob?");
         }
 
+        [Command("forcechunkreload")]
+        public async Task ForceChunkReloadAsync()
+        {
+            var c = Context.Client;
+            var world = Context.Server.world;
+
+            int dist = c.ClientSettings?.ViewDistance ?? 1;
+
+            int oldchunkx = world.transformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
+            int chunkx = world.transformToChunk(c.Player.Transform?.X ?? 0);
+
+            int oldchunkz = world.transformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
+            int chunkz = world.transformToChunk(c.Player.Transform?.Z ?? 0);
+
+            await world.resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+        }
+
         [Command("echo")]
         [Description("Echoes given text.")]
         public Task EchoAsync([Remainder] string text)

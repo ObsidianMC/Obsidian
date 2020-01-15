@@ -172,7 +172,7 @@ namespace Obsidian.Util
                     var pos = new PlayerPosition(packet.PacketData);
                     await pos.ReadAsync(packet.PacketData);
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    //Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
+                    Logger.LogDebug($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)

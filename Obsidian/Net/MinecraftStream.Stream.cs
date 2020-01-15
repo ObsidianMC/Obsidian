@@ -8,11 +8,23 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream : Stream
     {
-        public MinecraftStream() => BaseStream = new MemoryStream();
+        public MinecraftStream()
+        {
+            BaseStream = new MemoryStream();
+            semaphore = new Semaphore(1, 1);
+        }
 
-        public MinecraftStream(Stream stream) => BaseStream = stream;
+        public MinecraftStream(Stream stream)
+        {
+            BaseStream = stream;
+            semaphore = new Semaphore(1, 1);
+        }
 
-        public MinecraftStream(byte[] data) => BaseStream = new MemoryStream(data);
+        public MinecraftStream(byte[] data)
+        {
+            BaseStream = new MemoryStream(data);
+            semaphore = new Semaphore(1, 1);
+        }
 
         public Stream BaseStream { get; set; }
 

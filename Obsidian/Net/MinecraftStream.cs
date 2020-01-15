@@ -6,6 +6,7 @@ using Obsidian.Util;
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
@@ -53,6 +54,8 @@ namespace Obsidian.Net
         }
 
         public static Encoding StringEncoding;
+
+        public Semaphore semaphore;
 
         #region Writing
 
