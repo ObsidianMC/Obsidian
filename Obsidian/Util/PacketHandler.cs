@@ -154,9 +154,11 @@ namespace Obsidian.Util
                 case 0x0E:
                     // Keep Alive (serverbound)
                     var keepalive = new KeepAlive(packet.PacketData);
-                    await keepalive.ReadAsync(packet.PacketData);
-
-                    Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id {keepalive.KeepAliveId}");
+                await keepalive.ReadAsync(packet.PacketData);
+                    Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id " +
+                        $"{keepalive.KeepAliveId} previously missed {client.MissedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
+                    // Server is alive, reset missed keepalives.
+                    client.MissedKeepalives = 0;
                     break;
 
                 case 0x0F: // Player

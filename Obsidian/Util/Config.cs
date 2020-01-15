@@ -39,5 +39,8 @@ namespace Obsidian.Entities
 
         [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
         public bool? Baah = null;
+
+        [JsonProperty("maxmissedkeepalives")]
+        public int MaxMissedKeepalives = 15;
     }
 }
