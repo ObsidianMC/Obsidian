@@ -461,7 +461,7 @@ namespace Obsidian
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
-            //await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
+            await OriginServer.world.resendBaseChunksAsync(4, 0, 0, 0, 0, this);
 
             this.Logger.LogDebug("Sent chunk");
 
