@@ -6,6 +6,7 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
@@ -22,33 +23,31 @@ namespace Obsidian
 {
     public class Client : IDisposable
     {
-        private readonly bool Compressed = false;
+        private byte[] Token { get; set; }
+        private byte[] SharedKey { get; set; }
+
+        public int Ping { get; private set; }
+        public int PlayerId { get; private set; }
+
+        public TcpClient Tcp { get; private set; }
         public MinecraftStream MinecraftStream { get; set; }
+        public CancellationTokenSource Cancellation { get; private set; }
 
         public ClientState State { get; private set; }
 
-        public CancellationTokenSource Cancellation { get; private set; }
+        public bool Playing => this.State == ClientState.Play && this.Player != null;
+        public AsyncLogger Logger => this.OriginServer.Logger;
 
-        public bool IsPlaying => this.State == ClientState.Play && this.Player != null; //HACK: Suggest better property name lol -Craftplacer
-
-        private byte[] Token { get; set; }
+        private bool Disposed = false;
+        private bool CompressionEnabled = false;
+        private bool EncryptionEnabled = false;
 
         public int MissedKeepalives = 0;
 
         public Server OriginServer;
-        public TcpClient Tcp;
         public Player Player;
         public Config Config;
         public ClientSettings ClientSettings;
-
-        public int Ping;
-        public int PlayerId;
-
-        public byte[] SharedKey = null;
-
-        public bool EncryptionEnabled = false;
-
-        private bool Disposed = false;
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -68,8 +67,6 @@ namespace Obsidian
             Dispose(false);
         }
 
-        public AsyncLogger Logger => this.OriginServer.Logger;
-
         #region Packet Sending Methods
 
         internal async Task DisconnectAsync(ChatMessage reason)
@@ -82,7 +79,7 @@ namespace Obsidian
             this.Ping = (int)(DateTime.Now.Millisecond - id);
             await new KeepAlive(id).WriteAsync(this.MinecraftStream);
             MissedKeepalives += 1; // This will be decreased after an answer is received.
-            if(MissedKeepalives > this.Config.MaxMissedKeepalives)
+            if (MissedKeepalives > this.Config.MaxMissedKeepalives)
             {
                 // Too many keepalives missed, kill this connection.
                 Cancellation.Cancel();
@@ -189,7 +186,7 @@ namespace Obsidian
 
             foreach (Client client in this.OriginServer.Clients)
             {
-                if (!client.IsPlaying)
+                if (!client.Playing)
                 {
                     continue;
                 }
@@ -260,7 +257,7 @@ namespace Obsidian
         {
             while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
             {
-                Packet packet = this.Compressed ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
+                Packet packet = this.CompressionEnabled ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
                 Packet returnPacket;
 
                 if (this.State == ClientState.Play && packet.PacketData.Length < 1)
@@ -355,10 +352,10 @@ namespace Obsidian
                                 }
 
                                 this.Player = new Player(Guid.NewGuid(), username, this);
+
+                                await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
-
                                 break;
-
                             case 0x01:
                                 var encryptionResponse = new EncryptionResponse(packet.PacketData);
                                 await encryptionResponse.ReadAsync(packet.PacketData);
@@ -394,9 +391,9 @@ namespace Obsidian
                                 this.EncryptionEnabled = true;
                                 this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
+                                await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
                                 break;
-
                             case 0x02:
                                 // Login Plugin Response
                                 break;
@@ -414,13 +411,19 @@ namespace Obsidian
 
             Logger.LogMessage($"Disconnected client");
 
-            if (this.IsPlaying)
+            if (this.Playing)
                 await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
 
             this.Player = null;
 
             if (Tcp.Connected)
                 this.Tcp.Close();
+        }
+
+        private async Task SetCompression()
+        {
+            this.CompressionEnabled = true;
+            await new SetCompression(256).WriteAsync(this.MinecraftStream);
         }
 
         private async Task ConnectAsync(Guid uuid)
@@ -461,7 +464,7 @@ namespace Obsidian
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
-            //await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
+            await OriginServer.world.resendBaseChunksAsync(10, 0, 0, 0, 0, this);
 
             this.Logger.LogDebug("Sent chunk");
 

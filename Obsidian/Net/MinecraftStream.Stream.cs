@@ -25,6 +25,8 @@ namespace Obsidian.Net
             semaphore = new Semaphore(1, 1);
         }
 
+        private bool Disposed = false;
+
         public Stream BaseStream { get; set; }
 
         public override bool CanRead => BaseStream.CanRead;
@@ -70,6 +72,18 @@ namespace Obsidian.Net
             return buffer;
         }
 
-        protected override void Dispose(bool disposing) => BaseStream.Dispose();
+        protected override void Dispose(bool disposing)
+        {
+            if (this.Disposed)
+                return;
+
+            if (disposing)
+            {
+                this.BaseStream.Dispose();
+                this.semaphore.Dispose();
+            }
+
+            this.Disposed = true;
+        }
     }
 }

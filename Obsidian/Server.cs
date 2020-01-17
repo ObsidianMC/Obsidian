@@ -93,7 +93,7 @@ namespace Obsidian
 
         public ConcurrentHashSet<Client> Clients { get; }
 
-        public List<Player> OnlinePlayers => Clients.Where(c => c.IsPlaying).Select(c => c.Player).ToList();
+        public List<Player> OnlinePlayers => Clients.Where(c => c.Playing).Select(c => c.Player).ToList();
 
         public CommandService Commands { get; }
         public Config Config { get; }

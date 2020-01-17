@@ -10,41 +10,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net
 {
-    public enum EntityMetadataType : int
-    {
-        Byte,
-
-        VarInt,
-
-        Float,
-
-        String,
-
-        Chat,
-
-        OptChat,
-
-        Slot,
-
-        Boolean,
-
-        Rotation,
-
-        Position,
-
-        OptPosition,
-
-        Direction,
-
-        OptUuid,
-
-        OptBlockId,
-
-        Nbt,
-
-        Particle
-    }
-
     public partial class MinecraftStream
     {
         static MinecraftStream()
@@ -52,7 +17,7 @@ namespace Obsidian.Net
             StringEncoding = Encoding.UTF8;
         }
 
-        public static Encoding StringEncoding;
+        public static Encoding StringEncoding { get; }
 
         public Semaphore semaphore;
 
@@ -610,5 +575,40 @@ namespace Obsidian.Net
         }
 
         #endregion Reading
+    }
+
+    public enum EntityMetadataType : int
+    {
+        Byte,
+
+        VarInt,
+
+        Float,
+
+        String,
+
+        Chat,
+
+        OptChat,
+
+        Slot,
+
+        Boolean,
+
+        Rotation,
+
+        Position,
+
+        OptPosition,
+
+        Direction,
+
+        OptUuid,
+
+        OptBlockId,
+
+        Nbt,
+
+        Particle
     }
 }

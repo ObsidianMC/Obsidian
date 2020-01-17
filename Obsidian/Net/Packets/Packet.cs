@@ -1,6 +1,5 @@
 using Obsidian.Util;
 using System;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -8,7 +7,7 @@ namespace Obsidian.Net.Packets
     /// <summary>
     /// https://wiki.vg/Protocol#Packet_format
     /// </summary>
-    public abstract class Packet
+    public class Packet
     {
         public byte[] PacketData { get; internal set; }
 
@@ -40,7 +39,6 @@ namespace Obsidian.Net.Packets
             await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(PacketId);
 
-
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
             stream.semaphore.Release();
@@ -53,9 +51,9 @@ namespace Obsidian.Net.Packets
             await PopulateAsync(stream);
         }
 
-        protected abstract Task ComposeAsync(MinecraftStream stream);
+        protected virtual Task ComposeAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        protected abstract Task PopulateAsync(MinecraftStream stream);
+        protected virtual Task PopulateAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 
     public class EmptyPacket : Packet
@@ -63,9 +61,5 @@ namespace Obsidian.Net.Packets
         public EmptyPacket(int packetId, byte[] data) : base(packetId, data)
         {
         }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
-
-        protected override Task ComposeAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }
