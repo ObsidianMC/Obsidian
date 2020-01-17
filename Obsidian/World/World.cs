@@ -47,20 +47,20 @@ namespace Obsidian.Entities
 
         public async Task UpdateChunksForClient(Client c)
         {
-            int dist = c.ClientSettings?.ViewDistance ?? 1;
+            int dist = 1;
 
-            int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
+            int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? 0);
             int chunkx = transformToChunk(c.Player.Transform?.X ?? 0);
 
-            int oldchunkz = transformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
+            int oldchunkz = transformToChunk(c.Player.PreviousTransform?.Z ?? 0);
             int chunkz = transformToChunk(c.Player.Transform?.Z ?? 0);
 
-            //if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
-            //{
-            //    // This is a teleport!!!1 Send full new chunk data.
-            //    await resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
-            //    return;
-            //}
+            if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
+            {
+                // This is a teleport!!!1 Send full new chunk data.
+                await resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                return;
+            }
 
             if (chunkx > oldchunkx)
             {
