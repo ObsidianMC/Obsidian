@@ -13,6 +13,7 @@ using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.World;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -35,12 +36,15 @@ namespace Obsidian
 
         public ClientState State { get; private set; }
 
-        public bool Playing => this.State == ClientState.Play && this.Player != null;
-        public AsyncLogger Logger => this.OriginServer.Logger;
-
         private bool Disposed = false;
         private bool CompressionEnabled = false;
         private bool EncryptionEnabled = false;
+
+        private const int CompressionThreshold = 256;
+
+        public bool Playing => this.State == ClientState.Play && this.Player != null;
+        public AsyncLogger Logger => this.OriginServer.Logger;
+
 
         public int MissedKeepalives = 0;
 
@@ -48,6 +52,8 @@ namespace Obsidian
         public Player Player;
         public Config Config;
         public ClientSettings ClientSettings;
+
+        public ConcurrentQueue<Packet> PacketQueue = new ConcurrentQueue<Packet>();
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -176,7 +182,7 @@ namespace Obsidian
                 packet.AddNode(node);
             }
 
-            await packet.WriteAsync(this.MinecraftStream);
+            this.SendPacket(packet);
             this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
@@ -249,15 +255,13 @@ namespace Obsidian
 
         #endregion Packet Sending Methods
 
-        private async Task<CompressedPacket> GetNextCompressedPacketAsync() => await CompressedPacket.ReadFromStreamAsync(this.MinecraftStream);
-
-        private async Task<Packet> GetNextPacketAsync() => await PacketHandler.ReadFromStreamAsync(this.MinecraftStream);
+        private async Task<Packet> GetNextPacketAsync() => this.CompressionEnabled ? await PacketHandler.ReadCompressedPacketAsync(this.MinecraftStream) : await PacketHandler.ReadPacketAsync(this.MinecraftStream);
 
         public async Task StartConnectionAsync()
         {
             while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
             {
-                Packet packet = this.CompressionEnabled ? await this.GetNextCompressedPacketAsync() : await this.GetNextPacketAsync();
+                Packet packet = await this.GetNextPacketAsync();
                 Packet returnPacket;
 
                 if (this.State == ClientState.Play && packet.PacketData.Length < 1)
@@ -388,6 +392,7 @@ namespace Obsidian
                                     await this.DisconnectAsync(ChatMessage.Simple("Unable to authenticate.."));
                                     break;
                                 }
+
                                 this.EncryptionEnabled = true;
                                 this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
@@ -407,6 +412,21 @@ namespace Obsidian
                         await PacketHandler.HandlePlayPackets(packet, this);
                         break;
                 }
+
+                if (this.PacketQueue.Count > 0)
+                {
+                    if (this.PacketQueue.TryDequeue(out var outgoingPacket))
+                    {
+                        if (this.CompressionEnabled)
+                        {
+                            await outgoingPacket.WriteCompressedAsync(MinecraftStream, CompressionThreshold);
+                        }
+                        else
+                        {
+                            await outgoingPacket.WriteAsync(this.MinecraftStream);
+                        }
+                    }
+                }
             }
 
             Logger.LogMessage($"Disconnected client");
@@ -423,31 +443,33 @@ namespace Obsidian
         private async Task SetCompression()
         {
             this.CompressionEnabled = true;
-            await new SetCompression(256).WriteAsync(this.MinecraftStream);
+            await new SetCompression(CompressionThreshold).WriteAsync(this.MinecraftStream);
+            this.Logger.LogDebug("Compression has been enabled.");
         }
 
         private async Task ConnectAsync(Guid uuid)
         {
-            await new LoginSuccess(uuid, this.Player.Username).WriteAsync(this.MinecraftStream);
+            this.SendPacket(new LoginSuccess(uuid, this.Player.Username));
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
 
             this.State = ClientState.Play;
             this.Player.Gamemode = Gamemode.Creative;
 
-            await new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true).WriteAsync(this.MinecraftStream);
+            this.SendPacket(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true));
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            await new SpawnPosition(new Position(0, 100, 0)).WriteAsync(this.MinecraftStream);
+            this.SendPacket(new SpawnPosition(new Position(0, 100, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            await new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0).WriteAsync(this.MinecraftStream);
+            this.SendPacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
             this.Logger.LogDebug("Sent Position packet.");
 
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync("obsidian");
-                await new PluginMessage("minecraft:brand", stream.ToArray()).WriteAsync(this.MinecraftStream);
-            }
+            using var stream = new MinecraftStream();
+
+            await stream.WriteStringAsync("obsidian");
+            this.SendPacket(new PluginMessage("minecraft:brand", stream.ToArray()));
+
+
             this.Logger.LogDebug("Sent server brand.");
 
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
@@ -464,7 +486,7 @@ namespace Obsidian
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
             //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
 
-            await OriginServer.world.resendBaseChunksAsync(4, 0, 0, 0, 0, this);
+            OriginServer.world.ResendBaseChunks(4, 0, 0, 0, 0, this);
 
             this.Logger.LogDebug("Sent chunk");
 
@@ -500,7 +522,7 @@ namespace Obsidian
             }*/
         }
 
-        public async Task SendChunkAsync(Chunk chunk)
+        public void SendChunk(Chunk chunk)
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
@@ -527,10 +549,11 @@ namespace Obsidian
                 chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
-            await chunkData.WriteAsync(this.MinecraftStream);
+            this.SendPacket(chunkData);
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
+        internal void SendPacket(Packet packet) => this.PacketQueue.Enqueue(packet);
 
         #region dispose methods
         protected virtual void Dispose(bool disposing)

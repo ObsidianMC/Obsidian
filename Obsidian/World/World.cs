@@ -45,7 +45,7 @@ namespace Obsidian.Entities
             this.worldgen = worldgen;
         }
 
-        public async Task UpdateChunksForClient(Client c)
+        public void UpdateChunksForClient(Client c)
         {
             int dist = 1;
 
@@ -58,7 +58,7 @@ namespace Obsidian.Entities
             if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
             {
                 // This is a teleport!!!1 Send full new chunk data.
-                await resendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                ResendBaseChunks(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx - dist), i);
 
-                    await c.SendChunkAsync(getChunk((chunkx + dist), i, c));
+                    c.SendChunk(getChunk((chunkx + dist), i, c));
                 }
             }
 
@@ -80,7 +80,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                    await c.SendChunkAsync(getChunk((chunkx - dist), i, c));
+                    c.SendChunk(getChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -91,7 +91,7 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
 
-                    await c.SendChunkAsync(getChunk(i, (chunkz + dist), c));
+                    c.SendChunk(getChunk(i, (chunkz + dist), c));
                 }
             }
 
@@ -102,12 +102,12 @@ namespace Obsidian.Entities
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
 
-                    await c.SendChunkAsync(getChunk(i, (chunkz - dist), c));
+                    c.SendChunk(getChunk(i, (chunkz - dist), c));
                 }
             }
         }
 
-        public async Task resendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
+        public void ResendBaseChunks(int dist, int oldx, int oldz, int x, int z, Client c)
         {
             // unload old chunks
             for (int cx = oldx - dist; cx < oldx + dist; cx++)
@@ -123,7 +123,7 @@ namespace Obsidian.Entities
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    await c.SendChunkAsync(getChunk(cx, cz, c));
+                    c.SendChunk(getChunk(cx, cz, c));
                 }
             }
 

@@ -187,7 +187,7 @@ namespace Obsidian
 
                     if (client.State == ClientState.Play)
                     {
-                        await world.UpdateChunksForClient(client);
+                        world.UpdateChunksForClient(client);
                     }
 
                 }

@@ -1,9 +1,10 @@
-﻿using Obsidian.Entities;
-using Obsidian.Logging;
+﻿using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using SharpCompress.Compressors.Deflate;
 using System;
+using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -18,24 +19,9 @@ namespace Obsidian.Util
 
         public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
 
-        //public static async Task<T> CreateAsync<T>(T packet, MinecraftStream stream = null) where T : Packet
-        //{
-        //    if (packet.Empty)
-        //    {
-        //        await packet.FillPacketDataAsync();
-        //    }
-        //    else
-        //    {
-        //        await packet.PopulateAsync();
-        //    }
-        //
-        //    if (stream != null)
-        //        await packet.WriteToStreamAsync(stream);
-        //
-        //    return (T)packet;
-        //}
+        public const float MaxDiggingRadius = 6;
 
-        public static async Task<Packet> ReadFromStreamAsync(MinecraftStream stream)
+        public static async Task<Packet> ReadPacketAsync(MinecraftStream stream)
         {
             int length = await stream.ReadVarIntAsync();
             byte[] receivedData = new byte[length];
@@ -64,10 +50,22 @@ namespace Obsidian.Util
                 }
             }
 
-            return new EmptyPacket(packetId, packetData);
+            return new Packet(packetId, packetData);
         }
 
-        public const float MaxDiggingRadius = 6;
+        public static async Task<Packet> ReadCompressedPacketAsync(MinecraftStream stream)
+        {
+            var packetLength = await stream.ReadVarIntAsync();
+            var dataLength = await stream.ReadVarIntAsync();
+
+            using var deStream = new MinecraftStream(new ZlibStream(stream, SharpCompress.Compressors.CompressionMode.Decompress, SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed));
+
+            var packetId = await deStream.ReadVarIntAsync();
+            var packetData = await deStream.ReadUInt8ArrayAsync(dataLength - packetId.GetVarintLength());
+
+            return new Packet(packetId, packetData);
+        }
+        
 
         public static async Task HandlePlayPackets(Packet packet, Client client)
         {
