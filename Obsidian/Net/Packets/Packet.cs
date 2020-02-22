@@ -1,5 +1,4 @@
 using Obsidian.Util;
-using SharpCompress.Compressors.Deflate;
 using System;
 using System.Threading.Tasks;
 
@@ -10,26 +9,22 @@ namespace Obsidian.Net.Packets
     /// </summary>
     public class Packet
     {
-        public byte[] PacketData { get; internal set; }
+        public bool Empty => this.packetData == null || this.packetData.Length == 0;
 
-        public int PacketId { get; internal set; }
+        internal MinecraftStream dataStream;
 
-        public bool Empty => this.PacketData == null || this.PacketData.Length == 0;
+        internal byte[] packetData;
 
-        public Packet(int packetid) => this.PacketId = packetid;
+        internal int packetId;
 
-        public Packet(int packetid, byte[] data)
-        {
-            this.PacketId = packetid;
-            this.PacketData = data;
-        }
+        public Packet(int packetid) =>
+            this.packetId = packetid;
 
-        internal Packet()
-        {
-            /* Only for the static method to _not_ error */
-        }
+        public Packet(int packetId, byte[] data) =>
+            (this.packetData, this.packetId) = (data, packetId);
 
-        public int GetPacketLength() => this.PacketId.GetVarintLength() + this.PacketData.Length;
+
+        public int GetPacketLength() => this.packetId.GetVarintLength() + this.packetData.Length;
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
@@ -37,10 +32,10 @@ namespace Obsidian.Net.Packets
             using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
-            var packetLength = this.PacketId.GetVarintLength() + (int)dataStream.Length;
+            var packetLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
 
             await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(PacketId);
+            await stream.WriteVarIntAsync(packetId);
 
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
@@ -49,23 +44,27 @@ namespace Obsidian.Net.Packets
 
         public virtual async Task WriteCompressedAsync(MinecraftStream stream, int threshold = 0)
         {
-            using var memstr = new MinecraftStream();
-            await memstr.WriteVarIntAsync(PacketId);
-            await this.ComposeAsync(memstr);
+            stream.semaphore.WaitOne();
+            using var dataStream = new MinecraftStream();
+            await ComposeAsync(dataStream);
 
-            var dataLength = this.PacketId.GetVarintLength() + (int)memstr.Length;
+            var dataLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
             var useCompression = threshold > 0 && dataLength >= threshold;
 
             if (!useCompression)
             {
-                Console.WriteLine($"Not compressing");
-                await this.WriteAsync(stream);
+                Console.WriteLine("Not compressing");
+                await stream.WriteVarIntAsync(0);
+                await stream.WriteVarIntAsync(this.packetId);
+
+                dataStream.Position = 0;
+                await dataStream.CopyToAsync(stream);
             }
             else
             {
+                Console.WriteLine("compressing");
                 //compress
-                Console.WriteLine($"Compressing");
-                var compdata = ZLibUtils.Compress(memstr.ToArray());
+                var compdata = ZLibUtils.Compress(dataStream.ToArray());
 
                 var packetLength = dataLength + compdata.Length;
 
@@ -74,12 +73,13 @@ namespace Obsidian.Net.Packets
 
                 await stream.WriteAsync(compdata, 0, compdata.Length);
             }
+            stream.semaphore.Release();
         }
 
         public virtual async Task ReadAsync(byte[] data = null)
         {
             //TODO: Please look into this.
-            using var stream = new MinecraftStream(data ?? this.PacketData);
+            using var stream = new MinecraftStream(data ?? this.packetData);
             await PopulateAsync(stream);
         }
 

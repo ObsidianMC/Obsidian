@@ -264,13 +264,13 @@ namespace Obsidian
                 Packet packet = await this.GetNextPacketAsync();
                 Packet returnPacket;
 
-                if (this.State == ClientState.Play && packet.PacketData.Length < 1)
+                if (this.State == ClientState.Play && packet.packetData.Length < 1)
                     this.Disconnect();
 
                 switch (this.State)
                 {
                     case ClientState.Status: //server ping/list
-                        switch (packet.PacketId)
+                        switch (packet.packetId)
                         {
                             case 0x00:
                                 var status = new ServerStatus(OriginServer);
@@ -278,19 +278,19 @@ namespace Obsidian
                                 break;
 
                             case 0x01:
-                                await new PingPong(packet.PacketData).WriteAsync(this.MinecraftStream);
+                                await new PingPong(packet.packetData).WriteAsync(this.MinecraftStream);
                                 this.Disconnect();
                                 break;
                         }
                         break;
 
                     case ClientState.Handshaking:
-                        if (packet.PacketId == 0x00)
+                        if (packet.packetId == 0x00)
                         {
                             if (packet == null)
                                 throw new InvalidOperationException();
 
-                            var handshake = new Handshake(packet.PacketData);
+                            var handshake = new Handshake(packet.packetData);
                             await handshake.ReadAsync();
 
                             var nextState = handshake.NextState;
@@ -311,7 +311,7 @@ namespace Obsidian
                         break;
 
                     case ClientState.Login:
-                        switch (packet.PacketId)
+                        switch (packet.packetId)
                         {
                             default:
                                 this.Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
@@ -319,8 +319,8 @@ namespace Obsidian
                                 break;
 
                             case 0x00:
-                                var loginStart = new LoginStart(packet.PacketData);
-                                await loginStart.ReadAsync(packet.PacketData);
+                                var loginStart = new LoginStart(packet.packetData);
+                                await loginStart.ReadAsync(packet.packetData);
 
                                 string username = loginStart.Username;
 
@@ -361,8 +361,8 @@ namespace Obsidian
                                 await ConnectAsync(this.Player.Uuid);
                                 break;
                             case 0x01:
-                                var encryptionResponse = new EncryptionResponse(packet.PacketData);
-                                await encryptionResponse.ReadAsync(packet.PacketData);
+                                var encryptionResponse = new EncryptionResponse(packet.packetData);
+                                await encryptionResponse.ReadAsync(packet.packetData);
 
                                 JoinedResponse response;
 
