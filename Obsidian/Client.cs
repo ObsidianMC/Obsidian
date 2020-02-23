@@ -300,12 +300,12 @@ namespace Obsidian
                             case 0x00:
                                 var status = new ServerStatus(OriginServer);
                                 var requestResponse = new RequestResponse(status);
-                                SendPacket(requestResponse);
+                                await requestResponse.WriteAsync(this.MinecraftStream);
                                 break;
 
                             case 0x01:
                                 var pingPong = new PingPong(packet.packetData);
-                                SendPacket(pingPong);
+                                await pingPong.WriteAsync(this.MinecraftStream);
                                 this.Disconnect();
                                 break;
                         }
@@ -325,7 +325,7 @@ namespace Obsidian
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
                                 this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
-                                await this.DisconnectAsync(Chat.ChatMessage.Simple("you seem suspicious"));
+                                await this.DisconnectAsync(ChatMessage.Simple("you seem suspicious"));
                             }
 
                             this.State = nextState;
@@ -377,7 +377,7 @@ namespace Obsidian
                                     this.Token = PacketCryptography.GetRandomToken();
 
                                     var encryptionRequest = new EncryptionRequest(pubKey, this.Token);
-                                    SendPacket(encryptionRequest);
+                                    await encryptionRequest.WriteAsync(this.MinecraftStream);
 
                                     break;
                                 }
