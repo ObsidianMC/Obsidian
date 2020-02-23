@@ -23,13 +23,13 @@ namespace Obsidian.Entities
         public bool OnlineMode = true;
 
         [JsonProperty("operatorRequests")]
-        public bool AllowOperatorRequests = false;
+        public bool AllowOperatorRequests;
 
         /// <summary>
         /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
         /// </summary>
         [JsonProperty("multiplayerDebugMode")]
-        public bool MulitplayerDebugMode = false;
+        public bool MulitplayerDebugMode;
 
         [JsonProperty("header")]
         public string Header = "§dObsidian > All other servers";
@@ -38,7 +38,7 @@ namespace Obsidian.Entities
         public string Footer = "§5tiddies §l§d( §c. §d)( §c. §d)";
 
         [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? Baah = null;
+        public bool? Baah;
 
         [JsonProperty("maxmissedkeepalives")]
         public int MaxMissedKeepalives = 15;

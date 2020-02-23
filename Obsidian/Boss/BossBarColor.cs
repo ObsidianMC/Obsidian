@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Boss
 {
-    public enum BossBarColor : int
+    public enum BossBarColor
     {
         Pink = 0,
         Blue = 1,

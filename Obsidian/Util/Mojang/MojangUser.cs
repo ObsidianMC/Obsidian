@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Net;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

@@ -1,8 +1,6 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands

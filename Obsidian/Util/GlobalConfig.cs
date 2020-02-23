@@ -17,6 +17,6 @@ namespace Obsidian.Entities
 #endif
 
         [JsonProperty("debugMode")]
-        public bool DebugMode = false;
+        public bool DebugMode;
     }
 }

@@ -1,8 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play

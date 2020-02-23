@@ -40,7 +40,7 @@ namespace Obsidian.Tests
                         value += (char)random.Next(' ', '~');
                     }
 
-                    values.Add(new[] { value });
+                    values.Add(new object[] { value });
                 }
 
                 return values;

@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
+﻿using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
 
@@ -19,7 +18,7 @@ namespace Obsidian.Net.Packets
 
         public Position Position { get; set; }
 
-        public bool OnGround { get; private set; } = false;
+        public bool OnGround { get; private set; }
 
         protected override async Task ComposeAsync(MinecraftStream stream)
         {

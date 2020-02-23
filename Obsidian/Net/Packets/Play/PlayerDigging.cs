@@ -1,7 +1,4 @@
-﻿using Obsidian.PlayerData.Info;
-using Obsidian.Util;
-using System;
-using System.Collections.Generic;
+﻿using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets

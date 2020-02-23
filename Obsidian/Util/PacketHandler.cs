@@ -4,7 +4,6 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using SharpCompress.Compressors.Deflate;
 using System;
-using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util

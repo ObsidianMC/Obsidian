@@ -36,7 +36,7 @@ namespace Obsidian.BlockData
     public class LinearBlockStatePalette : IBlockStatePalette
     {
         public BlockState[] BlockStateArray;
-        public int BlockStateCount = 0;
+        public int BlockStateCount;
 
         public bool IsFull { get { return BlockStateArray.Length == BlockStateCount; } }
 

@@ -2,7 +2,6 @@
 using Obsidian.Net;
 using Obsidian.Util;
 using Obsidian.Util.Registry;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData

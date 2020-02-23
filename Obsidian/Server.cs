@@ -21,6 +21,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.Chat;
 
 namespace Obsidian
 {
@@ -101,7 +102,7 @@ namespace Obsidian
         public int Id { get; private set; }
         public string Version { get; }
         public int Port { get; }
-        public int TotalTicks { get; private set; } = 0;
+        public int TotalTicks { get; private set; }
         public Entities.World world;
 
         private async Task ServerLoop()

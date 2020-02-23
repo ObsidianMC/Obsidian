@@ -15,11 +15,11 @@ namespace Obsidian.Net.Packets
         {
         }
 
-        public float Yaw { get; private set; } = 0;
+        public float Yaw { get; private set; }
 
-        public float Pitch { get; private set; } = 0;
+        public float Pitch { get; private set; }
 
-        public bool OnGround { get; private set; } = false;
+        public bool OnGround { get; private set; }
 
         protected override async Task PopulateAsync(MinecraftStream stream)
         {
