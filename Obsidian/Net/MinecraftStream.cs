@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Debug;
 
 namespace Obsidian.Net
 {
@@ -229,6 +230,7 @@ namespace Obsidian.Net
             {
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
             }
+
             var bytes = Encoding.UTF8.GetBytes(value);
             await this.WriteVarIntAsync(bytes.Length);
             await this.WriteAsync(bytes);

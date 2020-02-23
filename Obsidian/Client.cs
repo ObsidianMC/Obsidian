@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Status;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Debug;
 using Obsidian.Util.Mojang;
 
 namespace Obsidian
@@ -57,6 +58,8 @@ namespace Obsidian
         public Config Config;
         public ClientSettings ClientSettings;
 
+        public PacketDebugStream DebugStream;
+        
         public ConcurrentQueue<Packet> PacketQueue = new ConcurrentQueue<Packet>();
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
@@ -69,7 +72,9 @@ namespace Obsidian
             this.Cancellation = new CancellationTokenSource();
             this.State = ClientState.Handshaking;
 
-            this.MinecraftStream = new MinecraftStream(tcp.GetStream());
+            DebugStream = new PacketDebugStream(tcp.GetStream());
+            
+            this.MinecraftStream = new MinecraftStream(DebugStream);
         }
 
         ~Client()
@@ -371,7 +376,7 @@ namespace Obsidian
 
                                 this.Player = new Player(Guid.NewGuid(), username, this);
 
-                                await this.SetCompression();
+                                //await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
                                 break;
                             case 0x01:
@@ -410,7 +415,7 @@ namespace Obsidian
                                 this.EncryptionEnabled = true;
                                 this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
 
-                                await this.SetCompression();
+                                //await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
                                 break;
                             case 0x02:
