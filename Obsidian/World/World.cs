@@ -1,12 +1,13 @@
-﻿using fNbt;
-using Obsidian.Concurrency;
-using Obsidian.PlayerData;
-using Obsidian.World;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+using fNbt;
+using Obsidian.Concurrency;
+using Obsidian.Entities;
+using Obsidian.PlayerData;
 
-namespace Obsidian.Entities
+namespace Obsidian.World
 {
     public class World
     {
@@ -42,7 +43,7 @@ namespace Obsidian.Entities
             this.worldgen = worldgen;
         }
 
-        public void UpdateChunksForClient(Client c)
+        public async Task UpdateChunksForClient(Client c)
         {
             int dist = 1;
 
@@ -124,7 +125,7 @@ namespace Obsidian.Entities
                 }
             }
 
-            c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+            c.Logger.LogDebugAsync($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
         private Chunk getChunk(int x, int z, Client c)

@@ -62,13 +62,15 @@ namespace Obsidian.Logging
         {
         }
 
-        public void LogDebug(string message) => this.LogMessage(message, LogLevel.Debug);
+        public async Task LogDebugAsync(string message) => await LogMessageAsync(message, LogLevel.Debug);
 
-        public void LogWarning(string message) => this.LogMessage(message, LogLevel.Warning);
+        public async Task LogWarningAsync(string message) => await LogMessageAsync(message, LogLevel.Warning);
 
-        public void LogError(string message) => this.LogMessage(message, LogLevel.Error);
+        public async Task LogErrorAsync(string message) => await LogMessageAsync(message, LogLevel.Error);
 
-        public void LogMessage(string message, LogLevel logLevel = LogLevel.Info) => _messages.Enqueue(new LogMessage(message, logLevel));
+        public async Task LogMessageAsync(string message) => await LogMessageAsync(message, LogLevel.Info);
+        
+        private async Task LogMessageAsync(string message, LogLevel level) => await LogMessageAsync(new LogMessage(message, level));
 
         private async Task LogMessageAsync(LogMessage message, ConsoleColor color)
         {

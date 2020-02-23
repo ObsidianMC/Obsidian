@@ -56,15 +56,14 @@ namespace Obsidian.Util
                 return false;
             }
 
-            var result = !_reqs.Any(r => r.Player == p);
+            var result = _reqs.All(r => r.Player != p);
 
             if (result)
             {
                 var req = new OperatorRequest(p);
-
-                _server.Logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
-
                 _reqs.Add(req);
+
+                _server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
             }
 
             return result;

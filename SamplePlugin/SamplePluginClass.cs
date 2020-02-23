@@ -32,12 +32,10 @@ namespace SamplePlugin
             ));
         }
 
-        private Task OnPlayerJoin(PlayerJoinEventArgs e)
+        private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
             e.Server.Broadcast($"Player join event from sample plugin! {e.Joined.Username}");
-            e.Logger.LogMessage($"Player join event to logger from sample plugin! {e.Joined.Username}");
-
-            return Task.CompletedTask;
+            await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Joined.Username}");
         }
     }
 

@@ -71,84 +71,84 @@ namespace Obsidian.Util
                     // Teleport Confirm
                     // GET X Y Z FROM PACKET TODO
                     //this.Player.Position = new Position((int)x, (int)y, (int)z);
-                    //Logger.LogDebug("Received teleport confirm");
+                    //await Logger.LogDebugAsync("Received teleport confirm");
                     break;
 
                 case 0x01:
                     // Query Block NBT
-                    Logger.LogDebug("Received query block nbt");
+                    await Logger.LogDebugAsync("Received query block nbt");
                     break;
 
                 case 0x02:
                     // Incoming chat message
                     var message = new IncomingChatMessage(packet.packetData);
                     await message.ReadAsync(packet.packetData);
-                    Logger.LogDebug($"received chat: {message.Message}");
+                    await Logger.LogDebugAsync($"received chat: {message.Message}");
 
                     await server.ParseMessage(message.Message, client);
                     break;
 
                 case 0x03:
-                    Logger.LogDebug("Received client status");
+                    await Logger.LogDebugAsync("Received client status");
                     break;
 
                 case 0x04:
                     // Client Settings
                     client.ClientSettings = new ClientSettings(packet.packetData);
                     await client.ClientSettings.ReadAsync(packet.packetData);
-                    Logger.LogDebug("Received client settings");
+                    await Logger.LogDebugAsync("Received client settings");
                     break;
 
                 case 0x05:
                     // Tab-Complete
-                    Logger.LogDebug("Received tab-complete");
+                    await Logger.LogDebugAsync("Received tab-complete");
                     break;
 
                 case 0x06:
                     // Confirm Transaction
-                    Logger.LogDebug("Received confirm transaction");
+                    await Logger.LogDebugAsync("Received confirm transaction");
                     break;
 
                 case 0x07:
                     // Enchant Item
-                    Logger.LogDebug("Received enchant item");
+                    await Logger.LogDebugAsync("Received enchant item");
                     break;
 
                 case 0x08:
                     // Click Window
-                    Logger.LogDebug("Received click window");
+                    await Logger.LogDebugAsync("Received click window");
                     break;
 
                 case 0x09:
                     // Close Window (serverbound)
-                    Logger.LogDebug("Received close window");
+                    await Logger.LogDebugAsync("Received close window");
                     break;
 
                 case 0x0A:
                     // Plugin Message (serverbound)
-                    Logger.LogDebug("Received plugin message");
+                    await Logger.LogDebugAsync("Received plugin message");
                     break;
 
                 case 0x0B:
                     // Edit Book
-                    Logger.LogDebug("Received edit book");
+                    await Logger.LogDebugAsync("Received edit book");
                     break;
 
                 case 0x0C:
                     // Query Entity NBT
-                    Logger.LogDebug("Received query entity nbt");
+                    await Logger.LogDebugAsync("Received query entity nbt");
                     break;
 
                 case 0x0D:
                     // Use Entity
-                    Logger.LogDebug("Received use entity");
+                    await Logger.LogDebugAsync("Received use entity");
                     break;
 
                 case 0x0E:
                     // Keep Alive (serverbound)
                     var keepalive = new KeepAlive(packet.packetData);
                 await keepalive.ReadAsync(packet.packetData);
-                    Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id " +
+                    await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.MissedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
                     client.MissedKeepalives = 0;
@@ -157,7 +157,7 @@ namespace Obsidian.Util
                 case 0x0F: // Player
                     //TODO: Please rewrite.
                     //var onground = BitConverter.ToBoolean(await packet.ToArrayAsync(), 0);
-                    //Logger.LogDebug($"{client.Player.Username} on ground?: {onground}");
+                    //await Logger.LogDebugAsync($"{client.Player.Username} on ground?: {onground}");
                     //client.Player.OnGround = onground;
                     break;
 
@@ -165,7 +165,7 @@ namespace Obsidian.Util
                     var pos = new PlayerPosition(packet.packetData);
                     await pos.ReadAsync(packet.packetData);
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    Logger.LogDebug($"Updated position for {client.Player.Username}");
+                    await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
@@ -173,7 +173,7 @@ namespace Obsidian.Util
                     await ppos.ReadAsync(packet.packetData);
 
                     client.Player.UpdatePosition(ppos.Transform);
-                    //Logger.LogDebugAsync($"Updated look and position for {this.Player.Username}");
+                    //await Logger.LogDebugAsyncAsync($"Updated look and position for {this.Player.Username}");
                     break;
 
                 case 0x12:
@@ -182,37 +182,37 @@ namespace Obsidian.Util
                     await look.ReadAsync(packet.packetData);
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
-                    Logger.LogDebug($"Updated look for {client.Player.Username}");
+                    await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
                     break;
 
                 case 0x13:
                     // Vehicle Move (serverbound)
-                    Logger.LogDebug("Received vehicle move");
+                    await Logger.LogDebugAsync("Received vehicle move");
                     break;
 
                 case 0x14:
                     // Steer Boat
-                    Logger.LogDebug("Received steer boat");
+                    await Logger.LogDebugAsync("Received steer boat");
                     break;
 
                 case 0x15:
                     // Pick Item
-                    Logger.LogDebug("Received pick item");
+                    await Logger.LogDebugAsync("Received pick item");
                     break;
 
                 case 0x16:
                     // Craft Recipe Request
-                    Logger.LogDebug("Received craft recipe request");
+                    await Logger.LogDebugAsync("Received craft recipe request");
                     break;
 
                 case 0x17:
                     // Player Abilities (serverbound)
-                    Logger.LogDebug("Received player abilities");
+                    await Logger.LogDebugAsync("Received player abilities");
                     break;
 
                 case 0x18:
                     // Player Digging
-                    Logger.LogDebug("Received player digging");
+                    await Logger.LogDebugAsync("Received player digging");
 
                     var digging = new PlayerDigging(packet.packetData);
                     await digging.ReadAsync(packet.packetData);
@@ -222,72 +222,72 @@ namespace Obsidian.Util
 
                 case 0x19:
                     // Entity Action
-                    Logger.LogDebug("Received entity action");
+                    await Logger.LogDebugAsync("Received entity action");
                     break;
 
                 case 0x1A:
                     // Steer Vehicle
-                    Logger.LogDebug("Received steer vehicle");
+                    await Logger.LogDebugAsync("Received steer vehicle");
                     break;
 
                 case 0x1B:
                     // Recipe Book Data
-                    Logger.LogDebug("Received recipe book data");
+                    await Logger.LogDebugAsync("Received recipe book data");
                     break;
 
                 case 0x1C:
                     // Name Item
-                    Logger.LogDebug("Received name item");
+                    await Logger.LogDebugAsync("Received name item");
                     break;
 
                 case 0x1D:
                     // Resource Pack Status
-                    Logger.LogDebug("Received resource pack status");
+                    await Logger.LogDebugAsync("Received resource pack status");
                     break;
 
                 case 0x1E:
                     // Advancement Tab
-                    Logger.LogDebug("Received advancement tab");
+                    await Logger.LogDebugAsync("Received advancement tab");
                     break;
 
                 case 0x1F:
                     // Select Trade
-                    Logger.LogDebug("Received select trade");
+                    await Logger.LogDebugAsync("Received select trade");
                     break;
 
                 case 0x20:
                     // Set Beacon Effect
-                    Logger.LogDebug("Received set beacon effect");
+                    await Logger.LogDebugAsync("Received set beacon effect");
                     break;
 
                 case 0x21:
                     // Held Item Change (serverbound)
-                    Logger.LogDebug("Received held item change");
+                    await Logger.LogDebugAsync("Received held item change");
                     break;
 
                 case 0x22:
                     // Update Command Block
-                    Logger.LogDebug("Received update command block");
+                    await Logger.LogDebugAsync("Received update command block");
                     break;
 
                 case 0x23:
                     // Update Command Block Minecart
-                    Logger.LogDebug("Received update command block minecart");
+                    await Logger.LogDebugAsync("Received update command block minecart");
                     break;
 
                 case 0x24:
                     // Creative Inventory Action
-                    Logger.LogDebug("Received creative inventory action");
+                    await Logger.LogDebugAsync("Received creative inventory action");
                     break;
 
                 case 0x25:
                     // Update Structure Block
-                    Logger.LogDebug("Received update structure block");
+                    await Logger.LogDebugAsync("Received update structure block");
                     break;
 
                 case 0x26:
                     // Update Sign
-                    Logger.LogDebug("Received update sign");
+                    await Logger.LogDebugAsync("Received update sign");
                     break;
 
                 case 0x27:
@@ -295,12 +295,12 @@ namespace Obsidian.Util
                     var serverAnim = new AnimationServerPacket(packet.packetData);
                     await serverAnim.ReadAsync(packet.packetData);
 
-                    Logger.LogDebug("Received animation (serverbound)");
+                    await Logger.LogDebugAsync("Received animation (serverbound)");
                     break;
 
                 case 0x28:
                     // Spectate
-                    Logger.LogDebug("Received spectate");
+                    await Logger.LogDebugAsync("Received spectate");
                     break;
 
                 case 0x29:
@@ -310,13 +310,13 @@ namespace Obsidian.Util
                     await pbp.ReadAsync(packet.packetData);
 
                     server.EnqueuePlacing(pbp);
-                    Logger.LogDebug("Received player block placement");
+                    await Logger.LogDebugAsync("Received player block placement");
 
                     break;
 
                 case 0x2A:
                     // Use Item
-                    Logger.LogDebug("Received use item");
+                    await Logger.LogDebugAsync("Received use item");
                     break;
             }
         }

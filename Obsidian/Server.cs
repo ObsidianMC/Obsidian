@@ -264,7 +264,7 @@ namespace Obsidian
             {
                 if (clnt.PlayerId == id)
                 {
-                    Logger.LogError($"YOure not suppose to get this packet :( {id}");
+                    await Logger.LogErrorAsync($"You're not suppose to get this packet :( {id}");
                     continue;
                 }
 
@@ -277,7 +277,7 @@ namespace Obsidian
             if (!CommandUtilities.HasPrefix(message, '/', out string output))
             {
                 _chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
-                Logger.LogMessage($"<{source.Player.Username}> {message}");
+                await Logger.LogMessageAsync($"<{source.Player.Username}> {message}");
                 return;
             }
 
@@ -292,7 +292,7 @@ namespace Obsidian
         public void Broadcast(string message, byte position = 0)
         {
             _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
-            Logger.LogMessage(message);
+            Logger.LogMessageAsync(message);
         }
 
         /// <summary>
@@ -302,26 +302,26 @@ namespace Obsidian
         public async Task StartServer()
         {
             Console.CancelKeyPress += this.Console_CancelKeyPress;
-            Logger.LogMessage($"Launching Obsidian Server v{Version} with ID {Id}");
+            await Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
 
             //Check if MPDM and OM are enabled, if so, we can't handle connections
             if (Config.MulitplayerDebugMode && Config.OnlineMode)
             {
-                Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+                await Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
                 StopServer();
                 return;
             }
 
-            Logger.LogDebug("Registering blocks..");
+            await Logger.LogDebugAsync("Registering blocks..");
             await BlockRegistry.RegisterAll();
 
-            Logger.LogMessage($"Loading operator list...");
+            await Logger.LogMessageAsync($"Loading operator list...");
             Operators.Initialize();
 
-            Logger.LogMessage("Registering default entities");
+            await Logger.LogMessageAsync("Registering default entities");
             RegisterDefault();
 
-            Logger.LogMessage($"Loading and Initializing plugins...");
+            await Logger.LogMessageAsync($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
 
             if (WorldGenerators.FirstOrDefault(g => g.Id == Config.Generator) is WorldGenerator worldGenerator)
@@ -330,29 +330,29 @@ namespace Obsidian
             }
             else
             {
-                this.Logger.LogWarning($"Generator ({Config.Generator}) is unknown. Using default generator");
+                await this.Logger.LogWarningAsync($"Generator ({Config.Generator}) is unknown. Using default generator");
                 this.WorldGenerator = new SuperflatGenerator();
             }
 
-            Logger.LogMessage($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
+            await Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator.ToString()})");
 
-            Logger.LogDebug($"Set start DateTimeOffset for measuring uptime.");
+            await Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
             this.StartTime = DateTimeOffset.Now;
 
-            Logger.LogMessage("Starting server backend...");
+            await Logger.LogMessageAsync("Starting server backend...");
             await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
             if (!this.Config.OnlineMode)
-                this.Logger.LogMessage($"Server started in offline mode..");
+                await Logger.LogMessageAsync($"Server started in offline mode..");
 
-            Logger.LogDebug($"Start listening for new clients");
+            await Logger.LogDebugAsync($"Start listening for new clients");
             _tcpListener.Start();
 
             while (!_cts.IsCancellationRequested)
             {
                 var tcp = await _tcpListener.AcceptTcpClientAsync();
 
-                Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
+                await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
                 int newplayerid = Math.Max(0, this.Clients.Count);
 
@@ -361,7 +361,8 @@ namespace Obsidian
 
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
-            Logger.LogWarning($"Cancellation has been requested. Stopping server...");
+            
+            await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
         }
 
         private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
@@ -401,7 +402,7 @@ namespace Obsidian
                         throw new Exception($"Input ({item.GetType().ToString()}) can't be handled by RegisterAsync.");
 
                     case WorldGenerator generator:
-                        Logger.LogDebug($"Registering {generator.Id}...");
+                        Logger.LogDebugAsync($"Registering {generator.Id}...");
                         WorldGenerators.Add(generator);
                         break;
                 }

@@ -51,7 +51,7 @@ namespace Obsidian.Util.Registry
                         if (Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
                         {
                             int id = states.States.FirstOrDefault().Id;
-                            Logger.LogDebug($"Registered block: {material.ToString()} with id: {id.ToString()}");
+                            await Logger.LogDebugAsync($"Registered block: {material.ToString()} with id: {id.ToString()}");
                             
                             switch (material)
                             {
@@ -601,7 +601,7 @@ namespace Obsidian.Util.Registry
                     }
                 }
 
-                Logger.LogDebug($"Successfully registered {registered} blocks..");
+                await Logger.LogDebugAsync($"Successfully registered {registered} blocks..");
             }
             else
             {
