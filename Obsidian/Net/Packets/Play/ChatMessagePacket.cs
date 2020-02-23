@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets
 
         public ChatMessage Message { get; private set; }
 
-        public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
+        public byte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
         protected override async Task PopulateAsync(MinecraftStream stream)
         {

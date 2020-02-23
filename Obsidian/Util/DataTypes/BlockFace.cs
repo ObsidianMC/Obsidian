@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.Util.DataTypes
+﻿namespace Obsidian.Util.DataTypes
 {
     public enum BlockFace : sbyte
     {

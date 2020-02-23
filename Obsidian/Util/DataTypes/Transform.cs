@@ -2,9 +2,9 @@
 {
     public class Transform
     {
-        public double X { get; set; } = 0;
-        public double Y { get; set; } = 0;
-        public double Z { get; set; } = 0;
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
 
         public Angle Pitch { get; set; } = 0;
         public Angle Yaw { get; set; } = 0;

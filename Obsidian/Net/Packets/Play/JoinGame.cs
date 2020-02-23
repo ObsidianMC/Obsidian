@@ -14,11 +14,11 @@ namespace Obsidian.Net.Packets
 
         public Difficulty Difficulty { get; private set; } = Difficulty.Peaceful;
 
-        public byte MaxPlayers { get; private set; } = 0; // Gets ignored by client
+        public byte MaxPlayers { get; private set; } // Gets ignored by client
 
         public string LevelType { get; private set; } = "default";
 
-        public bool ReducedDebugInfo { get; private set; } = false;
+        public bool ReducedDebugInfo { get; private set; }
 
         public JoinGame(byte[] data) : base(0x25, data)
         {

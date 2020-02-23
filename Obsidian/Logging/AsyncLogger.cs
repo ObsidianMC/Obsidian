@@ -1,19 +1,28 @@
 ﻿using Obsidian.Events;
 using System;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Logging
 {
-    public class AsyncLogger
+    public class AsyncLogger : IAsyncDisposable
     {
         private readonly AsyncEvent<LoggerEventArgs> _messageLogged;
         private readonly ConcurrentQueue<LogMessage> _messages = new ConcurrentQueue<LogMessage>();
         private readonly Task _dispatcherTask;
+            
+        private CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();
 
-        private bool _running = true;
-
+        private readonly StreamWriter _streamWriter;
+        
         public string Prefix { get; }
+        
+        public string FilePath { get; }
+        
+        public LogLevel LogLevel { get; set; }
 
         public event AsyncEventHandler<LoggerEventArgs> MessageLogged
         {
@@ -21,28 +30,30 @@ namespace Obsidian.Logging
             remove { this._messageLogged.Unregister(value); }
         }
 
-        public LogLevel LogLevel { get; set; }
 
-        internal AsyncLogger(string prefix, LogLevel logLevel)
+        internal AsyncLogger(string prefix, LogLevel logLevel, string filePath)
         {
             this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
             this.Prefix = prefix;
             this.LogLevel = logLevel;
+            this.FilePath = filePath;
 
+            _streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
+            {
+                AutoFlush = true
+            };
             _dispatcherTask = Task.Run(TaskLoop);
         }
-        
-        public void StopLogging() => this._running = false;
 
+        public void StopLogging() => Cancellation.Cancel();
 
         private async Task TaskLoop()
         {
-            while (_running)
+            while (!Cancellation.IsCancellationRequested)
             {
                 if (_messages.TryDequeue(out LogMessage message))
-                {
-                    await LogMessageAsync(message.Message, message.Level);
-                }
+                    await LogMessageAsync(message);
+                
                 await Task.Delay(100);
             }
         }
@@ -59,80 +70,47 @@ namespace Obsidian.Logging
 
         public void LogMessage(string message, LogLevel logLevel = LogLevel.Info) => _messages.Enqueue(new LogMessage(message, logLevel));
 
-        public async Task LogMessageAsync(string message, LogLevel logLevel, ConsoleColor color)
+        private async Task LogMessageAsync(LogMessage message, ConsoleColor color)
         {
-            await _messageLogged.InvokeAsync(new LoggerEventArgs(message, Prefix, DateTimeOffset.Now));
+            await _messageLogged.InvokeAsync(new LoggerEventArgs(message));
 
             //checking if message should be printed or not
-            if (logLevel > LogLevel)
-            {
+            if (message.Level > LogLevel)
                 return;
-            }
 
-            string line = "";
+            var line = $"[{message.DateTime:t}] [{message.Level}] ";
 
-            line += string.Format("[{0:t}] " + logLevel.ToString() + " ", DateTimeOffset.Now);
-
-            if (Prefix != "")
-            {
+            if (!string.IsNullOrWhiteSpace(Prefix))
                 line += $"[{Prefix}] ";
-            }
 
-            line += message;
+            line += message.Message;
 
             Console.ForegroundColor = color;
             Console.WriteLine(line);
+            
+            await _streamWriter.WriteLineAsync(line);
         }
 
-        private async Task LogMessageAsync(string message, LogLevel logLevel)
+        private async Task LogMessageAsync(LogMessage message)
         {
-            await _messageLogged.InvokeAsync(new LoggerEventArgs(message, Prefix, DateTimeOffset.Now));
-
-            //checking if message should be printed or not
-            if (logLevel > LogLevel)
-            {
-                return;
-            }
-
-            string line = "";
-
-            line += string.Format("[{0:t}] " + logLevel.ToString() + " ", DateTimeOffset.Now);
-
-            if (Prefix != "")
-            {
-                line += $"[{Prefix}] ";
-            }
-
-            line += message;
-
-            Console.ForegroundColor = GetConsoleColor(logLevel);
-            Console.WriteLine(line);
+            await LogMessageAsync(message, GetConsoleColor(message.Level));
         }
 
         private static ConsoleColor GetConsoleColor(LogLevel logLevel)
         {
-            switch (logLevel)
+            return logLevel switch
             {
-                case LogLevel.Info: return ConsoleColor.Cyan;
-                case LogLevel.Warning: return ConsoleColor.Yellow;
-                case LogLevel.Error: return ConsoleColor.DarkRed;
-                case LogLevel.Debug: return ConsoleColor.Magenta;
-                default: return ConsoleColor.Gray;
-            }
+                LogLevel.Info => ConsoleColor.Cyan,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Error => ConsoleColor.DarkRed,
+                LogLevel.Debug => ConsoleColor.Magenta,
+                _ => ConsoleColor.Gray
+            };
         }
-    }
 
-    public struct LogMessage
-    {
-        public LogLevel Level;
-        public DateTimeOffset DateTime;
-        public string Message;
-
-        public LogMessage(string message, LogLevel level)
+        public async ValueTask DisposeAsync()
         {
-            Message = message ?? throw new ArgumentNullException(nameof(message));
-            Level = level;
-            DateTime = DateTimeOffset.Now;
+            await _streamWriter.DisposeAsync();
         }
     }
 }

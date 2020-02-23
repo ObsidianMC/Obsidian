@@ -1,5 +1,4 @@
-﻿using Obsidian.BlockData;
-using Obsidian.Util;
+﻿using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets

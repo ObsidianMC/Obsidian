@@ -2,7 +2,7 @@
 {
     public class BlockState
     {
-        public int Id = 0;
+        public int Id;
 
         public string UnlocalizedName { get; }
 
@@ -11,9 +11,9 @@
             this.Id = id;
         }
 
-        public BlockState(string unlocalizedName, int Id)
+        public BlockState(string unlocalizedName, int id)
         {
-            this.Id = Id;
+            this.Id = id;
             this.UnlocalizedName = unlocalizedName;
         }
     }

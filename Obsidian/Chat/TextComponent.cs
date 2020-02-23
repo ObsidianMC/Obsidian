@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+// ReSharper disable InconsistentNaming
 
 namespace Obsidian.Chat
 {

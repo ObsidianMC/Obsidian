@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
+﻿using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
 
@@ -34,7 +33,7 @@ namespace Obsidian.Net.Packets
 
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        public int TeleportId { get; private set; } = 0;
+        public int TeleportId { get; private set; }
 
         protected override async Task ComposeAsync(MinecraftStream stream)
         {

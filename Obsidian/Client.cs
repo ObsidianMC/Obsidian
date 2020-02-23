@@ -36,9 +36,9 @@ namespace Obsidian
 
         public ClientState State { get; private set; }
 
-        private bool Disposed = false;
-        private bool CompressionEnabled = false;
-        private bool EncryptionEnabled = false;
+        private bool Disposed;
+        private bool CompressionEnabled;
+        private bool EncryptionEnabled;
 
         private const int CompressionThreshold = 256;
 
@@ -46,7 +46,7 @@ namespace Obsidian
         public AsyncLogger Logger => this.OriginServer.Logger;
 
 
-        public int MissedKeepalives = 0;
+        public int MissedKeepalives;
 
         public Server OriginServer;
         public Player Player;
@@ -265,7 +265,17 @@ namespace Obsidian
 
         #endregion Packet Sending Methods
 
-        private async Task<Packet> GetNextPacketAsync() => this.CompressionEnabled ? await PacketHandler.ReadCompressedPacketAsync(this.MinecraftStream) : await PacketHandler.ReadPacketAsync(this.MinecraftStream);
+        private async Task<Packet> GetNextPacketAsync()
+        {
+            if (this.CompressionEnabled)
+            {
+                return await PacketHandler.ReadCompressedPacketAsync(this.MinecraftStream);
+            }
+            else
+            {
+                return await PacketHandler.ReadPacketAsync(this.MinecraftStream);
+            }
+        }
 
         public async Task StartConnectionAsync()
         {
@@ -444,6 +454,7 @@ namespace Obsidian
             {
                 if (!this.PacketQueue.Any()) continue;
                 if (!this.PacketQueue.TryDequeue(out var outgoingPacket)) continue;
+                Logger.LogDebug($"Enqueuing packet: {outgoingPacket} (0x{outgoingPacket.packetId:X2})");
                 
                 if (this.CompressionEnabled)
                 {
@@ -572,7 +583,11 @@ namespace Obsidian
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
-        internal void SendPacket(Packet packet) => this.PacketQueue.Enqueue(packet);
+        internal void SendPacket(Packet packet)
+        {
+            this.PacketQueue.Enqueue(packet);
+            Logger.LogWarning($"Queuing packet: {packet} (0x{packet.packetId:X2})");
+        }
 
         #region dispose methods
         protected virtual void Dispose(bool disposing)

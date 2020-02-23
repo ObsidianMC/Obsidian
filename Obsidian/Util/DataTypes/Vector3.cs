@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using System;
+﻿using System;
 
 namespace Obsidian.Util
 {

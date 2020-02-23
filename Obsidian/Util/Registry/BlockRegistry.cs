@@ -16,7 +16,7 @@ namespace Obsidian.Util.Registry
     {
         public static Dictionary<Materials, Block> BLOCK_STATES = new Dictionary<Materials, Block>();
 
-        private static readonly AsyncLogger Logger = new AsyncLogger("Registry", LogLevel.Debug);
+        private static readonly AsyncLogger Logger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
 
         public static async Task RegisterAll()
         {
@@ -51,8 +51,8 @@ namespace Obsidian.Util.Registry
                         if (Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
                         {
                             int id = states.States.FirstOrDefault().Id;
-                            await Logger.LogMessageAsync($"Registered block: {material.ToString()} with id: {id.ToString()}", LogLevel.Debug, ConsoleColor.White);
-
+                            Logger.LogDebug($"Registered block: {material.ToString()} with id: {id.ToString()}");
+                            
                             switch (material)
                             {
                                 case Materials.Air:

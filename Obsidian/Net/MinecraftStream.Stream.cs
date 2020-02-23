@@ -25,7 +25,7 @@ namespace Obsidian.Net
             semaphore = new Semaphore(1, 1);
         }
 
-        private bool Disposed = false;
+        private bool Disposed;
 
         protected Stream BaseStream { get; set; }
 
