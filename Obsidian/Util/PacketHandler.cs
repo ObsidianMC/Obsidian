@@ -10,11 +10,7 @@ namespace Obsidian.Util
 {
     public class PacketHandler
     {
-#if DEBUG
-        private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug);
-#else
-        private static Logger Logger = new Logger("Packets", LogLevel.Error);
-#endif
+        private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug, "packets.log");
 
         public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
 

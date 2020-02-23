@@ -60,7 +60,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}", Program.Config.LogLevel);
+            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}",  Program.Config.LogLevel, System.IO.Path.Combine(Path, "latest.log"));
 
             this.Port = config.Port;
             this.Version = version;

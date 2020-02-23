@@ -454,6 +454,7 @@ namespace Obsidian
             {
                 if (!this.PacketQueue.Any()) continue;
                 if (!this.PacketQueue.TryDequeue(out var outgoingPacket)) continue;
+                Logger.LogDebug($"Enqueuing packet: {outgoingPacket} (0x{outgoingPacket.packetId:X2})");
                 
                 if (this.CompressionEnabled)
                 {
@@ -582,7 +583,11 @@ namespace Obsidian
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
-        internal void SendPacket(Packet packet) => this.PacketQueue.Enqueue(packet);
+        internal void SendPacket(Packet packet)
+        {
+            this.PacketQueue.Enqueue(packet);
+            Logger.LogWarning($"Queuing packet: {packet} (0x{packet.packetId:X2})");
+        }
 
         #region dispose methods
         protected virtual void Dispose(bool disposing)
