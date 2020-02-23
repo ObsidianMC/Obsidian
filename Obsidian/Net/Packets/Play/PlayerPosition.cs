@@ -1,8 +1,8 @@
-﻿using Obsidian.Util;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Obsidian.Util.DataTypes;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PlayerPosition : Packet
     {

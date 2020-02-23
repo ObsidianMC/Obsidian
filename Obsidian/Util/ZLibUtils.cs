@@ -1,6 +1,7 @@
 ﻿using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Obsidian.Util
 {
@@ -19,6 +20,20 @@ namespace Obsidian.Util
             data = memstream.ToArray();
 
             return data;
+        }
+
+        public static async Task WriteCompressedAsync(byte[] toCompress, Stream targetStream)
+        {
+            await using var memoryStream = new MemoryStream(toCompress);
+            await using var stream = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+            await stream.WriteAsync(toCompress, 0, toCompress.Length);
+            await stream.CopyToAsync(targetStream);
+        }
+        
+        public static async Task WriteCompressedAsync(Stream inputStream, Stream outputStream)
+        {
+            await using var stream = new ZlibStream(inputStream, CompressionMode.Compress, CompressionLevel.BestCompression);
+            await stream.CopyToAsync(outputStream);
         }
 
         /// <summary>

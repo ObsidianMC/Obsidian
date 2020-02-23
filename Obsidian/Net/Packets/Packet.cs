@@ -1,5 +1,6 @@
 using Obsidian.Util;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -52,19 +53,21 @@ namespace Obsidian.Net.Packets
             if (useCompression)
             {
                 Console.WriteLine("compressing");
-                var compressedData = ZLibUtils.Compress(dataStream.ToArray());
 
-                var packetLength = dataLength + compressedData.Length;
+                await using var memoryStream = new MemoryStream();
+                await ZLibUtils.WriteCompressedAsync(dataStream, memoryStream);
+
+                var packetLength = dataLength + (int)memoryStream.Length;
 
                 await stream.WriteVarIntAsync(packetLength);
                 await stream.WriteVarIntAsync(dataLength);
 
-                await stream.WriteAsync(compressedData, 0, compressedData.Length);
+                memoryStream.Position = 0;
+                await memoryStream.CopyToAsync(stream);
             }
             else
             {
                 Console.WriteLine("Not compressing");
-                await stream.WriteVarIntAsync(0);
                 await stream.WriteVarIntAsync(0);
                 await stream.WriteVarIntAsync(this.packetId);
                 await dataStream.CopyToAsync(stream);

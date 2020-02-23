@@ -1,10 +1,10 @@
-﻿using fNbt;
-using Obsidian.ChunkData;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using fNbt;
+using Obsidian.ChunkData;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class ChunkDataPacket : Packet
     {
@@ -43,8 +43,8 @@ namespace Obsidian.Net.Packets
             int availableSections = 0;
 
             byte[] data;
-            using (var dataStream = new MinecraftStream())
-            {
+            await using var dataStream = new MinecraftStream();
+                
                 var chunkSectionY = 0;
                 foreach (var section in Data)
                 {
@@ -73,13 +73,11 @@ namespace Obsidian.Net.Packets
                         await dataStream.WriteIntAsync(biomeId);
                     }
                 }
-
-                data = dataStream.ToArray();
-            }
             await stream.WriteVarIntAsync(availableSections);
 
-            await stream.WriteVarIntAsync(data.Length);
-            await stream.WriteAsync(data);
+            await stream.WriteVarIntAsync((int)dataStream.Length);
+            dataStream.Position=0;
+            await dataStream.CopyToAsync(stream);
 
             await stream.WriteVarIntAsync(BlockEntities.Count);
 
