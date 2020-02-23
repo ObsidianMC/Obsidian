@@ -128,27 +128,32 @@ namespace Obsidian.Entities
         public async Task SendMessageAsync(string message, byte position = 0)
         {
             var chat = ChatMessage.Simple(message);
-            await new ChatMessagePacket(chat, position).WriteAsync(this.Client.MinecraftStream);
+            var packet = new ChatMessagePacket(chat, position);
+            Client.SendPacket(packet);
         }
 
         public async Task SendMessageAsync(ChatMessage message)
         {
-            await new ChatMessagePacket(message, 0).WriteAsync(this.Client.MinecraftStream);
+            var packet = new ChatMessagePacket(message, 0);
+            Client.SendPacket(packet);
         }
 
         public async Task SendSoundAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await new SoundEffect(soundId, location, category, pitch, volume).WriteAsync(this.Client.MinecraftStream);
+            var packet = new SoundEffect(soundId, location, category, pitch, volume);
+            Client.SendPacket(packet);
         }
 
         public async Task SendNamedSoundAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await new NamedSoundEffect(name, location, category, pitch, volume).WriteAsync(this.Client.MinecraftStream);
+            var packet = new NamedSoundEffect(name, location, category, pitch, volume);
+            Client.SendPacket(packet);
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
-            await new BossBar(uuid, action).WriteAsync(this.Client.MinecraftStream);
+            var packet = new BossBar(uuid, action);
+            this.Client.SendPacket(packet);
         }
 
         public async Task KickAsync(string reason)

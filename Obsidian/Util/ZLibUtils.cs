@@ -6,7 +6,7 @@ namespace Obsidian.Util
 {
     public static class ZLibUtils
     {
-
+        //TODO: Make this async >:( - Craftplacer
         public static byte[] Compress(byte[] to_compress)
         {
             byte[] data;

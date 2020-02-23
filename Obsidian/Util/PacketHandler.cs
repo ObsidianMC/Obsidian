@@ -38,8 +38,8 @@ namespace Obsidian.Util
                     packetId = await packetStream.ReadVarIntAsync();
                     int arlen = 0;
 
-                    if (length - packetId.GetVarintLength() > -1)
-                        arlen = length - packetId.GetVarintLength();
+                    if (length - packetId.GetVarIntLength() > -1)
+                        arlen = length - packetId.GetVarIntLength();
 
                     packetData = new byte[arlen];
                     await packetStream.ReadAsync(packetData, 0, packetData.Length);
@@ -61,7 +61,7 @@ namespace Obsidian.Util
             using var deStream = new MinecraftStream(new ZlibStream(stream, SharpCompress.Compressors.CompressionMode.Decompress, SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed));
 
             var packetId = await deStream.ReadVarIntAsync();
-            var packetData = await deStream.ReadUInt8ArrayAsync(dataLength - packetId.GetVarintLength());
+            var packetData = await deStream.ReadUInt8ArrayAsync(dataLength - packetId.GetVarIntLength());
 
             return new Packet(packetId, packetData);
         }

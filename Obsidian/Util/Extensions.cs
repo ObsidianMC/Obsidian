@@ -23,7 +23,7 @@ namespace Obsidian.Util
             return char.ToUpper(s[0]) + s.Substring(1);
         }
 
-        public static int GetVarintLength(this int val)
+        public static int GetVarIntLength(this int val)
         {
             int amount = 0;
             do

@@ -27,7 +27,7 @@ namespace Obsidian.Net
 
         private bool Disposed = false;
 
-        public Stream BaseStream { get; set; }
+        protected Stream BaseStream { get; set; }
 
         public override bool CanRead => BaseStream.CanRead;
 
@@ -66,8 +66,8 @@ namespace Obsidian.Net
         public byte[] ToArray()
         {
             this.Position = 0;
-            byte[] buffer = new byte[this.Length];
-            for (int totalBytesCopied = 0; totalBytesCopied < this.Length;)
+            var buffer = new byte[this.Length];
+            for (var totalBytesCopied = 0; totalBytesCopied < this.Length;)
                 totalBytesCopied += this.Read(buffer, totalBytesCopied, Convert.ToInt32(this.Length) - totalBytesCopied);
             return buffer;
         }

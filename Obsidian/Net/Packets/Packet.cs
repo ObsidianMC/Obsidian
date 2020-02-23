@@ -11,28 +11,24 @@ namespace Obsidian.Net.Packets
     {
         public bool Empty => this.packetData == null || this.packetData.Length == 0;
 
-        internal MinecraftStream dataStream;
-
         internal byte[] packetData;
 
         internal int packetId;
 
-        public Packet(int packetid) =>
-            this.packetId = packetid;
+        public Packet(int packetId) => this.packetId = packetId;
 
-        public Packet(int packetId, byte[] data) =>
-            (this.packetData, this.packetId) = (data, packetId);
+        public Packet(int packetId, byte[] data) => (this.packetData, this.packetId) = (data, packetId);
 
 
-        public int GetPacketLength() => this.packetId.GetVarintLength() + this.packetData.Length;
+        public int GetPacketLength() => this.packetId.GetVarIntLength() + this.packetData.Length;
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
             stream.semaphore.WaitOne();
-            using var dataStream = new MinecraftStream();
+            await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
-            var packetLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
+            var packetLength = this.packetId.GetVarIntLength() + (int)dataStream.Length;
 
             await stream.WriteVarIntAsync(packetLength);
             await stream.WriteVarIntAsync(packetId);
@@ -45,41 +41,42 @@ namespace Obsidian.Net.Packets
         public virtual async Task WriteCompressedAsync(MinecraftStream stream, int threshold = 0)
         {
             stream.semaphore.WaitOne();
-            using var dataStream = new MinecraftStream();
+            await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
+            
+            dataStream.Position = 0;
 
-            var dataLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
+            var dataLength = this.packetId.GetVarIntLength() + (int)dataStream.Length;
             var useCompression = threshold > 0 && dataLength >= threshold;
 
-            if (!useCompression)
-            {
-                Console.WriteLine("Not compressing");
-                await stream.WriteVarIntAsync(0);
-                await stream.WriteVarIntAsync(this.packetId);
-
-                dataStream.Position = 0;
-                await dataStream.CopyToAsync(stream);
-            }
-            else
+            if (useCompression)
             {
                 Console.WriteLine("compressing");
-                //compress
-                var compdata = ZLibUtils.Compress(dataStream.ToArray());
+                var compressedData = ZLibUtils.Compress(dataStream.ToArray());
 
-                var packetLength = dataLength + compdata.Length;
+                var packetLength = dataLength + compressedData.Length;
 
                 await stream.WriteVarIntAsync(packetLength);
                 await stream.WriteVarIntAsync(dataLength);
 
-                await stream.WriteAsync(compdata, 0, compdata.Length);
+                await stream.WriteAsync(compressedData, 0, compressedData.Length);
             }
+            else
+            {
+                Console.WriteLine("Not compressing");
+                await stream.WriteVarIntAsync(0);
+                await stream.WriteVarIntAsync(0);
+                await stream.WriteVarIntAsync(this.packetId);
+                await dataStream.CopyToAsync(stream);
+            }
+
             stream.semaphore.Release();
         }
 
         public virtual async Task ReadAsync(byte[] data = null)
         {
             //TODO: Please look into this.
-            using var stream = new MinecraftStream(data ?? this.packetData);
+            await using var stream = new MinecraftStream(data ?? this.packetData);
             await PopulateAsync(stream);
         }
 

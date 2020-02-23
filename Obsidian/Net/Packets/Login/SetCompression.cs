@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
@@ -6,7 +7,9 @@ namespace Obsidian.Net.Packets.Login
     {
         public int Threshold { get; }
 
-        public SetCompression(int threshold) : base(0x03, System.Array.Empty<byte>())
+        public bool Enabled => Threshold < 0;
+
+        public SetCompression(int threshold) : base(0x03, Array.Empty<byte>())
         {
             this.Threshold = threshold;
         }
