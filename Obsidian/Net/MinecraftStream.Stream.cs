@@ -27,7 +27,7 @@ namespace Obsidian.Net
 
         private bool Disposed;
 
-        protected Stream BaseStream { get; set; }
+        public Stream BaseStream { get; set; }
 
         public override bool CanRead => BaseStream.CanRead;
 
