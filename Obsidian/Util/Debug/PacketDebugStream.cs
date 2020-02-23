@@ -10,10 +10,8 @@ namespace Obsidian.Util.Debug
         public Stream Target { get; }
 
         //TODO: Dispose of this when done
-        public MemoryStream MemoryStream { get; } = new MemoryStream();
+        public MemoryStream MemoryStream { get; set; } = new MemoryStream();
 
-        public List<PacketDebugMarker> Markers { get; } = new List<PacketDebugMarker>();
-        
         public PacketDebugStream(Stream target)
         {
             Target = target;
@@ -33,21 +31,12 @@ namespace Obsidian.Util.Debug
         public override void Write(byte[] buffer, int offset, int count)
         {
             MemoryStream.Write(buffer, offset, count);
+
+            PacketDebug.Append("", MemoryStream.ToArray());
+            MemoryStream = new MemoryStream();
+            
+            
             Target.Write(buffer, offset, count);
-        }
-
-        private void ExportData()
-        {
-            while (Markers.Any())
-            {
-                var marker = Markers.First();
-                var offset = (int)(marker.StartPosition - this.Position);
-                var buffer = new byte[marker.Length];
-
-                MemoryStream.Read(buffer, offset, buffer.Length);
-                
-                PacketDebug.Append(marker.Name, buffer);
-            }
         }
 
         public override bool CanRead => Target.CanRead;
