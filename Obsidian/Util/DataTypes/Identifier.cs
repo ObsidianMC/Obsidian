@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 
 // https://wiki.vg/Protocol#Identifier
-namespace Obsidian.Entities
+namespace Obsidian.Util.DataTypes
 {
     public class Identifier
     {

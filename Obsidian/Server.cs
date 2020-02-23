@@ -22,6 +22,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Obsidian.Chat;
+using Obsidian.Sounds;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian
 {
@@ -86,7 +88,7 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.world = new Entities.World("", WorldGenerator);
+            this.world = new World.World("", WorldGenerator);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -103,7 +105,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
         public int TotalTicks { get; private set; }
-        public Entities.World world;
+        public World.World world;
 
         private async Task ServerLoop()
         {

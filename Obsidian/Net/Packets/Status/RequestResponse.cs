@@ -1,8 +1,8 @@
-using Newtonsoft.Json;
-using Obsidian.Entities;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Obsidian.Util;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Status
 {
     public class RequestResponse : Packet
     {

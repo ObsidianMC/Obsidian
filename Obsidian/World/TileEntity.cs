@@ -1,5 +1,6 @@
 ﻿using fNbt.Serialization;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.World
 {

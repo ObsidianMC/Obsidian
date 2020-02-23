@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Net.Packets.Play;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Commands
 {
@@ -52,7 +54,7 @@ namespace Obsidian.Commands
         [Command("spawnmob")]
         public async Task SpawnMob()
         {
-            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Util.Transform
+            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Transform
             {
                 X = 0,
 
@@ -63,7 +65,7 @@ namespace Obsidian.Commands
                 Pitch = 0,
 
                 Yaw = 0
-            }, 0, new Util.Velocity(0, 0, 0), Context.Client.Player);
+            }, 0, new Velocity(0, 0, 0), Context.Client.Player);
 
             await Context.Player.SendMessageAsync("Spawning mob?");
         }
@@ -122,7 +124,7 @@ namespace Obsidian.Commands
         public async Task TeleportAsync(double x, double y, double z)
         {
             await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
+            await Context.Client.SendPlayerLookPositionAsync(new Transform(x, y, z), PositionFlags.NONE);
         }
 
         [Command("op")]

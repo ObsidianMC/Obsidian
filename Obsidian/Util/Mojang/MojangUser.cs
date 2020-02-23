@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Net;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Obsidian.Net;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Mojang
 {
     public class MojangUser
     {

@@ -10,6 +10,10 @@ using Obsidian.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Obsidian.Net.Packets.Play;
+using Obsidian.Sounds;
+using Obsidian.Util.DataTypes;
+using Hand = Obsidian.PlayerData.Hand;
 
 namespace Obsidian.Entities
 {
@@ -21,16 +25,16 @@ namespace Obsidian.Entities
 
         public string Uuid3 { get; }
 
-        public Transform PreviousTransform { get; set; }
+        public Util.DataTypes.Transform PreviousTransform { get; set; }
 
         // Properties set by Minecraft (official)
-        public Transform Transform
+        public Util.DataTypes.Transform Transform
         {
             get => _transform;
             set { PreviousTransform = _transform; _transform = value; }
         } // making sure PreviousTransform gets set on update, for comparison in world class.
 
-        private Transform _transform;
+        private Util.DataTypes.Transform _transform;
 
         public PlayerBitMask PlayerBitMask { get; set; }
 
@@ -81,14 +85,14 @@ namespace Obsidian.Entities
 
         public string Username { get; }
 
-        public World World;
+        public World.World World;
 
         internal Player(Guid uuid, string username, Client client)
         {
             this.Uuid = uuid;
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
-            this.Transform = new Transform();
+            this.Transform = new Util.DataTypes.Transform();
             this.Client = client;
 
             this.Uuid3 = $"OfflinePlayer:{username}";
@@ -102,7 +106,7 @@ namespace Obsidian.Entities
             this.OnGround = onGround ?? this.OnGround;
         }
 
-        public void UpdatePosition(Transform pos, bool? onGround = null)
+        public void UpdatePosition(Util.DataTypes.Transform pos, bool? onGround = null)
         {
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;

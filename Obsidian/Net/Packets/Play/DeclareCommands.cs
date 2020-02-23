@@ -1,9 +1,9 @@
-﻿using Obsidian.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Obsidian.Commands;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol#Declare_Commands

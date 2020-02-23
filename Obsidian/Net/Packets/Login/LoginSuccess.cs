@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Login
 {
     public class LoginSuccess : Packet
     {

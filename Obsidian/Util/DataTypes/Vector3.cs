@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.DataTypes
 {
     public struct Vector3 : IEquatable<Vector3>
     {

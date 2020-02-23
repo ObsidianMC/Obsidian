@@ -1,8 +1,8 @@
-﻿using Obsidian.Boss;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Obsidian.Boss;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class BossBar : Packet
     {

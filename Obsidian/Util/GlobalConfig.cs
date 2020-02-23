@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Logging;
 
-namespace Obsidian.Entities
+namespace Obsidian.Util
 {
     public class GlobalConfig
     {

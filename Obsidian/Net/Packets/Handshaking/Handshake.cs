@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
+using Obsidian.Util;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Handshaking
 {
     public class Handshake : Packet
     {

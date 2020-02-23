@@ -1,8 +1,8 @@
-﻿using Obsidian.Entities;
+﻿using System.Threading.Tasks;
 using Obsidian.PlayerData;
-using System.Threading.Tasks;
+using Obsidian.World;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class JoinGame : Packet
     {

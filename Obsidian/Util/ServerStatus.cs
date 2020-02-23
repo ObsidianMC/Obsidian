@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Linq;
 using Newtonsoft.Json;
-using Obsidian.Util;
 
-namespace Obsidian.Entities
+namespace Obsidian.Util
 {
     public class ServerStatus
     {

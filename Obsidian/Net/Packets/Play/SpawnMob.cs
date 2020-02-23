@@ -2,6 +2,7 @@
 using Obsidian.Util;
 using System;
 using System.Threading.Tasks;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {

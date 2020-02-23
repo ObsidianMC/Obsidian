@@ -19,6 +19,10 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.Net.Packets.Handshaking;
+using Obsidian.Net.Packets.Status;
+using Obsidian.Util.DataTypes;
+using Obsidian.Util.Mojang;
 
 namespace Obsidian
 {

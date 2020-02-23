@@ -1,6 +1,6 @@
 // This is the data about one world. It gets saved as level.dat.
 
-namespace Obsidian.Entities
+namespace Obsidian.World
 {
     public class Level
     {

@@ -1,8 +1,8 @@
-﻿using Obsidian.GameState;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Obsidian.GameState;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class ChangeGameState : Packet
     {

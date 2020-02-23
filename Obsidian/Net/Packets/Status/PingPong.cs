@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Status
 {
     public class PingPong : Packet
     {

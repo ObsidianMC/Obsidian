@@ -1,10 +1,9 @@
-﻿using Obsidian.PlayerData.Info;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Obsidian.PlayerData.Info;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PlayerInfo : Packet
     {

@@ -1,9 +1,10 @@
-﻿using Obsidian.Net;
-using Obsidian.Util.Registry;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.BlockData;
+using Obsidian.Net;
+using Obsidian.Util.Registry;
 
-namespace Obsidian.BlockData
+namespace Obsidian.ChunkData
 {
     public interface IBlockStatePalette
     {
