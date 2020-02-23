@@ -21,7 +21,7 @@
             return char.ToUpper(s[0]) + s.Substring(1);
         }
 
-        public static int GetVarIntLength(this int val)
+        public static int GetVarintLength(this int val)
         {
             int amount = 0;
             do
