@@ -14,14 +14,7 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream
     {
-        static MinecraftStream()
-        {
-            StringEncoding = Encoding.UTF8;
-        }
-
-        public static Encoding StringEncoding { get; }
-
-        public Semaphore semaphore;
+        public static Encoding StringEncoding { get; } = Encoding.UTF8;
 
         #region Writing
 

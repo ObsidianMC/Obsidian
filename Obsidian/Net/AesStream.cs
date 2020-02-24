@@ -23,8 +23,6 @@ namespace Obsidian.Net
             DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
             DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
 
-            semaphore = new Semaphore(1, 1);
-
             var oldStream = this.BaseStream;
             this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
         }
@@ -37,8 +35,6 @@ namespace Obsidian.Net
             DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
             DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
 
-            semaphore = new Semaphore(1, 1);
-
             var oldStream = this.BaseStream;
             this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
         }
@@ -50,7 +46,6 @@ namespace Obsidian.Net
 
             DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
             DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
-            semaphore = new Semaphore(1, 1);
 
             var oldStream = this.BaseStream;
             this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);

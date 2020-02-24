@@ -10,19 +10,16 @@ namespace Obsidian.Net
         public MinecraftStream()
         {
             BaseStream = new MemoryStream();
-            semaphore = new Semaphore(1, 1);
         }
 
         public MinecraftStream(Stream stream)
         {
             BaseStream = stream;
-            semaphore = new Semaphore(1, 1);
         }
 
         public MinecraftStream(byte[] data)
         {
             BaseStream = new MemoryStream(data);
-            semaphore = new Semaphore(1, 1);
         }
 
         private bool Disposed;
@@ -80,7 +77,6 @@ namespace Obsidian.Net
             if (disposing)
             {
                 this.BaseStream.Dispose();
-                this.semaphore.Dispose();
             }
 
             this.Disposed = true;
