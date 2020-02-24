@@ -293,11 +293,11 @@ namespace Obsidian
                         {
                             case 0x00:
                                 var status = new ServerStatus(OriginServer);
-                                await new RequestResponse(status).WriteAsync(this.MinecraftStream);
+                                await SendPacket(new RequestResponse(status));
                                 break;
 
                             case 0x01:
-                                await new PingPong(packet.packetData).WriteAsync(this.MinecraftStream);
+                                await SendPacket(new PingPong(packet.packetData));
                                 this.Disconnect();
                                 break;
                         }
@@ -369,7 +369,7 @@ namespace Obsidian
                                     this.Token = PacketCryptography.GetRandomToken();
 
                                     var encryptionRequest = new EncryptionRequest(pubKey, this.Token);
-                                    await encryptionRequest.WriteAsync(this.MinecraftStream);
+                                    await SendPacket(encryptionRequest);
 
                                     break;
                                 }
@@ -461,19 +461,19 @@ namespace Obsidian
 
         private async Task ConnectAsync(Guid uuid)
         {
-            this.QueuePacket(new LoginSuccess(uuid, this.Player.Username));
+            await this.SendPacket(new LoginSuccess(uuid, this.Player.Username));
             await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
 
             this.State = ClientState.Play;
             this.Player.Gamemode = Gamemode.Creative;
 
-            this.QueuePacket(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true));
+            await this.SendPacket(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true));
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            this.QueuePacket(new SpawnPosition(new Position(0, 100, 0)));
+            await this.SendPacket(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            this.QueuePacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
+            await this.SendPacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             //using var stream = new MinecraftStream();
