@@ -95,7 +95,24 @@ namespace Obsidian.Logging
 
         private async Task LogMessageAsync(LogMessage message)
         {
-            await LogMessageAsync(message, GetConsoleColor(message.Level));
+            ConsoleColor color;
+
+            if (message.Level == LogLevel.Debug)
+            {
+                var hash = Prefix.GetHashCode();
+
+                if (hash < 0)
+                    hash *= -1;
+
+                var colorIndex = hash % 15;
+                color = (ConsoleColor) colorIndex;
+            }
+            else
+            {
+                color = GetConsoleColor(message.Level);
+            }
+
+            await LogMessageAsync(message, color);
         }
 
         private static ConsoleColor GetConsoleColor(LogLevel logLevel)
