@@ -476,61 +476,37 @@ namespace Obsidian
             await this.SendPacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
-            //using var stream = new MinecraftStream();
-            //await stream.WriteStringAsync("obsidian");
-            //this.SendPacket(new PluginMessage("minecraft:brand", stream.ToArray()));
-
-
-            await this.Logger.LogDebugAsync("Sent server brand.");
+            //await this.SendServerBrand();
 
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
-            //await this.SendPlayerInfoAsync();
-
-            //await this.SendPlayerListHeaderFooterAsync(string.IsNullOrWhiteSpace(OriginServer.Config.Header) ? null : ChatMessage.Simple(OriginServer.Config.Header),
-            //                                         string.IsNullOrWhiteSpace(OriginServer.Config.Footer) ? null : ChatMessage.Simple(OriginServer.Config.Footer));
-            //await this.Logger.LogDebugAsync("Sent player list decoration");
-
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, 0)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, 0)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(0, -1)));
-            //await this.SendChunkAsync(OriginServer.WorldGenerator.GenerateChunk(new Chunk(-1, -1)));
-
             OriginServer.world.ResendBaseChunks(4, 0, 0, 0, 0, this);
+            await this.SendPlayerInfoAsync();
+            await this.SendPlayerListDecoration();
 
-            //await this.Logger.LogDebugAsync("Sent chunk");
+        }
 
-            /*if (this.OriginServer.Config.OnlineMode)
-            {
-                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid, new Transform
-                {
-                    X = 0,
+        private async Task SendServerBrand()
+        {
+            await using var stream = new MinecraftStream();
+            await stream.WriteStringAsync("obsidian");
+            QueuePacket(new PluginMessage("minecraft:brand", stream.ToArray()));
 
-                    Y = 105,
+            await this.Logger.LogDebugAsync("Sent server brand.");
+        }
 
-                    Z = 0,
+        private async Task SendPlayerListDecoration()
+        {
+            var header = string.IsNullOrWhiteSpace(OriginServer.Config.Header)
+                ? null
+                : ChatMessage.Simple(OriginServer.Config.Header);
+            var footer = string.IsNullOrWhiteSpace(OriginServer.Config.Footer)
+                ? null
+                : ChatMessage.Simple(OriginServer.Config.Footer);
 
-                    Pitch = 1,
-
-                    Yaw = 1
-                });
-            }
-            else
-            {
-                await this.OriginServer.SendNewPlayer(this.PlayerId, this.Player.Uuid3, new Transform
-                {
-                    X = 0,
-
-                    Y = 105,
-
-                    Z = 0,
-
-                    Pitch = 1,
-
-                    Yaw = 1
-                });
-            }*/
+            await this.SendPlayerListHeaderFooterAsync(header, footer);
+            await this.Logger.LogDebugAsync("Sent player list decoration");
         }
 
         public void SendChunk(Chunk chunk)
