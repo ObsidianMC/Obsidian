@@ -89,8 +89,6 @@ namespace Obsidian.Logging
 
             Console.ForegroundColor = color;
             Console.WriteLine(line);
-            
-            await _streamWriter.WriteLineAsync(line);
         }
 
         private async Task LogMessageAsync(LogMessage message)
