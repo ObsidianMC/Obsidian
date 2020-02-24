@@ -72,9 +72,9 @@ namespace Obsidian
             this.Cancellation = new CancellationTokenSource();
             this.State = ClientState.Handshaking;
 
-            DebugStream = new PacketDebugStream(tcp.GetStream());
+            //DebugStream = new PacketDebugStream(tcp.GetStream());
             
-            this.MinecraftStream = new MinecraftStream(DebugStream);
+            this.MinecraftStream = new MinecraftStream(tcp.GetStream());
         }
 
         ~Client()
