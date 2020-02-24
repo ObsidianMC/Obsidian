@@ -30,7 +30,8 @@ namespace Obsidian.Net.Packets
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
             stream.semaphore.WaitOne();
-            using var dataStream = new MinecraftStream();
+            
+            await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
             var packetLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
