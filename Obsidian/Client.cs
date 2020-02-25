@@ -278,6 +278,8 @@ namespace Obsidian
 
         public async Task StartConnectionAsync()
         {
+            Task.Run(ProcessQueue);
+
             while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
             {
                 Packet packet = await this.GetNextPacketAsync();
@@ -431,14 +433,6 @@ namespace Obsidian
                         await PacketHandler.HandlePlayPackets(packet, this);
                         break;
                 }
-
-                if (this.PacketQueue.Count > 0)
-                {
-                    if (this.PacketQueue.TryDequeue(out var outgoingPacket))
-                    {
-                        await SendPacket(outgoingPacket);
-                    }
-                }
             }
 
             await Logger.LogMessageAsync($"Disconnected client");
@@ -450,6 +444,18 @@ namespace Obsidian
 
             if (Tcp.Connected)
                 this.Tcp.Close();
+        }
+
+        private async Task ProcessQueue()
+        {
+            while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
+            {
+                if (this.PacketQueue.TryDequeue(out var packet))
+                {
+                    await SendPacket(packet);
+                    await Logger.LogWarningAsync($"Enqueued packet: {packet} (0x{packet.packetId:X2})");
+                }
+            }
         }
 
         private async Task SetCompression()
