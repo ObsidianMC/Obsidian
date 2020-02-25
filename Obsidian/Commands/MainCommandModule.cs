@@ -24,6 +24,14 @@ namespace Obsidian.Commands
             }
         }
 
+        [Command("forceskins")]
+        [Description("forces skin reload")]
+        public async Task ForceSkinAsync()
+        {
+            await Context.Client.SendPlayerInfoAsync();
+            await Context.Player.SendMessageAsync(ChatMessage.Simple("done"));
+        }
+
         [Command("plugins")]
         [Description("Lists plugins.")]
         public async Task PluginsAsync()

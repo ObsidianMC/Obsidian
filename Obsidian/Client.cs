@@ -76,7 +76,7 @@ namespace Obsidian
 
             Stream parentStream = this.Tcp.GetStream();
 #if DEBUG
-            parentStream = this.DebugStream = new PacketDebugStream(parentStream);
+            //parentStream = this.DebugStream = new PacketDebugStream(parentStream);
 #endif
             this.MinecraftStream = new MinecraftStream(parentStream);
         }
@@ -211,15 +211,23 @@ namespace Obsidian
                 }
 
                 Player player = client.Player;
-
-                list.Add(new PlayerInfoAddAction()
+                var piaa = new PlayerInfoAddAction()
                 {
                     Name = player.Username,
                     Uuid = player.Uuid,
                     Ping = client.Ping,
                     Gamemode = (int)Player.Gamemode,
                     DisplayName = ChatMessage.Simple(player.Username)
-                });
+                };
+
+                if (this.Config.OnlineMode) // GET SKIN IN ONLINE MODE?
+                {
+                    var uuid = player.Uuid.ToString().Replace("-", "");
+                    var skin = await MinecraftAPI.GetUserAndSkin(uuid);
+                    piaa.Properties.AddRange(skin.Properties);
+                }
+
+                list.Add(piaa);
             }
 
             await SendPacket(new PlayerInfo(0, list));

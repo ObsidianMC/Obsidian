@@ -5,6 +5,7 @@ using Obsidian.Util;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Obsidian.Util.Mojang;
+using System;
 
 namespace Obsidian.PlayerData.Info
 {
@@ -31,7 +32,10 @@ namespace Obsidian.PlayerData.Info
             await stream.WriteVarIntAsync(this.Properties.Count);
 
             foreach (SkinProperties props in this.Properties)
+            {
                 await stream.WriteAsync(await props.ToArrayAsync());
+                Console.WriteLine("wrote");
+            }
 
             await stream.WriteVarIntAsync(this.Gamemode);
 
