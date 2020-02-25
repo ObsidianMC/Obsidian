@@ -301,10 +301,7 @@ namespace Obsidian.BouncyCastle
 			{
 				await stream.WriteAsync(data, 0, data.Length);
 			}
-
-			await base.WriteAsync(buffer, offset, count, cancellationToken);
 		}
-
 
 		#endregion
 		#region Unimplemented & Unsupported
@@ -321,10 +318,6 @@ namespace Obsidian.BouncyCastle
 		public sealed override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
 		public sealed override void SetLength(long length) => throw new NotSupportedException();
-
-		public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException("New .NET types aren't supported yet.");
-
-		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotImplementedException("New .NET types aren't supported yet.");
 		#endregion
 	}
 }
