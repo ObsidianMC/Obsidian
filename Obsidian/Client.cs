@@ -6,24 +6,26 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
+using Obsidian.Util.Debug;
+using Obsidian.Util.Mojang;
 using Obsidian.World;
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Net.Packets.Handshaking;
-using Obsidian.Net.Packets.Status;
-using Obsidian.Util.DataTypes;
-using Obsidian.Util.Debug;
-using Obsidian.Util.Mojang;
 
 namespace Obsidian
 {
@@ -72,9 +74,11 @@ namespace Obsidian
             this.Cancellation = new CancellationTokenSource();
             this.State = ClientState.Handshaking;
 
-            //DebugStream = new PacketDebugStream(tcp.GetStream());
-            
-            this.MinecraftStream = new MinecraftStream(tcp.GetStream());
+            Stream parentStream = this.Tcp.GetStream();
+#if DEBUG
+            parentStream = this.DebugStream = new PacketDebugStream(parentStream);
+#endif
+            this.MinecraftStream = new MinecraftStream(parentStream);
         }
 
         ~Client()
