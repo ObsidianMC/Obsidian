@@ -84,7 +84,7 @@ namespace Obsidian.Commands
             int oldchunkz = world.transformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
             int chunkz = world.transformToChunk(c.Player.Transform?.Z ?? 0);
 
-            world.ResendBaseChunks(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+            await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
         }
 
         [Command("echo")]

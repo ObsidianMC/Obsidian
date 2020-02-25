@@ -191,7 +191,7 @@ namespace Obsidian
                 packet.AddNode(node);
             }
 
-            this.QueuePacket(packet);
+            await this.QueuePacketAsync(packet);
             await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
         }
 
@@ -497,8 +497,7 @@ namespace Obsidian
         {
             await using var stream = new MinecraftStream();
             await stream.WriteStringAsync("obsidian");
-            QueuePacket(new PluginMessage("minecraft:brand", stream.ToArray()));
-
+            await QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
             await this.Logger.LogDebugAsync("Sent server brand.");
         }
 
@@ -515,7 +514,7 @@ namespace Obsidian
             await this.Logger.LogDebugAsync("Sent player list decoration");
         }
 
-        public void SendChunk(Chunk chunk)
+        public async Task SendChunkAsync(Chunk chunk)
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
@@ -542,14 +541,14 @@ namespace Obsidian
                 chunkData.Biomes.Add(29); //TODO: Add proper biomes
             }
 
-            this.QueuePacket(chunkData);
+            await this.QueuePacketAsync(chunkData);
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
-        internal void QueuePacket(Packet packet)
+        internal async Task QueuePacketAsync(Packet packet)
         {
             this.PacketQueue.Enqueue(packet);
-            Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.packetId:X2})");
+            await Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.packetId:X2})");
         }
 
         public async Task SendPacket(Packet packet)

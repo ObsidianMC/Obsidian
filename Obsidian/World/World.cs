@@ -56,7 +56,7 @@ namespace Obsidian.World
             if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
             {
                 // This is a teleport!!!1 Send full new chunk data.
-                ResendBaseChunks(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                await ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
                 return;
             }
 
@@ -67,7 +67,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx - dist), i);
 
-                    c.SendChunk(getChunk((chunkx + dist), i, c));
+                    await c.SendChunkAsync(getChunk((chunkx + dist), i, c));
                 }
             }
 
@@ -78,7 +78,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                    c.SendChunk(getChunk((chunkx - dist), i, c));
+                    await c.SendChunkAsync(getChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -89,7 +89,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
 
-                    c.SendChunk(getChunk(i, (chunkz + dist), c));
+                    await c.SendChunkAsync(getChunk(i, (chunkz + dist), c));
                 }
             }
 
@@ -100,12 +100,12 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
 
-                    c.SendChunk(getChunk(i, (chunkz - dist), c));
+                    await c.SendChunkAsync(getChunk(i, (chunkz - dist), c));
                 }
             }
         }
 
-        public void ResendBaseChunks(int dist, int oldx, int oldz, int x, int z, Client c)
+        public async Task ResendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
         {
             // unload old chunks
             for (int cx = oldx - dist; cx < oldx + dist; cx++)
@@ -121,11 +121,11 @@ namespace Obsidian.World
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    c.SendChunk(getChunk(cx, cz, c));
+                    await c.SendChunkAsync(getChunk(cx, cz, c));
                 }
             }
 
-            c.Logger.LogDebugAsync($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+            await c.Logger.LogDebugAsync($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
         private Chunk getChunk(int x, int z, Client c)
