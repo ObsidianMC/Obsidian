@@ -74,7 +74,7 @@ namespace Obsidian
             this.Cancellation = new CancellationTokenSource();
             this.State = ClientState.Handshaking;
 
-            var parentStream = this.Tcp.GetStream();
+            Stream parentStream = this.Tcp.GetStream();
 #if DEBUG
             parentStream = this.DebugStream = new PacketDebugStream(parentStream);
 #endif
