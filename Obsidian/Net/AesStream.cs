@@ -55,70 +55,29 @@ namespace Obsidian.Net
         public override int ReadByte()
         {
             int value = BaseStream.ReadByte();
-            if (value == -1) return value;
+
+            if (value == -1)
+                return value;
 
             return value;
-            //return DecryptCipher.ProcessByte((byte)value)[0];
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            int length = BaseStream.Read(buffer, offset, count);
-            //var decrypted = DecryptCipher.ProcessBytes(buffer, offset, length);
+        public override int Read(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
-            //Array.Copy(decrypted, 0, buffer, offset, decrypted.Length);
-            return length;
-        }
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => await this.BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
-        {
-            int length = await BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
-            //var decrypted = DecryptCipher.ProcessBytes(buffer, offset, length);
+        public override async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
 
-            //Array.Copy(decrypted, 0, buffer, offset, decrypted.Length);
-            return length;
-        }
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-        public override async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default)
-        {
-            int length = await BaseStream.ReadAsync(buffer, cancellationToken);
-            //var decrypted = DecryptCipher.ProcessBytes(buffer, 0, length);
+        public override async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, cancellationToken);
 
-            //Array.Copy(decrypted, 0, buffer, 0, decrypted.Length);
-            return length;
-        }
+        public override void Write(byte[] buffer, int offset, int count) => BaseStream.Write(buffer, offset, count);
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
-        {
-            //var encrypted = EncryptCipher.ProcessBytes(buffer, offset, count);
-            await BaseStream.WriteAsync(buffer, offset, count, cancellationToken);
-        }
+        public override long Seek(long offset, SeekOrigin origin) => BaseStream.Seek(offset, origin);
 
-        public override async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
-        {
-            //var encrypted = EncryptCipher.ProcessBytes(buffer, 0, buffer.Length);
-            await BaseStream.WriteAsync(buffer, cancellationToken);
-        }
+        public override void SetLength(long value) => BaseStream.SetLength(value);
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            // var encrypted = EncryptCipher.ProcessBytes(buffer, offset, count);
-            BaseStream.Write(buffer, offset, count);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return BaseStream.Seek(offset, origin);
-        }
-
-        public override void SetLength(long value)
-        {
-            BaseStream.SetLength(value);
-        }
-
-        public override void Close()
-        {
-            BaseStream.Close();
-        }
+        public override void Close() => BaseStream.Close();
     }
 }
