@@ -1,6 +1,7 @@
 using Obsidian.Util;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -22,6 +23,8 @@ namespace Obsidian.Net.Packets
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
+            await stream.Lock.WaitAsync();
+
             await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
@@ -32,10 +35,14 @@ namespace Obsidian.Net.Packets
 
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
+
+            stream.Lock.Release();
         }
 
         public virtual async Task WriteCompressedAsync(MinecraftStream stream, int threshold = 0)
         {
+            await stream.Lock.WaitAsync();
+
             await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
@@ -64,6 +71,8 @@ namespace Obsidian.Net.Packets
                 await stream.WriteVarIntAsync(this.packetId);
                 await dataStream.CopyToAsync(stream);
             }
+
+            stream.Lock.Release();
         }
 
         public virtual async Task ReadAsync(byte[] data = null)

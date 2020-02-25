@@ -77,6 +77,7 @@ namespace Obsidian.Net
             if (disposing)
             {
                 this.BaseStream.Dispose();
+                this.Lock.Dispose();
             }
 
             this.Disposed = true;

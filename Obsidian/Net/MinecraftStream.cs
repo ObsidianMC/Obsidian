@@ -1,20 +1,24 @@
 ﻿using fNbt;
+
 using Newtonsoft.Json;
+
 using Obsidian.Chat;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
+
 using System;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Util.DataTypes;
-using Obsidian.Util.Debug;
 
 namespace Obsidian.Net
 {
     public partial class MinecraftStream
     {
         public static Encoding StringEncoding { get; } = Encoding.UTF8;
+
+        public readonly SemaphoreSlim Lock = new SemaphoreSlim(1, 1);
 
         #region Writing
 
