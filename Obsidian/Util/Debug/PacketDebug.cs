@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Obsidian.Logging;
 
@@ -10,7 +11,6 @@ namespace Obsidian.Util.Debug
 
         public static void Append(string description, byte[] newBytes)
         {
-            var stack = new StackTrace();
             var builder = new StringBuilder();
             builder.AppendLine("====================");
             
@@ -21,11 +21,22 @@ namespace Obsidian.Util.Debug
             builder.AppendLine(ToString(newBytes));
             
             builder.AppendLine("STACK --------------");
-            builder.AppendLine(stack.ToString());
+            builder.AppendLine(GetStack());
             
             builder.AppendLine("====================");
 
             Logger.LogDebugAsync(builder.ToString());
+        }
+
+        private static string GetStack()
+        {
+            var stack = new StackTrace();
+
+            return string.Join("\n",
+                               stack.ToString()
+                                    .Split('\n')
+                                    .Skip(2)
+                                    .Where((line) => !line.StartsWith("   at System.")));
         }
 
         private static string ToString(byte[] bytes)
