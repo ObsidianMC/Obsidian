@@ -74,7 +74,7 @@ namespace Obsidian
             this.Cancellation = new CancellationTokenSource();
             this.State = ClientState.Handshaking;
 
-            Stream parentStream = this.Tcp.GetStream();
+            var parentStream = this.Tcp.GetStream();
 #if DEBUG
             parentStream = this.DebugStream = new PacketDebugStream(parentStream);
 #endif
@@ -419,7 +419,7 @@ namespace Obsidian
                                 }
 
                                 this.EncryptionEnabled = true;
-                                this.MinecraftStream = new AesStream(this.Tcp.GetStream(), this.SharedKey);
+                                this.MinecraftStream = new AesStream((Stream)this.DebugStream ?? (Stream)this.Tcp.GetStream(), this.SharedKey);
 
                                 //await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
