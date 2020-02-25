@@ -487,10 +487,10 @@ namespace Obsidian
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
-            OriginServer.world.ResendBaseChunks(4, 0, 0, 0, 0, this);
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
+            //OriginServer.world.ResendBaseChunks(4, 0, 0, 0, 0, this);
         }
 
         private async Task SendServerBrand()
