@@ -102,8 +102,11 @@ namespace Obsidian.Logging
                 if (hash < 0)
                     hash *= -1;
 
-                var colorIndex = hash % 15;
-                color = (ConsoleColor) colorIndex;
+                var colorIndex = (hash + 1) % 14;
+                color = (ConsoleColor)colorIndex;
+
+                if (color == Console.BackgroundColor)
+                    color = ConsoleColor.White;
             }
             else
             {
