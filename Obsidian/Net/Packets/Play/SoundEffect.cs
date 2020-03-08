@@ -28,9 +28,9 @@ namespace Obsidian.Net.Packets.Play
         {
             await stream.WriteVarIntAsync(this.SoundId);
             await stream.WriteVarIntAsync((int)this.Category);
-            await stream.WriteIntAsync((int)this.Location.X);
-            await stream.WriteIntAsync((int)this.Location.Y);
-            await stream.WriteIntAsync((int)this.Location.Z);
+            await stream.WriteIntAsync((int)(this.Location.X / 32.0D));
+            await stream.WriteIntAsync((int)(this.Location.Y / 32.0D));
+            await stream.WriteIntAsync((int)(this.Location.Z / 32.0D));
             await stream.WriteFloatAsync(this.Volume);
             await stream.WriteFloatAsync(this.Pitch);
         }
