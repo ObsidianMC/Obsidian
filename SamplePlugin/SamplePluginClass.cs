@@ -6,14 +6,23 @@ using Obsidian.Plugins;
 using Qmmands;
 
 using System.Threading.Tasks;
+using Obsidian.Plugins.Obsidian;
 
 namespace SamplePlugin
 {
-    public class SamplePluginClass : IPluginClass
+    public class SamplePluginClass : IObsidianPluginClass
     {
         private Server server;
 
-        public Task<PluginInfo> InitializeAsync(Server server)
+        public PluginInfo Info => new PluginInfo(
+            "SamplePlugin",
+            "Obsidian Team",
+            "0.1",
+            "A Sample Plugin! <3",
+            "https://github.com/NaamloosDT/Obsidian"
+        );
+        
+        public Task InitializeAsync(Server server)
         {
             this.server = server;
 
@@ -22,16 +31,7 @@ namespace SamplePlugin
             server.Events.PlayerJoin += OnPlayerJoin;
 
             server.Register(new DickWorldGenerator());
-
-            return Task.FromResult(new PluginInfo(
-                "SamplePlugin",
-                "Obsidian Team",
-                "0.1",
-                "A Sample Plugin! <3",
-                "https://github.com/NaamloosDT/Obsidian"
-            ));
         }
-
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
             e.Server.Broadcast($"Player join event from sample plugin! {e.Joined.Username}");

@@ -22,6 +22,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Obsidian.Chat;
+using Obsidian.Plugins.Obsidian;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
 
@@ -209,30 +210,30 @@ namespace Obsidian
             _placed.Enqueue(pbp);
         }
 
-        public T LoadConfig<T>(IPluginClass plugin)
+        public T LoadConfig<T>(Plugin plugin)
         {
-            string path = GetPath(plugin);
+            var path = GetConfigPath(plugin);
 
             if (!System.IO.File.Exists(path))
-            {
                 SaveConfig(plugin, default(T));
-            }
 
-            string json = System.IO.File.ReadAllText(path);
+            var json = System.IO.File.ReadAllText(path);
             return JsonConvert.DeserializeObject<T>(json);
         }
 
-        public void SaveConfig(IPluginClass plugin, object config)
+        public void SaveConfig(Plugin plugin, object config)
         {
-            string path = GetPath(plugin);
-            string json = JsonConvert.SerializeObject(config);
+            var path = GetConfigPath(plugin);
+            var json = JsonConvert.SerializeObject(config);
             System.IO.File.WriteAllText(path, json);
         }
 
-        private string GetPath(IPluginClass plugin)
+        private string GetConfigPath(Plugin plugin)
         {
-            string path = plugin.GetType().Assembly.Location;
-            return System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path), System.IO.Path.GetFileNameWithoutExtension(path) + ".json");
+            var path = plugin.Path;
+            var folder = System.IO.Path.GetDirectoryName(path);
+            var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+            return System.IO.Path.Combine(folder, fileName) + ".json";
         }
 
         public async Task SendNewPlayer(int id, Guid uuid, Transform position)
