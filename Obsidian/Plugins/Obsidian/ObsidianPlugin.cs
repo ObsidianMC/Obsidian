@@ -11,8 +11,6 @@ namespace Obsidian.Plugins.Obsidian
             this.Class = @class;
         }
 
-        public override void Load(Server server) => LoadAsync(server).GetAwaiter().GetResult();
-
         public override async Task LoadAsync(Server server) => await Class.InitializeAsync(server);
     }
 }

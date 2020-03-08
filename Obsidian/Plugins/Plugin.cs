@@ -31,8 +31,6 @@ namespace Obsidian.Plugins
             this.Info = info;
         }
 
-        public abstract void Load(Server server);
-
         public abstract Task LoadAsync(Server server);
     }
 }
