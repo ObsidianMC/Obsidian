@@ -28,13 +28,7 @@ namespace Obsidian.Entities
         public Util.DataTypes.Transform PreviousTransform { get; set; }
 
         // Properties set by Minecraft (official)
-        public Util.DataTypes.Transform Transform
-        {
-            get => _transform;
-            set { PreviousTransform = _transform; _transform = value; }
-        } // making sure PreviousTransform gets set on update, for comparison in world class.
-
-        private Util.DataTypes.Transform _transform;
+        public Util.DataTypes.Transform Transform { get; set; }
 
         public PlayerBitMask PlayerBitMask { get; set; }
 
@@ -100,6 +94,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(Position pos, bool? onGround = null)
         {
+            copyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
@@ -108,6 +103,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(Util.DataTypes.Transform pos, bool? onGround = null)
         {
+            copyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
@@ -116,6 +112,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(double x, double y, double z, bool? onGround = null)
         {
+            copyTransform();
             this.Transform.X = x;
             this.Transform.Y = y;
             this.Transform.Z = z;
@@ -124,9 +121,20 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(float pitch, float yaw, bool? onGround = null)
         {
+            copyTransform();
             this.Transform.Pitch = pitch;
             this.Transform.Yaw = yaw;
             this.OnGround = onGround ?? this.OnGround;
+        }
+
+        private void copyTransform()
+        {
+            this.PreviousTransform.X = this.Transform.X;
+            this.PreviousTransform.Y = this.Transform.Y;
+            this.PreviousTransform.Z = this.Transform.Z;
+            this.PreviousTransform.Yaw = this.Transform.Yaw;
+            this.PreviousTransform.Pitch = this.Transform.Pitch;
+            this.PreviousTransform.Position = this.Transform.Position;
         }
 
         public async Task SendMessageAsync(string message, byte position = 0)

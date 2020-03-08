@@ -45,7 +45,7 @@ namespace Obsidian.World
 
         public async Task UpdateChunksForClient(Client c)
         {
-            int dist = 1;
+            int dist = c.ClientSettings.ViewDistance;
 
             int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? 0);
             int chunkx = transformToChunk(c.Player.Transform?.X ?? 0);
@@ -53,7 +53,7 @@ namespace Obsidian.World
             int oldchunkz = transformToChunk(c.Player.PreviousTransform?.Z ?? 0);
             int chunkz = transformToChunk(c.Player.Transform?.Z ?? 0);
 
-            if (Math.Abs(chunkz - oldchunkz) > 4 || Math.Abs(chunkx - oldchunkx) > 4)
+            if (Math.Abs(chunkz - oldchunkz) > dist || Math.Abs(chunkx - oldchunkx) > dist)
             {
                 // This is a teleport!!!1 Send full new chunk data.
                 await ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
@@ -108,13 +108,13 @@ namespace Obsidian.World
         public async Task ResendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
         {
             // unload old chunks
-            for (int cx = oldx - dist; cx < oldx + dist; cx++)
-            {
-                for (int cz = oldz - dist; cz < oldz + dist; cz++)
-                {
-                    //await c.UnloadChunkAsync(cx, cz);
-                }
-            }
+            //for (int cx = oldx - dist; cx < oldx + dist; cx++)
+            //{
+            //    for (int cz = oldz - dist; cz < oldz + dist; cz++)
+            //    {
+            //        await c.UnloadChunkAsync(cx, cz);
+            //    }
+            //}
 
             // load new chunks
             for (int cx = (x - dist); cx < (x + dist); cx++)

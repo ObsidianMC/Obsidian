@@ -494,7 +494,7 @@ namespace Obsidian
             await this.SendPacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
-            //await this.SendServerBrand();
+            await this.SendServerBrand();
 
             await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
@@ -502,7 +502,7 @@ namespace Obsidian
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            //OriginServer.world.ResendBaseChunks(4, 0, 0, 0, 0, this);
+            await OriginServer.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         private async Task SendServerBrand()
@@ -554,6 +554,11 @@ namespace Obsidian
             }
 
             await this.QueuePacketAsync(chunkData);
+        }
+
+        public async Task UnloadChunkAsync(int x, int z)
+        {
+            await this.QueuePacketAsync(new UnloadChunk(x, z));
         }
 
         internal void Disconnect() => this.Cancellation.Cancel();
