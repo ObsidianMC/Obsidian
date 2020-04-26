@@ -42,41 +42,40 @@ namespace Obsidian.Net.Packets.Play
 
             int availableSections = 0;
 
-            byte[] data;
             await using var dataStream = new MinecraftStream();
-                
-                var chunkSectionY = 0;
-                foreach (var section in Data)
-                {
-                    if (section == null)
-                        throw new InvalidOperationException();
 
-                    if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0)
-                    {
-                        availableSections |= 1 << chunkSectionY;
-
-                        await section.WriteAsync(dataStream);
-                    }
-                    chunkSectionY++;
-                }
-
-                if (chunkSectionY != 16)
+            var chunkSectionY = 0;
+            foreach (var section in Data)
+            {
+                if (section == null)
                     throw new InvalidOperationException();
 
-                if (fullChunk)
+                if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0)
                 {
-                    if (Biomes.Count != 16 * 16)
-                        throw new InvalidOperationException();
+                    availableSections |= 1 << chunkSectionY;
 
-                    foreach (int biomeId in Biomes)
-                    {
-                        await dataStream.WriteIntAsync(biomeId);
-                    }
+                    await section.WriteAsync(dataStream);
                 }
+                chunkSectionY++;
+            }
+
+            if (chunkSectionY != 16)
+                throw new InvalidOperationException();
+
+            if (fullChunk)
+            {
+                if (Biomes.Count != 16 * 16)
+                    throw new InvalidOperationException();
+
+                foreach (int biomeId in Biomes)
+                {
+                    await dataStream.WriteIntAsync(biomeId);
+                }
+            }
             await stream.WriteVarIntAsync(availableSections);
 
             await stream.WriteVarIntAsync((int)dataStream.Length);
-            dataStream.Position=0;
+            dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
 
             await stream.WriteVarIntAsync(BlockEntities.Count);

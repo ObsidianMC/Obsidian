@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Obsidian.Logging;
 
 namespace Obsidian.Util.Debug
@@ -9,7 +10,7 @@ namespace Obsidian.Util.Debug
     {
         private static AsyncLogger Logger { get; } = new AsyncLogger("Packet Debugger", LogLevel.Debug, "packet-debug.log");
 
-        public static void Append(string description, byte[] newBytes)
+        public static async Task AppendAsync(string description, byte[] newBytes)
         {
             var builder = new StringBuilder();
             builder.AppendLine("====================");
@@ -25,7 +26,7 @@ namespace Obsidian.Util.Debug
             
             builder.AppendLine("====================");
 
-            Logger.LogDebugAsync(builder.ToString());
+            await Logger.LogDebugAsync(builder.ToString());
         }
 
         private static string GetStack()

@@ -1,14 +1,18 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.BlockData;
+using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
+using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Plugins;
+using Obsidian.Sounds;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
 using Obsidian.World;
 using Obsidian.World.Generators;
@@ -21,10 +25,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Chat;
-using Obsidian.Plugins.Obsidian;
-using Obsidian.Sounds;
-using Obsidian.Util.DataTypes;
 
 namespace Obsidian
 {
@@ -39,6 +39,7 @@ namespace Obsidian
         private readonly ConcurrentQueue<QueueChat> _chatmessages;
         private readonly ConcurrentQueue<PlayerDigging> _diggers; // PETALUL this was unintended
         private readonly ConcurrentQueue<PlayerBlockPlacement> _placed;
+        private ConcurrentHashSet<Client> _clients { get; }
 
         private readonly CancellationTokenSource _cts;
         private readonly TcpListener _tcpListener;
@@ -49,9 +50,20 @@ namespace Obsidian
 
         public OperatorList Operators;
 
+        public ConcurrentHashSet<Player> OnlinePlayers { get; } = new ConcurrentHashSet<Player>();
+
         public List<WorldGenerator> WorldGenerators { get; } = new List<WorldGenerator>();
 
         public WorldGenerator WorldGenerator { get; private set; }
+
+        public CommandService Commands { get; }
+        public Config Config { get; }
+        public AsyncLogger Logger { get; }
+        public int Id { get; private set; }
+        public string Version { get; }
+        public int Port { get; }
+        public int TotalTicks { get; private set; }
+        public World.World world;
 
         public string Path => System.IO.Path.GetFullPath(Id.ToString());
 
@@ -63,7 +75,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}",  Program.Config.LogLevel, System.IO.Path.Combine(Path, "latest.log"));
+            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}", Program.Config.LogLevel, System.IO.Path.Combine(Path, "latest.log"));
 
             this.Port = config.Port;
             this.Version = version;
@@ -71,7 +83,7 @@ namespace Obsidian
 
             this._tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
-            this.Clients = new ConcurrentHashSet<Client>();
+            this._clients = new ConcurrentHashSet<Client>();
 
             this._cts = new CancellationTokenSource();
             this._chatmessages = new ConcurrentQueue<QueueChat>();
@@ -95,19 +107,6 @@ namespace Obsidian
             this.Events.PlayerJoin += this.Events_PlayerJoin;
         }
 
-        public ConcurrentHashSet<Client> Clients { get; }
-
-        public List<Player> OnlinePlayers => Clients.Where(c => c.Playing).Select(c => c.Player).ToList();
-
-        public CommandService Commands { get; }
-        public Config Config { get; }
-        public AsyncLogger Logger { get; }
-        public int Id { get; private set; }
-        public string Version { get; }
-        public int Port { get; }
-        public int TotalTicks { get; private set; }
-        public World.World world;
-
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
@@ -116,50 +115,46 @@ namespace Obsidian
                 await Task.Delay(50);
 
                 TotalTicks++;
-                await Events.InvokeServerTick();
+                await Events.InvokeServerTickAsync();
 
                 keepaliveticks++;
                 if (keepaliveticks > 50)
                 {
                     var keepaliveid = DateTime.Now.Millisecond;
 
-                    Task t; // remove nasty squigglies
-                    foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-                        t = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
+                    foreach (var clnt in this._clients.Where(x => x.State == ClientState.Play).ToList())
+                        _ = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
                     keepaliveticks = 0;
                 }
 
                 if (_chatmessages.Count > 0)
                 {
-                    foreach (var players in this.OnlinePlayers)
+                    if (_chatmessages.TryDequeue(out QueueChat msg))
                     {
-                        Task t; // Remove dem squigglies lines
-                        if (_chatmessages.TryDequeue(out QueueChat msg))
-                            t = Task.Run(async () => { await players.SendMessageAsync(msg.Message, msg.Position); });
+                        foreach (var player in this.OnlinePlayers)
+                            _ = Task.Run(async () => { await player.SendMessageAsync(msg.Message, msg.Position); });
                     }
-                    //_chatmessages.TryDequeue(out QueueChat chat);
                 }
 
                 if (_diggers.Count > 0)
                 {
-                    if (_diggers.TryPeek(out PlayerDigging d))
+                    if (_diggers.TryDequeue(out PlayerDigging d))
                     {
-                        foreach (var clnt in Clients)
+                        foreach (var clnt in _clients)
                         {
                             var b = new BlockChange(d.Location, BlockRegistry.G(Materials.Air).Id);
 
                             await clnt.SendBlockChangeAsync(b);
                         }
                     }
-                    _diggers.TryDequeue(out PlayerDigging dd);
                 }
 
                 // TODO use blockface values to determine where block should be placed
                 if (_placed.Count > 0)
                 {
-                    if (_placed.TryPeek(out PlayerBlockPlacement pbp))
+                    if (_placed.TryDequeue(out PlayerBlockPlacement pbp))
                     {
-                        foreach (var clnt in Clients)
+                        foreach (var clnt in _clients)
                         {
                             var location = pbp.Location;
 
@@ -167,8 +162,6 @@ namespace Obsidian
                             await clnt.SendBlockChangeAsync(b);
                         }
                     }
-
-                    _placed.TryDequeue(out PlayerBlockPlacement pbpn);
                 }
 
                 if (Config.Baah.HasValue)
@@ -180,25 +173,23 @@ namespace Obsidian
                     }
                 }
 
-                foreach (var client in Clients)
+                foreach (var client in _clients)
                 {
-                    if (!client.Tcp.Connected)
+                    if (!client._tcp.Connected)
                     {
-                        this.Clients.TryRemove(client);
+                        this._clients.TryRemove(client);
 
                         continue;
                     }
 
+                    //?
                     if (client.State == ClientState.Play)
-                    {
-                        world.UpdateChunksForClient(client);
-                    }
-
+                        await world.UpdateChunksForClientAsync(client);
                 }
             }
         }
 
-        public bool CheckPlayerOnline(string username) => this.Clients.Any(x => x.Player != null && x.Player.Username == username);
+        public bool CheckPlayerOnline(string username) => this._clients.Any(x => x.Player != null && x.Player.Username == username);
 
         public void EnqueueDigging(PlayerDigging d)
         {
@@ -236,43 +227,6 @@ namespace Obsidian
             return System.IO.Path.Combine(folder, fileName) + ".json";
         }
 
-        public async Task SendNewPlayer(int id, Guid uuid, Transform position)
-        {
-            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-            {
-                if (clnt.PlayerId == id)
-                    continue;
-
-                await clnt.SendEntity(new EntityPacket { Id = id });
-                await clnt.SendPlayerAsync(id, uuid, position);
-            }
-        }
-
-        public async Task SendNewPlayer(int id, string uuid, Transform position)
-        {
-            foreach (var clnt in this.Clients.Where(x => x.State == ClientState.Play).ToList())
-            {
-                if (clnt.PlayerId == id)
-                    continue;
-                await clnt.SendEntity(new EntityPacket { Id = id });
-                await clnt.SendPlayerAsync(id, uuid, position);
-            }
-        }
-
-        public async Task AddPlayer(int id)
-        {
-            foreach (var clnt in this.Clients.Where(x => x.PlayerId != id))
-            {
-                if (clnt.PlayerId == id)
-                {
-                    await Logger.LogErrorAsync($"You're not suppose to get this packet :( {id}");
-                    continue;
-                }
-
-                await clnt.SendPlayerInfoAsync();
-            }
-        }
-
         public async Task ParseMessage(string message, Client source, byte position = 0)
         {
             if (!CommandUtilities.HasPrefix(message, '/', out string output))
@@ -290,10 +244,10 @@ namespace Obsidian
             }
         }
 
-        public void Broadcast(string message, byte position = 0)
+        public async Task BroadcastAsync(string message, byte position = 0)
         {
             _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
-            Logger.LogMessageAsync(message);
+            await Logger.LogMessageAsync(message);
         }
 
         /// <summary>
@@ -320,7 +274,7 @@ namespace Obsidian
             Operators.Initialize();
 
             await Logger.LogMessageAsync("Registering default entities");
-            RegisterDefault();
+            await RegisterDefaultAsync();
 
             await Logger.LogMessageAsync($"Loading and Initializing plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
@@ -355,15 +309,26 @@ namespace Obsidian
 
                 await Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint.ToString()}");
 
-                int newplayerid = Math.Max(0, this.Clients.Count);
+                int newplayerid = Math.Max(0, this._clients.Count);
 
                 var clnt = new Client(tcp, this.Config, newplayerid, this);
-                Clients.Add(clnt);
+                _clients.Add(clnt);
 
                 await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
             }
-            
+
             await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
+        }
+
+        public async Task DisconnectIfConnected(Player player, ChatMessage reason = null)
+        {
+            if (this.OnlinePlayers.Any(x => x.Username == player.Username))
+            {
+                if (reason is null)
+                    reason = ChatMessage.Simple("Disconnected");
+
+                await player.DisconnectAsync(reason);
+            }
         }
 
         private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
@@ -382,10 +347,10 @@ namespace Obsidian
         /// <summary>
         /// Registers the "obsidian-vanilla" entities and objects
         /// </summary>
-        private void RegisterDefault()
+        private async Task RegisterDefaultAsync()
         {
-            Register(new SuperflatGenerator());
-            Register(new TestBlocksGenerator());
+            await RegisterAsync(new SuperflatGenerator());
+            await RegisterAsync(new TestBlocksGenerator());
         }
 
         /// <summary>
@@ -393,17 +358,17 @@ namespace Obsidian
         /// </summary>
         /// <param name="input">A compatible entry</param>
         /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
-        public void Register(params object[] input)
+        public async Task RegisterAsync(params object[] input)
         {
             foreach (object item in input)
             {
                 switch (item)
                 {
                     default:
-                        throw new Exception($"Input ({item.GetType().ToString()}) can't be handled by RegisterAsync.");
+                        throw new Exception($"Input ({item.GetType()}) can't be handled by RegisterAsync.");
 
                     case WorldGenerator generator:
-                        Logger.LogDebugAsync($"Registering {generator.Id}...");
+                        await Logger.LogDebugAsync($"Registering {generator.Id}...");
                         WorldGenerators.Add(generator);
                         break;
                 }
@@ -411,18 +376,22 @@ namespace Obsidian
         }
 
         #region events
-        private Task Events_PlayerLeave(Events.EventArgs.PlayerLeaveEventArgs e)
+        private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
-            this.Broadcast(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
+            //TODO same here :)
+            foreach (var other in this.OnlinePlayers.Except(new List<Player> { e.WhoLeft }))
+                await other._client.RemovePlayerFromListAsync(e.WhoLeft);
 
-            return Task.CompletedTask;
+            await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
         }
 
-        private Task Events_PlayerJoin(Events.EventArgs.PlayerJoinEventArgs e)
+        private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
         {
-            this.Broadcast(string.Format(this.Config.JoinMessage, e.Joined.Username));
-
-            return Task.CompletedTask;
+            //TODO do this from somewhere else
+            foreach (var other in this.OnlinePlayers.Except(new List<Player> { e.Joined }))
+                await other._client.AddPlayerToListAsync(e.Joined);
+            
+            await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
         }
 
         #endregion

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Newtonsoft.Json;
+using Obsidian.Entities;
 
 namespace Obsidian.Util
 {
@@ -75,13 +76,15 @@ namespace Obsidian.Util
             Online = players.Count();
             Sample = new object[Online];
 
-            for (int i = 0; i < Online; i++)
+            var count = 0;
+            foreach (Player player in players)
             {
-                Sample[i] = new
+                Sample[count] = new
                 {
-                    name = players[i].Username,
-                    id = players[i].Uuid
+                    name = player.Username,
+                    id = player.Uuid
                 };
+                count++;
             }
         }
     }

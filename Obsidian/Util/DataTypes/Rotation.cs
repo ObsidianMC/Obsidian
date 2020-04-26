@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Entities.Transform
+﻿namespace Obsidian.Util.DataTypes
 {
     public struct Rotation
     {

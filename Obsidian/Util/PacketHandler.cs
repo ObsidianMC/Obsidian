@@ -60,11 +60,11 @@ namespace Obsidian.Util
 
             return new Packet(packetId, packetData);
         }
-        
+
 
         public static async Task HandlePlayPackets(Packet packet, Client client)
         {
-            Server server = client.OriginServer;
+            Server server = client.Server;
             switch (packet.packetId)
             {
                 case 0x00:
@@ -83,7 +83,6 @@ namespace Obsidian.Util
                     // Incoming chat message
                     var message = new IncomingChatMessage(packet.packetData);
                     await message.ReadAsync(packet.packetData);
-                    await Logger.LogDebugAsync($"received chat: {message.Message}");
 
                     await server.ParseMessage(message.Message, client);
                     break;
@@ -147,11 +146,11 @@ namespace Obsidian.Util
                 case 0x0E:
                     // Keep Alive (serverbound)
                     var keepalive = new KeepAlive(packet.packetData);
-                await keepalive.ReadAsync(packet.packetData);
+                    await keepalive.ReadAsync(packet.packetData);
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
-                        $"{keepalive.KeepAliveId} previously missed {client.MissedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
+                        $"{keepalive.KeepAliveId} previously missed {client._missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
-                    client.MissedKeepalives = 0;
+                    client._missedKeepalives = 0;
                     break;
 
                 case 0x0F: // Player

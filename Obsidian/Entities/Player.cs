@@ -4,31 +4,27 @@ using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
 using Obsidian.Net;
-using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
-using Obsidian.Util;
+using Obsidian.Sounds;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Sounds;
-using Obsidian.Util.DataTypes;
 using Hand = Obsidian.PlayerData.Hand;
 
 namespace Obsidian.Entities
 {
     public class Player : Living
     {
-        private readonly Client Client;
+        internal readonly Client _client;
 
-        public Guid Uuid { get; set; }
+        public string Uuid { get; set; }
 
-        public string Uuid3 { get; }
-
-        public Util.DataTypes.Transform PreviousTransform { get; set; }
+        public Transform PreviousTransform { get; set; } = new Transform();
 
         // Properties set by Minecraft (official)
-        public Util.DataTypes.Transform Transform { get; set; }
+        public Transform Transform { get; set; }
 
         public PlayerBitMask PlayerBitMask { get; set; }
 
@@ -41,6 +37,8 @@ namespace Obsidian.Entities
         public short SleepTimer { get; set; }
 
         public Gamemode Gamemode { get; set; }
+
+        public int Ping => this._client._ping;
 
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
@@ -59,11 +57,6 @@ namespace Obsidian.Entities
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
 
-        /// <summary>
-        /// This is a temporary solution will be removed when I am able to think of a workaround.
-        /// </summary>
-        public bool Connected => this.Client.Tcp.Connected;
-
         /* Missing for now:
             NbtCompound(inventory)
             NbtList(Motion)
@@ -81,29 +74,27 @@ namespace Obsidian.Entities
 
         public World.World World;
 
-        internal Player(Guid uuid, string username, Client client)
+        internal Player(string uuid, string username, Client client)
         {
             this.Uuid = uuid;
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
-            this.Transform = new Util.DataTypes.Transform();
-            this.Client = client;
-
-            this.Uuid3 = $"OfflinePlayer:{username}";
+            this.Transform = new Transform();
+            this._client = client;
         }
 
         public void UpdatePosition(Position pos, bool? onGround = null)
         {
-            copyTransform();
+            CopyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
             this.OnGround = onGround ?? this.OnGround;
         }
 
-        public void UpdatePosition(Util.DataTypes.Transform pos, bool? onGround = null)
+        public void UpdatePosition(Transform pos, bool? onGround = null)
         {
-            copyTransform();
+            CopyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
@@ -112,7 +103,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(double x, double y, double z, bool? onGround = null)
         {
-            copyTransform();
+            CopyTransform();
             this.Transform.X = x;
             this.Transform.Y = y;
             this.Transform.Z = z;
@@ -121,13 +112,13 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(float pitch, float yaw, bool? onGround = null)
         {
-            copyTransform();
+            CopyTransform();
             this.Transform.Pitch = pitch;
             this.Transform.Yaw = yaw;
             this.OnGround = onGround ?? this.OnGround;
         }
 
-        private void copyTransform()
+        private void CopyTransform()
         {
             this.PreviousTransform.X = this.Transform.X;
             this.PreviousTransform.Y = this.Transform.Y;
@@ -140,32 +131,32 @@ namespace Obsidian.Entities
         public async Task SendMessageAsync(string message, byte position = 0)
         {
             var chat = ChatMessage.Simple(message);
-            await Client.SendPacket(new ChatMessagePacket(chat, position));
+            await _client.SendPacket(new ChatMessagePacket(chat, position));
         }
 
         public async Task SendMessageAsync(ChatMessage message)
         {
-            await Client.SendPacket(new ChatMessagePacket(message, 0));
+            await _client.SendPacket(new ChatMessagePacket(message, 0));
         }
 
         public async Task SendSoundAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await Client.SendPacket(new SoundEffect(soundId, location, category, pitch, volume));
+            await _client.SendPacket(new SoundEffect(soundId, location, category, pitch, volume));
         }
 
         public async Task SendNamedSoundAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await Client.SendPacket(new NamedSoundEffect(name, location, category, pitch, volume));
+            await _client.SendPacket(new NamedSoundEffect(name, location, category, pitch, volume));
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
-            await Client.SendPacket(new BossBar(uuid, action));
+            await _client.SendPacket(new BossBar(uuid, action));
         }
 
         public async Task KickAsync(string reason)
         {
-            await this.Client.DisconnectAsync(ChatMessage.Simple(reason));
+            await this._client.DisconnectAsync(ChatMessage.Simple(reason));
         }
 
         public void LoadPerms(List<string> permissions)
@@ -175,6 +166,8 @@ namespace Obsidian.Entities
                 Permissions.Add(perm);
             }
         }
+
+        public Task DisconnectAsync(ChatMessage reason) => this._client.DisconnectAsync(reason);
 
         public override async Task WriteAsync(MinecraftStream stream)
         {

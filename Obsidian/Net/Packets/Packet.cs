@@ -67,6 +67,7 @@ namespace Obsidian.Net.Packets
             else
             {
                 Console.WriteLine("Not compressing");
+                await stream.WriteVarIntAsync(dataLength);
                 await stream.WriteVarIntAsync(0);
                 await stream.WriteVarIntAsync(this.packetId);
                 await dataStream.CopyToAsync(stream);

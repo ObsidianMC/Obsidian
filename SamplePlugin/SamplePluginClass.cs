@@ -30,12 +30,12 @@ namespace SamplePlugin
 
             server.Events.PlayerJoin += OnPlayerJoin;
 
-            server.Register(new DickWorldGenerator());
+            server.RegisterAsync(new DickWorldGenerator());
         }
         
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            e.Server.Broadcast($"Player join event from sample plugin! {e.Joined.Username}");
+            e.Server.BroadcastAsync($"Player join event from sample plugin! {e.Joined.Username}");
             await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Joined.Username}");
         }
     }
@@ -48,7 +48,7 @@ namespace SamplePlugin
         [Description("A sample command added by a sample plugin!")]
         public Task SampleCommandAsync()
         {
-            Context.Server.Broadcast($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
+            Context.Server.BroadcastAsync($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
 
             return Task.CompletedTask;
         }

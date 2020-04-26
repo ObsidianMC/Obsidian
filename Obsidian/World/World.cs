@@ -43,9 +43,9 @@ namespace Obsidian.World
             this.worldgen = worldgen;
         }
 
-        public async Task UpdateChunksForClient(Client c)
+        public async Task UpdateChunksForClientAsync(Client c)
         {
-            int dist = c.ClientSettings.ViewDistance;
+            int dist = c.ClientSettings?.ViewDistance ?? 8;
 
             int oldchunkx = transformToChunk(c.Player.PreviousTransform?.X ?? 0);
             int chunkx = transformToChunk(c.Player.Transform?.X ?? 0);
@@ -131,7 +131,7 @@ namespace Obsidian.World
         private Chunk getChunk(int x, int z, Client c)
         {
             // TODO: loading existing chunks
-            return c.OriginServer.WorldGenerator.GenerateChunk(new Chunk(x, z));
+            return c.Server.WorldGenerator.GenerateChunk(new Chunk(x, z));
         }
 
         public int transformToChunk(double input)
@@ -181,7 +181,7 @@ namespace Obsidian.World
         //TODO
         public void Save() { }
 
-        public void LoadPlayer(Guid uuid)
+        public void LoadPlayer(string uuid)
         {
             var playerfile = Path.Combine(folder, "players", $"{uuid.ToString()}.dat");
 
@@ -216,7 +216,7 @@ namespace Obsidian.World
         }
 
         // This would also save the file back to the world folder.
-        public void UnloadPlayer(Guid uuid)
+        public void UnloadPlayer(string uuid)
         {
             // TODO save changed data to file [uuid].dat
             this.Players.RemoveAll(x => x.Uuid == uuid);

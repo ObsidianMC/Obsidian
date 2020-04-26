@@ -88,7 +88,7 @@ namespace Obsidian.Logging
             line += message.Message;
 
             // Console logging is console lagging h
-            Task.Run(() =>
+            _ =Task.Run(() =>
             {
                 Console.ForegroundColor = color;
                 Console.WriteLine(line);

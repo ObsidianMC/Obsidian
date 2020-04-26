@@ -1,4 +1,5 @@
-﻿using Obsidian.Chat;
+﻿using DaanV2.UUID;
+using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -31,54 +32,52 @@ namespace Obsidian
 {
     public class Client : IDisposable
     {
-        private byte[] Token { get; set; }
-        private byte[] SharedKey { get; set; }
+        private byte[] _token;
+        private byte[] _sharedKey;
 
-        public int Ping { get; private set; }
-        public int PlayerId { get; private set; }
+        private MinecraftStream _minecraftStream;
+        private PacketDebugStream _debugStream;
 
-        public TcpClient Tcp { get; private set; }
-        public MinecraftStream MinecraftStream { get; set; }
-        public CancellationTokenSource Cancellation { get; private set; }
+        private Config _config;
 
-        public ClientState State { get; private set; }
+        private bool _disposed;
+        private bool _compressionEnabled;
+        private bool _encryptionEnabled;
 
-        private bool Disposed;
-        private bool CompressionEnabled;
-        private bool EncryptionEnabled;
+        private const int _compressionThreshold = 256;
 
-        private const int CompressionThreshold = 256;
+        internal TcpClient _tcp;
 
-        public bool Playing => this.State == ClientState.Play && this.Player != null;
-        public AsyncLogger Logger => this.OriginServer.Logger;
+        internal int _ping;
+        internal int _missedKeepalives;
+        internal int _id;
 
+        public ClientSettings ClientSettings { get; internal set; }
 
-        public int MissedKeepalives;
+        public CancellationTokenSource Cancellation { get; private set; } = new CancellationTokenSource();
 
-        public Server OriginServer;
-        public Player Player;
-        public Config Config;
-        public ClientSettings ClientSettings;
+        public ClientState State { get; private set; } = ClientState.Handshaking;
 
-        public PacketDebugStream DebugStream;
-        
-        public ConcurrentQueue<Packet> PacketQueue = new ConcurrentQueue<Packet>();
+        public ConcurrentQueue<Packet> PacketQueue { get; } = new ConcurrentQueue<Packet>();
+
+        public Server Server { get; private set; }
+        public Player Player { get; private set; }
+
+        public AsyncLogger Logger => this.Server.Logger;
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
-            this.Tcp = tcp;
-            this.Config = config;
-            this.PlayerId = playerId;
+            this._tcp = tcp;
+            this._config = config;
+            this._id = playerId;
 
-            this.OriginServer = originServer;
-            this.Cancellation = new CancellationTokenSource();
-            this.State = ClientState.Handshaking;
+            this.Server = originServer;
 
-            Stream parentStream = this.Tcp.GetStream();
+            Stream parentStream = this._tcp.GetStream();
 #if DEBUG
             //parentStream = this.DebugStream = new PacketDebugStream(parentStream);
 #endif
-            this.MinecraftStream = new MinecraftStream(parentStream);
+            this._minecraftStream = new MinecraftStream(parentStream);
         }
 
         ~Client()
@@ -95,10 +94,10 @@ namespace Obsidian
 
         internal async Task ProcessKeepAlive(long id)
         {
-            this.Ping = (int)(DateTime.Now.Millisecond - id);
+            this._ping = (int)(DateTime.Now.Millisecond - id);
             await SendPacket(new KeepAlive(id));
-            MissedKeepalives += 1; // This will be decreased after an answer is received.
-            if (MissedKeepalives > this.Config.MaxMissedKeepalives)
+            _missedKeepalives += 1; // This will be decreased after an answer is received.
+            if (_missedKeepalives > this._config.MaxMissedKeepalives)
             {
                 // Too many keepalives missed, kill this connection.
                 Cancellation.Cancel();
@@ -153,7 +152,7 @@ namespace Obsidian
             {
                 Type = CommandNodeType.Root
             };
-            foreach (Qmmands.Command command in this.OriginServer.Commands.GetAllCommands())
+            foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
             {
                 var commandNode = new CommandNode()
                 {
@@ -199,30 +198,57 @@ namespace Obsidian
             await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
         }
 
+        internal async Task RemovePlayerFromListAsync(Player player)
+        {
+            var list = new List<PlayerInfoAction>
+            {
+                new PlayerInfoAction
+                {
+                    Uuid = player.Uuid
+                }
+            };
+
+            await SendPacket(new PlayerInfo(4, list));
+            await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
+        }
+
+        internal async Task AddPlayerToListAsync(Player player)
+        {
+            var list = new List<PlayerInfoAction>
+            {
+                new PlayerInfoAddAction
+                {
+                    Name = player.Username,
+                    Uuid = player.Uuid,
+                    Ping = this.Player.Ping,
+                    Gamemode = (int)this.Player.Gamemode,
+                    DisplayName = ChatMessage.Simple(player.Username)
+                }
+            };
+
+            await SendPacket(new PlayerInfo(0, list));
+            await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
+        }
+
         internal async Task SendPlayerInfoAsync()
         {
             var list = new List<PlayerInfoAction>();
 
-            foreach (Client client in this.OriginServer.Clients)
+            foreach (Player player in this.Server.OnlinePlayers)
             {
-                if (!client.Playing)
-                {
-                    continue;
-                }
 
-                Player player = client.Player;
                 var piaa = new PlayerInfoAddAction()
                 {
                     Name = player.Username,
                     Uuid = player.Uuid,
-                    Ping = client.Ping,
+                    Ping = player.Ping,
                     Gamemode = (int)Player.Gamemode,
                     DisplayName = ChatMessage.Simple(player.Username)
                 };
 
-                if (this.Config.OnlineMode) // GET SKIN IN ONLINE MODE?
+                if (this._config.OnlineMode) // GET SKIN IN ONLINE MODE?
                 {
-                    var uuid = player.Uuid.ToString().Replace("-", "");
+                    var uuid = player.Uuid.Replace("-", "");
                     var skin = await MinecraftAPI.GetUserAndSkin(uuid);
                     piaa.Properties.AddRange(skin.Properties);
                 }
@@ -232,40 +258,6 @@ namespace Obsidian
 
             await SendPacket(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
-        }
-
-        internal async Task SendPlayerAsync(int id, Guid uuid, Transform pos)
-        {
-            var packet = new SpawnPlayer
-            {
-                Id = id,
-
-                Uuid = uuid,
-
-                Tranform = pos,
-
-                Player = this.Player
-            };
-
-            await SendPacket(packet);
-            await this.Logger.LogDebugAsync("New player spawned!");
-        }
-
-        internal async Task SendPlayerAsync(int id, string uuid, Transform pos)
-        {
-            var packet = new SpawnPlayer
-            {
-                Id = id,
-
-                Uuid3 = uuid,
-
-                Tranform = pos,
-
-                Player = this.Player
-            };
-
-            await SendPacket(packet);
-            await this.Logger.LogDebugAsync("New player spawned!");
         }
 
         internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
@@ -278,24 +270,23 @@ namespace Obsidian
 
         private async Task<Packet> GetNextPacketAsync()
         {
-            if (this.CompressionEnabled)
+            if (this._compressionEnabled)
             {
-                return await PacketHandler.ReadCompressedPacketAsync(this.MinecraftStream);
+                return await PacketHandler.ReadCompressedPacketAsync(this._minecraftStream);
             }
             else
             {
-                return await PacketHandler.ReadPacketAsync(this.MinecraftStream);
+                return await PacketHandler.ReadPacketAsync(this._minecraftStream);
             }
         }
 
         public async Task StartConnectionAsync()
         {
-            Task.Run(ProcessQueue);
+            _ = Task.Run(ProcessQueue);
 
-            while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
+            while (!Cancellation.IsCancellationRequested && this._tcp.Connected)
             {
                 Packet packet = await this.GetNextPacketAsync();
-                Packet returnPacket;
 
                 if (this.State == ClientState.Play && packet.packetData.Length < 1)
                     this.Disconnect();
@@ -306,7 +297,7 @@ namespace Obsidian
                         switch (packet.packetId)
                         {
                             case 0x00:
-                                var status = new ServerStatus(OriginServer);
+                                var status = new ServerStatus(Server);
                                 await SendPacket(new RequestResponse(status));
                                 break;
 
@@ -357,7 +348,7 @@ namespace Obsidian
 
                                 string username = loginStart.Username;
 
-                                if (Config.MulitplayerDebugMode)
+                                if (_config.MulitplayerDebugMode)
                                 {
                                     username = $"Player{new Random().Next(1, 999)}";
                                     await this.Logger.LogDebugAsync($"Overriding username from {loginStart.Username} to {username}");
@@ -365,30 +356,30 @@ namespace Obsidian
 
                                 await this.Logger.LogDebugAsync($"Received login request from user {loginStart.Username}");
 
-                                if (this.OriginServer.CheckPlayerOnline(username))
-                                    await this.OriginServer.Clients.FirstOrDefault(c => c.Player.Username == username).DisconnectAsync(Chat.ChatMessage.Simple("Logged in from another location"));
+                                if (this.Server.CheckPlayerOnline(username))
+                                    await this.Server.OnlinePlayers.FirstOrDefault(c => c.Username == username).DisconnectAsync(ChatMessage.Simple("Logged in from another location"));
 
-                                if (this.Config.OnlineMode)
+                                if (this._config.OnlineMode)
                                 {
                                     var users = await MinecraftAPI.GetUsersAsync(new string[] { loginStart.Username });
                                     var uid = users.FirstOrDefault();
 
-                                    var uuid = Guid.Parse(uid.Id);
+                                    var uuid = Guid.Parse(uid.Id).ToString();
                                     this.Player = new Player(uuid, loginStart.Username, this);
 
                                     PacketCryptography.GenerateKeyPair();
 
                                     var pubKey = PacketCryptography.PublicKeyToAsn();
 
-                                    this.Token = PacketCryptography.GetRandomToken();
+                                    this._token = PacketCryptography.GetRandomToken();
 
-                                    var encryptionRequest = new EncryptionRequest(pubKey, this.Token);
+                                    var encryptionRequest = new EncryptionRequest(pubKey, this._token);
                                     await SendPacket(encryptionRequest);
 
                                     break;
                                 }
 
-                                this.Player = new Player(Guid.NewGuid(), username, this);
+                                this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this);
 
                                 //await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
@@ -399,15 +390,13 @@ namespace Obsidian
 
                                 JoinedResponse response;
 
-                                this.SharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
+                                this._sharedKey = PacketCryptography.Decrypt(encryptionResponse.SharedSecret);
+                                var decryptedToken = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-                                var dec2 = PacketCryptography.Decrypt(encryptionResponse.VerifyToken);
+                                var decryptedTokenString = Convert.ToBase64String(decryptedToken);
+                                var tokenString = Convert.ToBase64String(this._token);
 
-                                var decBase64 = Convert.ToBase64String(dec2);
-
-                                var tokenBase64 = Convert.ToBase64String(this.Token);
-
-                                if (!decBase64.Equals(tokenBase64))
+                                if (!decryptedTokenString.Equals(tokenString))
                                 {
                                     await this.DisconnectAsync(ChatMessage.Simple("Invalid token.."));
                                     break;
@@ -415,7 +404,7 @@ namespace Obsidian
 
                                 var encodedKey = PacketCryptography.PublicKeyToAsn();
 
-                                var serverId = PacketCryptography.MinecraftShaDigest(SharedKey.Concat(encodedKey).ToArray());
+                                var serverId = PacketCryptography.MinecraftShaDigest(_sharedKey.Concat(encodedKey).ToArray());
 
                                 response = await MinecraftAPI.HasJoined(this.Player.Username, serverId);
 
@@ -426,8 +415,8 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.EncryptionEnabled = true;
-                                this.MinecraftStream = new AesStream((Stream)this.DebugStream ?? (Stream)this.Tcp.GetStream(), this.SharedKey);
+                                this._encryptionEnabled = true;
+                                this._minecraftStream = new AesStream(this._debugStream ?? (Stream)this._tcp.GetStream(), this._sharedKey);
 
                                 //await this.SetCompression();
                                 await ConnectAsync(this.Player.Uuid);
@@ -449,18 +438,20 @@ namespace Obsidian
 
             await Logger.LogMessageAsync($"Disconnected client");
 
-            if (this.Playing)
-                await this.OriginServer.Events.InvokePlayerLeave(new PlayerLeaveEventArgs(this));
+            if (this.State == ClientState.Play)
+                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this));
 
-            this.Player = null;
+            if (_tcp.Connected)
+            {
+                this._tcp.Close();
 
-            if (Tcp.Connected)
-                this.Tcp.Close();
+                this.Server.OnlinePlayers.TryRemove(this.Player);
+            }
         }
 
         private async Task ProcessQueue()
         {
-            while (!Cancellation.IsCancellationRequested && this.Tcp.Connected)
+            while (!Cancellation.IsCancellationRequested && this._tcp.Connected)
             {
                 if (this.PacketQueue.TryDequeue(out var packet))
                 {
@@ -470,22 +461,25 @@ namespace Obsidian
             }
         }
 
+        //TODO fix compression
         private async Task SetCompression()
         {
-            await SendPacket(new SetCompression(CompressionThreshold));
-            this.CompressionEnabled = true;
+            await SendPacket(new SetCompression(_compressionThreshold));
+            this._compressionEnabled = true;
             await this.Logger.LogDebugAsync("Compression has been enabled.");
         }
 
-        private async Task ConnectAsync(Guid uuid)
+        private async Task ConnectAsync(string uuid)
         {
             await this.SendPacket(new LoginSuccess(uuid, this.Player.Username));
-            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid.ToString()}");
+            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
             this.Player.Gamemode = Gamemode.Creative;
 
-            await this.SendPacket(new JoinGame((int)(EntityId.Player | (EntityId)this.PlayerId), Gamemode.Creative, 0, 0, "default", true));
+            this.Server.OnlinePlayers.Add(this.Player);
+
+            await this.SendPacket(new JoinGame((int)(EntityId.Player | (EntityId)this._id), Gamemode.Creative, 0, 0, "default", true));
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
             await this.SendPacket(new SpawnPosition(new Position(0, 100, 0)));
@@ -496,13 +490,13 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            await this.OriginServer.Events.InvokePlayerJoin(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
+            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            await OriginServer.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
+            await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         private async Task SendServerBrand()
@@ -515,12 +509,8 @@ namespace Obsidian
 
         private async Task SendPlayerListDecoration()
         {
-            var header = string.IsNullOrWhiteSpace(OriginServer.Config.Header)
-                ? null
-                : ChatMessage.Simple(OriginServer.Config.Header);
-            var footer = string.IsNullOrWhiteSpace(OriginServer.Config.Footer)
-                ? null
-                : ChatMessage.Simple(OriginServer.Config.Footer);
+            var header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
+            var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
 
             await this.SendPlayerListHeaderFooterAsync(header, footer);
             await this.Logger.LogDebugAsync("Sent player list decoration");
@@ -531,9 +521,7 @@ namespace Obsidian
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
             for (int i = 0; i < 16; i++)
-            {
                 chunkData.Data.Add(new ChunkSection().FilledWithLight());
-            }
 
             for (int x = 0; x < 16; x++)
             {
@@ -549,9 +537,7 @@ namespace Obsidian
             }
 
             for (int i = 0; i < 16 * 16; i++)
-            {
                 chunkData.Biomes.Add(29); //TODO: Add proper biomes
-            }
 
             await this.QueuePacketAsync(chunkData);
         }
@@ -561,52 +547,53 @@ namespace Obsidian
             await this.QueuePacketAsync(new UnloadChunk(x, z));
         }
 
-        internal void Disconnect() => this.Cancellation.Cancel();
+        public async Task SendPacket(Packet packet)
+        {
+            if (this._compressionEnabled)
+            {
+                await packet.WriteCompressedAsync(_minecraftStream, _compressionThreshold);
+            }
+            else
+            {
+                await packet.WriteAsync(this._minecraftStream);
+            }
+        }
+
         internal async Task QueuePacketAsync(Packet packet)
         {
             this.PacketQueue.Enqueue(packet);
             await Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.packetId:X2})");
         }
-
-        public async Task SendPacket(Packet packet)
-        {
-            if (this.CompressionEnabled)
-            {
-                await packet.WriteCompressedAsync(MinecraftStream, CompressionThreshold);
-            }
-            else
-            {
-                await packet.WriteAsync(this.MinecraftStream);
-            }
-        }
+        internal void Disconnect() => this.Cancellation.Cancel();
 
         #region dispose methods
         protected virtual void Dispose(bool disposing)
         {
-            if (this.Disposed)
+            if (this._disposed)
                 return;
 
             if (disposing)
             {
-                this.MinecraftStream.Dispose();
-                this.Tcp.Dispose();
+                this._minecraftStream.Dispose();
+                this._tcp.Dispose();
 
                 if (this.Cancellation != null)
                     this.Cancellation.Dispose();
             }
 
-            this.MinecraftStream = null;
-            this.Tcp = null;
+            this.Player = null;
+            this._minecraftStream = null;
+            this._tcp = null;
             this.Cancellation = null;
 
-            this.Token = null;
-            this.SharedKey = null;
+            this._token = null;
+            this._sharedKey = null;
             this.Player = null;
             this.ClientSettings = null;
-            this.Config = null;
-            this.OriginServer = null;
+            this._config = null;
+            this.Server = null;
 
-            this.Disposed = true;
+            this._disposed = true;
         }
 
         public void Dispose()

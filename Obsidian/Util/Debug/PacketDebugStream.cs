@@ -19,13 +19,11 @@ namespace Obsidian.Util.Debug
             BaseStream = target;
         }
 
-        
-
         public override void Write(byte[] buffer, int offset, int count)
         {
             MemoryStream.Write(buffer, offset, count);
 
-            PacketDebug.Append("", MemoryStream.ToArray());
+            _ = PacketDebug.AppendAsync("", MemoryStream.ToArray());
             MemoryStream = new MemoryStream();
             
             BaseStream.Write(buffer, offset, count);
@@ -35,7 +33,7 @@ namespace Obsidian.Util.Debug
         {
             await MemoryStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-            PacketDebug.Append("", MemoryStream.ToArray());
+            await PacketDebug.AppendAsync("", MemoryStream.ToArray());
             MemoryStream = new MemoryStream();
 
             await BaseStream.WriteAsync(buffer, offset, count, cancellationToken);

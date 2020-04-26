@@ -12,7 +12,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// Server this event took place in
         /// </summary>
-        public Server Server => Client.OriginServer;
+        public Server Server => Client.Server;
 
         /// <summary>
         /// Player that invoked this event

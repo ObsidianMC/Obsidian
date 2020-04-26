@@ -97,21 +97,11 @@ namespace Obsidian.Commands
 
         [Command("echo")]
         [Description("Echoes given text.")]
-        public Task EchoAsync([Remainder] string text)
-        {
-            Context.Server.Broadcast(text);
-
-            return Task.CompletedTask;
-        }
+        public Task EchoAsync([Remainder] string text) => Context.Server.BroadcastAsync(text);
 
         [Command("announce")]
         [Description("makes an announcement")]
-        public Task AnnounceAsync([Remainder] string text)
-        {
-            Context.Server.Broadcast(text, 2);
-
-            return Task.CompletedTask;
-        }
+        public Task AnnounceAsync([Remainder] string text) => Context.Server.BroadcastAsync(text, 2);
 
         [Command("leave", "kickme")]
         [Description("kicks you")]
@@ -139,10 +129,10 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task GiveOpAsync(string username)
         {
-            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
-            if (client != null)
+            var player = Context.Server.OnlinePlayers.FirstOrDefault(c => c.Username == username);
+            if (player != null)
             {
-                Context.Server.Operators.AddOperator(client.Player);
+                Context.Server.Operators.AddOperator(player);
             }
             else
             {
@@ -156,10 +146,10 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task UnclaimOpAsync(string username)
         {
-            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
-            if (client != null)
+            var player = Context.Server.OnlinePlayers.FirstOrDefault(c =>c.Username == username);
+            if (player != null)
             {
-                Context.Server.Operators.AddOperator(client.Player);
+                Context.Server.Operators.AddOperator(player);
             }
             else
             {
@@ -219,7 +209,7 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         public async Task BreakpointAsync()
         {
-            Context.Server.Broadcast("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
+            await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);
             Debugger.Break();
         }

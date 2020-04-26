@@ -1,9 +1,8 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Net;
-using Obsidian.Util;
+using Obsidian.Util.Collection;
 using Obsidian.Util.Registry;
 using System.Threading.Tasks;
-using Obsidian.Util.Collection;
 
 namespace Obsidian.ChunkData
 {
@@ -21,22 +20,16 @@ namespace Obsidian.ChunkData
             await stream.WriteAsync(BlockLightArray.Data);
 
             if (Overworld)
-            {
                 await stream.WriteAsync(SkyLightArray.Data);
-            }
         }
 
         public ChunkSection FilledWithLight()
         {
             for (int i = 0; i < BlockLightArray.Data.Length; i++)
-            {
                 BlockLightArray.Data[i] = 255;
-            }
 
             for (int i = 0; i < SkyLightArray.Data.Length; i++)
-            {
                 SkyLightArray.Data[i] = 255;
-            }
 
             return this;
         }
@@ -50,15 +43,9 @@ namespace Obsidian.ChunkData
 
         private IBlockStatePalette Palette { get; }
 
-        public void Set(int x, int y, int z, BlockState blockState)
-        {
-            this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
-        }
+        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
 
-        public void Set(double x, double y, double z, BlockState blockState)
-        {
-            this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
-        }
+        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
 
         public BlockState Get(int x, int y, int z)
         {

@@ -12,7 +12,7 @@ namespace Obsidian.Util
         private List<Operator> _ops;
         private readonly List<OperatorRequest> _reqs;
         private readonly Server _server;
-        private string path => Path.Combine(_server.Path, "ops.json");
+        private string Path => System.IO.Path.Combine(this._server.Path, "ops.json");
 
         public OperatorList(Server s)
         {
@@ -23,29 +23,22 @@ namespace Obsidian.Util
 
         public void Initialize()
         {
-            if (!File.Exists(path))
+            if (!File.Exists(Path))
             {
-                using (var opfile = File.CreateText(path))
-                {
-                    opfile.Write(JsonConvert.SerializeObject(_ops));
-                }
+                using var opfile = File.CreateText(Path);
+
+                opfile.Write(JsonConvert.SerializeObject(_ops));
             }
             else
             {
-                _ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(path));
+                _ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(Path));
             }
         }
 
         public void AddOperator(Player p)
         {
-            if (_server.Config.OnlineMode)
-            {
-                _ops.Add(new Operator() { Username = p.Username, Uuid = p?.Uuid });
-            }
-            else
-            {
-                _ops.Add(new Operator() { Username = p.Username, Uuid3 = p?.Uuid3 });
-            }
+            _ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
+
             _updateList();
         }
 
@@ -97,15 +90,9 @@ namespace Obsidian.Util
             _updateList();
         }
 
-        public void RemoveOperator(string username)
+        public void RemoveOperator(string value)
         {
-            _ops.RemoveAll(x => x.Username == username);
-            _updateList();
-        }
-
-        public void RemoveOperator(Guid uuid)
-        {
-            _ops.RemoveAll(x => x.Uuid == uuid);
+            _ops.RemoveAll(x => x.Username == value || x.Uuid == value);
             _updateList();
         }
 
@@ -119,7 +106,7 @@ namespace Obsidian.Util
 
         private void _updateList()
         {
-            File.WriteAllText(path, JsonConvert.SerializeObject(_ops));
+            File.WriteAllText(Path, JsonConvert.SerializeObject(_ops));
         }
 
         // we only use this in this class
@@ -129,10 +116,7 @@ namespace Obsidian.Util
             public string Username;
 
             [JsonProperty("uuid")]
-            public Guid? Uuid;
-
-            [JsonProperty("uuid3")]
-            public string Uuid3;
+            public string Uuid;
 
             [JsonIgnore]
             public bool Online => Uuid != null;

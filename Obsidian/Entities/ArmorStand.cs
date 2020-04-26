@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities.Transform;
-using Obsidian.Util;
+﻿using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Entities
 {
