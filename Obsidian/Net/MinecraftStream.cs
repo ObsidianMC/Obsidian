@@ -1,12 +1,19 @@
-﻿using fNbt;
+﻿
+using fNbt;
 
 using Newtonsoft.Json;
-
+using Obsidian.Boss;
 using Obsidian.Chat;
+using Obsidian.Commands;
+using Obsidian.GameState;
+using Obsidian.Net.Packets.Play;
+using Obsidian.PlayerData;
+using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.Util.DataTypes;
-
+using Obsidian.World;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -104,7 +111,7 @@ namespace Obsidian.Net
         public async Task WriteByteAsync(sbyte value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Byte (0x{value.ToString("X")})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
 #endif
 
             await this.WriteUnsignedByteAsync((byte)value);
@@ -113,7 +120,7 @@ namespace Obsidian.Net
         public async Task WriteUnsignedByteAsync(byte value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing unsigned Byte (0x{value.ToString("X")})");
+            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
 #endif
 
             await this.WriteAsync(new[] { value });
@@ -122,7 +129,7 @@ namespace Obsidian.Net
         public async Task WriteBooleanAsync(bool value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Boolean ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
 #endif
 
             await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
@@ -131,7 +138,7 @@ namespace Obsidian.Net
         public async Task WriteUnsignedShortAsync(ushort value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing unsigned Short ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -145,7 +152,7 @@ namespace Obsidian.Net
         public async Task WriteShortAsync(short value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Short ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Short ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -159,7 +166,7 @@ namespace Obsidian.Net
         public async Task WriteIntAsync(int value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Int ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Int ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -173,7 +180,7 @@ namespace Obsidian.Net
         public async Task WriteLongAsync(long value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Long ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Long ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -187,7 +194,7 @@ namespace Obsidian.Net
         public async Task WriteFloatAsync(float value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Float ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Float ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -201,7 +208,7 @@ namespace Obsidian.Net
         public async Task WriteDoubleAsync(double value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing Double ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing Double ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -215,7 +222,7 @@ namespace Obsidian.Net
         public async Task WriteStringAsync(string value, int maxLength = 0)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing String ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
 #endif
 
             if (value == null)
@@ -242,10 +249,10 @@ namespace Obsidian.Net
         public async Task WriteVarIntAsync(int value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing VarInt ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
 #endif
 
-            uint v = (uint)value;
+            var v = (uint)value;
 
             do
             {
@@ -267,29 +274,234 @@ namespace Obsidian.Net
         /// </summary>
         public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
 
-        public async Task WriteAutoAsync(params object[] values)
+        public async Task<object> ReadAutoAsync(Type type, bool absolute = false, bool countLength = false)
         {
-            foreach (object value in values)
+            if (type == typeof(int))
             {
-                switch (value)
+                if (absolute)
+                    return await this.ReadIntAsync();
+
+                return await this.ReadVarIntAsync();
+            }
+            else if (type == typeof(string))
+            {
+                return await this.ReadStringAsync(32767) ?? string.Empty;
+            }
+            else if (type == typeof(float))
+            {
+                return await this.ReadFloatAsync();
+            }
+            else if (type == typeof(double))
+            {
+                return await this.ReadDoubleAsync();
+            }
+            else if (type == typeof(short))
+            {
+                return await this.ReadShortAsync();
+            }
+            else if (type == typeof(ushort))
+            {
+                return await this.ReadUnsignedShortAsync();
+            }
+            else if (type == typeof(long))
+            {
+                return await this.ReadLongAsync();
+            }
+            else if (type == typeof(bool))
+            {
+                return await this.ReadBooleanAsync();
+            }
+            else if (type == typeof(byte))
+            {
+                return await this.ReadUnsignedByteAsync();
+            }
+            else if (type == typeof(sbyte))
+            {
+                return await this.ReadByteAsync();
+            }
+            else if (type == typeof(byte[]) && countLength)
+            {
+                var length = await this.ReadVarIntAsync();
+                return await this.ReadUInt8ArrayAsync(length);
+            }
+            else if (type == typeof(ChatMessage))
+            {
+                return JsonConvert.DeserializeObject<ChatMessage>(await this.ReadStringAsync());
+            }
+            else if (type == typeof(Position))
+            {
+                if (absolute)
                 {
-                    case int intValue: await this.WriteVarIntAsync(intValue); break;
-                    case string stringValue: await this.WriteStringAsync(stringValue); break;
-                    case float floatValue: await this.WriteFloatAsync(floatValue); break;
-                    case double doubleValue: await this.WriteDoubleAsync(doubleValue); break;
-                    case short shortValue: await this.WriteShortAsync(shortValue); break;
-                    case ushort ushortValue: await this.WriteUnsignedShortAsync(ushortValue); break;
-                    case long longValue: await this.WriteVarLongAsync(longValue); break;
-                    case bool boolValue: await this.WriteBooleanAsync(boolValue); break;
-                    case Enum enumValue: await this.WriteVarIntAsync(enumValue); break;
-                    case ChatMessage chatValue: await this.WriteChatAsync(chatValue); break;
-                    case Guid uuidValue: await this.WriteUuidAsync(uuidValue); break;
-                    case byte[] byteArray: await this.WriteAsync(byteArray); break;
-                    case object[] objectArray: await this.WriteAutoAsync(objectArray); break;
-                    case sbyte sbyteValue: await this.WriteByteAsync(sbyteValue); break;
-                    case byte byteValue: await this.WriteUnsignedByteAsync(byteValue); break;
-                    default: throw new Exception($"Can't handle {value.ToString()} ({value.GetType().ToString()})");
+                    return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
                 }
+
+                return await this.ReadPositionAsync();
+            }
+            else if (type.BaseType != null && type.BaseType == typeof(Enum))
+            {
+                return await this.ReadVarIntAsync();
+            }
+            else
+            {
+                throw new InvalidOperationException("Tried to read un-supported type");
+            }
+        }
+
+        public async Task WriteAutoAsync(object value, bool absolute = false, bool countLength = false)
+        {
+            //isn't there a better way to do this?
+            switch (value)
+            {
+                case int intValue:
+                    if (absolute)
+                    {
+                        await this.WriteIntAsync(intValue);
+                        break;
+                    }
+
+                    await this.WriteVarIntAsync(intValue);
+                    break;
+
+                case string stringValue:
+                    await this.WriteStringAsync(stringValue);
+                    break;
+
+                case float floatValue:
+                    await this.WriteFloatAsync(floatValue);
+                    break;
+
+                case double doubleValue:
+                    await this.WriteDoubleAsync(doubleValue);
+                    break;
+
+                case short shortValue:
+                    await this.WriteShortAsync(shortValue);
+                    break;
+
+                case ushort ushortValue:
+                    await this.WriteUnsignedShortAsync(ushortValue);
+                    break;
+
+                case long longValue:
+                    await this.WriteLongAsync(longValue);
+                    break;
+
+                case bool boolValue:
+                    await this.WriteBooleanAsync(boolValue);
+                    break;
+
+                case Enum enumValue:
+                    if (enumValue is Gamemode gamemode)
+                    {
+                        await this.WriteUnsignedByteAsync((byte)gamemode);
+                    }
+                    else if(enumValue is Dimension dimension)
+                    {
+                        await this.WriteIntAsync((int)dimension);
+                    }
+                    else if (enumValue is Difficulty difficulty)
+                    {
+                        await this.WriteUnsignedByteAsync((byte)difficulty);
+                    }
+                    else if (enumValue is PositionFlags flags)
+                    {
+                        await this.WriteByteAsync((sbyte)flags);
+                    }
+                    else
+                    {
+                        await this.WriteVarIntAsync(enumValue);
+                    }
+
+                    break;
+
+                case Transform transform:
+                    await this.WriteDoubleAsync(transform.X);
+                    await this.WriteDoubleAsync(transform.Y);
+                    await this.WriteDoubleAsync(transform.Z);
+                    await this.WriteFloatAsync(transform.Yaw.Degrees);
+                    await this.WriteFloatAsync(transform.Pitch.Degrees);
+                    break;
+
+                case Position pos:
+                    if (absolute)
+                    {
+                        await this.WriteDoubleAsync(pos.X);
+                        await this.WriteDoubleAsync(pos.Y);
+                        await this.WriteDoubleAsync(pos.Z);
+                        break;
+                    }
+
+                    await this.WritePositionAsync(pos);
+                    break;
+
+                case Velocity velocity:
+                    await this.WriteShortAsync(velocity.X);
+                    await this.WriteShortAsync(velocity.Y);
+                    await this.WriteShortAsync(velocity.Z);
+                    break;
+
+                case SoundPosition soundPos:
+                    await this.WriteIntAsync(soundPos.X);
+                    await this.WriteIntAsync(soundPos.Y);
+                    await this.WriteIntAsync(soundPos.Z);
+                    break;
+
+                case ChatMessage chatValue:
+                    await this.WriteChatAsync(chatValue);
+                    break;
+
+                case BossBarAction actionValue:
+                    await this.WriteVarIntAsync(actionValue.Action);
+                    await this.WriteAsync(await actionValue.ToArrayAsync());
+                    break;
+
+                case ChangeGameStateReason gameStateValue:
+                    await this.WriteUnsignedByteAsync(gameStateValue.Reason);
+                    await this.WriteFloatAsync(gameStateValue.Value);
+                    break;
+
+                case List<CommandNode> nodes:
+                    await this.WriteVarIntAsync(nodes.Count);
+                    foreach (var node in nodes)
+                        await this.WriteAsync(await node.ToArrayAsync());
+
+                    await this.WriteVarIntAsync(0);
+                    break;
+
+                case List<PlayerInfoAction> actions:
+                    await this.WriteVarIntAsync(actions.Count);
+
+                    foreach (var action in actions)
+                        await action.WriteAsync(this);
+
+                    break;
+
+                case Guid uuidValue:
+                    await this.WriteUuidAsync(uuidValue);
+                    break;
+
+                case byte[] byteArray:
+                    if (countLength)
+                    {
+                        await this.WriteVarIntAsync(byteArray.Length);
+                        await this.WriteAsync(byteArray);
+                    }
+                    else
+                    {
+                        await this.WriteAsync(byteArray);
+                    }
+                    break;
+
+                case sbyte sbyteValue:
+                    await this.WriteByteAsync(sbyteValue);
+                    break;
+
+                case byte byteValue:
+                    await this.WriteUnsignedByteAsync(byteValue);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Can't handle {value} ({value.GetType()})");
             }
         }
 
@@ -308,10 +520,10 @@ namespace Obsidian.Net
         public async Task WriteVarLongAsync(long value)
         {
 #if PACKETLOG
-            Program.PacketLogger.LogDebug($"Writing VarLong ({value})");
+            await Program.PacketLogger.LogDebugAsync($"Writing VarLong ({value})");
 #endif
 
-            ulong v = (ulong)value;
+            var v = (ulong)value;
 
             do
             {
@@ -474,13 +686,6 @@ namespace Obsidian.Net
             }
 
             return JsonConvert.DeserializeObject<ChatMessage>(chat);
-        }
-
-        public async Task<string> ReadIdentifierAsync()
-        {
-            var identifier = await this.ReadStringAsync();
-            if (identifier.Length > 32767) throw new ArgumentException("string provided by stream exceeded maximum length", nameof(BaseStream));
-            return identifier;
         }
 
         public virtual async Task<int> ReadVarIntAsync()

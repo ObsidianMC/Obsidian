@@ -1,42 +1,25 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PlayerPosition : Packet
     {
-        public PlayerPosition(Position pos, bool onground) : base(0x10, Array.Empty<byte>())
-        {
-            this.Position = pos;
-            this.OnGround = onground;
-        }
-
-        public PlayerPosition(byte[] data) : base(0x10, data)
-        {
-        }
-
+        [PacketOrder(0, true)]
         public Position Position { get; set; }
+
+        [PacketOrder(1)]
 
         public bool OnGround { get; private set; }
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteDoubleAsync(this.Position.X);
-            await stream.WriteDoubleAsync(this.Position.Y);
-            await stream.WriteDoubleAsync(this.Position.Z);
-            await stream.WriteBooleanAsync(this.OnGround);
-        }
+        public PlayerPosition() : base(0x10) { }
 
-        protected override async Task PopulateAsync(MinecraftStream stream)
+        public PlayerPosition(byte[] data) : base(0x10, data) { }
+
+        public PlayerPosition(Position pos, bool onground) : base(0x10)
         {
-            this.Position = new Position
-            {
-                X = await stream.ReadDoubleAsync(),
-                Y = await stream.ReadDoubleAsync(),
-                Z = await stream.ReadDoubleAsync()
-            };
-            this.OnGround = await stream.ReadBooleanAsync();
+            this.Position = pos;
+            this.OnGround = onground;
         }
     }
 }

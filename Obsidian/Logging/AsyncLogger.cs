@@ -38,10 +38,10 @@ namespace Obsidian.Logging
             this.LogLevel = logLevel;
             this.FilePath = filePath;
 
-            _streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
+            /*_streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
             {
                 AutoFlush = true
-            };
+            };*/
             _dispatcherTask = Task.Run(TaskLoop);
         }
 
@@ -88,11 +88,8 @@ namespace Obsidian.Logging
             line += message.Message;
 
             // Console logging is console lagging h
-            _ =Task.Run(() =>
-            {
-                Console.ForegroundColor = color;
-                Console.WriteLine(line);
-            });
+            Console.ForegroundColor = color;
+            Console.WriteLine(line);
         }
 
         private async Task LogMessageAsync(LogMessage message)

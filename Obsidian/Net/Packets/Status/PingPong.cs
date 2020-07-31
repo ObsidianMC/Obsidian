@@ -1,17 +1,12 @@
-using System.Threading.Tasks;
+using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Status
 {
     public class PingPong : Packet
     {
+        [PacketOrder(0)]
         public long Payload;
 
-        public PingPong(byte[] data) : base(0x01, data)
-        {
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream) => this.Payload = await stream.ReadLongAsync();
-
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteLongAsync(this.Payload);
+        public PingPong(byte[] data) : base(0x01, data) { }
     }
 }

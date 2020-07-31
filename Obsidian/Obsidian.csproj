@@ -23,7 +23,7 @@
     <PackageReference Include="fNBT.Serialization" Version="0.6.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Qmmands" Version="2.3.0" />
-    <PackageReference Include="sharpcompress" Version="0.25.0" />
+    <PackageReference Include="sharpcompress" Version="0.25.1" />
     <PackageReference Include="SharpZipLib" Version="1.2.0" />
   </ItemGroup>
 

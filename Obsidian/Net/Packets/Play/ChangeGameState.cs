@@ -1,24 +1,15 @@
-﻿using System;
-using System.Threading.Tasks;
-using Obsidian.GameState;
+﻿using Obsidian.GameState;
+using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class ChangeGameState : Packet
     {
-        public ChangeGameState(ChangeGameStateReason Reason) : base(0x20, Array.Empty<byte>()) => this.Reason = Reason;
+        [PacketOrder(0)]
+        public ChangeGameStateReason Value { get; private set; }
 
-        public ChangeGameStateReason Reason { get; private set; }
+        public ChangeGameState() : base(0x20) { }
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            //NOTE: Uncomment if set should be made public
-            //if (Reason == null) throw new Exception("Reason is null!");
-
-            await stream.WriteUnsignedByteAsync(this.Reason.Reason);
-            await stream.WriteFloatAsync(this.Reason.Value);
-        }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
+        public ChangeGameState(ChangeGameStateReason Reason) : base(0x20) => this.Value = Reason;
     }
 }

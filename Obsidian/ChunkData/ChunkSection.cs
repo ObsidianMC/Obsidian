@@ -12,7 +12,7 @@ namespace Obsidian.ChunkData
         public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
         public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);
 
-        public bool Overworld = true;//TODO
+        public bool Overworld = true;
 
         public async Task WriteAsync(MinecraftStream stream)
         {

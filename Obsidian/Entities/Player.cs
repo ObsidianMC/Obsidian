@@ -38,7 +38,7 @@ namespace Obsidian.Entities
 
         public Gamemode Gamemode { get; set; }
 
-        public int Ping => this._client._ping;
+        public int Ping => this._client.ping;
 
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
@@ -125,7 +125,7 @@ namespace Obsidian.Entities
             this.PreviousTransform.Z = this.Transform.Z;
             this.PreviousTransform.Yaw = this.Transform.Yaw;
             this.PreviousTransform.Pitch = this.Transform.Pitch;
-            this.PreviousTransform.Position = this.Transform.Position;
+            this.PreviousTransform.ToPosition = this.Transform.ToPosition;
         }
 
         public async Task SendMessageAsync(string message, byte position = 0)
@@ -139,14 +139,14 @@ namespace Obsidian.Entities
             await _client.SendPacket(new ChatMessagePacket(message, 0));
         }
 
-        public async Task SendSoundAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
+        public async Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacket(new SoundEffect(soundId, location, category, pitch, volume));
+            await _client.SendPacket(new SoundEffect(soundId, position, category, pitch, volume));
         }
 
-        public async Task SendNamedSoundAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
+        public async Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacket(new NamedSoundEffect(name, location, category, pitch, volume));
+            await _client.SendPacket(new NamedSoundEffect(name, position, category, pitch, volume));
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)

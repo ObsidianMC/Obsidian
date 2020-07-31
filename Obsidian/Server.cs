@@ -50,7 +50,7 @@ namespace Obsidian
 
         public OperatorList Operators;
 
-        public ConcurrentHashSet<Player> OnlinePlayers { get; } = new ConcurrentHashSet<Player>();
+        public ConcurrentDictionary<string, Player> OnlinePlayers { get; } = new ConcurrentDictionary<string, Player>();
 
         public List<WorldGenerator> WorldGenerators { get; } = new List<WorldGenerator>();
 
@@ -131,7 +131,7 @@ namespace Obsidian
                 {
                     if (_chatmessages.TryDequeue(out QueueChat msg))
                     {
-                        foreach (var player in this.OnlinePlayers)
+                        foreach (var player in this.OnlinePlayers.Values)
                             _ = Task.Run(async () => { await player.SendMessageAsync(msg.Message, msg.Position); });
                     }
                 }
@@ -166,16 +166,16 @@ namespace Obsidian
 
                 if (Config.Baah.HasValue)
                 {
-                    foreach (var player in this.OnlinePlayers)
+                    foreach (var player in this.OnlinePlayers.Values)
                     {
-                        var pos = new Position(player.Transform.X * 8, player.Transform.Y * 8, player.Transform.Z * 8);
+                        var pos = new SoundPosition(player.Transform.X, player.Transform.Y, player.Transform.Z);
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
                 }
 
                 foreach (var client in _clients)
                 {
-                    if (!client._tcp.Connected)
+                    if (!client.tcp.Connected)
                     {
                         this._clients.TryRemove(client);
 
@@ -259,7 +259,8 @@ namespace Obsidian
             Console.CancelKeyPress += this.Console_CancelKeyPress;
             await Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
 
-            //Check if MPDM and OM are enabled, if so, we can't handle connections
+            //Why?????
+            //Check if MPDM and OM are enabled, if so, we can't handle connections 
             if (Config.MulitplayerDebugMode && Config.OnlineMode)
             {
                 await Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
@@ -320,12 +321,13 @@ namespace Obsidian
             await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
         }
 
-        public async Task DisconnectIfConnected(Player player, ChatMessage reason = null)
+        public async Task DisconnectIfConnected(string username, ChatMessage reason = null)
         {
-            if (this.OnlinePlayers.Any(x => x.Username == player.Username))
+            var player = this.OnlinePlayers.Values.FirstOrDefault(x => x.Username == username);
+            if (player != null)
             {
                 if (reason is null)
-                    reason = ChatMessage.Simple("Disconnected");
+                    reason = ChatMessage.Simple("Connected from another location");
 
                 await player.DisconnectAsync(reason);
             }
@@ -379,7 +381,7 @@ namespace Obsidian
         private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
             //TODO same here :)
-            foreach (var other in this.OnlinePlayers.Except(new List<Player> { e.WhoLeft }))
+            foreach (var other in this.OnlinePlayers.Values.Except(new List<Player> { e.WhoLeft }))
                 await other._client.RemovePlayerFromListAsync(e.WhoLeft);
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
@@ -388,7 +390,7 @@ namespace Obsidian
         private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
         {
             //TODO do this from somewhere else
-            foreach (var other in this.OnlinePlayers.Except(new List<Player> { e.Joined }))
+            foreach (var other in this.OnlinePlayers.Values.Except(new List<Player> { e.Joined }))
                 await other._client.AddPlayerToListAsync(e.Joined);
             
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));

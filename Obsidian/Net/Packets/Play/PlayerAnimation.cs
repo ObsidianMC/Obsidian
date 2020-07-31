@@ -1,19 +1,15 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class AnimationServerPacket : Packet
     {
+        [PacketOrder(0)]
         public Hand Hand { get; set; }
 
-        public AnimationServerPacket(byte[] data) : base(0x27, data)
-        {
-        }
+        public AnimationServerPacket() : base(0x27) { }
 
-        protected override Task ComposeAsync(MinecraftStream stream) => throw new NotImplementedException();
-
-        protected override async Task PopulateAsync(MinecraftStream stream) => this.Hand = (Hand)await stream.ReadVarIntAsync();
+        public AnimationServerPacket(byte[] data) : base(0x27, data) { }
     }
 
     public enum Hand

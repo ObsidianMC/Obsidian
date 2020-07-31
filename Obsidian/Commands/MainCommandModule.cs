@@ -86,11 +86,11 @@ namespace Obsidian.Commands
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
 
-            int oldchunkx = world.transformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
-            int chunkx = world.transformToChunk(c.Player.Transform?.X ?? 0);
+            int oldchunkx = world.TransformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
+            int chunkx = world.TransformToChunk(c.Player.Transform?.X ?? 0);
 
-            int oldchunkz = world.transformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
-            int chunkz = world.transformToChunk(c.Player.Transform?.Z ?? 0);
+            int oldchunkz = world.TransformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
+            int chunkz = world.TransformToChunk(c.Player.Transform?.Z ?? 0);
 
             await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
         }
@@ -129,7 +129,7 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task GiveOpAsync(string username)
         {
-            var player = Context.Server.OnlinePlayers.FirstOrDefault(c => c.Username == username);
+            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c => c.Username == username);
             if (player != null)
             {
                 Context.Server.Operators.AddOperator(player);
@@ -146,7 +146,7 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task UnclaimOpAsync(string username)
         {
-            var player = Context.Server.OnlinePlayers.FirstOrDefault(c =>c.Username == username);
+            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c =>c.Username == username);
             if (player != null)
             {
                 Context.Server.Operators.AddOperator(player);

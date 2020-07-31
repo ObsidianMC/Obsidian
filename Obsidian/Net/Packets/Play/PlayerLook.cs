@@ -1,25 +1,29 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PlayerLook : Packet
     {
-        /*public PlayerLook(float yaw, float pitch, bool onground)
+        [PacketOrder(0)]
+        public float Yaw { get; private set; }
+
+        [PacketOrder(1)]
+        public float Pitch { get; private set; }
+
+        [PacketOrder(2)]
+        public bool OnGround { get; private set; }
+
+        public PlayerLook() : base(0x12) { }
+
+        public PlayerLook(byte[] data) : base(0x12, data) { }
+
+        public PlayerLook(float yaw, float pitch, bool onground) : base(0x12)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onground;
-        }*/
-
-        public PlayerLook(byte[] data) : base(0x00, data)
-        {
         }
-
-        public float Yaw { get; private set; }
-
-        public float Pitch { get; private set; }
-
-        public bool OnGround { get; private set; }
 
         protected override async Task PopulateAsync(MinecraftStream stream)
         {

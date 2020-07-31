@@ -11,15 +11,19 @@ namespace Obsidian.Net.Packets
     /// </summary>
     public class Packet
     {
-        public bool Empty => this.packetData == null || this.packetData.Length == 0;
+        public bool Empty => this.data == null || this.data.Length == 0;
 
-        internal byte[] packetData;
+        internal byte[] data;
 
-        internal int packetId;
+        internal int id;
 
-        public Packet(int packetid) => this.packetId = packetid;
+        public Packet(int packetid) => this.id = packetid;
 
-        public Packet(int packetId, byte[] data) => (this.packetData, this.packetId) = (data, packetId);
+        public Packet(int packetId, byte[] data)
+        {
+            this.id = packetId;
+            this.data = data;
+        }
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
@@ -28,10 +32,10 @@ namespace Obsidian.Net.Packets
             await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
-            var packetLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
+            var packetLength = this.id.GetVarIntLength() + (int)dataStream.Length;
 
             await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(packetId);
+            await stream.WriteVarIntAsync(id);
 
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
@@ -46,7 +50,7 @@ namespace Obsidian.Net.Packets
             await using var dataStream = new MinecraftStream();
             await ComposeAsync(dataStream);
 
-            var dataLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
+            var dataLength = this.id.GetVarIntLength() + (int)dataStream.Length;
             var useCompression = threshold > 0 && dataLength >= threshold;
 
             dataStream.Position = 0;
@@ -69,7 +73,7 @@ namespace Obsidian.Net.Packets
                 Console.WriteLine("Not compressing");
                 await stream.WriteVarIntAsync(dataLength);
                 await stream.WriteVarIntAsync(0);
-                await stream.WriteVarIntAsync(this.packetId);
+                await stream.WriteVarIntAsync(this.id);
                 await dataStream.CopyToAsync(stream);
             }
 
@@ -78,8 +82,7 @@ namespace Obsidian.Net.Packets
 
         public virtual async Task ReadAsync(byte[] data = null)
         {
-            //TODO: Please look into this.
-            using var stream = new MinecraftStream(data ?? this.packetData);
+            using var stream = new MinecraftStream(data ?? this.data);
             await PopulateAsync(stream);
         }
 

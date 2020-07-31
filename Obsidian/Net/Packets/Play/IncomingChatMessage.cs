@@ -1,17 +1,14 @@
-using System.Threading.Tasks;
+using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class IncomingChatMessage : Packet
     {
-        public IncomingChatMessage(byte[] data) : base(0x02, data)
-        {
-        }
-
+        [PacketOrder(0)]
         public string Message { get; private set; }
 
-        protected override async Task PopulateAsync(MinecraftStream stream) => Message = await stream.ReadStringAsync(256);
+        public IncomingChatMessage() : base(0x02) { }
 
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteStringAsync(this.Message);
+        public IncomingChatMessage(byte[] data) : base(0x02, data) { }
     }
 }

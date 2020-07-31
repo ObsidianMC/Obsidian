@@ -1,19 +1,16 @@
-using System;
-using System.Threading.Tasks;
+using Obsidian.Chat;
+using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
     public class Disconnect : Packet
     {
-        private readonly Chat.ChatMessage Reason;
+        [PacketOrder(0)]
+        private readonly ChatMessage Reason;
 
-        public Disconnect(Chat.ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00, Array.Empty<byte>())
+        public Disconnect(ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00)
         {
             this.Reason = reason;
         }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
-
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteChatAsync(this.Reason);
     }
 }

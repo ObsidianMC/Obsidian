@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.Util.DataTypes
 {
+    //TODO merge this into position class???
     public class Transform
     {
         public double X { get; set; }
@@ -29,7 +30,7 @@
             this.Yaw = yaw;
         }
 
-        public Position Position
+        public Position ToPosition
         {
             get => new Position(X, Y, Z);
             set

@@ -1,19 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
     public class LoginStart : Packet
     {
-        public LoginStart(string username) : base(0x00, System.Array.Empty<byte>()) => this.Username = username;
-
-        public LoginStart(byte[] data) : base(0x00, data)
-        {
-        }
-
+        [PacketOrder(0)]
         public string Username { get; private set; }
 
-        protected override async Task PopulateAsync(MinecraftStream stream) => this.Username = await stream.ReadStringAsync();
+        public LoginStart() : base(0x00) { }
 
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteStringAsync(this.Username);
+        public LoginStart(byte[] data) : base(0x00, data) { }
     }
 }

@@ -1,22 +1,19 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class KeepAlive : Packet
     {
-        public KeepAlive(long id) : base(0x21, System.Array.Empty<byte>())
+        [PacketOrder(0)]
+        public long KeepAliveId { get; set; }
+
+        public KeepAlive() : base(0x21) { }
+
+        public KeepAlive(long id) : base(0x21)
         {
             this.KeepAliveId = id;
         }
 
-        public KeepAlive(byte[] data) : base(0x21, data)
-        {
-        }
-
-        public long KeepAliveId { get; set; }
-
-        protected override async Task PopulateAsync(MinecraftStream stream) => this.KeepAliveId = await stream.ReadLongAsync();
-
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteLongAsync(this.KeepAliveId);
+        public KeepAlive(byte[] data) : base(0x21, data) { }
     }
 }

@@ -10,53 +10,32 @@ using Org.BouncyCastle.X509;
 
 namespace Obsidian.Net
 {
-    public static class PacketCryptography
+    public class PacketCryptography
     {
-        private static RsaKeyPairGenerator provider;
+        private RsaKeyPairGenerator provider;
 
-        public static byte[] VerifyToken { get; set; }
+        private IAsymmetricBlockCipher encryptCipher;
+        private IAsymmetricBlockCipher decryptCipher;
 
-        public static AsymmetricCipherKeyPair KeyPair { get; set; }
+        internal byte[] VerifyToken { get; set; }
+        internal byte[] PublicKey { get; set; }
 
-        private static IAsymmetricBlockCipher EncryptCipher { get; set; }
-        private static IAsymmetricBlockCipher DecryptCipher { get; set; }
+        internal AsymmetricCipherKeyPair KeyPair { get; set; }
 
-        //https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
-        public static string MinecraftShaDigest(byte[] data)
-        {
-            var hash = new SHA1Managed().ComputeHash(data);
-            // Reverse the bytes since BigInteger uses little endian
-            Array.Reverse(hash);
-
-            var b = new BigInteger(hash);
-            // very annoyingly, BigInteger in C# tries to be smart and puts in
-            // a leading 0 when formatting as a hex number to allow roundtripping 
-            // of negative numbers, thus we have to trim it off.
-            if (b < 0)
-            {
-                // toss in a negative sign if the interpreted number is negative
-                return "-" + (-b).ToString("x").TrimStart('0');
-            }
-            else
-            {
-                return b.ToString("x").TrimStart('0');
-            }
-        }
-
-        public static AsymmetricCipherKeyPair GenerateKeyPair()
+        public AsymmetricCipherKeyPair GenerateKeyPair()
         {
             if (provider is null)
             {
                 try
                 {
-                    provider = new RsaKeyPairGenerator();
-                    provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
-                    EncryptCipher = new Pkcs1Encoding(new RsaEngine());
-                    DecryptCipher = new Pkcs1Encoding(new RsaEngine());
-                    KeyPair = provider.GenerateKeyPair();
+                    this.provider = new RsaKeyPairGenerator();
+                    this.provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
+                    this.encryptCipher = new Pkcs1Encoding(new RsaEngine());
+                    this.decryptCipher = new Pkcs1Encoding(new RsaEngine());
+                    this.KeyPair = provider.GenerateKeyPair();
 
-                    EncryptCipher.Init(true, KeyPair.Public);
-                    DecryptCipher.Init(false, KeyPair.Private);
+                    this.encryptCipher.Init(true, KeyPair.Public);
+                    this.decryptCipher.Init(false, KeyPair.Private);
                 }
                 catch
                 {
@@ -64,32 +43,23 @@ namespace Obsidian.Net
                 }
             }
 
-            return KeyPair;
+            return this.KeyPair;
         }
 
-        public static byte[] Decrypt(byte[] toDecrypt)
-        {
-            return DecryptCipher.ProcessBlock(toDecrypt, 0, DecryptCipher.GetInputBlockSize());
-        }
+        public byte[] Decrypt(byte[] toDecrypt) => this.decryptCipher.ProcessBlock(toDecrypt, 0, this.decryptCipher.GetInputBlockSize());
 
-        public static byte[] Encrypt(byte[] toDecrypt)
-        {
-            return EncryptCipher.ProcessBlock(toDecrypt, 0, EncryptCipher.GetInputBlockSize());
-        }
+        public byte[] Encrypt(byte[] toDecrypt) => this.encryptCipher.ProcessBlock(toDecrypt, 0, this.encryptCipher.GetInputBlockSize());
 
-        public static byte[] GetRandomToken()
+        public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
         {
-            var token = new byte[4];
-            var provider = new RNGCryptoServiceProvider();
-            
-            provider.GetBytes(token);
-            VerifyToken = token;
-            return token;
-        }
+            var randomToken = new byte[4];
+            using var provider = new RNGCryptoServiceProvider();
+            provider.GetBytes(randomToken);
 
-        public static byte[] PublicKeyToAsn()
-        {
-            return SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(KeyPair.Public).ToAsn1Object().GetDerEncoded();
+            this.VerifyToken = randomToken;
+            this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
+
+            return (this.PublicKey, this.VerifyToken);
         }
     }
 }

@@ -1,7 +1,6 @@
-﻿using Obsidian.Entities;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Numerics;
+using System.Security.Cryptography;
 
 namespace Obsidian.Util
 {
@@ -26,7 +25,7 @@ namespace Obsidian.Util
             return char.ToUpper(s[0]) + s.Substring(1);
         }
 
-        public static int GetVarintLength(this int val)
+        public static int GetVarIntLength(this int val)
         {
             int amount = 0;
             do
@@ -41,6 +40,28 @@ namespace Obsidian.Util
                 amount++;
             } while (val != 0);
             return amount;
+        }
+
+        //https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
+        public static string MinecraftShaDigest(this byte[] data)
+        {
+            var hash = new SHA1Managed().ComputeHash(data);
+            // Reverse the bytes since BigInteger uses little endian
+            Array.Reverse(hash);
+
+            var b = new BigInteger(hash);
+            // very annoyingly, BigInteger in C# tries to be smart and puts in
+            // a leading 0 when formatting as a hex number to allow roundtripping 
+            // of negative numbers, thus we have to trim it off.
+            if (b < 0)
+            {
+                // toss in a negative sign if the interpreted number is negative
+                return "-" + (-b).ToString("x").TrimStart('0');
+            }
+            else
+            {
+                return b.ToString("x").TrimStart('0');
+            }
         }
     }
 }

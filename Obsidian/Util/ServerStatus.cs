@@ -70,7 +70,7 @@ namespace Obsidian.Util
 
         public ServerPlayers(Server server)
         {
-            var players = server.OnlinePlayers;
+            var players = server.OnlinePlayers.Values;
 
             Max = 1000000;
             Online = players.Count();

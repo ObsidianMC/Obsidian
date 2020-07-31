@@ -1,18 +1,20 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
     public class EncryptionResponse : Packet
     {
+        [PacketOrder(0, true)]
         public byte[] SharedSecret { get; private set; }
 
+        [PacketOrder(1, true)]
         public byte[] VerifyToken { get; set; }
 
-        public EncryptionResponse(byte[] data) : base(0x01, data)
-        {
-        }
+        public EncryptionResponse() : base(0x01) { }
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
+        public EncryptionResponse(byte[] data) : base(0x01, data) { }
+
+        /*protected override async Task ComposeAsync(MinecraftStream stream)
         {
             await stream.WriteVarIntAsync(this.SharedSecret.Length);
             await stream.WriteAsync(this.SharedSecret);
@@ -28,6 +30,6 @@ namespace Obsidian.Net.Packets.Login
 
             var tokenLength = await stream.ReadVarIntAsync();
             this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
-        }
+        }*/
     }
 }
