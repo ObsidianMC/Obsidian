@@ -219,7 +219,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public async Task WriteStringAsync(string value, int maxLength = 0)
+        public async Task WriteStringAsync(string value, int maxLength = 32767)
         {
 #if PACKETLOG
             await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
@@ -243,8 +243,6 @@ namespace Obsidian.Net
         public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString(), 32767);
-
-        public async Task WriteIdentifierAsync(string value) => await this.WriteStringAsync(value, 32767);
 
         public async Task WriteVarIntAsync(int value)
         {
@@ -527,7 +525,7 @@ namespace Obsidian.Net
 
             do
             {
-                byte temp = (byte)(v & 127);
+                var temp = (byte)(v & 127);
 
                 v >>= 7;
 

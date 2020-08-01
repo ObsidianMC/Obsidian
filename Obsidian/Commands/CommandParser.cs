@@ -10,6 +10,6 @@ namespace Obsidian.Commands
 
         public CommandParser(string identifier) => this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
 
-        public async Task WriteAsync(MinecraftStream stream) => await stream.WriteIdentifierAsync(Identifier);
+        public async Task WriteAsync(MinecraftStream stream) => await stream.WriteStringAsync(Identifier);
     }
 }

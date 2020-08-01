@@ -5,12 +5,15 @@ using Obsidian.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian.Serializer
 {
     public static class PacketSerializer
     {
+        private static BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
         public static async Task SerializeAsync(Packet packet, MinecraftStream stream)
         {
             if (packet == null)
@@ -49,13 +52,16 @@ namespace Obsidian.Serializer
 
             var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
 
-            var fields = packet.GetType().GetFields();
-            var properties = packet.GetType().GetProperties();
+            MemberInfo[] members = packet.GetType().GetMembers(flags);
+
             foreach (var (key, value) in valueDict)
             {
-                foreach (var field in fields)
+                foreach (var member in members)
                 {
-                    if (field.Name == value)
+                    if (member.Name != value)
+                        continue;
+
+                    if (member is FieldInfo field)
                     {
                         var val = await stream.ReadAutoAsync(field.FieldType, key.Absolute, key.CountLength);
 
@@ -63,11 +69,7 @@ namespace Obsidian.Serializer
 
                         field.SetValue(packet, val);
                     }
-                }
-
-                foreach (var property in properties)
-                {
-                    if (property.Name == value)
+                    else if (member is PropertyInfo property)
                     {
                         var val = await stream.ReadAutoAsync(property.PropertyType, key.Absolute, key.CountLength);
 
@@ -83,25 +85,18 @@ namespace Obsidian.Serializer
 
         public static Dictionary<PacketOrderAttribute, string> GetAllMemberNames(this Packet packet)
         {
-            var fields = packet.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var properties = packet.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            MemberInfo[] members = packet.GetType().GetMembers(flags);
 
             var valueDict = new Dictionary<PacketOrderAttribute, string>();
 
-            foreach (var field in fields)
+            foreach (var member in members)
             {
-                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(field, typeof(PacketOrderAttribute));
+                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(member, typeof(PacketOrderAttribute));
+                if (att == null)
+                    continue;
 
-                if (att != null)
-                    valueDict.Add(att, field.Name);
-            }
-
-            foreach (var property in properties)
-            {
-                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(property, typeof(PacketOrderAttribute));
-
-                if (att != null)
-                    valueDict.Add(att, property.Name);
+                Console.WriteLine($"Adding Member {member.Name}");
+                valueDict.Add(att, member.Name);
             }
 
             return valueDict;
@@ -109,41 +104,26 @@ namespace Obsidian.Serializer
 
         public static Dictionary<PacketOrderAttribute, object> GetAllObjects(this Packet packet)
         {
-            var fields = packet.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var properties = packet.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            MemberInfo[] members = packet.GetType().GetMembers(flags);
 
             var valueDict = new Dictionary<PacketOrderAttribute, object>();
 
-            foreach (var field in fields)
+            foreach (var member in members)
             {
-                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(field, typeof(PacketOrderAttribute));
+                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(member, typeof(PacketOrderAttribute));
+                if (att == null)
+                    continue;
 
-                if (att != null)
+                if (member is FieldInfo field)
                 {
                     var val = field.GetValue(packet);
-                    var e = false;
-                    if (val is Enum)
-                    {
-                        e = true;
-                    }
-                    Console.WriteLine($"Adding val {val.GetType()}:{e}");
+                    Console.WriteLine($"Adding val {val.GetType()}");
                     valueDict.Add(att, val);
                 }
-            }
-
-            foreach (var property in properties)
-            {
-                var att = (PacketOrderAttribute)Attribute.GetCustomAttribute(property, typeof(PacketOrderAttribute));
-
-                if (att != null)
+                else if (member is PropertyInfo property)
                 {
                     var val = property.GetValue(packet);
-                    var e = false;
-                    if (val is Enum)
-                    {
-                        e = true;
-                    }
-                    Console.WriteLine($"Adding val {val.GetType()}:{e}");
+                    Console.WriteLine($"Adding val {val.GetType()}");
                     valueDict.Add(att, val);
                 }
             }

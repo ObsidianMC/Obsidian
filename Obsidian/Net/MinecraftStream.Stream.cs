@@ -8,22 +8,7 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream : Stream
     {
-        public MinecraftStream()
-        {
-            BaseStream = new MemoryStream();
-        }
-
-        public MinecraftStream(Stream stream)
-        {
-            BaseStream = stream;
-        }
-
-        public MinecraftStream(byte[] data)
-        {
-            BaseStream = new MemoryStream(data);
-        }
-
-        private bool Disposed;
+        private bool disposed;
 
         public Stream BaseStream { get; set; }
 
@@ -39,6 +24,21 @@ namespace Obsidian.Net
         {
             get => BaseStream.Position;
             set => BaseStream.Position = value;
+        }
+
+        public MinecraftStream()
+        {
+            BaseStream = new MemoryStream();
+        }
+
+        public MinecraftStream(Stream stream)
+        {
+            BaseStream = stream;
+        }
+
+        public MinecraftStream(byte[] data)
+        {
+            BaseStream = new MemoryStream(data);
         }
 
         public override void Flush() => BaseStream.Flush();
@@ -72,7 +72,7 @@ namespace Obsidian.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (this.Disposed)
+            if (this.disposed)
                 return;
 
             if (disposing)
@@ -81,7 +81,7 @@ namespace Obsidian.Net
                 this.Lock.Dispose();
             }
 
-            this.Disposed = true;
+            this.disposed = true;
         }
     }
 }
