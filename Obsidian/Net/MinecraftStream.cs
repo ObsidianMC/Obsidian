@@ -499,13 +499,13 @@ namespace Obsidian.Net
             } while (v != 0);
         }
 
-        public async Task WritePositionAsync(Position value)
+        public async Task WritePositionAsync(Position value, bool pre14 = true)
         {
-            //this is 1.13
-            long pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
+            var pos = pre14
+                ? (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF)
+                : (((long)value.X & 0x3FFFFFF) << 38) | ((long)value.Z & 0x3FFFFFF << 12) | (((long)value.Y & 0xFFF));
 
-            await this.WriteLongAsync(pos);
-            //await this.WriteLongAsync((((value.X & 0x3FFFFFF) << 38) | ((value.Y & 0xFFF) << 26) | (value.Z & 0x3FFFFFF)));
+            await WriteLongAsync(pos);
         }
 
         public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);
