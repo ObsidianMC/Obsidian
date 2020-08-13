@@ -7,25 +7,25 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SpawnMob : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public int EntityId { get; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public Guid Uuid { get; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public int Type { get; }
 
-        [PacketOrder(3)]
+        [Field(3)]
         public Transform Transform { get; }
 
-        [PacketOrder(4)]
+        [Field(4)]
         public float HeadPitch { get; }
 
-        [PacketOrder(5)]
+        [Field(5)]
         public Velocity Velocity { get; }
 
-        [PacketOrder(6)]
+        [Field(6)]
         public Entity Entity { get; }
 
         public SpawnMob(int id, Guid uuid, int type, Transform transform, float headPitch, Velocity velocity, Entity entity) : base(0x03)

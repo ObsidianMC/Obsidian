@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Login
 {
     public class SetCompression : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public int Threshold { get; }
 
         public bool Enabled => Threshold < 0;

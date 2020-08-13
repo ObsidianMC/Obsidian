@@ -4,22 +4,22 @@ namespace Obsidian.Net.Packets.Play
 {
     public class ClientSettings : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string Locale { get; private set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public sbyte ViewDistance { get; private set; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public int ChatMode { get; private set; }
 
-        [PacketOrder(3)]
+        [Field(3)]
         public bool ChatColors { get; private set; }
 
-        [PacketOrder(4)]
+        [Field(4)]
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
 
-        [PacketOrder(5)]
+        [Field(5)]
         public int MainHand { get; private set; }
 
         public ClientSettings() : base(0x04) { }

@@ -40,7 +40,7 @@ namespace Obsidian.Util
         [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
         public bool? Baah;
 
-        [JsonProperty("maxmissedkeepalives")]
+        [JsonProperty("maxMissedKeepAlives")]
         public int MaxMissedKeepalives = 15;
     }
 }

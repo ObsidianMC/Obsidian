@@ -5,13 +5,13 @@ namespace Obsidian.Net.Packets.Play
 {
     public class PlayerLook : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public float Yaw { get; private set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public float Pitch { get; private set; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public bool OnGround { get; private set; }
 
         public PlayerLook() : base(0x12) { }

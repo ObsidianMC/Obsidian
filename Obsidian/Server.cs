@@ -321,7 +321,7 @@ namespace Obsidian
             await Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
         }
 
-        public async Task DisconnectIfConnected(string username, ChatMessage reason = null)
+        public async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
         {
             var player = this.OnlinePlayers.Values.FirstOrDefault(x => x.Username == username);
             if (player != null)

@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Login
 {
     public class LoginStart : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string Username { get; private set; }
 
         public LoginStart() : base(0x00) { }

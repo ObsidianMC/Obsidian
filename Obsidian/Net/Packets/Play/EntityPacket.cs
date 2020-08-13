@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public class EntityPacket : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public int Id { get; set; }
 
         public EntityPacket() : base(0x27) { }

@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Status
 {
     public class PingPong : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public long Payload;
 
         public PingPong(byte[] data) : base(0x01, data) { }

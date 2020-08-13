@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SpawnPosition : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public Position Location { get; private set; }
 
         public SpawnPosition(Position location) : base(0x49) => Location = location;

@@ -4,10 +4,10 @@ namespace Obsidian.Net.Packets.Login
 {
     public class LoginSuccess : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string UUID { get; set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public string Username { get; set; }
 
         public LoginSuccess(string uuid, string username) : base(0x02)
