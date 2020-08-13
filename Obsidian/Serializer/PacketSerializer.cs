@@ -8,17 +8,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Obsidian.Chat;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Serializer
 {
     public static class PacketSerializer
     {
-        private static readonly BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
         public static async Task SerializeAsync(Packet packet, MinecraftStream stream)
         {
             if (packet == null)
                 throw new ArgumentNullException(nameof(packet));
+
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
@@ -54,28 +57,28 @@ namespace Obsidian.Serializer
             stream.Lock.Release();
         }
 
-        public static async Task WriteToStream(MinecraftStream stream, DataType type, object value, int length = 32767)
+        private static async Task WriteToStream(MinecraftStream stream, DataType type, object value, int length = 32767)
         {
             switch (type)
             {
-                //case DataType.Auto:
-                //{
-                //    await dataStream.WriteAutoAsync(value, key.Absolute, key.CountLength);
-                //    break;
-                //}
-                case DataType.Bool:
+                case DataType.Auto:
+                {
+                    await stream.WriteAutoAsync(value);
+                    break;
+                }
+                case DataType.Boolean:
                 {
                     await stream.WriteBooleanAsync((bool)value);
                     break;
                 }
-                case DataType.Float:
+                case DataType.Byte:
                 {
-                    await stream.WriteFloatAsync((float)value);
+                    await stream.WriteByteAsync((sbyte)value);
                     break;
                 }
-                case DataType.Double:
+                case DataType.UnsignedByte:
                 {
-                    await stream.WriteDoubleAsync((double)value);
+                    await stream.WriteUnsignedByteAsync((byte)value);
                     break;
                 }
                 case DataType.Short:
@@ -88,14 +91,36 @@ namespace Obsidian.Serializer
                     await stream.WriteUnsignedShortAsync((ushort)value);
                     break;
                 }
+                case DataType.Int:
+                {
+                    await stream.WriteIntAsync((int)value);
+                    break;
+                }
                 case DataType.Long:
                 {
                     await stream.WriteLongAsync((long)value);
                     break;
                 }
-                case DataType.UnsignedByte:
+                case DataType.Float:
                 {
-                    await stream.WriteUnsignedByteAsync((byte)value);
+                    await stream.WriteFloatAsync((float)value);
+                    break;
+                }
+                case DataType.Double:
+                {
+                    await stream.WriteDoubleAsync((double)value);
+                    break;
+                }
+                
+                case DataType.String:
+                {
+                    // TODO: add casing options on Field attribute and support custom naming enums.
+                    await stream.WriteStringAsync(type.ToString().ToCamelCase(), length);
+                    break;
+                }
+                case DataType.Chat:
+                {
+                    await stream.WriteChatAsync((ChatMessage)value);
                     break;
                 }
                 case DataType.VarInt:
@@ -103,44 +128,88 @@ namespace Obsidian.Serializer
                     await stream.WriteVarIntAsync((int)value);
                     break;
                 }
-                case DataType.String:
+                case DataType.VarLong:
                 {
-                    // TODO: add casing options on Field attribute and support custom naming enums.
-                    await stream.WriteStringAsync(type.ToString().ToCamelCase(), length);
+                    await stream.WriteVarLongAsync((long)value);
                     break;
                 }
-                case DataType.Int:
+                case DataType.Position:
                 {
-                    await stream.WriteIntAsync((int)value);
+                    var pos = (Position) value;
+                    
+                    // if (absolute)
+                    // {
+                    //     await stream.WriteDoubleAsync(pos.X);
+                    //     await stream.WriteDoubleAsync(pos.Y);
+                    //     await stream.WriteDoubleAsync(pos.Z);
+                    //     break;
+                    // }
+
+                    await stream.WritePositionAsync(pos);
                     break;
                 }
+                case DataType.UUID:
+                {
+                    await stream.WriteUuidAsync((Guid)value);
+                    break;
+                }
+                default: throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
 
-        public static DataType ToDataType(this Type type)
+        private static DataType ToDataType(this Type type)
         {
-            return Type.GetTypeCode(type) switch
+            if (type == typeof(ChatMessage))
+                return DataType.Chat;
+            
+            if (type == typeof(Position))
+                return DataType.Position;
+            
+            switch (Type.GetTypeCode(type))
             {
-                TypeCode.Empty => throw new NotImplementedException(),
-                TypeCode.Object => throw new NotImplementedException(),
-                TypeCode.DBNull => throw new NotImplementedException(),
-                TypeCode.Boolean => throw new NotImplementedException(),
-                TypeCode.Char => throw new NotImplementedException(),
-                TypeCode.SByte => throw new NotImplementedException(),
-                TypeCode.Byte => throw new NotImplementedException(),
-                TypeCode.Int16 => throw new NotImplementedException(),
-                TypeCode.UInt16 => throw new NotImplementedException(),
-                TypeCode.Int32 => throw new NotImplementedException(),
-                TypeCode.UInt32 => throw new NotImplementedException(),
-                TypeCode.Int64 => throw new NotImplementedException(),
-                TypeCode.UInt64 => throw new NotImplementedException(),
-                TypeCode.Single => throw new NotImplementedException(),
-                TypeCode.Double => throw new NotImplementedException(),
-                TypeCode.Decimal => throw new NotImplementedException(),
-                TypeCode.DateTime => throw new NotImplementedException(),
-                TypeCode.String => throw new NotImplementedException(),
-                _ => throw new NotImplementedException(),
-            };
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                    throw new ArgumentException("A data type must be specified for integer values.", nameof(type));
+                
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    throw new ArgumentException("A data type must be specified for integer values.",  nameof(type));
+                
+                case TypeCode.Boolean:
+                    return DataType.Boolean;
+
+                case TypeCode.SByte:
+                    return DataType.Byte;
+
+                case TypeCode.Byte:
+                    return DataType.UnsignedByte;
+
+                case TypeCode.Int16:
+                    return DataType.Short;
+
+                case TypeCode.UInt16:
+                    return DataType.UnsignedShort;
+
+                case TypeCode.Single:
+                    return DataType.Float;
+
+                case TypeCode.Double:
+                    return DataType.Double;
+
+                case TypeCode.String:
+                    return DataType.String;
+
+                case TypeCode.DateTime:
+                case TypeCode.Empty:
+                case TypeCode.Object:
+                case TypeCode.DBNull:
+                case TypeCode.Decimal:
+                case TypeCode.Char:
+                    throw new ArgumentOutOfRangeException(nameof(type));
+                
+                default:
+                    return DataType.Auto;
+            }
         }
 
         public static async Task<T> DeserializeAsync<T>(byte[] data) where T : Packet
@@ -151,8 +220,7 @@ namespace Obsidian.Serializer
                 throw new NullReferenceException(nameof(packet));
 
             var valueDict = (await packet.GetAllMemberNamesAsync()).OrderBy(x => x.Key.Order);
-
-            MemberInfo[] members = packet.GetType().GetMembers(flags);
+            var members = packet.GetType().GetMembers(flags);
 
             foreach (var (key, value) in valueDict)
             {
@@ -183,10 +251,9 @@ namespace Obsidian.Serializer
             return packet;
         }
 
-        public static async Task<Dictionary<FieldAttribute, string>> GetAllMemberNamesAsync(this Packet packet)
+        private static async Task<Dictionary<FieldAttribute, string>> GetAllMemberNamesAsync(this Packet packet)
         {
-            MemberInfo[] members = packet.GetType().GetMembers(flags);
-
+            var members = packet.GetType().GetMembers(flags);
             var valueDict = new Dictionary<FieldAttribute, string>();
 
             foreach (var member in members)
@@ -202,10 +269,9 @@ namespace Obsidian.Serializer
             return valueDict;
         }
 
-        public static async Task<Dictionary<FieldAttribute, object>> GetAllObjectsAsync(this Packet packet)
+        private static async Task<Dictionary<FieldAttribute, object>> GetAllObjectsAsync(this Packet packet)
         {
-            MemberInfo[] members = packet.GetType().GetMembers(flags);
-
+            var members = packet.GetType().GetMembers(flags);
             var valueDict = new Dictionary<FieldAttribute, object>();
 
             foreach (var member in members)

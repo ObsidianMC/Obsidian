@@ -343,27 +343,11 @@ namespace Obsidian.Net
         }
 
         [Obsolete("Shouldn't be used anymore")]
-        public async Task WriteAutoAsync(object value, bool absolute = false, bool countLength = false)
+        public async Task WriteAutoAsync(object value, bool countLength = false)
         {
             //isn't there a better way to do this?
             switch (value)
             {
-                case int intValue:
-                    if (absolute)
-                    {
-                        await this.WriteIntAsync(intValue);
-                        break;
-                    }
-
-                    await this.WriteVarIntAsync(intValue);
-                    break;
-
-                case string stringValue:
-                    await this.WriteStringAsync(stringValue);
-                    break;
-
-                
-
                 case Enum enumValue:
                     if (enumValue is PositionFlags flags)
                     {
@@ -382,17 +366,6 @@ namespace Obsidian.Net
                     await this.WriteFloatAsync(transform.Pitch.Degrees);
                     break;
 
-                case Position pos:
-                    if (absolute)
-                    {
-                        await this.WriteDoubleAsync(pos.X);
-                        await this.WriteDoubleAsync(pos.Y);
-                        await this.WriteDoubleAsync(pos.Z);
-                        break;
-                    }
-
-                    await this.WritePositionAsync(pos);
-                    break;
 
                 case Velocity velocity:
                     await this.WriteShortAsync(velocity.X);
@@ -404,10 +377,6 @@ namespace Obsidian.Net
                     await this.WriteIntAsync(soundPos.X);
                     await this.WriteIntAsync(soundPos.Y);
                     await this.WriteIntAsync(soundPos.Z);
-                    break;
-
-                case ChatMessage chatValue:
-                    await this.WriteChatAsync(chatValue);
                     break;
 
                 case BossBarAction actionValue:
@@ -436,10 +405,6 @@ namespace Obsidian.Net
 
                     break;
 
-                case Guid uuidValue:
-                    await this.WriteUuidAsync(uuidValue);
-                    break;
-
                 case byte[] byteArray:
                     if (countLength)
                     {
@@ -450,14 +415,6 @@ namespace Obsidian.Net
                     {
                         await this.WriteAsync(byteArray);
                     }
-                    break;
-
-                case sbyte sbyteValue:
-                    await this.WriteByteAsync(sbyteValue);
-                    break;
-
-                case byte byteValue:
-                    await this.WriteUnsignedByteAsync(byteValue);
                     break;
 
                 default:

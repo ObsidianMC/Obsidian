@@ -23,7 +23,6 @@
         Position,
         Angle,
         UUID,
-        Bool,
         // TODO: Implement missing data types
         // Optional X
         // Array of X
