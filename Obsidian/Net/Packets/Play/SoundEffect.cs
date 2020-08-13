@@ -1,4 +1,5 @@
 ﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
 
@@ -6,19 +7,19 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SoundEffect : Packet
     {
-        [PacketOrder(0)]
+        [Field(0, Type = DataType.VarInt)]
         public int SoundId { get; set; }
 
-        [PacketOrder(1)]
+        [Field(1, Type = DataType.VarInt)]
         public SoundCategory Category { get; set; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public SoundPosition Position { get; set; }
 
-        [PacketOrder(3)]
+        [Field(3)]
         public float Volume { get; set; }
 
-        [PacketOrder(4)]
+        [Field(4)]
         public float Pitch { get; set; }
 
         public SoundEffect(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D)

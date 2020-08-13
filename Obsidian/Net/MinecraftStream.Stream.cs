@@ -12,6 +12,8 @@ namespace Obsidian.Net
 
         public Stream BaseStream { get; set; }
 
+        private MemoryStream debugMemoryStream;
+
         public override bool CanRead => BaseStream.CanRead;
 
         public override bool CanSeek => BaseStream.CanSeek;
@@ -26,19 +28,43 @@ namespace Obsidian.Net
             set => BaseStream.Position = value;
         }
 
-        public MinecraftStream()
+        public MinecraftStream(bool debug = false)
         {
+            if (debug)
+                debugMemoryStream = new MemoryStream();
+
             BaseStream = new MemoryStream();
         }
 
-        public MinecraftStream(Stream stream)
+        public MinecraftStream(Stream stream, bool debug = false)
         {
+            if (debug)
+                debugMemoryStream = new MemoryStream();
+
             BaseStream = stream;
         }
 
         public MinecraftStream(byte[] data)
         {
             BaseStream = new MemoryStream(data);
+        }
+
+        public async Task DumpAsync(bool clear = true)
+        {
+            if (debugMemoryStream == null)
+                throw new Exception("Can't dump a stream who wasn't set to debug.");
+
+            // TODO: Stream the memory stream into a file stream for better performance and stuff :3
+            var filePath = Path.Combine(Path.GetTempPath(), "obsidian-" + Path.GetRandomFileName() + ".bin");
+            await File.WriteAllBytesAsync(filePath, debugMemoryStream.ToArray());
+
+            if (clear)
+            {
+                debugMemoryStream.Dispose();
+                debugMemoryStream = new MemoryStream();
+            }
+
+            await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
         }
 
         public override void Flush() => BaseStream.Flush();
@@ -49,11 +75,29 @@ namespace Obsidian.Net
 
         public virtual async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await BaseStream.WriteAsync(buffer, offset, count);
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (debugMemoryStream != null)
+                await debugMemoryStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-        public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.WriteAsync(buffer, cancellationToken);
+            await BaseStream.WriteAsync(buffer, offset, count);
+        }
 
-        public override void Write(byte[] buffer, int offset, int count) => BaseStream.Write(buffer, offset, count);
+        public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
+        {
+            if (debugMemoryStream != null)
+                await debugMemoryStream.WriteAsync(buffer, cancellationToken);
+
+            await BaseStream.WriteAsync(buffer, cancellationToken);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (debugMemoryStream != null)
+                debugMemoryStream.Write(buffer, offset, count);
+
+            BaseStream.Write(buffer, offset, count);
+        }
 
         public override long Seek(long offset, SeekOrigin origin) => BaseStream.Seek(offset, origin);
 

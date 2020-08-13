@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play
     /// </summary>
     public class DeclareCommands : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
         public DeclareCommands() : base(0x11) { }

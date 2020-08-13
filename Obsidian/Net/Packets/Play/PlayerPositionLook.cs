@@ -17,13 +17,13 @@ namespace Obsidian.Net.Packets.Play
 
     public class PlayerPositionLook : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public Transform Transform { get; set; }
 
-        [PacketOrder(1)]
+        [Field(1, Type = DataType.VarInt)]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [PacketOrder(2)]
+        [Field(2, Type = DataType.VarInt)]
         public int TeleportId { get; private set; }
 
         public PlayerPositionLook() : base(0x32) { }

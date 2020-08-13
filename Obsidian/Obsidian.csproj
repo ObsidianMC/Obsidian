@@ -17,6 +17,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Serializer\Enums\FieldType.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Serializer\Attributes\NewFile1.txt" />
+    <None Remove="Serializer\Enums\NewFile1.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
     <PackageReference Include="DaanV2.UUID.Net" Version="1.0.3" />
     <PackageReference Include="fNbt" Version="0.6.4" />

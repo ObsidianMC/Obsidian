@@ -1,22 +1,23 @@
 ﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 
 namespace Obsidian.Net.Packets.Login
 {
     public class EncryptionRequest : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string ServerId { get; private set; } = string.Empty;
 
-        [PacketOrder(1)]
+        [Field(1, Type = DataType.VarInt)]
         public int KeyLength { get; private set; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public byte[] PublicKey { get; private set; }
 
-        [PacketOrder(3)]
+        [Field(3, Type = DataType.VarInt)]
         public int TokenLength = 4;
 
-        [PacketOrder(4)]
+        [Field(4)]
         public byte[] VerifyToken { get; private set; }
 
         public EncryptionRequest(byte[] publicKey, byte[] verifyToken) : base(0x01)

@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public class IncomingChatMessage : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string Message { get; private set; }
 
         public IncomingChatMessage() : base(0x02) { }

@@ -90,15 +90,12 @@ namespace Obsidian
 
         #region Packet Sending Methods
 
-        internal async Task DisconnectAsync(ChatMessage reason)
-        {
-            await SendPacket(new Disconnect(reason, this.State));
-        }
+        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacket(new Disconnect(reason, this.State));
 
         internal async Task ProcessKeepAlive(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
-            await SendPacket(new KeepAlive(id));
+            await this.SendPacket(new KeepAlive(id));
             missedKeepalives += 1; // This will be decreased after an answer is received.
             if (missedKeepalives > this.config.MaxMissedKeepalives)
             {
@@ -124,19 +121,19 @@ namespace Obsidian
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
         {
-            await SendPacket(new PlayerPositionLook(poslook, posflags, tpid));
+            await this.SendPacket(new PlayerPositionLook(poslook, posflags, tpid));
         }
 
         internal async Task SendBlockChangeAsync(BlockChange b)
         {
             await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
-            await SendPacket(b);
+            await this.SendPacket(b);
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
         }
 
         internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
-            await SendPacket(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
+            await this.SendPacket(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
 
             await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
         }
@@ -300,11 +297,11 @@ namespace Obsidian
                         {
                             case 0x00:
                                 var status = new ServerStatus(Server);
-                                await SendPacket(new RequestResponse(status));
+                                await this.SendPacket(new RequestResponse(status));
                                 break;
 
                             case 0x01:
-                                await SendPacket(new PingPong(packet.data));
+                                await this.SendPacket(new PingPong(packet.data));
                                 this.Disconnect();
                                 break;
                         }
@@ -346,17 +343,11 @@ namespace Obsidian
                             case 0x00:
                                 var loginStart = await PacketSerializer.DeserializeAsync<LoginStart>(packet.data);
 
-                                string username = loginStart.Username;
-
-                                if (config.MulitplayerDebugMode)
-                                {
-                                    username = $"Player{Program.Random.Next(1, 999)}";
-                                    await this.Logger.LogDebugAsync($"Overriding username from {loginStart.Username} to {username}");
-                                }
+                                string username = config.MulitplayerDebugMode ? $"Player{Program.Random.Next(1, 999)}" : loginStart.Username;
 
                                 await this.Logger.LogDebugAsync($"Received login request from user {loginStart.Username}");
 
-                                await this.Server.DisconnectIfConnected(username);
+                                await this.Server.DisconnectIfConnectedAsync(username);
 
                                 if (this.config.OnlineMode)
                                 {
@@ -371,7 +362,7 @@ namespace Obsidian
 
                                     this.randomToken = values.randomToken;
 
-                                    await this. SendPacket(new EncryptionRequest(values.publicKey, this.randomToken));
+                                    await this.SendPacket(new EncryptionRequest(values.publicKey, this.randomToken));
 
                                     break;
                                 }
@@ -437,7 +428,7 @@ namespace Obsidian
             {
                 this.tcp.Close();
 
-                if(this.Player != null)
+                if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
             }
         }
@@ -448,7 +439,7 @@ namespace Obsidian
             {
                 if (this.PacketQueue.TryDequeue(out var packet))
                 {
-                    await SendPacket(packet);
+                    await this.SendPacket(packet);
                     await Logger.LogWarningAsync($"Enqueued packet: {packet} (0x{packet.id:X2})");
                 }
             }
@@ -457,7 +448,7 @@ namespace Obsidian
         //TODO fix compression
         private async Task SetCompression()
         {
-            await SendPacket(new SetCompression(compressionThreshold));
+            await this.SendPacket(new SetCompression(compressionThreshold));
             this.compressionEnabled = true;
             await this.Logger.LogDebugAsync("Compression has been enabled.");
         }
@@ -478,7 +469,6 @@ namespace Obsidian
                 GameMode = Gamemode.Creative,
                 Dimension = Dimension.Overworld,
                 Difficulty = Difficulty.Peaceful,
-                LevelType = "default",
                 ReducedDebugInfo = false
             });
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
@@ -504,7 +494,7 @@ namespace Obsidian
         {
             await using var stream = new MinecraftStream();
             await stream.WriteStringAsync("obsidian");
-            await QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
             await this.Logger.LogDebugAsync("Sent server brand.");
         }
 

@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Play
 {
     public class PlayerListHeaderFooter : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public ChatMessage Header { get; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public ChatMessage Footer { get; }
 
         public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer) : base(0x4E)

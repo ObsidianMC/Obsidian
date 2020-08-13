@@ -221,57 +221,54 @@ namespace Obsidian.Net
 
         public async Task WriteStringAsync(string value, int maxLength = 32767)
         {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
-#endif
+            //await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
 
             if (value == null)
-            {
                 throw new ArgumentNullException(nameof(value));
-            }
 
-            if (maxLength > 0 && value.Length > maxLength)
-            {
+            if (value.Length > maxLength)
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
-            }
 
             var bytes = Encoding.UTF8.GetBytes(value);
             await this.WriteVarIntAsync(bytes.Length);
-            await this.WriteAsync(bytes);
+            await this.WriteAsync(bytes); 
         }
 
         public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
-        public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString(), 32767);
+        public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
-        public async Task WriteVarIntAsync(int value)
+        public async Task<int> WriteVarIntAsync(int value)
         {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
-#endif
+            //await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
 
             var v = (uint)value;
+            int varInt = 0;
 
             do
             {
-                byte temp = (byte)(v & 127);
+                var temp = (byte)(v & 127);
 
                 v >>= 7;
 
                 if (v != 0)
-                {
                     temp |= 128;
-                }
+
+                varInt += temp;
 
                 await this.WriteUnsignedByteAsync(temp);
             } while (v != 0);
+
+            return varInt;
         }
+
 
         /// <summary>
         /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
         /// </summary>
         public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
 
+        [Obsolete("Shouldn't be used anymore")]
         public async Task<object> ReadAutoAsync(Type type, bool absolute = false, bool countLength = false)
         {
             if (type == typeof(int))
@@ -345,6 +342,7 @@ namespace Obsidian.Net
             }
         }
 
+        [Obsolete("Shouldn't be used anymore")]
         public async Task WriteAutoAsync(object value, bool absolute = false, bool countLength = false)
         {
             //isn't there a better way to do this?
@@ -364,52 +362,16 @@ namespace Obsidian.Net
                     await this.WriteStringAsync(stringValue);
                     break;
 
-                case float floatValue:
-                    await this.WriteFloatAsync(floatValue);
-                    break;
-
-                case double doubleValue:
-                    await this.WriteDoubleAsync(doubleValue);
-                    break;
-
-                case short shortValue:
-                    await this.WriteShortAsync(shortValue);
-                    break;
-
-                case ushort ushortValue:
-                    await this.WriteUnsignedShortAsync(ushortValue);
-                    break;
-
-                case long longValue:
-                    await this.WriteLongAsync(longValue);
-                    break;
-
-                case bool boolValue:
-                    await this.WriteBooleanAsync(boolValue);
-                    break;
+                
 
                 case Enum enumValue:
-                    if (enumValue is Gamemode gamemode)
-                    {
-                        await this.WriteUnsignedByteAsync((byte)gamemode);
-                    }
-                    else if(enumValue is Dimension dimension)
-                    {
-                        await this.WriteIntAsync((int)dimension);
-                    }
-                    else if (enumValue is Difficulty difficulty)
-                    {
-                        await this.WriteUnsignedByteAsync((byte)difficulty);
-                    }
-                    else if (enumValue is PositionFlags flags)
+                    if (enumValue is PositionFlags flags)
                     {
                         await this.WriteByteAsync((sbyte)flags);
-                    }
-                    else
-                    {
-                        await this.WriteVarIntAsync(enumValue);
+                        break;
                     }
 
+                    await this.WriteVarIntAsync(enumValue);
                     break;
 
                 case Transform transform:
@@ -530,9 +492,8 @@ namespace Obsidian.Net
                 v >>= 7;
 
                 if (v != 0)
-                {
                     temp |= 128;
-                }
+
 
                 await this.WriteUnsignedByteAsync(temp);
             } while (v != 0);

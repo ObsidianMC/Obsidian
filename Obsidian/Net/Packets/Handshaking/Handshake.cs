@@ -1,20 +1,21 @@
 using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
     public class Handshake : Packet
     {
-        [PacketOrder(0)]
+        [Field(0, Type = DataType.VarInt)]
         public ProtocolVersion Version;
 
-        [PacketOrder(1)]
+        [Field(1)]
         public string ServerAddress;
 
-        [PacketOrder(2)]
+        [Field(2)]
         public ushort ServerPort;
 
-        [PacketOrder(3)]
+        [Field(3, Type = DataType.VarInt)]
         public ClientState NextState;
 
         public Handshake() : base(0x00) { }

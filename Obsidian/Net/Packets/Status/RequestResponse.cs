@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Status
 {
     public class RequestResponse : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public string Json;
 
         public RequestResponse(string json) : base(0x00) => this.Json = json;

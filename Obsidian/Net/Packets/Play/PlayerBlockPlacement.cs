@@ -1,26 +1,27 @@
 ﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PlayerBlockPlacement : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public Position Location { get; private set; }
 
-        [PacketOrder(1)]
+        [Field(1, Type = DataType.VarInt)]
         public BlockFace Face { get; private set; } // enum with face
 
-        [PacketOrder(2)]
+        [Field(2)]
         public int Hand { get; private set; } // hand it was placed from. 0 is main, 1 is off
 
-        [PacketOrder(3)]
+        [Field(3)]
         public float CursorX { get; private set; }
 
-        [PacketOrder(4)]
+        [Field(4)]
         public float CursorY { get; private set; }
 
-        [PacketOrder(5)]
+        [Field(5)]
         public float CursorZ { get; private set; }
 
         public PlayerBlockPlacement() : base(0x29) { }

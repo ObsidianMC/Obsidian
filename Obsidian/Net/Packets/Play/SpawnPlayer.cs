@@ -7,16 +7,16 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SpawnPlayer : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public int EntityId { get; set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public Guid Uuid { get; set; }
 
-        [PacketOrder(2)]
+        [Field(2)]
         public Transform Tranform { get; set; }
 
-        [PacketOrder(3)]
+        [Field(3)]
         public Player Player { get; set; }
 
         public SpawnPlayer() : base(0x05) { }

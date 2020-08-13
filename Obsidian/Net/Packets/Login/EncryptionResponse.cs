@@ -4,10 +4,10 @@ namespace Obsidian.Net.Packets.Login
 {
     public class EncryptionResponse : Packet
     {
-        [PacketOrder(0, true)]
+        [Field(0, true)]
         public byte[] SharedSecret { get; private set; }
 
-        [PacketOrder(1, true)]
+        [Field(1, true)]
         public byte[] VerifyToken { get; set; }
 
         public EncryptionResponse() : base(0x01) { }

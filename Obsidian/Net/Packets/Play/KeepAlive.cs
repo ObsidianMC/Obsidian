@@ -4,7 +4,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public class KeepAlive : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public long KeepAliveId { get; set; }
 
         public KeepAlive() : base(0x21) { }

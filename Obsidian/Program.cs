@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Obsidian.Logging;
 using Obsidian.Util;
 using System;
 using System.IO;
@@ -13,9 +14,9 @@ namespace Obsidian
         public static GlobalConfig Config;
         public static Random Random = new Random();
 
-#if PACKETLOG
-        public static AsyncLogger PacketLogger = new AsyncLogger("Packet Logger", LogLevel.Debug, Directory.GetCurrentDirectory());
-#endif
+
+        public static AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
+
 
         private static async Task Main(string[] args)
         {

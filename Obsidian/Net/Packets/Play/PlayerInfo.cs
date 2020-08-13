@@ -1,15 +1,16 @@
 ﻿using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PlayerInfo : Packet
     {
-        [PacketOrder(0)]
+        [Field(0, Type = DataType.VarInt)]
         public int Action { get; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public List<PlayerInfoAction> Actions { get; }
 
         public PlayerInfo() : base(0x30) { }

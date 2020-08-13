@@ -12,10 +12,10 @@ namespace Obsidian.Net.Packets.Play
             new MinecraftBrand()
         };
 
-        [PacketOrder(0)]
+        [Field(0)]
         public string Channel { get; private set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
         public byte[] PluginData { get; private set; }
 
         public PluginMessage(string channel, byte[] data) : base(0x19, Array.Empty<byte>())

@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public class ChangeGameState : Packet
     {
-        [PacketOrder(0)]
+        [Field(0)]
         public ChangeGameStateReason Value { get; private set; }
 
         public ChangeGameState() : base(0x20) { }

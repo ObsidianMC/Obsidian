@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace Obsidian.Util
 {
     public static class Extensions
     {
+        public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
         //this is for ints
         public static int GetUnsignedRightShift(this int value, int s) => value >> s;
 
@@ -16,13 +20,25 @@ namespace Obsidian.Util
             return (long)((ulong)value >> s);
         }
 
-        public static string Capitalize(this string s)
+        public static string Capitalize(this string value)
         {
-            if (string.IsNullOrEmpty(s))
-            {
-                return string.Empty;
-            }
-            return char.ToUpper(s[0]) + s.Substring(1);
+            if (string.IsNullOrEmpty(value))
+                throw new NullReferenceException(nameof(value));
+
+            return char.ToUpper(value[0]) + value.Substring(1);
+        }
+
+        public static string ToCamelCase(this string str)
+        {
+
+            return new string(
+              new CultureInfo("en-US", false)
+                .TextInfo
+                .ToTitleCase(string.Join(" ", pattern.Matches(str)).ToLower())
+                .Replace(@" ", "")
+                .Select((x, i) => i == 0 ? char.ToLower(x) : x)
+                .ToArray()
+            );
         }
 
         public static int GetVarIntLength(this int val)
@@ -30,15 +46,10 @@ namespace Obsidian.Util
             int amount = 0;
             do
             {
-                var temp = (sbyte)(val & 0b01111111);
-                // Note: >>> means that the sign bit is shifted with the rest of the number rather than being left alone
                 val >>= 7;
-                if (val != 0)
-                {
-                    temp |= 127;
-                }
                 amount++;
             } while (val != 0);
+
             return amount;
         }
 
@@ -56,7 +67,7 @@ namespace Obsidian.Util
             if (b < 0)
             {
                 // toss in a negative sign if the interpreted number is negative
-                return "-" + (-b).ToString("x").TrimStart('0');
+                return $"-{(-b).ToString("x").TrimStart('0')}";
             }
             else
             {

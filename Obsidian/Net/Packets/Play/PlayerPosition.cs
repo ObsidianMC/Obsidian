@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Play
 {
     public class PlayerPosition : Packet
     {
-        [PacketOrder(0, true)]
+        [Field(0, true)]
         public Position Position { get; set; }
 
-        [PacketOrder(1)]
+        [Field(1)]
 
         public bool OnGround { get; private set; }
 
