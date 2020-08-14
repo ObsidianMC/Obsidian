@@ -44,16 +44,24 @@ namespace Obsidian.Commands
             var messages = new List<ChatMessage>();
 
             foreach (var pls in Context.Server.PluginManager.Plugins)
-                messages.Add(new ChatMessage
+                if(pls.Info.ProjectUrl != null)
                 {
-                    Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
-                    ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
-                });
+                    messages.Add(new ChatMessage
+                    {
+                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
+                        ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
+                    });
+                }
+                else
+                {
+                    messages.Add(new ChatMessage
+                    {
+                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, "
+                    });
+                }
 
             if (messages.Count > 0)
                 message.AddExtra(messages);
-
-            Console.WriteLine(message.ToString());
 
             await Context.Player.SendMessageAsync(message);
             //await Context.Player.SendMessageAsync(pls);

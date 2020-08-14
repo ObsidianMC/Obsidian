@@ -26,27 +26,24 @@ namespace Obsidian.Plugins.Obsidian
                 var classes = assembly.GetTypes().Where(type => typeof(ObsidianPluginClass).IsAssignableFrom(type) && type != typeof(ObsidianPluginClass));
 
                 foreach (var type in classes)
+
                 {
                     var pluginClass = (ObsidianPluginClass)Activator.CreateInstance(type);
+                    var plugin = new ObsidianPlugin(this, file, pluginClass);
 
                     var name = assembly.GetName().Name;
-                    using var sm = assembly.GetManifestResourceStream($"{name}.plugin.json");
+                    using var sm = assembly.GetManifestResourceStream($"{name}.plugin.json") ?? assembly.GetManifestResourceStream($"{name}.Resources.plugin.json");
                     if (sm == null)
-                        throw new InvalidOperationException("Failed to find plugin.json");
+                        throw new FileNotFoundException("Failed to find plugin.json");//TODO lets just keep this for now...
 
                     using var sr = new StreamReader(sm);
                     var json = sr.ReadToEnd();
 
-                    var plugin = new ObsidianPlugin(this, file, pluginClass)
+                    plugin.Info = JsonConvert.DeserializeObject<PluginInfo>(json, new JsonSerializerSettings
                     {
-                        Info = JsonConvert.DeserializeObject<PluginInfo>(json, new JsonSerializerSettings
-                        {
-                            ContractResolver = this.contractResolver,
-                            NullValueHandling = NullValueHandling.Ignore
-                        })
-                    };
-
-
+                        ContractResolver = this.contractResolver,
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
                     yield return plugin;
                 }
             }
