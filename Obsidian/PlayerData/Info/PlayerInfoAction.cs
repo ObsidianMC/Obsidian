@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-
+using Obsidian.Serializer.Attributes;
 using System;
 using System.Threading.Tasks;
 

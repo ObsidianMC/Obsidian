@@ -7,8 +7,21 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\Obsidian\bin\Debug\netcoreapp2.1\0\plugins</OutputPath>
+    <OutputPath>..\Obsidian\bin\Debug\netcoreapp3.1\0\plugins</OutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="plugin.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="plugin.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="DickWorldGenerator.cs" />
+    <Resource Include="SamplePluginClass.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Qmmands" Version="2.3.0" />

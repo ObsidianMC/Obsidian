@@ -1,5 +1,7 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Util.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,37 +22,39 @@ namespace Obsidian.Commands
 
         public string Name;
 
-        public int Index => Owner.Nodes.IndexOf(this);
+        public int Index => this.Owner.Nodes.IndexOf(this);
 
-        public async Task<byte[]> ToArrayAsync()
+        public async Task CopyToAsync(MinecraftStream mcStream)
         {
             await using var stream = new MinecraftStream();
-            await stream.WriteByteAsync((sbyte)Type);
-            await stream.WriteVarIntAsync(Children.Count);
+            await stream.WriteByteAsync((sbyte)this.Type);
+            await stream.WriteVarIntAsync(this.Children.Count);
 
-            foreach (CommandNode childNode in Children)
+            foreach (CommandNode childNode in this.Children)
             {
                 await stream.WriteVarIntAsync(childNode.Index);
             }
 
-            if (Type.HasFlag(CommandNodeType.HasRedirect))
+            if (this.Type.HasFlag(CommandNodeType.HasRedirect))
             {
                 //TODO: Add redirect functionality if needed
                 await stream.WriteVarIntAsync(0);
             }
 
-            if (Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal))
+            if (this.Type.HasFlag(CommandNodeType.Argument) || this.Type.HasFlag(CommandNodeType.Literal))
             {
-                if (!string.IsNullOrWhiteSpace(Name))
-                    await stream.WriteStringAsync(Name);
+                if (!this.Name.IsNullOrWhitespace())
+                    await stream.WriteStringAsync(this.Name);
             }
 
-            if (Type.HasFlag(CommandNodeType.Argument))
+            if (this.Type.HasFlag(CommandNodeType.Argument))
             {
-                await Parser.WriteAsync(stream);
+                await this.Parser.WriteAsync(stream);
             }
 
-            return stream.ToArray();
+            stream.Position = 0;
+
+            await stream.CopyToAsync(mcStream);
         }
     }
 }

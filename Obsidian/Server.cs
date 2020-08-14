@@ -31,7 +31,7 @@ namespace Obsidian
     public struct QueueChat
     {
         public string Message;
-        public byte Position;
+        public sbyte Position;
     }
 
     public class Server
@@ -227,7 +227,7 @@ namespace Obsidian
             return System.IO.Path.Combine(folder, fileName) + ".json";
         }
 
-        public async Task ParseMessage(string message, Client source, byte position = 0)
+        public async Task ParseMessage(string message, Client source, sbyte position = 0)
         {
             if (!CommandUtilities.HasPrefix(message, '/', out string output))
             {
@@ -244,7 +244,7 @@ namespace Obsidian
             }
         }
 
-        public async Task BroadcastAsync(string message, byte position = 0)
+        public async Task BroadcastAsync(string message, sbyte position = 0)
         {
             _chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
             await Logger.LogMessageAsync(message);

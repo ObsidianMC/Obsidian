@@ -17,6 +17,7 @@ using Obsidian.Serializer;
 using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
+using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.World;
 
@@ -154,6 +155,9 @@ namespace Obsidian
             };
             foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
             {
+                if (command.Name.IsNullOrEmpty() || node.Children.Any(x => x.Name.EqualsIgnoreCase(command.Name)))
+                    continue;
+
                 var commandNode = new CommandNode()
                 {
                     Name = command.Name,
@@ -483,11 +487,11 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            await this.SendDeclareCommandsAsync();
+            //await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
+            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         private async Task SendServerBrand()

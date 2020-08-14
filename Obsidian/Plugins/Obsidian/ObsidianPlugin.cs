@@ -4,13 +4,17 @@ namespace Obsidian.Plugins.Obsidian
 {
     public class ObsidianPlugin : Plugin
     {
-        private IObsidianPluginClass Class { get; }
+        private ObsidianPluginClass Class { get; }
 
-        public ObsidianPlugin(PluginSource source, string path, IObsidianPluginClass @class) : base(source, path, @class.Info)
+        public ObsidianPlugin(PluginSource source, string path, ObsidianPluginClass @class) : base(source, path, @class.Info)
         {
             this.Class = @class;
         }
 
-        public override async Task LoadAsync(Server server) => await Class.InitializeAsync(server);
+        public override async Task LoadAsync(Server server)
+        {
+            this.Class.Server = server;
+            await this.Class.InitializeAsync();
+        }
     }
 }

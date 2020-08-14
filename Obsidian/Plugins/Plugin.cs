@@ -5,7 +5,7 @@ namespace Obsidian.Plugins
     public abstract class Plugin
     {
         public PluginSource Source { get; }
-        public PluginInfo Info { get; }
+        public PluginInfo Info { get; set; }
 
         /// <summary>
         /// The file path of this plugin

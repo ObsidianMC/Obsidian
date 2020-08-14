@@ -9,12 +9,16 @@ using Obsidian.GameState;
 using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Extensions;
 using Obsidian.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -231,19 +235,18 @@ namespace Obsidian.Net
 
             var bytes = Encoding.UTF8.GetBytes(value);
             await this.WriteVarIntAsync(bytes.Length);
-            await this.WriteAsync(bytes); 
+            await this.WriteAsync(bytes);
         }
 
         public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
-        public async Task<int> WriteVarIntAsync(int value)
+        public async Task WriteVarIntAsync(int value)
         {
             //await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
 
             var v = (uint)value;
-            int varInt = 0;
 
             do
             {
@@ -254,12 +257,8 @@ namespace Obsidian.Net
                 if (v != 0)
                     temp |= 128;
 
-                varInt += temp;
-
                 await this.WriteUnsignedByteAsync(temp);
             } while (v != 0);
-
-            return varInt;
         }
 
 
@@ -267,6 +266,80 @@ namespace Obsidian.Net
         /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
         /// </summary>
         public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
+
+        public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr)
+        {
+            switch (dataType)
+            {
+                case DataType.Auto:
+                    return await this.ReadAutoAsync(type, attr.Absolute, attr.CountLength);
+                case DataType.Boolean:
+                    return await this.ReadBooleanAsync();
+                case DataType.Byte:
+                    return await this.ReadByteAsync();
+                case DataType.UnsignedByte:
+                    return await this.ReadUnsignedByteAsync();
+                case DataType.Short:
+                    return await this.ReadShortAsync();
+                case DataType.UnsignedShort:
+                    return await this.ReadUnsignedShortAsync();
+                case DataType.Int:
+                    return await this.ReadIntAsync();
+                case DataType.Long:
+                    return await this.ReadLongAsync();
+                case DataType.Float:
+                    return await this.ReadFloatAsync();
+                case DataType.Double:
+                    return await this.ReadDoubleAsync();
+                case DataType.String:
+                    return await this.ReadStringAsync(attr.MaxLength);
+                case DataType.Chat:
+                    return await this.ReadChatAsync();
+                case DataType.Identifier:
+                    return await this.ReadStringAsync();
+                case DataType.VarInt:
+                    return await this.ReadVarIntAsync();
+                case DataType.VarLong:
+                    return await this.ReadVarLongAsync();
+                case DataType.EntityMetadata:
+                case DataType.Slot:
+                case DataType.NbtTag:
+                case DataType.ChangeGameStateReason:
+                case DataType.List:
+                    throw new NotImplementedException(nameof(type));
+
+                case DataType.Position:
+                    {
+                        if (attr.Absolute)
+                            return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+
+                        return await this.ReadPositionAsync();
+                    }
+                case DataType.Angle:
+                    return this.ReadFloatAsync();
+                case DataType.UUID:
+                    return Guid.Parse(await this.ReadStringAsync());
+                case DataType.Transform:
+                    return await this.ReadTransformAsync();
+                case DataType.SoundPosition:
+                    return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
+                case DataType.Velocity:
+                    return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
+                default:
+                    throw new NotImplementedException(nameof(type));
+            }
+        }
+
+        private async Task<Transform> ReadTransformAsync()
+        {
+            var x = await this.ReadDoubleAsync();
+            var y = await this.ReadDoubleAsync();
+            var z = await this.ReadDoubleAsync();
+            var pitch = await this.ReadFloatAsync();
+            var yaw = await this.ReadFloatAsync();
+
+            return new Transform(x, y, z, pitch, yaw);
+        }
 
         [Obsolete("Shouldn't be used anymore")]
         public async Task<object> ReadAutoAsync(Type type, bool absolute = false, bool countLength = false)
@@ -332,13 +405,17 @@ namespace Obsidian.Net
 
                 return await this.ReadPositionAsync();
             }
+            else if (type == typeof(Transform))
+            {
+                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadFloatAsync(), await this.ReadFloatAsync());
+            }
             else if (type.BaseType != null && type.BaseType == typeof(Enum))
             {
                 return await this.ReadVarIntAsync();
             }
             else
             {
-                throw new InvalidOperationException("Tried to read un-supported type");
+                throw new InvalidOperationException($"Tried to read un-supported type {type}");
             }
         }
 
@@ -392,7 +469,7 @@ namespace Obsidian.Net
                 case List<CommandNode> nodes:
                     await this.WriteVarIntAsync(nodes.Count);
                     foreach (var node in nodes)
-                        await this.WriteAsync(await node.ToArrayAsync());
+                        await node.CopyToAsync(this);
 
                     await this.WriteVarIntAsync(0);
                     break;
@@ -421,6 +498,176 @@ namespace Obsidian.Net
                     throw new InvalidOperationException($"Can't handle {value} ({value.GetType()})");
             }
         }
+
+        public async Task WriteAsync(DataType type, FieldAttribute attribute, object value, int length = 32767)
+        {
+            switch (type)
+            {
+                case DataType.Auto:
+                    {
+                        await this.WriteAutoAsync(value);
+                        break;
+                    }
+                case DataType.Boolean:
+                    {
+                        await this.WriteBooleanAsync((bool)value);
+                        break;
+                    }
+                case DataType.Byte:
+                    {
+                        await this.WriteByteAsync((sbyte)value);
+                        break;
+                    }
+                case DataType.UnsignedByte:
+                    {
+                        await this.WriteUnsignedByteAsync((byte)value);
+                        break;
+                    }
+                case DataType.Short:
+                    {
+                        await this.WriteShortAsync((short)value);
+                        break;
+                    }
+                case DataType.UnsignedShort:
+                    {
+                        await this.WriteUnsignedShortAsync((ushort)value);
+                        break;
+                    }
+                case DataType.Int:
+                    {
+                        await this.WriteIntAsync((int)value);
+                        break;
+                    }
+                case DataType.Long:
+                    {
+                        await this.WriteLongAsync((long)value);
+                        break;
+                    }
+                case DataType.Float:
+                    {
+                        await this.WriteFloatAsync((float)value);
+                        break;
+                    }
+                case DataType.Double:
+                    {
+                        await this.WriteDoubleAsync((double)value);
+                        break;
+                    }
+
+                case DataType.String:
+                    {
+                        // TODO: add casing options on Field attribute and support custom naming enums.
+                        var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
+                        await Program.PacketLogger.LogDebugAsync($"Writing string: {val}");
+                        await this.WriteStringAsync(val, length);
+                        break;
+                    }
+                case DataType.Chat:
+                    {
+                        await this.WriteChatAsync((ChatMessage)value);
+                        break;
+                    }
+                case DataType.VarInt:
+                    {
+                        await this.WriteVarIntAsync((int)value);
+                        break;
+                    }
+                case DataType.VarLong:
+                    {
+                        await this.WriteVarLongAsync((long)value);
+                        break;
+                    }
+                case DataType.Position:
+                    {
+                        var pos = (Position)value;
+
+                        if (attribute.Absolute)
+                        {
+                            await this.WriteDoubleAsync(pos.X);
+                            await this.WriteDoubleAsync(pos.Y);
+                            await this.WriteDoubleAsync(pos.Z);
+                            break;
+                        }
+
+                        await this.WritePositionAsync(pos);
+                        break;
+                    }
+                case DataType.Transform:
+                    {
+                        var transform = (Transform)value;
+
+                        await this.WriteDoubleAsync(transform.X);
+                        await this.WriteDoubleAsync(transform.Y);
+                        await this.WriteDoubleAsync(transform.Z);
+                        await this.WriteFloatAsync(transform.Yaw.Degrees);
+                        await this.WriteFloatAsync(transform.Pitch.Degrees);
+                        break;
+                    }
+                case DataType.SoundPosition:
+                    {
+                        var soundPosition = (SoundPosition)value;
+
+                        await this.WriteIntAsync(soundPosition.X);
+                        await this.WriteIntAsync(soundPosition.Y);
+                        await this.WriteIntAsync(soundPosition.Z);
+                        break;
+                    }
+                case DataType.Velocity:
+                    {
+                        var velocity = (Velocity)value;
+
+                        await this.WriteShortAsync(velocity.X);
+                        await this.WriteShortAsync(velocity.Y);
+                        await this.WriteShortAsync(velocity.Z);
+                        break;
+                    }
+                case DataType.ChangeGameStateReason:
+                    {
+                        var gameStateValue = (ChangeGameStateReason)value;
+
+                        await this.WriteUnsignedByteAsync(gameStateValue.Reason);
+                        await this.WriteFloatAsync(gameStateValue.Value);
+                        break;
+                    }
+                case DataType.UUID:
+                    {
+                        await this.WriteUuidAsync((Guid)value);
+                        break;
+                    }
+                case DataType.List:
+                    {
+                        if (value is List<CommandNode> nodes)
+                        {
+                            var list = nodes.Distinct().ToList();//TODO find out why its duplicating and adding empty entries
+                            list.RemoveAll(x => x.Name.IsNullOrWhitespace());
+
+                            await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", list.Select(x => x.Name))} ({list.Count})");
+
+                            await this.WriteVarIntAsync(list.Count);
+
+                            foreach (var node in list)
+                            {
+                                if (string.IsNullOrEmpty(node.Name))
+                                    continue;
+
+                                await node.CopyToAsync(this);
+                            }
+
+                            await this.WriteVarIntAsync(0);
+                        }
+                        else if (value is List<PlayerInfoAction> actions)
+                        {
+                            await this.WriteVarIntAsync(actions.Count);
+
+                            foreach (var action in actions)
+                                await action.WriteAsync(this);
+                        }
+                        break;
+                    }
+                default: throw new ArgumentOutOfRangeException(nameof(type));
+            }
+        }
+
 
         public async Task WriteLongArrayAsync(long[] value)
         {

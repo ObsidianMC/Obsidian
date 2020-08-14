@@ -128,7 +128,7 @@ namespace Obsidian.Entities
             this.PreviousTransform.ToPosition = this.Transform.ToPosition;
         }
 
-        public async Task SendMessageAsync(string message, byte position = 0)
+        public async Task SendMessageAsync(string message, sbyte position = 0)
         {
             var chat = ChatMessage.Simple(message);
             await _client.SendPacket(new ChatMessagePacket(chat, position));

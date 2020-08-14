@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Extensions
 {
     public static class Extensions
     {
@@ -20,6 +20,10 @@ namespace Obsidian.Util
             return (long)((ulong)value >> s);
         }
 
+        public static bool IsNullOrEmpty(this string value) => string.IsNullOrEmpty(value);
+
+        public static bool IsNullOrWhitespace(this string value) => string.IsNullOrWhiteSpace(value);
+
         public static string Capitalize(this string value)
         {
             if (string.IsNullOrEmpty(value))
@@ -27,6 +31,8 @@ namespace Obsidian.Util
 
             return char.ToUpper(value[0]) + value.Substring(1);
         }
+
+        public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
         public static string ToCamelCase(this string str)
         {

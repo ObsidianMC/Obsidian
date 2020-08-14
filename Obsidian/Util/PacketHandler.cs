@@ -3,6 +3,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer;
+using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
 using System.Threading.Tasks;

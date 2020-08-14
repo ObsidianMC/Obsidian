@@ -32,17 +32,19 @@ namespace Obsidian.Plugins
 
             var discoveredPlugins = new List<Plugin>();
 
-            foreach (var source in Sources)
+            foreach (var source in this.Sources)
                 discoveredPlugins.AddRange(await source.GetPluginsAsync(Path));
 
             foreach (var plugin in discoveredPlugins)
             {
                 await plugin.LoadAsync(Server);
-                
+
                 var authors = string.Join(", ", plugin.Info.Authors);
                 await logger.LogMessageAsync($"Loaded plugin: {plugin.Info.Name} by {authors}");
-                
+
                 Plugins.Add(plugin);
+
+
             }
         }
     }

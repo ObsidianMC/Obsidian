@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(0, Type = DataType.VarInt)]
         public int Action { get; }
 
-        [Field(1)]
+        [Field(1, Type = DataType.List)]
         public List<PlayerInfoAction> Actions { get; }
 
         public PlayerInfo() : base(0x30) { }

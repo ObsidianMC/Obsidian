@@ -1,5 +1,6 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play
@@ -9,7 +10,7 @@ namespace Obsidian.Net.Packets.Play
     /// </summary>
     public class DeclareCommands : Packet
     {
-        [Field(0)]
+        [Field(0, Type = DataType.List)]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
         public DeclareCommands() : base(0x11) { }

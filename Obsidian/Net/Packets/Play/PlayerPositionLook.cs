@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(0)]
         public Transform Transform { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1, Type = DataType.Byte)]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
         [Field(2, Type = DataType.VarInt)]
