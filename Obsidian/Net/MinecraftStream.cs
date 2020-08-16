@@ -638,22 +638,19 @@ namespace Obsidian.Net
                     {
                         if (value is List<CommandNode> nodes)
                         {
-                            var list = nodes.Distinct().ToList();//TODO find out why its duplicating and adding empty entries
-                            list.RemoveAll(x => x.Name.IsNullOrWhitespace());
+                            Console.WriteLine(nodes.Count);
+                            //var list = nodes.Distinct().ToList();//TODO find out why its duplicating and adding empty entries
+                            //list.RemoveAll(x => x.Name.IsNullOrWhitespace());
 
-                            await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", list.Select(x => x.Name))} ({list.Count})");
+                            await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", nodes.Select(x => x.Name))} ({nodes.Count})");
 
-                            await this.WriteVarIntAsync(list.Count);
-
-                            foreach (var node in list)
+                            foreach (var node in nodes)
                             {
                                 if (string.IsNullOrEmpty(node.Name))
                                     continue;
 
                                 await node.CopyToAsync(this);
                             }
-
-                            await this.WriteVarIntAsync(0);
                         }
                         else if (value is List<PlayerInfoAction> actions)
                         {

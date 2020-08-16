@@ -194,10 +194,9 @@ namespace Obsidian
                 }
 
                 node.Children.Add(commandNode);
-
-                packet.AddNode(node);
             }
 
+            packet.AddNode(node);
             await this.QueuePacketAsync(packet);
             await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
         }
@@ -491,7 +490,9 @@ namespace Obsidian
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix this as well
+            //await this.SendChunkAsync(new Chunk(0, 0));
+
+            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         private async Task SendServerBrand()
@@ -536,7 +537,7 @@ namespace Obsidian
             for (int i = 0; i < 16 * 16; i++)
                 chunkData.Biomes.Add(127); //TODO: Add proper biomes
 
-            await this.SendPacket(chunkData);
+            await this.QueuePacketAsync(chunkData);
         }
 
         public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
@@ -549,10 +550,10 @@ namespace Obsidian
             }
             else
             {
-                if(packet is ChunkDataPacket chunk)
+                if (packet is ChunkDataPacket chunk)
                 {
                     await chunk.WriteToAsync(this.minecraftStream);
-                    await this.Logger.LogDebugAsync("Sending CHunk");
+
                     return;
                 }
 

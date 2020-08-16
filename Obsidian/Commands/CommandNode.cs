@@ -16,45 +16,45 @@ namespace Obsidian.Commands
 
         internal CommandParser Parser { get; set; }
 
-        public CommandNodeType Type;
+        public CommandNodeType Type { get; set; }
 
         public List<CommandNode> Children = new List<CommandNode>();
 
-        public string Name;
+        public string Name { get; set; } = string.Empty;
 
         public int Index => this.Owner.Nodes.IndexOf(this);
 
-        public async Task CopyToAsync(MinecraftStream mcStream)
+        public async Task CopyToAsync(MinecraftStream stream)
         {
-            await using var stream = new MinecraftStream();
-            await stream.WriteByteAsync((sbyte)this.Type);
-            await stream.WriteVarIntAsync(this.Children.Count);
+            await using var dataStream = new MinecraftStream();
+            await dataStream.WriteByteAsync((sbyte)this.Type);
+            await dataStream.WriteVarIntAsync(this.Children.Count);
 
             foreach (CommandNode childNode in this.Children)
             {
-                await stream.WriteVarIntAsync(childNode.Index);
+                await dataStream.WriteVarIntAsync(childNode.Index);
             }
 
             if (this.Type.HasFlag(CommandNodeType.HasRedirect))
             {
                 //TODO: Add redirect functionality if needed
-                await stream.WriteVarIntAsync(0);
+                await dataStream.WriteVarIntAsync(0);
             }
 
             if (this.Type.HasFlag(CommandNodeType.Argument) || this.Type.HasFlag(CommandNodeType.Literal))
             {
                 if (!this.Name.IsNullOrWhitespace())
-                    await stream.WriteStringAsync(this.Name);
+                    await dataStream.WriteStringAsync(this.Name);
             }
 
             if (this.Type.HasFlag(CommandNodeType.Argument))
             {
-                await this.Parser.WriteAsync(stream);
+                await this.Parser.WriteAsync(dataStream);
             }
 
-            stream.Position = 0;
+            dataStream.Position = 0;
 
-            await stream.CopyToAsync(mcStream);
+            await dataStream.CopyToAsync(stream);
         }
     }
 }
