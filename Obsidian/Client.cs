@@ -487,11 +487,11 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            //await this.SendDeclareCommandsAsync();
+            //await this.SendDeclareCommandsAsync(); //TODO fix
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
+            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix this as well
         }
 
         private async Task SendServerBrand()
@@ -515,8 +515,10 @@ namespace Obsidian
         {
             var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
 
+            chunk = this.Server.WorldGenerator.GenerateChunk(chunk);
+
             for (int i = 0; i < 16; i++)
-                chunkData.Data.Add(new ChunkSection().FilledWithLight());
+                chunkData.Data.Add(new ChunkSection().FillWithLight());
 
             for (int x = 0; x < 16; x++)
             {
@@ -532,9 +534,9 @@ namespace Obsidian
             }
 
             for (int i = 0; i < 16 * 16; i++)
-                chunkData.Biomes.Add(29); //TODO: Add proper biomes
+                chunkData.Biomes.Add(127); //TODO: Add proper biomes
 
-            await this.QueuePacketAsync(chunkData);
+            await this.SendPacket(chunkData);
         }
 
         public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
@@ -547,6 +549,13 @@ namespace Obsidian
             }
             else
             {
+                if(packet is ChunkDataPacket chunk)
+                {
+                    await chunk.WriteToAsync(this.minecraftStream);
+                    await this.Logger.LogDebugAsync("Sending CHunk");
+                    return;
+                }
+
                 await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
             }
         }

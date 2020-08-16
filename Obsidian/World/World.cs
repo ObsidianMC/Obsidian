@@ -47,16 +47,16 @@ namespace Obsidian.World
         {
             int dist = c.ClientSettings?.ViewDistance ?? 8;
 
-            int oldchunkx = TransformToChunk(c.Player.PreviousTransform?.X ?? 0);
-            int chunkx = TransformToChunk(c.Player.Transform?.X ?? 0);
+            int oldchunkx = this.TransformToChunk(c.Player.PreviousTransform?.X ?? 0);
+            int chunkx = this.TransformToChunk(c.Player.Transform?.X ?? 0);
 
-            int oldchunkz = TransformToChunk(c.Player.PreviousTransform?.Z ?? 0);
-            int chunkz = TransformToChunk(c.Player.Transform?.Z ?? 0);
+            int oldchunkz = this.TransformToChunk(c.Player.PreviousTransform?.Z ?? 0);
+            int chunkz = this.TransformToChunk(c.Player.Transform?.Z ?? 0);
 
             if (Math.Abs(chunkz - oldchunkz) > dist || Math.Abs(chunkx - oldchunkx) > dist)
             {
                 // This is a teleport!!!1 Send full new chunk data.
-                await ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                await this.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
                 return;
             }
 
@@ -67,7 +67,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx - dist), i);
 
-                    await c.SendChunkAsync(GetChunk((chunkx + dist), i, c));
+                    await c.SendChunkAsync(this.GetChunk((chunkx + dist), i, c));
                 }
             }
 
@@ -78,7 +78,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                    await c.SendChunkAsync(GetChunk((chunkx - dist), i, c));
+                    await c.SendChunkAsync(this.GetChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -89,7 +89,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
 
-                    await c.SendChunkAsync(GetChunk(i, (chunkz + dist), c));
+                    await c.SendChunkAsync(this.GetChunk(i, (chunkz + dist), c));
                 }
             }
 
@@ -100,7 +100,7 @@ namespace Obsidian.World
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
 
-                    await c.SendChunkAsync(GetChunk(i, (chunkz - dist), c));
+                    await c.SendChunkAsync(this.GetChunk(i, (chunkz - dist), c));
                 }
             }
         }
@@ -121,7 +121,7 @@ namespace Obsidian.World
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    await c.SendChunkAsync(GetChunk(cx, cz, c));
+                    await c.SendChunkAsync(this.GetChunk(cx, cz, c));
                 }
             }
 

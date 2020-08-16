@@ -1,16 +1,16 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Obsidian.BlockData;
+﻿using Obsidian.BlockData;
 using Obsidian.Net;
 using Obsidian.Util.Registry;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
     public interface IBlockStatePalette
     {
         bool IsFull { get; }
-        int IdFromState(Block blockState);
-        BlockState StateFromIndex(int index);
+        int GetIdFromState(Block blockState);
+        BlockState GetStateFromIndex(int index);
         Task<byte[]> ToArrayAsync();
     }
 
@@ -18,12 +18,14 @@ namespace Obsidian.ChunkData
     {
         public bool IsFull { get { return false; } }
 
-        public int IdFromState(Block blockState)
+        public byte BitsPerBlock { get => 14; }
+
+        public int GetIdFromState(Block blockState)
         {
             return BlockRegistry.BLOCK_STATES.Values.ToList().IndexOf(blockState);
         }
 
-        public BlockState StateFromIndex(int index)
+        public BlockState GetStateFromIndex(int index)
         {
             return BlockRegistry.BLOCK_STATES.Values.ToList()[index];
         }
@@ -43,10 +45,11 @@ namespace Obsidian.ChunkData
 
         public LinearBlockStatePalette(int bitCount)
         {
+
             this.BlockStateArray = new BlockState[1 << bitCount];
         }
 
-        public int IdFromState(Block blockState)
+        public int GetIdFromState(Block blockState)
         {
             for (int id = 0; id < BlockStateCount; id++)
             {
@@ -67,24 +70,23 @@ namespace Obsidian.ChunkData
             return newId;
         }
 
-        public BlockState StateFromIndex(int index)
+        public BlockState GetStateFromIndex(int index)
         {
             return BlockStateArray[index];
         }
 
         public async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MinecraftStream())
+            using var stream = new MinecraftStream();
+
+            await stream.WriteVarIntAsync(BlockStateCount);
+
+            for (int i = 0; i < BlockStateCount; i++)
             {
-                await stream.WriteVarIntAsync(BlockStateCount);
-
-                for (int i = 0; i < BlockStateCount; i++)
-                {
-                    await stream.WriteVarIntAsync(BlockStateArray[i].Id);
-                }
-
-                return stream.ToArray();
+                await stream.WriteVarIntAsync(BlockStateArray[i].Id);
             }
+
+            return stream.ToArray();
         }
     }
 }

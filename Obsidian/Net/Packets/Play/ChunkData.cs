@@ -1,8 +1,8 @@
-﻿using System;
+﻿using fNbt;
+using Obsidian.ChunkData;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using fNbt;
-using Obsidian.ChunkData;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -11,11 +11,13 @@ namespace Obsidian.Net.Packets.Play
         public int ChunkX { get; set; }
         public int ChunkZ { get; set; }
 
+        public bool FullChunk = true;
+
         public List<ChunkSection> Data { get; }
         public List<int> Biomes { get; }
         public List<NbtTag> BlockEntities { get; }
 
-        public int changedSectionFilter = 0b1111111111111111;
+        public const int changedSectionFilter = 0b1111111111111111;
 
         public ChunkDataPacket() : base(0x22, Array.Empty<byte>()) { }
 
@@ -29,7 +31,7 @@ namespace Obsidian.Net.Packets.Play
             this.BlockEntities = new List<NbtTag>();
         }
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
+        internal async Task WriteToAsync(MinecraftStream stream)
         {
             bool fullChunk = true; // changedSectionFilter == 0b1111111111111111;
 
@@ -38,21 +40,21 @@ namespace Obsidian.Net.Packets.Play
 
             await stream.WriteBooleanAsync(fullChunk);
 
-            int availableSections = 0;
+            int avaliableSections = 0;
 
             await using var dataStream = new MinecraftStream();
 
             var chunkSectionY = 0;
-            foreach (var section in Data)
+            foreach (var section in this.Data)
             {
                 if (section == null)
                     throw new InvalidOperationException();
 
                 if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0)
                 {
-                    availableSections |= 1 << chunkSectionY;
+                    avaliableSections |= 1 << chunkSectionY;
 
-                    await section.WriteAsync(dataStream);
+                    await section.CopyToAsync(dataStream);
                 }
                 chunkSectionY++;
             }
@@ -70,18 +72,17 @@ namespace Obsidian.Net.Packets.Play
                     await dataStream.WriteIntAsync(biomeId);
                 }
             }
-            await stream.WriteVarIntAsync(availableSections);
+            await stream.WriteVarIntAsync(avaliableSections);
 
-            await stream.WriteVarIntAsync((int)dataStream.Length);
-            dataStream.Position = 0;
-            await dataStream.CopyToAsync(stream);
+            var data = dataStream.ToArray();
+
+            await stream.WriteVarIntAsync(data.Length);
+            await stream.WriteAsync(data);
 
             await stream.WriteVarIntAsync(BlockEntities.Count);
 
             foreach (var entity in BlockEntities)
                 await stream.WriteNbtAsync(entity);
         }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

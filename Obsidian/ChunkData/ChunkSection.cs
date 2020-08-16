@@ -14,16 +14,21 @@ namespace Obsidian.ChunkData
 
         public bool Overworld = true;
 
-        public async Task WriteAsync(MinecraftStream stream)
+        public async Task CopyToAsync(MinecraftStream stream)
         {
-            await BlockStateContainer.WriteAsync(stream);
-            await stream.WriteAsync(BlockLightArray.Data);
+            await using var data = new MinecraftStream();
+            await data.WriteAsync(await this.BlockStateContainer.ToArrayAsync());
+            await data.WriteAsync(BlockLightArray.Data);
 
             if (Overworld)
-                await stream.WriteAsync(SkyLightArray.Data);
+                await data.WriteAsync(SkyLightArray.Data);
+
+            data.Position = 0;
+
+            await data.CopyToAsync(stream);
         }
 
-        public ChunkSection FilledWithLight()
+        public ChunkSection FillWithLight()
         {
             for (int i = 0; i < BlockLightArray.Data.Length; i++)
                 BlockLightArray.Data[i] = 255;
@@ -35,22 +40,20 @@ namespace Obsidian.ChunkData
         }
     }
 
+
     public class BlockStateContainer
     {
         private const byte BitsPerEntry = 14;
+        private DataArray BlockStorage = new DataArray(BitsPerEntry);
 
-        private readonly DataArray BlockStorage = new DataArray(BitsPerEntry);
-
-        private IBlockStatePalette Palette { get; }
-
-        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
-
-        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
+        public void Set(int x, int y, int z, BlockState blockState)
+        {
+            this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
+        }
 
         public BlockState Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[GetIndex(x, y, z)];
-
             foreach (var blockState in BlockRegistry.BLOCK_STATES.Values)
             {
                 if (blockState.Id == storageId)
@@ -61,12 +64,17 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
-        public async Task WriteAsync(MinecraftStream stream)
+        public async Task<byte[]> ToArrayAsync()
         {
+            await using var stream = new MinecraftStream();
             await stream.WriteByteAsync((sbyte)BitsPerEntry);
 
             await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
             await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
+
+            return stream.ToArray();
         }
     }
+
+
 }
