@@ -24,7 +24,7 @@
         Angle,
         UUID,
         Transform,
-        List,
+        Array,
         ChangeGameStateReason,
         SoundPosition,
         Velocity,

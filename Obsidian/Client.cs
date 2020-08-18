@@ -2,6 +2,7 @@
 using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
+using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
@@ -91,12 +92,12 @@ namespace Obsidian
 
         #region Packet Sending Methods
 
-        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacket(new Disconnect(reason, this.State));
+        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacketAsync(new Disconnect(reason, this.State));
 
         internal async Task ProcessKeepAlive(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
-            await this.SendPacket(new KeepAlive(id));
+            await this.SendPacketAsync(new KeepAlive(id));
             missedKeepalives += 1; // This will be decreased after an answer is received.
             if (missedKeepalives > this.config.MaxMissedKeepalives)
             {
@@ -122,26 +123,26 @@ namespace Obsidian
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
         {
-            await this.SendPacket(new PlayerPositionLook(poslook, posflags, tpid));
+            await this.SendPacketAsync(new PlayerPositionLook(poslook, posflags, tpid));
         }
 
         internal async Task SendBlockChangeAsync(BlockChange b)
         {
             await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
-            await this.SendPacket(b);
+            await this.SendPacketAsync(b);
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
         }
 
         internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
-            await this.SendPacket(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
+            await this.SendPacketAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
 
             await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
         }
 
         internal async Task SendEntity(EntityPacket packet)
         {
-            await SendPacket(packet);
+            await SendPacketAsync(packet);
             await this.Logger.LogDebugAsync($"Sent entity with id {packet.Id} for player {this.Player.Username}");
         }
 
@@ -153,15 +154,14 @@ namespace Obsidian
             {
                 Type = CommandNodeType.Root
             };
+            var index = 0;
             foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
             {
-                if (command.Name.IsNullOrEmpty() || node.Children.Any(x => x.Name.EqualsIgnoreCase(command.Name)))
-                    continue;
-
                 var commandNode = new CommandNode()
                 {
                     Name = command.Name,
-                    Type = CommandNodeType.Literal
+                    Type = CommandNodeType.Literal,
+                    Index = ++index
                 };
 
                 foreach (Qmmands.Parameter parameter in command.Parameters)
@@ -170,18 +170,20 @@ namespace Obsidian
                     {
                         Name = parameter.Name,
                         Type = CommandNodeType.Argument,
+                        Index = ++index
                     };
 
                     Type type = parameter.Type;
 
                     if (type == typeof(string)) parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                    else if (type == typeof(double)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:double");
-                    else if (type == typeof(float)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:float");
-                    else if (type == typeof(int)) parameterNode.Parser = new EmptyFlagsCommandParser("brigadier:integer");
+                    else if (type == typeof(double)) parameterNode.Parser = new CommandParser("brigadier:double");
+                    else if (type == typeof(float)) parameterNode.Parser = new CommandParser("brigadier:float");
+                    else if (type == typeof(int)) parameterNode.Parser = new CommandParser("brigadier:integer");
                     else if (type == typeof(bool)) parameterNode.Parser = new CommandParser("brigadier:bool");
+                    else if (type == typeof(Position)) parameterNode.Parser = new CommandParser("minecraft:vec3");
                     else continue;
 
-                    commandNode.Children.Add(parameterNode);
+                    commandNode.AddChild(parameterNode);
                 }
 
                 if (commandNode.Children.Count > 0)
@@ -193,11 +195,11 @@ namespace Obsidian
                     commandNode.Type |= CommandNodeType.IsExecutabe;
                 }
 
-                node.Children.Add(commandNode);
+                node.AddChild(commandNode);
             }
 
             packet.AddNode(node);
-            await this.QueuePacketAsync(packet);
+            await this.SendPacketAsync(packet);
             await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
         }
 
@@ -211,7 +213,7 @@ namespace Obsidian
                 }
             };
 
-            await SendPacket(new PlayerInfo(4, list));
+            await SendPacketAsync(new PlayerInfo(4, list));
             await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
         }
 
@@ -229,7 +231,7 @@ namespace Obsidian
                 }
             };
 
-            await SendPacket(new PlayerInfo(0, list));
+            await SendPacketAsync(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
         }
 
@@ -258,13 +260,13 @@ namespace Obsidian
                 list.Add(piaa);
             }
 
-            await SendPacket(new PlayerInfo(0, list));
+            await SendPacketAsync(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
         {
-            await SendPacket(new PlayerListHeaderFooter(header, footer));
+            await SendPacketAsync(new PlayerListHeaderFooter(header, footer));
             await this.Logger.LogDebugAsync("Sent Player List Footer Header packet.");
         }
 
@@ -300,11 +302,11 @@ namespace Obsidian
                         {
                             case 0x00:
                                 var status = new ServerStatus(Server);
-                                await this.SendPacket(new RequestResponse(status));
+                                await this.SendPacketAsync(new RequestResponse(status));
                                 break;
 
                             case 0x01:
-                                await this.SendPacket(new PingPong(packet.data));
+                                await this.SendPacketAsync(new PingPong(packet.data));
                                 this.Disconnect();
                                 break;
                         }
@@ -365,7 +367,7 @@ namespace Obsidian
 
                                     this.randomToken = values.randomToken;
 
-                                    await this.SendPacket(new EncryptionRequest(values.publicKey, this.randomToken));
+                                    await this.SendPacketAsync(new EncryptionRequest(values.publicKey, this.randomToken));
 
                                     break;
                                 }
@@ -442,7 +444,7 @@ namespace Obsidian
             {
                 if (this.PacketQueue.TryDequeue(out var packet))
                 {
-                    await this.SendPacket(packet);
+                    await this.SendPacketAsync(packet);
                     await Logger.LogWarningAsync($"Enqueued packet: {packet} (0x{packet.id:X2})");
                 }
             }
@@ -451,14 +453,14 @@ namespace Obsidian
         //TODO fix compression
         private async Task SetCompression()
         {
-            await this.SendPacket(new SetCompression(compressionThreshold));
+            await this.SendPacketAsync(new SetCompression(compressionThreshold));
             this.compressionEnabled = true;
             await this.Logger.LogDebugAsync("Compression has been enabled.");
         }
 
         private async Task ConnectAsync()
         {
-            await this.SendPacket(new LoginSuccess(this.Player.Uuid, this.Player.Username));
+            await this.SendPacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
             await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
@@ -466,7 +468,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            await this.SendPacket(new JoinGame
+            await this.SendPacketAsync(new JoinGame
             {
                 EntityId = (int)(EntityId.Player | (EntityId)this.id),
                 GameMode = Gamemode.Creative,
@@ -476,19 +478,18 @@ namespace Obsidian
             });
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await this.SendPacket(new SpawnPosition(new Position(0, 100, 0)));
+            await this.SendPacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await this.SendPacket(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
+            await this.SendPacketAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
-
-            await this.SendServerBrand();
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            //await this.SendDeclareCommandsAsync(); //TODO fix
-            await this.SendPlayerInfoAsync();
-            await this.SendPlayerListDecoration();
+            await this.SendDeclareCommandsAsync(); //TODO fix
+                                                   // await this.SendPlayerInfoAsync();
+                                                   //await this.SendPlayerListDecoration();
+                                                   //await this.SendServerBrand();
 
             //await this.SendChunkAsync(new Chunk(0, 0));
 
@@ -542,7 +543,7 @@ namespace Obsidian
 
         public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
 
-        public async Task SendPacket(Packet packet)
+        public async Task SendPacketAsync(Packet packet)
         {
             if (this.compressionEnabled)
             {
@@ -556,7 +557,7 @@ namespace Obsidian
 
                     return;
                 }
-
+                
                 await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
             }
         }

@@ -131,27 +131,27 @@ namespace Obsidian.Entities
         public async Task SendMessageAsync(string message, sbyte position = 0)
         {
             var chat = ChatMessage.Simple(message);
-            await _client.SendPacket(new ChatMessagePacket(chat, position));
+            await _client.SendPacketAsync(new ChatMessagePacket(chat, position));
         }
 
         public async Task SendMessageAsync(ChatMessage message)
         {
-            await _client.SendPacket(new ChatMessagePacket(message, 0));
+            await _client.SendPacketAsync(new ChatMessagePacket(message, 0));
         }
 
         public async Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacket(new SoundEffect(soundId, position, category, pitch, volume));
+            await _client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
         }
 
         public async Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacket(new NamedSoundEffect(name, position, category, pitch, volume));
+            await _client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
-            await _client.SendPacket(new BossBar(uuid, action));
+            await _client.SendPacketAsync(new BossBar(uuid, action));
         }
 
         public async Task KickAsync(string reason)

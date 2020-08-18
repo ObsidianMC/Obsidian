@@ -44,7 +44,7 @@ namespace Obsidian.Commands
             var messages = new List<ChatMessage>();
 
             foreach (var pls in Context.Server.PluginManager.Plugins)
-                if(pls.Info.ProjectUrl != null)
+                if (pls.Info.ProjectUrl != null)
                 {
                     messages.Add(new ChatMessage
                     {
@@ -127,10 +127,10 @@ namespace Obsidian.Commands
 
         [Command("tp")]
         [Description("teleports you to a location")]
-        public async Task TeleportAsync(double x, double y, double z)
+        public async Task TeleportAsync(Position location)
         {
             await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await Context.Client.SendPlayerLookPositionAsync(new Transform(x, y, z), PositionFlags.NONE);
+            await Context.Client.SendPlayerLookPositionAsync(new Transform(location.X, location.Y, location.Z), PositionFlags.NONE);
         }
 
         [Command("op")]
@@ -154,7 +154,7 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task UnclaimOpAsync(string username)
         {
-            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c =>c.Username == username);
+            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c => c.Username == username);
             if (player != null)
             {
                 Context.Server.Operators.AddOperator(player);
@@ -168,26 +168,7 @@ namespace Obsidian.Commands
         }
 
         [Command("oprequest", "opreq")]
-        public async Task RequestOpAsync()
-        {
-            if (!Context.Server.Config.AllowOperatorRequests)
-            {
-                await Context.Player.SendMessageAsync("§cOperator requests are disabled on this server.");
-                return;
-            }
-
-            if (Context.Server.Operators.CreateRequest(Context.Player))
-            {
-                await Context.Player.SendMessageAsync("A request has been to the server console");
-            }
-            else
-            {
-                await Context.Player.SendMessageAsync("§cYou have already sent a request");
-            }
-        }
-
-        [Command("oprequest", "opreq")]
-        public async Task RequestOpAsync(string code)
+        public async Task RequestOpAsync(string code = null)
         {
             if (!Context.Server.Config.AllowOperatorRequests)
             {
@@ -198,10 +179,17 @@ namespace Obsidian.Commands
             if (Context.Server.Operators.ProcessRequest(Context.Player, code))
             {
                 await Context.Player.SendMessageAsync("Your request has been accepted");
+
+                return;
+            }
+
+            if (Context.Server.Operators.CreateRequest(Context.Player))
+            {
+                await Context.Player.SendMessageAsync("A request has been to the server console");
             }
             else
             {
-                await Context.Player.SendMessageAsync("§cInvalid request");
+                await Context.Player.SendMessageAsync("§cYou have already sent a request");
             }
         }
 

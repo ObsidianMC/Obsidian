@@ -46,7 +46,6 @@ namespace Obsidian.Serializer
             dataStream.Position = 0;
             await dataStream.DumpAsync();
 
-            dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
 
             stream.Lock.Release();

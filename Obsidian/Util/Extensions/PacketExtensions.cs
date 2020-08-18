@@ -73,7 +73,7 @@ namespace Obsidian.Util.Extensions
                         else if (type == typeof(ChangeGameStateReason))
                             return DataType.ChangeGameStateReason;
                         else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList))
-                            return DataType.List;
+                            return DataType.Array;
 
                         return DataType.Auto;
                     }

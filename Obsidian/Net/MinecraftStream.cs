@@ -305,7 +305,7 @@ namespace Obsidian.Net
                 case DataType.Slot:
                 case DataType.NbtTag:
                 case DataType.ChangeGameStateReason:
-                case DataType.List:
+                case DataType.Array:
                     throw new NotImplementedException(nameof(type));
 
                 case DataType.Position:
@@ -634,21 +634,14 @@ namespace Obsidian.Net
                         await this.WriteUuidAsync((Guid)value);
                         break;
                     }
-                case DataType.List:
+                case DataType.Array:
                     {
                         if (value is List<CommandNode> nodes)
                         {
-                            Console.WriteLine(nodes.Count);
-                            //var list = nodes.Distinct().ToList();//TODO find out why its duplicating and adding empty entries
-                            //list.RemoveAll(x => x.Name.IsNullOrWhitespace());
-
-                            await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", nodes.Select(x => x.Name))} ({nodes.Count})");
+                            //await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", nodes.Select(x => x.Name))} ({nodes.Count})");
 
                             foreach (var node in nodes)
                             {
-                                if (string.IsNullOrEmpty(node.Name))
-                                    continue;
-
                                 await node.CopyToAsync(this);
                             }
                         }

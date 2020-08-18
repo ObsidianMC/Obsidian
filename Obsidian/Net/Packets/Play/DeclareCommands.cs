@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(0, Type = DataType.VarInt)]
         public int NodeCount => this.Nodes.Count;
 
-        [Field(1, Type = DataType.List)]
+        [Field(1, Type = DataType.Array)]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
         [Field(2, Type = DataType.VarInt)]
@@ -23,12 +23,10 @@ namespace Obsidian.Net.Packets.Play
 
         public void AddNode(CommandNode node)
         {
-            node.Owner = this;
-            Nodes.Add(node);
+            this.Nodes.Add(node);
 
             foreach (var child in node.Children)
-                AddNode(child);
-
+                this.AddNode(child);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿
+using Obsidian.Net.Packets;
 using System;
 using System.IO;
 using System.Threading;
@@ -49,13 +50,13 @@ namespace Obsidian.Net
             BaseStream = new MemoryStream(data);
         }
 
-        public async Task DumpAsync(bool clear = true)
+        public async Task DumpAsync(bool clear = true, Packet packet = null)
         {
             if (debugMemoryStream == null)
                 throw new Exception("Can't dump a stream who wasn't set to debug.");
 
             // TODO: Stream the memory stream into a file stream for better performance and stuff :3
-            var filePath = Path.Combine(Path.GetTempPath(), "obsidian-" + Path.GetRandomFileName() + ".bin");
+            var filePath = Path.Combine(Path.GetTempPath(), $"obsidian-{(packet != null ? packet.GetType().Name : "")}-" + Path.GetRandomFileName() + ".bin");
             await File.WriteAllBytesAsync(filePath, debugMemoryStream.ToArray());
 
             if (clear)

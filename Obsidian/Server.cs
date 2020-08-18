@@ -2,6 +2,7 @@
 using Obsidian.BlockData;
 using Obsidian.Chat;
 using Obsidian.Commands;
+using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
@@ -96,6 +97,7 @@ namespace Obsidian
                 IgnoreExtraArguments = true
             });
             this.Commands.AddModule<MainCommandModule>();
+            this.Commands.AddTypeParser(new LocationTypeParser());
             this.Events = new MinecraftEventHandler();
 
             this.PluginManager = new PluginManager(this);
