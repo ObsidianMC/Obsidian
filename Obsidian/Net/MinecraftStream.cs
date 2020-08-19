@@ -659,16 +659,16 @@ namespace Obsidian.Net
         }
 
 
-        public async Task WriteLongArrayAsync(long[] value)
+        public async Task WriteLongArrayAsync(long[] values)
         {
-            for (var i = 0; i < value.Length; i++)
-                await this.WriteLongAsync(value[i]);
+            foreach (var value in values)
+                await this.WriteLongAsync(value);
         }
 
-        public async Task WriteLongArrayAsync(ulong[] value)
+        public async Task WriteLongArrayAsync(ulong[] values)
         {
-            for (var i = 0; i < value.Length; i++)
-                await this.WriteLongAsync((long)value[i]);
+            foreach (var value in values)
+                await this.WriteLongAsync((long)value);
         }
 
         public async Task WriteVarLongAsync(long value)

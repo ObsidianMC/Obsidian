@@ -10,6 +10,19 @@ namespace Obsidian.Util.Collection
 
         public ulong[] Storage { get; }
 
+        public DataArray(byte bitsPerBlock)
+        {
+            this.BitsPerBlock = bitsPerBlock;
+            this.BlockMask = (1u << BitsPerBlock) - 1;
+            this.Storage = new ulong[(16 * 16 * 16) * this.BitsPerBlock / 64];
+        }
+
+        private (int indexOffset, int bitOffset) GetOffset(int serialIndex)
+        {
+            var index = serialIndex * this.BitsPerBlock;
+            return (index / 64, index % 64);
+        }
+
         public int this[int serialIndex]//Changed this to int and everything fixed
         {
             get
@@ -40,19 +53,6 @@ namespace Obsidian.Util.Collection
                     this.Storage[indexOffset + 1] = (tmpValue & ~mask) | (stgValue & mask);
                 }
             }
-        }
-
-        public DataArray(byte bitsPerBlock)
-        {
-            this.BitsPerBlock = bitsPerBlock;
-            this.BlockMask = (1u << BitsPerBlock) - 1;
-            this.Storage = new ulong[(16 * 16 * 16) * BitsPerBlock / 64];
-        }
-
-        private (int indexOffset, int bitOffset) GetOffset(int serialIndex)
-        {
-            var index = serialIndex * this.BitsPerBlock;
-            return (index / 64, index % 64);
         }
     }
 }

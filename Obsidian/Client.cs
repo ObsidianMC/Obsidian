@@ -486,14 +486,14 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
 
-            await this.SendDeclareCommandsAsync(); //TODO fix
-                                                   // await this.SendPlayerInfoAsync();
-                                                   //await this.SendPlayerListDecoration();
-                                                   //await this.SendServerBrand();
+            await this.SendDeclareCommandsAsync();
+            await this.SendPlayerInfoAsync();
+            await this.SendPlayerListDecoration();
+            await this.SendServerBrand();
 
-            //await this.SendChunkAsync(new Chunk(0, 0));
+            await this.SendChunkAsync(new Chunk(0, 0));
 
-            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
+            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
 
         private async Task SendServerBrand()
@@ -530,7 +530,7 @@ namespace Obsidian
                     {
                         var block = chunk.Blocks[x, y, z];
 
-                        chunkData.Data[6].BlockStateContainer.Set(x, y, z, block);
+                        chunkData.Data[6].Container.Set(x, y, z, block);
                     }
                 }
             }
@@ -553,11 +553,11 @@ namespace Obsidian
             {
                 if (packet is ChunkDataPacket chunk)
                 {
-                    await chunk.WriteToAsync(this.minecraftStream);
+                    await chunk.WriteAsync(this.minecraftStream);
 
                     return;
                 }
-                
+
                 await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
             }
         }

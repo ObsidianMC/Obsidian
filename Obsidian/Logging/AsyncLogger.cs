@@ -125,10 +125,10 @@ namespace Obsidian.Logging
         {
             return logLevel switch
             {
-                LogLevel.Info => ConsoleColor.Cyan,
+                LogLevel.Info => ConsoleColor.White,
                 LogLevel.Warning => ConsoleColor.Yellow,
                 LogLevel.Error => ConsoleColor.DarkRed,
-                LogLevel.Debug => ConsoleColor.Magenta,
+                LogLevel.Debug => ConsoleColor.Cyan,
                 _ => ConsoleColor.Gray
             };
         }
