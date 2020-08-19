@@ -297,7 +297,7 @@ namespace Obsidian.Util
                     // Player Block Placement
                     var pbp = await PacketSerializer.DeserializeAsync<PlayerBlockPlacement>(packet.data);
 
-                    server.EnqueuePlacing(pbp);
+                    await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
                     await Logger.LogDebugAsync("Received player block placement");
 
                     break;

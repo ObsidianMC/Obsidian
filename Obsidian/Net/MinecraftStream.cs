@@ -301,30 +301,33 @@ namespace Obsidian.Net
                     return await this.ReadVarIntAsync();
                 case DataType.VarLong:
                     return await this.ReadVarLongAsync();
-                case DataType.EntityMetadata:
-                case DataType.Slot:
-                case DataType.NbtTag:
-                case DataType.ChangeGameStateReason:
-                case DataType.Array:
-                    throw new NotImplementedException(nameof(type));
-
                 case DataType.Position:
                     {
-                        if (attr.Absolute)
-                            return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+                        if (type == typeof(Position))
+                        {
+                            if (attr.Absolute)
+                                return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
 
-                        return await this.ReadPositionAsync();
+                            return await this.ReadPositionAsync();
+                        }
+                        else if (type == typeof(Transform))
+                            return await this.ReadTransformAsync();
+                        else if (type == typeof(SoundPosition))
+                            return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
+
+
+                        return null;
                     }
                 case DataType.Angle:
                     return this.ReadFloatAsync();
                 case DataType.UUID:
                     return Guid.Parse(await this.ReadStringAsync());
-                case DataType.Transform:
-                    return await this.ReadTransformAsync();
-                case DataType.SoundPosition:
-                    return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
                 case DataType.Velocity:
                     return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
+                case DataType.EntityMetadata:
+                case DataType.Slot:
+                case DataType.NbtTag:
+                case DataType.Array:
                 default:
                     throw new NotImplementedException(nameof(type));
             }
@@ -505,7 +508,14 @@ namespace Obsidian.Net
             {
                 case DataType.Auto:
                     {
-                        await this.WriteAutoAsync(value);
+                        if (value is ChangeGameStateReason changeGameState)
+                        {
+                            await this.WriteUnsignedByteAsync(changeGameState.Reason);
+                            await this.WriteFloatAsync(changeGameState.Value);
+                        }
+                        else
+                            await this.WriteAutoAsync(value);
+
                         break;
                     }
                 case DataType.Boolean:
@@ -579,37 +589,33 @@ namespace Obsidian.Net
                     }
                 case DataType.Position:
                     {
-                        var pos = (Position)value;
-
-                        if (attribute.Absolute)
+                        if (value is Position position)
                         {
-                            await this.WriteDoubleAsync(pos.X);
-                            await this.WriteDoubleAsync(pos.Y);
-                            await this.WriteDoubleAsync(pos.Z);
-                            break;
+                            if (attribute.Absolute)
+                            {
+                                await this.WriteDoubleAsync(position.X);
+                                await this.WriteDoubleAsync(position.Y);
+                                await this.WriteDoubleAsync(position.Z);
+                                break;
+                            }
+
+                            await this.WritePositionAsync(position);
+                        }
+                        else if (value is Transform transform)
+                        {
+                            await this.WriteDoubleAsync(transform.X);
+                            await this.WriteDoubleAsync(transform.Y);
+                            await this.WriteDoubleAsync(transform.Z);
+                            await this.WriteFloatAsync(transform.Yaw.Degrees);
+                            await this.WriteFloatAsync(transform.Pitch.Degrees);
+                        }
+                        else if (value is SoundPosition soundPosition)
+                        {
+                            await this.WriteIntAsync(soundPosition.X);
+                            await this.WriteIntAsync(soundPosition.Y);
+                            await this.WriteIntAsync(soundPosition.Z);
                         }
 
-                        await this.WritePositionAsync(pos);
-                        break;
-                    }
-                case DataType.Transform:
-                    {
-                        var transform = (Transform)value;
-
-                        await this.WriteDoubleAsync(transform.X);
-                        await this.WriteDoubleAsync(transform.Y);
-                        await this.WriteDoubleAsync(transform.Z);
-                        await this.WriteFloatAsync(transform.Yaw.Degrees);
-                        await this.WriteFloatAsync(transform.Pitch.Degrees);
-                        break;
-                    }
-                case DataType.SoundPosition:
-                    {
-                        var soundPosition = (SoundPosition)value;
-
-                        await this.WriteIntAsync(soundPosition.X);
-                        await this.WriteIntAsync(soundPosition.Y);
-                        await this.WriteIntAsync(soundPosition.Z);
                         break;
                     }
                 case DataType.Velocity:
@@ -619,14 +625,6 @@ namespace Obsidian.Net
                         await this.WriteShortAsync(velocity.X);
                         await this.WriteShortAsync(velocity.Y);
                         await this.WriteShortAsync(velocity.Z);
-                        break;
-                    }
-                case DataType.ChangeGameStateReason:
-                    {
-                        var gameStateValue = (ChangeGameStateReason)value;
-
-                        await this.WriteUnsignedByteAsync(gameStateValue.Reason);
-                        await this.WriteFloatAsync(gameStateValue.Value);
                         break;
                     }
                 case DataType.UUID:
@@ -695,9 +693,7 @@ namespace Obsidian.Net
 
         public async Task WritePositionAsync(Position value, bool pre14 = true)
         {
-            var pos = pre14
-                ? (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF)
-                : (((long)value.X & 0x3FFFFFF) << 38) | ((long)value.Z & 0x3FFFFFF << 12) | (((long)value.Y & 0xFFF));
+            var pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
 
             await WriteLongAsync(pos);
         }
@@ -909,7 +905,9 @@ namespace Obsidian.Net
         public async Task<Position> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
-            int x = (int)(value >> 38), y = (int)((value >> 26) & 0xFFF), z = (int)(value << 38 >> 38);
+            double x = (int)(value >> 38),
+                y = (int)(value >> 26) & 0xFFF,
+                z = (int)(value << 38 >> 38);
 
             if (PacketHandler.Protocol == ProtocolVersion.v1_14)
             {
@@ -918,9 +916,9 @@ namespace Obsidian.Net
                 z = (int)(value << 26 >> 38);
             }
 
-            if (x >= Math.Pow(2, 25)) { x -= (int)Math.Pow(2, 26); }
-            if (y >= Math.Pow(2, 11)) { y -= (int)Math.Pow(2, 12); }
-            if (z >= Math.Pow(2, 25)) { z -= (int)Math.Pow(2, 26); }
+            if (x >= Math.Pow(2, 25)) { x -= Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11)) { y -= Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25)) { z -= Math.Pow(2, 26); }
 
             return new Position
             {

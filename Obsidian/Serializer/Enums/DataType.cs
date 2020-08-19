@@ -23,10 +23,7 @@
         Position,
         Angle,
         UUID,
-        Transform,
         Array,
-        ChangeGameStateReason,
-        SoundPosition,
         Velocity,
         // TODO: Implement missing data types
         // Optional X

@@ -1,6 +1,7 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Enums;
+using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
 using System.Linq;
@@ -91,6 +92,9 @@ namespace Obsidian.Serializer
                         var val = await stream.ReadAsync(property.PropertyType, dataType, key);
 
                         await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
+
+                        if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
+                            val = (BlockFace)val;
 
                         property.SetValue(packet, val);
                     }

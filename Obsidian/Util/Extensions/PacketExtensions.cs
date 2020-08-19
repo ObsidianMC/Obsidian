@@ -62,16 +62,10 @@ namespace Obsidian.Util.Extensions
                     {
                         if (type == typeof(ChatMessage))
                             return DataType.Chat;
-                        else if (type == typeof(Position))
+                        else if (type == typeof(Position) || type == typeof(SoundPosition) || type == typeof(Transform))
                             return DataType.Position;
-                        else if (type == typeof(SoundPosition))
-                            return DataType.SoundPosition;
                         else if (type == typeof(Velocity))
                             return DataType.Velocity;
-                        else if (type == typeof(Transform))
-                            return DataType.Transform;
-                        else if (type == typeof(ChangeGameStateReason))
-                            return DataType.ChangeGameStateReason;
                         else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList))
                             return DataType.Array;
 

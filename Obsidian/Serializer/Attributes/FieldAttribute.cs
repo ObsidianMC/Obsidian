@@ -19,11 +19,6 @@ namespace Obsidian.Serializer.Attributes
         /// </summary>
         public int MaxLength { get; set; }
 
-        public FieldAttribute(int order)
-        {
-            this.Order = order;
-        }
-
         public FieldAttribute(int order, bool absolute = false)
         {
             this.Order = order;

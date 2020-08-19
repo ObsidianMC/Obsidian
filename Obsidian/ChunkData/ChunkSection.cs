@@ -50,13 +50,13 @@ namespace Obsidian.ChunkData
 
         private IBlockStatePalette Palette { get; }
 
-        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
+        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[this.GetIndex(x, y, z)] = blockState.Id;
 
-        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
+        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[this.GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
 
         public BlockState Get(int x, int y, int z)
         {
-            int storageId = this.BlockStorage[GetIndex(x, y, z)];
+            int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 
             foreach (var blockState in BlockRegistry.BLOCK_STATES.Values)
             {
@@ -66,7 +66,9 @@ namespace Obsidian.ChunkData
             return null;
         }
 
-        private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+        //private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+
+        private int GetIndex(int x, int y, int z) => (y & 0xF) << 8 | z << 4 | x;
 
         public async Task WriteToAsync(MinecraftStream stream)
         {

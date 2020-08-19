@@ -17,7 +17,7 @@ namespace Obsidian.Entities
 {
     public class Player : Living
     {
-        internal readonly Client _client;
+        internal readonly Client client;
 
         public string Uuid { get; set; }
 
@@ -38,7 +38,7 @@ namespace Obsidian.Entities
 
         public Gamemode Gamemode { get; set; }
 
-        public int Ping => this._client.ping;
+        public int Ping => this.client.ping;
 
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
@@ -80,7 +80,7 @@ namespace Obsidian.Entities
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
             this.Transform = new Transform();
-            this._client = client;
+            this.client = client;
         }
 
         public void UpdatePosition(Position pos, bool? onGround = null)
@@ -131,32 +131,32 @@ namespace Obsidian.Entities
         public async Task SendMessageAsync(string message, sbyte position = 0)
         {
             var chat = ChatMessage.Simple(message);
-            await _client.SendPacketAsync(new ChatMessagePacket(chat, position));
+            await client.SendPacketAsync(new ChatMessagePacket(chat, position));
         }
 
         public async Task SendMessageAsync(ChatMessage message)
         {
-            await _client.SendPacketAsync(new ChatMessagePacket(message, 0));
+            await client.SendPacketAsync(new ChatMessagePacket(message, 0));
         }
 
         public async Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
+            await client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
         }
 
         public async Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-            await _client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
+            await client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
         }
 
         public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
         {
-            await _client.SendPacketAsync(new BossBar(uuid, action));
+            await client.SendPacketAsync(new BossBar(uuid, action));
         }
 
         public async Task KickAsync(string reason)
         {
-            await this._client.DisconnectAsync(ChatMessage.Simple(reason));
+            await this.client.DisconnectAsync(ChatMessage.Simple(reason));
         }
 
         public void LoadPerms(List<string> permissions)
@@ -167,7 +167,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public Task DisconnectAsync(ChatMessage reason) => this._client.DisconnectAsync(reason);
+        public Task DisconnectAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public override async Task WriteAsync(MinecraftStream stream)
         {

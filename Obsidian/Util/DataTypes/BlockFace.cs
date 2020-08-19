@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Util.DataTypes
 {
-    public enum BlockFace : sbyte
+    public enum BlockFace : int
     {
         /// <summary>
         /// -Y
