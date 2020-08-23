@@ -1,9 +1,11 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -12,6 +14,9 @@ namespace Obsidian.Serializer
 {
     public static class PacketSerializer
     {
+        internal delegate Packet DeserializeDelegate(MinecraftStream minecraftStream);
+
+        private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
 
         public static async Task SerializeAsync(Packet packet, MinecraftStream stream)
         {
@@ -104,6 +109,22 @@ namespace Obsidian.Serializer
             return packet;
         }
 
+        public static async Task<T> FastDeserializeAsync<T>(byte[] data) where T : Packet
+        {
+            await using var stream = new MinecraftStream(data);
 
+            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+
+            return (T)deserializeMethod(stream);
+        }
+
+        public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : Packet
+        {
+            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+
+            return (T)deserializeMethod(minecraftStream);
+        }
     }
 }

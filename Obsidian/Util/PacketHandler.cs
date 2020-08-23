@@ -83,7 +83,7 @@ namespace Obsidian.Util
 
                 case 0x02:
                     // Incoming chat message
-                    var message = await PacketSerializer.DeserializeAsync<IncomingChatMessage>(packet.data);
+                    var message = await PacketSerializer.FastDeserializeAsync<IncomingChatMessage>(packet.data);
 
                     await server.ParseMessage(message.Message, client);
                     break;
