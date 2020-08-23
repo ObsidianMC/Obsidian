@@ -391,7 +391,10 @@ namespace Obsidian
         {
             //TODO do this from somewhere else
             foreach (var other in this.OnlinePlayers.Values.Except(new List<Player> { e.Joined }))
+            {
                 await other.client.AddPlayerToListAsync(e.Joined);
+                await other.client.SpawnNewPlayerAsync(e.Joined);
+            }
 
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
         }

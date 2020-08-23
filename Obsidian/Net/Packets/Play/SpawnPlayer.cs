@@ -7,13 +7,13 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SpawnPlayer : Packet
     {
-        [Field(0)]
+        [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
 
         [Field(1)]
         public Guid Uuid { get; set; }
 
-        [Field(2)]
+        [Field(2, true)]
         public Transform Tranform { get; set; }
 
         [Field(3)]

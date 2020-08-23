@@ -7,18 +7,14 @@ using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.GameState;
 using Obsidian.Net.Packets.Play;
-using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
-using Obsidian.World;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -112,315 +108,10 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteByteAsync(sbyte value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
-#endif
-
-            await this.WriteUnsignedByteAsync((byte)value);
-        }
-
-        public async Task WriteUnsignedByteAsync(byte value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
-#endif
-
-            await this.WriteAsync(new[] { value });
-        }
-
-        public async Task WriteBooleanAsync(bool value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
-#endif
-
-            await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
-        }
-
-        public async Task WriteUnsignedShortAsync(ushort value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteShortAsync(short value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Short ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteIntAsync(int value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Int ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteLongAsync(long value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Long ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteFloatAsync(float value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Float ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteDoubleAsync(double value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Double ({value})");
-#endif
-
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
-            await this.WriteAsync(write);
-        }
-
-        public async Task WriteStringAsync(string value, int maxLength = 32767)
-        {
-            //await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            if (value.Length > maxLength)
-                throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
-
-            var bytes = Encoding.UTF8.GetBytes(value);
-            await this.WriteVarIntAsync(bytes.Length);
-            await this.WriteAsync(bytes);
-        }
-
         public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
-        public async Task WriteVarIntAsync(int value)
-        {
-            //await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
-
-            var v = (uint)value;
-
-            do
-            {
-                var temp = (byte)(v & 127);
-
-                v >>= 7;
-
-                if (v != 0)
-                    temp |= 128;
-
-                await this.WriteUnsignedByteAsync(temp);
-            } while (v != 0);
-        }
-
-
-        /// <summary>
-        /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
-        /// </summary>
-        public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
-
-        public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr)
-        {
-            switch (dataType)
-            {
-                case DataType.Auto:
-                    return await this.ReadAutoAsync(type, attr.Absolute, attr.CountLength);
-                case DataType.Boolean:
-                    return await this.ReadBooleanAsync();
-                case DataType.Byte:
-                    return await this.ReadByteAsync();
-                case DataType.UnsignedByte:
-                    return await this.ReadUnsignedByteAsync();
-                case DataType.Short:
-                    return await this.ReadShortAsync();
-                case DataType.UnsignedShort:
-                    return await this.ReadUnsignedShortAsync();
-                case DataType.Int:
-                    return await this.ReadIntAsync();
-                case DataType.Long:
-                    return await this.ReadLongAsync();
-                case DataType.Float:
-                    return await this.ReadFloatAsync();
-                case DataType.Double:
-                    return await this.ReadDoubleAsync();
-                case DataType.String:
-                    return await this.ReadStringAsync(attr.MaxLength);
-                case DataType.Chat:
-                    return await this.ReadChatAsync();
-                case DataType.Identifier:
-                    return await this.ReadStringAsync();
-                case DataType.VarInt:
-                    return await this.ReadVarIntAsync();
-                case DataType.VarLong:
-                    return await this.ReadVarLongAsync();
-                case DataType.Position:
-                    {
-                        if (type == typeof(Position))
-                        {
-                            if (attr.Absolute)
-                                return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
-
-                            return await this.ReadPositionAsync();
-                        }
-                        else if (type == typeof(Transform))
-                            return await this.ReadTransformAsync();
-                        else if (type == typeof(SoundPosition))
-                            return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
-
-
-                        return null;
-                    }
-                case DataType.Angle:
-                    return this.ReadFloatAsync();
-                case DataType.UUID:
-                    return Guid.Parse(await this.ReadStringAsync());
-                case DataType.Velocity:
-                    return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
-                case DataType.EntityMetadata:
-                case DataType.Slot:
-                case DataType.NbtTag:
-                case DataType.Array:
-                default:
-                    throw new NotImplementedException(nameof(type));
-            }
-        }
-
-        private async Task<Transform> ReadTransformAsync()
-        {
-            var x = await this.ReadDoubleAsync();
-            var y = await this.ReadDoubleAsync();
-            var z = await this.ReadDoubleAsync();
-            var pitch = await this.ReadFloatAsync();
-            var yaw = await this.ReadFloatAsync();
-
-            return new Transform(x, y, z, pitch, yaw);
-        }
-
-        [Obsolete("Shouldn't be used anymore")]
-        public async Task<object> ReadAutoAsync(Type type, bool absolute = false, bool countLength = false)
-        {
-            if (type == typeof(int))
-            {
-                if (absolute)
-                    return await this.ReadIntAsync();
-
-                return await this.ReadVarIntAsync();
-            }
-            else if (type == typeof(string))
-            {
-                return await this.ReadStringAsync(32767) ?? string.Empty;
-            }
-            else if (type == typeof(float))
-            {
-                return await this.ReadFloatAsync();
-            }
-            else if (type == typeof(double))
-            {
-                return await this.ReadDoubleAsync();
-            }
-            else if (type == typeof(short))
-            {
-                return await this.ReadShortAsync();
-            }
-            else if (type == typeof(ushort))
-            {
-                return await this.ReadUnsignedShortAsync();
-            }
-            else if (type == typeof(long))
-            {
-                return await this.ReadLongAsync();
-            }
-            else if (type == typeof(bool))
-            {
-                return await this.ReadBooleanAsync();
-            }
-            else if (type == typeof(byte))
-            {
-                return await this.ReadUnsignedByteAsync();
-            }
-            else if (type == typeof(sbyte))
-            {
-                return await this.ReadByteAsync();
-            }
-            else if (type == typeof(byte[]) && countLength)
-            {
-                var length = await this.ReadVarIntAsync();
-                return await this.ReadUInt8ArrayAsync(length);
-            }
-            else if (type == typeof(ChatMessage))
-            {
-                return JsonConvert.DeserializeObject<ChatMessage>(await this.ReadStringAsync());
-            }
-            else if (type == typeof(Position))
-            {
-                if (absolute)
-                {
-                    return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
-                }
-
-                return await this.ReadPositionAsync();
-            }
-            else if (type == typeof(Transform))
-            {
-                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadFloatAsync(), await this.ReadFloatAsync());
-            }
-            else if (type.BaseType != null && type.BaseType == typeof(Enum))
-            {
-                return await this.ReadVarIntAsync();
-            }
-            else
-            {
-                throw new InvalidOperationException($"Tried to read un-supported type {type}");
-            }
-        }
 
         [Obsolete("Shouldn't be used anymore")]
         public async Task WriteAutoAsync(object value, bool countLength = false)
@@ -656,41 +347,6 @@ namespace Obsidian.Net
             }
         }
 
-
-        public async Task WriteLongArrayAsync(long[] values)
-        {
-            foreach (var value in values)
-                await this.WriteLongAsync(value);
-        }
-
-        public async Task WriteLongArrayAsync(ulong[] values)
-        {
-            foreach (var value in values)
-                await this.WriteLongAsync((long)value);
-        }
-
-        public async Task WriteVarLongAsync(long value)
-        {
-#if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing VarLong ({value})");
-#endif
-
-            var v = (ulong)value;
-
-            do
-            {
-                var temp = (byte)(v & 127);
-
-                v >>= 7;
-
-                if (v != 0)
-                    temp |= 128;
-
-
-                await this.WriteUnsignedByteAsync(temp);
-            } while (v != 0);
-        }
-
         public async Task WritePositionAsync(Position value, bool pre14 = true)
         {
             long pos = ((long)value.X & 0x3FFFFFF << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
@@ -709,125 +365,159 @@ namespace Obsidian.Net
 
         #region Reading
 
-        public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
-
-        public async Task<byte> ReadUnsignedByteAsync()
+        public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr)
         {
-            var buffer = new byte[1];
-            await this.ReadAsync(buffer);
-            return buffer[0];
+            switch (dataType)
+            {
+                case DataType.Auto:
+                    return await this.ReadAutoAsync(type, attr.Absolute, attr.CountLength);
+                case DataType.Boolean:
+                    return await this.ReadBooleanAsync();
+                case DataType.Byte:
+                    return await this.ReadByteAsync();
+                case DataType.UnsignedByte:
+                    return await this.ReadUnsignedByteAsync();
+                case DataType.Short:
+                    return await this.ReadShortAsync();
+                case DataType.UnsignedShort:
+                    return await this.ReadUnsignedShortAsync();
+                case DataType.Int:
+                    return await this.ReadIntAsync();
+                case DataType.Long:
+                    return await this.ReadLongAsync();
+                case DataType.Float:
+                    return await this.ReadFloatAsync();
+                case DataType.Double:
+                    return await this.ReadDoubleAsync();
+                case DataType.String:
+                    return await this.ReadStringAsync(attr.MaxLength);
+                case DataType.Chat:
+                    return await this.ReadChatAsync();
+                case DataType.Identifier:
+                    return await this.ReadStringAsync();
+                case DataType.VarInt:
+                    return await this.ReadVarIntAsync();
+                case DataType.VarLong:
+                    return await this.ReadVarLongAsync();
+                case DataType.Position:
+                    {
+                        if (type == typeof(Position))
+                        {
+                            if (attr.Absolute)
+                                return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+
+                            return await this.ReadPositionAsync();
+                        }
+                        else if (type == typeof(Transform))
+                            return await this.ReadTransformAsync();
+                        else if (type == typeof(SoundPosition))
+                            return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
+
+
+                        return null;
+                    }
+                case DataType.Angle:
+                    return this.ReadFloatAsync();
+                case DataType.UUID:
+                    return Guid.Parse(await this.ReadStringAsync());
+                case DataType.Velocity:
+                    return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
+                case DataType.EntityMetadata:
+                case DataType.Slot:
+                case DataType.NbtTag:
+                case DataType.Array:
+                default:
+                    throw new NotImplementedException(nameof(type));
+            }
         }
 
-        public async Task<bool> ReadBooleanAsync()
+        private async Task<Transform> ReadTransformAsync()
         {
-            var value = (int)await this.ReadByteAsync();
-            if (value == 0x00)
+            var x = await this.ReadDoubleAsync();
+            var y = await this.ReadDoubleAsync();
+            var z = await this.ReadDoubleAsync();
+            var pitch = await this.ReadFloatAsync();
+            var yaw = await this.ReadFloatAsync();
+
+            return new Transform(x, y, z, pitch, yaw);
+        }
+
+        [Obsolete("Shouldn't be used anymore")]
+        public async Task<object> ReadAutoAsync(Type type, bool absolute = false, bool countLength = false)
+        {
+            if (type == typeof(int))
             {
-                return false;
+                if (absolute)
+                    return await this.ReadIntAsync();
+
+                return await this.ReadVarIntAsync();
             }
-            else if (value == 0x01)
+            else if (type == typeof(string))
             {
-                return true;
+                return await this.ReadStringAsync(32767) ?? string.Empty;
+            }
+            else if (type == typeof(float))
+            {
+                return await this.ReadFloatAsync();
+            }
+            else if (type == typeof(double))
+            {
+                return await this.ReadDoubleAsync();
+            }
+            else if (type == typeof(short))
+            {
+                return await this.ReadShortAsync();
+            }
+            else if (type == typeof(ushort))
+            {
+                return await this.ReadUnsignedShortAsync();
+            }
+            else if (type == typeof(long))
+            {
+                return await this.ReadLongAsync();
+            }
+            else if (type == typeof(bool))
+            {
+                return await this.ReadBooleanAsync();
+            }
+            else if (type == typeof(byte))
+            {
+                return await this.ReadUnsignedByteAsync();
+            }
+            else if (type == typeof(sbyte))
+            {
+                return await this.ReadByteAsync();
+            }
+            else if (type == typeof(byte[]) && countLength)
+            {
+                var length = await this.ReadVarIntAsync();
+                return await this.ReadUInt8ArrayAsync(length);
+            }
+            else if (type == typeof(ChatMessage))
+            {
+                return JsonConvert.DeserializeObject<ChatMessage>(await this.ReadStringAsync());
+            }
+            else if (type == typeof(Position))
+            {
+                if (absolute)
+                {
+                    return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+                }
+
+                return await this.ReadPositionAsync();
+            }
+            else if (type == typeof(Transform))
+            {
+                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadFloatAsync(), await this.ReadFloatAsync());
+            }
+            else if (type.BaseType != null && type.BaseType == typeof(Enum))
+            {
+                return await this.ReadVarIntAsync();
             }
             else
             {
-                throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
+                throw new InvalidOperationException($"Tried to read un-supported type {type}");
             }
-        }
-
-        public async Task<ushort> ReadUnsignedShortAsync()
-        {
-            var buffer = new byte[2];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt16(buffer);
-        }
-
-        public async Task<short> ReadShortAsync()
-        {
-            var buffer = new byte[2];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt16(buffer);
-        }
-
-        public async Task<int> ReadIntAsync()
-        {
-            var buffer = new byte[4];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt32(buffer);
-        }
-
-        public async Task<long> ReadLongAsync()
-        {
-            var buffer = new byte[8];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt64(buffer);
-        }
-
-        public async Task<ulong> ReadUnsignedLongAsync()
-        {
-            var buffer = new byte[8];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt64(buffer);
-        }
-
-        public async Task<float> ReadFloatAsync()
-        {
-            var buffer = new byte[4];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToSingle(buffer);
-        }
-
-        public async Task<double> ReadDoubleAsync()
-        {
-            var buffer = new byte[8];
-            await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToDouble(buffer);
-        }
-
-        public async Task<string> ReadStringAsync(int maxLength = 0)
-        {
-            var length = await this.ReadVarIntAsync();
-            var buffer = new byte[length];
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            await this.ReadAsync(buffer, 0, length);
-
-            var value = Encoding.UTF8.GetString(buffer);
-            if (maxLength > 0 && value.Length > maxLength)
-            {
-                throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
-            }
-            return value;
         }
 
         public async Task<ChatMessage> ReadChatAsync()
@@ -835,76 +525,9 @@ namespace Obsidian.Net
             var chat = await this.ReadStringAsync();
 
             if (chat.Length > 32767)
-            {
                 throw new ArgumentException("string provided by stream exceeded maximum length", nameof(BaseStream));
-            }
 
             return JsonConvert.DeserializeObject<ChatMessage>(chat);
-        }
-
-        public virtual async Task<int> ReadVarIntAsync()
-        {
-            int numRead = 0;
-            int result = 0;
-            byte read;
-            do
-            {
-                read = await this.ReadUnsignedByteAsync();
-                int value = read & 0b01111111;
-                result |= value << (7 * numRead);
-
-                numRead++;
-                if (numRead > 5)
-                {
-                    throw new InvalidOperationException("VarInt is too big");
-                }
-            } while ((read & 0b10000000) != 0);
-
-            return result;
-        }
-
-        public async Task<byte[]> ReadUInt8ArrayAsync(int length)
-        {
-            var result = new byte[length];
-            if (length == 0) return result;
-            int n = length;
-            while (true)
-            {
-                n -= await this.ReadAsync(result, length - n, n);
-                if (n == 0)
-                    break;
-                await Task.Delay(1);
-            }
-            return result;
-        }
-
-        public async Task<byte> ReadUInt8Async()
-        {
-            int value = await this.ReadByteAsync();
-            if (value == -1)
-                throw new EndOfStreamException();
-            return (byte)value;
-        }
-
-        public async Task<long> ReadVarLongAsync()
-        {
-            int numRead = 0;
-            long result = 0;
-            byte read;
-            do
-            {
-                read = await this.ReadUnsignedByteAsync();
-                int value = (read & 0b01111111);
-                result |= (long)value << (7 * numRead);
-
-                numRead++;
-                if (numRead > 10)
-                {
-                    throw new InvalidOperationException("VarLong is too big");
-                }
-            } while ((read & 0b10000000) != 0);
-
-            return result;
         }
 
         public async Task<Position> ReadPositionAsync()
@@ -914,8 +537,6 @@ namespace Obsidian.Net
             long x = (long)(value >> 38);
             long y = (long)(value >> 26) & 0xFFF;
             long z = (long)(value << 38 >> 38);
-
-            Console.WriteLine($"\n\n\n\n\n\n\nY VALUE: {y}");
 
             if (PacketHandler.Protocol == ProtocolVersion.v1_14)
             {

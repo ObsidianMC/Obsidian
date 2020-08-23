@@ -18,9 +18,12 @@ namespace Obsidian.Net.Packets.Handshaking
         [Field(3, Type = DataType.VarInt)]
         public ClientState NextState;
 
-        public Handshake() : base(0x00) { }
+        public Handshake() : base(0x00)
+        {
+        }
 
-        public Handshake(byte[] data) : base(0x00, data) { }
-
+        public Handshake(byte[] data) : base(0x00, data)
+        {
+        }
     }
 }

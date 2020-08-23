@@ -438,6 +438,17 @@ namespace Obsidian
             }
         }
 
+        internal async Task SpawnNewPlayerAsync(Player joined)
+        {
+            await this.QueuePacketAsync(new SpawnPlayer
+            {
+                EntityId = (int)(EntityId.Player | (EntityId)joined.client.id),
+                Player = this.Player,
+                Tranform = this.Player.Transform,
+                Uuid = Guid.Parse(this.Player.Uuid)
+            });
+        }
+
         private async Task ProcessQueue()
         {
             while (!Cancellation.IsCancellationRequested && this.tcp.Connected)
@@ -481,7 +492,9 @@ namespace Obsidian
             await this.SendPacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            await this.SendPacketAsync(new PlayerPositionLook(new Transform(0, 105, 0), PositionFlags.NONE, 0));
+            this.Player.Transform = new Transform(0, 105, 0);
+
+            await this.SendPacketAsync(new PlayerPositionLook(this.Player.Transform, PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
