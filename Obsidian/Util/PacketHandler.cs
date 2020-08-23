@@ -159,7 +159,7 @@ namespace Obsidian.Util
                     var pos = await PacketSerializer.DeserializeAsync<PlayerPosition>(packet.data);
 
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
+                    //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
@@ -174,7 +174,7 @@ namespace Obsidian.Util
                     var look = await PacketSerializer.DeserializeAsync<PlayerLook>(packet.data);
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
-                    await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
+                    //await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
                     break;
 
                 case 0x13:

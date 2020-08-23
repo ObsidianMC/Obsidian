@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play
 
         public BlockChange() : base(0x0B) { }
 
-        public BlockChange(Position loc, int block) : base(0x0B, System.Array.Empty<byte>())
+        public BlockChange(Position loc, int block) : base(0x0B)
         {
             Location = loc;
             BlockId = block;

@@ -68,7 +68,7 @@ namespace Obsidian.ChunkData
 
         //private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
-        private int GetIndex(int x, int y, int z) => (y & 0xF) << 8 | z << 4 | x;
+        private int GetIndex(int x, int y, int z) => (y << 8) | (z << 4) | x;
 
         public async Task WriteToAsync(MinecraftStream stream)
         {

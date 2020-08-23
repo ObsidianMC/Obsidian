@@ -693,9 +693,14 @@ namespace Obsidian.Net
 
         public async Task WritePositionAsync(Position value, bool pre14 = true)
         {
-            var pos = (((long)value.X & 0x3FFFFFF) << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
+            long pos = ((long)value.X & 0x3FFFFFF << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
 
-            await WriteLongAsync(pos);
+
+            var val = (long)((int)value.X & 0x3FFFFFF) << 38;
+            val |= (long)((int)value.Y & 0xFFF) << 26;
+            val |= (long)((int)value.Z & 0x3FFFFFF);
+
+            await WriteLongAsync(val);
         }
 
         public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);
@@ -905,20 +910,23 @@ namespace Obsidian.Net
         public async Task<Position> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
-            double x = (int)(value >> 38),
-                y = (int)(value >> 26) & 0xFFF,
-                z = (int)(value << 38 >> 38);
+
+            long x = (long)(value >> 38);
+            long y = (long)(value >> 26) & 0xFFF;
+            long z = (long)(value << 38 >> 38);
+
+            Console.WriteLine($"\n\n\n\n\n\n\nY VALUE: {y}");
 
             if (PacketHandler.Protocol == ProtocolVersion.v1_14)
             {
-                x = (int)(value >> 38);
-                y = (int)value & 0xFFF;
-                z = (int)(value << 26 >> 38);
+                x = (long)(value >> 38);
+                y = (long)value & 0xFFF;
+                z = (long)(value << 26 >> 38);
             }
 
-            if (x >= Math.Pow(2, 25)) { x -= Math.Pow(2, 26); }
-            if (y >= Math.Pow(2, 11)) { y -= Math.Pow(2, 12); }
-            if (z >= Math.Pow(2, 25)) { z -= Math.Pow(2, 26); }
+            if (x >= Math.Pow(2, 25)) { x -= (long)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11)) { y -= (long)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25)) { z -= (long)Math.Pow(2, 26); }
 
             return new Position
             {

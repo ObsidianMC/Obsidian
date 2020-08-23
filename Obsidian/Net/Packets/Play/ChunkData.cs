@@ -40,7 +40,7 @@ namespace Obsidian.Net.Packets.Play
 
             await stream.WriteBooleanAsync(fullChunk);
 
-            int availableSections = 0;
+            int mask = 0;
 
             await using var dataStream = new MinecraftStream();
 
@@ -52,7 +52,7 @@ namespace Obsidian.Net.Packets.Play
 
                 if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0)
                 {
-                    availableSections |= 1 << chunkSectionY;
+                    mask |= 1 << chunkSectionY;
 
                     await section.WriteToAsync(dataStream);
                 }
@@ -72,7 +72,7 @@ namespace Obsidian.Net.Packets.Play
                     await dataStream.WriteIntAsync(biomeId);
                 }
             }
-            await stream.WriteVarIntAsync(availableSections);
+            await stream.WriteVarIntAsync(mask);
 
             await stream.WriteVarIntAsync((int)dataStream.Length);
             dataStream.Position = 0;

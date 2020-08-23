@@ -128,36 +128,17 @@ namespace Obsidian.Entities
             this.PreviousTransform.ToPosition = this.Transform.ToPosition;
         }
 
-        public async Task SendMessageAsync(string message, sbyte position = 0)
-        {
-            var chat = ChatMessage.Simple(message);
-            await client.SendPacketAsync(new ChatMessagePacket(chat, position));
-        }
+        public Task SendMessageAsync(string message, sbyte position = 0) => client.SendPacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
 
-        public async Task SendMessageAsync(ChatMessage message)
-        {
-            await client.SendPacketAsync(new ChatMessagePacket(message, 0));
-        }
+        public Task SendMessageAsync(ChatMessage message) => client.SendPacketAsync(new ChatMessagePacket(message, 0));
 
-        public async Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
-        }
+        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public async Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
-        }
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
-        public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
-        {
-            await client.SendPacketAsync(new BossBar(uuid, action));
-        }
+        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.SendPacketAsync(new BossBar(uuid, action));
 
-        public async Task KickAsync(string reason)
-        {
-            await this.client.DisconnectAsync(ChatMessage.Simple(reason));
-        }
+        public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
 
         public void LoadPerms(List<string> permissions)
         {

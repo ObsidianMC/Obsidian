@@ -126,17 +126,20 @@ namespace Obsidian
 
                     foreach (var clnt in this.clients.Where(x => x.State == ClientState.Play).ToList())
                         _ = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
+
                     keepaliveticks = 0;
                 }
 
-                foreach (Player player in this.OnlinePlayers.Values)
+                if (this.chatmessages.TryDequeue(out QueueChat msg))
                 {
-                    if (this.chatmessages.Count > 0 && this.chatmessages.TryDequeue(out QueueChat msg))
+                    foreach (var (_, player) in this.OnlinePlayers)
                     {
-                        _ = Task.Run(async () => { await player.SendMessageAsync(msg.Message, msg.Position); });
+                        await player.SendMessageAsync(msg.Message, msg.Position);
                     }
+                }
 
-
+                foreach (var (uuid, player) in this.OnlinePlayers)
+                {
                     if (this.Config.Baah.HasValue)
                     {
                         var pos = new SoundPosition(player.Transform.X, player.Transform.Y, player.Transform.Z);
@@ -144,7 +147,7 @@ namespace Obsidian
                     }
                 }
 
-                if (this.diggers.Count > 0 && this.diggers.TryDequeue(out PlayerDigging d))
+                if (this.diggers.TryDequeue(out PlayerDigging d))
                 {
                     foreach (var clnt in clients)
                     {
@@ -183,9 +186,15 @@ namespace Obsidian
             {
                 var client = player.client;//TODO
 
-                var location = pbp.Location;
+                var castedY = (long)pbp.Location.Y;
+                Console.WriteLine($"\n\n\n\n\n Casted Y: {castedY}");
+
+                var oldLoc = pbp.Location;
+                pbp.Location.Y = castedY == oldLoc.Y ? castedY : oldLoc.Y + 1;
 
                 var b = new BlockChange(pbp.Location, BlockRegistry.G(Materials.Cobblestone).Id);
+
+               
                 await client.SendBlockChangeAsync(b);
             }
         }
@@ -220,7 +229,9 @@ namespace Obsidian
         {
             if (!CommandUtilities.HasPrefix(message, '/', out string output))
             {
-                chatmessages.Enqueue(new QueueChat() { Message = $"<{source.Player.Username}> {message}", Position = position });
+                //await source.Player.SendMessageAsync($"<{source.Player.Username}> {message}", position);
+
+                await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
                 await Logger.LogMessageAsync($"<{source.Player.Username}> {message}");
                 return;
             }
