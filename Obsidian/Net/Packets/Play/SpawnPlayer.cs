@@ -13,10 +13,11 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public Guid Uuid { get; set; }
 
-        [Field(2, true)]
+        [Field(2)]
         public Transform Tranform { get; set; }
 
         [Field(3)]
+        //public byte EOF = 0xff;
         public Player Player { get; set; }
 
         public SpawnPlayer() : base(0x05) { }

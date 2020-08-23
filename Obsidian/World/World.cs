@@ -181,7 +181,7 @@ namespace Obsidian.World
         //TODO
         public void Save() { }
 
-        public void LoadPlayer(string uuid)
+        public void LoadPlayer(Guid uuid)
         {
             var playerfile = Path.Combine(folder, "players", $"{uuid.ToString()}.dat");
 
@@ -216,7 +216,7 @@ namespace Obsidian.World
         }
 
         // This would also save the file back to the world folder.
-        public void UnloadPlayer(string uuid)
+        public void UnloadPlayer(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
             this.Players.RemoveAll(x => x.Uuid == uuid);

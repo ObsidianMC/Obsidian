@@ -11,7 +11,7 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUuidAsync(Guid.Parse(this.Uuid));
+            await stream.WriteUuidAsync(this.Uuid);
             await stream.WriteStringAsync(this.DisplayName);
         }
     }

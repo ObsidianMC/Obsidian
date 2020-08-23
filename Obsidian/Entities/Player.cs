@@ -19,7 +19,7 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
-        public string Uuid { get; set; }
+        public Guid Uuid { get; set; }
 
         public Transform PreviousTransform { get; set; } = new Transform();
 
@@ -74,7 +74,7 @@ namespace Obsidian.Entities
 
         public World.World World;
 
-        internal Player(string uuid, string username, Client client)
+        internal Player(Guid uuid, string username, Client client)
         {
             this.Uuid = uuid;
             this.Username = username;

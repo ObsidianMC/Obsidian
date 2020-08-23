@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
+using Obsidian.Entities;
 using Obsidian.GameState;
 using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData.Info;
@@ -204,8 +205,18 @@ namespace Obsidian.Net
                             await this.WriteUnsignedByteAsync(changeGameState.Reason);
                             await this.WriteFloatAsync(changeGameState.Value);
                         }
+                        else if(value is Player player)
+                        {
+                            await this.WriteUnsignedByteAsync(0xff);
+                            //await this.WriteUnsignedByteAsync(0);
+                            //await this.WriteVarIntAsync(3);
+                            //await this.WriteStringAsync("obsidian player");
+                            //await this.WriteUnsignedByteAsync(0xff);
+                        }
                         else
-                            await this.WriteAutoAsync(value);
+                        {
+                            //await this.WriteAutoAsync(value);
+                        }
 
                         break;
                     }
@@ -321,6 +332,7 @@ namespace Obsidian.Net
                 case DataType.UUID:
                     {
                         await this.WriteUuidAsync((Guid)value);
+                        //await this.WriteStringAsync(((Guid)value).ToString());
                         break;
                     }
                 case DataType.Array:
@@ -356,7 +368,7 @@ namespace Obsidian.Net
             val |= (long)((int)value.Y & 0xFFF) << 26;
             val |= (long)((int)value.Z & 0x3FFFFFF);
 
-            await WriteLongAsync(val);
+            await this.WriteLongAsync(val);
         }
 
         public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);

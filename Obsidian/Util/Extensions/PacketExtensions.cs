@@ -22,7 +22,6 @@ namespace Obsidian.Util.Extensions
             {
                 case TypeCode.Int32:
                     return DataType.Int;
-
                 case TypeCode.Int64:
                     return DataType.Long;
 
@@ -68,6 +67,8 @@ namespace Obsidian.Util.Extensions
                             return DataType.Velocity;
                         else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList))
                             return DataType.Array;
+                        else if (type == typeof(Guid))
+                            return DataType.UUID;
 
                         return DataType.Auto;
                     }
@@ -113,7 +114,7 @@ namespace Obsidian.Util.Extensions
                 if (member is FieldInfo field)
                 {
                     var val = field.GetValue(packet);
-                    await Program.PacketLogger.LogDebugAsync($"Adding val {val.GetType()}");
+                    await Program.PacketLogger.LogDebugAsync($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, val);
                 }
                 else if (member is PropertyInfo property)

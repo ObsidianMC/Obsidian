@@ -87,7 +87,7 @@ namespace Obsidian
 
         ~Client()
         {
-            Dispose(false);
+            this.Dispose(false);
         }
 
         #region Packet Sending Methods
@@ -231,7 +231,7 @@ namespace Obsidian
                 }
             };
 
-            await SendPacketAsync(new PlayerInfo(0, list));
+            await this.QueuePacketAsync(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
         }
 
@@ -252,7 +252,7 @@ namespace Obsidian
 
                 if (this.config.OnlineMode)
                 {
-                    var uuid = player.Uuid.Replace("-", "");
+                    var uuid = player.Uuid.ToString().Replace("-", "");
                     var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
                     piaa.Properties.AddRange(skin.Properties);
                 }
@@ -358,8 +358,7 @@ namespace Obsidian
                                 {
                                     var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
 
-                                    var uuid = Guid.Parse(user.Id).ToString();
-                                    this.Player = new Player(uuid, loginStart.Username, this);
+                                    this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this);
 
                                     this.packetCryptography.GenerateKeyPair();
 
@@ -375,7 +374,7 @@ namespace Obsidian
                                 this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this);
 
                                 //await this.SetCompression();
-                                await ConnectAsync();
+                                await this.ConnectAsync();
                                 break;
                             case 0x01:
                                 var encryptionResponse = await PacketSerializer.DeserializeAsync<EncryptionResponse>(packet.data);
@@ -438,17 +437,6 @@ namespace Obsidian
             }
         }
 
-        internal async Task SpawnNewPlayerAsync(Player joined)
-        {
-            await this.QueuePacketAsync(new SpawnPlayer
-            {
-                EntityId = (int)(EntityId.Player | (EntityId)joined.client.id),
-                Player = this.Player,
-                Tranform = this.Player.Transform,
-                Uuid = Guid.Parse(this.Player.Uuid)
-            });
-        }
-
         private async Task ProcessQueue()
         {
             while (!Cancellation.IsCancellationRequested && this.tcp.Connected)
@@ -471,7 +459,7 @@ namespace Obsidian
 
         private async Task ConnectAsync()
         {
-            await this.SendPacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
+            await this.SendPacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
             await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
@@ -481,7 +469,7 @@ namespace Obsidian
 
             await this.SendPacketAsync(new JoinGame
             {
-                EntityId = (int)(EntityId.Player | (EntityId)this.id),
+                EntityId = this.id,
                 GameMode = Gamemode.Creative,
                 Dimension = Dimension.Overworld,
                 Difficulty = Difficulty.Peaceful,
@@ -506,7 +494,21 @@ namespace Obsidian
 
             await this.SendChunkAsync(new Chunk(0, 0));
 
+            //await this.Server.SendSpawnPlayerAsync(this.Player);//TODO find out why this is breaking
+
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
+        }
+
+        internal async Task SpawnPlayerAsync(Player who)
+        {
+            await this.Logger.LogWarningAsync($"Sending spawn player packet... from: {this.Player.Username}");
+            await this.QueuePacketAsync(new SpawnPlayer
+            {
+                EntityId = who.client.id,
+                Tranform = who.Transform,
+                Uuid = who.Uuid,
+                Player = who
+            });
         }
 
         private async Task SendServerBrand()
@@ -570,7 +572,6 @@ namespace Obsidian
 
                     return;
                 }
-
                 await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
             }
         }

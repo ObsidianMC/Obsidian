@@ -17,7 +17,7 @@ namespace Obsidian.Plugins
         
         public Server Server { get; }
         
-        private string Path => System.IO.Path.Combine(Server.Path, "plugins");
+        private string Path => System.IO.Path.Combine(Server.ServerFolderPath, "plugins");
 
         internal PluginManager(Server server)
         {

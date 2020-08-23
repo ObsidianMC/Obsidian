@@ -1,5 +1,10 @@
-﻿using System;
+﻿using Obsidian.Entities;
+using Obsidian.Plugins;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -15,9 +20,14 @@ namespace Obsidian.Util.Extensions
 
         //this is for longs
 
-        public static long GetUnsignedRightShift(this long value, int s)
+        public static long GetUnsignedRightShift(this long value, int s) => (long)((ulong)value >> s);
+
+        public static string GetConfigPath(this Plugin plugin)
         {
-            return (long)((ulong)value >> s);
+            var path = plugin.Path;
+            var folder = Path.GetDirectoryName(path);
+            var fileName = Path.GetFileNameWithoutExtension(path);
+            return Path.Combine(folder, fileName) + ".json";
         }
 
         public static bool IsNullOrEmpty(this string value) => string.IsNullOrEmpty(value);
@@ -30,6 +40,25 @@ namespace Obsidian.Util.Extensions
                 throw new NullReferenceException(nameof(value));
 
             return char.ToUpper(value[0]) + value.Substring(1);
+        }
+
+        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids)
+        {
+            return source.Where(x => !uuids.Contains(x.Value.Uuid));
+        }
+
+        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
+        {
+            var newDict = new Dictionary<Guid, Player>();
+            foreach((Guid uuid, Player player) in source)
+            {
+                if (players.Any(x => x.Uuid == uuid))
+                    continue;
+
+                newDict.Add(uuid, player);
+            }
+
+            return newDict;
         }
 
         public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
