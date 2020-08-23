@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +10,14 @@ namespace Obsidian.Net
     public partial class MinecraftStream
     {
 		public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
+
+		[ReadMethod(DataType.UnsignedByte)]
+		public byte ReadUnsignedByte()
+        {
+			var buffer = new byte[1];
+			Read(buffer);
+			return buffer[0];
+        }
 
 		public async Task<byte> ReadUnsignedByteAsync()
 		{
@@ -110,6 +120,25 @@ namespace Obsidian.Net
 			return BitConverter.ToDouble(buffer);
 		}
 
+		[ReadMethod(DataType.String)]
+		public string ReadString(int maxLength = 0)
+        {
+			var length = ReadVarInt();
+			var buffer = new byte[length];
+			if (BitConverter.IsLittleEndian)
+			{
+				Array.Reverse(buffer);
+			}
+			Read(buffer, 0, length);
+
+			var value = Encoding.UTF8.GetString(buffer);
+			if (maxLength > 0 && value.Length > maxLength)
+			{
+				throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
+			}
+			return value;
+		}
+
 		public async Task<string> ReadStringAsync(int maxLength = 0)
 		{
 			var length = await this.ReadVarIntAsync();
@@ -126,6 +155,28 @@ namespace Obsidian.Net
 				throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
 			}
 			return value;
+		}
+
+		[ReadMethod(DataType.VarInt)]
+		public int ReadVarInt()
+        {
+			int numRead = 0;
+			int result = 0;
+			byte read;
+			do
+			{
+				read = ReadUnsignedByte();
+				int value = read & 0b01111111;
+				result |= value << (7 * numRead);
+
+				numRead++;
+				if (numRead > 5)
+				{
+					throw new InvalidOperationException("VarInt is too big");
+				}
+			} while ((read & 0b10000000) != 0);
+
+			return result;
 		}
 
 		public virtual async Task<int> ReadVarIntAsync()
