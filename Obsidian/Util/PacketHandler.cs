@@ -260,12 +260,12 @@ namespace Obsidian.Util
                     break;
 
                 case 0x21:
-                    // Held Item Change (serverbound)
-                    var hic = await CreateAsync(new HeldItemChange(packet.PacketData));
-                    client.Player.HeldItemSlot = hic.Slot;
+                    // Held Item Change (serverbound)//TODO fix this
+                    //var hic = await CreateAsync(new HeldItemChange(packet.PacketData));
+                    //client.Player.HeldItemSlot = hic.Slot;
                     
 
-                    await Logger.LogDebugAsync($"Received held item change: {hic.Slot}");
+                    //await Logger.LogDebugAsync($"Received held item change: {hic.Slot}");
 
                     break;
 
