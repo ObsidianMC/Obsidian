@@ -28,24 +28,26 @@ namespace Obsidian
             Console.WriteLine(asciilogo);
             Console.ResetColor();
 
-            if (!File.Exists("config.json"))
+            if (!File.Exists("global_config.json"))
             {
-                File.WriteAllText("config.json", JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
+                File.WriteAllText("global_config.json", JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
                 Console.WriteLine("Created new global config");
             }
 
-            Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText("config.json"));
+            Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText("global_config.json"));
 
             Tasks = new Task[Config.ServerCount];
             Servers = new Server[Config.ServerCount];
             for (int i = 0; i < Servers.Length; i++)
             {
-                if (!Directory.Exists(i.ToString()))
+                string serverDir = $"Server{i}";
+                
+                if (!Directory.Exists(serverDir))
                 {
-                    Directory.CreateDirectory(i.ToString());
+                    Directory.CreateDirectory(serverDir);
                 }
 
-                string configPath = Path.Combine(i.ToString(), "config.json");
+                string configPath = Path.Combine(serverDir, "config.json");
 
                 if (!File.Exists(configPath))
                 {

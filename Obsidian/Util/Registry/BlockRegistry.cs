@@ -20,8 +20,8 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterAll()
         {
-            var file = new FileInfo("blocks.json");
-
+            var file = new FileInfo("Assets/blocks.json");
+            
             if (file.Exists)
             {
                 var json = "";
@@ -48,9 +48,14 @@ namespace Obsidian.Util.Registry
                         var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), new MinecraftCustomDirectionConverter(), new MinecraftAxisConverter(), new MinecraftFaceConverter(), 
                             new MinecraftFacesConverter(), new MinecraftHalfConverter(), new MinecraftHingeConverter(), new MinecraftInstrumentConverter(), new MinecraftPartConverter(), new MinecraftShapeConverter(), new MinecraftTypeConverter());
 
-                        if (Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
-                        {
-                            int id = states.States.FirstOrDefault().Id;
+                        if (!Enum.TryParse(blockName.Replace("_", ""), true, out Materials material)) continue;
+
+                        if (states.States.Length <= 0) continue;
+                        
+                        int id = 0;
+                        foreach (var state in states.States)
+                            id = state.Default ? state.Id : states.States.First().Id;
+                        
                             await Logger.LogDebugAsync($"Registered block: {material.ToString()} with id: {id.ToString()}");
                             
                             switch (material)
@@ -595,9 +600,8 @@ namespace Obsidian.Util.Registry
                                 default:
                                     BLOCK_STATES.Add(material, new Block(blockName, id));
                                     break;
-                            }
-                            registered++;
-                        }
+                          }
+                          registered++;
                     }
                 }
 

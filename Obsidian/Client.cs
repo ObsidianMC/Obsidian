@@ -478,7 +478,7 @@ namespace Obsidian
             this.Player.Gamemode = Gamemode.Creative;
 
             this.Server.OnlinePlayers.Add(this.Player);
-
+            
             await this.SendPacket(new JoinGame((int)(EntityId.Player | (EntityId)this._id), Gamemode.Creative, 0, 0, "default", true));
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
