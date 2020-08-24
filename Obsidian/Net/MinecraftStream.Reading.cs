@@ -1,5 +1,7 @@
 ﻿using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using Obsidian.Util;
+using Obsidian.Util.DataTypes;
 using System;
 using System.IO;
 using System.Text;
@@ -156,6 +158,17 @@ namespace Obsidian.Net
             return BitConverter.ToInt64(buffer);
         }
 
+        public ulong ReadUnsignedLong()
+        {
+            var buffer = new byte[8];
+            Read(buffer);
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(buffer);
+            }
+            return BitConverter.ToUInt64(buffer);
+        }
+
         public async Task<ulong> ReadUnsignedLongAsync()
         {
             var buffer = new byte[8];
@@ -293,6 +306,22 @@ namespace Obsidian.Net
             return result;
         }
 
+        [ReadMethod(DataType.ByteArray)]
+        public byte[] ReadUInt8Array()
+        {
+            var length = ReadVarInt();
+            var result = new byte[length];
+            if (length == 0) return result;
+            int n = length;
+            while (true)
+            {
+                n -= Read(result, length - n, n);
+                if (n == 0)
+                    break;
+            }
+            return result;
+        }
+
         public async Task<byte[]> ReadUInt8ArrayAsync(int length)
         {
             var result = new byte[length];
@@ -357,6 +386,66 @@ namespace Obsidian.Net
             } while ((read & 0b10000000) != 0);
 
             return result;
+        }
+
+        [ReadMethod(DataType.Position)]
+        public Position ReadPosition()
+        {
+            ulong value = ReadUnsignedLong();
+
+            long x = (long)(value >> 38);
+            long y = (long)(value >> 26) & 0xFFF;
+            long z = (long)(value << 38 >> 38);
+
+            if (PacketHandler.Protocol == ProtocolVersion.v1_14)
+            {
+                x = (long)(value >> 38);
+                y = (long)value & 0xFFF;
+                z = (long)(value << 26 >> 38);
+            }
+
+            if (x >= Math.Pow(2, 25)) { x -= (long)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11)) { y -= (long)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25)) { z -= (long)Math.Pow(2, 26); }
+
+            return new Position
+            {
+                X = x,
+
+                Y = y,
+
+                Z = z,
+            };
+        }
+
+        [ReadMethod(DataType.AbsolutePosition)]
+        public Position ReadAbsolutePosition()
+        {
+            return new Position
+            {
+                X = ReadDouble(),
+                Y = ReadDouble(),
+                Z = ReadDouble()
+            };
+        }
+
+        [ReadMethod(DataType.Transform)]
+        public Transform ReadTransform()
+        {
+            return new Transform
+            {
+                X = ReadDouble(),
+                Y = ReadDouble(),
+                Z = ReadDouble(),
+                Pitch = ReadFloat(),
+                Yaw = ReadFloat()
+            };
+        }
+
+        [ReadMethod(DataType.SoundPosition)]
+        public SoundPosition ReadSoundPosition()
+        {
+            return new SoundPosition(ReadInt(), ReadInt(), ReadInt());
         }
     }
 }

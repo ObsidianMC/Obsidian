@@ -156,14 +156,14 @@ namespace Obsidian.Util
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await PacketSerializer.DeserializeAsync<PlayerPosition>(packet.data);
+                    var pos = await PacketSerializer.FastDeserializeAsync<PlayerPosition>(packet.data);
 
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await PacketSerializer.DeserializeAsync<PlayerPositionLook>(packet.data);
+                    var ppos = await PacketSerializer.FastDeserializeAsync<PlayerPositionLook>(packet.data);
 
                     client.Player.UpdatePosition(ppos.Transform);
                     //await Logger.LogDebugAsyncAsync($"Updated look and position for {this.Player.Username}");
@@ -206,7 +206,7 @@ namespace Obsidian.Util
                     // Player Digging
                     await Logger.LogDebugAsync("Received player digging");
 
-                    var digging = await PacketSerializer.DeserializeAsync<PlayerDigging>(packet.data);
+                    var digging = await PacketSerializer.FastDeserializeAsync<PlayerDigging>(packet.data);
 
                     server.EnqueueDigging(digging);
                     break;
@@ -295,7 +295,7 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
-                    var pbp = await PacketSerializer.DeserializeAsync<PlayerBlockPlacement>(packet.data);
+                    var pbp = await PacketSerializer.FastDeserializeAsync<PlayerBlockPlacement>(packet.data);
 
                     await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
                     await Logger.LogDebugAsync("Received player block placement");

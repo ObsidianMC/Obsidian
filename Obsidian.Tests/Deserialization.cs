@@ -4,7 +4,9 @@ using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -140,34 +142,122 @@ namespace Obsidian.Tests
             Assert.Equal(hand, packet.Hand);
         }
 
-        //[Fact]
-        //public void PlayerDigging()
-        //{
-        //    throw new NotImplementedException();
-        //}
+        [Fact]
+        public async Task PlayerDigging()
+        {
+            var status = int.MaxValue;
+            var location = new Position(1.0, 2.0, 3.0);
+            var face = sbyte.MaxValue;
 
-        //[Fact]
-        //public void PlayerBlockPlacement()
-        //{
-        //    throw new NotImplementedException();
-        //}
+            using var stream = new MinecraftStream();
+            await stream.WriteVarIntAsync(status);
+            await stream.WritePositionAsync(location);
+            await stream.WriteByteAsync(face);
+            stream.Position = 0;
 
-        //[Fact]
-        //public void PlayerPositionLook()
-        //{
-        //    throw new NotImplementedException();
-        //}
+            var packet = PacketSerializer.FastDeserialize<PlayerDigging>(stream);
 
-        //[Fact]
-        //public void PlayerPosition()
-        //{
-        //    throw new NotImplementedException();
-        //}
+            Assert.Equal(status, packet.Status);
+            Assert.Equal(location.X, packet.Location.X);
+            Assert.Equal(location.Y, packet.Location.Y);
+            Assert.Equal(location.Z, packet.Location.Z);
+            Assert.Equal(face, packet.Face);
+        }
 
-        //[Fact]
-        //public void EncryptionResponse()
-        //{
-        //    throw new NotImplementedException();
-        //}
+        [Fact]
+        public async Task PlayerBlockPlacement()
+        {
+            var location = new Position(1.0, 2.0, 3.0);
+            var face = BlockFace.Top;
+            var hand = int.MaxValue;
+            var cursorX = float.MaxValue;
+            var cursorY = float.MaxValue;
+            var cursorZ = float.MaxValue;
+
+            using var stream = new MinecraftStream();
+            await stream.WritePositionAsync(location);
+            await stream.WriteVarIntAsync(face);
+            await stream.WriteIntAsync(hand);
+            await stream.WriteFloatAsync(cursorX);
+            await stream.WriteFloatAsync(cursorY);
+            await stream.WriteFloatAsync(cursorZ);
+            stream.Position = 0;
+
+            var packet = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(stream);
+
+            Assert.Equal(location.X, packet.Location.X);
+            Assert.Equal(location.Y, packet.Location.Y);
+            Assert.Equal(location.Z, packet.Location.Z);
+            Assert.Equal(hand, packet.Hand);
+            Assert.Equal(cursorX, packet.CursorX);
+            Assert.Equal(cursorY, packet.CursorY);
+            Assert.Equal(cursorZ, packet.CursorZ);
+        }
+
+        [Fact]
+        public async Task PlayerPositionLook()
+        {
+            var pitch = new Angle(byte.MaxValue - 1);
+            var yaw = new Angle(byte.MaxValue);
+            var transform = new Transform(1.0, 2.0, 3.0, pitch, yaw);
+            var flags = PositionFlags.X | PositionFlags.Y_ROT;
+            var teleportId = int.MaxValue;
+
+            using var stream = new MinecraftStream();
+            await stream.WriteAsync(DataType.Position, null, transform);
+            await stream.WriteUnsignedByteAsync((byte)flags);
+            await stream.WriteVarIntAsync(teleportId);
+            stream.Position = 0;
+
+            var packet = PacketSerializer.FastDeserialize<PlayerPositionLook>(stream);
+
+            Assert.Equal(transform.X, packet.Transform.X);
+            Assert.Equal(transform.Y, packet.Transform.Y);
+            Assert.Equal(transform.Z, packet.Transform.Z);
+            Assert.Equal(yaw.Degrees, packet.Transform.Pitch.Degrees);
+            Assert.Equal(pitch.Degrees, packet.Transform.Yaw.Degrees);
+            Assert.Equal(flags, packet.Flags);
+            Assert.Equal(teleportId, packet.TeleportId);
+        }
+
+        [Fact]
+        public async Task PlayerPosition()
+        {
+            var position = new Position(1.0, 2.0, 3.0);
+            var onGround = true;
+
+            using var stream = new MinecraftStream();
+            await stream.WriteDoubleAsync(position.X);
+            await stream.WriteDoubleAsync(position.Y);
+            await stream.WriteDoubleAsync(position.Z);
+            await stream.WriteBooleanAsync(onGround);
+            stream.Position = 0;
+
+            var packet = PacketSerializer.FastDeserialize<PlayerPosition>(stream);
+
+            Assert.Equal(position.X, packet.Position.X);
+            Assert.Equal(position.Y, packet.Position.Y);
+            Assert.Equal(position.Z, packet.Position.Z);
+            Assert.Equal(onGround, packet.OnGround);
+        }
+
+        [Fact]
+        public async Task EncryptionResponse()
+        {
+            var sharedSecret = new byte[] { 1, 2, 3, 4, 5 };
+            var verifyToken = new byte[] { 6, 7, 8, 9, 10 };
+
+            using var stream = new MinecraftStream();
+            await stream.WriteVarIntAsync(sharedSecret.Length);
+            await stream.WriteAsync(sharedSecret);
+            await stream.WriteVarIntAsync(verifyToken.Length);
+            await stream.WriteAsync(verifyToken);
+            stream.Position = 0;
+
+            var packet = PacketSerializer.FastDeserialize<EncryptionResponse>(stream);
+
+            Assert.Equal(sharedSecret, packet.SharedSecret);
+            Assert.Equal(verifyToken, packet.VerifyToken);
+        }
     }
 }

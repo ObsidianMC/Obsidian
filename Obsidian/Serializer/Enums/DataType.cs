@@ -2,7 +2,7 @@
 {
     public enum DataType
     {
-        Auto = 0,
+        Auto,
         Boolean,
         Byte,
         UnsignedByte,
@@ -21,10 +21,14 @@
         Slot,
         NbtTag,
         Position,
+        AbsolutePosition,
+        Transform,
+        SoundPosition,
         Angle,
         UUID,
         Array,
         Velocity,
+        ByteArray,
         // TODO: Implement missing data types
         // Optional X
         // Array of X

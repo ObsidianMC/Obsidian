@@ -377,7 +377,7 @@ namespace Obsidian
                                 await this.ConnectAsync();
                                 break;
                             case 0x01:
-                                var encryptionResponse = await PacketSerializer.DeserializeAsync<EncryptionResponse>(packet.data);
+                                var encryptionResponse = await PacketSerializer.FastDeserializeAsync<EncryptionResponse>(packet.data);
 
                                 this.sharedKey = this.packetCryptography.Decrypt(encryptionResponse.SharedSecret);
                                 var decryptedToken = this.packetCryptography.Decrypt(encryptionResponse.VerifyToken);
