@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
 {
-    public abstract class PlayerInfoAction
+    public class PlayerInfoAction
     {
-        public Guid Uuid { get; set; }
+        public string Uuid { get; set; }
 
-        public abstract Task WriteAsync(MinecraftStream stream);
+        public virtual async Task WriteAsync(MinecraftStream stream) => await stream.WriteUuidAsync(Guid.Parse(this.Uuid));
     }
 }

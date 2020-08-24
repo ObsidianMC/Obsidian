@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
+using Obsidian.Util;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Handshaking
 {
     public class Handshake : Packet
     {
         public ProtocolVersion Version;
-        
+
         public string ServerAddress;
 
         public ushort ServerPort;
@@ -14,35 +15,27 @@ namespace Obsidian.Net.Packets
 
         public Handshake(byte[] data) : base(0x00, data)
         {
-    
         }
 
-        public Handshake() : base(0x00, null){}
-
-        public override async Task PopulateAsync()
+        public Handshake() : base(0x00, null)
         {
-            using(var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
-                this.ServerAddress = await stream.ReadStringAsync();
-                this.ServerPort = await stream.ReadUnsignedShortAsync();
-                this.NextState = (ClientState)await stream.ReadVarIntAsync();
-            }
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync((int)this.Version);
-                //TODO: add string length check
-                await stream.WriteStringAsync(this.ServerAddress);
-                await stream.WriteUnsignedShortAsync(this.ServerPort);
-                await stream.WriteVarIntAsync((int)this.NextState);
-
-                return stream.ToArray();
-            }
+            await stream.WriteVarIntAsync((int)this.Version);
+            //TODO: add string length check
+            await stream.WriteStringAsync(this.ServerAddress);
+            await stream.WriteUnsignedShortAsync(this.ServerPort);
+            await stream.WriteVarIntAsync((int)this.NextState);
         }
 
+        protected override async Task PopulateAsync(MinecraftStream stream)
+        {
+            this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
+            this.ServerAddress = await stream.ReadStringAsync();
+            this.ServerPort = await stream.ReadUnsignedShortAsync();
+            this.NextState = (ClientState)await stream.ReadVarIntAsync();
+        }
     }
 }

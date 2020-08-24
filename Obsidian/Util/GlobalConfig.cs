@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Logging;
 
-namespace Obsidian.Entities
+namespace Obsidian.Util
 {
     public class GlobalConfig
     {
@@ -17,6 +17,6 @@ namespace Obsidian.Entities
 #endif
 
         [JsonProperty("debugMode")]
-        public bool DebugMode = false;
+        public bool DebugMode;
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Util
+﻿namespace Obsidian.Util.DataTypes
 {
     public class Position
     {

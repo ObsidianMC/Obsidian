@@ -1,12 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Obsidian.Chat;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class ChatMessagePacket : Packet
     {
-        public ChatMessagePacket(ChatMessage message, byte position) : base(0x0E, new byte[0])
+        public ChatMessagePacket(ChatMessage message, byte position) : base(0x0E, System.Array.Empty<byte>())
         {
             this.Message = message;
             this.Position = position;
@@ -14,25 +14,18 @@ namespace Obsidian.Net.Packets
 
         public ChatMessage Message { get; private set; }
 
-        public byte Position { get; private set; } = 0; // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
+        public byte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-        public override async Task PopulateAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Message = JsonConvert.DeserializeObject<ChatMessage>(await stream.ReadStringAsync());
-                this.Position = await stream.ReadUnsignedByteAsync();
-            }
+            this.Message = JsonConvert.DeserializeObject<ChatMessage>(await stream.ReadStringAsync());
+            this.Position = await stream.ReadUnsignedByteAsync();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteStringAsync(this.Message.ToString());
-                await stream.WriteUnsignedByteAsync(this.Position);
-                return stream.ToArray();
-            }
+            await stream.WriteStringAsync(this.Message.ToString());
+            await stream.WriteUnsignedByteAsync(this.Position);
         }
     }
 }

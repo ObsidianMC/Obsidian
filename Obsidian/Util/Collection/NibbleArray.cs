@@ -1,9 +1,9 @@
-﻿using fNbt;
-using fNbt.Serialization;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
+using fNbt;
+using fNbt.Serialization;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Collection
 {
     /// <summary>
     /// Represents an array of 4-bit values.

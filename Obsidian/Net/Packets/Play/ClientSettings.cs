@@ -1,12 +1,11 @@
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class ClientSettings : Packet
     {
         public ClientSettings(byte[] data) : base(0x04, data)
         {
-            
         }
 
         public string Locale { get; private set; }
@@ -16,32 +15,25 @@ namespace Obsidian.Net.Packets
         public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
         public int MainHand { get; private set; }
 
-        public override async Task PopulateAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                Locale = await stream.ReadStringAsync();
-                ViewDistance = await stream.ReadByteAsync();
-                ChatMode = await stream.ReadIntAsync();
-                ChatColors = await stream.ReadBooleanAsync();
-                SkinParts = await stream.ReadUnsignedByteAsync();
-                MainHand = await stream.ReadVarIntAsync();
-            }
+            Locale = await stream.ReadStringAsync();
+            ViewDistance = await stream.ReadByteAsync();
+            ChatMode = await stream.ReadIntAsync();
+            ChatColors = await stream.ReadBooleanAsync();
+            SkinParts = await stream.ReadUnsignedByteAsync();
+            MainHand = await stream.ReadVarIntAsync();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                // afaik these never get sent but that's OK
-                await stream.WriteStringAsync(Locale);
-                await stream.WriteByteAsync(ViewDistance);
-                await stream.WriteIntAsync(ChatMode);
-                await stream.WriteBooleanAsync(ChatColors);
-                await stream.WriteUnsignedByteAsync(SkinParts);
-                await stream.WriteVarIntAsync(MainHand);
-                return stream.ToArray();
-            }
+            // afaik these never get sent but that's OK
+            await stream.WriteStringAsync(Locale);
+            await stream.WriteByteAsync(ViewDistance);
+            await stream.WriteIntAsync(ChatMode);
+            await stream.WriteBooleanAsync(ChatColors);
+            await stream.WriteUnsignedByteAsync(SkinParts);
+            await stream.WriteVarIntAsync(MainHand);
         }
     }
 }

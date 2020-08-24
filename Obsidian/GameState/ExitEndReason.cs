@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.GameState
+﻿namespace Obsidian.GameState
 {
     public class ExitEndReason : ChangeGameStateReason
     {

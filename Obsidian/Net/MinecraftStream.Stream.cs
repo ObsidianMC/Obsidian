@@ -2,17 +2,27 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.Util;
 
 namespace Obsidian.Net
 {
     public partial class MinecraftStream : Stream
     {
-        public MinecraftStream() => BaseStream = new MemoryStream();
+        public MinecraftStream()
+        {
+            BaseStream = new MemoryStream();
+        }
 
-        public MinecraftStream(Stream stream) => BaseStream = stream;
+        public MinecraftStream(Stream stream)
+        {
+            BaseStream = stream;
+        }
 
-        public MinecraftStream(byte[] data) => BaseStream = new MemoryStream(data);
+        public MinecraftStream(byte[] data)
+        {
+            BaseStream = new MemoryStream(data);
+        }
+
+        private bool Disposed;
 
         public Stream BaseStream { get; set; }
 
@@ -53,12 +63,24 @@ namespace Obsidian.Net
         public byte[] ToArray()
         {
             this.Position = 0;
-            byte[] buffer = new byte[this.Length];
-            for (int totalBytesCopied = 0; totalBytesCopied < this.Length;)
+            var buffer = new byte[this.Length];
+            for (var totalBytesCopied = 0; totalBytesCopied < this.Length;)
                 totalBytesCopied += this.Read(buffer, totalBytesCopied, Convert.ToInt32(this.Length) - totalBytesCopied);
             return buffer;
         }
 
-        protected override void Dispose(bool disposing) => BaseStream.Dispose();
+        protected override void Dispose(bool disposing)
+        {
+            if (this.Disposed)
+                return;
+
+            if (disposing)
+            {
+                this.BaseStream.Dispose();
+                this.Lock.Dispose();
+            }
+
+            this.Disposed = true;
+        }
     }
 }

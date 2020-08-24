@@ -1,58 +1,24 @@
 ﻿using fNbt;
+
 using Newtonsoft.Json;
+
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Util;
+using Obsidian.Util.DataTypes;
+
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
 {
-    public enum EntityMetadataType : int
-    {
-        Byte,
-
-        VarInt,
-
-        Float,
-
-        String,
-
-        Chat,
-
-        OptChat,
-
-        Slot,
-
-        Boolean,
-
-        Rotation,
-
-        Position,
-
-        OptPosition,
-
-        Direction,
-
-        OptUuid,
-
-        OptBlockId,
-
-        Nbt,
-
-        Particle
-    }
-
     public partial class MinecraftStream
     {
-        static MinecraftStream()
-        {
-            StringEncoding = Encoding.UTF8;
-        }
+        public static Encoding StringEncoding { get; } = Encoding.UTF8;
 
-        public static Encoding StringEncoding;
+        public readonly SemaphoreSlim Lock = new SemaphoreSlim(1, 1);
 
         #region Writing
 
@@ -261,6 +227,7 @@ namespace Obsidian.Net
             {
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
             }
+
             var bytes = Encoding.UTF8.GetBytes(value);
             await this.WriteVarIntAsync(bytes.Length);
             await this.WriteAsync(bytes);
@@ -608,5 +575,40 @@ namespace Obsidian.Net
         }
 
         #endregion Reading
+    }
+
+    public enum EntityMetadataType : int
+    {
+        Byte,
+
+        VarInt,
+
+        Float,
+
+        String,
+
+        Chat,
+
+        OptChat,
+
+        Slot,
+
+        Boolean,
+
+        Rotation,
+
+        Position,
+
+        OptPosition,
+
+        Direction,
+
+        OptUuid,
+
+        OptBlockId,
+
+        Nbt,
+
+        Particle
     }
 }

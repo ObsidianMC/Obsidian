@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Collection
 {
     public class VariableValueArray
     {
-        public long[] Backing { get; }
+        public long[] Backing;
 
         public int Capacity { get; }
         public int BitsPerValue { get; }

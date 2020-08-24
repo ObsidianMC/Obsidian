@@ -1,9 +1,8 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Util;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -28,33 +27,28 @@ namespace Obsidian.Net.Packets.Play
         public Velocity Velocity { get; }
         public Entity Entity { get; }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(Id);
+            await stream.WriteVarIntAsync(Id);
 
-                await stream.WriteUuidAsync(Uuid);
+            await stream.WriteUuidAsync(Uuid);
 
-                await stream.WriteVarIntAsync(this.Type);
+            await stream.WriteVarIntAsync(this.Type);
 
-                await stream.WriteDoubleAsync(Transform.X);
-                await stream.WriteDoubleAsync(Transform.Y);
-                await stream.WriteDoubleAsync(Transform.Z);
+            await stream.WriteDoubleAsync(Transform.X);
+            await stream.WriteDoubleAsync(Transform.Y);
+            await stream.WriteDoubleAsync(Transform.Z);
 
-                stream.WriteByte(0);
-                stream.WriteByte(0);
-                stream.WriteByte(0);
+            await stream.WriteByteAsync(0);
+            await stream.WriteByteAsync(0);
+            await stream.WriteByteAsync(0);
 
-                await stream.WriteShortAsync(Velocity.X);
-                await stream.WriteShortAsync(Velocity.Y);
-                await stream.WriteShortAsync(Velocity.Z);
-                //await Entity.WriteAsync(stream);
-
-                return stream.ToArray();
-            }
+            await stream.WriteShortAsync(Velocity.X);
+            await stream.WriteShortAsync(Velocity.Y);
+            await stream.WriteShortAsync(Velocity.Z);
+            //await Entity.WriteAsync(stream);
         }
     }
 }

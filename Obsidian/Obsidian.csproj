@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <LangVersion>7.2</LangVersion>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -11,16 +11,26 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.0.1" />
-    <PackageReference Include="fNbt" Version="0.6.4" />
-    <PackageReference Include="fNBT.Serialization" Version="0.6.3" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Qmmands" Version="2.3.0" />
-    <PackageReference Include="SharpZipLib" Version="1.1.0" />
+    <Compile Remove="PluginMessages\**" />
+    <EmbeddedResource Remove="PluginMessages\**" />
+    <None Remove="PluginMessages\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="PluginMessages\" />
+    <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
+    <PackageReference Include="DaanV2.UUID.Net" Version="1.0.3" />
+    <PackageReference Include="fNbt" Version="0.6.4" />
+    <PackageReference Include="fNBT.Serialization" Version="0.6.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Qmmands" Version="2.3.0" />
+    <PackageReference Include="sharpcompress" Version="0.25.0" />
+    <PackageReference Include="SharpZipLib" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="blocks.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

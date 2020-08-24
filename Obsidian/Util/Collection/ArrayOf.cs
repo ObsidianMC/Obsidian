@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Util
+﻿namespace Obsidian.Util.Collection
 {
     public static class ArrayOf<T> where T : new()
     {

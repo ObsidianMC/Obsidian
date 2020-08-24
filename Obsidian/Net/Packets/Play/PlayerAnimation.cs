@@ -7,20 +7,13 @@ namespace Obsidian.Net.Packets.Play
     {
         public Hand Hand { get; set; }
 
-        public AnimationServerPacket(byte[] data) : base(0x27, data) { }
-
-        public async override Task PopulateAsync()
+        public AnimationServerPacket(byte[] data) : base(0x27, data)
         {
-            using(var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Hand = (Hand)await stream.ReadVarIntAsync();
-            }
         }
 
-        public override Task<byte[]> ToArrayAsync()
-        {
-            throw new NotImplementedException();
-        }
+        protected override Task ComposeAsync(MinecraftStream stream) => throw new NotImplementedException();
+
+        protected override async Task PopulateAsync(MinecraftStream stream) => this.Hand = (Hand)await stream.ReadVarIntAsync();
     }
 
     public enum Hand

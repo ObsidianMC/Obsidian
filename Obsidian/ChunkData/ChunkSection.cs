@@ -1,13 +1,12 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Net;
-using Obsidian.Util;
+using Obsidian.Util.Collection;
 using Obsidian.Util.Registry;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
-    public class ChunkSection : ISerializable
+    public class ChunkSection
     {
         public BlockStateContainer BlockStateContainer = new BlockStateContainer();
         public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
@@ -15,33 +14,22 @@ namespace Obsidian.ChunkData
 
         public bool Overworld = true;//TODO
 
-        public async Task<byte[]> ToArrayAsync()
+        public async Task WriteAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteAsync(await BlockStateContainer.ToArrayAsync());
-                await stream.WriteAsync(BlockLightArray.Data);
+            await BlockStateContainer.WriteAsync(stream);
+            await stream.WriteAsync(BlockLightArray.Data);
 
-                if (Overworld)
-                {
-                    await stream.WriteAsync(SkyLightArray.Data);
-                }
-
-                return stream.ToArray();
-            }
+            if (Overworld)
+                await stream.WriteAsync(SkyLightArray.Data);
         }
 
         public ChunkSection FilledWithLight()
         {
             for (int i = 0; i < BlockLightArray.Data.Length; i++)
-            {
                 BlockLightArray.Data[i] = 255;
-            }
 
             for (int i = 0; i < SkyLightArray.Data.Length; i++)
-            {
                 SkyLightArray.Data[i] = 255;
-            }
 
             return this;
         }
@@ -55,15 +43,9 @@ namespace Obsidian.ChunkData
 
         private IBlockStatePalette Palette { get; }
 
-        public void Set(int x, int y, int z, BlockState blockState)
-        {
-            this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
-        }
+        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[GetIndex(x, y, z)] = blockState.Id;
 
-        public void Set(double x, double y, double z, BlockState blockState)
-        {
-            this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
-        }
+        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
 
         public BlockState Get(int x, int y, int z)
         {
@@ -79,17 +61,12 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
-        public async Task<byte[]> ToArrayAsync()
+        public async Task WriteAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteByteAsync((sbyte)BitsPerEntry);
+            await stream.WriteByteAsync((sbyte)BitsPerEntry);
 
-                await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
-                await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
-
-                return stream.ToArray();
-            }
+            await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
+            await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
         }
     }
 }

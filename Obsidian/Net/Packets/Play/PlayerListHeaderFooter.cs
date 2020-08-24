@@ -23,17 +23,12 @@ namespace Obsidian.Net.Packets.Play
 
         public ChatMessage Footer { get; }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteChatAsync(Header);
-                await stream.WriteChatAsync(Footer);
-
-                return stream.ToArray();
-            }
+            await stream.WriteChatAsync(Header);
+            await stream.WriteChatAsync(Footer);
         }
     }
 }

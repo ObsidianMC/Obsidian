@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -9,6 +9,10 @@ namespace Obsidian.PlayerData.Info
         public string DisplayName { get; set; }
         public bool HasDisplayName => string.IsNullOrWhiteSpace(DisplayName);
 
-        public override async Task WriteAsync(MinecraftStream stream) => await stream.WriteStringAsync(this.DisplayName);
+        public override async Task WriteAsync(MinecraftStream stream)
+        {
+            await stream.WriteUuidAsync(Guid.Parse(this.Uuid));
+            await stream.WriteStringAsync(this.DisplayName);
+        }
     }
 }

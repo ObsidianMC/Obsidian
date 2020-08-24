@@ -1,7 +1,10 @@
-public enum Difficulty : byte
+namespace Obsidian.World
 {
-    Peaceful,
-    Easy,
-    Normal,
-    Hard
+    public enum Difficulty : byte
+    {
+        Peaceful,
+        Easy,
+        Normal,
+        Hard
+    }
 }

@@ -1,7 +1,6 @@
-﻿using Obsidian.BlockData;
-using System;
+﻿using System;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Collection
 {
 
     public sealed class DataArray

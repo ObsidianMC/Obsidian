@@ -6,6 +6,15 @@
 
 [WIP] A C# implementation of the Minecraft server protocol. (NET Core)
 
+## (Upcoming) Features
+- A custom plugin framework
+- Low memory usage
+- 
+
+## Goals
+- As much of the vanilla game as possible
+- 
+
 ## The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
 - [Tides](https://github.com/Tides) (developer)

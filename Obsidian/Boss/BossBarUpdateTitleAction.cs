@@ -1,7 +1,5 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Net;
-
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Boss

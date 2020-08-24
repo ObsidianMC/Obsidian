@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PluginMessage : Packet
     {
@@ -16,31 +16,24 @@ namespace Obsidian.Net.Packets
 
         public byte[] Data { get; private set; }
 
-        public PluginMessage(string channel, byte[] data) : base(0x19, new byte[0])
+        public PluginMessage(string channel, byte[] data) : base(0x19, Array.Empty<byte>())
         {
             //TODO: ADD check pls
             this.Channel = channel;
             this.Data = data;
         }
 
-        public async override Task PopulateAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Channel = await stream.ReadIdentifierAsync();
-
-                await Handlers.First(h => h.Channel == this.Channel).HandleAsync(stream);
-            }
+            await stream.WriteIdentifierAsync(Channel);
+            await stream.WriteAsync(Data);
         }
 
-        public async override Task<byte[]> ToArrayAsync()
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteIdentifierAsync(Channel);
-                await stream.WriteAsync(Data);
-                return stream.ToArray();
-            }
+            this.Channel = await stream.ReadIdentifierAsync();
+
+            await Handlers.First(h => h.Channel == this.Channel).HandleAsync(stream);
         }
     }
 

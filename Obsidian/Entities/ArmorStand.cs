@@ -1,4 +1,4 @@
-﻿using Obsidian.Util;
+﻿using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Entities
 {

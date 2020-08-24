@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.Net.Packets.Play;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Commands
 {
@@ -20,6 +22,14 @@ namespace Obsidian.Commands
             {
                 await Context.Player.SendMessageAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
             }
+        }
+
+        [Command("forceskins")]
+        [Description("forces skin reload")]
+        public async Task ForceSkinAsync()
+        {
+            await Context.Client.SendPlayerInfoAsync();
+            await Context.Player.SendMessageAsync(ChatMessage.Simple("done"));
         }
 
         [Command("plugins")]
@@ -52,7 +62,7 @@ namespace Obsidian.Commands
         [Command("spawnmob")]
         public async Task SpawnMob()
         {
-            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Util.Transform
+            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Transform
             {
                 X = 0,
 
@@ -63,28 +73,35 @@ namespace Obsidian.Commands
                 Pitch = 0,
 
                 Yaw = 0
-            }, 0, new Util.Velocity(0, 0, 0), Context.Client.Player);
+            }, 0, new Velocity(0, 0, 0), Context.Client.Player);
 
             await Context.Player.SendMessageAsync("Spawning mob?");
         }
 
+        [Command("forcechunkreload")]
+        public async Task ForceChunkReloadAsync()
+        {
+            var c = Context.Client;
+            var world = Context.Server.world;
+
+            int dist = c.ClientSettings?.ViewDistance ?? 1;
+
+            int oldchunkx = world.transformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
+            int chunkx = world.transformToChunk(c.Player.Transform?.X ?? 0);
+
+            int oldchunkz = world.transformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
+            int chunkz = world.transformToChunk(c.Player.Transform?.Z ?? 0);
+
+            await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+        }
+
         [Command("echo")]
         [Description("Echoes given text.")]
-        public Task EchoAsync([Remainder] string text)
-        {
-            Context.Server.Broadcast(text);
-
-            return Task.CompletedTask;
-        }
+        public Task EchoAsync([Remainder] string text) => Context.Server.BroadcastAsync(text);
 
         [Command("announce")]
         [Description("makes an announcement")]
-        public Task AnnounceAsync([Remainder] string text)
-        {
-            Context.Server.Broadcast(text, 2);
-
-            return Task.CompletedTask;
-        }
+        public Task AnnounceAsync([Remainder] string text) => Context.Server.BroadcastAsync(text, 2);
 
         [Command("leave", "kickme")]
         [Description("kicks you")]
@@ -105,17 +122,17 @@ namespace Obsidian.Commands
         public async Task TeleportAsync(double x, double y, double z)
         {
             await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await Context.Client.SendPlayerLookPositionAsync(new Util.Transform(x, y, z), Net.Packets.PositionFlags.NONE);
+            await Context.Client.SendPlayerLookPositionAsync(new Transform(x, y, z), PositionFlags.NONE);
         }
 
         [Command("op")]
         [RequireOperator]
         public async Task GiveOpAsync(string username)
         {
-            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
-            if (client != null)
+            var player = Context.Server.OnlinePlayers.FirstOrDefault(c => c.Username == username);
+            if (player != null)
             {
-                Context.Server.Operators.AddOperator(client.Player);
+                Context.Server.Operators.AddOperator(player);
             }
             else
             {
@@ -129,10 +146,10 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task UnclaimOpAsync(string username)
         {
-            var client = Context.Server.Clients.FirstOrDefault(c => c.Player != null && c.Player.Username == username);
-            if (client != null)
+            var player = Context.Server.OnlinePlayers.FirstOrDefault(c =>c.Username == username);
+            if (player != null)
             {
-                Context.Server.Operators.AddOperator(client.Player);
+                Context.Server.Operators.AddOperator(player);
             }
             else
             {
@@ -192,7 +209,7 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         public async Task BreakpointAsync()
         {
-            Context.Server.Broadcast("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
+            await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);
             Debugger.Break();
         }

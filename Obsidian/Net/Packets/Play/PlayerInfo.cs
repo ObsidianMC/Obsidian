@@ -1,10 +1,9 @@
-﻿using Obsidian.PlayerData.Info;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Obsidian.PlayerData.Info;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PlayerInfo : Packet
     {
@@ -18,20 +17,15 @@ namespace Obsidian.Net.Packets
             this.Actions = actions;
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(Action);
-                await stream.WriteVarIntAsync(Actions.Count);
+            await stream.WriteVarIntAsync(Action);
+            await stream.WriteVarIntAsync(Actions.Count);
 
-                foreach (PlayerInfoAction action in Actions)
-                    await action.WriteAsync(stream);
-
-                return stream.ToArray();
-            }
+            foreach (var action in Actions)
+                await action.WriteAsync(stream);
         }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

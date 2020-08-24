@@ -1,5 +1,7 @@
 using Obsidian.Util;
 using System;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets
@@ -7,58 +9,82 @@ namespace Obsidian.Net.Packets
     /// <summary>
     /// https://wiki.vg/Protocol#Packet_format
     /// </summary>
-    public abstract class Packet
+    public class Packet
     {
-        public byte[] PacketData { get; internal set; }
+        public bool Empty => this.packetData == null || this.packetData.Length == 0;
 
-        public int PacketId { get; }
+        internal byte[] packetData;
 
-        public bool Empty => this.PacketData == null || this.PacketData.Length == 0;
+        internal int packetId;
 
-        public Packet(int packetid) => this.PacketId = packetid;
+        public Packet(int packetid) => this.packetId = packetid;
 
-        public Packet(int packetid, byte[] data)
+        public Packet(int packetId, byte[] data) => (this.packetData, this.packetId) = (data, packetId);
+
+        public virtual async Task WriteAsync(MinecraftStream stream)
         {
-            this.PacketId = packetid;
-            this.PacketData = data;
-        }
+            await stream.Lock.WaitAsync();
 
-        internal Packet()
-        {
-            /* Only for the static method to _not_ error */
-        }
+            await using var dataStream = new MinecraftStream();
+            await ComposeAsync(dataStream);
 
-        public async Task FillPacketDataAsync() => this.PacketData = await this.ToArrayAsync();
-
-        public async Task WriteToStreamAsync(MinecraftStream stream)
-        {
-            int packetLength = this.PacketData.Length + this.PacketId.GetVarintLength();
-
-#if PACKETLOG
-            Program.PacketLogger.LogDebug($"<< 0x{PacketId.ToString("X")}, length {packetLength}");
-            Program.PacketLogger.LogDebug("====================================");
-#endif
-
-            byte[] data = this.PacketData;
+            var packetLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
 
             await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(PacketId);
-            await stream.WriteAsync(data);
+            await stream.WriteVarIntAsync(packetId);
+
+            dataStream.Position = 0;
+            await dataStream.CopyToAsync(stream);
+
+            stream.Lock.Release();
         }
 
-        public abstract Task<byte[]> ToArrayAsync();
-
-        public abstract Task PopulateAsync();
-    }
-
-    public class EmptyPacket : Packet
-    {
-        public EmptyPacket(int packetId, byte[] data) : base(packetId, data)
+        public virtual async Task WriteCompressedAsync(MinecraftStream stream, int threshold = 0)
         {
+            await stream.Lock.WaitAsync();
+
+            await using var dataStream = new MinecraftStream();
+            await ComposeAsync(dataStream);
+
+            var dataLength = this.packetId.GetVarintLength() + (int)dataStream.Length;
+            var useCompression = threshold > 0 && dataLength >= threshold;
+
+            dataStream.Position = 0;
+
+            if (useCompression)
+            {
+                Console.WriteLine("compressing");
+                await using var memoryStream = new MemoryStream();
+                await ZLibUtils.WriteCompressedAsync(dataStream, memoryStream);
+
+                var packetLength = dataLength + (int)memoryStream.Length;
+
+                await stream.WriteVarIntAsync(packetLength);
+                await stream.WriteVarIntAsync(dataLength);
+                memoryStream.Position = 0;
+                await memoryStream.CopyToAsync(stream);
+            }
+            else
+            {
+                Console.WriteLine("Not compressing");
+                await stream.WriteVarIntAsync(dataLength);
+                await stream.WriteVarIntAsync(0);
+                await stream.WriteVarIntAsync(this.packetId);
+                await dataStream.CopyToAsync(stream);
+            }
+
+            stream.Lock.Release();
         }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        public virtual async Task ReadAsync(byte[] data = null)
+        {
+            //TODO: Please look into this.
+            using var stream = new MinecraftStream(data ?? this.packetData);
+            await PopulateAsync(stream);
+        }
 
-        public override Task<byte[]> ToArrayAsync() => throw new NotImplementedException();
+        protected virtual Task ComposeAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        protected virtual Task PopulateAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 }

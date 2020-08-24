@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PlayerLook : Packet
     {
@@ -11,33 +11,28 @@ namespace Obsidian.Net.Packets
             this.OnGround = onground;
         }*/
 
-        public PlayerLook(byte[] data) : base(0x00, data) { }
-
-        public float Yaw { get; private set; } = 0;
-
-        public float Pitch { get; private set; } = 0;
-
-        public bool OnGround { get; private set; } = false;
-
-        public override async Task PopulateAsync()
+        public PlayerLook(byte[] data) : base(0x00, data)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                this.Yaw = await stream.ReadFloatAsync();
-                this.Pitch = await stream.ReadFloatAsync();
-                this.OnGround = await stream.ReadBooleanAsync();
-            }
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public float Yaw { get; private set; }
+
+        public float Pitch { get; private set; }
+
+        public bool OnGround { get; private set; }
+
+        protected override async Task PopulateAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteFloatAsync(this.Yaw);
-                await stream.WriteFloatAsync(this.Pitch);
-                await stream.WriteBooleanAsync(this.OnGround);
-                return stream.ToArray();
-            }
+            this.Yaw = await stream.ReadFloatAsync();
+            this.Pitch = await stream.ReadFloatAsync();
+            this.OnGround = await stream.ReadBooleanAsync();
+        }
+
+        protected override async Task ComposeAsync(MinecraftStream stream)
+        {
+            await stream.WriteFloatAsync(this.Yaw);
+            await stream.WriteFloatAsync(this.Pitch);
+            await stream.WriteBooleanAsync(this.OnGround);
         }
     }
 }

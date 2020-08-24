@@ -1,9 +1,9 @@
-﻿using Obsidian.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Obsidian.Commands;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol#Declare_Commands
@@ -14,31 +14,13 @@ namespace Obsidian.Net.Packets
 
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
-        public DeclareCommands() : base(0x11, new byte[0])
+        public DeclareCommands() : base(0x11, Array.Empty<byte>())
         {
             this.RootNode = new CommandNode()
             {
                 Type = CommandNodeType.Root,
                 Owner = this,
             };
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using (var ms = new MinecraftStream())
-            {
-                await ms.WriteVarIntAsync(this.Nodes.Count);
-
-                foreach (CommandNode node in Nodes)
-                {
-                    await ms.WriteAsync(await node.ToArrayAsync());
-                }
-
-                //Constant root node index
-                await ms.WriteVarIntAsync(0);
-
-                return ms.ToArray();
-            }
         }
 
         /// <summary>
@@ -51,11 +33,20 @@ namespace Obsidian.Net.Packets
             Nodes.Add(node);
 
             foreach (var childs in node.Children)
-            {
                 AddNode(childs);
-            }
         }
 
-        public override Task PopulateAsync() => throw new NotImplementedException();
+        protected override async Task ComposeAsync(MinecraftStream stream)
+        {
+            await stream.WriteVarIntAsync(this.Nodes.Count);
+
+            foreach (var node in Nodes)
+                await stream.WriteAsync(await node.ToArrayAsync());
+
+            //Constant root node index
+            await stream.WriteVarIntAsync(0);
+        }
+
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

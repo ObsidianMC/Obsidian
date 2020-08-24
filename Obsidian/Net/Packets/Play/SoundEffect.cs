@@ -1,13 +1,13 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Obsidian.Sounds;
+using Obsidian.Util.DataTypes;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class SoundEffect : Packet
     {
-        public SoundEffect(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, new byte[0])
+        public SoundEffect(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, Array.Empty<byte>())
         {
             this.SoundId = soundId;
             this.Location = location;
@@ -22,24 +22,17 @@ namespace Obsidian.Net.Packets
         public int SoundId { get; set; }
         public float Volume { get; set; }
 
-        public override Task PopulateAsync()
-        {
-            throw new NotImplementedException();
-        }
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(this.SoundId);
-                await stream.WriteVarIntAsync((int)this.Category);
-                await stream.WriteIntAsync((int)this.Location.X);
-                await stream.WriteIntAsync((int)this.Location.Y);
-                await stream.WriteIntAsync((int)this.Location.Z);
-                await stream.WriteFloatAsync(this.Volume);
-                await stream.WriteFloatAsync(this.Pitch);
-                return stream.ToArray();
-            }
+            await stream.WriteVarIntAsync(this.SoundId);
+            await stream.WriteVarIntAsync((int)this.Category);
+            await stream.WriteIntAsync((int)(this.Location.X / 32.0D));
+            await stream.WriteIntAsync((int)(this.Location.Y / 32.0D));
+            await stream.WriteIntAsync((int)(this.Location.Z / 32.0D));
+            await stream.WriteFloatAsync(this.Volume);
+            await stream.WriteFloatAsync(this.Pitch);
         }
     }
 }

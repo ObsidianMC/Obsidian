@@ -54,25 +54,31 @@ namespace Obsidian.Events
         {
         }
 
-        internal async Task InvokePacketReceived(PacketReceivedEventArgs eventArgs)
+        internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs)
         {
-            // invokes event on a new parallel task.
-            await Task.Factory.StartNew(async () => { await this._packetReceived.InvokeAsync(eventArgs); });
+            _ = Task.Run(async () => { await this._packetReceived.InvokeAsync(eventArgs); });
+
+            return Task.CompletedTask;
         }
 
-        internal async Task InvokePlayerJoin(PlayerJoinEventArgs eventArgs)
+        internal Task InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs)
         {
-            await Task.Factory.StartNew(async () => { await this._playerJoin.InvokeAsync(eventArgs); });
+            _ = Task.Run(async () => { await this._playerJoin.InvokeAsync(eventArgs); });
+
+            return Task.CompletedTask;
         }
 
-        internal async Task InvokePlayerLeave(PlayerLeaveEventArgs eventArgs)
+        internal Task InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs)
         {
-            await Task.Factory.StartNew(async () => { await this._playerLeave.InvokeAsync(eventArgs); });
+            _ = Task.Run(async () => { await this._playerLeave.InvokeAsync(eventArgs); });
+
+            return Task.CompletedTask;
         }
 
-        internal async Task InvokeServerTick()
+        internal Task InvokeServerTickAsync()
         {
-            await Task.Factory.StartNew(async () => { await this._serverTick.InvokeAsync(); });
+            _ = Task.Run(async () => { await this._serverTick.InvokeAsync(); });
+            return Task.CompletedTask;
         }
     }
 }

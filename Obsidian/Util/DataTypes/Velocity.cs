@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.Util
+﻿namespace Obsidian.Util.DataTypes
 {
     public struct Velocity
     {

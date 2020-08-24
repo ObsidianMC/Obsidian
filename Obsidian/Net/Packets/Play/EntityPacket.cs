@@ -7,20 +7,12 @@ namespace Obsidian.Net.Packets.Play
     {
         public int Id { get; set; }
 
-        public EntityPacket() : base(0x27, new byte[0]) { }
-
-        public override Task PopulateAsync()
+        public EntityPacket() : base(0x27, Array.Empty<byte>())
         {
-            throw new NotImplementedException();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using(var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(this.Id);
-                return stream.ToArray();
-            }
-        }
+        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteVarIntAsync(this.Id);
+
+        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

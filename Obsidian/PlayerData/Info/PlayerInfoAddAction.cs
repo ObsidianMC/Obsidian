@@ -1,7 +1,7 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Net;
-using Obsidian.Util;
-
+using Obsidian.Util.Mojang;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,14 +23,17 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUuidAsync(this.Uuid);
+            await stream.WriteUuidAsync(Guid.Parse(this.Uuid));//monkaS
 
             await stream.WriteStringAsync(this.Name, 16);
 
             await stream.WriteVarIntAsync(this.Properties.Count);
 
             foreach (SkinProperties props in this.Properties)
+            {
                 await stream.WriteAsync(await props.ToArrayAsync());
+                Console.WriteLine("wrote");
+            }
 
             await stream.WriteVarIntAsync(this.Gamemode);
 

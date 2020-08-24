@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
-namespace Obsidian.Util
+namespace Obsidian.Util.Mojang
 {
     public class JoinedResponse
     {

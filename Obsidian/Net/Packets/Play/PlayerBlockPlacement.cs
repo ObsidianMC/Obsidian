@@ -1,8 +1,7 @@
-﻿using Obsidian.Util;
+﻿using System.Threading.Tasks;
 using Obsidian.Util.DataTypes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets.Play
 {
     public class PlayerBlockPlacement : Packet
     {
@@ -13,7 +12,7 @@ namespace Obsidian.Net.Packets
         public float CursorY { get; private set; }
         public float CursorZ { get; private set; }
 
-        public PlayerBlockPlacement(Position loc, BlockFace face, int hand, float cursorx, float cursory, float cursorz) : base(0x29, new byte[0])
+        public PlayerBlockPlacement(Position loc, BlockFace face, int hand, float cursorx, float cursory, float cursorz) : base(0x29, System.Array.Empty<byte>())
         {
             Location = loc;
             Face = face;
@@ -23,33 +22,28 @@ namespace Obsidian.Net.Packets
             CursorZ = cursorz;
         }
 
-        public PlayerBlockPlacement(byte[] data) : base(0x29, data) { }
-
-        public override async Task PopulateAsync()
+        public PlayerBlockPlacement(byte[] data) : base(0x29, data)
         {
-            using (var stream = new MinecraftStream(this.PacketData))
-            {
-                Location = await stream.ReadPositionAsync();
-                Face = (BlockFace)await stream.ReadByteAsync();
-                Hand = await stream.ReadVarIntAsync();
-                CursorX = await stream.ReadFloatAsync();
-                CursorY = await stream.ReadFloatAsync();
-                CursorZ = await stream.ReadFloatAsync();
-            }
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        protected override async Task ComposeAsync(MinecraftStream stream)
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WritePositionAsync(Location);
-                await stream.WriteVarIntAsync(Face);
-                await stream.WriteVarIntAsync(Hand);
-                await stream.WriteFloatAsync(CursorX);
-                await stream.WriteFloatAsync(CursorY);
-                await stream.WriteFloatAsync(CursorZ);
-                return stream.ToArray();
-            }
+            await stream.WritePositionAsync(Location);
+            await stream.WriteVarIntAsync(Face);
+            await stream.WriteVarIntAsync(Hand);
+            await stream.WriteFloatAsync(CursorX);
+            await stream.WriteFloatAsync(CursorY);
+            await stream.WriteFloatAsync(CursorZ);
+        }
+
+        protected override async Task PopulateAsync(MinecraftStream stream)
+        {
+            Location = await stream.ReadPositionAsync();
+            Face = (BlockFace)await stream.ReadByteAsync();
+            Hand = await stream.ReadVarIntAsync();
+            CursorX = await stream.ReadFloatAsync();
+            CursorY = await stream.ReadFloatAsync();
+            CursorZ = await stream.ReadFloatAsync();
         }
     }
 }

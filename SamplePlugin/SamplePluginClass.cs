@@ -6,14 +6,23 @@ using Obsidian.Plugins;
 using Qmmands;
 
 using System.Threading.Tasks;
+using Obsidian.Plugins.Obsidian;
 
 namespace SamplePlugin
 {
-    public class SamplePluginClass : IPluginClass
+    public class SamplePluginClass : IObsidianPluginClass
     {
         private Server server;
 
-        public async Task<PluginInfo> InitializeAsync(Server server)
+        public PluginInfo Info => new PluginInfo(
+            "SamplePlugin",
+            "Obsidian Team",
+            "0.1",
+            "A Sample Plugin! <3",
+            "https://github.com/NaamloosDT/Obsidian"
+        );
+        
+        public async Task InitializeAsync(Server server)
         {
             this.server = server;
 
@@ -21,23 +30,13 @@ namespace SamplePlugin
 
             server.Events.PlayerJoin += OnPlayerJoin;
 
-            server.Register(new DickWorldGenerator());
-
-            return new PluginInfo(
-                "SamplePlugin",
-                "Obsidian Team",
-                "0.1",
-                "A Sample Plugin! <3",
-                "https://github.com/NaamloosDT/Obsidian"
-            );
+            server.RegisterAsync(new DickWorldGenerator());
         }
-
-        private Task OnPlayerJoin(PlayerJoinEventArgs e)
+        
+        private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            e.Server.Broadcast($"Player join event from sample plugin! {e.Joined.Username}");
-            e.Logger.LogMessage($"Player join event to logger from sample plugin! {e.Joined.Username}");
-
-            return Task.CompletedTask;
+            e.Server.BroadcastAsync($"Player join event from sample plugin! {e.Joined.Username}");
+            await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Joined.Username}");
         }
     }
 
@@ -49,7 +48,7 @@ namespace SamplePlugin
         [Description("A sample command added by a sample plugin!")]
         public Task SampleCommandAsync()
         {
-            Context.Server.Broadcast($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
+            Context.Server.BroadcastAsync($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
 
             return Task.CompletedTask;
         }

@@ -1,9 +1,10 @@
-﻿using Obsidian.Net;
-using Obsidian.Util.Registry;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
+using Obsidian.BlockData;
+using Obsidian.Net;
+using Obsidian.Util.Registry;
 
-namespace Obsidian.BlockData
+namespace Obsidian.ChunkData
 {
     public interface IBlockStatePalette
     {
@@ -29,14 +30,14 @@ namespace Obsidian.BlockData
 
         public Task<byte[]> ToArrayAsync()
         {
-            return Task.FromResult(new byte[0]);
+            return Task.FromResult(System.Array.Empty<byte>());
         }
     }
 
     public class LinearBlockStatePalette : IBlockStatePalette
     {
         public BlockState[] BlockStateArray;
-        public int BlockStateCount = 0;
+        public int BlockStateCount;
 
         public bool IsFull { get { return BlockStateArray.Length == BlockStateCount; } }
 
