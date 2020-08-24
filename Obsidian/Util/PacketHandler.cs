@@ -94,7 +94,7 @@ namespace Obsidian.Util
 
                 case 0x04:
                     // Client Settings
-                    client.ClientSettings = await PacketSerializer.DeserializeAsync<ClientSettings>(packet.data);
+                    client.ClientSettings = await PacketSerializer.FastDeserializeAsync<ClientSettings>(packet.data);
                     await Logger.LogDebugAsync("Received client settings");
                     break;
 
@@ -145,7 +145,7 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await PacketSerializer.DeserializeAsync<KeepAlive>(packet.data);
+                    var keepalive = await PacketSerializer.FastDeserializeAsync<KeepAlive>(packet.data);
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
@@ -171,7 +171,7 @@ namespace Obsidian.Util
 
                 case 0x12:
                     // Player Look
-                    var look = await PacketSerializer.DeserializeAsync<PlayerLook>(packet.data);
+                    var look = await PacketSerializer.FastDeserializeAsync<PlayerLook>(packet.data);
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                     //await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
@@ -283,7 +283,7 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Animation (serverbound)
-                    var serverAnim = await PacketSerializer.DeserializeAsync<AnimationServerPacket>(packet.data);
+                    var serverAnim = await PacketSerializer.FastDeserializeAsync<AnimationServerPacket>(packet.data);
 
                     await Logger.LogDebugAsync("Received animation (serverbound)");
                     break;
