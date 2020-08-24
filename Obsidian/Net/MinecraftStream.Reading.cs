@@ -10,7 +10,7 @@ namespace Obsidian.Net
     public partial class MinecraftStream
     {
         [ReadMethod(DataType.Byte)]
-        public sbyte ReadSignedByte() => (sbyte)ReadByte();
+        public sbyte ReadSignedByte() => (sbyte)ReadUnsignedByte();
 
         public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
@@ -32,7 +32,7 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Boolean)]
         public bool ReadBoolean()
         {
-            var value = base.ReadByte();
+            var value = ReadUnsignedByte();
             if (value == 0x00)
             {
                 return false;
