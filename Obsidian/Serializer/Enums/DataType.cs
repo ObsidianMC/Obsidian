@@ -20,7 +20,13 @@
         EntityMetadata,
         Slot,
         NbtTag,
+        /// <summary>
+        /// Position serialized as an Int64.
+        /// </summary>
         Position,
+        /// <summary>
+        /// Position serialized as three double values.
+        /// </summary>
         AbsolutePosition,
         Transform,
         SoundPosition,
