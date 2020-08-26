@@ -2,6 +2,7 @@
 using Obsidian.Logging;
 using Obsidian.Util;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -9,8 +10,9 @@ namespace Obsidian
 {
     public static class Program
     {
-        private static Server[] Servers;
-        private static Task[] Tasks;
+        private static Dictionary<int,Server> Servers = new Dictionary<int, Server>();
+        private static List<Task> Tasks = new List<Task>();
+
         public static GlobalConfig Config;
         public static Random Random = new Random();
 
@@ -37,16 +39,18 @@ namespace Obsidian
 
             Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText("global_config.json"));
 
-            Tasks = new Task[Config.ServerCount];
-            Servers = new Server[Config.ServerCount];
-            for (int i = 0; i < Servers.Length; i++)
+            for (int i = 0; i < Config.ServerCount; i++)
             {
+<<<<<<< Updated upstream
                 string serverDir = $"Server{i}";
                 
                 if (!Directory.Exists(serverDir))
                 {
                     Directory.CreateDirectory(serverDir);
                 }
+=======
+                Directory.CreateDirectory(i.ToString());
+>>>>>>> Stashed changes
 
                 string configPath = Path.Combine(serverDir, "config.json");
 
@@ -56,15 +60,17 @@ namespace Obsidian
                     Console.WriteLine("Created new config");
                 }
 
-                Config config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+                var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
 
-                Servers[i] = new Server(config, version, i);
+                Servers.Add(i, new Server(config, version, i));
+            }
 
-                int capturedIndex = i; //HACK: race condition of the index
-                Tasks[i] = Task.Run(async delegate ()
+            foreach (var (key, server) in Servers)
+            {
+                Tasks.Add(Task.Run(async delegate ()
                 {
-                    await Servers[capturedIndex].StartServer();
-                });
+                    await server.StartServer();
+                }));
             }
 
             await Task.WhenAll(Tasks); //Wait until all servers are dead.

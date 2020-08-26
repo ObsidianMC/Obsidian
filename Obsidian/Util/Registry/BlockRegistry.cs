@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Obsidian.BlockData;
 using Obsidian.Logging;
 using Obsidian.Util.Converters;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -966,16 +967,6 @@ namespace Obsidian.Util.Registry
         Chime,
 
         Xylophone
-    }
-
-    public enum BlockFace
-    {
-        North,
-        East,
-        South,
-        West,
-        Up,
-        Down   
     }
 
     public enum SignFace
