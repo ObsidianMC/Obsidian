@@ -6,7 +6,7 @@ namespace Obsidian.ChunkData
 {
     public class ChunkSection
     {
-        public BlockStateContainer Container = new BlockStateContainer();
+        public BlockStateContainer Container = new BlockStateContainer(4);
 
         public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
         public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);

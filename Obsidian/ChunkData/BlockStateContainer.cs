@@ -23,34 +23,36 @@ namespace Obsidian.ChunkData
             this.BlockStorage = new DataArray(bitsPerBlock);
 
             //TODO implement palettes
-            /*if (bitsPerBlock <= 4)
+            if (bitsPerBlock <= 4)
             {
-                
+                this.Palette = new LinearBlockStatePalette(4);
             }
             else if(bitsPerBlock <= 8)
             {
-
+                this.Palette = new LinearBlockStatePalette(bitsPerBlock);
             }
             else if (bitsPerBlock >= 9)
             {
-
-            }*/
+                this.Palette = new GlobalBlockStatePalette();
+            }
         }
 
-        public void Set(int x, int y, int z, BlockState blockState) => this.BlockStorage[this.GetIndex(x, y, z)] = blockState.Id;
+        public void Set(int x, int y, int z, BlockState blockState)
+        {
+            var blockIndex = this.GetIndex(x, y, z);
 
-        public void Set(double x, double y, double z, BlockState blockState) => this.BlockStorage[this.GetIndex((int)x, (int)y, (int)z)] = blockState.Id;
+            int paletteIndex = this.Palette.GetIdFromState((Block)blockState);
+
+            this.BlockStorage[blockIndex] = paletteIndex;
+        }
+
+        public void Set(double x, double y, double z, BlockState blockState) => this.Set((int)x, (int)y, (int)z, blockState);
 
         public BlockState Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 
-            foreach (var blockState in BlockRegistry.BLOCK_STATES.Values)
-            {
-                if (blockState.Id == storageId)
-                    return blockState;
-            }
-            return null;
+            return this.Palette.GetStateFromIndex(storageId);
         }
 
         private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
@@ -60,6 +62,8 @@ namespace Obsidian.ChunkData
         public async Task WriteToAsync(MinecraftStream stream)
         {
             await stream.WriteByteAsync((sbyte)this.BitsPerBlock);
+
+            await this.Palette.WriteToAsync(stream);
 
             await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
             await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
