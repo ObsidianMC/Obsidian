@@ -1,14 +1,13 @@
-﻿using Obsidian.Net;
-using Obsidian.Net.Packets;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
-using Obsidian.Util.DataTypes;
-using Obsidian.Util.Extensions;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Collections.Generic;
+using Obsidian.Net;
+using Obsidian.Net.Packets;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Util.Extensions;
+using Obsidian.Serializer.Enums;
 
 namespace Obsidian.Serializer.Dynamic
 {
@@ -22,7 +21,7 @@ namespace Obsidian.Serializer.Dynamic
             writeMethods = GetStreamMethods<WriteMethod>();
             readMethods = GetStreamMethods<ReadMethod>();
         }
-
+        
         internal static MethodInfo BuildSerializationMethod<T>() where T : Packet
         {
             throw new NotImplementedException();
@@ -51,25 +50,12 @@ namespace Obsidian.Serializer.Dynamic
                 if (member is FieldInfo field)
                 {
                     DataType fieldType = attribute.Type != DataType.Auto ? attribute.Type : field.FieldType.ToDataType();
-
-                    // TODO: move this to PacketExtensions.ToDataType(), once everything works with SerializationMethodBuilder
-                    if (field.FieldType == typeof(byte[])) fieldType = DataType.ByteArray;
-                    // TODO: remove this once packet attributes are changed
-                    if (fieldType == DataType.Position)
-                    {
-                        if (field.FieldType == typeof(Transform))
-                            fieldType = DataType.Transform;
-                        else if (field.FieldType == typeof(SoundPosition))
-                            fieldType = DataType.SoundPosition;
-                        else if (attribute.Absolute)
-                            fieldType = DataType.AbsolutePosition;
-                    }
-
                     if (fieldType == DataType.Auto || !readMethods.TryGetValue(fieldType, out var readMethod))
                     {
                         throw new NotSupportedException();
+                        continue;
                     }
-
+                    
                     il.Emit(OpCodes.Ldarg_0);
                     var parameters = readMethod.GetParameters();
                     for (int i = 0; i < parameters.Length; i++)
@@ -91,23 +77,10 @@ namespace Obsidian.Serializer.Dynamic
                     if (setMethod != null)
                     {
                         DataType propertyType = attribute.Type != DataType.Auto ? attribute.Type : property.PropertyType.ToDataType();
-
-                        // TODO: move this to PacketExtensions.ToDataType(), once everything works with SerializationMethodBuilder
-                        if (property.PropertyType == typeof(byte[])) propertyType = DataType.ByteArray;
-                        // TODO: remove this once packet attributes are changed
-                        if (propertyType == DataType.Position)
-                        {
-                            if (property.PropertyType == typeof(Transform))
-                                propertyType = DataType.Transform;
-                            else if (property.PropertyType == typeof(SoundPosition))
-                                propertyType = DataType.SoundPosition;
-                            else if (attribute.Absolute)
-                                propertyType = DataType.AbsolutePosition;
-                        }
-
                         if (propertyType == DataType.Auto || !readMethods.TryGetValue(propertyType, out var readMethod))
                         {
                             throw new NotSupportedException();
+                            continue;
                         }
 
                         il.Emit(OpCodes.Ldarg_0);

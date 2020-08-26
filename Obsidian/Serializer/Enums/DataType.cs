@@ -2,7 +2,7 @@
 {
     public enum DataType
     {
-        Auto,
+        Auto = 0,
         Boolean,
         Byte,
         UnsignedByte,
@@ -20,21 +20,11 @@
         EntityMetadata,
         Slot,
         NbtTag,
-        /// <summary>
-        /// Position serialized as an Int64.
-        /// </summary>
         Position,
-        /// <summary>
-        /// Position serialized as three double values.
-        /// </summary>
-        AbsolutePosition,
-        Transform,
-        SoundPosition,
         Angle,
         UUID,
         Array,
         Velocity,
-        ByteArray,
         // TODO: Implement missing data types
         // Optional X
         // Array of X
