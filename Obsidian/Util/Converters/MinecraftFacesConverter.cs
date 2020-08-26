@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Util.Registry;
+using Obsidian.Util.DataTypes;
 using System;
 
 namespace Obsidian.Util.Converters

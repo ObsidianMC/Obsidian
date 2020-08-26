@@ -41,16 +41,9 @@ namespace Obsidian
 
             for (int i = 0; i < Config.ServerCount; i++)
             {
-<<<<<<< Updated upstream
-                string serverDir = $"Server{i}";
-                
-                if (!Directory.Exists(serverDir))
-                {
-                    Directory.CreateDirectory(serverDir);
-                }
-=======
-                Directory.CreateDirectory(i.ToString());
->>>>>>> Stashed changes
+                string serverDir = $"Server-{i}";
+
+                Directory.CreateDirectory(serverDir);
 
                 string configPath = Path.Combine(serverDir, "config.json");
 
