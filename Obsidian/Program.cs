@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Entities;
+using Obsidian.Logging;
+using Obsidian.Util;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Obsidian.Util;
 
 namespace Obsidian
 {
@@ -12,10 +12,11 @@ namespace Obsidian
         private static Server[] Servers;
         private static Task[] Tasks;
         public static GlobalConfig Config;
+        public static Random Random = new Random();
 
-#if PACKETLOG
-        public static Logger PacketLogger = new Logger("Packet Logger", LogLevel.Debug);
-#endif
+
+        public static AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
+
 
         private static async Task Main(string[] args)
         {

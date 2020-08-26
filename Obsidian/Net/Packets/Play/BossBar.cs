@@ -1,27 +1,22 @@
-﻿using System;
-using System.Threading.Tasks;
-using Obsidian.Boss;
+﻿using Obsidian.Boss;
+using Obsidian.Serializer.Attributes;
+using System;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class BossBar : Packet
     {
+        [Field(0)]
+        public Guid UUID { get; private set; }
+
+        [Field(1)]
+        public BossBarAction Action { get; private set; }
+
+        public BossBar() : base(0x0C) { }
         public BossBar(Guid uuid, BossBarAction action) : base(0x0C)
         {
             this.UUID = uuid;
             this.Action = action ?? throw new ArgumentNullException(nameof(action));
         }
-
-        public Guid UUID { get; private set; }
-        public BossBarAction Action { get; private set; }
-
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteUuidAsync(this.UUID);
-            await stream.WriteVarIntAsync(this.Action.Action);
-            await stream.WriteAsync(await this.Action.ToArrayAsync());
-        }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

@@ -1,5 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
 
@@ -7,32 +7,28 @@ namespace Obsidian.Net.Packets.Play
 {
     public class SoundEffect : Packet
     {
-        public SoundEffect(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D, Array.Empty<byte>())
+        [Field(0, Type = DataType.VarInt)]
+        public int SoundId { get; set; }
+
+        [Field(1, Type = DataType.VarInt)]
+        public SoundCategory Category { get; set; }
+
+        [Field(2)]
+        public SoundPosition Position { get; set; }
+
+        [Field(3)]
+        public float Volume { get; set; }
+
+        [Field(4)]
+        public float Pitch { get; set; }
+
+        public SoundEffect(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x4D)
         {
             this.SoundId = soundId;
-            this.Location = location;
+            this.Position = position;
             this.Category = category;
             this.Pitch = pitch;
             this.Volume = volume;
-        }
-
-        public SoundCategory Category { get; set; }
-        public float Pitch { get; set; }
-        public Position Location { get; set; }
-        public int SoundId { get; set; }
-        public float Volume { get; set; }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
-
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteVarIntAsync(this.SoundId);
-            await stream.WriteVarIntAsync((int)this.Category);
-            await stream.WriteIntAsync((int)(this.Location.X / 32.0D));
-            await stream.WriteIntAsync((int)(this.Location.Y / 32.0D));
-            await stream.WriteIntAsync((int)(this.Location.Z / 32.0D));
-            await stream.WriteFloatAsync(this.Volume);
-            await stream.WriteFloatAsync(this.Pitch);
         }
     }
 }

@@ -1,18 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class EntityPacket : Packet
     {
+        [Field(0)]
         public int Id { get; set; }
 
-        public EntityPacket() : base(0x27, Array.Empty<byte>())
-        {
-        }
-
-        protected override async Task ComposeAsync(MinecraftStream stream) => await stream.WriteVarIntAsync(this.Id);
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
+        public EntityPacket() : base(0x27) { }
     }
 }

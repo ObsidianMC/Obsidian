@@ -1,8 +1,8 @@
-﻿using System;
+﻿using fNbt;
+using Obsidian.ChunkData;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using fNbt;
-using Obsidian.ChunkData;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -17,11 +17,11 @@ namespace Obsidian.Net.Packets.Play
 
         public int changedSectionFilter = 0b1111111111111111;
 
-        public ChunkDataPacket() : base(0x22, Array.Empty<byte>())
+        public ChunkDataPacket() : base(0x22)
         {
         }
 
-        public ChunkDataPacket(int chunkX, int chunkZ) : base(0x22, Array.Empty<byte>())
+        public ChunkDataPacket(int chunkX, int chunkZ) : base(0x22)
         {
             this.ChunkX = chunkX;
             this.ChunkZ = chunkZ;
@@ -40,7 +40,7 @@ namespace Obsidian.Net.Packets.Play
 
             await stream.WriteBooleanAsync(fullChunk);
 
-            int availableSections = 0;
+            int mask = 0;
 
             await using var dataStream = new MinecraftStream();
 
@@ -52,9 +52,9 @@ namespace Obsidian.Net.Packets.Play
 
                 if (fullChunk || (changedSectionFilter & (1 << chunkSectionY)) != 0)
                 {
-                    availableSections |= 1 << chunkSectionY;
+                    mask |= 1 << chunkSectionY;
 
-                    await section.WriteAsync(dataStream);
+                    await section.WriteToAsync(dataStream);
                 }
                 chunkSectionY++;
             }
@@ -72,7 +72,7 @@ namespace Obsidian.Net.Packets.Play
                     await dataStream.WriteIntAsync(biomeId);
                 }
             }
-            await stream.WriteVarIntAsync(availableSections);
+            await stream.WriteVarIntAsync(mask);
 
             await stream.WriteVarIntAsync((int)dataStream.Length);
             dataStream.Position = 0;
@@ -83,7 +83,5 @@ namespace Obsidian.Net.Packets.Play
             foreach (var entity in BlockEntities)
                 await stream.WriteNbtAsync(entity);
         }
-
-        protected override Task PopulateAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

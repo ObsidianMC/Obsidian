@@ -17,9 +17,9 @@ namespace Obsidian.Entities
 {
     public class Player : Living
     {
-        internal readonly Client _client;
+        internal readonly Client client;
 
-        public string Uuid { get; set; }
+        public Guid Uuid { get; set; }
 
         public Transform PreviousTransform { get; set; } = new Transform();
 
@@ -39,7 +39,7 @@ namespace Obsidian.Entities
 
         public Gamemode Gamemode { get; set; }
 
-        public int Ping => this._client._ping;
+        public int Ping => this.client.ping;
 
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
@@ -75,13 +75,13 @@ namespace Obsidian.Entities
 
         public World.World World;
 
-        internal Player(string uuid, string username, Client client)
+        internal Player(Guid uuid, string username, Client client)
         {
             this.Uuid = uuid;
             this.Username = username;
             this.Permissions = new ConcurrentHashSet<string>();
             this.Transform = new Transform();
-            this._client = client;
+            this.client = client;
         }
 
         public void UpdatePosition(Position pos, bool? onGround = null)
@@ -126,39 +126,20 @@ namespace Obsidian.Entities
             this.PreviousTransform.Z = this.Transform.Z;
             this.PreviousTransform.Yaw = this.Transform.Yaw;
             this.PreviousTransform.Pitch = this.Transform.Pitch;
-            this.PreviousTransform.Position = this.Transform.Position;
+            this.PreviousTransform.ToPosition = this.Transform.ToPosition;
         }
 
-        public async Task SendMessageAsync(string message, byte position = 0)
-        {
-            var chat = ChatMessage.Simple(message);
-            await _client.SendPacket(new ChatMessagePacket(chat, position));
-        }
+        public Task SendMessageAsync(string message, sbyte position = 0) => client.SendPacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
 
-        public async Task SendMessageAsync(ChatMessage message)
-        {
-            await _client.SendPacket(new ChatMessagePacket(message, 0));
-        }
+        public Task SendMessageAsync(ChatMessage message) => client.SendPacketAsync(new ChatMessagePacket(message, 0));
 
-        public async Task SendSoundAsync(int soundId, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await _client.SendPacket(new SoundEffect(soundId, location, category, pitch, volume));
-        }
+        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public async Task SendNamedSoundAsync(string name, Position location, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
-        {
-            await _client.SendPacket(new NamedSoundEffect(name, location, category, pitch, volume));
-        }
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
-        public async Task SendBossBarAsync(Guid uuid, BossBarAction action)
-        {
-            await _client.SendPacket(new BossBar(uuid, action));
-        }
+        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.SendPacketAsync(new BossBar(uuid, action));
 
-        public async Task KickAsync(string reason)
-        {
-            await this._client.DisconnectAsync(ChatMessage.Simple(reason));
-        }
+        public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
 
         public void LoadPerms(List<string> permissions)
         {
@@ -168,7 +149,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public Task DisconnectAsync(ChatMessage reason) => this._client.DisconnectAsync(reason);
+        public Task DisconnectAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public override async Task WriteAsync(MinecraftStream stream)
         {

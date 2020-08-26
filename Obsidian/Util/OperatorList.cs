@@ -12,7 +12,7 @@ namespace Obsidian.Util
         private List<Operator> _ops;
         private readonly List<OperatorRequest> _reqs;
         private readonly Server _server;
-        private string Path => System.IO.Path.Combine(this._server.Path, "ops.json");
+        private string Path => System.IO.Path.Combine(this._server.ServerFolderPath, "ops.json");
 
         public OperatorList(Server s)
         {
@@ -80,7 +80,7 @@ namespace Obsidian.Util
 
         public void AddOperator(string username)
         {
-            _ops.Add(new Operator() { Username = username, Uuid = null });
+            _ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
             _updateList();
         }
 
@@ -92,7 +92,7 @@ namespace Obsidian.Util
 
         public void RemoveOperator(string value)
         {
-            _ops.RemoveAll(x => x.Username == value || x.Uuid == value);
+            _ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
             _updateList();
         }
 
@@ -116,7 +116,7 @@ namespace Obsidian.Util
             public string Username;
 
             [JsonProperty("uuid")]
-            public string Uuid;
+            public Guid Uuid;
 
             [JsonIgnore]
             public bool Online => Uuid != null;

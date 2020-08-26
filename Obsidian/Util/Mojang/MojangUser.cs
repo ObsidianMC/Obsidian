@@ -18,18 +18,6 @@ namespace Obsidian.Util.Mojang
 
         [JsonProperty("demo")]
         public bool Demo { get; set; }
-    }
-
-    public class MojangUserAndSkin
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("legacy")]
-        public bool Legacy { get; set; }
 
         [JsonProperty("properties")]
         public List<SkinProperties> Properties { get; set; }

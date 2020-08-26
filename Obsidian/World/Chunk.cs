@@ -1,5 +1,4 @@
 ﻿using Obsidian.BlockData;
-using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
 
@@ -32,12 +31,12 @@ namespace Obsidian.World
             }
         }
 
-        public Block GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
+        public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
 
         public Block GetBlock(int x, int y, int z) => this.Blocks[x, y, z];
 
-        public void SetBlock(Position position, Block block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
+        public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
-        public void SetBlock(int x, int y, int z, Block block) => Blocks[x, y, z] = block;
+        public void SetBlock(int x, int y, int z, Block block) => this.Blocks[x, y, z] = block;
     }
 }

@@ -1,30 +1,39 @@
-﻿using System.Threading.Tasks;
-using Obsidian.PlayerData;
+﻿using Obsidian.PlayerData;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.World;
+using System;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class JoinGame : Packet
     {
-        public int EntityId { get; private set; }
+        [Field(0, Type = DataType.Int)]
+        public int EntityId { get; set; }
 
-        public Gamemode GameMode { get; private set; } = Gamemode.Survival;
+        [Field(1, Type = DataType.UnsignedByte)]
+        public Gamemode GameMode { get; set; } = Gamemode.Survival;
 
-        public Dimension Dimension { get; private set; } = Dimension.Overworld;
+        [Field(2, Type = DataType.Int)]
+        public Dimension Dimension { get; set; } = Dimension.Overworld;
 
-        public Difficulty Difficulty { get; private set; } = Difficulty.Peaceful;
+        [Field(3, Type = DataType.UnsignedByte)]
+        public Difficulty Difficulty { get; set; } = Difficulty.Peaceful;
 
-        public byte MaxPlayers { get; private set; } // Gets ignored by client
+        [Field(4)]
+        private byte maxPlayers { get; } = 0;
 
-        public string LevelType { get; private set; } = "default";
+        [Field(5, Type = DataType.String, MaxLength = 16)]
+        public LevelType LevelType { get; set; } = LevelType.Default;
 
-        public bool ReducedDebugInfo { get; private set; }
+        [Field(6)]
+        public bool ReducedDebugInfo { get; set; }
 
-        public JoinGame(byte[] data) : base(0x25, data)
-        {
-        }
+        public JoinGame() : base(0x25) { }
 
-        public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, string leveltype, bool debugging) : base(0x25, System.Array.Empty<byte>())
+        public JoinGame(byte[] data) : base(0x25, data) { }
+
+        public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, LevelType leveltype, bool debugging) : base(0x25, Array.Empty<byte>())
         {
             this.EntityId = entityid;
             this.GameMode = gamemode;
@@ -33,27 +42,17 @@ namespace Obsidian.Net.Packets.Play
             this.LevelType = leveltype;
             this.ReducedDebugInfo = !debugging;
         }
+    }
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteIntAsync(this.EntityId);
-            await stream.WriteUnsignedByteAsync((byte)this.GameMode);
-            await stream.WriteIntAsync((int)this.Dimension);
-            await stream.WriteUnsignedByteAsync((byte)this.Difficulty);
-            await stream.WriteUnsignedByteAsync(this.MaxPlayers);
-            await stream.WriteStringAsync(this.LevelType);
-            await stream.WriteBooleanAsync(this.ReducedDebugInfo);
-        }
+    public enum LevelType
+    {
+        Default,
+        Flat,
+        LargeBiomes,
+        Amplified,
+        Customized,
+        Buffet,
 
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.GameMode = (Gamemode)await stream.ReadUnsignedByteAsync();
-            this.Dimension = (Dimension)await stream.ReadIntAsync();
-            this.Difficulty = (Difficulty)await stream.ReadUnsignedByteAsync();
-            this.MaxPlayers = await stream.ReadUnsignedByteAsync();
-            this.LevelType = await stream.ReadStringAsync();
-            this.ReducedDebugInfo = await stream.ReadBooleanAsync();
-        }
+        Default_1_1
     }
 }

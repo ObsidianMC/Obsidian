@@ -1,29 +1,62 @@
 ﻿using JetBrains.Annotations;
+using Newtonsoft.Json;
+using System;
+using System.Linq;
 
 namespace Obsidian.Plugins
 {
     public class PluginInfo
     {
-        public string Name { get; }
-        public string[] Authors { get; }
-        public string Version { get; }
-        public string Description { get; }
-        
-        [CanBeNull]
-        public string ProjectUrl { get; }
+        [JsonProperty]
+        public string Name { get; internal set; }
 
-        public PluginInfo(string name, string author, string version, string description, string projectUrl = null)
-            : this(name, new[] {author}, version, description, projectUrl)
-        {
-        }
-        
-        public PluginInfo(string name, string[] authors, string version, string description, string projectUrl = null)
+        [JsonProperty]
+        public string[] Authors { get; internal set; } = Array.Empty<string>();
+
+        [JsonProperty]
+        public string Version { get; internal set; }
+
+        [JsonProperty]
+        public string Description { get; internal set; }
+
+
+        [CanBeNull]
+        [JsonProperty]
+        public string ProjectUrl { get; internal set; }
+
+        public PluginInfo() { }
+
+        public PluginInfo SetName(string name)
         {
             this.Name = name;
-            this.Authors = authors;
+
+            return this;
+        }
+
+        public PluginInfo AddAuthor(string author)
+        {
+            this.Authors.Append(author);
+
+            return this;
+        }
+
+        public PluginInfo SetVersion(string version)
+        {
             this.Version = version;
+            return this;
+        }
+
+        public PluginInfo SetDescription(string description)
+        {
             this.Description = description;
-            this.ProjectUrl = projectUrl;
+
+            return this;
+        }
+
+        public PluginInfo SetProjectUrl(string url)
+        {
+            this.ProjectUrl = url;
+            return this;
         }
     }
 }

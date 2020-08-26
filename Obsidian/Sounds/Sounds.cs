@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Sounds
 {
-    public enum Sounds : int
+    public enum Sounds
     {
         AmbientCave,
         AmbientUnderwaterEnter,

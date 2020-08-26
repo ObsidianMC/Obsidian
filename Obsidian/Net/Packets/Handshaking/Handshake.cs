@@ -1,41 +1,29 @@
-using System.Threading.Tasks;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
     public class Handshake : Packet
     {
+        [Field(0, Type = DataType.VarInt)]
         public ProtocolVersion Version;
 
+        [Field(1)]
         public string ServerAddress;
 
+        [Field(2)]
         public ushort ServerPort;
 
+        [Field(3, Type = DataType.VarInt)]
         public ClientState NextState;
+
+        public Handshake() : base(0x00)
+        {
+        }
 
         public Handshake(byte[] data) : base(0x00, data)
         {
-        }
-
-        public Handshake() : base(0x00, null)
-        {
-        }
-
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteVarIntAsync((int)this.Version);
-            //TODO: add string length check
-            await stream.WriteStringAsync(this.ServerAddress);
-            await stream.WriteUnsignedShortAsync(this.ServerPort);
-            await stream.WriteVarIntAsync((int)this.NextState);
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            this.Version = (ProtocolVersion)await stream.ReadVarIntAsync();
-            this.ServerAddress = await stream.ReadStringAsync();
-            this.ServerPort = await stream.ReadUnsignedShortAsync();
-            this.NextState = (ClientState)await stream.ReadVarIntAsync();
         }
     }
 }

@@ -1,33 +1,23 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class BlockChange : Packet
     {
+        [Field(0)]
         public Position Location { get; private set; }
+
+        [Field(1, Type = DataType.VarInt)]
         public int BlockId { get; private set; }
 
-        public BlockChange(Position loc, int block) : base(0x0B, System.Array.Empty<byte>())
+        public BlockChange() : base(0x0B) { }
+
+        public BlockChange(Position loc, int block) : base(0x0B)
         {
             Location = loc;
             BlockId = block;
-        }
-
-        public BlockChange(byte[] data) : base(0x0B, data)
-        {
-        }
-
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WritePositionAsync(Location);
-            await stream.WriteVarIntAsync(BlockId);
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            Location = await stream.ReadPositionAsync();
-            BlockId = await stream.ReadVarIntAsync();
         }
     }
 }

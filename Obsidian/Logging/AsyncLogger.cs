@@ -38,10 +38,10 @@ namespace Obsidian.Logging
             this.LogLevel = logLevel;
             this.FilePath = filePath;
 
-            _streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
+            /*_streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
             {
                 AutoFlush = true
-            };
+            };*/
             _dispatcherTask = Task.Run(TaskLoop);
         }
 
@@ -88,46 +88,47 @@ namespace Obsidian.Logging
             line += message.Message;
 
             // Console logging is console lagging h
-            _ =Task.Run(() =>
-            {
-                Console.ForegroundColor = color;
-                Console.WriteLine(line);
-            });
+            Console.ForegroundColor = color;
+            Console.WriteLine(line);
         }
 
         private async Task LogMessageAsync(LogMessage message)
         {
-            ConsoleColor color;
-
-            if (message.Level == LogLevel.Debug)
-            {
-                var hash = Prefix.GetHashCode();
-
-                if (hash < 0)
-                    hash *= -1;
-
-                var colorIndex = (hash + 1) % 14;
-                color = (ConsoleColor)colorIndex;
-
-                if (color == Console.BackgroundColor)
-                    color = ConsoleColor.White;
-            }
-            else
-            {
-                color = GetConsoleColor(message.Level);
-            }
+            var color = message.Level == LogLevel.Debug
+                ? GetConsoleColorByString(Prefix)
+                : GetConsoleColor(message.Level);
 
             await LogMessageAsync(message, color);
+        }
+
+        /// <summary>
+        /// Returns a console color based on the hash of the text provided. 
+        /// </summary>
+        private static ConsoleColor GetConsoleColorByString(string text)
+        {
+            var hash = text.GetHashCode();
+
+            // make hash positive if negative
+            if (hash < 0)
+                hash *= -1;
+            
+            var colorIndex = (hash + 1) % 14;
+            var color = (ConsoleColor)colorIndex;
+
+            if (color == Console.BackgroundColor)
+                color = ConsoleColor.White;
+
+            return color;
         }
 
         private static ConsoleColor GetConsoleColor(LogLevel logLevel)
         {
             return logLevel switch
             {
-                LogLevel.Info => ConsoleColor.Cyan,
+                LogLevel.Info => ConsoleColor.White,
                 LogLevel.Warning => ConsoleColor.Yellow,
                 LogLevel.Error => ConsoleColor.DarkRed,
-                LogLevel.Debug => ConsoleColor.Magenta,
+                LogLevel.Debug => ConsoleColor.Cyan,
                 _ => ConsoleColor.Gray
             };
         }

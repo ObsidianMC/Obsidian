@@ -2,8 +2,9 @@
 {
     public abstract class ChangeGameStateReason
     {
-        protected ChangeGameStateReason(byte reason) => this.Reason = reason;
         public abstract float Value { get; }
         public byte Reason { get; }
+
+        protected ChangeGameStateReason(byte reason) => this.Reason = reason;
     }
 }

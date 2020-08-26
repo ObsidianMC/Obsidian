@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,13 +25,23 @@ namespace Obsidian.Util.Mojang
             return null;
         }
 
-        public static async Task<MojangUserAndSkin> GetUserAndSkin(string uuid)
+        public static async Task<MojangUser> GetUserAsync(string username)
+        {
+            var users = await GetUsersAsync(new[] { username });
+
+            if (users == null || users.Count <= 0)
+                return null;
+
+            return users.FirstOrDefault();
+        }
+
+        public static async Task<MojangUser> GetUserAndSkinAsync(string uuid)
         {
             using (HttpResponseMessage response = await Http.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid))
             {
                 if (response.IsSuccessStatusCode)
                 {
-                    return JsonConvert.DeserializeObject<MojangUserAndSkin>(await response.Content.ReadAsStringAsync());
+                    return JsonConvert.DeserializeObject<MojangUser>(await response.Content.ReadAsStringAsync());
                 }
             }
 

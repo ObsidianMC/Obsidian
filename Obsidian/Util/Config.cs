@@ -5,7 +5,7 @@ namespace Obsidian.Util
     public class Config
     {
         [JsonProperty("motd")]
-        public string Motd = "§dObsidian §rv§c0.1§a-DEVEL\n§r§lRunning on .NET Core 2.1 <3";
+        public string Motd = "§dObsidian §rv§c0.1§a-DEVEL\n§r§lRunning on .NET Core 3.1 <3";
 
         [JsonProperty("port")]
         public int Port = 25565;
@@ -40,7 +40,7 @@ namespace Obsidian.Util
         [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
         public bool? Baah;
 
-        [JsonProperty("maxmissedkeepalives")]
+        [JsonProperty("maxMissedKeepAlives")]
         public int MaxMissedKeepalives = 15;
     }
 }

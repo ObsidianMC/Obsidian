@@ -15,8 +15,10 @@ namespace Obsidian.Commands
         public override async Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);
-            await stream.WriteVarIntAsync(Type);
+
+            await stream.WriteVarIntAsync((int)this.Type);
         }
+
     }
 
     public enum StringType : int

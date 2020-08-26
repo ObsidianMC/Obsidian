@@ -1,36 +1,31 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using Obsidian.BlockData;
+﻿using Obsidian.BlockData;
 using Obsidian.Net;
 using Obsidian.Util.Registry;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
-    public interface IBlockStatePalette
-    {
-        bool IsFull { get; }
-        int IdFromState(Block blockState);
-        BlockState StateFromIndex(int index);
-        Task<byte[]> ToArrayAsync();
-    }
-
+   
     public class GlobalBlockStatePalette : IBlockStatePalette
     {
         public bool IsFull { get { return false; } }
 
-        public int IdFromState(Block blockState)
+        public byte BitsPerBlock { get => 14; }
+
+        public int GetIdFromState(Block blockState)
         {
             return BlockRegistry.BLOCK_STATES.Values.ToList().IndexOf(blockState);
         }
 
-        public BlockState StateFromIndex(int index)
+        public BlockState GetStateFromIndex(int index)
         {
             return BlockRegistry.BLOCK_STATES.Values.ToList()[index];
         }
 
-        public Task<byte[]> ToArrayAsync()
+        public Task WriteToAsync(MinecraftStream stream)
         {
-            return Task.FromResult(System.Array.Empty<byte>());
+            return Task.CompletedTask;
         }
     }
 
@@ -41,50 +36,37 @@ namespace Obsidian.ChunkData
 
         public bool IsFull { get { return BlockStateArray.Length == BlockStateCount; } }
 
-        public LinearBlockStatePalette(int bitCount)
+        public LinearBlockStatePalette(byte bitCount)
         {
             this.BlockStateArray = new BlockState[1 << bitCount];
         }
 
-        public int IdFromState(Block blockState)
+        public int GetIdFromState(Block blockState)
         {
-            for (int id = 0; id < BlockStateCount; id++)
+            for (int id = 0; id < this.BlockStateCount; id++)
             {
-                if (BlockStateArray[id] == blockState)
-                {
+                if (this.BlockStateArray[id] == blockState)
                     return id;
-                }
             }
 
             if (this.IsFull)
-            {
                 return -1;
-            }
+            
             // Add to palette
-            int newId = BlockStateCount;
-            BlockStateArray[newId] = blockState;
-            BlockStateCount++;
+            int newId = this.BlockStateCount;
+            this.BlockStateArray[newId] = blockState;
+            this.BlockStateCount++;
             return newId;
         }
 
-        public BlockState StateFromIndex(int index)
+        public BlockState GetStateFromIndex(int index) => BlockStateArray[index];
+
+        public async Task WriteToAsync(MinecraftStream stream)
         {
-            return BlockStateArray[index];
-        }
+            await stream.WriteVarIntAsync(this.BlockStateCount);
 
-        public async Task<byte[]> ToArrayAsync()
-        {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(BlockStateCount);
-
-                for (int i = 0; i < BlockStateCount; i++)
-                {
-                    await stream.WriteVarIntAsync(BlockStateArray[i].Id);
-                }
-
-                return stream.ToArray();
-            }
+            for (int i = 0; i < this.BlockStateCount; i++)
+                await stream.WriteVarIntAsync(this.BlockStateArray[i].Id);
         }
     }
 }

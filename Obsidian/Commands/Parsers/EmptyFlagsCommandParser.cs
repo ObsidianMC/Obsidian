@@ -10,11 +10,5 @@ namespace Obsidian.Commands
         public EmptyFlagsCommandParser(string identifier) : base(identifier)
         {
         }
-
-        public override async Task WriteAsync(MinecraftStream stream)
-        {
-            await base.WriteAsync(stream);
-            await stream.WriteByteAsync(0);
-        }
     }
 }
