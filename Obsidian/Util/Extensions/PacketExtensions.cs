@@ -71,6 +71,8 @@ namespace Obsidian.Util.Extensions
                             return DataType.Array;
                         else if (type == typeof(Guid))
                             return DataType.UUID;
+                        else if (type == typeof(byte[]))
+                            return DataType.Array;
 
                         return DataType.Auto;
                     }

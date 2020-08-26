@@ -22,7 +22,6 @@ namespace Obsidian.ChunkData
 
             this.BlockStorage = new DataArray(bitsPerBlock);
 
-            //TODO implement palettes
             if (bitsPerBlock <= 4)
             {
                 this.Palette = new LinearBlockStatePalette(4);

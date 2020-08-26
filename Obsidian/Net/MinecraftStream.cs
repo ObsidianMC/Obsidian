@@ -205,7 +205,7 @@ namespace Obsidian.Net
                             await this.WriteUnsignedByteAsync(changeGameState.Reason);
                             await this.WriteFloatAsync(changeGameState.Value);
                         }
-                        else if(value is Player player)
+                        else if (value is Player player)
                         {
                             await this.WriteUnsignedByteAsync(0xff);
                             //await this.WriteUnsignedByteAsync(0);
@@ -215,7 +215,7 @@ namespace Obsidian.Net
                         }
                         else
                         {
-                            //await this.WriteAutoAsync(value);
+                            await this.WriteAutoAsync(value);
                         }
 
                         break;
@@ -332,19 +332,14 @@ namespace Obsidian.Net
                 case DataType.UUID:
                     {
                         await this.WriteUuidAsync((Guid)value);
-                        //await this.WriteStringAsync(((Guid)value).ToString());
                         break;
                     }
                 case DataType.Array:
                     {
                         if (value is List<CommandNode> nodes)
                         {
-                            //await Program.PacketLogger.LogDebugAsync($"Commands: {string.Join(", ", nodes.Select(x => x.Name))} ({nodes.Count})");
-
                             foreach (var node in nodes)
-                            {
                                 await node.CopyToAsync(this);
-                            }
                         }
                         else if (value is List<PlayerInfoAction> actions)
                         {
@@ -352,6 +347,16 @@ namespace Obsidian.Net
 
                             foreach (var action in actions)
                                 await action.WriteAsync(this);
+                        }
+                        else if (value is byte[] array)
+                        {
+                            if (attribute.CountLength)
+                            {
+                                await this.WriteVarIntAsync(array.Length);
+                                await this.WriteAsync(array);
+                            }
+                            else
+                                await this.WriteAsync(array);
                         }
                         break;
                     }

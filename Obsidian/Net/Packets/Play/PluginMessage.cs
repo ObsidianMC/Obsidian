@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public byte[] PluginData { get; private set; }
 
-        public PluginMessage(string channel, byte[] data) : base(0x19, Array.Empty<byte>())
+        public PluginMessage(string channel, byte[] data) : base(0x19, data)
         {
             this.Channel = channel;
             this.PluginData = data;
