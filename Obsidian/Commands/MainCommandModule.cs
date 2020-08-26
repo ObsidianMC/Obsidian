@@ -90,7 +90,7 @@ namespace Obsidian.Commands
         public async Task ForceChunkReloadAsync()
         {
             var c = Context.Client;
-            var world = Context.Server.world;
+            var world = Context.Server.World;
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
 

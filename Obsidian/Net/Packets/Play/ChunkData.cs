@@ -17,9 +17,7 @@ namespace Obsidian.Net.Packets.Play
 
         public int changedSectionFilter = 0b1111111111111111;
 
-        public ChunkDataPacket() : base(0x22)
-        {
-        }
+        public ChunkDataPacket() : base(0x22) { }
 
         public ChunkDataPacket(int chunkX, int chunkZ) : base(0x22)
         {

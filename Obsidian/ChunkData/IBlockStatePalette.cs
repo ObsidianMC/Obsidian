@@ -8,7 +8,7 @@ namespace Obsidian.ChunkData
     {
         bool IsFull { get; }
         int GetIdFromState(Block blockState);
-        BlockState GetStateFromIndex(int index);
+        Block GetStateFromIndex(int index);
         Task WriteToAsync(MinecraftStream stream);
     }
 

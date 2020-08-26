@@ -40,7 +40,7 @@ namespace Obsidian
     public class Server
     {
         private readonly ConcurrentQueue<QueueChat> chatmessages;
-        private readonly ConcurrentQueue<PlayerDigging> diggers; 
+        private readonly ConcurrentQueue<PlayerDigging> diggers;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
 
@@ -53,7 +53,7 @@ namespace Obsidian
 
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
-        
+
         public OperatorList Operators { get; }
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
@@ -70,9 +70,9 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
 
-        public World.World world { get; }
+        public World.World World { get; }
 
-        public string ServerFolderPath => Path.GetFullPath(this.Id.ToString());
+        public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -82,7 +82,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}", Program.Config.LogLevel, System.IO.Path.Combine(ServerFolderPath, "latest.log"));
+            this.Logger = new AsyncLogger($"Obsidian ID: {serverId}", Program.Config.LogLevel, Path.Combine(ServerFolderPath, "latest.log"));
 
             this.Port = config.Port;
             this.Version = version;
@@ -109,7 +109,7 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.world = new World.World("", this.WorldGenerator);
+            this.World = new World.World("", this.WorldGenerator);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -150,7 +150,6 @@ namespace Obsidian
 
                 var b = new BlockChange(location, BlockRegistry.G(Materials.Cobblestone).Id);
 
-               
                 await client.SendBlockChangeAsync(b);
             }
         }
@@ -159,8 +158,6 @@ namespace Obsidian
         {
             if (!CommandUtilities.HasPrefix(message, '/', out string output))
             {
-                //await source.Player.SendMessageAsync($"<{source.Player.Username}> {message}", position);
-
                 await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
                 await Logger.LogMessageAsync($"<{source.Player.Username}> {message}");
                 return;
@@ -169,9 +166,8 @@ namespace Obsidian
             var context = new CommandContext(source, this);
             IResult result = await Commands.ExecuteAsync(output, context);
             if (!result.IsSuccessful)
-            {
                 await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
-            }
+
         }
 
         /// <summary>
@@ -252,7 +248,7 @@ namespace Obsidian
 
             await this.Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
         }
-        
+
         /// <summary>
         /// Registers a new entity to the server
         /// </summary>
@@ -313,6 +309,11 @@ namespace Obsidian
         {
             this.WorldGenerators.Clear(); //Clean up for memory and next boot
             this.cts.Cancel();
+
+            foreach (var client in this.clients)
+                client.Disconnect();
+
+            Console.WriteLine("Cancewlled");
         }
 
         private async Task ServerLoop()
@@ -339,9 +340,7 @@ namespace Obsidian
                 if (this.chatmessages.TryDequeue(out QueueChat msg))
                 {
                     foreach (var (_, player) in this.OnlinePlayers)
-                    {
                         await player.SendMessageAsync(msg.Message, msg.Position);
-                    }
                 }
 
                 foreach (var (uuid, player) in this.OnlinePlayers)
@@ -371,9 +370,6 @@ namespace Obsidian
 
                         continue;
                     }
-                    //?
-                    //if (client.State == ClientState.Play)
-                    //   await world.UpdateChunksForClientAsync(client);
                 }
             }
         }
@@ -393,7 +389,7 @@ namespace Obsidian
             Console.WriteLine("shutting down..");
             this.StopServer();
         }
-        
+
         #region events
         private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
@@ -417,7 +413,7 @@ namespace Obsidian
         public async Task SendSpawnPlayerAsync(Player except)
         {
             await this.Logger.LogWarningAsync("Received spawn player sending to other clients...");
-            foreach(var (_, player) in this.OnlinePlayers.Except(except))
+            foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
                 await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
                 await player.client.SpawnPlayerAsync(except);

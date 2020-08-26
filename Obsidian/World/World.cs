@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using fNbt;
+﻿using fNbt;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.PlayerData;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Obsidian.World
 {
