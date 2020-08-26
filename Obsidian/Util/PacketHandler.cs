@@ -94,7 +94,7 @@ namespace Obsidian.Util
 
                 case 0x04:
                     // Client Settings
-                    client.ClientSettings = await PacketSerializer.FastDeserializeAsync<ClientSettings>(packet.data);
+                    client.ClientSettings = await PacketSerializer.DeserializeAsync<ClientSettings>(packet.data);
                     await Logger.LogDebugAsync("Received client settings");
                     break;
 
@@ -145,7 +145,7 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await PacketSerializer.FastDeserializeAsync<KeepAlive>(packet.data);
+                    var keepalive = await PacketSerializer.DeserializeAsync<KeepAlive>(packet.data);
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
@@ -156,14 +156,14 @@ namespace Obsidian.Util
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await PacketSerializer.FastDeserializeAsync<PlayerPosition>(packet.data);
+                    var pos = await PacketSerializer.DeserializeAsync<PlayerPosition>(packet.data);
 
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
                     //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await PacketSerializer.FastDeserializeAsync<PlayerPositionLook>(packet.data);
+                    var ppos = await PacketSerializer.DeserializeAsync<PlayerPositionLook>(packet.data);
 
                     client.Player.UpdatePosition(ppos.Transform);
                     //await Logger.LogDebugAsyncAsync($"Updated look and position for {this.Player.Username}");
@@ -171,7 +171,7 @@ namespace Obsidian.Util
 
                 case 0x12:
                     // Player Look
-                    var look = await PacketSerializer.FastDeserializeAsync<PlayerLook>(packet.data);
+                    var look = await PacketSerializer.DeserializeAsync<PlayerLook>(packet.data);
 
                     client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
                     //await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
@@ -206,7 +206,7 @@ namespace Obsidian.Util
                     // Player Digging
                     await Logger.LogDebugAsync("Received player digging");
 
-                    var digging = await PacketSerializer.FastDeserializeAsync<PlayerDigging>(packet.data);
+                    var digging = await PacketSerializer.DeserializeAsync<PlayerDigging>(packet.data);
 
                     server.EnqueueDigging(digging);
                     break;
@@ -283,7 +283,7 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Animation (serverbound)
-                    var serverAnim = await PacketSerializer.FastDeserializeAsync<AnimationServerPacket>(packet.data);
+                    var serverAnim = await PacketSerializer.DeserializeAsync<AnimationServerPacket>(packet.data);
 
                     await Logger.LogDebugAsync("Received animation (serverbound)");
                     break;
@@ -295,7 +295,7 @@ namespace Obsidian.Util
 
                 case 0x29:
                     // Player Block Placement
-                    var pbp = await PacketSerializer.FastDeserializeAsync<PlayerBlockPlacement>(packet.data);
+                    var pbp = await PacketSerializer.DeserializeAsync<PlayerBlockPlacement>(packet.data);
 
                     await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
                     await Logger.LogDebugAsync("Received player block placement");

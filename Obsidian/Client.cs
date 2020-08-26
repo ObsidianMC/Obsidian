@@ -318,7 +318,7 @@ namespace Obsidian
                             if (packet == null)
                                 throw new InvalidOperationException();
 
-                            var handshake = await PacketSerializer.FastDeserializeAsync<Handshake>(packet.data);
+                            var handshake = await PacketSerializer.DeserializeAsync<Handshake>(packet.data);
 
                             var nextState = handshake.NextState;
 
@@ -346,7 +346,7 @@ namespace Obsidian
                                 break;
 
                             case 0x00:
-                                var loginStart = await PacketSerializer.FastDeserializeAsync<LoginStart>(packet.data);
+                                var loginStart = await PacketSerializer.DeserializeAsync<LoginStart>(packet.data);
 
                                 string username = config.MulitplayerDebugMode ? $"Player{Program.Random.Next(1, 999)}" : loginStart.Username;
 
@@ -377,7 +377,7 @@ namespace Obsidian
                                 await this.ConnectAsync();
                                 break;
                             case 0x01:
-                                var encryptionResponse = await PacketSerializer.FastDeserializeAsync<EncryptionResponse>(packet.data);
+                                var encryptionResponse = await PacketSerializer.DeserializeAsync<EncryptionResponse>(packet.data);
 
                                 this.sharedKey = this.packetCryptography.Decrypt(encryptionResponse.SharedSecret);
                                 var decryptedToken = this.packetCryptography.Decrypt(encryptionResponse.VerifyToken);

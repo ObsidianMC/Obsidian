@@ -1,4 +1,5 @@
 ﻿using Obsidian.Chat;
+using Obsidian.GameState;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -17,9 +18,6 @@ namespace Obsidian.Util.Extensions
 
         internal static DataType ToDataType(this Type type)
         {
-            if (type.IsEnum)
-                return DataType.VarInt;
-            
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Int32:
