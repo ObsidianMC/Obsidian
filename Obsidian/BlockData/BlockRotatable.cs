@@ -2,7 +2,7 @@
 {
     public class BlockRotatable : Block
     {
-        internal BlockRotatable(string name, int id) : base(name, id)
+        public BlockRotatable(string name, int id) : base(name, id)
         {
         }
     }

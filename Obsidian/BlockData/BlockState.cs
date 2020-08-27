@@ -6,12 +6,12 @@
 
         public string UnlocalizedName { get; }
 
-        public BlockState(int id)
+        internal BlockState(int id)
         {
             this.Id = id;
         }
 
-        public BlockState(string unlocalizedName, int id)
+        internal BlockState(string unlocalizedName, int id)
         {
             this.Id = id;
             this.UnlocalizedName = unlocalizedName;

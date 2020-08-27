@@ -4,7 +4,7 @@
     {
 
 
-        public BlockSand(string name, int id) : base(name, id)
+        internal BlockSand(string name, int id) : base(name, id)
         {
            
         }

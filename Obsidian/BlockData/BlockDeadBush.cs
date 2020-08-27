@@ -2,7 +2,7 @@
 {
     public class BlockDeadBush : Block
     {
-        public BlockDeadBush(string name, int id) : base(name, id)
+        internal BlockDeadBush(string name, int id) : base(name, id)
         {
         }
     }

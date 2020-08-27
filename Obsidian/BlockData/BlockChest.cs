@@ -2,7 +2,7 @@
 {
     public class BlockChest : Block
     {
-        public BlockChest(string name, int id) : base(name, id)
+        internal BlockChest(string name, int id) : base(name, id)
         {
         }
     }

@@ -8,7 +8,7 @@ namespace Obsidian.Util.Collection
         private readonly byte BitsPerBlock;
         private readonly ulong BlockMask;
 
-        public ulong[] Storage { get; }
+        public ulong[] Storage { get; set; }
 
         public DataArray(byte bitsPerBlock)
         {
@@ -38,7 +38,7 @@ namespace Obsidian.Util.Collection
 
             set
             {
-                var stgValue = (uint)value & BlockMask;
+                var stgValue = (uint)value & this.BlockMask;
                 var (indexOffset, bitOffset) = this.GetOffset(serialIndex);
                 var tmpValue = this.Storage[indexOffset];
                 var mask = this.BlockMask << bitOffset;

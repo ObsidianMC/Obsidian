@@ -2,7 +2,7 @@
 {
     public class BlockLog : Block
     {
-        public BlockLog(string name, int id) : base(name, id)
+        internal BlockLog(string name, int id) : base(name, id)
         {
         }
     }

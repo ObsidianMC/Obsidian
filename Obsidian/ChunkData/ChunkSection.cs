@@ -6,12 +6,17 @@ namespace Obsidian.ChunkData
 {
     public class ChunkSection
     {
-        public BlockStateContainer Container = new BlockStateContainer(4);
+        public BlockStateContainer Container { get; }
 
         public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
         public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);
 
         public bool Overworld = true;
+
+        public ChunkSection(byte bitsPerBlock = 4)
+        {
+            this.Container = new BlockStateContainer(bitsPerBlock);
+        }
 
         public async Task WriteToAsync(MinecraftStream stream)
         {

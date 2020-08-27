@@ -1,7 +1,6 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Net;
 using Obsidian.Util.Collection;
-using Obsidian.Util.Registry;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -12,9 +11,9 @@ namespace Obsidian.ChunkData
 
         public byte BitsPerBlock { get; }
 
-        private readonly DataArray BlockStorage;
+        public DataArray BlockStorage { get; set; }
 
-        private IBlockStatePalette Palette { get; }
+        public IBlockStatePalette Palette { get; }
 
         public BlockStateContainer(byte bitsPerBlock = 14)
         {
@@ -22,18 +21,7 @@ namespace Obsidian.ChunkData
 
             this.BlockStorage = new DataArray(bitsPerBlock);
 
-            if (bitsPerBlock <= 4)
-            {
-                this.Palette = new LinearBlockStatePalette(4);
-            }
-            else if(bitsPerBlock <= 8)
-            {
-                this.Palette = new LinearBlockStatePalette(bitsPerBlock);
-            }
-            else if (bitsPerBlock >= 9)
-            {
-                this.Palette = new GlobalBlockStatePalette();
-            }
+            this.Palette = bitsPerBlock.DeterminePalette();
         }
 
         public void Set(int x, int y, int z, BlockState blockState)
@@ -54,7 +42,7 @@ namespace Obsidian.ChunkData
             return this.Palette.GetStateFromIndex(storageId);
         }
 
-        private int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+        public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
         //private int GetIndex(int x, int y, int z) => (y << 8) | (z << 4) | x;
 

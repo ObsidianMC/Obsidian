@@ -2,7 +2,7 @@
 {
     public class BlockSoil : Block
     {
-        public BlockSoil(string name, int id) : base(name, id)
+        internal BlockSoil(string name, int id) : base(name, id)
         {
         }
     }

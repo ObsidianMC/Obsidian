@@ -2,7 +2,7 @@
 {
     public class BlockSeaGrass : Block
     {
-        public BlockSeaGrass(string name, int id) : base(name, id)
+        internal BlockSeaGrass(string name, int id) : base(name, id)
         {
         }
     }

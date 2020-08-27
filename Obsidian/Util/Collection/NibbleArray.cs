@@ -25,7 +25,7 @@ namespace Obsidian.Util.Collection
         /// </summary>
         public NibbleArray(int length)
         {
-            Data = new byte[length / 2];
+            this.Data = new byte[length / 2];
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace Obsidian.Util.Collection
         [NbtIgnore]
         public int Length
         {
-            get { return Data.Length * 2; }
+            get { return this.Data.Length * 2; }
         }
 
         /// <summary>
@@ -43,12 +43,12 @@ namespace Obsidian.Util.Collection
         [NbtIgnore]
         public byte this[int index]
         {
-            get => (byte)((Data[index / 2] >> (index % 2 * 4)) & 0xF);
+            get => (byte)((this.Data[index / 2] >> (index % 2 * 4)) & 0xF);
             set
             {
                 value &= 0xF;
-                Data[index / 2] &= (byte)(0xF << ((index + 1) % 2 * 4));
-                Data[index / 2] |= (byte)(value << (index % 2 * 4));
+                this.Data[index / 2] &= (byte)(0xF << ((index + 1) % 2 * 4));
+                this.Data[index / 2] |= (byte)(value << (index % 2 * 4));
             }
         }
 
@@ -59,7 +59,7 @@ namespace Obsidian.Util.Collection
 
         public void Deserialize(NbtTag value)
         {
-            Data = value.ByteArrayValue;
+            this.Data = value.ByteArrayValue;
         }
     }
 
@@ -69,14 +69,14 @@ namespace Obsidian.Util.Collection
 
         public ReadOnlyNibbleArray(NibbleArray array)
         {
-            NibbleArray = array;
+            this.NibbleArray = array;
         }
 
-        public byte this[int index] => NibbleArray[index];
+        public byte this[int index] => this.NibbleArray[index];
 
         public ReadOnlyCollection<byte> Data
         {
-            get { return Array.AsReadOnly(NibbleArray.Data); }
+            get { return Array.AsReadOnly(this.NibbleArray.Data); }
         }
     }
 }

@@ -2,7 +2,7 @@
 {
     public class BlockLeaves : Block
     {
-        public BlockLeaves(string name, int id) : base(name, id)
+        internal BlockLeaves(string name, int id) : base(name, id)
         {
         }
     }

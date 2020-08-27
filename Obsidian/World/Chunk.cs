@@ -25,7 +25,7 @@ namespace Obsidian.World
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        this.Blocks[chunkX, chunkY, chunkZ] = BlockRegistry.G(Materials.Air);
+                        this.Blocks[chunkX, chunkY, chunkZ] = BlockRegistry.GetBlock(Materials.Air);
                     }
                 }
             }

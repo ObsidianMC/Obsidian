@@ -2,7 +2,7 @@
 {
     public class BlockPistonExtension : BlockPiston
     {
-        public BlockPistonExtension(string name, int id) : base(name, id)
+        internal BlockPistonExtension(string name, int id) : base(name, id)
         {
         }
     }

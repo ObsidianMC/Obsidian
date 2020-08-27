@@ -1,5 +1,6 @@
 ﻿using Obsidian.BlockData;
 using Obsidian.Net;
+using Obsidian.Util.Registry;
 using System;
 using System.Threading.Tasks;
 
@@ -49,6 +50,21 @@ namespace Obsidian.ChunkData
 
             for (int i = 0; i < this.BlockStateCount; i++)
                 await stream.WriteVarIntAsync(this.BlockStateArray[i].Id);
+        }
+
+        public async Task ReadFromAsync(MinecraftStream stream)
+        {
+            var length = await stream.ReadVarIntAsync();
+
+            for(int i = 0; i < length; i++)
+            {
+                int stateId = await stream.ReadVarIntAsync();
+
+                Block blockState = BlockRegistry.FromId(stateId);
+
+                this.BlockStateArray[i] = blockState;
+                this.BlockStateCount++;
+            }
         }
     }
 }

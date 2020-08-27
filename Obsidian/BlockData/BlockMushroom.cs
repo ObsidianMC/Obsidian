@@ -2,7 +2,7 @@
 {
     public class BlockMushroom : Block
     {
-        public BlockMushroom(string name, int id) : base(name, id)
+        internal BlockMushroom(string name, int id) : base(name, id)
         {
         }
     }

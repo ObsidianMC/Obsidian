@@ -2,7 +2,7 @@
 {
     public class BlockAir : Block
     {
-        public BlockAir() : base("air", 0)
+        internal BlockAir() : base("air", 0)
         {
         }
     }

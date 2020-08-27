@@ -15,12 +15,12 @@ namespace Obsidian.World.Generators
             {
                 for (var z = 0; z < 16; z++)
                 {
-                    chunk.SetBlock(x, 5, z, BlockRegistry.G(Materials.GrassBlock));
-                    chunk.SetBlock(x, 4, z, BlockRegistry.G(Materials.Dirt));
-                    chunk.SetBlock(x, 3, z, BlockRegistry.G(Materials.Dirt));
-                    chunk.SetBlock(x, 2, z, BlockRegistry.G(Materials.Dirt));
-                    chunk.SetBlock(x, 1, z, BlockRegistry.G(Materials.Dirt));
-                    chunk.SetBlock(x, 0, z, BlockRegistry.G(Materials.Bedrock));
+                    chunk.SetBlock(x, 5, z, BlockRegistry.GetBlock(Materials.GrassBlock));
+                    chunk.SetBlock(x, 4, z, BlockRegistry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x, 3, z, BlockRegistry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x, 2, z, BlockRegistry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x, 1, z, BlockRegistry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x, 0, z, BlockRegistry.GetBlock(Materials.Bedrock));
                 }
             }
 

@@ -2,7 +2,7 @@
 {
     public class BlockNote : Block
     {
-        public BlockNote(string name, int id) : base(name, id)
+        internal BlockNote(string name, int id) : base(name, id)
         {
         }
     }

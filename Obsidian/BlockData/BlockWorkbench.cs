@@ -2,7 +2,7 @@
 {
     public class BlockWorkbench : Block
     {
-        public BlockWorkbench(string name, int id) : base(name, id)
+        internal BlockWorkbench(string name, int id) : base(name, id)
         {
         }
     }

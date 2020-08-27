@@ -14,7 +14,7 @@ namespace Obsidian.World.Generators
             int countX = 0;
             int countZ = 0;
 
-            foreach (var block in BlockRegistry.BLOCK_STATES.Values)
+            foreach (var block in BlockRegistry.BlockStates.Values)
             {
                 if (block is BlockAir || block is BlockBed)
                     continue;

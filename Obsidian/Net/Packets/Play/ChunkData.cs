@@ -2,6 +2,7 @@
 using Obsidian.ChunkData;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
@@ -11,7 +12,7 @@ namespace Obsidian.Net.Packets.Play
         public int ChunkX { get; set; }
         public int ChunkZ { get; set; }
 
-        public List<ChunkSection> Data { get; }
+        public List<ChunkSection> Sections { get; }
         public List<int> Biomes { get; }
         public List<NbtTag> BlockEntities { get; }
 
@@ -24,7 +25,7 @@ namespace Obsidian.Net.Packets.Play
             this.ChunkX = chunkX;
             this.ChunkZ = chunkZ;
 
-            this.Data = new List<ChunkSection>();
+            this.Sections = new List<ChunkSection>();
             this.Biomes = new List<int>(16 * 16);
             this.BlockEntities = new List<NbtTag>();
         }
@@ -43,7 +44,7 @@ namespace Obsidian.Net.Packets.Play
             await using var dataStream = new MinecraftStream();
 
             var chunkSectionY = 0;
-            foreach (var section in Data)
+            foreach (var section in this.Sections)
             {
                 if (section == null)
                     throw new InvalidOperationException();
@@ -73,6 +74,7 @@ namespace Obsidian.Net.Packets.Play
             await stream.WriteVarIntAsync(mask);
 
             await stream.WriteVarIntAsync((int)dataStream.Length);
+
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
 
@@ -81,5 +83,7 @@ namespace Obsidian.Net.Packets.Play
             foreach (var entity in BlockEntities)
                 await stream.WriteNbtAsync(entity);
         }
+
+        private int NeededBits(int value) => BitOperations.LeadingZeroCount((uint)value);
     }
 }

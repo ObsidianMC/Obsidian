@@ -208,10 +208,6 @@ namespace Obsidian.Net
                         else if (value is Player player)
                         {
                             await this.WriteUnsignedByteAsync(0xff);
-                            //await this.WriteUnsignedByteAsync(0);
-                            //await this.WriteVarIntAsync(3);
-                            //await this.WriteStringAsync("obsidian player");
-                            //await this.WriteUnsignedByteAsync(0xff);
                         }
                         else
                         {

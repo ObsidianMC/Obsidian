@@ -20,7 +20,7 @@ namespace Obsidian.Net
         public byte ReadUnsignedByte()
         {
             var buffer = new byte[1];
-            Read(buffer);
+            this.Read(buffer);
             return buffer[0];
         }
 
@@ -34,7 +34,7 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Boolean)]
         public bool ReadBoolean()
         {
-            var value = ReadUnsignedByte();
+            var value = this.ReadUnsignedByte();
             if (value == 0x00)
             {
                 return false;
@@ -70,7 +70,7 @@ namespace Obsidian.Net
         public ushort ReadUnsignedShort()
         {
             var buffer = new byte[2];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -93,7 +93,7 @@ namespace Obsidian.Net
         public short ReadShort()
         {
             var buffer = new byte[2];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -116,7 +116,7 @@ namespace Obsidian.Net
         public int ReadInt()
         {
             var buffer = new byte[4];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -139,7 +139,7 @@ namespace Obsidian.Net
         public long ReadLong()
         {
             var buffer = new byte[8];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -161,7 +161,7 @@ namespace Obsidian.Net
         public ulong ReadUnsignedLong()
         {
             var buffer = new byte[8];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -184,7 +184,7 @@ namespace Obsidian.Net
         public float ReadFloat()
         {
             var buffer = new byte[4];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -207,7 +207,7 @@ namespace Obsidian.Net
         public double ReadDouble()
         {
             var buffer = new byte[8];
-            Read(buffer);
+            this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
                 Array.Reverse(buffer);
@@ -235,7 +235,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(buffer);
             }
-            Read(buffer, 0, length);
+            this.Read(buffer, 0, length);
 
             var value = Encoding.UTF8.GetString(buffer);
             if (maxLength > 0 && value.Length > maxLength)
@@ -271,7 +271,7 @@ namespace Obsidian.Net
             byte read;
             do
             {
-                read = ReadUnsignedByte();
+                read = this.ReadUnsignedByte();
                 int value = read & 0b01111111;
                 result |= value << (7 * numRead);
 
@@ -309,7 +309,7 @@ namespace Obsidian.Net
         [ReadMethod(DataType.ByteArray)]
         public byte[] ReadUInt8Array()
         {
-            var length = ReadVarInt();
+            var length = this.ReadVarInt();
             var result = new byte[length];
             if (length == 0) return result;
             int n = length;
@@ -353,7 +353,7 @@ namespace Obsidian.Net
             byte read;
             do
             {
-                read = ReadUnsignedByte();
+                read = this.ReadUnsignedByte();
                 int value = (read & 0b01111111);
                 result |= (long)value << (7 * numRead);
 
@@ -391,7 +391,7 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Position)]
         public Position ReadPosition()
         {
-            ulong value = ReadUnsignedLong();
+            ulong value = this.ReadUnsignedLong();
 
             long x = (long)(value >> 38);
             long y = (long)(value >> 26) & 0xFFF;
@@ -423,9 +423,9 @@ namespace Obsidian.Net
         {
             return new Position
             {
-                X = ReadDouble(),
-                Y = ReadDouble(),
-                Z = ReadDouble()
+                X = this.ReadDouble(),
+                Y = this.ReadDouble(),
+                Z = this.ReadDouble()
             };
         }
 
@@ -434,18 +434,18 @@ namespace Obsidian.Net
         {
             return new Transform
             {
-                X = ReadDouble(),
-                Y = ReadDouble(),
-                Z = ReadDouble(),
-                Pitch = ReadFloat(),
-                Yaw = ReadFloat()
+                X = this.ReadDouble(),
+                Y = this.ReadDouble(),
+                Z = this.ReadDouble(),
+                Pitch = this.ReadFloat(),
+                Yaw = this.ReadFloat()
             };
         }
 
         [ReadMethod(DataType.SoundPosition)]
         public SoundPosition ReadSoundPosition()
         {
-            return new SoundPosition(ReadInt(), ReadInt(), ReadInt());
+            return new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
         }
     }
 }

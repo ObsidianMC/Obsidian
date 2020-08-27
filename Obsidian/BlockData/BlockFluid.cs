@@ -2,7 +2,7 @@
 {
     public class BlockFluid : Block
     {
-        public BlockFluid(string name, int id) : base(name, id)
+        internal BlockFluid(string name, int id) : base(name, id)
         {
         }
     }

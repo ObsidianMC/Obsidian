@@ -2,7 +2,7 @@
 {
     public class BlockDirtSnow : BlockGrass
     {
-        public BlockDirtSnow() : base("podzol", 12)
+        internal BlockDirtSnow() : base("podzol", 12)
         {
         }
     }
