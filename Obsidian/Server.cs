@@ -148,7 +148,7 @@ namespace Obsidian
                         break;
                 }
 
-                var b = new BlockChange(location, BlockRegistry.G(Materials.Cobblestone).Id);
+                var b = new BlockChange(location, BlockRegistry.GetBlock(Materials.Cobblestone).Id);
 
                 await client.SendBlockChangeAsync(b);
             }
@@ -356,7 +356,7 @@ namespace Obsidian
                 {
                     foreach (var clnt in clients)
                     {
-                        var b = new BlockChange(d.Location, BlockRegistry.G(Materials.Air).Id);
+                        var b = new BlockChange(d.Location, BlockRegistry.GetBlock(Materials.Air).Id);
 
                         await clnt.SendBlockChangeAsync(b);
                     }
@@ -408,15 +408,18 @@ namespace Obsidian
             {
                 await other.client.AddPlayerToListAsync(e.Joined);
             }
+
+            await this.SendSpawnPlayerAsync(e.Joined);
         }
 
         public async Task SendSpawnPlayerAsync(Player except)
         {
-            await this.Logger.LogWarningAsync("Received spawn player sending to other clients...");
+            await this.Logger.LogWarningAsync($"Received spawn player sending to other clients... {string.Join(", ", this.OnlinePlayers.Except(except).Select(x => x.Value.Username))}");
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
                 await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
                 await player.client.SpawnPlayerAsync(except);
+                await except.client.SpawnPlayerAsync(player);//This is for now but we need to implement this properly one of these days :v
             }
         }
 

@@ -129,15 +129,15 @@ namespace Obsidian.Entities
             this.PreviousTransform.ToPosition = this.Transform.ToPosition;
         }
 
-        public Task SendMessageAsync(string message, sbyte position = 0) => client.SendPacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
+        public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
 
-        public Task SendMessageAsync(ChatMessage message) => client.SendPacketAsync(new ChatMessagePacket(message, 0));
+        public Task SendMessageAsync(ChatMessage message) => client.QueuePacketAsync(new ChatMessagePacket(message, 0));
 
-        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
+        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.SendPacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
-        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.SendPacketAsync(new BossBar(uuid, action));
+        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
 

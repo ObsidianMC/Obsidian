@@ -56,7 +56,9 @@ namespace Obsidian.Net
                 throw new Exception("Can't dump a stream who wasn't set to debug.");
 
             // TODO: Stream the memory stream into a file stream for better performance and stuff :3
-            var filePath = Path.Combine(Path.GetTempPath(), $"obsidian-{(packet != null ? packet.GetType().Name : "")}-" + Path.GetRandomFileName() + ".bin");
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
+
+            var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{(packet != null ? packet.GetType().Name : "")}-" + Path.GetRandomFileName() + ".bin");
             await File.WriteAllBytesAsync(filePath, debugMemoryStream.ToArray());
 
             if (clear)

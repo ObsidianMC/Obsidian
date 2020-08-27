@@ -50,7 +50,7 @@ namespace Obsidian.Serializer
             await stream.WriteVarIntAsync(packet.id);
 
             dataStream.Position = 0;
-            await dataStream.DumpAsync();
+            await dataStream.DumpAsync(packet: packet);
 
             await dataStream.CopyToAsync(stream);
 

@@ -260,13 +260,13 @@ namespace Obsidian
                 list.Add(piaa);
             }
 
-            await SendPacketAsync(new PlayerInfo(0, list));
+            await this.QueuePacketAsync(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
         {
-            await SendPacketAsync(new PlayerListHeaderFooter(header, footer));
+            await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             await this.Logger.LogDebugAsync("Sent Player List Footer Header packet.");
         }
 
@@ -475,7 +475,7 @@ namespace Obsidian
                 Difficulty = Difficulty.Peaceful,
                 ReducedDebugInfo = false
             });
-            
+
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
             await this.SendPacketAsync(new SpawnPosition(new Position(0, 100, 0)));
@@ -506,9 +506,9 @@ namespace Obsidian
             await this.QueuePacketAsync(new SpawnPlayer
             {
                 EntityId = who.client.id,
-                Tranform = who.Transform,
                 Uuid = who.Uuid,
-                Player = who
+                Transform = who.Transform,
+                //Player = who
             });
         }
 
@@ -536,7 +536,7 @@ namespace Obsidian
             chunk = this.Server.WorldGenerator.GenerateChunk(chunk);
 
             for (int i = 0; i < 16; i++)
-                chunkData.Data.Add(new ChunkSection().FillWithLight());
+                chunkData.Sections.Add(new ChunkSection().FillWithLight());
 
             for (int x = 0; x < 16; x++)
             {
@@ -546,7 +546,7 @@ namespace Obsidian
                     {
                         var block = chunk.Blocks[x, y, z];
 
-                        chunkData.Data[6].Container.Set(x, y, z, block);
+                        chunkData.Sections[6].Container.Set(x, y, z, block);
                     }
                 }
             }

@@ -125,7 +125,9 @@ namespace Obsidian.Util
 
                 case 0x0A:
                     // Plugin Message (serverbound)
-                    await Logger.LogDebugAsync("Received plugin message");
+                    var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
+                    
+                    await Logger.LogDebugAsync($"Received plugin message: {msg.Channel}");
                     break;
 
                 case 0x0B:

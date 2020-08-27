@@ -109,7 +109,15 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
+        public async Task WriteUuidAsync(Guid value)
+        {
+            await this.WriteAsync(value.ToByteArray());
+            /*var mostBits = BitConverter.ToInt64(arr, 0);
+            var leastBits = BitConverter.ToInt64(arr, 8);
+
+            await this.WriteLongAsync(mostBits);
+            await this.WriteLongAsync(leastBits);*/
+        }
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
@@ -207,13 +215,18 @@ namespace Obsidian.Net
                         }
                         else if (value is Player player)
                         {
-                            await this.WriteUnsignedByteAsync(0xff);
+                            await this.WriteUnsignedByteAsync(255);
                         }
                         else
                         {
                             await this.WriteAutoAsync(value);
                         }
 
+                        break;
+                    }
+                case DataType.Angle:
+                    {
+                        await this.WriteFloatAsync(((Angle)value).Degrees);
                         break;
                     }
                 case DataType.Boolean:
