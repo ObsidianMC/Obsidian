@@ -198,6 +198,7 @@ namespace Obsidian
 
             await this.Logger.LogDebugAsync("Registering blocks..");
             await BlockRegistry.RegisterAll();
+            await ItemRegistry.RegisterAll();
 
             await this.Logger.LogMessageAsync($"Loading operator list...");
             this.Operators.Initialize();
@@ -409,7 +410,7 @@ namespace Obsidian
                 await other.client.AddPlayerToListAsync(e.Joined);
             }
 
-            await this.SendSpawnPlayerAsync(e.Joined);
+           // await this.SendSpawnPlayerAsync(e.Joined);
         }
 
         public async Task SendSpawnPlayerAsync(Player except)

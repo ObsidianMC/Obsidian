@@ -17,7 +17,8 @@ namespace Obsidian
         public static Random Random = new Random();
 
 
-        public static AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
+        public static readonly AsyncLogger RegistryLogger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
+        public static readonly AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
 
 
         private static async Task Main(string[] args)

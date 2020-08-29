@@ -17,8 +17,6 @@ namespace Obsidian.Util.Registry
     {
         public static Dictionary<Materials, Block> BlockStates = new Dictionary<Materials, Block>();
 
-        private static readonly AsyncLogger Logger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
-
         public static async Task RegisterAll()
         {
             var file = new FileInfo("Assets/blocks.json");
@@ -26,13 +24,10 @@ namespace Obsidian.Util.Registry
             if (file.Exists)
             {
                 var json = "";
-                using (var fs = file.OpenRead())
-                {
-                    using (var read = new StreamReader(fs, new UTF8Encoding(false)))
-                    {
-                        json = await read.ReadToEndAsync();
-                    }
-                }
+                using var fs = file.OpenRead();
+                using var read = new StreamReader(fs, new UTF8Encoding(false));
+
+                json = await read.ReadToEndAsync();
 
                 int registered = 0;
 
@@ -57,7 +52,7 @@ namespace Obsidian.Util.Registry
                         foreach (var state in states.States)
                             id = state.Default ? state.Id : states.States.First().Id;
 
-                        await Logger.LogDebugAsync($"Registered block: {material} with id: {id}");
+                        await Program.RegistryLogger.LogDebugAsync($"Registered block: {material} with id: {id}");
 
                         switch (material)
                         {
@@ -606,7 +601,7 @@ namespace Obsidian.Util.Registry
                     }
                 }
 
-                await Logger.LogDebugAsync($"Successfully registered {registered} blocks..");
+                await Program.RegistryLogger.LogDebugAsync($"Successfully registered {registered} blocks..");
             }
             else
             {
