@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Plugins;
 using System;
 using System.Collections.Concurrent;
@@ -15,6 +16,9 @@ namespace Obsidian.Util.Extensions
     public static class Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
+
+        public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
+
         //this is for ints
         public static int GetUnsignedRightShift(this int value, int s) => value >> s;
 

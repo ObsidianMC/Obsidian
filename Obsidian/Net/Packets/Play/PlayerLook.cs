@@ -1,5 +1,5 @@
 ﻿using Obsidian.Serializer.Attributes;
-using System.Threading.Tasks;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -18,25 +18,11 @@ namespace Obsidian.Net.Packets.Play
 
         public PlayerLook(byte[] data) : base(0x12, data) { }
 
-        public PlayerLook(float yaw, float pitch, bool onground) : base(0x12)
+        public PlayerLook(Angle yaw, Angle pitch, bool onground) : base(0x12)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onground;
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            this.Yaw = await stream.ReadFloatAsync();
-            this.Pitch = await stream.ReadFloatAsync();
-            this.OnGround = await stream.ReadBooleanAsync();
-        }
-
-        protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteFloatAsync(this.Yaw);
-            await stream.WriteFloatAsync(this.Pitch);
-            await stream.WriteBooleanAsync(this.OnGround);
         }
     }
 }

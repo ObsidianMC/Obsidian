@@ -13,15 +13,13 @@ namespace Obsidian.Net.Packets.Play
 
         public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer) : base(0x4E)
         {
-            this.Header = header ?? new ChatMessage()
+            var empty = new ChatMessage()
             {
                 HoverEvent = new TextComponent { Translate = "" }
             };
 
-            this.Footer = footer ?? new ChatMessage()
-            {
-                HoverEvent = new TextComponent { Translate = "" }
-            };
+            this.Header = header ?? empty;
+            this.Footer = footer ?? empty;
         }
     }
 }

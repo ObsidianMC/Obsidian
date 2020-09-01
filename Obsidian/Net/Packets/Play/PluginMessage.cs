@@ -1,5 +1,4 @@
 ﻿using Obsidian.Serializer.Attributes;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,6 +16,8 @@ namespace Obsidian.Net.Packets.Play
 
         [Field(1)]
         public byte[] PluginData { get; private set; }
+
+        public PluginMessage() : base(0xA) { }
 
         public PluginMessage(string channel, byte[] data) : base(0x19, data)
         {
