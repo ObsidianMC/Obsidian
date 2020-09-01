@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Obsidian.BlockData;
+using Obsidian.Blocks;
 using Obsidian.Items;
 using System;
 using System.Collections.Generic;

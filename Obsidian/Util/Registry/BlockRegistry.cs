@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Obsidian.BlockData;
+using Obsidian.Blocks;
 using Obsidian.Logging;
 using Obsidian.Util.Converters;
 using Obsidian.Util.DataTypes;

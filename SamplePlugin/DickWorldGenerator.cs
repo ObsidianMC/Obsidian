@@ -1,4 +1,4 @@
-﻿using Obsidian.BlockData;
+﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
 using Obsidian.World;
 

@@ -1,5 +1,5 @@
 using Newtonsoft.Json;
-using Obsidian.BlockData;
+using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -332,16 +332,10 @@ namespace Obsidian
                 {
                     var keepaliveid = DateTime.Now.Millisecond;
 
-                    foreach (var clnt in this.clients.Where(x => x.State == ClientState.Play).ToList())
+                    foreach (var clnt in this.clients.Where(x => x.State == ClientState.Play))
                         _ = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
 
                     keepaliveticks = 0;
-                }
-
-                if (this.chatmessages.TryDequeue(out QueueChat msg))
-                {
-                    foreach (var (_, player) in this.OnlinePlayers)
-                        await player.SendMessageAsync(msg.Message, msg.Position);
                 }
 
                 foreach (var (uuid, player) in this.OnlinePlayers)
@@ -351,17 +345,21 @@ namespace Obsidian
                         var pos = new SoundPosition(player.Transform.X, player.Transform.Y, player.Transform.Z);
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
-                }
 
-                if (this.diggers.TryDequeue(out PlayerDigging d))
-                {
-                    foreach (var clnt in clients)
+                    if (this.chatmessages.TryPeek(out QueueChat msg))
+                        await player.SendMessageAsync(msg.Message, msg.Position);
+
+
+                    if (this.diggers.TryPeek(out PlayerDigging d))
                     {
                         var b = new BlockChange(d.Location, BlockRegistry.GetBlock(Materials.Air).Id);
 
-                        await clnt.SendBlockChangeAsync(b);
+                        await player.client.SendBlockChangeAsync(b);
                     }
                 }
+
+                this.chatmessages.TryDequeue(out var _);
+                this.diggers.TryDequeue(out var _);
 
                 foreach (var client in clients)
                 {
@@ -410,16 +408,23 @@ namespace Obsidian
                 await other.client.AddPlayerToListAsync(e.Joined);
             }
 
-           // await this.SendSpawnPlayerAsync(e.Joined);
+            await this.SendSpawnPlayerAsync(e.Joined);
         }
 
         public async Task SendSpawnPlayerAsync(Player except)
         {
             await this.Logger.LogWarningAsync($"Received spawn player sending to other clients... {string.Join(", ", this.OnlinePlayers.Except(except).Select(x => x.Value.Username))}");
+            var expectPacket = new EntityPacket
+            {
+                Id = except.client.id
+            };
+
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
                 await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
+
                 await player.client.SpawnPlayerAsync(except);
+
                 await except.client.SpawnPlayerAsync(player);//This is for now but we need to implement this properly one of these days :v
             }
         }

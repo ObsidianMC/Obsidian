@@ -98,11 +98,11 @@ namespace Obsidian
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
             await this.SendPacketAsync(new KeepAlive(id));
-            missedKeepalives += 1; // This will be decreased after an answer is received.
-            if (missedKeepalives > this.config.MaxMissedKeepalives)
+            this.missedKeepalives += 1; // This will be decreased after an answer is received.
+            if (this.missedKeepalives > this.config.MaxMissedKeepalives)
             {
                 // Too many keepalives missed, kill this connection.
-                Cancellation.Cancel();
+                this.Cancellation.Cancel();
             }
 
             /////Sending ping change in background
@@ -123,26 +123,26 @@ namespace Obsidian
 
         internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
         {
-            await this.SendPacketAsync(new PlayerPositionLook(poslook, posflags, tpid));
+            await this.QueuePacketAsync(new PlayerPositionLook(poslook, posflags, tpid));
         }
 
         internal async Task SendBlockChangeAsync(BlockChange b)
         {
             await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
-            await this.SendPacketAsync(b);
+            await this.QueuePacketAsync(b);
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
         }
 
         internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
         {
-            await this.SendPacketAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
+            await this.QueuePacketAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
 
             await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
         }
 
-        internal async Task SendEntity(EntityPacket packet)
+        internal async Task SendEntityAsync(EntityPacket packet)
         {
-            await SendPacketAsync(packet);
+            await this.QueuePacketAsync(packet);
             await this.Logger.LogDebugAsync($"Sent entity with id {packet.Id} for player {this.Player.Username}");
         }
 
@@ -199,7 +199,7 @@ namespace Obsidian
             }
 
             packet.AddNode(node);
-            await this.SendPacketAsync(packet);
+            await this.QueuePacketAsync(packet);
             await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
         }
 
@@ -213,7 +213,7 @@ namespace Obsidian
                 }
             };
 
-            await SendPacketAsync(new PlayerInfo(4, list));
+            await this.QueuePacketAsync(new PlayerInfo(4, list));
             await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
         }
 
@@ -262,12 +262,6 @@ namespace Obsidian
 
             await this.QueuePacketAsync(new PlayerInfo(0, list));
             await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
-        }
-
-        internal async Task SendPlayerListHeaderFooterAsync(ChatMessage header, ChatMessage footer)
-        {
-            await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
-            await this.Logger.LogDebugAsync("Sent Player List Footer Header packet.");
         }
 
         #endregion Packet Sending Methods
@@ -416,7 +410,7 @@ namespace Obsidian
 
                     case ClientState.Play:
 
-                        ///this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.PacketId.ToString("X")}");
+                        //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
 
                         await PacketHandler.HandlePlayPackets(packet, this);
                         break;
@@ -459,7 +453,7 @@ namespace Obsidian
 
         private async Task ConnectAsync()
         {
-            await this.SendPacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
+            await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
             await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
@@ -467,7 +461,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            await this.SendPacketAsync(new JoinGame
+            await this.QueuePacketAsync(new JoinGame
             {
                 EntityId = this.id,
                 GameMode = Gamemode.Creative,
@@ -478,12 +472,12 @@ namespace Obsidian
 
             await this.Logger.LogDebugAsync("Sent Join Game packet.");
 
-            await this.SendPacketAsync(new SpawnPosition(new Position(0, 100, 0)));
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
             this.Player.Transform = new Transform(0, 105, 0);
 
-            await this.SendPacketAsync(new PlayerPositionLook(this.Player.Transform, PositionFlags.NONE, 0));
+            await this.QueuePacketAsync(new PlayerPositionLook(this.Player.Transform, PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
@@ -508,7 +502,7 @@ namespace Obsidian
                 EntityId = who.client.id,
                 Uuid = who.Uuid,
                 Transform = who.Transform,
-                //Player = who
+                Player = who
             });
         }
 
@@ -516,6 +510,7 @@ namespace Obsidian
         {
             await using var stream = new MinecraftStream();
             await stream.WriteStringAsync("obsidian");
+
             await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
             await this.Logger.LogDebugAsync("Sent server brand.");
         }
@@ -525,7 +520,7 @@ namespace Obsidian
             var header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
             var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
 
-            await this.SendPlayerListHeaderFooterAsync(header, footer);
+            await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             await this.Logger.LogDebugAsync("Sent player list decoration");
         }
 

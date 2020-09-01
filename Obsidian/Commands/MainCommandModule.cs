@@ -76,11 +76,7 @@ namespace Obsidian.Commands
 
                 Y = 105,
 
-                Z = 0,
-
-                Pitch = 0,
-
-                Yaw = 0
+                Z = 0
             }, 0, new Velocity(0, 0, 0), Context.Client.Player);
 
             await Context.Player.SendMessageAsync("Spawning mob?");

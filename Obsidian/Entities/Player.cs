@@ -3,6 +3,7 @@
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
+using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData;
@@ -11,7 +12,6 @@ using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Hand = Obsidian.PlayerData.Hand;
 
 namespace Obsidian.Entities
 {
@@ -19,9 +19,14 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
+        public Inventory Inventory { get; private set; } = new Inventory();
+
+        public Inventory OpenedInventory { get; set; }
+
         public Guid Uuid { get; set; }
 
         public Transform PreviousTransform { get; set; } = new Transform();
+
 
         // Properties set by Minecraft (official)
         public Transform Transform { get; set; }
@@ -52,8 +57,8 @@ namespace Obsidian.Entities
         public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
         public float XpP { get; set; } = 0; // idfk, xp points?
-        
-        public Hand MainHand { get; set; }
+
+        public Hand MainHand { get; set; } = Hand.MainHand;
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
@@ -86,7 +91,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(Position pos, bool? onGround = null)
         {
-            CopyTransform();
+            this.CopyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
@@ -95,7 +100,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(Transform pos, bool? onGround = null)
         {
-            CopyTransform();
+            this.CopyTransform();
             this.Transform.X = pos.X;
             this.Transform.Y = pos.Y;
             this.Transform.Z = pos.Z;
@@ -104,7 +109,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(double x, double y, double z, bool? onGround = null)
         {
-            CopyTransform();
+            this.CopyTransform();
             this.Transform.X = x;
             this.Transform.Y = y;
             this.Transform.Z = z;
@@ -113,9 +118,9 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(float pitch, float yaw, bool? onGround = null)
         {
-            CopyTransform();
-            this.Transform.Pitch = pitch;
-            this.Transform.Yaw = yaw;
+            this.CopyTransform();
+            this.Transform.Pitch = new Angle(pitch);
+            this.Transform.Yaw = new Angle(yaw);
             this.OnGround = onGround ?? this.OnGround;
         }
 
