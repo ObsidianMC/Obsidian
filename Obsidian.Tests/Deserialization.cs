@@ -214,8 +214,8 @@ namespace Obsidian.Tests
             Assert.Equal(transform.X, packet.Transform.X);
             Assert.Equal(transform.Y, packet.Transform.Y);
             Assert.Equal(transform.Z, packet.Transform.Z);
-            Assert.Equal(yaw.Degrees, packet.Transform.Pitch.Degrees);
-            Assert.Equal(pitch.Degrees, packet.Transform.Yaw.Degrees);
+            Assert.Equal(yaw, packet.Transform.Pitch);
+            Assert.Equal(pitch, packet.Transform.Yaw);
             Assert.Equal(flags, packet.Flags);
             Assert.Equal(teleportId, packet.TeleportId);
         }

@@ -31,7 +31,7 @@ namespace Obsidian.Net.Packets
             await stream.Lock.WaitAsync();
 
             await using var dataStream = new MinecraftStream();
-            await ComposeAsync(dataStream);
+            await this.ComposeAsync(dataStream);
 
             var packetLength = this.id.GetVarIntLength() + (int)dataStream.Length;
 
@@ -49,7 +49,7 @@ namespace Obsidian.Net.Packets
             await stream.Lock.WaitAsync();
 
             await using var dataStream = new MinecraftStream();
-            await ComposeAsync(dataStream);
+            await this.ComposeAsync(dataStream);
 
             var dataLength = this.id.GetVarIntLength() + (int)dataStream.Length;
             var useCompression = threshold > 0 && dataLength >= threshold;

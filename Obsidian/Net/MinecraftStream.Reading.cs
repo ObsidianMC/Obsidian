@@ -11,8 +11,9 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream
     {
+      
         [ReadMethod(DataType.Byte)]
-        public sbyte ReadSignedByte() => (sbyte)ReadUnsignedByte();
+        public sbyte ReadSignedByte() => (sbyte)this.ReadUnsignedByte();
 
         public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
@@ -437,8 +438,8 @@ namespace Obsidian.Net
                 X = this.ReadDouble(),
                 Y = this.ReadDouble(),
                 Z = this.ReadDouble(),
-                Pitch = this.ReadFloat(),
-                Yaw = this.ReadFloat()
+                Pitch = new Angle(this.ReadByte()),
+                Yaw = new Angle(this.ReadByte())
             };
         }
 
@@ -446,6 +447,21 @@ namespace Obsidian.Net
         public SoundPosition ReadSoundPosition()
         {
             return new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
+        }
+
+        [ReadMethod(DataType.Angle)]
+        public Angle ReadAngle()
+        {
+            // var value = ReadUnsignedByte();
+            var value = ReadFloat();
+            return new Angle(value / byte.MaxValue * Angle.MaxValue);
+        }
+
+        public async Task<Angle> ReadAngleAsync()
+        {
+            // var value = await this.ReadUnsignedByteAsync();
+            var value = await this.ReadFloatAsync();
+            return new Angle(value / byte.MaxValue * Angle.MaxValue);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
@@ -8,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace Obsidian.Serializer
@@ -60,50 +63,52 @@ namespace Obsidian.Serializer
         public static async Task<T> DeserializeAsync<T>(byte[] data) where T : Packet
         {
             await using var stream = new MinecraftStream(data);
-            var packet = (T)Activator.CreateInstance(typeof(T));
+            var packet = (T)Activator.CreateInstance(typeof(T));//TODO make sure all packets have default constructors
+
             if (packet == null)
                 throw new NullReferenceException(nameof(packet));
+
+            await Program.PacketLogger.LogDebugAsync($"Deserializing {packet}");
 
             var valueDict = (await packet.GetAllMemberNamesAsync()).OrderBy(x => x.Key.Order);
             var members = packet.GetType().GetMembers(PacketExtensions.Flags);
 
+            int readableBytes = 0;
             foreach (var (key, value) in valueDict)
             {
-                foreach (var member in members)
+                var member = members.FirstOrDefault(x => x.Name.EqualsIgnoreCase(value));
+
+                if (member is FieldInfo field)
                 {
-                    if (member.Name != value)
-                        continue;
+                    var dataType = key.Type;
 
-                    if (member is FieldInfo field)
-                    {
-                        var dataType = key.Type;
+                    if (dataType == DataType.Auto)
+                        dataType = field.FieldType.ToDataType();
 
-                        if (dataType == DataType.Auto)
-                            dataType = field.FieldType.ToDataType();
+                    var val = await stream.ReadAsync(field.FieldType, dataType, key);
 
-                        var val = await stream.ReadAsync(field.FieldType, dataType, key);
+                    await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
 
-                        await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
-
-                        field.SetValue(packet, val);
-                    }
-                    else if (member is PropertyInfo property)
-                    {
-                        var dataType = key.Type;
-
-                        if (dataType == DataType.Auto)
-                            dataType = property.PropertyType.ToDataType();
-
-                        var val = await stream.ReadAsync(property.PropertyType, dataType, key);
-
-                        await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
-
-                        if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
-                            val = (BlockFace)val;
-
-                        property.SetValue(packet, val);
-                    }
+                    field.SetValue(packet, val);
                 }
+                else if (member is PropertyInfo property)
+                {
+                    var dataType = key.Type;
+
+                    if (dataType == DataType.Auto)
+                        dataType = property.PropertyType.ToDataType();
+
+                    var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
+
+                    await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
+
+                    if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
+                        val = (BlockFace)val;
+
+                    property.SetValue(packet, val);
+                }
+
+                readableBytes = data.Length - (int)stream.Position;
             }
 
             return packet;

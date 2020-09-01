@@ -7,8 +7,8 @@
         public double Y { get; set; }
         public double Z { get; set; }
 
-        public Angle Pitch { get; set; } = 0;
-        public Angle Yaw { get; set; } = 0;
+        public float Pitch { get; set; } = new Angle(0);
+        public float Yaw { get; set; } = new Angle(0);
 
         public Transform()
         {

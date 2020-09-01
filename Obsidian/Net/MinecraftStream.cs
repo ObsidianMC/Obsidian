@@ -1,12 +1,12 @@
-﻿
-using fNbt;
-
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.GameState;
+using Obsidian.Items;
+using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
@@ -16,9 +16,11 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 namespace Obsidian.Net
 {
@@ -30,10 +32,7 @@ namespace Obsidian.Net
 
         #region Writing
 
-        public async Task WriteAngleAsync(Angle angle)
-        {
-            await this.WriteUnsignedByteAsync(angle.Value);
-        }
+
 
         public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
@@ -112,11 +111,6 @@ namespace Obsidian.Net
         public async Task WriteUuidAsync(Guid value)
         {
             await this.WriteAsync(value.ToByteArray());
-            /*var mostBits = BitConverter.ToInt64(arr, 0);
-            var leastBits = BitConverter.ToInt64(arr, 8);
-
-            await this.WriteLongAsync(mostBits);
-            await this.WriteLongAsync(leastBits);*/
         }
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
@@ -142,8 +136,8 @@ namespace Obsidian.Net
                     await this.WriteDoubleAsync(transform.X);
                     await this.WriteDoubleAsync(transform.Y);
                     await this.WriteDoubleAsync(transform.Z);
-                    await this.WriteFloatAsync(transform.Yaw.Degrees);
-                    await this.WriteFloatAsync(transform.Pitch.Degrees);
+                    await this.WriteAngleAsync(new Angle(transform.Yaw));
+                    await this.WriteAngleAsync(new Angle(transform.Pitch));
                     break;
 
 
@@ -207,169 +201,178 @@ namespace Obsidian.Net
             switch (type)
             {
                 case DataType.Auto:
+                {
+                    if (value is ChangeGameStateReason changeGameState)
                     {
-                        if (value is ChangeGameStateReason changeGameState)
-                        {
-                            await this.WriteUnsignedByteAsync(changeGameState.Reason);
-                            await this.WriteFloatAsync(changeGameState.Value);
-                        }
-                        else if (value is Player player)
-                        {
-                            await this.WriteUnsignedByteAsync(255);
-                        }
-                        else
-                        {
-                            await this.WriteAutoAsync(value);
-                        }
+                        await this.WriteUnsignedByteAsync(changeGameState.Reason);
+                        await this.WriteFloatAsync(changeGameState.Value);
+                    }
+                    else if (value is Player player)
+                    {
+                        await this.WriteUnsignedByteAsync(0xff);
+                    }
+                    else
+                    {
+                        await this.WriteAutoAsync(value);
+                    }
 
-                        break;
-                    }
+                    break;
+                }
                 case DataType.Angle:
-                    {
-                        await this.WriteFloatAsync(((Angle)value).Degrees);
-                        break;
-                    }
+                {
+                    await this.WriteAngleAsync((Angle)value);
+                    break;
+                }
                 case DataType.Boolean:
-                    {
-                        await this.WriteBooleanAsync((bool)value);
-                        break;
-                    }
+                {
+                    await this.WriteBooleanAsync((bool)value);
+                    break;
+                }
                 case DataType.Byte:
-                    {
-                        await this.WriteByteAsync((sbyte)value);
-                        break;
-                    }
+                {
+                    await this.WriteByteAsync((sbyte)value);
+                    break;
+                }
                 case DataType.UnsignedByte:
-                    {
-                        await this.WriteUnsignedByteAsync((byte)value);
-                        break;
-                    }
+                {
+                    await this.WriteUnsignedByteAsync((byte)value);
+                    break;
+                }
                 case DataType.Short:
-                    {
-                        await this.WriteShortAsync((short)value);
-                        break;
-                    }
+                {
+                    await this.WriteShortAsync((short)value);
+                    break;
+                }
                 case DataType.UnsignedShort:
-                    {
-                        await this.WriteUnsignedShortAsync((ushort)value);
-                        break;
-                    }
+                {
+                    await this.WriteUnsignedShortAsync((ushort)value);
+                    break;
+                }
                 case DataType.Int:
-                    {
-                        await this.WriteIntAsync((int)value);
-                        break;
-                    }
+                {
+                    await this.WriteIntAsync((int)value);
+                    break;
+                }
                 case DataType.Long:
-                    {
-                        await this.WriteLongAsync((long)value);
-                        break;
-                    }
+                {
+                    await this.WriteLongAsync((long)value);
+                    break;
+                }
                 case DataType.Float:
-                    {
-                        await this.WriteFloatAsync((float)value);
-                        break;
-                    }
+                {
+                    await this.WriteFloatAsync((float)value);
+                    break;
+                }
                 case DataType.Double:
-                    {
-                        await this.WriteDoubleAsync((double)value);
-                        break;
-                    }
+                {
+                    await this.WriteDoubleAsync((double)value);
+                    break;
+                }
 
                 case DataType.String:
-                    {
-                        // TODO: add casing options on Field attribute and support custom naming enums.
-                        var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
-                        await Program.PacketLogger.LogDebugAsync($"Writing string: {val}");
-                        await this.WriteStringAsync(val, length);
-                        break;
-                    }
+                {
+                    // TODO: add casing options on Field attribute and support custom naming enums.
+                    var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
+                    await Program.PacketLogger.LogDebugAsync($"Writing string: {val}");
+                    await this.WriteStringAsync(val, length);
+                    break;
+                }
                 case DataType.Chat:
-                    {
-                        await this.WriteChatAsync((ChatMessage)value);
-                        break;
-                    }
+                {
+                    await this.WriteChatAsync((ChatMessage)value);
+                    break;
+                }
                 case DataType.VarInt:
-                    {
-                        await this.WriteVarIntAsync((int)value);
-                        break;
-                    }
+                {
+                    await this.WriteVarIntAsync((int)value);
+                    break;
+                }
                 case DataType.VarLong:
-                    {
-                        await this.WriteVarLongAsync((long)value);
-                        break;
-                    }
+                {
+                    await this.WriteVarLongAsync((long)value);
+                    break;
+                }
                 case DataType.Position:
+                {
+                    if (value is Position position)
                     {
-                        if (value is Position position)
+                        if (attribute.Absolute)
                         {
-                            if (attribute.Absolute)
-                            {
-                                await this.WriteDoubleAsync(position.X);
-                                await this.WriteDoubleAsync(position.Y);
-                                await this.WriteDoubleAsync(position.Z);
-                                break;
-                            }
-
-                            await this.WritePositionAsync(position);
-                        }
-                        else if (value is Transform transform)
-                        {
-                            await this.WriteDoubleAsync(transform.X);
-                            await this.WriteDoubleAsync(transform.Y);
-                            await this.WriteDoubleAsync(transform.Z);
-                            await this.WriteFloatAsync(transform.Yaw.Degrees);
-                            await this.WriteFloatAsync(transform.Pitch.Degrees);
-                        }
-                        else if (value is SoundPosition soundPosition)
-                        {
-                            await this.WriteIntAsync(soundPosition.X);
-                            await this.WriteIntAsync(soundPosition.Y);
-                            await this.WriteIntAsync(soundPosition.Z);
+                            await this.WriteDoubleAsync(position.X);
+                            await this.WriteDoubleAsync(position.Y);
+                            await this.WriteDoubleAsync(position.Z);
+                            break;
                         }
 
-                        break;
+                        await this.WritePositionAsync(position);
                     }
+                    else if (value is Transform transform)
+                    {
+                        await this.WriteDoubleAsync(transform.X);
+                        await this.WriteDoubleAsync(transform.Y);
+                        await this.WriteDoubleAsync(transform.Z);
+
+                        await this.WriteAngleAsync(new Angle(transform.Yaw));
+                        await this.WriteAngleAsync(new Angle(transform.Pitch));
+                    }
+                    else if (value is SoundPosition soundPosition)
+                    {
+                        await this.WriteIntAsync(soundPosition.X);
+                        await this.WriteIntAsync(soundPosition.Y);
+                        await this.WriteIntAsync(soundPosition.Z);
+                    }
+
+                    break;
+                }
                 case DataType.Velocity:
-                    {
-                        var velocity = (Velocity)value;
+                {
+                    var velocity = (Velocity)value;
 
-                        await this.WriteShortAsync(velocity.X);
-                        await this.WriteShortAsync(velocity.Y);
-                        await this.WriteShortAsync(velocity.Z);
-                        break;
-                    }
+                    await this.WriteShortAsync(velocity.X);
+                    await this.WriteShortAsync(velocity.Y);
+                    await this.WriteShortAsync(velocity.Z);
+                    break;
+                }
                 case DataType.UUID:
-                    {
-                        await this.WriteUuidAsync((Guid)value);
-                        break;
-                    }
+                {
+                    await this.WriteUuidAsync((Guid)value);
+                    break;
+                }
                 case DataType.Array:
+                {
+                    if (value is List<CommandNode> nodes)
                     {
-                        if (value is List<CommandNode> nodes)
-                        {
-                            foreach (var node in nodes)
-                                await node.CopyToAsync(this);
-                        }
-                        else if (value is List<PlayerInfoAction> actions)
-                        {
-                            await this.WriteVarIntAsync(actions.Count);
-
-                            foreach (var action in actions)
-                                await action.WriteAsync(this);
-                        }
-                        else if (value is byte[] array)
-                        {
-                            if (attribute.CountLength)
-                            {
-                                await this.WriteVarIntAsync(array.Length);
-                                await this.WriteAsync(array);
-                            }
-                            else
-                                await this.WriteAsync(array);
-                        }
-                        break;
+                        foreach (var node in nodes)
+                            await node.CopyToAsync(this);
                     }
-                default: throw new ArgumentOutOfRangeException(nameof(type));
+                    else if (value is List<PlayerInfoAction> actions)
+                    {
+                        await this.WriteVarIntAsync(actions.Count);
+
+                        foreach (var action in actions)
+                            await action.WriteAsync(this);
+                    }
+                    break;
+                }
+                case DataType.ByteArray:
+                {
+                    var array = (byte[])value;
+                    if (attribute.CountLength)
+                    {
+                        await this.WriteVarIntAsync(array.Length);
+                        await this.WriteAsync(array);
+                    }
+                    else
+                        await this.WriteAsync(array);
+                    break;
+                }
+                case DataType.Slot:
+                {
+                    await this.WriteSlotAsync((Slot)value);
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
 
@@ -385,13 +388,147 @@ namespace Obsidian.Net
             await this.WriteLongAsync(val);
         }
 
-        public async Task WriteNbtAsync(NbtTag tag) => await this.WriteAsync(tag.ByteArrayValue);
+        public Task WriteNbtAsync(NbtTag tag)
+        {
+            var writer = new NbtWriter(new MemoryStream(), "Item");
+
+            writer.WriteTag(tag);
+
+            writer.EndCompound();
+            writer.Finish();
+
+            return Task.CompletedTask;
+        }
+
+        public async Task WriteSlotAsync(Slot slot, ITestOutputHelper output = null)
+        {
+            await this.WriteBooleanAsync(slot.Present);
+            if (slot.Present)
+            {
+                await this.WriteVarIntAsync(slot.Id);
+                await this.WriteByteAsync(slot.Count);
+
+                var writer = new NbtWriter(this, "");
+
+                writer.WriteByte("Slot", slot.ItemNbt.Slot);
+                writer.WriteByte("Count", (byte)slot.Count);
+                writer.WriteShort("id", (short)slot.Id);
+                writer.WriteShort("Damage", slot.ItemNbt.Damage);
+
+                writer.EndCompound();
+
+                writer.Finish();
+            }
+        }
+
+        public async Task<Slot> ReadSlotAsync(ITestOutputHelper output = null)
+        {
+            var slot = new Slot();
+
+            var present = await this.ReadBooleanAsync();
+            slot.Present = present;
+
+            if (present)
+            {
+                slot.Id = await this.ReadVarIntAsync();
+                slot.Count = await this.ReadByteAsync();
+
+                await using var stream = new MemoryStream();
+
+                await this.CopyToAsync(stream);
+                stream.Position = 0;
+
+                var reader = new NbtReader(stream);
+
+                while (reader.ReadToFollowing())
+                {
+                    if (!reader.HasName)
+                    {
+                        //TODO?????????
+                        continue;
+                    }
+
+                    slot.ItemNbt = new ItemNbt();
+
+                    if (reader.IsCompound)
+                    {
+                        var root = (NbtCompound)reader.ReadAsTag();
+                        foreach (var tag in root)
+                        {
+                            Console.WriteLine($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            if (tag.TagType == NbtTagType.Compound)
+                            {
+                                Console.WriteLine("Other compound");
+                            }
+                            switch (tag.Name.ToLower())
+                            {
+                                case "enchantments":
+                                {
+                                    var enchantments = (NbtList)tag;
+
+                                    foreach (var enchant in enchantments)
+                                    {
+                                        if (enchant is NbtCompound compound)
+                                        {
+                                            slot.ItemNbt.Enchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+
+                                    break;
+                                }
+                                case "storedenchantments":
+                                {
+                                    var enchantments = (NbtList)tag;
+
+                                    Console.WriteLine($"List Type: {enchantments.ListType}");
+
+                                    foreach (var enchantment in enchantments)
+                                    {
+                                        if (enchantment is NbtCompound compound)
+                                        {
+
+                                            slot.ItemNbt.StoredEnchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                        //slot.ItemNbt.Slot = compound.Get<NbtByte>("Slot").Value;
+                        //slot.ItemNbt.Count = compound.Get<NbtByte>("Count").Value;
+                        //slot.ItemNbt.Id = compound.Get<NbtShort>("id").Value;
+                        //slot.ItemNbt.Damage = compound.Get<NbtShort>("Damage").Value;
+                        //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Other Name: {reader.TagName}");
+                    }
+
+
+
+                }
+
+            }
+
+            return slot;
+        }
 
         #endregion Writing
 
         #region Reading
 
-        public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr)
+        public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr, int? readLen = null)
         {
             switch (dataType)
             {
@@ -426,22 +563,21 @@ namespace Obsidian.Net
                 case DataType.VarLong:
                     return await this.ReadVarLongAsync();
                 case DataType.Position:
+                {
+                    if (type == typeof(Position))
                     {
-                        if (type == typeof(Position))
-                        {
-                            if (attr.Absolute)
-                                return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+                        if (attr.Absolute)
+                            return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
 
-                            return await this.ReadPositionAsync();
-                        }
-                        else if (type == typeof(Transform))
-                            return await this.ReadTransformAsync();
-                        else if (type == typeof(SoundPosition))
-                            return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
-
-
-                        return null;
+                        return await this.ReadPositionAsync();
                     }
+                    else if (type == typeof(Transform))
+                        return await this.ReadTransformAsync();
+                    else if (type == typeof(SoundPosition))
+                        return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
+
+                    return null;
+                }
                 case DataType.Angle:
                     return this.ReadFloatAsync();
                 case DataType.UUID:
@@ -450,6 +586,15 @@ namespace Obsidian.Net
                     return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
                 case DataType.EntityMetadata:
                 case DataType.Slot:
+                {
+                    return await this.ReadSlotAsync();
+                }
+                case DataType.ByteArray:
+                {
+                    int len = readLen.Value;
+                    var arr = await this.ReadUInt8ArrayAsync(len);
+                    return arr;
+                }
                 case DataType.NbtTag:
                 case DataType.Array:
                 default:
@@ -462,8 +607,8 @@ namespace Obsidian.Net
             var x = await this.ReadDoubleAsync();
             var y = await this.ReadDoubleAsync();
             var z = await this.ReadDoubleAsync();
-            var pitch = await this.ReadFloatAsync();
-            var yaw = await this.ReadFloatAsync();
+            var pitch = await this.ReadAngleAsync();
+            var yaw = await this.ReadAngleAsync();
 
             return new Transform(x, y, z, pitch, yaw);
         }
@@ -534,7 +679,7 @@ namespace Obsidian.Net
             }
             else if (type == typeof(Transform))
             {
-                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadFloatAsync(), await this.ReadFloatAsync());
+                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadAngleAsync(), await this.ReadAngleAsync());
             }
             else if (type.BaseType != null && type.BaseType == typeof(Enum))
             {
@@ -571,9 +716,12 @@ namespace Obsidian.Net
                 z = (long)(value << 26 >> 38);
             }
 
-            if (x >= Math.Pow(2, 25)) { x -= (long)Math.Pow(2, 26); }
-            if (y >= Math.Pow(2, 11)) { y -= (long)Math.Pow(2, 12); }
-            if (z >= Math.Pow(2, 25)) { z -= (long)Math.Pow(2, 26); }
+            if (x >= Math.Pow(2, 25))
+            { x -= (long)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11))
+            { y -= (long)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25))
+            { z -= (long)Math.Pow(2, 26); }
 
             return new Position
             {

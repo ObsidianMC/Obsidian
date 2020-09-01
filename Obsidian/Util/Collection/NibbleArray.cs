@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Obsidian;
+using Obsidian.Nbt.Tags;
+using System;
 using System.Collections.ObjectModel;
-using fNbt;
-using fNbt.Serialization;
 
 namespace Obsidian.Util.Collection
 {
     /// <summary>
     /// Represents an array of 4-bit values.
     /// </summary>
-    public class NibbleArray : INbtSerializable
+    public class NibbleArray //: INbtSerializable
     {
         /// <summary>
         /// The data in the nibble array. Each byte contains
@@ -31,7 +31,7 @@ namespace Obsidian.Util.Collection
         /// <summary>
         /// Gets the current number of nibbles in this array.
         /// </summary>
-        [NbtIgnore]
+        //[NbtIgnore]
         public int Length
         {
             get { return this.Data.Length * 2; }
@@ -40,7 +40,7 @@ namespace Obsidian.Util.Collection
         /// <summary>
         /// Gets or sets a nibble at the given index.
         /// </summary>
-        [NbtIgnore]
+        //[NbtIgnore]
         public byte this[int index]
         {
             get => (byte)((this.Data[index / 2] >> (index % 2 * 4)) & 0xF);

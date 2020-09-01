@@ -1,4 +1,5 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Items;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -19,7 +20,7 @@ namespace Obsidian.Util.Extensions
         {
             if (type.IsEnum)
                 return DataType.VarInt;
-            
+
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Int32:
@@ -74,7 +75,9 @@ namespace Obsidian.Util.Extensions
                         else if (type == typeof(Guid))
                             return DataType.UUID;
                         else if (type == typeof(byte[]))
-                            return DataType.Array;
+                            return DataType.ByteArray;
+                        else if (type == typeof(Slot))
+                            return DataType.Slot; 
 
                         return DataType.Auto;
                     }
@@ -128,6 +131,34 @@ namespace Obsidian.Util.Extensions
                     var val = property.GetValue(packet);
                     await Program.PacketLogger.LogDebugAsync($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, val);
+                }
+            }
+
+            return valueDict;
+        }
+
+        internal static async Task<Dictionary<FieldAttribute, (string name, object value)>> GetAllObjectsAndNamesAsync(this Packet packet)
+        {
+            var members = packet.GetType().GetMembers(Flags);
+            var valueDict = new Dictionary<FieldAttribute, (string, object)>();
+
+            foreach (var member in members)
+            {
+                var att = (FieldAttribute)Attribute.GetCustomAttribute(member, typeof(FieldAttribute));
+                if (att == null)
+                    continue;
+
+                if (member is FieldInfo field)
+                {
+                    var val = field.GetValue(packet);
+                    await Program.PacketLogger.LogDebugAsync($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    valueDict.Add(att, (field.Name, val));
+                }
+                else if (member is PropertyInfo property)
+                {
+                    var val = property.GetValue(packet);
+                    await Program.PacketLogger.LogDebugAsync($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    valueDict.Add(att, (property.Name, val));
                 }
             }
 

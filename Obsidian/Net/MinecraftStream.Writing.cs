@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Obsidian.Util.DataTypes;
+using System;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -189,6 +190,12 @@ namespace Obsidian.Net
 
                 await this.WriteUnsignedByteAsync(temp);
             } while (v != 0);
+        }
+
+        public async Task WriteAngleAsync(Angle angle)
+        {
+            await this.WriteFloatAsync(angle);
+            //await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
         }
     }
 }

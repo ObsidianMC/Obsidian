@@ -1,12 +1,10 @@
-﻿using fNbt.Serialization;
-using Obsidian.Util;
-using Obsidian.Util.DataTypes;
+﻿using Obsidian.Util.DataTypes;
 
 namespace Obsidian.World
 {
     public abstract class TileEntity
     {
-        [NbtIgnore]
+        //[NbtIgnore]
         public Position Position
         {
             get
@@ -15,13 +13,13 @@ namespace Obsidian.World
             }
         }
 
-        [TagName("id")]
+        //[TagName("id")]
         public abstract string Id { get; }
-        [TagName("x")]
+        //[TagName("x")]
         public int X { get; set; }
-        [TagName("y")]
+        //[TagName("y")]
         public int Y { get; set; }
-        [TagName("z")]
+        //[TagName("z")]
         public int Z { get; set; }
     }
 }

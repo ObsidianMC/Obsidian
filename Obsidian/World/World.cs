@@ -1,6 +1,7 @@
-﻿using fNbt;
+﻿using Obsidian;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
+using Obsidian.Nbt;
 using Obsidian.PlayerData;
 using System;
 using System.Collections.Generic;

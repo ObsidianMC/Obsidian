@@ -1,4 +1,5 @@
-﻿using Obsidian.Logging;
+﻿using Newtonsoft.Json;
+using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
@@ -6,6 +7,7 @@ using Obsidian.Serializer;
 using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -83,6 +85,7 @@ namespace Obsidian.Util
 
                 case 0x02:
                     // Incoming chat message
+                    await Logger.LogDebugAsync("Received chat message");
                     var message = await PacketSerializer.FastDeserializeAsync<IncomingChatMessage>(packet.data);
 
                     await server.ParseMessage(message.Message, client);
@@ -115,6 +118,8 @@ namespace Obsidian.Util
 
                 case 0x08:
                     // Click Window
+                    var window = await PacketSerializer.FastDeserializeAsync<ClickWindow>(packet.data);
+
                     await Logger.LogDebugAsync("Received click window");
                     break;
 
@@ -126,7 +131,7 @@ namespace Obsidian.Util
                 case 0x0A:
                     // Plugin Message (serverbound)
                     var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
-                    
+
                     await Logger.LogDebugAsync($"Received plugin message: {msg.Channel}");
                     break;
 
@@ -257,7 +262,7 @@ namespace Obsidian.Util
                     // Held Item Change (serverbound)//TODO fix this
                     //var hic = await CreateAsync(new HeldItemChange(packet.PacketData));
                     //client.Player.HeldItemSlot = hic.Slot;
-                    
+
 
                     //await Logger.LogDebugAsync($"Received held item change: {hic.Slot}");
 
@@ -276,6 +281,18 @@ namespace Obsidian.Util
                 case 0x24:
                     // Creative Inventory Action
                     await Logger.LogDebugAsync("Received creative inventory action");
+                    var ca = await PacketSerializer.DeserializeAsync<CreativeInventoryAction>(packet.data);
+
+                    var json = JsonConvert.SerializeObject(ca.ClickedItem);
+
+                    client.Player.HeldItemSlot = ca.ClickedSlot;
+
+                    var dir = Path.Combine(Path.GetTempPath(), "obsidian", "slots");
+                    Directory.CreateDirectory(dir);
+
+                    var file = Path.Combine(dir, $"{Path.GetRandomFileName()}-slotData.json");
+
+                    File.WriteAllText(file, json);
                     break;
 
                 case 0x25:
