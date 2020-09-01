@@ -1,5 +1,5 @@
 {
-  "obsidian:air": {
+  "minecraft:air": {
     "states": [
       {
         "id": 0,
@@ -7,7 +7,7 @@
       }
     ]
   },
-  "obsidian:stone": {
+  "minecraft:stone": {
     "states": [
       {
         "id": 1,
@@ -15,7 +15,7 @@
       }
     ]
   },
-  "obsidian:granite": {
+  "minecraft:granite": {
     "states": [
       {
         "id": 2,
@@ -23,7 +23,7 @@
       }
     ]
   },
-  "obsidian:polished_granite": {
+  "minecraft:polished_granite": {
     "states": [
       {
         "id": 3,
@@ -31,7 +31,7 @@
       }
     ]
   },
-  "obsidian:diorite": {
+  "minecraft:diorite": {
     "states": [
       {
         "id": 4,
@@ -39,7 +39,7 @@
       }
     ]
   },
-  "obsidian:polished_diorite": {
+  "minecraft:polished_diorite": {
     "states": [
       {
         "id": 5,
@@ -47,7 +47,7 @@
       }
     ]
   },
-  "obsidian:andesite": {
+  "minecraft:andesite": {
     "states": [
       {
         "id": 6,
@@ -55,7 +55,7 @@
       }
     ]
   },
-  "obsidian:polished_andesite": {
+  "minecraft:polished_andesite": {
     "states": [
       {
         "id": 7,
@@ -63,7 +63,7 @@
       }
     ]
   },
-  "obsidian:grass_block": {
+  "minecraft:grass_block": {
     "properties": {
       "snowy": [
         "true",
@@ -86,7 +86,7 @@
       }
     ]
   },
-  "obsidian:dirt": {
+  "minecraft:dirt": {
     "states": [
       {
         "id": 10,
@@ -94,7 +94,7 @@
       }
     ]
   },
-  "obsidian:coarse_dirt": {
+  "minecraft:coarse_dirt": {
     "states": [
       {
         "id": 11,
@@ -102,7 +102,7 @@
       }
     ]
   },
-  "obsidian:podzol": {
+  "minecraft:podzol": {
     "properties": {
       "snowy": [
         "true",
@@ -125,7 +125,7 @@
       }
     ]
   },
-  "obsidian:cobblestone": {
+  "minecraft:cobblestone": {
     "states": [
       {
         "id": 14,
@@ -133,7 +133,7 @@
       }
     ]
   },
-  "obsidian:oak_planks": {
+  "minecraft:oak_planks": {
     "states": [
       {
         "id": 15,
@@ -141,7 +141,7 @@
       }
     ]
   },
-  "obsidian:spruce_planks": {
+  "minecraft:spruce_planks": {
     "states": [
       {
         "id": 16,
@@ -149,7 +149,7 @@
       }
     ]
   },
-  "obsidian:birch_planks": {
+  "minecraft:birch_planks": {
     "states": [
       {
         "id": 17,
@@ -157,7 +157,7 @@
       }
     ]
   },
-  "obsidian:jungle_planks": {
+  "minecraft:jungle_planks": {
     "states": [
       {
         "id": 18,
@@ -165,7 +165,7 @@
       }
     ]
   },
-  "obsidian:acacia_planks": {
+  "minecraft:acacia_planks": {
     "states": [
       {
         "id": 19,
@@ -173,7 +173,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_planks": {
+  "minecraft:dark_oak_planks": {
     "states": [
       {
         "id": 20,
@@ -181,7 +181,7 @@
       }
     ]
   },
-  "obsidian:oak_sapling": {
+  "minecraft:oak_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -204,7 +204,7 @@
       }
     ]
   },
-  "obsidian:spruce_sapling": {
+  "minecraft:spruce_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -227,7 +227,7 @@
       }
     ]
   },
-  "obsidian:birch_sapling": {
+  "minecraft:birch_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -250,7 +250,7 @@
       }
     ]
   },
-  "obsidian:jungle_sapling": {
+  "minecraft:jungle_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -273,7 +273,7 @@
       }
     ]
   },
-  "obsidian:acacia_sapling": {
+  "minecraft:acacia_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -296,7 +296,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_sapling": {
+  "minecraft:dark_oak_sapling": {
     "properties": {
       "stage": [
         "0",
@@ -319,7 +319,7 @@
       }
     ]
   },
-  "obsidian:bedrock": {
+  "minecraft:bedrock": {
     "states": [
       {
         "id": 33,
@@ -327,7 +327,7 @@
       }
     ]
   },
-  "obsidian:water": {
+  "minecraft:water": {
     "properties": {
       "level": [
         "0",
@@ -448,7 +448,7 @@
       }
     ]
   },
-  "obsidian:lava": {
+  "minecraft:lava": {
     "properties": {
       "level": [
         "0",
@@ -569,7 +569,7 @@
       }
     ]
   },
-  "obsidian:sand": {
+  "minecraft:sand": {
     "states": [
       {
         "id": 66,
@@ -577,7 +577,7 @@
       }
     ]
   },
-  "obsidian:red_sand": {
+  "minecraft:red_sand": {
     "states": [
       {
         "id": 67,
@@ -585,7 +585,7 @@
       }
     ]
   },
-  "obsidian:gravel": {
+  "minecraft:gravel": {
     "states": [
       {
         "id": 68,
@@ -593,7 +593,7 @@
       }
     ]
   },
-  "obsidian:gold_ore": {
+  "minecraft:gold_ore": {
     "states": [
       {
         "id": 69,
@@ -601,7 +601,7 @@
       }
     ]
   },
-  "obsidian:iron_ore": {
+  "minecraft:iron_ore": {
     "states": [
       {
         "id": 70,
@@ -609,7 +609,7 @@
       }
     ]
   },
-  "obsidian:coal_ore": {
+  "minecraft:coal_ore": {
     "states": [
       {
         "id": 71,
@@ -617,7 +617,7 @@
       }
     ]
   },
-  "obsidian:oak_log": {
+  "minecraft:oak_log": {
     "properties": {
       "axis": [
         "x",
@@ -647,7 +647,7 @@
       }
     ]
   },
-  "obsidian:spruce_log": {
+  "minecraft:spruce_log": {
     "properties": {
       "axis": [
         "x",
@@ -677,7 +677,7 @@
       }
     ]
   },
-  "obsidian:birch_log": {
+  "minecraft:birch_log": {
     "properties": {
       "axis": [
         "x",
@@ -707,7 +707,7 @@
       }
     ]
   },
-  "obsidian:jungle_log": {
+  "minecraft:jungle_log": {
     "properties": {
       "axis": [
         "x",
@@ -737,7 +737,7 @@
       }
     ]
   },
-  "obsidian:acacia_log": {
+  "minecraft:acacia_log": {
     "properties": {
       "axis": [
         "x",
@@ -767,7 +767,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_log": {
+  "minecraft:dark_oak_log": {
     "properties": {
       "axis": [
         "x",
@@ -797,7 +797,7 @@
       }
     ]
   },
-  "obsidian:stripped_spruce_log": {
+  "minecraft:stripped_spruce_log": {
     "properties": {
       "axis": [
         "x",
@@ -827,7 +827,7 @@
       }
     ]
   },
-  "obsidian:stripped_birch_log": {
+  "minecraft:stripped_birch_log": {
     "properties": {
       "axis": [
         "x",
@@ -857,7 +857,7 @@
       }
     ]
   },
-  "obsidian:stripped_jungle_log": {
+  "minecraft:stripped_jungle_log": {
     "properties": {
       "axis": [
         "x",
@@ -887,7 +887,7 @@
       }
     ]
   },
-  "obsidian:stripped_acacia_log": {
+  "minecraft:stripped_acacia_log": {
     "properties": {
       "axis": [
         "x",
@@ -917,7 +917,7 @@
       }
     ]
   },
-  "obsidian:stripped_dark_oak_log": {
+  "minecraft:stripped_dark_oak_log": {
     "properties": {
       "axis": [
         "x",
@@ -947,7 +947,7 @@
       }
     ]
   },
-  "obsidian:stripped_oak_log": {
+  "minecraft:stripped_oak_log": {
     "properties": {
       "axis": [
         "x",
@@ -977,7 +977,7 @@
       }
     ]
   },
-  "obsidian:oak_wood": {
+  "minecraft:oak_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1007,7 +1007,7 @@
       }
     ]
   },
-  "obsidian:spruce_wood": {
+  "minecraft:spruce_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1037,7 +1037,7 @@
       }
     ]
   },
-  "obsidian:birch_wood": {
+  "minecraft:birch_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1067,7 +1067,7 @@
       }
     ]
   },
-  "obsidian:jungle_wood": {
+  "minecraft:jungle_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1097,7 +1097,7 @@
       }
     ]
   },
-  "obsidian:acacia_wood": {
+  "minecraft:acacia_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1127,7 +1127,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_wood": {
+  "minecraft:dark_oak_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1157,7 +1157,7 @@
       }
     ]
   },
-  "obsidian:stripped_oak_wood": {
+  "minecraft:stripped_oak_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1187,7 +1187,7 @@
       }
     ]
   },
-  "obsidian:stripped_spruce_wood": {
+  "minecraft:stripped_spruce_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1217,7 +1217,7 @@
       }
     ]
   },
-  "obsidian:stripped_birch_wood": {
+  "minecraft:stripped_birch_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1247,7 +1247,7 @@
       }
     ]
   },
-  "obsidian:stripped_jungle_wood": {
+  "minecraft:stripped_jungle_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1277,7 +1277,7 @@
       }
     ]
   },
-  "obsidian:stripped_acacia_wood": {
+  "minecraft:stripped_acacia_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1307,7 +1307,7 @@
       }
     ]
   },
-  "obsidian:stripped_dark_oak_wood": {
+  "minecraft:stripped_dark_oak_wood": {
     "properties": {
       "axis": [
         "x",
@@ -1337,7 +1337,7 @@
       }
     ]
   },
-  "obsidian:oak_leaves": {
+  "minecraft:oak_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -1455,7 +1455,7 @@
       }
     ]
   },
-  "obsidian:spruce_leaves": {
+  "minecraft:spruce_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -1573,7 +1573,7 @@
       }
     ]
   },
-  "obsidian:birch_leaves": {
+  "minecraft:birch_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -1691,7 +1691,7 @@
       }
     ]
   },
-  "obsidian:jungle_leaves": {
+  "minecraft:jungle_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -1809,7 +1809,7 @@
       }
     ]
   },
-  "obsidian:acacia_leaves": {
+  "minecraft:acacia_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -1927,7 +1927,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_leaves": {
+  "minecraft:dark_oak_leaves": {
     "properties": {
       "distance": [
         "1",
@@ -2045,7 +2045,7 @@
       }
     ]
   },
-  "obsidian:sponge": {
+  "minecraft:sponge": {
     "states": [
       {
         "id": 228,
@@ -2053,7 +2053,7 @@
       }
     ]
   },
-  "obsidian:wet_sponge": {
+  "minecraft:wet_sponge": {
     "states": [
       {
         "id": 229,
@@ -2061,7 +2061,7 @@
       }
     ]
   },
-  "obsidian:glass": {
+  "minecraft:glass": {
     "states": [
       {
         "id": 230,
@@ -2069,7 +2069,7 @@
       }
     ]
   },
-  "obsidian:lapis_ore": {
+  "minecraft:lapis_ore": {
     "states": [
       {
         "id": 231,
@@ -2077,7 +2077,7 @@
       }
     ]
   },
-  "obsidian:lapis_block": {
+  "minecraft:lapis_block": {
     "states": [
       {
         "id": 232,
@@ -2085,7 +2085,7 @@
       }
     ]
   },
-  "obsidian:dispenser": {
+  "minecraft:dispenser": {
     "properties": {
       "facing": [
         "north",
@@ -2188,7 +2188,7 @@
       }
     ]
   },
-  "obsidian:sandstone": {
+  "minecraft:sandstone": {
     "states": [
       {
         "id": 245,
@@ -2196,7 +2196,7 @@
       }
     ]
   },
-  "obsidian:chiseled_sandstone": {
+  "minecraft:chiseled_sandstone": {
     "states": [
       {
         "id": 246,
@@ -2204,7 +2204,7 @@
       }
     ]
   },
-  "obsidian:cut_sandstone": {
+  "minecraft:cut_sandstone": {
     "states": [
       {
         "id": 247,
@@ -2212,7 +2212,7 @@
       }
     ]
   },
-  "obsidian:note_block": {
+  "minecraft:note_block": {
     "properties": {
       "instrument": [
         "harp",
@@ -6262,7 +6262,7 @@
       }
     ]
   },
-  "obsidian:white_bed": {
+  "minecraft:white_bed": {
     "properties": {
       "facing": [
         "north",
@@ -6411,7 +6411,7 @@
       }
     ]
   },
-  "obsidian:orange_bed": {
+  "minecraft:orange_bed": {
     "properties": {
       "facing": [
         "north",
@@ -6560,7 +6560,7 @@
       }
     ]
   },
-  "obsidian:magenta_bed": {
+  "minecraft:magenta_bed": {
     "properties": {
       "facing": [
         "north",
@@ -6709,7 +6709,7 @@
       }
     ]
   },
-  "obsidian:light_blue_bed": {
+  "minecraft:light_blue_bed": {
     "properties": {
       "facing": [
         "north",
@@ -6858,7 +6858,7 @@
       }
     ]
   },
-  "obsidian:yellow_bed": {
+  "minecraft:yellow_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7007,7 +7007,7 @@
       }
     ]
   },
-  "obsidian:lime_bed": {
+  "minecraft:lime_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7156,7 +7156,7 @@
       }
     ]
   },
-  "obsidian:pink_bed": {
+  "minecraft:pink_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7305,7 +7305,7 @@
       }
     ]
   },
-  "obsidian:gray_bed": {
+  "minecraft:gray_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7454,7 +7454,7 @@
       }
     ]
   },
-  "obsidian:light_gray_bed": {
+  "minecraft:light_gray_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7603,7 +7603,7 @@
       }
     ]
   },
-  "obsidian:cyan_bed": {
+  "minecraft:cyan_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7752,7 +7752,7 @@
       }
     ]
   },
-  "obsidian:purple_bed": {
+  "minecraft:purple_bed": {
     "properties": {
       "facing": [
         "north",
@@ -7901,7 +7901,7 @@
       }
     ]
   },
-  "obsidian:blue_bed": {
+  "minecraft:blue_bed": {
     "properties": {
       "facing": [
         "north",
@@ -8050,7 +8050,7 @@
       }
     ]
   },
-  "obsidian:brown_bed": {
+  "minecraft:brown_bed": {
     "properties": {
       "facing": [
         "north",
@@ -8199,7 +8199,7 @@
       }
     ]
   },
-  "obsidian:green_bed": {
+  "minecraft:green_bed": {
     "properties": {
       "facing": [
         "north",
@@ -8348,7 +8348,7 @@
       }
     ]
   },
-  "obsidian:red_bed": {
+  "minecraft:red_bed": {
     "properties": {
       "facing": [
         "north",
@@ -8497,7 +8497,7 @@
       }
     ]
   },
-  "obsidian:black_bed": {
+  "minecraft:black_bed": {
     "properties": {
       "facing": [
         "north",
@@ -8646,7 +8646,7 @@
       }
     ]
   },
-  "obsidian:powered_rail": {
+  "minecraft:powered_rail": {
     "properties": {
       "powered": [
         "true",
@@ -8749,7 +8749,7 @@
       }
     ]
   },
-  "obsidian:detector_rail": {
+  "minecraft:detector_rail": {
     "properties": {
       "powered": [
         "true",
@@ -8852,7 +8852,7 @@
       }
     ]
   },
-  "obsidian:sticky_piston": {
+  "minecraft:sticky_piston": {
     "properties": {
       "extended": [
         "true",
@@ -8955,7 +8955,7 @@
       }
     ]
   },
-  "obsidian:cobweb": {
+  "minecraft:cobweb": {
     "states": [
       {
         "id": 1040,
@@ -8963,7 +8963,7 @@
       }
     ]
   },
-  "obsidian:grass": {
+  "minecraft:grass": {
     "states": [
       {
         "id": 1041,
@@ -8971,7 +8971,7 @@
       }
     ]
   },
-  "obsidian:fern": {
+  "minecraft:fern": {
     "states": [
       {
         "id": 1042,
@@ -8979,7 +8979,7 @@
       }
     ]
   },
-  "obsidian:dead_bush": {
+  "minecraft:dead_bush": {
     "states": [
       {
         "id": 1043,
@@ -8987,7 +8987,7 @@
       }
     ]
   },
-  "obsidian:seagrass": {
+  "minecraft:seagrass": {
     "states": [
       {
         "id": 1044,
@@ -8995,7 +8995,7 @@
       }
     ]
   },
-  "obsidian:tall_seagrass": {
+  "minecraft:tall_seagrass": {
     "properties": {
       "half": [
         "upper",
@@ -9018,7 +9018,7 @@
       }
     ]
   },
-  "obsidian:piston": {
+  "minecraft:piston": {
     "properties": {
       "extended": [
         "true",
@@ -9121,7 +9121,7 @@
       }
     ]
   },
-  "obsidian:piston_head": {
+  "minecraft:piston_head": {
     "properties": {
       "facing": [
         "north",
@@ -9336,7 +9336,7 @@
       }
     ]
   },
-  "obsidian:white_wool": {
+  "minecraft:white_wool": {
     "states": [
       {
         "id": 1083,
@@ -9344,7 +9344,7 @@
       }
     ]
   },
-  "obsidian:orange_wool": {
+  "minecraft:orange_wool": {
     "states": [
       {
         "id": 1084,
@@ -9352,7 +9352,7 @@
       }
     ]
   },
-  "obsidian:magenta_wool": {
+  "minecraft:magenta_wool": {
     "states": [
       {
         "id": 1085,
@@ -9360,7 +9360,7 @@
       }
     ]
   },
-  "obsidian:light_blue_wool": {
+  "minecraft:light_blue_wool": {
     "states": [
       {
         "id": 1086,
@@ -9368,7 +9368,7 @@
       }
     ]
   },
-  "obsidian:yellow_wool": {
+  "minecraft:yellow_wool": {
     "states": [
       {
         "id": 1087,
@@ -9376,7 +9376,7 @@
       }
     ]
   },
-  "obsidian:lime_wool": {
+  "minecraft:lime_wool": {
     "states": [
       {
         "id": 1088,
@@ -9384,7 +9384,7 @@
       }
     ]
   },
-  "obsidian:pink_wool": {
+  "minecraft:pink_wool": {
     "states": [
       {
         "id": 1089,
@@ -9392,7 +9392,7 @@
       }
     ]
   },
-  "obsidian:gray_wool": {
+  "minecraft:gray_wool": {
     "states": [
       {
         "id": 1090,
@@ -9400,7 +9400,7 @@
       }
     ]
   },
-  "obsidian:light_gray_wool": {
+  "minecraft:light_gray_wool": {
     "states": [
       {
         "id": 1091,
@@ -9408,7 +9408,7 @@
       }
     ]
   },
-  "obsidian:cyan_wool": {
+  "minecraft:cyan_wool": {
     "states": [
       {
         "id": 1092,
@@ -9416,7 +9416,7 @@
       }
     ]
   },
-  "obsidian:purple_wool": {
+  "minecraft:purple_wool": {
     "states": [
       {
         "id": 1093,
@@ -9424,7 +9424,7 @@
       }
     ]
   },
-  "obsidian:blue_wool": {
+  "minecraft:blue_wool": {
     "states": [
       {
         "id": 1094,
@@ -9432,7 +9432,7 @@
       }
     ]
   },
-  "obsidian:brown_wool": {
+  "minecraft:brown_wool": {
     "states": [
       {
         "id": 1095,
@@ -9440,7 +9440,7 @@
       }
     ]
   },
-  "obsidian:green_wool": {
+  "minecraft:green_wool": {
     "states": [
       {
         "id": 1096,
@@ -9448,7 +9448,7 @@
       }
     ]
   },
-  "obsidian:red_wool": {
+  "minecraft:red_wool": {
     "states": [
       {
         "id": 1097,
@@ -9456,7 +9456,7 @@
       }
     ]
   },
-  "obsidian:black_wool": {
+  "minecraft:black_wool": {
     "states": [
       {
         "id": 1098,
@@ -9464,7 +9464,7 @@
       }
     ]
   },
-  "obsidian:moving_piston": {
+  "minecraft:moving_piston": {
     "properties": {
       "facing": [
         "north",
@@ -9567,7 +9567,7 @@
       }
     ]
   },
-  "obsidian:dandelion": {
+  "minecraft:dandelion": {
     "states": [
       {
         "id": 1111,
@@ -9575,7 +9575,7 @@
       }
     ]
   },
-  "obsidian:poppy": {
+  "minecraft:poppy": {
     "states": [
       {
         "id": 1112,
@@ -9583,7 +9583,7 @@
       }
     ]
   },
-  "obsidian:blue_orchid": {
+  "minecraft:blue_orchid": {
     "states": [
       {
         "id": 1113,
@@ -9591,7 +9591,7 @@
       }
     ]
   },
-  "obsidian:allium": {
+  "minecraft:allium": {
     "states": [
       {
         "id": 1114,
@@ -9599,7 +9599,7 @@
       }
     ]
   },
-  "obsidian:azure_bluet": {
+  "minecraft:azure_bluet": {
     "states": [
       {
         "id": 1115,
@@ -9607,7 +9607,7 @@
       }
     ]
   },
-  "obsidian:red_tulip": {
+  "minecraft:red_tulip": {
     "states": [
       {
         "id": 1116,
@@ -9615,7 +9615,7 @@
       }
     ]
   },
-  "obsidian:orange_tulip": {
+  "minecraft:orange_tulip": {
     "states": [
       {
         "id": 1117,
@@ -9623,7 +9623,7 @@
       }
     ]
   },
-  "obsidian:white_tulip": {
+  "minecraft:white_tulip": {
     "states": [
       {
         "id": 1118,
@@ -9631,7 +9631,7 @@
       }
     ]
   },
-  "obsidian:pink_tulip": {
+  "minecraft:pink_tulip": {
     "states": [
       {
         "id": 1119,
@@ -9639,7 +9639,7 @@
       }
     ]
   },
-  "obsidian:oxeye_daisy": {
+  "minecraft:oxeye_daisy": {
     "states": [
       {
         "id": 1120,
@@ -9647,7 +9647,7 @@
       }
     ]
   },
-  "obsidian:brown_mushroom": {
+  "minecraft:brown_mushroom": {
     "states": [
       {
         "id": 1121,
@@ -9655,7 +9655,7 @@
       }
     ]
   },
-  "obsidian:red_mushroom": {
+  "minecraft:red_mushroom": {
     "states": [
       {
         "id": 1122,
@@ -9663,7 +9663,7 @@
       }
     ]
   },
-  "obsidian:gold_block": {
+  "minecraft:gold_block": {
     "states": [
       {
         "id": 1123,
@@ -9671,7 +9671,7 @@
       }
     ]
   },
-  "obsidian:iron_block": {
+  "minecraft:iron_block": {
     "states": [
       {
         "id": 1124,
@@ -9679,7 +9679,7 @@
       }
     ]
   },
-  "obsidian:bricks": {
+  "minecraft:bricks": {
     "states": [
       {
         "id": 1125,
@@ -9687,7 +9687,7 @@
       }
     ]
   },
-  "obsidian:tnt": {
+  "minecraft:tnt": {
     "properties": {
       "unstable": [
         "true",
@@ -9710,7 +9710,7 @@
       }
     ]
   },
-  "obsidian:bookshelf": {
+  "minecraft:bookshelf": {
     "states": [
       {
         "id": 1128,
@@ -9718,7 +9718,7 @@
       }
     ]
   },
-  "obsidian:mossy_cobblestone": {
+  "minecraft:mossy_cobblestone": {
     "states": [
       {
         "id": 1129,
@@ -9726,7 +9726,7 @@
       }
     ]
   },
-  "obsidian:obsidian": {
+  "minecraft:obsidian": {
     "states": [
       {
         "id": 1130,
@@ -9734,7 +9734,7 @@
       }
     ]
   },
-  "obsidian:torch": {
+  "minecraft:torch": {
     "states": [
       {
         "id": 1131,
@@ -9742,7 +9742,7 @@
       }
     ]
   },
-  "obsidian:wall_torch": {
+  "minecraft:wall_torch": {
     "properties": {
       "facing": [
         "north",
@@ -9779,7 +9779,7 @@
       }
     ]
   },
-  "obsidian:fire": {
+  "minecraft:fire": {
     "properties": {
       "age": [
         "0",
@@ -15456,7 +15456,7 @@
       }
     ]
   },
-  "obsidian:spawner": {
+  "minecraft:spawner": {
     "states": [
       {
         "id": 1648,
@@ -15464,7 +15464,7 @@
       }
     ]
   },
-  "obsidian:oak_stairs": {
+  "minecraft:oak_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -16212,7 +16212,7 @@
       }
     ]
   },
-  "obsidian:chest": {
+  "minecraft:chest": {
     "properties": {
       "facing": [
         "north",
@@ -16426,7 +16426,7 @@
       }
     ]
   },
-  "obsidian:redstone_wire": {
+  "minecraft:redstone_wire": {
     "properties": {
       "east": [
         "up",
@@ -29431,7 +29431,7 @@
       }
     ]
   },
-  "obsidian:diamond_ore": {
+  "minecraft:diamond_ore": {
     "states": [
       {
         "id": 3049,
@@ -29439,7 +29439,7 @@
       }
     ]
   },
-  "obsidian:diamond_block": {
+  "minecraft:diamond_block": {
     "states": [
       {
         "id": 3050,
@@ -29447,7 +29447,7 @@
       }
     ]
   },
-  "obsidian:crafting_table": {
+  "minecraft:crafting_table": {
     "states": [
       {
         "id": 3051,
@@ -29455,7 +29455,7 @@
       }
     ]
   },
-  "obsidian:wheat": {
+  "minecraft:wheat": {
     "properties": {
       "age": [
         "0",
@@ -29520,7 +29520,7 @@
       }
     ]
   },
-  "obsidian:farmland": {
+  "minecraft:farmland": {
     "properties": {
       "moisture": [
         "0",
@@ -29585,7 +29585,7 @@
       }
     ]
   },
-  "obsidian:furnace": {
+  "minecraft:furnace": {
     "properties": {
       "facing": [
         "north",
@@ -29658,7 +29658,7 @@
       }
     ]
   },
-  "obsidian:sign": {
+  "minecraft:sign": {
     "properties": {
       "rotation": [
         "0",
@@ -29911,7 +29911,7 @@
       }
     ]
   },
-  "obsidian:oak_door": {
+  "minecraft:oak_door": {
     "properties": {
       "facing": [
         "north",
@@ -30580,7 +30580,7 @@
       }
     ]
   },
-  "obsidian:ladder": {
+  "minecraft:ladder": {
     "properties": {
       "facing": [
         "north",
@@ -30653,7 +30653,7 @@
       }
     ]
   },
-  "obsidian:rail": {
+  "minecraft:rail": {
     "properties": {
       "shape": [
         "north_south",
@@ -30732,7 +30732,7 @@
       }
     ]
   },
-  "obsidian:cobblestone_stairs": {
+  "minecraft:cobblestone_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -31480,7 +31480,7 @@
       }
     ]
   },
-  "obsidian:wall_sign": {
+  "minecraft:wall_sign": {
     "properties": {
       "facing": [
         "north",
@@ -31553,7 +31553,7 @@
       }
     ]
   },
-  "obsidian:lever": {
+  "minecraft:lever": {
     "properties": {
       "face": [
         "floor",
@@ -31767,7 +31767,7 @@
       }
     ]
   },
-  "obsidian:stone_pressure_plate": {
+  "minecraft:stone_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -31790,7 +31790,7 @@
       }
     ]
   },
-  "obsidian:iron_door": {
+  "minecraft:iron_door": {
     "properties": {
       "facing": [
         "north",
@@ -32459,7 +32459,7 @@
       }
     ]
   },
-  "obsidian:oak_pressure_plate": {
+  "minecraft:oak_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32482,7 +32482,7 @@
       }
     ]
   },
-  "obsidian:spruce_pressure_plate": {
+  "minecraft:spruce_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32505,7 +32505,7 @@
       }
     ]
   },
-  "obsidian:birch_pressure_plate": {
+  "minecraft:birch_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32528,7 +32528,7 @@
       }
     ]
   },
-  "obsidian:jungle_pressure_plate": {
+  "minecraft:jungle_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32551,7 +32551,7 @@
       }
     ]
   },
-  "obsidian:acacia_pressure_plate": {
+  "minecraft:acacia_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32574,7 +32574,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_pressure_plate": {
+  "minecraft:dark_oak_pressure_plate": {
     "properties": {
       "powered": [
         "true",
@@ -32597,7 +32597,7 @@
       }
     ]
   },
-  "obsidian:redstone_ore": {
+  "minecraft:redstone_ore": {
     "properties": {
       "lit": [
         "true",
@@ -32620,7 +32620,7 @@
       }
     ]
   },
-  "obsidian:redstone_torch": {
+  "minecraft:redstone_torch": {
     "properties": {
       "lit": [
         "true",
@@ -32643,7 +32643,7 @@
       }
     ]
   },
-  "obsidian:redstone_wall_torch": {
+  "minecraft:redstone_wall_torch": {
     "properties": {
       "facing": [
         "north",
@@ -32716,7 +32716,7 @@
       }
     ]
   },
-  "obsidian:stone_button": {
+  "minecraft:stone_button": {
     "properties": {
       "face": [
         "floor",
@@ -32930,7 +32930,7 @@
       }
     ]
   },
-  "obsidian:snow": {
+  "minecraft:snow": {
     "properties": {
       "layers": [
         "1",
@@ -32995,7 +32995,7 @@
       }
     ]
   },
-  "obsidian:ice": {
+  "minecraft:ice": {
     "states": [
       {
         "id": 3424,
@@ -33003,7 +33003,7 @@
       }
     ]
   },
-  "obsidian:snow_block": {
+  "minecraft:snow_block": {
     "states": [
       {
         "id": 3425,
@@ -33011,7 +33011,7 @@
       }
     ]
   },
-  "obsidian:cactus": {
+  "minecraft:cactus": {
     "properties": {
       "age": [
         "0",
@@ -33132,7 +33132,7 @@
       }
     ]
   },
-  "obsidian:clay": {
+  "minecraft:clay": {
     "states": [
       {
         "id": 3442,
@@ -33140,7 +33140,7 @@
       }
     ]
   },
-  "obsidian:sugar_cane": {
+  "minecraft:sugar_cane": {
     "properties": {
       "age": [
         "0",
@@ -33261,7 +33261,7 @@
       }
     ]
   },
-  "obsidian:jukebox": {
+  "minecraft:jukebox": {
     "properties": {
       "has_record": [
         "true",
@@ -33284,7 +33284,7 @@
       }
     ]
   },
-  "obsidian:oak_fence": {
+  "minecraft:oak_fence": {
     "properties": {
       "east": [
         "true",
@@ -33631,7 +33631,7 @@
       }
     ]
   },
-  "obsidian:pumpkin": {
+  "minecraft:pumpkin": {
     "states": [
       {
         "id": 3493,
@@ -33639,7 +33639,7 @@
       }
     ]
   },
-  "obsidian:netherrack": {
+  "minecraft:netherrack": {
     "states": [
       {
         "id": 3494,
@@ -33647,7 +33647,7 @@
       }
     ]
   },
-  "obsidian:soul_sand": {
+  "minecraft:soul_sand": {
     "states": [
       {
         "id": 3495,
@@ -33655,7 +33655,7 @@
       }
     ]
   },
-  "obsidian:glowstone": {
+  "minecraft:glowstone": {
     "states": [
       {
         "id": 3496,
@@ -33663,7 +33663,7 @@
       }
     ]
   },
-  "obsidian:nether_portal": {
+  "minecraft:nether_portal": {
     "properties": {
       "axis": [
         "x",
@@ -33686,7 +33686,7 @@
       }
     ]
   },
-  "obsidian:carved_pumpkin": {
+  "minecraft:carved_pumpkin": {
     "properties": {
       "facing": [
         "north",
@@ -33723,7 +33723,7 @@
       }
     ]
   },
-  "obsidian:jack_o_lantern": {
+  "minecraft:jack_o_lantern": {
     "properties": {
       "facing": [
         "north",
@@ -33760,7 +33760,7 @@
       }
     ]
   },
-  "obsidian:cake": {
+  "minecraft:cake": {
     "properties": {
       "bites": [
         "0",
@@ -33818,7 +33818,7 @@
       }
     ]
   },
-  "obsidian:repeater": {
+  "minecraft:repeater": {
     "properties": {
       "delay": [
         "1",
@@ -34421,7 +34421,7 @@
       }
     ]
   },
-  "obsidian:white_stained_glass": {
+  "minecraft:white_stained_glass": {
     "states": [
       {
         "id": 3578,
@@ -34429,7 +34429,7 @@
       }
     ]
   },
-  "obsidian:orange_stained_glass": {
+  "minecraft:orange_stained_glass": {
     "states": [
       {
         "id": 3579,
@@ -34437,7 +34437,7 @@
       }
     ]
   },
-  "obsidian:magenta_stained_glass": {
+  "minecraft:magenta_stained_glass": {
     "states": [
       {
         "id": 3580,
@@ -34445,7 +34445,7 @@
       }
     ]
   },
-  "obsidian:light_blue_stained_glass": {
+  "minecraft:light_blue_stained_glass": {
     "states": [
       {
         "id": 3581,
@@ -34453,7 +34453,7 @@
       }
     ]
   },
-  "obsidian:yellow_stained_glass": {
+  "minecraft:yellow_stained_glass": {
     "states": [
       {
         "id": 3582,
@@ -34461,7 +34461,7 @@
       }
     ]
   },
-  "obsidian:lime_stained_glass": {
+  "minecraft:lime_stained_glass": {
     "states": [
       {
         "id": 3583,
@@ -34469,7 +34469,7 @@
       }
     ]
   },
-  "obsidian:pink_stained_glass": {
+  "minecraft:pink_stained_glass": {
     "states": [
       {
         "id": 3584,
@@ -34477,7 +34477,7 @@
       }
     ]
   },
-  "obsidian:gray_stained_glass": {
+  "minecraft:gray_stained_glass": {
     "states": [
       {
         "id": 3585,
@@ -34485,7 +34485,7 @@
       }
     ]
   },
-  "obsidian:light_gray_stained_glass": {
+  "minecraft:light_gray_stained_glass": {
     "states": [
       {
         "id": 3586,
@@ -34493,7 +34493,7 @@
       }
     ]
   },
-  "obsidian:cyan_stained_glass": {
+  "minecraft:cyan_stained_glass": {
     "states": [
       {
         "id": 3587,
@@ -34501,7 +34501,7 @@
       }
     ]
   },
-  "obsidian:purple_stained_glass": {
+  "minecraft:purple_stained_glass": {
     "states": [
       {
         "id": 3588,
@@ -34509,7 +34509,7 @@
       }
     ]
   },
-  "obsidian:blue_stained_glass": {
+  "minecraft:blue_stained_glass": {
     "states": [
       {
         "id": 3589,
@@ -34517,7 +34517,7 @@
       }
     ]
   },
-  "obsidian:brown_stained_glass": {
+  "minecraft:brown_stained_glass": {
     "states": [
       {
         "id": 3590,
@@ -34525,7 +34525,7 @@
       }
     ]
   },
-  "obsidian:green_stained_glass": {
+  "minecraft:green_stained_glass": {
     "states": [
       {
         "id": 3591,
@@ -34533,7 +34533,7 @@
       }
     ]
   },
-  "obsidian:red_stained_glass": {
+  "minecraft:red_stained_glass": {
     "states": [
       {
         "id": 3592,
@@ -34541,7 +34541,7 @@
       }
     ]
   },
-  "obsidian:black_stained_glass": {
+  "minecraft:black_stained_glass": {
     "states": [
       {
         "id": 3593,
@@ -34549,7 +34549,7 @@
       }
     ]
   },
-  "obsidian:oak_trapdoor": {
+  "minecraft:oak_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -35218,7 +35218,7 @@
       }
     ]
   },
-  "obsidian:spruce_trapdoor": {
+  "minecraft:spruce_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -35887,7 +35887,7 @@
       }
     ]
   },
-  "obsidian:birch_trapdoor": {
+  "minecraft:birch_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -36556,7 +36556,7 @@
       }
     ]
   },
-  "obsidian:jungle_trapdoor": {
+  "minecraft:jungle_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -37225,7 +37225,7 @@
       }
     ]
   },
-  "obsidian:acacia_trapdoor": {
+  "minecraft:acacia_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -37894,7 +37894,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_trapdoor": {
+  "minecraft:dark_oak_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -38563,7 +38563,7 @@
       }
     ]
   },
-  "obsidian:infested_stone": {
+  "minecraft:infested_stone": {
     "states": [
       {
         "id": 3978,
@@ -38571,7 +38571,7 @@
       }
     ]
   },
-  "obsidian:infested_cobblestone": {
+  "minecraft:infested_cobblestone": {
     "states": [
       {
         "id": 3979,
@@ -38579,7 +38579,7 @@
       }
     ]
   },
-  "obsidian:infested_stone_bricks": {
+  "minecraft:infested_stone_bricks": {
     "states": [
       {
         "id": 3980,
@@ -38587,7 +38587,7 @@
       }
     ]
   },
-  "obsidian:infested_mossy_stone_bricks": {
+  "minecraft:infested_mossy_stone_bricks": {
     "states": [
       {
         "id": 3981,
@@ -38595,7 +38595,7 @@
       }
     ]
   },
-  "obsidian:infested_cracked_stone_bricks": {
+  "minecraft:infested_cracked_stone_bricks": {
     "states": [
       {
         "id": 3982,
@@ -38603,7 +38603,7 @@
       }
     ]
   },
-  "obsidian:infested_chiseled_stone_bricks": {
+  "minecraft:infested_chiseled_stone_bricks": {
     "states": [
       {
         "id": 3983,
@@ -38611,7 +38611,7 @@
       }
     ]
   },
-  "obsidian:stone_bricks": {
+  "minecraft:stone_bricks": {
     "states": [
       {
         "id": 3984,
@@ -38619,7 +38619,7 @@
       }
     ]
   },
-  "obsidian:mossy_stone_bricks": {
+  "minecraft:mossy_stone_bricks": {
     "states": [
       {
         "id": 3985,
@@ -38627,7 +38627,7 @@
       }
     ]
   },
-  "obsidian:cracked_stone_bricks": {
+  "minecraft:cracked_stone_bricks": {
     "states": [
       {
         "id": 3986,
@@ -38635,7 +38635,7 @@
       }
     ]
   },
-  "obsidian:chiseled_stone_bricks": {
+  "minecraft:chiseled_stone_bricks": {
     "states": [
       {
         "id": 3987,
@@ -38643,7 +38643,7 @@
       }
     ]
   },
-  "obsidian:brown_mushroom_block": {
+  "minecraft:brown_mushroom_block": {
     "properties": {
       "down": [
         "true",
@@ -39378,7 +39378,7 @@
       }
     ]
   },
-  "obsidian:red_mushroom_block": {
+  "minecraft:red_mushroom_block": {
     "properties": {
       "down": [
         "true",
@@ -40113,7 +40113,7 @@
       }
     ]
   },
-  "obsidian:mushroom_stem": {
+  "minecraft:mushroom_stem": {
     "properties": {
       "down": [
         "true",
@@ -40848,7 +40848,7 @@
       }
     ]
   },
-  "obsidian:iron_bars": {
+  "minecraft:iron_bars": {
     "properties": {
       "east": [
         "true",
@@ -41195,7 +41195,7 @@
       }
     ]
   },
-  "obsidian:glass_pane": {
+  "minecraft:glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -41542,7 +41542,7 @@
       }
     ]
   },
-  "obsidian:melon": {
+  "minecraft:melon": {
     "states": [
       {
         "id": 4244,
@@ -41550,7 +41550,7 @@
       }
     ]
   },
-  "obsidian:attached_pumpkin_stem": {
+  "minecraft:attached_pumpkin_stem": {
     "properties": {
       "facing": [
         "north",
@@ -41587,7 +41587,7 @@
       }
     ]
   },
-  "obsidian:attached_melon_stem": {
+  "minecraft:attached_melon_stem": {
     "properties": {
       "facing": [
         "north",
@@ -41624,7 +41624,7 @@
       }
     ]
   },
-  "obsidian:pumpkin_stem": {
+  "minecraft:pumpkin_stem": {
     "properties": {
       "age": [
         "0",
@@ -41689,7 +41689,7 @@
       }
     ]
   },
-  "obsidian:melon_stem": {
+  "minecraft:melon_stem": {
     "properties": {
       "age": [
         "0",
@@ -41754,7 +41754,7 @@
       }
     ]
   },
-  "obsidian:vine": {
+  "minecraft:vine": {
     "properties": {
       "east": [
         "true",
@@ -42101,7 +42101,7 @@
       }
     ]
   },
-  "obsidian:oak_fence_gate": {
+  "minecraft:oak_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -42414,7 +42414,7 @@
       }
     ]
   },
-  "obsidian:brick_stairs": {
+  "minecraft:brick_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -43162,7 +43162,7 @@
       }
     ]
   },
-  "obsidian:stone_brick_stairs": {
+  "minecraft:stone_brick_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -43910,7 +43910,7 @@
       }
     ]
   },
-  "obsidian:mycelium": {
+  "minecraft:mycelium": {
     "properties": {
       "snowy": [
         "true",
@@ -43933,7 +43933,7 @@
       }
     ]
   },
-  "obsidian:lily_pad": {
+  "minecraft:lily_pad": {
     "states": [
       {
         "id": 4495,
@@ -43941,7 +43941,7 @@
       }
     ]
   },
-  "obsidian:nether_bricks": {
+  "minecraft:nether_bricks": {
     "states": [
       {
         "id": 4496,
@@ -43949,7 +43949,7 @@
       }
     ]
   },
-  "obsidian:nether_brick_fence": {
+  "minecraft:nether_brick_fence": {
     "properties": {
       "east": [
         "true",
@@ -44296,7 +44296,7 @@
       }
     ]
   },
-  "obsidian:nether_brick_stairs": {
+  "minecraft:nether_brick_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -45044,7 +45044,7 @@
       }
     ]
   },
-  "obsidian:nether_wart": {
+  "minecraft:nether_wart": {
     "properties": {
       "age": [
         "0",
@@ -45081,7 +45081,7 @@
       }
     ]
   },
-  "obsidian:enchanting_table": {
+  "minecraft:enchanting_table": {
     "states": [
       {
         "id": 4613,
@@ -45089,7 +45089,7 @@
       }
     ]
   },
-  "obsidian:brewing_stand": {
+  "minecraft:brewing_stand": {
     "properties": {
       "has_bottle_0": [
         "true",
@@ -45172,7 +45172,7 @@
       }
     ]
   },
-  "obsidian:cauldron": {
+  "minecraft:cauldron": {
     "properties": {
       "level": [
         "0",
@@ -45209,7 +45209,7 @@
       }
     ]
   },
-  "obsidian:end_portal": {
+  "minecraft:end_portal": {
     "states": [
       {
         "id": 4626,
@@ -45217,7 +45217,7 @@
       }
     ]
   },
-  "obsidian:end_portal_frame": {
+  "minecraft:end_portal_frame": {
     "properties": {
       "eye": [
         "true",
@@ -45290,7 +45290,7 @@
       }
     ]
   },
-  "obsidian:end_stone": {
+  "minecraft:end_stone": {
     "states": [
       {
         "id": 4635,
@@ -45298,7 +45298,7 @@
       }
     ]
   },
-  "obsidian:dragon_egg": {
+  "minecraft:dragon_egg": {
     "states": [
       {
         "id": 4636,
@@ -45306,7 +45306,7 @@
       }
     ]
   },
-  "obsidian:redstone_lamp": {
+  "minecraft:redstone_lamp": {
     "properties": {
       "lit": [
         "true",
@@ -45329,7 +45329,7 @@
       }
     ]
   },
-  "obsidian:cocoa": {
+  "minecraft:cocoa": {
     "properties": {
       "age": [
         "0",
@@ -45431,7 +45431,7 @@
       }
     ]
   },
-  "obsidian:sandstone_stairs": {
+  "minecraft:sandstone_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -46179,7 +46179,7 @@
       }
     ]
   },
-  "obsidian:emerald_ore": {
+  "minecraft:emerald_ore": {
     "states": [
       {
         "id": 4731,
@@ -46187,7 +46187,7 @@
       }
     ]
   },
-  "obsidian:ender_chest": {
+  "minecraft:ender_chest": {
     "properties": {
       "facing": [
         "north",
@@ -46260,7 +46260,7 @@
       }
     ]
   },
-  "obsidian:tripwire_hook": {
+  "minecraft:tripwire_hook": {
     "properties": {
       "attached": [
         "true",
@@ -46409,7 +46409,7 @@
       }
     ]
   },
-  "obsidian:tripwire": {
+  "minecraft:tripwire": {
     "properties": {
       "attached": [
         "true",
@@ -47980,7 +47980,7 @@
       }
     ]
   },
-  "obsidian:emerald_block": {
+  "minecraft:emerald_block": {
     "states": [
       {
         "id": 4884,
@@ -47988,7 +47988,7 @@
       }
     ]
   },
-  "obsidian:spruce_stairs": {
+  "minecraft:spruce_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -48736,7 +48736,7 @@
       }
     ]
   },
-  "obsidian:birch_stairs": {
+  "minecraft:birch_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -49484,7 +49484,7 @@
       }
     ]
   },
-  "obsidian:jungle_stairs": {
+  "minecraft:jungle_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -50232,7 +50232,7 @@
       }
     ]
   },
-  "obsidian:command_block": {
+  "minecraft:command_block": {
     "properties": {
       "conditional": [
         "true",
@@ -50335,7 +50335,7 @@
       }
     ]
   },
-  "obsidian:beacon": {
+  "minecraft:beacon": {
     "states": [
       {
         "id": 5137,
@@ -50343,7 +50343,7 @@
       }
     ]
   },
-  "obsidian:cobblestone_wall": {
+  "minecraft:cobblestone_wall": {
     "properties": {
       "east": [
         "true",
@@ -51078,7 +51078,7 @@
       }
     ]
   },
-  "obsidian:mossy_cobblestone_wall": {
+  "minecraft:mossy_cobblestone_wall": {
     "properties": {
       "east": [
         "true",
@@ -51813,7 +51813,7 @@
       }
     ]
   },
-  "obsidian:flower_pot": {
+  "minecraft:flower_pot": {
     "states": [
       {
         "id": 5266,
@@ -51821,7 +51821,7 @@
       }
     ]
   },
-  "obsidian:potted_oak_sapling": {
+  "minecraft:potted_oak_sapling": {
     "states": [
       {
         "id": 5267,
@@ -51829,7 +51829,7 @@
       }
     ]
   },
-  "obsidian:potted_spruce_sapling": {
+  "minecraft:potted_spruce_sapling": {
     "states": [
       {
         "id": 5268,
@@ -51837,7 +51837,7 @@
       }
     ]
   },
-  "obsidian:potted_birch_sapling": {
+  "minecraft:potted_birch_sapling": {
     "states": [
       {
         "id": 5269,
@@ -51845,7 +51845,7 @@
       }
     ]
   },
-  "obsidian:potted_jungle_sapling": {
+  "minecraft:potted_jungle_sapling": {
     "states": [
       {
         "id": 5270,
@@ -51853,7 +51853,7 @@
       }
     ]
   },
-  "obsidian:potted_acacia_sapling": {
+  "minecraft:potted_acacia_sapling": {
     "states": [
       {
         "id": 5271,
@@ -51861,7 +51861,7 @@
       }
     ]
   },
-  "obsidian:potted_dark_oak_sapling": {
+  "minecraft:potted_dark_oak_sapling": {
     "states": [
       {
         "id": 5272,
@@ -51869,7 +51869,7 @@
       }
     ]
   },
-  "obsidian:potted_fern": {
+  "minecraft:potted_fern": {
     "states": [
       {
         "id": 5273,
@@ -51877,7 +51877,7 @@
       }
     ]
   },
-  "obsidian:potted_dandelion": {
+  "minecraft:potted_dandelion": {
     "states": [
       {
         "id": 5274,
@@ -51885,7 +51885,7 @@
       }
     ]
   },
-  "obsidian:potted_poppy": {
+  "minecraft:potted_poppy": {
     "states": [
       {
         "id": 5275,
@@ -51893,7 +51893,7 @@
       }
     ]
   },
-  "obsidian:potted_blue_orchid": {
+  "minecraft:potted_blue_orchid": {
     "states": [
       {
         "id": 5276,
@@ -51901,7 +51901,7 @@
       }
     ]
   },
-  "obsidian:potted_allium": {
+  "minecraft:potted_allium": {
     "states": [
       {
         "id": 5277,
@@ -51909,7 +51909,7 @@
       }
     ]
   },
-  "obsidian:potted_azure_bluet": {
+  "minecraft:potted_azure_bluet": {
     "states": [
       {
         "id": 5278,
@@ -51917,7 +51917,7 @@
       }
     ]
   },
-  "obsidian:potted_red_tulip": {
+  "minecraft:potted_red_tulip": {
     "states": [
       {
         "id": 5279,
@@ -51925,7 +51925,7 @@
       }
     ]
   },
-  "obsidian:potted_orange_tulip": {
+  "minecraft:potted_orange_tulip": {
     "states": [
       {
         "id": 5280,
@@ -51933,7 +51933,7 @@
       }
     ]
   },
-  "obsidian:potted_white_tulip": {
+  "minecraft:potted_white_tulip": {
     "states": [
       {
         "id": 5281,
@@ -51941,7 +51941,7 @@
       }
     ]
   },
-  "obsidian:potted_pink_tulip": {
+  "minecraft:potted_pink_tulip": {
     "states": [
       {
         "id": 5282,
@@ -51949,7 +51949,7 @@
       }
     ]
   },
-  "obsidian:potted_oxeye_daisy": {
+  "minecraft:potted_oxeye_daisy": {
     "states": [
       {
         "id": 5283,
@@ -51957,7 +51957,7 @@
       }
     ]
   },
-  "obsidian:potted_red_mushroom": {
+  "minecraft:potted_red_mushroom": {
     "states": [
       {
         "id": 5284,
@@ -51965,7 +51965,7 @@
       }
     ]
   },
-  "obsidian:potted_brown_mushroom": {
+  "minecraft:potted_brown_mushroom": {
     "states": [
       {
         "id": 5285,
@@ -51973,7 +51973,7 @@
       }
     ]
   },
-  "obsidian:potted_dead_bush": {
+  "minecraft:potted_dead_bush": {
     "states": [
       {
         "id": 5286,
@@ -51981,7 +51981,7 @@
       }
     ]
   },
-  "obsidian:potted_cactus": {
+  "minecraft:potted_cactus": {
     "states": [
       {
         "id": 5287,
@@ -51989,7 +51989,7 @@
       }
     ]
   },
-  "obsidian:carrots": {
+  "minecraft:carrots": {
     "properties": {
       "age": [
         "0",
@@ -52054,7 +52054,7 @@
       }
     ]
   },
-  "obsidian:potatoes": {
+  "minecraft:potatoes": {
     "properties": {
       "age": [
         "0",
@@ -52119,7 +52119,7 @@
       }
     ]
   },
-  "obsidian:oak_button": {
+  "minecraft:oak_button": {
     "properties": {
       "face": [
         "floor",
@@ -52333,7 +52333,7 @@
       }
     ]
   },
-  "obsidian:spruce_button": {
+  "minecraft:spruce_button": {
     "properties": {
       "face": [
         "floor",
@@ -52547,7 +52547,7 @@
       }
     ]
   },
-  "obsidian:birch_button": {
+  "minecraft:birch_button": {
     "properties": {
       "face": [
         "floor",
@@ -52761,7 +52761,7 @@
       }
     ]
   },
-  "obsidian:jungle_button": {
+  "minecraft:jungle_button": {
     "properties": {
       "face": [
         "floor",
@@ -52975,7 +52975,7 @@
       }
     ]
   },
-  "obsidian:acacia_button": {
+  "minecraft:acacia_button": {
     "properties": {
       "face": [
         "floor",
@@ -53189,7 +53189,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_button": {
+  "minecraft:dark_oak_button": {
     "properties": {
       "face": [
         "floor",
@@ -53403,7 +53403,7 @@
       }
     ]
   },
-  "obsidian:skeleton_wall_skull": {
+  "minecraft:skeleton_wall_skull": {
     "properties": {
       "facing": [
         "north",
@@ -53440,7 +53440,7 @@
       }
     ]
   },
-  "obsidian:skeleton_skull": {
+  "minecraft:skeleton_skull": {
     "properties": {
       "rotation": [
         "0",
@@ -53561,7 +53561,7 @@
       }
     ]
   },
-  "obsidian:wither_skeleton_wall_skull": {
+  "minecraft:wither_skeleton_wall_skull": {
     "properties": {
       "facing": [
         "north",
@@ -53598,7 +53598,7 @@
       }
     ]
   },
-  "obsidian:wither_skeleton_skull": {
+  "minecraft:wither_skeleton_skull": {
     "properties": {
       "rotation": [
         "0",
@@ -53719,7 +53719,7 @@
       }
     ]
   },
-  "obsidian:zombie_wall_head": {
+  "minecraft:zombie_wall_head": {
     "properties": {
       "facing": [
         "north",
@@ -53756,7 +53756,7 @@
       }
     ]
   },
-  "obsidian:zombie_head": {
+  "minecraft:zombie_head": {
     "properties": {
       "rotation": [
         "0",
@@ -53877,7 +53877,7 @@
       }
     ]
   },
-  "obsidian:player_wall_head": {
+  "minecraft:player_wall_head": {
     "properties": {
       "facing": [
         "north",
@@ -53914,7 +53914,7 @@
       }
     ]
   },
-  "obsidian:player_head": {
+  "minecraft:player_head": {
     "properties": {
       "rotation": [
         "0",
@@ -54035,7 +54035,7 @@
       }
     ]
   },
-  "obsidian:creeper_wall_head": {
+  "minecraft:creeper_wall_head": {
     "properties": {
       "facing": [
         "north",
@@ -54072,7 +54072,7 @@
       }
     ]
   },
-  "obsidian:creeper_head": {
+  "minecraft:creeper_head": {
     "properties": {
       "rotation": [
         "0",
@@ -54193,7 +54193,7 @@
       }
     ]
   },
-  "obsidian:dragon_wall_head": {
+  "minecraft:dragon_wall_head": {
     "properties": {
       "facing": [
         "north",
@@ -54230,7 +54230,7 @@
       }
     ]
   },
-  "obsidian:dragon_head": {
+  "minecraft:dragon_head": {
     "properties": {
       "rotation": [
         "0",
@@ -54351,7 +54351,7 @@
       }
     ]
   },
-  "obsidian:anvil": {
+  "minecraft:anvil": {
     "properties": {
       "facing": [
         "north",
@@ -54388,7 +54388,7 @@
       }
     ]
   },
-  "obsidian:chipped_anvil": {
+  "minecraft:chipped_anvil": {
     "properties": {
       "facing": [
         "north",
@@ -54425,7 +54425,7 @@
       }
     ]
   },
-  "obsidian:damaged_anvil": {
+  "minecraft:damaged_anvil": {
     "properties": {
       "facing": [
         "north",
@@ -54462,7 +54462,7 @@
       }
     ]
   },
-  "obsidian:trapped_chest": {
+  "minecraft:trapped_chest": {
     "properties": {
       "facing": [
         "north",
@@ -54676,7 +54676,7 @@
       }
     ]
   },
-  "obsidian:light_weighted_pressure_plate": {
+  "minecraft:light_weighted_pressure_plate": {
     "properties": {
       "power": [
         "0",
@@ -54797,7 +54797,7 @@
       }
     ]
   },
-  "obsidian:heavy_weighted_pressure_plate": {
+  "minecraft:heavy_weighted_pressure_plate": {
     "properties": {
       "power": [
         "0",
@@ -54918,7 +54918,7 @@
       }
     ]
   },
-  "obsidian:comparator": {
+  "minecraft:comparator": {
     "properties": {
       "facing": [
         "north",
@@ -55067,7 +55067,7 @@
       }
     ]
   },
-  "obsidian:daylight_detector": {
+  "minecraft:daylight_detector": {
     "properties": {
       "inverted": [
         "true",
@@ -55320,7 +55320,7 @@
       }
     ]
   },
-  "obsidian:redstone_block": {
+  "minecraft:redstone_block": {
     "states": [
       {
         "id": 5684,
@@ -55328,7 +55328,7 @@
       }
     ]
   },
-  "obsidian:nether_quartz_ore": {
+  "minecraft:nether_quartz_ore": {
     "states": [
       {
         "id": 5685,
@@ -55336,7 +55336,7 @@
       }
     ]
   },
-  "obsidian:hopper": {
+  "minecraft:hopper": {
     "properties": {
       "enabled": [
         "true",
@@ -55424,7 +55424,7 @@
       }
     ]
   },
-  "obsidian:quartz_block": {
+  "minecraft:quartz_block": {
     "states": [
       {
         "id": 5696,
@@ -55432,7 +55432,7 @@
       }
     ]
   },
-  "obsidian:chiseled_quartz_block": {
+  "minecraft:chiseled_quartz_block": {
     "states": [
       {
         "id": 5697,
@@ -55440,7 +55440,7 @@
       }
     ]
   },
-  "obsidian:quartz_pillar": {
+  "minecraft:quartz_pillar": {
     "properties": {
       "axis": [
         "x",
@@ -55470,7 +55470,7 @@
       }
     ]
   },
-  "obsidian:quartz_stairs": {
+  "minecraft:quartz_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -56218,7 +56218,7 @@
       }
     ]
   },
-  "obsidian:activator_rail": {
+  "minecraft:activator_rail": {
     "properties": {
       "powered": [
         "true",
@@ -56321,7 +56321,7 @@
       }
     ]
   },
-  "obsidian:dropper": {
+  "minecraft:dropper": {
     "properties": {
       "facing": [
         "north",
@@ -56424,7 +56424,7 @@
       }
     ]
   },
-  "obsidian:white_terracotta": {
+  "minecraft:white_terracotta": {
     "states": [
       {
         "id": 5805,
@@ -56432,7 +56432,7 @@
       }
     ]
   },
-  "obsidian:orange_terracotta": {
+  "minecraft:orange_terracotta": {
     "states": [
       {
         "id": 5806,
@@ -56440,7 +56440,7 @@
       }
     ]
   },
-  "obsidian:magenta_terracotta": {
+  "minecraft:magenta_terracotta": {
     "states": [
       {
         "id": 5807,
@@ -56448,7 +56448,7 @@
       }
     ]
   },
-  "obsidian:light_blue_terracotta": {
+  "minecraft:light_blue_terracotta": {
     "states": [
       {
         "id": 5808,
@@ -56456,7 +56456,7 @@
       }
     ]
   },
-  "obsidian:yellow_terracotta": {
+  "minecraft:yellow_terracotta": {
     "states": [
       {
         "id": 5809,
@@ -56464,7 +56464,7 @@
       }
     ]
   },
-  "obsidian:lime_terracotta": {
+  "minecraft:lime_terracotta": {
     "states": [
       {
         "id": 5810,
@@ -56472,7 +56472,7 @@
       }
     ]
   },
-  "obsidian:pink_terracotta": {
+  "minecraft:pink_terracotta": {
     "states": [
       {
         "id": 5811,
@@ -56480,7 +56480,7 @@
       }
     ]
   },
-  "obsidian:gray_terracotta": {
+  "minecraft:gray_terracotta": {
     "states": [
       {
         "id": 5812,
@@ -56488,7 +56488,7 @@
       }
     ]
   },
-  "obsidian:light_gray_terracotta": {
+  "minecraft:light_gray_terracotta": {
     "states": [
       {
         "id": 5813,
@@ -56496,7 +56496,7 @@
       }
     ]
   },
-  "obsidian:cyan_terracotta": {
+  "minecraft:cyan_terracotta": {
     "states": [
       {
         "id": 5814,
@@ -56504,7 +56504,7 @@
       }
     ]
   },
-  "obsidian:purple_terracotta": {
+  "minecraft:purple_terracotta": {
     "states": [
       {
         "id": 5815,
@@ -56512,7 +56512,7 @@
       }
     ]
   },
-  "obsidian:blue_terracotta": {
+  "minecraft:blue_terracotta": {
     "states": [
       {
         "id": 5816,
@@ -56520,7 +56520,7 @@
       }
     ]
   },
-  "obsidian:brown_terracotta": {
+  "minecraft:brown_terracotta": {
     "states": [
       {
         "id": 5817,
@@ -56528,7 +56528,7 @@
       }
     ]
   },
-  "obsidian:green_terracotta": {
+  "minecraft:green_terracotta": {
     "states": [
       {
         "id": 5818,
@@ -56536,7 +56536,7 @@
       }
     ]
   },
-  "obsidian:red_terracotta": {
+  "minecraft:red_terracotta": {
     "states": [
       {
         "id": 5819,
@@ -56544,7 +56544,7 @@
       }
     ]
   },
-  "obsidian:black_terracotta": {
+  "minecraft:black_terracotta": {
     "states": [
       {
         "id": 5820,
@@ -56552,7 +56552,7 @@
       }
     ]
   },
-  "obsidian:white_stained_glass_pane": {
+  "minecraft:white_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -56899,7 +56899,7 @@
       }
     ]
   },
-  "obsidian:orange_stained_glass_pane": {
+  "minecraft:orange_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -57246,7 +57246,7 @@
       }
     ]
   },
-  "obsidian:magenta_stained_glass_pane": {
+  "minecraft:magenta_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -57593,7 +57593,7 @@
       }
     ]
   },
-  "obsidian:light_blue_stained_glass_pane": {
+  "minecraft:light_blue_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -57940,7 +57940,7 @@
       }
     ]
   },
-  "obsidian:yellow_stained_glass_pane": {
+  "minecraft:yellow_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -58287,7 +58287,7 @@
       }
     ]
   },
-  "obsidian:lime_stained_glass_pane": {
+  "minecraft:lime_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -58634,7 +58634,7 @@
       }
     ]
   },
-  "obsidian:pink_stained_glass_pane": {
+  "minecraft:pink_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -58981,7 +58981,7 @@
       }
     ]
   },
-  "obsidian:gray_stained_glass_pane": {
+  "minecraft:gray_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -59328,7 +59328,7 @@
       }
     ]
   },
-  "obsidian:light_gray_stained_glass_pane": {
+  "minecraft:light_gray_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -59675,7 +59675,7 @@
       }
     ]
   },
-  "obsidian:cyan_stained_glass_pane": {
+  "minecraft:cyan_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -60022,7 +60022,7 @@
       }
     ]
   },
-  "obsidian:purple_stained_glass_pane": {
+  "minecraft:purple_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -60369,7 +60369,7 @@
       }
     ]
   },
-  "obsidian:blue_stained_glass_pane": {
+  "minecraft:blue_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -60716,7 +60716,7 @@
       }
     ]
   },
-  "obsidian:brown_stained_glass_pane": {
+  "minecraft:brown_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -61063,7 +61063,7 @@
       }
     ]
   },
-  "obsidian:green_stained_glass_pane": {
+  "minecraft:green_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -61410,7 +61410,7 @@
       }
     ]
   },
-  "obsidian:red_stained_glass_pane": {
+  "minecraft:red_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -61757,7 +61757,7 @@
       }
     ]
   },
-  "obsidian:black_stained_glass_pane": {
+  "minecraft:black_stained_glass_pane": {
     "properties": {
       "east": [
         "true",
@@ -62104,7 +62104,7 @@
       }
     ]
   },
-  "obsidian:acacia_stairs": {
+  "minecraft:acacia_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -62852,7 +62852,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_stairs": {
+  "minecraft:dark_oak_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -63600,7 +63600,7 @@
       }
     ]
   },
-  "obsidian:slime_block": {
+  "minecraft:slime_block": {
     "states": [
       {
         "id": 6493,
@@ -63608,7 +63608,7 @@
       }
     ]
   },
-  "obsidian:barrier": {
+  "minecraft:barrier": {
     "states": [
       {
         "id": 6494,
@@ -63616,7 +63616,7 @@
       }
     ]
   },
-  "obsidian:iron_trapdoor": {
+  "minecraft:iron_trapdoor": {
     "properties": {
       "facing": [
         "north",
@@ -64285,7 +64285,7 @@
       }
     ]
   },
-  "obsidian:prismarine": {
+  "minecraft:prismarine": {
     "states": [
       {
         "id": 6559,
@@ -64293,7 +64293,7 @@
       }
     ]
   },
-  "obsidian:prismarine_bricks": {
+  "minecraft:prismarine_bricks": {
     "states": [
       {
         "id": 6560,
@@ -64301,7 +64301,7 @@
       }
     ]
   },
-  "obsidian:dark_prismarine": {
+  "minecraft:dark_prismarine": {
     "states": [
       {
         "id": 6561,
@@ -64309,7 +64309,7 @@
       }
     ]
   },
-  "obsidian:prismarine_stairs": {
+  "minecraft:prismarine_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -65057,7 +65057,7 @@
       }
     ]
   },
-  "obsidian:prismarine_brick_stairs": {
+  "minecraft:prismarine_brick_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -65805,7 +65805,7 @@
       }
     ]
   },
-  "obsidian:dark_prismarine_stairs": {
+  "minecraft:dark_prismarine_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -66553,7 +66553,7 @@
       }
     ]
   },
-  "obsidian:prismarine_slab": {
+  "minecraft:prismarine_slab": {
     "properties": {
       "type": [
         "top",
@@ -66611,7 +66611,7 @@
       }
     ]
   },
-  "obsidian:prismarine_brick_slab": {
+  "minecraft:prismarine_brick_slab": {
     "properties": {
       "type": [
         "top",
@@ -66669,7 +66669,7 @@
       }
     ]
   },
-  "obsidian:dark_prismarine_slab": {
+  "minecraft:dark_prismarine_slab": {
     "properties": {
       "type": [
         "top",
@@ -66727,7 +66727,7 @@
       }
     ]
   },
-  "obsidian:sea_lantern": {
+  "minecraft:sea_lantern": {
     "states": [
       {
         "id": 6820,
@@ -66735,7 +66735,7 @@
       }
     ]
   },
-  "obsidian:hay_block": {
+  "minecraft:hay_block": {
     "properties": {
       "axis": [
         "x",
@@ -66765,7 +66765,7 @@
       }
     ]
   },
-  "obsidian:white_carpet": {
+  "minecraft:white_carpet": {
     "states": [
       {
         "id": 6824,
@@ -66773,7 +66773,7 @@
       }
     ]
   },
-  "obsidian:orange_carpet": {
+  "minecraft:orange_carpet": {
     "states": [
       {
         "id": 6825,
@@ -66781,7 +66781,7 @@
       }
     ]
   },
-  "obsidian:magenta_carpet": {
+  "minecraft:magenta_carpet": {
     "states": [
       {
         "id": 6826,
@@ -66789,7 +66789,7 @@
       }
     ]
   },
-  "obsidian:light_blue_carpet": {
+  "minecraft:light_blue_carpet": {
     "states": [
       {
         "id": 6827,
@@ -66797,7 +66797,7 @@
       }
     ]
   },
-  "obsidian:yellow_carpet": {
+  "minecraft:yellow_carpet": {
     "states": [
       {
         "id": 6828,
@@ -66805,7 +66805,7 @@
       }
     ]
   },
-  "obsidian:lime_carpet": {
+  "minecraft:lime_carpet": {
     "states": [
       {
         "id": 6829,
@@ -66813,7 +66813,7 @@
       }
     ]
   },
-  "obsidian:pink_carpet": {
+  "minecraft:pink_carpet": {
     "states": [
       {
         "id": 6830,
@@ -66821,7 +66821,7 @@
       }
     ]
   },
-  "obsidian:gray_carpet": {
+  "minecraft:gray_carpet": {
     "states": [
       {
         "id": 6831,
@@ -66829,7 +66829,7 @@
       }
     ]
   },
-  "obsidian:light_gray_carpet": {
+  "minecraft:light_gray_carpet": {
     "states": [
       {
         "id": 6832,
@@ -66837,7 +66837,7 @@
       }
     ]
   },
-  "obsidian:cyan_carpet": {
+  "minecraft:cyan_carpet": {
     "states": [
       {
         "id": 6833,
@@ -66845,7 +66845,7 @@
       }
     ]
   },
-  "obsidian:purple_carpet": {
+  "minecraft:purple_carpet": {
     "states": [
       {
         "id": 6834,
@@ -66853,7 +66853,7 @@
       }
     ]
   },
-  "obsidian:blue_carpet": {
+  "minecraft:blue_carpet": {
     "states": [
       {
         "id": 6835,
@@ -66861,7 +66861,7 @@
       }
     ]
   },
-  "obsidian:brown_carpet": {
+  "minecraft:brown_carpet": {
     "states": [
       {
         "id": 6836,
@@ -66869,7 +66869,7 @@
       }
     ]
   },
-  "obsidian:green_carpet": {
+  "minecraft:green_carpet": {
     "states": [
       {
         "id": 6837,
@@ -66877,7 +66877,7 @@
       }
     ]
   },
-  "obsidian:red_carpet": {
+  "minecraft:red_carpet": {
     "states": [
       {
         "id": 6838,
@@ -66885,7 +66885,7 @@
       }
     ]
   },
-  "obsidian:black_carpet": {
+  "minecraft:black_carpet": {
     "states": [
       {
         "id": 6839,
@@ -66893,7 +66893,7 @@
       }
     ]
   },
-  "obsidian:terracotta": {
+  "minecraft:terracotta": {
     "states": [
       {
         "id": 6840,
@@ -66901,7 +66901,7 @@
       }
     ]
   },
-  "obsidian:coal_block": {
+  "minecraft:coal_block": {
     "states": [
       {
         "id": 6841,
@@ -66909,7 +66909,7 @@
       }
     ]
   },
-  "obsidian:packed_ice": {
+  "minecraft:packed_ice": {
     "states": [
       {
         "id": 6842,
@@ -66917,7 +66917,7 @@
       }
     ]
   },
-  "obsidian:sunflower": {
+  "minecraft:sunflower": {
     "properties": {
       "half": [
         "upper",
@@ -66940,7 +66940,7 @@
       }
     ]
   },
-  "obsidian:lilac": {
+  "minecraft:lilac": {
     "properties": {
       "half": [
         "upper",
@@ -66963,7 +66963,7 @@
       }
     ]
   },
-  "obsidian:rose_bush": {
+  "minecraft:rose_bush": {
     "properties": {
       "half": [
         "upper",
@@ -66986,7 +66986,7 @@
       }
     ]
   },
-  "obsidian:peony": {
+  "minecraft:peony": {
     "properties": {
       "half": [
         "upper",
@@ -67009,7 +67009,7 @@
       }
     ]
   },
-  "obsidian:tall_grass": {
+  "minecraft:tall_grass": {
     "properties": {
       "half": [
         "upper",
@@ -67032,7 +67032,7 @@
       }
     ]
   },
-  "obsidian:large_fern": {
+  "minecraft:large_fern": {
     "properties": {
       "half": [
         "upper",
@@ -67055,7 +67055,7 @@
       }
     ]
   },
-  "obsidian:white_banner": {
+  "minecraft:white_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67176,7 +67176,7 @@
       }
     ]
   },
-  "obsidian:orange_banner": {
+  "minecraft:orange_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67297,7 +67297,7 @@
       }
     ]
   },
-  "obsidian:magenta_banner": {
+  "minecraft:magenta_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67418,7 +67418,7 @@
       }
     ]
   },
-  "obsidian:light_blue_banner": {
+  "minecraft:light_blue_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67539,7 +67539,7 @@
       }
     ]
   },
-  "obsidian:yellow_banner": {
+  "minecraft:yellow_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67660,7 +67660,7 @@
       }
     ]
   },
-  "obsidian:lime_banner": {
+  "minecraft:lime_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67781,7 +67781,7 @@
       }
     ]
   },
-  "obsidian:pink_banner": {
+  "minecraft:pink_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -67902,7 +67902,7 @@
       }
     ]
   },
-  "obsidian:gray_banner": {
+  "minecraft:gray_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68023,7 +68023,7 @@
       }
     ]
   },
-  "obsidian:light_gray_banner": {
+  "minecraft:light_gray_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68144,7 +68144,7 @@
       }
     ]
   },
-  "obsidian:cyan_banner": {
+  "minecraft:cyan_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68265,7 +68265,7 @@
       }
     ]
   },
-  "obsidian:purple_banner": {
+  "minecraft:purple_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68386,7 +68386,7 @@
       }
     ]
   },
-  "obsidian:blue_banner": {
+  "minecraft:blue_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68507,7 +68507,7 @@
       }
     ]
   },
-  "obsidian:brown_banner": {
+  "minecraft:brown_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68628,7 +68628,7 @@
       }
     ]
   },
-  "obsidian:green_banner": {
+  "minecraft:green_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68749,7 +68749,7 @@
       }
     ]
   },
-  "obsidian:red_banner": {
+  "minecraft:red_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68870,7 +68870,7 @@
       }
     ]
   },
-  "obsidian:black_banner": {
+  "minecraft:black_banner": {
     "properties": {
       "rotation": [
         "0",
@@ -68991,7 +68991,7 @@
       }
     ]
   },
-  "obsidian:white_wall_banner": {
+  "minecraft:white_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69028,7 +69028,7 @@
       }
     ]
   },
-  "obsidian:orange_wall_banner": {
+  "minecraft:orange_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69065,7 +69065,7 @@
       }
     ]
   },
-  "obsidian:magenta_wall_banner": {
+  "minecraft:magenta_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69102,7 +69102,7 @@
       }
     ]
   },
-  "obsidian:light_blue_wall_banner": {
+  "minecraft:light_blue_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69139,7 +69139,7 @@
       }
     ]
   },
-  "obsidian:yellow_wall_banner": {
+  "minecraft:yellow_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69176,7 +69176,7 @@
       }
     ]
   },
-  "obsidian:lime_wall_banner": {
+  "minecraft:lime_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69213,7 +69213,7 @@
       }
     ]
   },
-  "obsidian:pink_wall_banner": {
+  "minecraft:pink_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69250,7 +69250,7 @@
       }
     ]
   },
-  "obsidian:gray_wall_banner": {
+  "minecraft:gray_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69287,7 +69287,7 @@
       }
     ]
   },
-  "obsidian:light_gray_wall_banner": {
+  "minecraft:light_gray_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69324,7 +69324,7 @@
       }
     ]
   },
-  "obsidian:cyan_wall_banner": {
+  "minecraft:cyan_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69361,7 +69361,7 @@
       }
     ]
   },
-  "obsidian:purple_wall_banner": {
+  "minecraft:purple_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69398,7 +69398,7 @@
       }
     ]
   },
-  "obsidian:blue_wall_banner": {
+  "minecraft:blue_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69435,7 +69435,7 @@
       }
     ]
   },
-  "obsidian:brown_wall_banner": {
+  "minecraft:brown_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69472,7 +69472,7 @@
       }
     ]
   },
-  "obsidian:green_wall_banner": {
+  "minecraft:green_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69509,7 +69509,7 @@
       }
     ]
   },
-  "obsidian:red_wall_banner": {
+  "minecraft:red_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69546,7 +69546,7 @@
       }
     ]
   },
-  "obsidian:black_wall_banner": {
+  "minecraft:black_wall_banner": {
     "properties": {
       "facing": [
         "north",
@@ -69583,7 +69583,7 @@
       }
     ]
   },
-  "obsidian:red_sandstone": {
+  "minecraft:red_sandstone": {
     "states": [
       {
         "id": 7175,
@@ -69591,7 +69591,7 @@
       }
     ]
   },
-  "obsidian:chiseled_red_sandstone": {
+  "minecraft:chiseled_red_sandstone": {
     "states": [
       {
         "id": 7176,
@@ -69599,7 +69599,7 @@
       }
     ]
   },
-  "obsidian:cut_red_sandstone": {
+  "minecraft:cut_red_sandstone": {
     "states": [
       {
         "id": 7177,
@@ -69607,7 +69607,7 @@
       }
     ]
   },
-  "obsidian:red_sandstone_stairs": {
+  "minecraft:red_sandstone_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -70355,7 +70355,7 @@
       }
     ]
   },
-  "obsidian:oak_slab": {
+  "minecraft:oak_slab": {
     "properties": {
       "type": [
         "top",
@@ -70413,7 +70413,7 @@
       }
     ]
   },
-  "obsidian:spruce_slab": {
+  "minecraft:spruce_slab": {
     "properties": {
       "type": [
         "top",
@@ -70471,7 +70471,7 @@
       }
     ]
   },
-  "obsidian:birch_slab": {
+  "minecraft:birch_slab": {
     "properties": {
       "type": [
         "top",
@@ -70529,7 +70529,7 @@
       }
     ]
   },
-  "obsidian:jungle_slab": {
+  "minecraft:jungle_slab": {
     "properties": {
       "type": [
         "top",
@@ -70587,7 +70587,7 @@
       }
     ]
   },
-  "obsidian:acacia_slab": {
+  "minecraft:acacia_slab": {
     "properties": {
       "type": [
         "top",
@@ -70645,7 +70645,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_slab": {
+  "minecraft:dark_oak_slab": {
     "properties": {
       "type": [
         "top",
@@ -70703,7 +70703,7 @@
       }
     ]
   },
-  "obsidian:stone_slab": {
+  "minecraft:stone_slab": {
     "properties": {
       "type": [
         "top",
@@ -70761,7 +70761,7 @@
       }
     ]
   },
-  "obsidian:sandstone_slab": {
+  "minecraft:sandstone_slab": {
     "properties": {
       "type": [
         "top",
@@ -70819,7 +70819,7 @@
       }
     ]
   },
-  "obsidian:petrified_oak_slab": {
+  "minecraft:petrified_oak_slab": {
     "properties": {
       "type": [
         "top",
@@ -70877,7 +70877,7 @@
       }
     ]
   },
-  "obsidian:cobblestone_slab": {
+  "minecraft:cobblestone_slab": {
     "properties": {
       "type": [
         "top",
@@ -70935,7 +70935,7 @@
       }
     ]
   },
-  "obsidian:brick_slab": {
+  "minecraft:brick_slab": {
     "properties": {
       "type": [
         "top",
@@ -70993,7 +70993,7 @@
       }
     ]
   },
-  "obsidian:stone_brick_slab": {
+  "minecraft:stone_brick_slab": {
     "properties": {
       "type": [
         "top",
@@ -71051,7 +71051,7 @@
       }
     ]
   },
-  "obsidian:nether_brick_slab": {
+  "minecraft:nether_brick_slab": {
     "properties": {
       "type": [
         "top",
@@ -71109,7 +71109,7 @@
       }
     ]
   },
-  "obsidian:quartz_slab": {
+  "minecraft:quartz_slab": {
     "properties": {
       "type": [
         "top",
@@ -71167,7 +71167,7 @@
       }
     ]
   },
-  "obsidian:red_sandstone_slab": {
+  "minecraft:red_sandstone_slab": {
     "properties": {
       "type": [
         "top",
@@ -71225,7 +71225,7 @@
       }
     ]
   },
-  "obsidian:purpur_slab": {
+  "minecraft:purpur_slab": {
     "properties": {
       "type": [
         "top",
@@ -71283,7 +71283,7 @@
       }
     ]
   },
-  "obsidian:smooth_stone": {
+  "minecraft:smooth_stone": {
     "states": [
       {
         "id": 7354,
@@ -71291,7 +71291,7 @@
       }
     ]
   },
-  "obsidian:smooth_sandstone": {
+  "minecraft:smooth_sandstone": {
     "states": [
       {
         "id": 7355,
@@ -71299,7 +71299,7 @@
       }
     ]
   },
-  "obsidian:smooth_quartz": {
+  "minecraft:smooth_quartz": {
     "states": [
       {
         "id": 7356,
@@ -71307,7 +71307,7 @@
       }
     ]
   },
-  "obsidian:smooth_red_sandstone": {
+  "minecraft:smooth_red_sandstone": {
     "states": [
       {
         "id": 7357,
@@ -71315,7 +71315,7 @@
       }
     ]
   },
-  "obsidian:spruce_fence_gate": {
+  "minecraft:spruce_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -71628,7 +71628,7 @@
       }
     ]
   },
-  "obsidian:birch_fence_gate": {
+  "minecraft:birch_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -71941,7 +71941,7 @@
       }
     ]
   },
-  "obsidian:jungle_fence_gate": {
+  "minecraft:jungle_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -72254,7 +72254,7 @@
       }
     ]
   },
-  "obsidian:acacia_fence_gate": {
+  "minecraft:acacia_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -72567,7 +72567,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_fence_gate": {
+  "minecraft:dark_oak_fence_gate": {
     "properties": {
       "facing": [
         "north",
@@ -72880,7 +72880,7 @@
       }
     ]
   },
-  "obsidian:spruce_fence": {
+  "minecraft:spruce_fence": {
     "properties": {
       "east": [
         "true",
@@ -73227,7 +73227,7 @@
       }
     ]
   },
-  "obsidian:birch_fence": {
+  "minecraft:birch_fence": {
     "properties": {
       "east": [
         "true",
@@ -73574,7 +73574,7 @@
       }
     ]
   },
-  "obsidian:jungle_fence": {
+  "minecraft:jungle_fence": {
     "properties": {
       "east": [
         "true",
@@ -73921,7 +73921,7 @@
       }
     ]
   },
-  "obsidian:acacia_fence": {
+  "minecraft:acacia_fence": {
     "properties": {
       "east": [
         "true",
@@ -74268,7 +74268,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_fence": {
+  "minecraft:dark_oak_fence": {
     "properties": {
       "east": [
         "true",
@@ -74615,7 +74615,7 @@
       }
     ]
   },
-  "obsidian:spruce_door": {
+  "minecraft:spruce_door": {
     "properties": {
       "facing": [
         "north",
@@ -75284,7 +75284,7 @@
       }
     ]
   },
-  "obsidian:birch_door": {
+  "minecraft:birch_door": {
     "properties": {
       "facing": [
         "north",
@@ -75953,7 +75953,7 @@
       }
     ]
   },
-  "obsidian:jungle_door": {
+  "minecraft:jungle_door": {
     "properties": {
       "facing": [
         "north",
@@ -76622,7 +76622,7 @@
       }
     ]
   },
-  "obsidian:acacia_door": {
+  "minecraft:acacia_door": {
     "properties": {
       "facing": [
         "north",
@@ -77291,7 +77291,7 @@
       }
     ]
   },
-  "obsidian:dark_oak_door": {
+  "minecraft:dark_oak_door": {
     "properties": {
       "facing": [
         "north",
@@ -77960,7 +77960,7 @@
       }
     ]
   },
-  "obsidian:end_rod": {
+  "minecraft:end_rod": {
     "properties": {
       "facing": [
         "north",
@@ -78011,7 +78011,7 @@
       }
     ]
   },
-  "obsidian:chorus_plant": {
+  "minecraft:chorus_plant": {
     "properties": {
       "down": [
         "true",
@@ -78746,7 +78746,7 @@
       }
     ]
   },
-  "obsidian:chorus_flower": {
+  "minecraft:chorus_flower": {
     "properties": {
       "age": [
         "0",
@@ -78797,7 +78797,7 @@
       }
     ]
   },
-  "obsidian:purpur_block": {
+  "minecraft:purpur_block": {
     "states": [
       {
         "id": 8074,
@@ -78805,7 +78805,7 @@
       }
     ]
   },
-  "obsidian:purpur_pillar": {
+  "minecraft:purpur_pillar": {
     "properties": {
       "axis": [
         "x",
@@ -78835,7 +78835,7 @@
       }
     ]
   },
-  "obsidian:purpur_stairs": {
+  "minecraft:purpur_stairs": {
     "properties": {
       "facing": [
         "north",
@@ -79583,7 +79583,7 @@
       }
     ]
   },
-  "obsidian:end_stone_bricks": {
+  "minecraft:end_stone_bricks": {
     "states": [
       {
         "id": 8158,
@@ -79591,7 +79591,7 @@
       }
     ]
   },
-  "obsidian:beetroots": {
+  "minecraft:beetroots": {
     "properties": {
       "age": [
         "0",
@@ -79628,7 +79628,7 @@
       }
     ]
   },
-  "obsidian:grass_path": {
+  "minecraft:grass_path": {
     "states": [
       {
         "id": 8163,
@@ -79636,7 +79636,7 @@
       }
     ]
   },
-  "obsidian:end_gateway": {
+  "minecraft:end_gateway": {
     "states": [
       {
         "id": 8164,
@@ -79644,7 +79644,7 @@
       }
     ]
   },
-  "obsidian:repeating_command_block": {
+  "minecraft:repeating_command_block": {
     "properties": {
       "conditional": [
         "true",
@@ -79747,7 +79747,7 @@
       }
     ]
   },
-  "obsidian:chain_command_block": {
+  "minecraft:chain_command_block": {
     "properties": {
       "conditional": [
         "true",
@@ -79850,7 +79850,7 @@
       }
     ]
   },
-  "obsidian:frosted_ice": {
+  "minecraft:frosted_ice": {
     "properties": {
       "age": [
         "0",
@@ -79887,7 +79887,7 @@
       }
     ]
   },
-  "obsidian:magma_block": {
+  "minecraft:magma_block": {
     "states": [
       {
         "id": 8193,
@@ -79895,7 +79895,7 @@
       }
     ]
   },
-  "obsidian:nether_wart_block": {
+  "minecraft:nether_wart_block": {
     "states": [
       {
         "id": 8194,
@@ -79903,7 +79903,7 @@
       }
     ]
   },
-  "obsidian:red_nether_bricks": {
+  "minecraft:red_nether_bricks": {
     "states": [
       {
         "id": 8195,
@@ -79911,7 +79911,7 @@
       }
     ]
   },
-  "obsidian:bone_block": {
+  "minecraft:bone_block": {
     "properties": {
       "axis": [
         "x",
@@ -79941,7 +79941,7 @@
       }
     ]
   },
-  "obsidian:structure_void": {
+  "minecraft:structure_void": {
     "states": [
       {
         "id": 8199,
@@ -79949,7 +79949,7 @@
       }
     ]
   },
-  "obsidian:observer": {
+  "minecraft:observer": {
     "properties": {
       "facing": [
         "north",
@@ -80052,7 +80052,7 @@
       }
     ]
   },
-  "obsidian:shulker_box": {
+  "minecraft:shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80103,7 +80103,7 @@
       }
     ]
   },
-  "obsidian:white_shulker_box": {
+  "minecraft:white_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80154,7 +80154,7 @@
       }
     ]
   },
-  "obsidian:orange_shulker_box": {
+  "minecraft:orange_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80205,7 +80205,7 @@
       }
     ]
   },
-  "obsidian:magenta_shulker_box": {
+  "minecraft:magenta_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80256,7 +80256,7 @@
       }
     ]
   },
-  "obsidian:light_blue_shulker_box": {
+  "minecraft:light_blue_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80307,7 +80307,7 @@
       }
     ]
   },
-  "obsidian:yellow_shulker_box": {
+  "minecraft:yellow_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80358,7 +80358,7 @@
       }
     ]
   },
-  "obsidian:lime_shulker_box": {
+  "minecraft:lime_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80409,7 +80409,7 @@
       }
     ]
   },
-  "obsidian:pink_shulker_box": {
+  "minecraft:pink_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80460,7 +80460,7 @@
       }
     ]
   },
-  "obsidian:gray_shulker_box": {
+  "minecraft:gray_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80511,7 +80511,7 @@
       }
     ]
   },
-  "obsidian:light_gray_shulker_box": {
+  "minecraft:light_gray_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80562,7 +80562,7 @@
       }
     ]
   },
-  "obsidian:cyan_shulker_box": {
+  "minecraft:cyan_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80613,7 +80613,7 @@
       }
     ]
   },
-  "obsidian:purple_shulker_box": {
+  "minecraft:purple_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80664,7 +80664,7 @@
       }
     ]
   },
-  "obsidian:blue_shulker_box": {
+  "minecraft:blue_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80715,7 +80715,7 @@
       }
     ]
   },
-  "obsidian:brown_shulker_box": {
+  "minecraft:brown_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80766,7 +80766,7 @@
       }
     ]
   },
-  "obsidian:green_shulker_box": {
+  "minecraft:green_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80817,7 +80817,7 @@
       }
     ]
   },
-  "obsidian:red_shulker_box": {
+  "minecraft:red_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80868,7 +80868,7 @@
       }
     ]
   },
-  "obsidian:black_shulker_box": {
+  "minecraft:black_shulker_box": {
     "properties": {
       "facing": [
         "north",
@@ -80919,7 +80919,7 @@
       }
     ]
   },
-  "obsidian:white_glazed_terracotta": {
+  "minecraft:white_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -80956,7 +80956,7 @@
       }
     ]
   },
-  "obsidian:orange_glazed_terracotta": {
+  "minecraft:orange_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -80993,7 +80993,7 @@
       }
     ]
   },
-  "obsidian:magenta_glazed_terracotta": {
+  "minecraft:magenta_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81030,7 +81030,7 @@
       }
     ]
   },
-  "obsidian:light_blue_glazed_terracotta": {
+  "minecraft:light_blue_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81067,7 +81067,7 @@
       }
     ]
   },
-  "obsidian:yellow_glazed_terracotta": {
+  "minecraft:yellow_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81104,7 +81104,7 @@
       }
     ]
   },
-  "obsidian:lime_glazed_terracotta": {
+  "minecraft:lime_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81141,7 +81141,7 @@
       }
     ]
   },
-  "obsidian:pink_glazed_terracotta": {
+  "minecraft:pink_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81178,7 +81178,7 @@
       }
     ]
   },
-  "obsidian:gray_glazed_terracotta": {
+  "minecraft:gray_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81215,7 +81215,7 @@
       }
     ]
   },
-  "obsidian:light_gray_glazed_terracotta": {
+  "minecraft:light_gray_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81252,7 +81252,7 @@
       }
     ]
   },
-  "obsidian:cyan_glazed_terracotta": {
+  "minecraft:cyan_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81289,7 +81289,7 @@
       }
     ]
   },
-  "obsidian:purple_glazed_terracotta": {
+  "minecraft:purple_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81326,7 +81326,7 @@
       }
     ]
   },
-  "obsidian:blue_glazed_terracotta": {
+  "minecraft:blue_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81363,7 +81363,7 @@
       }
     ]
   },
-  "obsidian:brown_glazed_terracotta": {
+  "minecraft:brown_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81400,7 +81400,7 @@
       }
     ]
   },
-  "obsidian:green_glazed_terracotta": {
+  "minecraft:green_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81437,7 +81437,7 @@
       }
     ]
   },
-  "obsidian:red_glazed_terracotta": {
+  "minecraft:red_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81474,7 +81474,7 @@
       }
     ]
   },
-  "obsidian:black_glazed_terracotta": {
+  "minecraft:black_glazed_terracotta": {
     "properties": {
       "facing": [
         "north",
@@ -81511,7 +81511,7 @@
       }
     ]
   },
-  "obsidian:white_concrete": {
+  "minecraft:white_concrete": {
     "states": [
       {
         "id": 8378,
@@ -81519,7 +81519,7 @@
       }
     ]
   },
-  "obsidian:orange_concrete": {
+  "minecraft:orange_concrete": {
     "states": [
       {
         "id": 8379,
@@ -81527,7 +81527,7 @@
       }
     ]
   },
-  "obsidian:magenta_concrete": {
+  "minecraft:magenta_concrete": {
     "states": [
       {
         "id": 8380,
@@ -81535,7 +81535,7 @@
       }
     ]
   },
-  "obsidian:light_blue_concrete": {
+  "minecraft:light_blue_concrete": {
     "states": [
       {
         "id": 8381,
@@ -81543,7 +81543,7 @@
       }
     ]
   },
-  "obsidian:yellow_concrete": {
+  "minecraft:yellow_concrete": {
     "states": [
       {
         "id": 8382,
@@ -81551,7 +81551,7 @@
       }
     ]
   },
-  "obsidian:lime_concrete": {
+  "minecraft:lime_concrete": {
     "states": [
       {
         "id": 8383,
@@ -81559,7 +81559,7 @@
       }
     ]
   },
-  "obsidian:pink_concrete": {
+  "minecraft:pink_concrete": {
     "states": [
       {
         "id": 8384,
@@ -81567,7 +81567,7 @@
       }
     ]
   },
-  "obsidian:gray_concrete": {
+  "minecraft:gray_concrete": {
     "states": [
       {
         "id": 8385,
@@ -81575,7 +81575,7 @@
       }
     ]
   },
-  "obsidian:light_gray_concrete": {
+  "minecraft:light_gray_concrete": {
     "states": [
       {
         "id": 8386,
@@ -81583,7 +81583,7 @@
       }
     ]
   },
-  "obsidian:cyan_concrete": {
+  "minecraft:cyan_concrete": {
     "states": [
       {
         "id": 8387,
@@ -81591,7 +81591,7 @@
       }
     ]
   },
-  "obsidian:purple_concrete": {
+  "minecraft:purple_concrete": {
     "states": [
       {
         "id": 8388,
@@ -81599,7 +81599,7 @@
       }
     ]
   },
-  "obsidian:blue_concrete": {
+  "minecraft:blue_concrete": {
     "states": [
       {
         "id": 8389,
@@ -81607,7 +81607,7 @@
       }
     ]
   },
-  "obsidian:brown_concrete": {
+  "minecraft:brown_concrete": {
     "states": [
       {
         "id": 8390,
@@ -81615,7 +81615,7 @@
       }
     ]
   },
-  "obsidian:green_concrete": {
+  "minecraft:green_concrete": {
     "states": [
       {
         "id": 8391,
@@ -81623,7 +81623,7 @@
       }
     ]
   },
-  "obsidian:red_concrete": {
+  "minecraft:red_concrete": {
     "states": [
       {
         "id": 8392,
@@ -81631,7 +81631,7 @@
       }
     ]
   },
-  "obsidian:black_concrete": {
+  "minecraft:black_concrete": {
     "states": [
       {
         "id": 8393,
@@ -81639,7 +81639,7 @@
       }
     ]
   },
-  "obsidian:white_concrete_powder": {
+  "minecraft:white_concrete_powder": {
     "states": [
       {
         "id": 8394,
@@ -81647,7 +81647,7 @@
       }
     ]
   },
-  "obsidian:orange_concrete_powder": {
+  "minecraft:orange_concrete_powder": {
     "states": [
       {
         "id": 8395,
@@ -81655,7 +81655,7 @@
       }
     ]
   },
-  "obsidian:magenta_concrete_powder": {
+  "minecraft:magenta_concrete_powder": {
     "states": [
       {
         "id": 8396,
@@ -81663,7 +81663,7 @@
       }
     ]
   },
-  "obsidian:light_blue_concrete_powder": {
+  "minecraft:light_blue_concrete_powder": {
     "states": [
       {
         "id": 8397,
@@ -81671,7 +81671,7 @@
       }
     ]
   },
-  "obsidian:yellow_concrete_powder": {
+  "minecraft:yellow_concrete_powder": {
     "states": [
       {
         "id": 8398,
@@ -81679,7 +81679,7 @@
       }
     ]
   },
-  "obsidian:lime_concrete_powder": {
+  "minecraft:lime_concrete_powder": {
     "states": [
       {
         "id": 8399,
@@ -81687,7 +81687,7 @@
       }
     ]
   },
-  "obsidian:pink_concrete_powder": {
+  "minecraft:pink_concrete_powder": {
     "states": [
       {
         "id": 8400,
@@ -81695,7 +81695,7 @@
       }
     ]
   },
-  "obsidian:gray_concrete_powder": {
+  "minecraft:gray_concrete_powder": {
     "states": [
       {
         "id": 8401,
@@ -81703,7 +81703,7 @@
       }
     ]
   },
-  "obsidian:light_gray_concrete_powder": {
+  "minecraft:light_gray_concrete_powder": {
     "states": [
       {
         "id": 8402,
@@ -81711,7 +81711,7 @@
       }
     ]
   },
-  "obsidian:cyan_concrete_powder": {
+  "minecraft:cyan_concrete_powder": {
     "states": [
       {
         "id": 8403,
@@ -81719,7 +81719,7 @@
       }
     ]
   },
-  "obsidian:purple_concrete_powder": {
+  "minecraft:purple_concrete_powder": {
     "states": [
       {
         "id": 8404,
@@ -81727,7 +81727,7 @@
       }
     ]
   },
-  "obsidian:blue_concrete_powder": {
+  "minecraft:blue_concrete_powder": {
     "states": [
       {
         "id": 8405,
@@ -81735,7 +81735,7 @@
       }
     ]
   },
-  "obsidian:brown_concrete_powder": {
+  "minecraft:brown_concrete_powder": {
     "states": [
       {
         "id": 8406,
@@ -81743,7 +81743,7 @@
       }
     ]
   },
-  "obsidian:green_concrete_powder": {
+  "minecraft:green_concrete_powder": {
     "states": [
       {
         "id": 8407,
@@ -81751,7 +81751,7 @@
       }
     ]
   },
-  "obsidian:red_concrete_powder": {
+  "minecraft:red_concrete_powder": {
     "states": [
       {
         "id": 8408,
@@ -81759,7 +81759,7 @@
       }
     ]
   },
-  "obsidian:black_concrete_powder": {
+  "minecraft:black_concrete_powder": {
     "states": [
       {
         "id": 8409,
@@ -81767,7 +81767,7 @@
       }
     ]
   },
-  "obsidian:kelp": {
+  "minecraft:kelp": {
     "properties": {
       "age": [
         "0",
@@ -81958,7 +81958,7 @@
       }
     ]
   },
-  "obsidian:kelp_plant": {
+  "minecraft:kelp_plant": {
     "states": [
       {
         "id": 8436,
@@ -81966,7 +81966,7 @@
       }
     ]
   },
-  "obsidian:dried_kelp_block": {
+  "minecraft:dried_kelp_block": {
     "states": [
       {
         "id": 8437,
@@ -81974,7 +81974,7 @@
       }
     ]
   },
-  "obsidian:turtle_egg": {
+  "minecraft:turtle_egg": {
     "properties": {
       "eggs": [
         "1",
@@ -82076,7 +82076,7 @@
       }
     ]
   },
-  "obsidian:dead_tube_coral_block": {
+  "minecraft:dead_tube_coral_block": {
     "states": [
       {
         "id": 8450,
@@ -82084,7 +82084,7 @@
       }
     ]
   },
-  "obsidian:dead_brain_coral_block": {
+  "minecraft:dead_brain_coral_block": {
     "states": [
       {
         "id": 8451,
@@ -82092,7 +82092,7 @@
       }
     ]
   },
-  "obsidian:dead_bubble_coral_block": {
+  "minecraft:dead_bubble_coral_block": {
     "states": [
       {
         "id": 8452,
@@ -82100,7 +82100,7 @@
       }
     ]
   },
-  "obsidian:dead_fire_coral_block": {
+  "minecraft:dead_fire_coral_block": {
     "states": [
       {
         "id": 8453,
@@ -82108,7 +82108,7 @@
       }
     ]
   },
-  "obsidian:dead_horn_coral_block": {
+  "minecraft:dead_horn_coral_block": {
     "states": [
       {
         "id": 8454,
@@ -82116,7 +82116,7 @@
       }
     ]
   },
-  "obsidian:tube_coral_block": {
+  "minecraft:tube_coral_block": {
     "states": [
       {
         "id": 8455,
@@ -82124,7 +82124,7 @@
       }
     ]
   },
-  "obsidian:brain_coral_block": {
+  "minecraft:brain_coral_block": {
     "states": [
       {
         "id": 8456,
@@ -82132,7 +82132,7 @@
       }
     ]
   },
-  "obsidian:bubble_coral_block": {
+  "minecraft:bubble_coral_block": {
     "states": [
       {
         "id": 8457,
@@ -82140,7 +82140,7 @@
       }
     ]
   },
-  "obsidian:fire_coral_block": {
+  "minecraft:fire_coral_block": {
     "states": [
       {
         "id": 8458,
@@ -82148,7 +82148,7 @@
       }
     ]
   },
-  "obsidian:horn_coral_block": {
+  "minecraft:horn_coral_block": {
     "states": [
       {
         "id": 8459,
@@ -82156,7 +82156,7 @@
       }
     ]
   },
-  "obsidian:dead_tube_coral": {
+  "minecraft:dead_tube_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82179,7 +82179,7 @@
       }
     ]
   },
-  "obsidian:dead_brain_coral": {
+  "minecraft:dead_brain_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82202,7 +82202,7 @@
       }
     ]
   },
-  "obsidian:dead_bubble_coral": {
+  "minecraft:dead_bubble_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82225,7 +82225,7 @@
       }
     ]
   },
-  "obsidian:dead_fire_coral": {
+  "minecraft:dead_fire_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82248,7 +82248,7 @@
       }
     ]
   },
-  "obsidian:dead_horn_coral": {
+  "minecraft:dead_horn_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82271,7 +82271,7 @@
       }
     ]
   },
-  "obsidian:tube_coral": {
+  "minecraft:tube_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82294,7 +82294,7 @@
       }
     ]
   },
-  "obsidian:brain_coral": {
+  "minecraft:brain_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82317,7 +82317,7 @@
       }
     ]
   },
-  "obsidian:bubble_coral": {
+  "minecraft:bubble_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82340,7 +82340,7 @@
       }
     ]
   },
-  "obsidian:fire_coral": {
+  "minecraft:fire_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82363,7 +82363,7 @@
       }
     ]
   },
-  "obsidian:horn_coral": {
+  "minecraft:horn_coral": {
     "properties": {
       "waterlogged": [
         "true",
@@ -82386,7 +82386,7 @@
       }
     ]
   },
-  "obsidian:dead_tube_coral_wall_fan": {
+  "minecraft:dead_tube_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82459,7 +82459,7 @@
       }
     ]
   },
-  "obsidian:dead_brain_coral_wall_fan": {
+  "minecraft:dead_brain_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82532,7 +82532,7 @@
       }
     ]
   },
-  "obsidian:dead_bubble_coral_wall_fan": {
+  "minecraft:dead_bubble_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82605,7 +82605,7 @@
       }
     ]
   },
-  "obsidian:dead_fire_coral_wall_fan": {
+  "minecraft:dead_fire_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82678,7 +82678,7 @@
       }
     ]
   },
-  "obsidian:dead_horn_coral_wall_fan": {
+  "minecraft:dead_horn_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82751,7 +82751,7 @@
       }
     ]
   },
-  "obsidian:tube_coral_wall_fan": {
+  "minecraft:tube_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82824,7 +82824,7 @@
       }
     ]
   },
-  "obsidian:brain_coral_wall_fan": {
+  "minecraft:brain_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82897,7 +82897,7 @@
       }
     ]
   },
-  "obsidian:bubble_coral_wall_fan": {
+  "minecraft:bubble_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -82970,7 +82970,7 @@
       }
     ]
   },
-  "obsidian:fire_coral_wall_fan": {
+  "minecraft:fire_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -83043,7 +83043,7 @@
       }
     ]
   },
-  "obsidian:horn_coral_wall_fan": {
+  "minecraft:horn_coral_wall_fan": {
     "properties": {
       "facing": [
         "north",
@@ -83116,7 +83116,7 @@
       }
     ]
   },
-  "obsidian:dead_tube_coral_fan": {
+  "minecraft:dead_tube_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83139,7 +83139,7 @@
       }
     ]
   },
-  "obsidian:dead_brain_coral_fan": {
+  "minecraft:dead_brain_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83162,7 +83162,7 @@
       }
     ]
   },
-  "obsidian:dead_bubble_coral_fan": {
+  "minecraft:dead_bubble_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83185,7 +83185,7 @@
       }
     ]
   },
-  "obsidian:dead_fire_coral_fan": {
+  "minecraft:dead_fire_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83208,7 +83208,7 @@
       }
     ]
   },
-  "obsidian:dead_horn_coral_fan": {
+  "minecraft:dead_horn_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83231,7 +83231,7 @@
       }
     ]
   },
-  "obsidian:tube_coral_fan": {
+  "minecraft:tube_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83254,7 +83254,7 @@
       }
     ]
   },
-  "obsidian:brain_coral_fan": {
+  "minecraft:brain_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83277,7 +83277,7 @@
       }
     ]
   },
-  "obsidian:bubble_coral_fan": {
+  "minecraft:bubble_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83300,7 +83300,7 @@
       }
     ]
   },
-  "obsidian:fire_coral_fan": {
+  "minecraft:fire_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83323,7 +83323,7 @@
       }
     ]
   },
-  "obsidian:horn_coral_fan": {
+  "minecraft:horn_coral_fan": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83346,7 +83346,7 @@
       }
     ]
   },
-  "obsidian:sea_pickle": {
+  "minecraft:sea_pickle": {
     "properties": {
       "pickles": [
         "1",
@@ -83419,7 +83419,7 @@
       }
     ]
   },
-  "obsidian:blue_ice": {
+  "minecraft:blue_ice": {
     "states": [
       {
         "id": 8588,
@@ -83427,7 +83427,7 @@
       }
     ]
   },
-  "obsidian:conduit": {
+  "minecraft:conduit": {
     "properties": {
       "waterlogged": [
         "true",
@@ -83450,7 +83450,7 @@
       }
     ]
   },
-  "obsidian:void_air": {
+  "minecraft:void_air": {
     "states": [
       {
         "id": 8591,
@@ -83458,7 +83458,7 @@
       }
     ]
   },
-  "obsidian:cave_air": {
+  "minecraft:cave_air": {
     "states": [
       {
         "id": 8592,
@@ -83466,7 +83466,7 @@
       }
     ]
   },
-  "obsidian:bubble_column": {
+  "minecraft:bubble_column": {
     "properties": {
       "drag": [
         "true",
@@ -83489,7 +83489,7 @@
       }
     ]
   },
-  "obsidian:structure_block": {
+  "minecraft:structure_block": {
     "properties": {
       "mode": [
         "save",
