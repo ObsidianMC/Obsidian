@@ -11,13 +11,11 @@ namespace Obsidian.Boss
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteVarIntAsync(Color);
-                await stream.WriteVarIntAsync(Division);
+            using var stream = new MinecraftStream();
+            await stream.WriteVarIntAsync(Color);
+            await stream.WriteVarIntAsync(Division);
 
-                return stream.ToArray();
-            }
+            return stream.ToArray();
         }
     }
 }

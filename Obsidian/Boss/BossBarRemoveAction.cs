@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.Boss
 {
@@ -6,6 +7,6 @@ namespace Obsidian.Boss
     {
         public override int Action => 1;
 
-        public override Task<byte[]> ToArrayAsync() => Task.FromResult(System.Array.Empty<byte>());
+        public override Task<byte[]> ToArrayAsync() => Task.FromResult(Array.Empty<byte>());
     }
 }

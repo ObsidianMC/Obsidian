@@ -9,16 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\spawnPlayerPacket1.bin" />
-    <None Remove="Assets\spawnPlayerPacket2.bin" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Assets\spawnPlayerPacket2.bin" />
-    <EmbeddedResource Include="Assets\spawnPlayerPacket1.bin" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
@@ -30,6 +20,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
     <ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\" />
   </ItemGroup>
 
 </Project>

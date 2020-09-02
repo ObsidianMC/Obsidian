@@ -10,12 +10,10 @@ namespace Obsidian.Boss
 
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteFloatAsync(Health);
+            using var stream = new MinecraftStream();
+            await stream.WriteFloatAsync(Health);
 
-                return stream.ToArray();
-            }
+            return stream.ToArray();
         }
     }
 }

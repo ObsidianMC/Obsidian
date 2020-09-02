@@ -8,15 +8,12 @@ namespace Obsidian.Boss
     {
         public override int Action => 3;
         public ChatMessage Title { get; set; }
-
         public override async Task<byte[]> ToArrayAsync()
         {
-            using (var stream = new MinecraftStream())
-            {
-                await stream.WriteChatAsync(Title);
+            using var stream = new MinecraftStream();
+            await stream.WriteChatAsync(Title);
 
-                return stream.ToArray();
-            }
+            return stream.ToArray();
         }
     }
 }
