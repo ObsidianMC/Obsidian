@@ -26,8 +26,6 @@ namespace Obsidian.Util.DataTypes
             return angle;
         }
 
-        public static implicit operator byte(Angle angle) => angle.Value;
-
         internal static float NormalizeDegree(float degree)
         {
             degree %= 360;

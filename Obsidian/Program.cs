@@ -4,6 +4,7 @@ using Obsidian.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -13,7 +14,7 @@ namespace Obsidian
         private static Dictionary<int,Server> Servers = new Dictionary<int, Server>();
         private static List<Task> Tasks = new List<Task>();
 
-        public static GlobalConfig Config;
+        public static GlobalConfig Config { get; private set; }
         public static Random Random = new Random();
 
 
@@ -61,6 +62,9 @@ namespace Obsidian
 
             foreach (var (key, server) in Servers)
             {
+                if (Servers.Any(x => x.Value.Port == server.Port))
+                    throw new InvalidOperationException("Servers cannot be binded to the same ports");
+
                 Tasks.Add(Task.Run(async delegate ()
                 {
                     await server.StartServer();

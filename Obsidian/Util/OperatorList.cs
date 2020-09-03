@@ -4,59 +4,61 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Obsidian.Util
 {
     public class OperatorList
     {
-        private List<Operator> _ops;
-        private readonly List<OperatorRequest> _reqs;
-        private readonly Server _server;
-        private string Path => System.IO.Path.Combine(this._server.ServerFolderPath, "ops.json");
+        private List<Operator> ops;
+        private readonly List<OperatorRequest> reqs;
+        private readonly Server server;
+        private string Path => System.IO.Path.Combine(this.server.ServerFolderPath, "ops.json");
 
-        public OperatorList(Server s)
+        public OperatorList(Server server)
         {
-            _ops = new List<Operator>();
-            _reqs = new List<OperatorRequest>();
-            _server = s;
+            this.ops = new List<Operator>();
+            this.reqs = new List<OperatorRequest>();
+            this.server = server;
         }
 
-        public void Initialize()
+        public async Task InitializeAsync()
         {
-            if (!File.Exists(Path))
+            var fi = new FileInfo(this.Path);
+            if (fi.Exists)
             {
-                using var opfile = File.CreateText(Path);
-
-                opfile.Write(JsonConvert.SerializeObject(_ops));
+                this.ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(Path));
             }
             else
             {
-                _ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(Path));
+                using var sw = fi.CreateText();
+
+                await sw.WriteAsync(JsonConvert.SerializeObject(this.ops));
             }
         }
 
         public void AddOperator(Player p)
         {
-            _ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
+            ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
 
-            _updateList();
+            updateList();
         }
 
         public bool CreateRequest(Player p)
         {
-            if (!_server.Config.AllowOperatorRequests)
+            if (!server.Config.AllowOperatorRequests)
             {
                 return false;
             }
 
-            var result = _reqs.All(r => r.Player != p);
+            var result = reqs.All(r => r.Player != p);
 
             if (result)
             {
                 var req = new OperatorRequest(p);
-                _reqs.Add(req);
+                reqs.Add(req);
 
-                _server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
+                server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
             }
 
             return result;
@@ -64,14 +66,14 @@ namespace Obsidian.Util
 
         public bool ProcessRequest(Player p, string code)
         {
-            var result = _reqs.FirstOrDefault(r => r.Player == p && r.Code == code);
+            var result = reqs.FirstOrDefault(r => r.Player == p && r.Code == code);
 
             if (result == null)
             {
                 return false;
             }
 
-            _reqs.Remove(result);
+            reqs.Remove(result);
 
             AddOperator(p);
 
@@ -80,46 +82,36 @@ namespace Obsidian.Util
 
         public void AddOperator(string username)
         {
-            _ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
-            _updateList();
+            this.ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
+            this.updateList();
         }
 
         public void RemoveOperator(Player p)
         {
-            _ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
-            _updateList();
+            this.ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
+            this.updateList();
         }
 
         public void RemoveOperator(string value)
         {
-            _ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
-            _updateList();
+            this.ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
+            this.updateList();
         }
 
-        public bool IsOperator(Player p)
+        public bool IsOperator(Player p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
+
+        private void updateList()
         {
-            return _ops.Any(x =>
-                (x.Username == p.Username || p.Uuid == x.Uuid)
-                 && x.Online == _server.Config.OnlineMode
-                 );
+            File.WriteAllText(Path, JsonConvert.SerializeObject(ops));
         }
 
-        private void _updateList()
-        {
-            File.WriteAllText(Path, JsonConvert.SerializeObject(_ops));
-        }
-
-        // we only use this in this class
         private class Operator
         {
             [JsonProperty("username")]
-            public string Username;
+            public string Username { get; set; }
 
             [JsonProperty("uuid")]
-            public Guid Uuid;
-
-            [JsonIgnore]
-            public bool Online => Uuid != null;
+            public Guid Uuid { get; set; }
         }
 
         private class OperatorRequest

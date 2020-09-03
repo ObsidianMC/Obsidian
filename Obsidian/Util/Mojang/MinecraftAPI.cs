@@ -11,7 +11,6 @@ namespace Obsidian.Util.Mojang
     {
         public static HttpClient Http = new HttpClient();
 
-
         public static async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
         {
             using (HttpResponseMessage response = await Http.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonConvert.SerializeObject(usernames), Encoding.UTF8, "application/json")))

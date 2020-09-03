@@ -30,7 +30,6 @@ namespace Obsidian.Logging
             remove { this._messageLogged.Unregister(value); }
         }
 
-
         internal AsyncLogger(string prefix, LogLevel logLevel, string filePath)
         {
             this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");

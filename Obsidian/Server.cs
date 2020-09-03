@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.Commands;
@@ -58,7 +57,7 @@ namespace Obsidian
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
-        public List<WorldGenerator> WorldGenerators { get; } = new List<WorldGenerator>();
+        public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
 
         public CommandService Commands { get; }
         public Config Config { get; }
@@ -66,16 +65,16 @@ namespace Obsidian
 
         public int TotalTicks { get; private set; }
 
-        public int EntityId { get; }
+        public int Id { get; }
         public string Version { get; }
         public int Port { get; }
 
         public World.World World { get; }
 
-        public string ServerFolderPath => Path.GetFullPath($"Server-{this.EntityId}");
+        public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
 
         /// <summary>
-        /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
+        /// Creates a new Server instance.
         /// </summary>
         /// <param name="version">Version the server is running.</param>
         public Server(Config config, string version, int serverId)
@@ -86,7 +85,7 @@ namespace Obsidian
 
             this.Port = config.Port;
             this.Version = version;
-            this.EntityId = serverId;
+            this.Id = serverId;
 
             this.tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
@@ -113,6 +112,88 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
+            Console.CancelKeyPress += this.Console_CancelKeyPress;
+        }
+
+        /// <summary>
+        /// Checks if a player is online
+        /// </summary>
+        /// <param name="username">The username you want to check for</param>
+        /// <returns>True if the player is online</returns>
+        public bool IsPlayerOnline(string username) => this.OnlinePlayers.Any(x => x.Value.Username == username);
+
+        public bool IsPlayerOnline(Guid uuid) => this.OnlinePlayers.ContainsKey(uuid);
+
+        /// <summary>
+        /// Sends a message to all online players on the server
+        /// </summary>
+        public async Task BroadcastAsync(string message, sbyte position = 0)
+        {
+            this.chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
+            await Logger.LogMessageAsync(message);
+        }
+
+        /// <summary>
+        /// Starts this server
+        /// </summary>
+        public async Task StartServer()
+        {
+            this.StartTime = DateTimeOffset.Now;
+
+            await this.Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
+
+            //Check if MPDM and OM are enabled, if so, we can't handle connections
+            if (this.Config.MulitplayerDebugMode && this.Config.OnlineMode)
+            {
+                await this.Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+                this.StopServer();
+                return;
+            }
+
+            await BlockRegistry.RegisterAllAsync();
+            await ItemRegistry.RegisterAllAsync();
+
+            await this.Logger.LogMessageAsync($"Loading properties...");
+            await this.Operators.InitializeAsync();
+            await this.RegisterDefaultAsync();
+
+            await this.Logger.LogMessageAsync("Loading plugins...");
+            await this.PluginManager.LoadPluginsAsync(this.Logger);
+
+            if (this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
+            {
+                this.WorldGenerator = value;
+            }
+            else
+            {
+                await this.Logger.LogWarningAsync($"Generator ({this.Config.Generator}) is unknown. Using default generator");
+                this.WorldGenerator = new SuperflatGenerator();
+            }
+
+            await this.Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator})");
+
+            await this.Logger.LogMessageAsync("Starting backend...");
+            await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
+
+            if (!this.Config.OnlineMode)
+                await this.Logger.LogMessageAsync($"Starting in offline mode...");
+
+            await this.Logger.LogDebugAsync($"Listening for new clients...");
+            this.tcpListener.Start();
+
+            while (!cts.IsCancellationRequested)
+            {
+                var tcp = await this.tcpListener.AcceptTcpClientAsync();
+
+                await this.Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
+
+                var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count), this);
+                this.clients.Add(clnt);
+
+                await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
+            }
+
+            await this.Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
         }
 
         internal async Task BroadcastBlockPlacementAsync(Guid senderId, PlayerBlockPlacement pbp)
@@ -129,21 +210,27 @@ namespace Obsidian
                     case BlockFace.Bottom:
                         location.Y -= 1;
                         break;
+
                     case BlockFace.Top:
                         location.Y += 1;
                         break;
+
                     case BlockFace.North:
                         location.Z -= 1;
                         break;
+
                     case BlockFace.South:
                         location.Z += 1;
                         break;
+
                     case BlockFace.West:
                         location.X -= 1;
                         break;
+
                     case BlockFace.East:
                         location.X += 1;
                         break;
+
                     default:
                         break;
                 }
@@ -167,7 +254,6 @@ namespace Obsidian
             IResult result = await Commands.ExecuteAsync(output, context);
             if (!result.IsSuccessful)
                 await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
-
         }
 
         internal async Task BroadcastPacketAsync(Packet packet, params Player[] excluded)
@@ -177,91 +263,11 @@ namespace Obsidian
         }
 
         /// <summary>
-        /// Sends a message to all online players on the server
-        /// </summary>
-        public async Task BroadcastAsync(string message, sbyte position = 0)
-        {
-            this.chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
-            await Logger.LogMessageAsync(message);
-        }
-
-        /// <summary>
-        /// Starts this server
-        /// </summary>
-        public async Task StartServer()
-        {
-            Console.CancelKeyPress += this.Console_CancelKeyPress;
-            await this.Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {EntityId}");
-
-            //Why?????
-            //Check if MPDM and OM are enabled, if so, we can't handle connections 
-            if (this.Config.MulitplayerDebugMode && this.Config.OnlineMode)
-            {
-                await this.Logger.LogErrorAsync("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-                this.StopServer();
-                return;
-            }
-
-            await this.Logger.LogDebugAsync("Registering blocks..");
-            await BlockRegistry.RegisterAllAsync();
-            await ItemRegistry.RegisterAllAsync();
-
-            await this.Logger.LogMessageAsync($"Loading operator list...");
-            this.Operators.Initialize();
-
-            await this.Logger.LogMessageAsync("Registering default entities");
-            await this.RegisterDefaultAsync();
-
-            await this.Logger.LogMessageAsync($"Loading and Initializing plugins...");
-            await this.PluginManager.LoadPluginsAsync(this.Logger);
-
-            if (this.WorldGenerators.FirstOrDefault(g => g.Id == this.Config.Generator) is WorldGenerator worldGenerator)
-            {
-                this.WorldGenerator = worldGenerator;
-            }
-            else
-            {
-                await this.Logger.LogWarningAsync($"Generator ({this.Config.Generator}) is unknown. Using default generator");
-                this.WorldGenerator = new SuperflatGenerator();
-            }
-
-            await this.Logger.LogMessageAsync($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator})");
-
-            await this.Logger.LogDebugAsync($"Set start DateTimeOffset for measuring uptime.");
-            this.StartTime = DateTimeOffset.Now;
-
-            await this.Logger.LogMessageAsync("Starting server backend...");
-            await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
-
-            if (!this.Config.OnlineMode)
-                await this.Logger.LogMessageAsync($"Server started in offline mode..");
-
-            await this.Logger.LogDebugAsync($"Start listening for new clients");
-            this.tcpListener.Start();
-
-            while (!cts.IsCancellationRequested)
-            {
-                var tcp = await this.tcpListener.AcceptTcpClientAsync();
-
-                await this.Logger.LogDebugAsync($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
-
-                int newplayerid = Math.Max(0, this.clients.Count);
-
-                var clnt = new Client(tcp, this.Config, newplayerid, this);
-                this.clients.Add(clnt);
-
-                await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
-            }
-
-            await this.Logger.LogWarningAsync($"Cancellation has been requested. Stopping server...");
-        }
-
-        /// <summary>
         /// Registers a new entity to the server
         /// </summary>
         /// <param name="input">A compatible entry</param>
         /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
-        public async Task RegisterAsync(params object[] input)
+        internal async Task RegisterAsync(params object[] input)
         {
             foreach (object item in input)
             {
@@ -272,13 +278,13 @@ namespace Obsidian
 
                     case WorldGenerator generator:
                         await Logger.LogDebugAsync($"Registering {generator.Id}...");
-                        this.WorldGenerators.Add(generator);
+                        this.WorldGenerators.Add(generator.Id, generator);
                         break;
                 }
             }
         }
 
-        public async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
+        internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
         {
             var player = this.OnlinePlayers.Values.FirstOrDefault(x => x.Username == username);
             if (player != null)
@@ -290,29 +296,9 @@ namespace Obsidian
             }
         }
 
-        public bool IsPlayerOnline(string username) => this.clients.Any(x => x.Player != null && x.Player.Username == username);
+        internal void EnqueueDigging(PlayerDigging d) => this.diggers.Enqueue(d);
 
-        public void EnqueueDigging(PlayerDigging d) => this.diggers.Enqueue(d);
-
-        public T LoadConfig<T>(Plugin plugin)
-        {
-            var path = plugin.GetConfigPath();
-
-            if (!File.Exists(path))
-                this.SaveConfig(plugin, default(T));
-
-            var json = File.ReadAllText(path);
-            return JsonConvert.DeserializeObject<T>(json);
-        }
-
-        public void SaveConfig(Plugin plugin, object config)
-        {
-            var path = plugin.GetConfigPath();
-            var json = JsonConvert.SerializeObject(config);
-            File.WriteAllText(path, json);
-        }
-
-        public void StopServer()
+        internal void StopServer()
         {
             this.WorldGenerators.Clear(); //Clean up for memory and next boot
             this.cts.Cancel();
@@ -320,7 +306,7 @@ namespace Obsidian
             foreach (var client in this.clients)
                 client.Disconnect();
 
-            Console.WriteLine("Cancewlled");
+            Console.WriteLine("shutting down..");
         }
 
         private async Task ServerLoop()
@@ -355,7 +341,6 @@ namespace Obsidian
                     if (this.chatmessages.TryPeek(out QueueChat msg))
                         await player.SendMessageAsync(msg.Message, msg.Position);
 
-
                     if (this.diggers.TryPeek(out PlayerDigging d))
                     {
                         var b = new BlockChange(d.Location, BlockRegistry.GetBlock(Materials.Air).Id);
@@ -388,34 +373,7 @@ namespace Obsidian
             await this.RegisterAsync(new TestBlocksGenerator());
         }
 
-        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
-            Console.WriteLine("shutting down..");
-            this.StopServer();
-        }
-
-        #region events
-        private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
-        {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.WhoLeft))
-                await other.client.RemovePlayerFromListAsync(e.WhoLeft);
-
-            await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
-        }
-
-        private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
-        {
-            await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
-            foreach (var (_, other) in this.OnlinePlayers)
-            {
-                await other.client.AddPlayerToListAsync(e.Joined);
-            }
-
-            await this.SendSpawnPlayerAsync(e.Joined);
-        }
-
-        public async Task SendSpawnPlayerAsync(Player except)
+        private async Task SendSpawnPlayerAsync(Player except)
         {
             await this.Logger.LogWarningAsync($"Received spawn player sending to other clients... {string.Join(", ", this.OnlinePlayers.Except(except).Select(x => x.Value.Username))}");
 
@@ -437,6 +395,33 @@ namespace Obsidian
             }
         }
 
-        #endregion
+        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
+            this.StopServer();
+        }
+
+        #region events
+
+        private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
+        {
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.WhoLeft))
+                await other.client.RemovePlayerFromListAsync(e.WhoLeft);
+
+            await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
+        }
+
+        private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
+        {
+            await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
+            foreach (var (_, other) in this.OnlinePlayers)
+            {
+                await other.client.AddPlayerToListAsync(e.Joined);
+            }
+
+            await this.SendSpawnPlayerAsync(e.Joined);
+        }
+
+        #endregion events
     }
 }

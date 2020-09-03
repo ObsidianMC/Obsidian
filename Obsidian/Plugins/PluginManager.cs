@@ -17,7 +17,7 @@ namespace Obsidian.Plugins
         
         public Server Server { get; }
         
-        private string Path => System.IO.Path.Combine(Server.ServerFolderPath, "plugins");
+        private string pluginPath => Path.Combine(Server.ServerFolderPath, "plugins");
 
         internal PluginManager(Server server)
         {
@@ -27,13 +27,13 @@ namespace Obsidian.Plugins
 
         internal async Task LoadPluginsAsync(AsyncLogger logger)
         {
-            if (!Directory.Exists(Path))
-                Directory.CreateDirectory(Path);
+            if (!Directory.Exists(this.pluginPath))
+                Directory.CreateDirectory(this.pluginPath);
 
             var discoveredPlugins = new List<Plugin>();
 
             foreach (var source in this.Sources)
-                discoveredPlugins.AddRange(await source.GetPluginsAsync(Path));
+                discoveredPlugins.AddRange(await source.GetPluginsAsync(this.pluginPath));
 
             foreach (var plugin in discoveredPlugins)
             {
@@ -42,9 +42,7 @@ namespace Obsidian.Plugins
                 var authors = string.Join(", ", plugin.Info.Authors);
                 await logger.LogMessageAsync($"Loaded plugin: {plugin.Info.Name} by {authors}");
 
-                Plugins.Add(plugin);
-
-
+                this.Plugins.Add(plugin);
             }
         }
     }

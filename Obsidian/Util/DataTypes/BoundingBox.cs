@@ -13,40 +13,31 @@ namespace Obsidian.Util.DataTypes
     public struct BoundingBox : IEquatable<BoundingBox>
     {
         public const int CornerCount = 8;
-        public Vector3 Max;
-        public Vector3 Min;
+        public Position Max;
+        public Position Min;
 
-        public BoundingBox(Vector3 min, Vector3 max)
+        public BoundingBox(Position min, Position max)
         {
-            Min = min;
-            Max = max;
-        }
-
-        public BoundingBox(BoundingBox box)
-        {
-            Min = new Vector3(box.Min);
-            Max = new Vector3(box.Max);
+            this.Min = min;
+            this.Max = max;
         }
 
         public double Height
         {
-            get { return Max.Y - Min.Y; }
+            get => Max.Y - Min.Y;
         }
 
         public double Width
         {
-            get { return Max.X - Min.X; }
+            get => Max.X - Min.X;
         }
 
         public double Depth
         {
-            get { return Max.Z - Min.Z; }
+            get => Max.Z - Min.Z;
         }
 
-        public bool Equals(BoundingBox other)
-        {
-            return (Min == other.Min) && (Max == other.Max);
-        }
+        public bool Equals(BoundingBox other) => (Min == other.Min) && (Max == other.Max);
 
         public ContainmentType Contains(BoundingBox box)
         {
@@ -70,62 +61,55 @@ namespace Obsidian.Util.DataTypes
             return ContainmentType.Intersects;
         }
 
-        public bool Contains(Vector3 vec)
+        public bool Contains(Position vec)
         {
             return Min.X <= vec.X && vec.X <= Max.X &&
                    Min.Y <= vec.Y && vec.Y <= Max.Y &&
                    Min.Z <= vec.Z && vec.Z <= Max.Z;
         }
 
-        public static BoundingBox CreateFromPoints(IEnumerable<Vector3> points)
+        public static BoundingBox CreateFromPoints(IEnumerable<Position> points)
         {
             if (points == null)
                 throw new ArgumentNullException();
 
             var empty = true;
-            var vector2 = new Vector3(float.MaxValue);
-            var vector1 = new Vector3(float.MinValue);
-            foreach (var vector3 in points)
+            var pos2 = new Position(float.MaxValue);
+            var pos1 = new Position(float.MinValue);
+
+            foreach (var Position in points)
             {
-                vector2 = Vector3.Min(vector2, vector3);
-                vector1 = Vector3.Max(vector1, vector3);
+                pos2 = Position.Min(pos2, Position);
+                pos1 = Position.Max(pos1, Position);
                 empty = false;
             }
+
             if (empty)
                 throw new ArgumentException();
 
-            return new BoundingBox(vector2, vector1);
+            return new BoundingBox(pos2, pos1);
         }
 
-        public BoundingBox OffsetBy(Vector3 offset)
-        {
-            return new BoundingBox(Min + offset, Max + offset);
-        }
+        public BoundingBox OffsetBy(Position offset) => new BoundingBox(Min + offset, Max + offset);
 
-        public Vector3[] GetCorners()
+        public Position[] GetCorners()
         {
             return new[]
             {
-                new Vector3(Min.X, Max.Y, Max.Z),
-                new Vector3(Max.X, Max.Y, Max.Z),
-                new Vector3(Max.X, Min.Y, Max.Z),
-                new Vector3(Min.X, Min.Y, Max.Z),
-                new Vector3(Min.X, Max.Y, Min.Z),
-                new Vector3(Max.X, Max.Y, Min.Z),
-                new Vector3(Max.X, Min.Y, Min.Z),
-                new Vector3(Min.X, Min.Y, Min.Z)
+                new Position(Min.X, Max.Y, Max.Z),
+                new Position(Max.X, Max.Y, Max.Z),
+                new Position(Max.X, Min.Y, Max.Z),
+                new Position(Min.X, Min.Y, Max.Z),
+                new Position(Min.X, Max.Y, Min.Z),
+                new Position(Max.X, Max.Y, Min.Z),
+                new Position(Max.X, Min.Y, Min.Z),
+                new Position(Min.X, Min.Y, Min.Z)
             };
         }
 
-        public override bool Equals(object obj)
-        {
-            return (obj is BoundingBox) && Equals((BoundingBox)obj);
-        }
+        public override bool Equals(object obj) => (obj is BoundingBox box) && this.Equals(box);
 
-        public override int GetHashCode()
-        {
-            return Min.GetHashCode() + Max.GetHashCode();
-        }
+        public override int GetHashCode() => Min.GetHashCode() + Max.GetHashCode();
 
         public bool Intersects(BoundingBox box)
         {
@@ -150,24 +134,11 @@ namespace Obsidian.Util.DataTypes
             result = false;
         }
 
-        public static BoundingBox operator +(BoundingBox a, double b)
-        {
-            return new BoundingBox(a.Min - b, a.Max + b);
-        }
+        public static BoundingBox operator +(BoundingBox a, double b) => new BoundingBox(a.Min - b, a.Max + b);
+        public static bool operator ==(BoundingBox a, BoundingBox b) => a.Equals(b);
 
-        public static bool operator ==(BoundingBox a, BoundingBox b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator !=(BoundingBox a, BoundingBox b) => !a.Equals(b);
 
-        public static bool operator !=(BoundingBox a, BoundingBox b)
-        {
-            return !a.Equals(b);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("{{Min:{0} Max:{1}}}", Min, Max);
-        }
+        public override string ToString() => $"{{Min:{Min} Max:{Max}}}";
     }
 }
