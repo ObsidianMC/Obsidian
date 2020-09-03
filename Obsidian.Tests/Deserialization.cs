@@ -213,9 +213,9 @@ namespace Obsidian.Tests
 
             var packet = PacketSerializer.FastDeserialize<PlayerPositionLook>(stream);
 
-            Assert.Equal(position.X, packet.Transform.X);
-            Assert.Equal(position.Y, packet.Transform.Y);
-            Assert.Equal(position.Z, packet.Transform.Z);
+            Assert.Equal(position.X, packet.Position.X);
+            Assert.Equal(position.Y, packet.Position.Y);
+            Assert.Equal(position.Z, packet.Position.Z);
             Assert.Equal(yaw.Degrees, packet.Pitch);
             Assert.Equal(pitch.Degrees, packet.Yaw);
             Assert.Equal(flags, packet.Flags);

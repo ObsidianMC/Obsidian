@@ -66,13 +66,13 @@ namespace Obsidian
 
         public int TotalTicks { get; private set; }
 
-        public int Id { get; }
+        public int EntityId { get; }
         public string Version { get; }
         public int Port { get; }
 
         public World.World World { get; }
 
-        public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
+        public string ServerFolderPath => Path.GetFullPath($"Server-{this.EntityId}");
 
         /// <summary>
         /// Creates a new Server instance. Spawning multiple of these could make a multi-server setup  :thinking:
@@ -86,7 +86,7 @@ namespace Obsidian
 
             this.Port = config.Port;
             this.Version = version;
-            this.Id = serverId;
+            this.EntityId = serverId;
 
             this.tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
@@ -170,63 +170,10 @@ namespace Obsidian
 
         }
 
-        internal async Task BroadcastEntityAsync(Player excluded, EntityPacket entityPacket)
+        internal async Task BroadcastPacketAsync(Packet packet, params Player[] excluded)
         {
             foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
-            {
-                await player.client.SendEntityAsync(entityPacket);
-            }
-        }
-
-        internal async Task BroadcastPlayerMove(Player excluded, PlayerPosition playerPos)
-        {
-            var pos = playerPos.Position;
-
-            short deltaX = (short)((pos.X * 32 - excluded.LastPosition.X * 32) * 128f),
-                  deltaY = (short)((pos.Y * 32 - excluded.LastPosition.Y * 32) * 128f),
-                  deltaZ = (short)((pos.Z * 32 - excluded.LastPosition.Z * 32) * 128f);
-
-            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
-            {
-                await player.client.QueuePacketAsync(new EntityRelativeMove
-                {
-                    EntityId = excluded.client.id,
-
-                    DeltaX = deltaX,
-                    DeltaY = deltaY,
-                    DeltaZ = deltaZ,
-
-                    OnGround = true
-                });
-            }
-        }
-
-        internal async Task BroadcastPlayerLookMove(Player excluded, PlayerPositionAndLook ppos)
-        {
-            var pos = ppos.Position;
-
-            short deltaX = (short)((pos.X * 32 - excluded.LastPosition.X * 32) * 128f),
-                  deltaY = (short)((pos.Y * 32 - excluded.LastPosition.Y * 32) * 128f),
-                  deltaZ = (short)((pos.Z * 32 - excluded.LastPosition.Z * 32) * 128f);
-
-
-            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
-            {
-                await player.client.QueuePacketAsync(new EntityLookRelativeMove
-                {
-                    EntityId = player.client.id,
-
-                    DeltaX = deltaX,
-                    DeltaY = deltaY,
-                    DeltaZ = deltaZ,
-
-                    Yaw = Angle.FromDegrees(ppos.Yaw),
-
-                    Pitch = Angle.FromDegrees(ppos.Pitch),
-
-                    OnGround = ppos.OnGround
-                });
-            }
+                await player.client.QueuePacketAsync(packet);
         }
 
         /// <summary>
@@ -244,7 +191,7 @@ namespace Obsidian
         public async Task StartServer()
         {
             Console.CancelKeyPress += this.Console_CancelKeyPress;
-            await this.Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {Id}");
+            await this.Logger.LogMessageAsync($"Launching Obsidian Server v{Version} with ID {EntityId}");
 
             //Why?????
             //Check if MPDM and OM are enabled, if so, we can't handle connections 
@@ -451,7 +398,6 @@ namespace Obsidian
         #region events
         private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
-            //TODO same here :)
             foreach (var (_, other) in this.OnlinePlayers.Except(e.WhoLeft))
                 await other.client.RemovePlayerFromListAsync(e.WhoLeft);
 
@@ -460,7 +406,6 @@ namespace Obsidian
 
         private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
         {
-            //TODO do this from somewhere else
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
             foreach (var (_, other) in this.OnlinePlayers)
             {
@@ -478,9 +423,17 @@ namespace Obsidian
             {
                 await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
 
+                await player.client.SendEntityAsync(new EntityPacket
+                {
+                    EntityId = except.client.id
+                });
                 await player.client.SpawnPlayerAsync(except).ConfigureAwait(false);
 
-                await except.client.SpawnPlayerAsync(player).ConfigureAwait(false);//This is for now but we need to implement this properly one of these days :v
+                await except.client.SendEntityAsync(new EntityPacket
+                {
+                    EntityId = player.client.id
+                });
+                await except.client.SpawnPlayerAsync(player).ConfigureAwait(false);
             }
         }
 

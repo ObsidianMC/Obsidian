@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play
     public class PlayerPositionLook : Packet
     {
         [Field(0, true)]
-        public Position Transform { get; set; }
+        public Position Position { get; set; }
 
         [Field(1)]
         public float Pitch { get; set; }
@@ -39,7 +39,7 @@ namespace Obsidian.Net.Packets.Play
 
         public PlayerPositionLook(Position tranform, PositionFlags flags, int tpId) : base(0x32)
         {
-            this.Transform = tranform;
+            this.Position = tranform;
             this.Flags = flags;
             this.TeleportId = tpId;
         }

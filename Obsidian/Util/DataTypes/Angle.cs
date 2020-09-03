@@ -11,26 +11,31 @@ namespace Obsidian.Util.DataTypes
         public float Degrees
         {
             get => Value * 360f / 256f;
-            set => Value = (byte)(NormalizeDegree(value) * 256f / 360f);
+            set => Value = (byte)(NormalizeDegree(value) / 360f * 256f);
         }
 
         public Angle(byte value)
         {
-            //if (value < MinValue || value > MaxValue)
-            // throw new ArgumentOutOfRangeException(nameof(value), $"Argument needs to be a valid angle, provided was {value}");// -0.15000002
-
             this.Value = value;
         }
+
+        public static implicit operator Angle(float degree)
+        {
+            var angle = default(Angle);
+            angle.Degrees = degree;
+            return angle;
+        }
+
+        public static implicit operator byte(Angle angle) => angle.Value;
 
         internal static float NormalizeDegree(float degree)
         {
             degree %= 360;
             if (degree < 0)
                 degree += 360;
+
             return degree;
         }
-
-        internal static Angle FromDegrees(float value) => new Angle((byte)(NormalizeDegree(value) * 256f / 360f));
     }
 }
 

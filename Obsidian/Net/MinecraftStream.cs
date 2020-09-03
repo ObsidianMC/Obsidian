@@ -108,10 +108,7 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteUuidAsync(Guid value)
-        {
-            await this.WriteAsync(value.ToByteArray());
-        }
+        public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
@@ -119,7 +116,6 @@ namespace Obsidian.Net
         [Obsolete("Shouldn't be used anymore")]
         public async Task WriteAutoAsync(object value, bool countLength = false)
         {
-            //isn't there a better way to do this?
             switch (value)
             {
                 case Enum enumValue:

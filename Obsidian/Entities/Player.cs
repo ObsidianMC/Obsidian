@@ -97,23 +97,137 @@ namespace Obsidian.Entities
             this.client = client;
         }
 
+        private short lastX;
+        private short lastY;
+        private short lastZ;
+
+        internal async Task UpdateAsync(Position position, bool onGround)
+        {
+            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128),
+                newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128),
+                newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
+
+            var isNewLocation = newX != this.lastX || newY != this.lastY || newZ != this.lastZ;
+
+            if (isNewLocation)
+            {
+                this.lastX = newX;
+                this.lastY = newY;
+                this.lastZ = newZ;
+
+                if (Math.Abs(newX) <= short.MaxValue && Math.Abs(newY) <= short.MaxValue && Math.Abs(newZ) <= short.MaxValue)
+                {
+                    await this.client.Server.BroadcastPacketAsync(new EntityRelativeMove
+                    {
+                        EntityId = this.client.id,
+
+                        DeltaX = newX,
+                        DeltaY = newY,
+                        DeltaZ = newZ,
+
+                        OnGround = onGround
+                    }, this);
+                }
+
+                this.UpdatePosition(position, onGround);
+            }
+        }
+
+
+        internal async Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+        {
+            var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
+
+            if (isNewRotation)
+            {
+                await this.client.Server.BroadcastPacketAsync(new EntityLook
+                {
+                    EntityId = this.client.id,
+                    OnGround = onGround,
+                    Yaw = yaw,
+                    Pitch = pitch
+                });
+
+                this.UpdatePosition(yaw, pitch, onGround);
+            }
+        }
+
+        //TODO move all location and rotation properties to the LivingEntity class
+        internal async Task UpdateAsync(Position position, Angle yaw, Angle pitch, bool onGround)
+        {
+            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128),
+                 newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128),
+                 newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
+
+            var isNewLocation = newX != this.lastX || newY != this.lastY || newZ != this.lastZ;
+
+            var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
+
+            if (isNewRotation)
+                this.CopyLook();
+
+            if (isNewLocation)
+            {
+                this.lastX = newX;
+                this.lastY = newY;
+                this.lastZ = newZ;
+
+                if (Math.Abs(newX) <= short.MaxValue && Math.Abs(newY) <= short.MaxValue && Math.Abs(newZ) <= short.MaxValue)
+                {
+                    if (isNewRotation)
+                    {
+                        await this.client.Server.BroadcastPacketAsync(new EntityLookRelativeMove
+                        {
+                            EntityId = this.client.id,
+
+                            DeltaX = newX,
+                            DeltaY = newY,
+                            DeltaZ = newZ,
+
+                            Yaw = yaw,
+
+                            Pitch = pitch,
+
+                            OnGround = onGround
+                        }, this);
+                    }
+                    else
+                    {
+                        await this.client.Server.BroadcastPacketAsync(new EntityRelativeMove
+                        {
+                            EntityId = this.client.id,
+
+                            DeltaX = newX,
+                            DeltaY = newY,
+                            DeltaZ = newZ,
+
+                            OnGround = onGround
+                        }, this);
+                    }
+
+                }
+
+                this.UpdatePosition(position, yaw, pitch, onGround);
+            }
+
+
+        }
+
         public void UpdatePosition(Position pos, bool onGround = true)
         {
             this.CopyPosition();
-            this.Position.X = pos.X;
-            this.Position.Y = pos.Y;
-            this.Position.Z = pos.Z;
+            this.Position = pos;
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(Position pos, Angle pitch, Angle yaw, bool onGround = true)
+        public void UpdatePosition(Position pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
             this.Position.X = pos.X;
             this.Position.Y = pos.Y;
             this.Position.Z = pos.Z;
-            this.Pitch = pitch;
             this.Yaw = yaw;
+            this.Pitch = pitch;
             this.OnGround = onGround;
         }
 
@@ -126,30 +240,26 @@ namespace Obsidian.Entities
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(Angle pitch, Angle yaw, bool onGround = true)
+        public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyLook();
-            this.Pitch = pitch;
             this.Yaw = yaw;
+            this.Pitch = pitch;
             this.OnGround = onGround;
         }
 
-        private void CopyPosition(bool withLook = false)
+        internal void CopyPosition(bool withLook = false)
         {
-            this.LastPosition.X = this.Position.X;
-            this.LastPosition.Y = this.Position.Y;
-            this.LastPosition.Z = this.Position.Z;
+            this.LastPosition = this.Position;
 
             if (withLook)
             {
                 this.LastYaw = this.Yaw;
                 this.LastPitch = this.Pitch;
             }
-            
-            this.LastPosition = this.Position;
         }
 
-        private void CopyLook()
+        internal void CopyLook()
         {
             this.LastYaw = this.Yaw;
             this.LastPitch = this.Pitch;

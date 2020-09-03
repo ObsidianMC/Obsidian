@@ -136,7 +136,7 @@ namespace Obsidian
         internal async Task SendEntityAsync(EntityPacket packet)
         {
             await this.QueuePacketAsync(packet);
-            await this.Logger.LogDebugAsync($"Sent entity with id {packet.Id} for player {this.Player.Username}");
+            await this.Logger.LogDebugAsync($"Sent entity with id {packet.EntityId} for player {this.Player.Username}");
         }
 
         internal async Task SendDeclareCommandsAsync()

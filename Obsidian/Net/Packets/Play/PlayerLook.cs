@@ -1,18 +1,19 @@
 ﻿using Obsidian.Serializer.Attributes;
-using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PlayerLook : Packet
     {
         [Field(0)]
-        public float Yaw { get; private set; }
+        public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
+
+        private float yaw;
 
         [Field(1)]
-        public float Pitch { get; private set; }
+        public float Pitch { get; set; }
 
         [Field(2)]
-        public bool OnGround { get; private set; }
+        public bool OnGround { get; set; }
 
         public PlayerLook() : base(0x12) { }
 

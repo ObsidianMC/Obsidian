@@ -167,25 +167,20 @@ namespace Obsidian.Util
                 case 0x10:// Player Position
                     var pos = PacketSerializer.FastDeserialize<PlayerPosition>(new MinecraftStream(packet.data));
 
-                    //await server.BroadcastPlayerMove(client.Player, pos);//TODO WE CAN'T DO THIS KEK BUT FOR NOW THIS IS FINE
-
-                    client.Player.UpdatePosition(pos.Position, pos.OnGround);
+                    await client.Player.UpdateAsync(pos.Position, pos.OnGround);
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await PacketSerializer.DeserializeAsync<PlayerPositionAndLook>(packet.data);
+                    var ppos = PacketSerializer.FastDeserialize<PlayerPositionAndLook>(new MinecraftStream(packet.data));
 
-                    await server.BroadcastPlayerLookMove(client.Player, ppos);
-
-                    client.Player.UpdatePosition(ppos.Position, Angle.FromDegrees(ppos.Pitch), Angle.FromDegrees(ppos.Yaw));
+                    await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
 
                 case 0x12:
                     // Player Look
-                    var look = await PacketSerializer.DeserializeAsync<PlayerLook>(packet.data);
+                    var look = PacketSerializer.FastDeserialize<PlayerLook>(new MinecraftStream(packet.data));
 
-                    client.Player.UpdatePosition(Angle.FromDegrees(look.Pitch), Angle.FromDegrees(look.Yaw), look.OnGround);
-                    //await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
+                    //await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);// TODO this makes player fly all over the place idk why
                     break;
 
                 case 0x13:
