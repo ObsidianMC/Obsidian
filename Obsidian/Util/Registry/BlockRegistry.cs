@@ -17,7 +17,7 @@ namespace Obsidian.Util.Registry
     {
         public static Dictionary<Materials, Block> BlockStates = new Dictionary<Materials, Block>();
 
-        public static async Task RegisterAll()
+        public static async Task RegisterAllAsync()
         {
             var file = new FileInfo("Assets/blocks.json");
 

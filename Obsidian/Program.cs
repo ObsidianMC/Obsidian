@@ -67,7 +67,7 @@ namespace Obsidian
                 }));
             }
 
-            await Task.WhenAll(Tasks); //Wait until all servers are dead.
+            await Task.WhenAll(Tasks);//Wait until all servers are dead.
 
             // Do some entry stuff for server class
             Console.WriteLine("Server killed. Press any key to Return.");

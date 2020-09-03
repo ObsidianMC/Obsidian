@@ -14,7 +14,7 @@ namespace Obsidian.Util.Registry
     {
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
 
-        public static async Task RegisterAll()
+        public static async Task RegisterAllAsync()
         {
             var file = new FileInfo("Assets/items.json");
 
