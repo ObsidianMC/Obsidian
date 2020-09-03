@@ -57,9 +57,7 @@ namespace Obsidian.Serializer.Dynamic
                     // TODO: remove this once packet attributes are changed
                     if (fieldType == DataType.Position)
                     {
-                        if (field.FieldType == typeof(Transform))
-                            fieldType = DataType.Transform;
-                        else if (field.FieldType == typeof(SoundPosition))
+                        if (field.FieldType == typeof(SoundPosition))
                             fieldType = DataType.SoundPosition;
                         else if (attribute.Absolute)
                             fieldType = DataType.AbsolutePosition;
@@ -97,9 +95,7 @@ namespace Obsidian.Serializer.Dynamic
                         // TODO: remove this once packet attributes are changed
                         if (propertyType == DataType.Position)
                         {
-                            if (property.PropertyType == typeof(Transform))
-                                propertyType = DataType.Transform;
-                            else if (property.PropertyType == typeof(SoundPosition))
+                            if (property.PropertyType == typeof(SoundPosition))
                                 propertyType = DataType.SoundPosition;
                             else if (attribute.Absolute)
                                 propertyType = DataType.AbsolutePosition;

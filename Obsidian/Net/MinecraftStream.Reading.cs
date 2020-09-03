@@ -11,7 +11,7 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream
     {
-      
+
         [ReadMethod(DataType.Byte)]
         public sbyte ReadSignedByte() => (sbyte)this.ReadUnsignedByte();
 
@@ -35,7 +35,7 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Boolean)]
         public bool ReadBoolean()
         {
-            var value = this.ReadUnsignedByte();
+            var value = (int)this.ReadUnsignedByte();
             if (value == 0x00)
             {
                 return false;
@@ -46,7 +46,7 @@ namespace Obsidian.Net
             }
             else
             {
-                throw new ArgumentOutOfRangeException("Byte returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
+                throw new ArgumentOutOfRangeException($"Byte: {value} returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
             }
         }
 
@@ -312,7 +312,8 @@ namespace Obsidian.Net
         {
             var length = this.ReadVarInt();
             var result = new byte[length];
-            if (length == 0) return result;
+            if (length == 0)
+                return result;
             int n = length;
             while (true)
             {
@@ -326,7 +327,8 @@ namespace Obsidian.Net
         public async Task<byte[]> ReadUInt8ArrayAsync(int length)
         {
             var result = new byte[length];
-            if (length == 0) return result;
+            if (length == 0)
+                return result;
             int n = length;
             while (true)
             {
@@ -405,9 +407,12 @@ namespace Obsidian.Net
                 z = (long)(value << 26 >> 38);
             }
 
-            if (x >= Math.Pow(2, 25)) { x -= (long)Math.Pow(2, 26); }
-            if (y >= Math.Pow(2, 11)) { y -= (long)Math.Pow(2, 12); }
-            if (z >= Math.Pow(2, 25)) { z -= (long)Math.Pow(2, 26); }
+            if (x >= Math.Pow(2, 25))
+            { x -= (long)Math.Pow(2, 26); }
+            if (y >= Math.Pow(2, 11))
+            { y -= (long)Math.Pow(2, 12); }
+            if (z >= Math.Pow(2, 25))
+            { z -= (long)Math.Pow(2, 26); }
 
             return new Position
             {
@@ -430,38 +435,12 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod(DataType.Transform)]
-        public Transform ReadTransform()
-        {
-            return new Transform
-            {
-                X = this.ReadDouble(),
-                Y = this.ReadDouble(),
-                Z = this.ReadDouble(),
-                Pitch = new Angle(this.ReadByte()),
-                Yaw = new Angle(this.ReadByte())
-            };
-        }
-
         [ReadMethod(DataType.SoundPosition)]
-        public SoundPosition ReadSoundPosition()
-        {
-            return new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
-        }
+        public SoundPosition ReadSoundPosition() => new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
 
         [ReadMethod(DataType.Angle)]
-        public Angle ReadAngle()
-        {
-            // var value = ReadUnsignedByte();
-            var value = ReadFloat();
-            return new Angle(value / byte.MaxValue * Angle.MaxValue);
-        }
+        public Angle ReadAngle() => new Angle(this.ReadUnsignedByte());
 
-        public async Task<Angle> ReadAngleAsync()
-        {
-            // var value = await this.ReadUnsignedByteAsync();
-            var value = await this.ReadFloatAsync();
-            return new Angle(value / byte.MaxValue * Angle.MaxValue);
-        }
+        public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
     }
 }

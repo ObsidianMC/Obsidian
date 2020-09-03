@@ -170,6 +170,65 @@ namespace Obsidian
 
         }
 
+        internal async Task BroadcastEntityAsync(Player excluded, EntityPacket entityPacket)
+        {
+            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
+            {
+                await player.client.SendEntityAsync(entityPacket);
+            }
+        }
+
+        internal async Task BroadcastPlayerMove(Player excluded, PlayerPosition playerPos)
+        {
+            var pos = playerPos.Position;
+
+            short deltaX = (short)((pos.X * 32 - excluded.LastPosition.X * 32) * 128f),
+                  deltaY = (short)((pos.Y * 32 - excluded.LastPosition.Y * 32) * 128f),
+                  deltaZ = (short)((pos.Z * 32 - excluded.LastPosition.Z * 32) * 128f);
+
+            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
+            {
+                await player.client.QueuePacketAsync(new EntityRelativeMove
+                {
+                    EntityId = excluded.client.id,
+
+                    DeltaX = deltaX,
+                    DeltaY = deltaY,
+                    DeltaZ = deltaZ,
+
+                    OnGround = true
+                });
+            }
+        }
+
+        internal async Task BroadcastPlayerLookMove(Player excluded, PlayerPositionAndLook ppos)
+        {
+            var pos = ppos.Position;
+
+            short deltaX = (short)((pos.X * 32 - excluded.LastPosition.X * 32) * 128f),
+                  deltaY = (short)((pos.Y * 32 - excluded.LastPosition.Y * 32) * 128f),
+                  deltaZ = (short)((pos.Z * 32 - excluded.LastPosition.Z * 32) * 128f);
+
+
+            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
+            {
+                await player.client.QueuePacketAsync(new EntityLookRelativeMove
+                {
+                    EntityId = player.client.id,
+
+                    DeltaX = deltaX,
+                    DeltaY = deltaY,
+                    DeltaZ = deltaZ,
+
+                    Yaw = Angle.FromDegrees(ppos.Yaw),
+
+                    Pitch = Angle.FromDegrees(ppos.Pitch),
+
+                    OnGround = ppos.OnGround
+                });
+            }
+        }
+
         /// <summary>
         /// Sends a message to all online players on the server
         /// </summary>
@@ -197,8 +256,8 @@ namespace Obsidian
             }
 
             await this.Logger.LogDebugAsync("Registering blocks..");
-            await BlockRegistry.RegisterAll();
-            await ItemRegistry.RegisterAll();
+            await BlockRegistry.RegisterAllAsync();
+            await ItemRegistry.RegisterAllAsync();
 
             await this.Logger.LogMessageAsync($"Loading operator list...");
             this.Operators.Initialize();
@@ -342,7 +401,7 @@ namespace Obsidian
                 {
                     if (this.Config.Baah.HasValue)
                     {
-                        var pos = new SoundPosition(player.Transform.X, player.Transform.Y, player.Transform.Z);
+                        var pos = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
@@ -393,7 +452,7 @@ namespace Obsidian
         private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
             //TODO same here :)
-            foreach (var other in this.OnlinePlayers.Values.Except(new List<Player> { e.WhoLeft }))
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.WhoLeft))
                 await other.client.RemovePlayerFromListAsync(e.WhoLeft);
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
@@ -414,18 +473,14 @@ namespace Obsidian
         public async Task SendSpawnPlayerAsync(Player except)
         {
             await this.Logger.LogWarningAsync($"Received spawn player sending to other clients... {string.Join(", ", this.OnlinePlayers.Except(except).Select(x => x.Value.Username))}");
-            var expectPacket = new EntityPacket
-            {
-                Id = except.client.id
-            };
 
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
                 await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
 
-                await player.client.SpawnPlayerAsync(except);
+                await player.client.SpawnPlayerAsync(except).ConfigureAwait(false);
 
-                await except.client.SpawnPlayerAsync(player);//This is for now but we need to implement this properly one of these days :v
+                await except.client.SpawnPlayerAsync(player).ConfigureAwait(false);//This is for now but we need to implement this properly one of these days :v
             }
         }
 

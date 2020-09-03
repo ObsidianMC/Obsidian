@@ -25,12 +25,22 @@ namespace Obsidian.Entities
 
         public Guid Uuid { get; set; }
 
-        public Transform PreviousTransform { get; set; } = new Transform();
+
+        internal Position LastPosition { get; set; } = new Position();
+
+        internal Angle LastPitch { get; set; }
+
+        internal Angle LastYaw { get; set; }
+
+
+        public Position Position { get; set; } = new Position();
+
+        public Angle Pitch { get; set; }
+
+        public Angle Yaw { get; set; }
 
 
         // Properties set by Minecraft (official)
-        public Transform Transform { get; set; }
-
         public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool OnGround { get; set; }
@@ -74,7 +84,7 @@ namespace Obsidian.Entities
         // Not sure whether these should be saved to the NBT file.
         // These could be saved under nbt tags prefixed with "obsidian_"
         // As minecraft might just ignore them.
-        public ConcurrentHashSet<string> Permissions { get; }
+        public ConcurrentHashSet<string> Permissions { get; } = new ConcurrentHashSet<string>();
 
         public string Username { get; }
 
@@ -84,54 +94,65 @@ namespace Obsidian.Entities
         {
             this.Uuid = uuid;
             this.Username = username;
-            this.Permissions = new ConcurrentHashSet<string>();
-            this.Transform = new Transform();
             this.client = client;
         }
 
-        public void UpdatePosition(Position pos, bool? onGround = null)
+        public void UpdatePosition(Position pos, bool onGround = true)
         {
-            this.CopyTransform();
-            this.Transform.X = pos.X;
-            this.Transform.Y = pos.Y;
-            this.Transform.Z = pos.Z;
-            this.OnGround = onGround ?? this.OnGround;
+            this.CopyPosition();
+            this.Position.X = pos.X;
+            this.Position.Y = pos.Y;
+            this.Position.Z = pos.Z;
+            this.OnGround = onGround;
         }
 
-        public void UpdatePosition(Transform pos, bool? onGround = null)
+        public void UpdatePosition(Position pos, Angle pitch, Angle yaw, bool onGround = true)
         {
-            this.CopyTransform();
-            this.Transform.X = pos.X;
-            this.Transform.Y = pos.Y;
-            this.Transform.Z = pos.Z;
-            this.OnGround = onGround ?? this.OnGround;
+            this.CopyPosition(true);
+            this.Position.X = pos.X;
+            this.Position.Y = pos.Y;
+            this.Position.Z = pos.Z;
+            this.Pitch = pitch;
+            this.Yaw = yaw;
+            this.OnGround = onGround;
         }
 
-        public void UpdatePosition(double x, double y, double z, bool? onGround = null)
+        public void UpdatePosition(double x, double y, double z, bool onGround = true)
         {
-            this.CopyTransform();
-            this.Transform.X = x;
-            this.Transform.Y = y;
-            this.Transform.Z = z;
-            this.OnGround = onGround ?? this.OnGround;
+            this.CopyPosition();
+            this.Position.X = x;
+            this.Position.Y = y;
+            this.Position.Z = z;
+            this.OnGround = onGround;
         }
 
-        public void UpdatePosition(float pitch, float yaw, bool? onGround = null)
+        public void UpdatePosition(Angle pitch, Angle yaw, bool onGround = true)
         {
-            this.CopyTransform();
-            this.Transform.Pitch = new Angle(pitch);
-            this.Transform.Yaw = new Angle(yaw);
-            this.OnGround = onGround ?? this.OnGround;
+            this.CopyLook();
+            this.Pitch = pitch;
+            this.Yaw = yaw;
+            this.OnGround = onGround;
         }
 
-        private void CopyTransform()
+        private void CopyPosition(bool withLook = false)
         {
-            this.PreviousTransform.X = this.Transform.X;
-            this.PreviousTransform.Y = this.Transform.Y;
-            this.PreviousTransform.Z = this.Transform.Z;
-            this.PreviousTransform.Yaw = this.Transform.Yaw;
-            this.PreviousTransform.Pitch = this.Transform.Pitch;
-            this.PreviousTransform.ToPosition = this.Transform.ToPosition;
+            this.LastPosition.X = this.Position.X;
+            this.LastPosition.Y = this.Position.Y;
+            this.LastPosition.Z = this.Position.Z;
+
+            if (withLook)
+            {
+                this.LastYaw = this.Yaw;
+                this.LastPitch = this.Pitch;
+            }
+            
+            this.LastPosition = this.Position;
+        }
+
+        private void CopyLook()
+        {
+            this.LastYaw = this.Yaw;
+            this.LastPitch = this.Pitch;
         }
 
         public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));

@@ -18,24 +18,47 @@ namespace Obsidian.Net.Packets.Play
 
     public class PlayerPositionLook : Packet
     {
-        [Field(0)]
-        public Transform Transform { get; set; }
+        [Field(0, true)]
+        public Position Transform { get; set; }
 
-        [Field(1, Type = DataType.Byte)]
+        [Field(1)]
+        public float Pitch { get; set; }
+
+        [Field(2)]
+        public float Yaw { get; set; }
+
+        [Field(3, Type = DataType.Byte)]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(4, Type = DataType.VarInt)]
         public int TeleportId { get; private set; }
 
         public PlayerPositionLook() : base(0x32) { }
 
         public PlayerPositionLook(byte[] data) : base(0x32, data) { }
 
-        public PlayerPositionLook(Transform tranform, PositionFlags flags, int tpId) : base(0x32)
+        public PlayerPositionLook(Position tranform, PositionFlags flags, int tpId) : base(0x32)
         {
             this.Transform = tranform;
             this.Flags = flags;
             this.TeleportId = tpId;
         }
+
+    }
+    public class PlayerPositionAndLook : Packet
+    {
+        [Field(0, true)]
+        public Position Position { get; set; }
+
+        [Field(1)]
+        public float Pitch { get; set; }
+
+        [Field(2)]
+        public float Yaw { get; set; }
+
+        [Field(3)]
+        public bool OnGround { get; set; }
+
+        public PlayerPositionAndLook() : base(0x11) { }
     }
 }

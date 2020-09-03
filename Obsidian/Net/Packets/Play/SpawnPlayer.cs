@@ -14,12 +14,17 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public Guid Uuid { get; set; }
 
-        [Field(2)]
-        public Transform Transform { get; set; }
+        [Field(2, true)]
+        public Position Position { get; set; }
 
         [Field(3)]
-        public byte EOF = 255;
+        public Angle Yaw { get; set; }
 
+        [Field(4)]
+        public Angle Pitch { get; set; }
+
+        [Field(5)]
+        public byte EOF = 255;
 
         public Player Player { get; set; }
 

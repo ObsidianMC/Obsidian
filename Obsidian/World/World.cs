@@ -48,11 +48,11 @@ namespace Obsidian.World
         {
             int dist = c.ClientSettings?.ViewDistance ?? 8;
 
-            int oldchunkx = this.TransformToChunk(c.Player.PreviousTransform?.X ?? 0);
-            int chunkx = this.TransformToChunk(c.Player.Transform?.X ?? 0);
+            int oldchunkx = this.TransformToChunk(c.Player.LastPosition?.X ?? 0);
+            int chunkx = this.TransformToChunk(c.Player.Position?.X ?? 0);
 
-            int oldchunkz = this.TransformToChunk(c.Player.PreviousTransform?.Z ?? 0);
-            int chunkz = this.TransformToChunk(c.Player.Transform?.Z ?? 0);
+            int oldchunkz = this.TransformToChunk(c.Player.LastPosition?.Z ?? 0);
+            int chunkz = this.TransformToChunk(c.Player.Position?.Z ?? 0);
 
             if (Math.Abs(chunkz - oldchunkz) > dist || Math.Abs(chunkx - oldchunkx) > dist)
             {

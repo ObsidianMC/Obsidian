@@ -199,23 +199,25 @@ namespace Obsidian.Tests
         {
             var pitch = new Angle(byte.MaxValue - 1);
             var yaw = new Angle(byte.MaxValue);
-            var transform = new Transform(1.0, 2.0, 3.0, pitch, yaw);
+            var position = new Position(1.0, 2.0, 3.0);
             var flags = PositionFlags.X | PositionFlags.Y_ROT;
             var teleportId = int.MaxValue;
 
             using var stream = new MinecraftStream();
-            await stream.WriteAsync(DataType.Position, null, transform);
+            await stream.WriteAsync(DataType.Position, null, position);
+            await stream.WriteFloatAsync(yaw.Degrees);
+            await stream.WriteFloatAsync(pitch.Degrees);
             await stream.WriteUnsignedByteAsync((byte)flags);
             await stream.WriteVarIntAsync(teleportId);
             stream.Position = 0;
 
             var packet = PacketSerializer.FastDeserialize<PlayerPositionLook>(stream);
 
-            Assert.Equal(transform.X, packet.Transform.X);
-            Assert.Equal(transform.Y, packet.Transform.Y);
-            Assert.Equal(transform.Z, packet.Transform.Z);
-            Assert.Equal(yaw, packet.Transform.Pitch);
-            Assert.Equal(pitch, packet.Transform.Yaw);
+            Assert.Equal(position.X, packet.Transform.X);
+            Assert.Equal(position.Y, packet.Transform.Y);
+            Assert.Equal(position.Z, packet.Transform.Z);
+            Assert.Equal(yaw.Degrees, packet.Pitch);
+            Assert.Equal(pitch.Degrees, packet.Yaw);
             Assert.Equal(flags, packet.Flags);
             Assert.Equal(teleportId, packet.TeleportId);
         }

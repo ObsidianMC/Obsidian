@@ -4,6 +4,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer;
+using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
@@ -160,27 +161,30 @@ namespace Obsidian.Util
                     break;
 
                 case 0x0F: // Player
+                    //await server.BroadcastEntityAsync(client.Player, new EntityPacket { Id = client.id });
                     break;
 
                 case 0x10:// Player Position
-                    var pos = await PacketSerializer.FastDeserializeAsync<PlayerPosition>(packet.data);
+                    var pos = PacketSerializer.FastDeserialize<PlayerPosition>(new MinecraftStream(packet.data));
+
+                    //await server.BroadcastPlayerMove(client.Player, pos);//TODO WE CAN'T DO THIS KEK BUT FOR NOW THIS IS FINE
 
                     client.Player.UpdatePosition(pos.Position, pos.OnGround);
-                    //await Logger.LogDebugAsync($"Updated position for {client.Player.Username}");
                     break;
 
                 case 0x11: // Player Position And Look (serverbound)
-                    var ppos = await PacketSerializer.FastDeserializeAsync<PlayerPositionLook>(packet.data);
+                    var ppos = await PacketSerializer.DeserializeAsync<PlayerPositionAndLook>(packet.data);
 
-                    client.Player.UpdatePosition(ppos.Transform);
-                    //await Logger.LogDebugAsyncAsync($"Updated look and position for {this.Player.Username}");
+                    await server.BroadcastPlayerLookMove(client.Player, ppos);
+
+                    client.Player.UpdatePosition(ppos.Position, Angle.FromDegrees(ppos.Pitch), Angle.FromDegrees(ppos.Yaw));
                     break;
 
                 case 0x12:
                     // Player Look
-                    var look = await PacketSerializer.FastDeserializeAsync<PlayerLook>(packet.data);
+                    var look = await PacketSerializer.DeserializeAsync<PlayerLook>(packet.data);
 
-                    client.Player.UpdatePosition(look.Pitch, look.Yaw, look.OnGround);
+                    client.Player.UpdatePosition(Angle.FromDegrees(look.Pitch), Angle.FromDegrees(look.Yaw), look.OnGround);
                     //await Logger.LogDebugAsync($"Updated look for {client.Player.Username}");
                     break;
 

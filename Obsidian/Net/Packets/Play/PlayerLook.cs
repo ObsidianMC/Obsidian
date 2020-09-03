@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play
 
         public PlayerLook(byte[] data) : base(0x12, data) { }
 
-        public PlayerLook(Angle yaw, Angle pitch, bool onground) : base(0x12)
+        public PlayerLook(float yaw, float pitch, bool onground) : base(0x12)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;

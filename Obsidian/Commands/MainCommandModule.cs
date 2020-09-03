@@ -67,21 +67,6 @@ namespace Obsidian.Commands
             //await Context.Player.SendMessageAsync(pls);
         }
 
-        [Command("spawnmob")]
-        public async Task SpawnMob()
-        {
-            await Context.Client.SendSpawnMobAsync(3, Guid.NewGuid(), 1, new Transform
-            {
-                X = 0,
-
-                Y = 105,
-
-                Z = 0
-            }, 0, new Velocity(0, 0, 0), Context.Client.Player);
-
-            await Context.Player.SendMessageAsync("Spawning mob?");
-        }
-
         [Command("forcechunkreload")]
         public async Task ForceChunkReloadAsync()
         {
@@ -90,11 +75,11 @@ namespace Obsidian.Commands
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
 
-            int oldchunkx = world.TransformToChunk(c.Player.PreviousTransform?.X ?? int.MaxValue);
-            int chunkx = world.TransformToChunk(c.Player.Transform?.X ?? 0);
+            int oldchunkx = world.TransformToChunk(c.Player.LastPosition?.X ?? int.MaxValue);
+            int chunkx = world.TransformToChunk(c.Player.Position?.X ?? 0);
 
-            int oldchunkz = world.TransformToChunk(c.Player.PreviousTransform?.Z ?? int.MaxValue);
-            int chunkz = world.TransformToChunk(c.Player.Transform?.Z ?? 0);
+            int oldchunkz = world.TransformToChunk(c.Player.LastPosition?.Z ?? int.MaxValue);
+            int chunkz = world.TransformToChunk(c.Player.Position?.Z ?? 0);
 
             await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
         }
@@ -126,7 +111,7 @@ namespace Obsidian.Commands
         public async Task TeleportAsync(Position location)
         {
             await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await Context.Client.SendPlayerLookPositionAsync(new Transform(location.X, location.Y, location.Z), PositionFlags.NONE);
+            await Context.Client.SendPlayerLookPositionAsync(new Position(location.X, location.Y, location.Z), PositionFlags.NONE);
         }
 
         [Command("op")]

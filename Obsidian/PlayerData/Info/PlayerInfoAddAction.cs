@@ -23,17 +23,15 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUuidAsync(this.Uuid);//monkaS
+            await stream.WriteUuidAsync(this.Uuid);
 
             await stream.WriteStringAsync(this.Name, 16);
 
             await stream.WriteVarIntAsync(this.Properties.Count);
 
             foreach (SkinProperties props in this.Properties)
-            {
                 await stream.WriteAsync(await props.ToArrayAsync());
-                Console.WriteLine("wrote");
-            }
+
 
             await stream.WriteVarIntAsync(this.Gamemode);
 
@@ -42,9 +40,7 @@ namespace Obsidian.PlayerData.Info
             await stream.WriteBooleanAsync(this.HasDisplayName);
 
             if (this.HasDisplayName)
-            {
                 await stream.WriteChatAsync(this.DisplayName);
-            }
         }
     }
 }

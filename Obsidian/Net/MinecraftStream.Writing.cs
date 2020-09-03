@@ -118,7 +118,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        public async Task WriteStringAsync(string value, int maxLength = 32767)
+        public async Task WriteStringAsync(string value, int maxLength = short.MaxValue)
         {
             //await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
 
@@ -132,7 +132,6 @@ namespace Obsidian.Net
             await this.WriteVarIntAsync(bytes.Length);
             await this.WriteAsync(bytes);
         }
-
         public async Task WriteVarIntAsync(int value)
         {
             //await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
@@ -152,7 +151,6 @@ namespace Obsidian.Net
             } while (v != 0);
         }
 
-
         /// <summary>
         /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
         /// </summary>
@@ -163,6 +161,7 @@ namespace Obsidian.Net
             foreach (var value in values)
                 await this.WriteLongAsync(value);
         }
+
 
         public async Task WriteLongArrayAsync(ulong[] values)
         {
@@ -192,10 +191,11 @@ namespace Obsidian.Net
             } while (v != 0);
         }
 
+
         public async Task WriteAngleAsync(Angle angle)
         {
-            await this.WriteFloatAsync(angle);
-            //await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
+            await this.WriteByteAsync((sbyte)angle.Value);
+            // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
         }
     }
 }

@@ -121,7 +121,7 @@ namespace Obsidian
             ///}).ConfigureAwait(false);
         }
 
-        internal async Task SendPlayerLookPositionAsync(Transform poslook, PositionFlags posflags, int tpid = 0)
+        internal async Task SendPlayerLookPositionAsync(Position poslook, PositionFlags posflags, int tpid = 0)
         {
             await this.QueuePacketAsync(new PlayerPositionLook(poslook, posflags, tpid));
         }
@@ -131,13 +131,6 @@ namespace Obsidian
             await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
             await this.QueuePacketAsync(b);
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
-        }
-
-        internal async Task SendSpawnMobAsync(int id, Guid uuid, int type, Transform transform, byte headPitch, Velocity velocity, Entity entity)
-        {
-            await this.QueuePacketAsync(new SpawnMob(id, uuid, type, transform, headPitch, velocity, entity));
-
-            await this.Logger.LogDebugAsync($"Spawned entity with id {id} for player {this.Player.Username}");
         }
 
         internal async Task SendEntityAsync(EntityPacket packet)
@@ -475,9 +468,9 @@ namespace Obsidian
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            this.Player.Transform = new Transform(0, 105, 0);
+            this.Player.Position = new Position(0, 105, 0);
 
-            await this.QueuePacketAsync(new PlayerPositionLook(this.Player.Transform, PositionFlags.NONE, 0));
+            await this.QueuePacketAsync(new PlayerPositionLook(this.Player.Position, PositionFlags.NONE, 0));
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
@@ -501,7 +494,7 @@ namespace Obsidian
             {
                 EntityId = who.client.id,
                 Uuid = who.Uuid,
-                Transform = who.Transform,
+                Position = who.Position,
                 Player = who
             });
         }

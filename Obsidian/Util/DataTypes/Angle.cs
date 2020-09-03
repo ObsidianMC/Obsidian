@@ -7,28 +7,30 @@ namespace Obsidian.Util.DataTypes
     /// </summary>
     public struct Angle
     {
-        public const float MinValue = 0;
-        public const float MaxValue = 360;
+        public byte Value { get; set; }
+        public float Degrees
+        {
+            get => Value * 360f / 256f;
+            set => Value = (byte)(NormalizeDegree(value) * 256f / 360f);
+        }
 
-        private float _value;
-
-        public Angle(float value)
+        public Angle(byte value)
         {
             //if (value < MinValue || value > MaxValue)
-               // throw new ArgumentOutOfRangeException(nameof(value), $"Argument needs to be a valid angle, provided was {value}");// -0.15000002
+            // throw new ArgumentOutOfRangeException(nameof(value), $"Argument needs to be a valid angle, provided was {value}");// -0.15000002
 
-            _value = value;
+            this.Value = value;
         }
 
-        public static explicit operator Angle(float degree) => new Angle(NormalizeDegree(degree));
-
-        public static implicit operator float(Angle angle) => angle._value;
-
-        private static float NormalizeDegree(float degree)
+        internal static float NormalizeDegree(float degree)
         {
             degree %= 360;
-            if (degree < 0) degree += 360;
+            if (degree < 0)
+                degree += 360;
             return degree;
         }
+
+        internal static Angle FromDegrees(float value) => new Angle((byte)(NormalizeDegree(value) * 256f / 360f));
     }
 }
+

@@ -132,15 +132,6 @@ namespace Obsidian.Net
                     await this.WriteVarIntAsync(enumValue);
                     break;
 
-                case Transform transform:
-                    await this.WriteDoubleAsync(transform.X);
-                    await this.WriteDoubleAsync(transform.Y);
-                    await this.WriteDoubleAsync(transform.Z);
-                    await this.WriteAngleAsync(new Angle(transform.Yaw));
-                    await this.WriteAngleAsync(new Angle(transform.Pitch));
-                    break;
-
-
                 case Velocity velocity:
                     await this.WriteShortAsync(velocity.X);
                     await this.WriteShortAsync(velocity.Y);
@@ -305,15 +296,6 @@ namespace Obsidian.Net
                         }
 
                         await this.WritePositionAsync(position);
-                    }
-                    else if (value is Transform transform)
-                    {
-                        await this.WriteDoubleAsync(transform.X);
-                        await this.WriteDoubleAsync(transform.Y);
-                        await this.WriteDoubleAsync(transform.Z);
-
-                        await this.WriteAngleAsync(new Angle(transform.Yaw));
-                        await this.WriteAngleAsync(new Angle(transform.Pitch));
                     }
                     else if (value is SoundPosition soundPosition)
                     {
@@ -571,8 +553,6 @@ namespace Obsidian.Net
 
                         return await this.ReadPositionAsync();
                     }
-                    else if (type == typeof(Transform))
-                        return await this.ReadTransformAsync();
                     else if (type == typeof(SoundPosition))
                         return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
 
@@ -600,17 +580,6 @@ namespace Obsidian.Net
                 default:
                     throw new NotImplementedException(nameof(type));
             }
-        }
-
-        private async Task<Transform> ReadTransformAsync()
-        {
-            var x = await this.ReadDoubleAsync();
-            var y = await this.ReadDoubleAsync();
-            var z = await this.ReadDoubleAsync();
-            var pitch = await this.ReadAngleAsync();
-            var yaw = await this.ReadAngleAsync();
-
-            return new Transform(x, y, z, pitch, yaw);
         }
 
         [Obsolete("Shouldn't be used anymore")]
@@ -676,10 +645,6 @@ namespace Obsidian.Net
                 }
 
                 return await this.ReadPositionAsync();
-            }
-            else if (type == typeof(Transform))
-            {
-                return new Transform(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadAngleAsync(), await this.ReadAngleAsync());
             }
             else if (type.BaseType != null && type.BaseType == typeof(Enum))
             {

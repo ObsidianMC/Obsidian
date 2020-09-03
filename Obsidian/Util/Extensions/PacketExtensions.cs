@@ -66,7 +66,7 @@ namespace Obsidian.Util.Extensions
                             return DataType.Chat;
                         else if (type == typeof(Angle))
                             return DataType.Angle;
-                        else if (type == typeof(Position) || type == typeof(SoundPosition) || type == typeof(Transform))
+                        else if (type == typeof(Position) || type == typeof(SoundPosition))
                             return DataType.Position;
                         else if (type == typeof(Velocity))
                             return DataType.Velocity;
