@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Logging;
 using Obsidian.Util;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -62,7 +63,7 @@ namespace Obsidian
 
             foreach (var (key, server) in Servers)
             {
-                if (Servers.Any(x => x.Value.Port == server.Port))
+                if (Servers.Count(x => x.Value.Port == server.Port) > 1)
                     throw new InvalidOperationException("Servers cannot be binded to the same ports");
 
                 Tasks.Add(Task.Run(async delegate ()

@@ -134,6 +134,28 @@ namespace Obsidian
         }
 
         /// <summary>
+        /// Registers a new entity to the server
+        /// </summary>
+        /// <param name="input">A compatible entry</param>
+        /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
+        public async Task RegisterAsync(params object[] input)
+        {
+            foreach (object item in input)
+            {
+                switch (item)
+                {
+                    default:
+                        throw new Exception($"Input ({item.GetType()}) can't be handled by RegisterAsync.");
+
+                    case WorldGenerator generator:
+                        await Logger.LogDebugAsync($"Registering {generator.Id}...");
+                        this.WorldGenerators.Add(generator.Id, generator);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
         /// Starts this server
         /// </summary>
         public async Task StartServer()
@@ -260,28 +282,6 @@ namespace Obsidian
         {
             foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
                 await player.client.QueuePacketAsync(packet);
-        }
-
-        /// <summary>
-        /// Registers a new entity to the server
-        /// </summary>
-        /// <param name="input">A compatible entry</param>
-        /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
-        internal async Task RegisterAsync(params object[] input)
-        {
-            foreach (object item in input)
-            {
-                switch (item)
-                {
-                    default:
-                        throw new Exception($"Input ({item.GetType()}) can't be handled by RegisterAsync.");
-
-                    case WorldGenerator generator:
-                        await Logger.LogDebugAsync($"Registering {generator.Id}...");
-                        this.WorldGenerators.Add(generator.Id, generator);
-                        break;
-                }
-            }
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
