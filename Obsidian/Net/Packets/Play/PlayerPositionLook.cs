@@ -22,10 +22,10 @@ namespace Obsidian.Net.Packets.Play
         public Position Position { get; set; }
 
         [Field(1)]
-        public float Pitch { get; set; }
+        public float Yaw { get; set; }
 
         [Field(2)]
-        public float Yaw { get; set; }
+        public float Pitch { get; set; }
 
         [Field(3, Type = DataType.Byte)]
         public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;

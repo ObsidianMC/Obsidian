@@ -284,6 +284,12 @@ namespace Obsidian
                 await player.client.QueuePacketAsync(packet);
         }
 
+        internal async Task BroadcastPacketWithoutQueueAsync(Packet packet, params Player[] excluded)
+        {
+            foreach (var (uuid, player) in this.OnlinePlayers.Except(excluded))
+                await player.client.SendPacketAsync(packet);
+        }
+
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
         {
             var player = this.OnlinePlayers.Values.FirstOrDefault(x => x.Username == username);

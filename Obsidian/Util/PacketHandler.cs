@@ -153,7 +153,7 @@ namespace Obsidian.Util
 
                 case 0x0E:
                     // Keep Alive (serverbound)
-                    var keepalive = await PacketSerializer.FastDeserializeAsync<KeepAlive>(packet.data);
+                    var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(new MinecraftStream(packet.data));
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
                     // Server is alive, reset missed keepalives.
@@ -173,14 +173,16 @@ namespace Obsidian.Util
                 case 0x11: // Player Position And Look (serverbound)
                     var ppos = PacketSerializer.FastDeserialize<PlayerPositionAndLook>(new MinecraftStream(packet.data));
 
-                    await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
+                    
+
+                    // await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
 
                 case 0x12:
                     // Player Look
                     var look = PacketSerializer.FastDeserialize<PlayerLook>(new MinecraftStream(packet.data));
 
-                    //await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);// TODO this makes player fly all over the place idk why
+                    // await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);//this makes player fly all over the place idk why
                     break;
 
                 case 0x13:

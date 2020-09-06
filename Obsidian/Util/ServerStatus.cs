@@ -65,7 +65,7 @@ namespace Obsidian.Util
         public int Online { get; set; }
 
         [JsonProperty("sample")]
-        public List<object> Sample { get; set; }
+        public List<object> Sample { get; set; } = new List<object>();
 
         public ServerPlayers(Server server)
         {
@@ -75,7 +75,16 @@ namespace Obsidian.Util
             Online = players.Count();
 
             if (this.Online > 0)
-                Sample.AddRange(players);
+            {
+                foreach (var player in players)
+                {
+                    this.Sample.Add(new
+                    {
+                        name = player.Username,
+                        id = player.Uuid
+                    });
+                }
+            }
         }
     }
 

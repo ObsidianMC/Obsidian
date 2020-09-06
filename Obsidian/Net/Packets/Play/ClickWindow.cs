@@ -49,9 +49,9 @@ namespace Obsidian.Net.Packets.Play
 
     public enum InventoryOperationMode : int
     {
-        MouseClicks,
+        MouseClick,
 
-        ShiftMouseClicks,
+        ShiftMouseClick,
 
         NumberKeys,
 

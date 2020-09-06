@@ -97,39 +97,29 @@ namespace Obsidian.Entities
             this.client = client;
         }
 
-        private short lastX;
-        private short lastY;
-        private short lastZ;
-
         internal async Task UpdateAsync(Position position, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128),
-                newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128),
-                newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
+            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128);
+            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128);
+            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
 
-            var isNewLocation = newX != this.lastX || newY != this.lastY || newZ != this.lastZ;
+            var isNewLocation = position != this.LastPosition;
 
             if (isNewLocation)
             {
-                this.lastX = newX;
-                this.lastY = newY;
-                this.lastZ = newZ;
-
-                if (Math.Abs(newX) <= short.MaxValue && Math.Abs(newY) <= short.MaxValue && Math.Abs(newZ) <= short.MaxValue)
-                {
-                    await this.client.Server.BroadcastPacketAsync(new EntityRelativeMove
-                    {
-                        EntityId = this.client.id,
-
-                        DeltaX = newX,
-                        DeltaY = newY,
-                        DeltaZ = newZ,
-
-                        OnGround = onGround
-                    }, this);
-                }
-
                 this.UpdatePosition(position, onGround);
+
+                await this.client.Server.BroadcastPacketWithoutQueueAsync(new EntityRelativeMove
+                {
+                    EntityId = this.client.id,
+
+                    DeltaX = newX,
+                    DeltaY = newY,
+                    DeltaZ = newZ,
+
+                    OnGround = onGround
+                }, this);
+
             }
         }
 
@@ -159,7 +149,7 @@ namespace Obsidian.Entities
                  newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128),
                  newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
 
-            var isNewLocation = newX != this.lastX || newY != this.lastY || newZ != this.lastZ;
+            var isNewLocation = position != this.LastPosition;
 
             var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
 
@@ -168,9 +158,6 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-                this.lastX = newX;
-                this.lastY = newY;
-                this.lastZ = newZ;
 
                 if (Math.Abs(newX) <= short.MaxValue && Math.Abs(newY) <= short.MaxValue && Math.Abs(newZ) <= short.MaxValue)
                 {
@@ -223,9 +210,7 @@ namespace Obsidian.Entities
         public void UpdatePosition(Position pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
-            this.Position.X = pos.X;
-            this.Position.Y = pos.Y;
-            this.Position.Z = pos.Z;
+            this.Position = pos;
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onGround;
@@ -248,8 +233,10 @@ namespace Obsidian.Entities
             this.OnGround = onGround;
         }
 
+
         internal void CopyPosition(bool withLook = false)
         {
+
             this.LastPosition = this.Position;
 
             if (withLook)
