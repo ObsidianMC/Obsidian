@@ -23,7 +23,7 @@ namespace Obsidian.Chat
         ///
         /// Only used for click event.
         /// </summary>
-        open_url,
+        OpenUrl,
 
         /// <summary>
         /// Runs the given command. Not required to be a command - clicking this only causes the client to send the given content as a chat message, so if not prefixed with /, they will say the given text instead.
@@ -31,14 +31,14 @@ namespace Obsidian.Chat
         ///
         /// Only used for click event.
         /// </summary>
-        run_command,
+        RunCommand,
 
         /// <summary>
         /// Only usable for messages in chat. Replaces the content of the chat box with the given text - usually a command, but it is not required to be a command (commands should be prefixed with /).
         ///
         /// Only used for click event.
         /// </summary>
-        suggest_command,
+        SuggestCommand,
 
         /// <summary>
         /// Only usable within written books. Changes the page of the book to the given page, starting at 1. For instance, "value":1 switches the book to the first page.
@@ -46,14 +46,14 @@ namespace Obsidian.Chat
         ///
         /// Only used for click event.
         /// </summary>
-        change_page,
+        ChangePage,
 
         /// <summary>
         /// The text to display. Can either be a string directly ("value":"la") or a full component ("value":{"text":"la","color":"red"}).
         ///
         /// Only used for hover event.
         /// </summary>
-        show_text,
+        ShowText,
 
         /// <summary>
         /// The NBT of the item to display, in the JSON-NBT format (as would be used in /give).
@@ -62,7 +62,7 @@ namespace Obsidian.Chat
         ///
         /// Only used for hover event.
         /// </summary>
-        show_item,
+        ShowItem,
 
         /// <summary>
         /// A JSON-NBT String describing the entity. Contains 3 values: id, the entity's UUID (with dashes); type (optional), which contains the resource location for the entity's type (eg minecraft:zombie); and name, which contains the entity's custom name (if present).
@@ -71,6 +71,6 @@ namespace Obsidian.Chat
         ///
         /// Only used for hover event.
         /// </summary>
-        show_entity
+        ShowEntity
     }
 }

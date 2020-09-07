@@ -20,7 +20,7 @@ namespace Obsidian.Util
         public string LeaveMessage = "§e{0} left the game";
 
         [JsonProperty("onlineMode")]
-        public bool OnlineMode = true;
+        public bool OnlineMode = false;
 
         [JsonProperty("operatorRequests")]
         public bool AllowOperatorRequests;

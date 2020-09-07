@@ -1,8 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Obsidian.Chat;
 using Obsidian.Logging;
 using Obsidian.Util;
 using Obsidian.Util.Converters;
+using Obsidian.Util.DataTypes;
+using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +16,7 @@ namespace Obsidian
 {
     public static class Program
     {
-        private static Dictionary<int,Server> Servers = new Dictionary<int, Server>();
+        private static Dictionary<int, Server> Servers = new Dictionary<int, Server>();
         private static List<Task> Tasks = new List<Task>();
 
         public static GlobalConfig Config { get; private set; }
@@ -33,17 +36,19 @@ namespace Obsidian
             ContractResolver = ContractResolver,
             Converters = new List<JsonConverter>
             {
-                new MinecraftCustomDirectionConverter(),
-                new MinecraftAxisConverter(),
-                new MinecraftFaceConverter(),
-                new MinecraftFacesConverter(),
-                new MinecraftHalfConverter(),
-                new MinecraftHingeConverter(),
-                new MinecraftInstrumentConverter(),
-                new MinecraftPartConverter(),
-                new MinecraftShapeConverter(),
-                new MinecraftTypeConverter(),
-                new MinecraftAttachmentConverter()
+                new DefaultEnumConverter<CustomDirection>(),
+                new DefaultEnumConverter<Axis>(),
+                new DefaultEnumConverter<Face>(),
+                new DefaultEnumConverter<BlockFace>(),
+                new DefaultEnumConverter<Half>(),
+                new DefaultEnumConverter<Hinge>(),
+                new DefaultEnumConverter<Instruments>(),
+                new DefaultEnumConverter<Part>(),
+                new DefaultEnumConverter<Shape>(),
+                new DefaultEnumConverter<CustomDirection>(),
+                new DefaultEnumConverter<MinecraftType>(),
+                new DefaultEnumConverter<Attachment>(),
+                new DefaultEnumConverter<ETextAction>(),
             }
         };
         private static async Task Main(string[] args)

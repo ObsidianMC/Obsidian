@@ -73,6 +73,6 @@ namespace Obsidian.Chat
         }
 
 
-        public override string ToString() => JsonConvert.SerializeObject(this, new MinecraftTextActionConverter());
+        public override string ToString() => JsonConvert.SerializeObject(this, Program.JsonSettings);
     }
 }

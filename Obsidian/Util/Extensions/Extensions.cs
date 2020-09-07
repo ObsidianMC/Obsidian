@@ -67,6 +67,7 @@ namespace Obsidian.Util.Extensions
 
         public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
+        public static string ToSnakeCase(this string str) => string.Join("_", pattern.Matches(str)).ToLower();
         public static string ToCamelCase(this string str)
         {
 
