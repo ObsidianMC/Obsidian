@@ -3,6 +3,8 @@ namespace Obsidian.Util
 {
     public enum ProtocolVersion
     {
+        v1_15_2 = 578,
+
         v1_14_1 = 480,
 
         v1_14 = 477,

@@ -49,7 +49,7 @@ namespace Obsidian.Util
         [JsonProperty("protocol")]
         public ProtocolVersion Protocol { get; set; }
 
-        public ServerVersion(string name = "Obsidian 1.13.2", ProtocolVersion? protocol = null)
+        public ServerVersion(string name = "Obsidian 1.15.2", ProtocolVersion? protocol = null)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Protocol = protocol ?? PacketHandler.Protocol;

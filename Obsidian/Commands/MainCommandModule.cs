@@ -49,7 +49,7 @@ namespace Obsidian.Commands
                     messages.Add(new ChatMessage
                     {
                         Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
-                        ClickEvent = new TextComponent { Action = ETextAction.open_url, Value = pls.Info.ProjectUrl }
+                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pls.Info.ProjectUrl }
                     });
                 }
                 else

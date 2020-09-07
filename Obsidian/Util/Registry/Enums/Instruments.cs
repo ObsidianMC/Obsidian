@@ -24,7 +24,7 @@
 
         IronXylophone,
 
-        Cow_Bell,
+        CowBell,
 
         Didgeridoo,
 

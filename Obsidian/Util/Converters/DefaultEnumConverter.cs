@@ -11,9 +11,10 @@ namespace Obsidian.Util.Converters
         {
             var val = reader.Value.ToString().Replace("_", "");
 
-            Enum.TryParse(typeof(T), val, true, out var result);
+            if (Enum.TryParse(typeof(T), val, true, out var result))
+                return (T)result;
 
-            return (T)result;
+            throw new InvalidOperationException($"Failed to deserialize: {val}");
         }
 
         public override void WriteJson(JsonWriter writer, [AllowNull] T value, JsonSerializer serializer)

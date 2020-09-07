@@ -17,7 +17,7 @@ namespace Obsidian.Util
     {
         private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug, "packets.log");
 
-        public static ProtocolVersion Protocol = ProtocolVersion.v1_13_2;
+        public static ProtocolVersion Protocol = ProtocolVersion.v1_15_2;
 
         public const float MaxDiggingRadius = 6;
 
