@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Obsidian.Blocks;
-using Obsidian.Logging;
-using Obsidian.Util.Converters;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
+
+
     public class BlockRegistry
     {
         public static Dictionary<Materials, Block> BlockStates = new Dictionary<Materials, Block>();
@@ -41,12 +43,13 @@ namespace Obsidian.Util.Registry
 
                         var blockName = name.Split(":")[1];
 
-                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), new MinecraftCustomDirectionConverter(), new MinecraftAxisConverter(), new MinecraftFaceConverter(),
-                            new MinecraftFacesConverter(), new MinecraftHalfConverter(), new MinecraftHingeConverter(), new MinecraftInstrumentConverter(), new MinecraftPartConverter(), new MinecraftShapeConverter(), new MinecraftTypeConverter());
+                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Program.JsonSettings);
 
-                        if (!Enum.TryParse(blockName.Replace("_", ""), true, out Materials material)) continue;
+                        if (!Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
+                            continue;
 
-                        if (states.States.Length <= 0) continue;
+                        if (states.States.Length <= 0)
+                            continue;
 
                         int id = 0;
                         foreach (var state in states.States)
@@ -146,7 +149,7 @@ namespace Obsidian.Util.Registry
                             case Materials.StrippedOakWood:
                                 BlockStates.Add(material, new BlockRotatable(blockName, id));
                                 break;
-                            case Materials.StrippedSprucehWood:
+                            case Materials.StrippedSpruceWood:
                                 BlockStates.Add(material, new BlockRotatable(blockName, id));
                                 break;
                             case Materials.StrippedBirchWood:
@@ -260,10 +263,10 @@ namespace Obsidian.Util.Registry
                             case Materials.DeadBush:
                                 BlockStates.Add(material, new BlockDeadBush(blockName, id));
                                 break;
-                            case Materials.SeaGrass:
+                            case Materials.Seagrass:
                                 BlockStates.Add(material, new BlockSeaGrass(blockName, id));
                                 break;
-                            case Materials.TallSeaGrass:
+                            case Materials.TallSeagrass:
                                 BlockStates.Add(material, new BlockTallSeaGrass(blockName, id));
                                 break;
                             case Materials.Piston:
@@ -347,7 +350,22 @@ namespace Obsidian.Util.Registry
                             case Materials.Furnace:
                                 BlockStates.Add(material, new BlockFurnace(blockName, id));
                                 break;
-                            case Materials.Sign:
+                            case Materials.AcaciaSign://TODO signs
+                                BlockStates.Add(material, new BlockFloorSign(blockName, id));
+                                break;
+                            case Materials.BirchSign:
+                                BlockStates.Add(material, new BlockFloorSign(blockName, id));
+                                break;
+                            case Materials.DarkOakSign:
+                                BlockStates.Add(material, new BlockFloorSign(blockName, id));
+                                break;
+                            case Materials.JungleSign:
+                                BlockStates.Add(material, new BlockFloorSign(blockName, id));
+                                break;
+                            case Materials.OakSign:
+                                BlockStates.Add(material, new BlockFloorSign(blockName, id));
+                                break;
+                            case Materials.SpruceSign:
                                 BlockStates.Add(material, new BlockFloorSign(blockName, id));
                                 break;
                             case Materials.OakDoor:
@@ -362,7 +380,22 @@ namespace Obsidian.Util.Registry
                             case Materials.CobblestoneStairs:
                                 BlockStates.Add(material, new BlockStairs(blockName, id));
                                 break;
-                            case Materials.WallSign:
+                            case Materials.AcaciaWallSign://TODO different wall signs
+                                BlockStates.Add(material, new BlockWallSign(blockName, id));
+                                break;
+                            case Materials.BirchWallSign:
+                                BlockStates.Add(material, new BlockWallSign(blockName, id));
+                                break;
+                            case Materials.DarkOakWallSign:
+                                BlockStates.Add(material, new BlockWallSign(blockName, id));
+                                break;
+                            case Materials.JungleWallSign:
+                                BlockStates.Add(material, new BlockWallSign(blockName, id));
+                                break;
+                            case Materials.OakWallSign:
+                                BlockStates.Add(material, new BlockWallSign(blockName, id));
+                                break;
+                            case Materials.SpruceWallSign:
                                 BlockStates.Add(material, new BlockWallSign(blockName, id));
                                 break;
                             case Materials.Lever:
@@ -679,65 +712,8 @@ namespace Obsidian.Util.Registry
         [JsonProperty("delay")]
         public int[] DelayStates { get; set; }
 
-        [JsonProperty("snowy")]
-        public bool[] SnowyStates { get; set; }
-
-        [JsonProperty("triggered")]
-        public bool[] TriggeredStates { get; set; }
-
-        [JsonProperty("powered")]
-        public bool[] PoweredStates { get; set; }
-
-        [JsonProperty("occupied")]
-        public bool[] OccupiedStates { get; set; }
-
-        [JsonProperty("extended")]
-        public bool[] ExtendedStates { get; set; }
-
-        [JsonProperty("unstable")]
-        public bool[] UnstableStates { get; set; }
-
-        [JsonProperty("waterlogged")]
-        public bool[] WaterloggedStates { get; set; }
-
-        [JsonProperty("lit")]
-        public bool[] LitStates { get; set; }
-
-        [JsonProperty("open")]
-        public bool[] OpenedStates { get; set; }
-
-        [JsonProperty("has_record")]
-        public bool[] HasRecordStates { get; set; }
-
-        [JsonProperty("locked")]
-        public bool[] Locked { get; set; }
-
-        [JsonProperty("has_bottle_0")]
-        public bool[] HasBottle0States { get; set; }
-
-        [JsonProperty("has_bottle_1")]
-        public bool[] HasBottle1States { get; set; }
-
-        [JsonProperty("has_bottle_2")]
-        public bool[] HasBottle2States { get; set; }
-
-        [JsonProperty("up")]
-        public string[] UpStates { get; set; }
-
-        [JsonProperty("down")]
-        public string[] DownStates { get; set; }
-
-        [JsonProperty("east")]
-        public string[] EastStates { get; set; }
-
-        [JsonProperty("north")]
-        public string[] NorthStates { get; set; }
-
-        [JsonProperty("South")]
-        public string[] SouthStates { get; set; }
-
-        [JsonProperty("west")]
-        public string[] WestStates { get; set; }
+        [JsonProperty("honey_level")]
+        public int[] HoneyLevels { get; set; }
 
         [JsonProperty("axis")]
         public string[] Axis { get; set; }
@@ -762,232 +738,65 @@ namespace Obsidian.Util.Registry
 
         [JsonProperty("hinge")]
         public string[] Hinges { get; set; }
+
+        [JsonProperty("mode")]
+        public string[] Mode { get; set; }
+
+        [JsonProperty("attachment")]
+        public string[] Attachments { get; set; }
     }
 
     public class BlockPropertiesJson
     {
-        [JsonProperty("stage")]
         public int Stage { get; set; }
-
-        [JsonProperty("level")]
         public int Level { get; set; }
-
-        [JsonProperty("note")]
         public int Note { get; set; }
-
-        [JsonProperty("age")]
         public int Age { get; set; }
-
-        [JsonProperty("power")]
         public int Power { get; set; }
-
-        [JsonProperty("moisture")]
         public int Moisture { get; set; }
-
-        [JsonProperty("rotation")]
         public int Rotation { get; set; }
-
-        [JsonProperty("layers")]
         public int Layers { get; set; }
-
-        [JsonProperty("bites")]
         public int Bites { get; set; }
-
-        [JsonProperty("delay")]
         public int Delay { get; set; }
+        public int HoneyLevel { get; set; }
+        public int Distance { get; set; }
 
-        [JsonProperty("snowy")]
+        public string East { get; set; }
+        public string North { get; set; }
+        public string South { get; set; }
+        public string Up { get; set; }
+        public string West { get; set; }
+        public string Bottom { get; set; }
+
         public bool Snowy { get; set; }
-
-        [JsonProperty("powered")]
         public bool Powered { get; set; }
-
-        [JsonProperty("triggered")]
         public bool Triggered { get; set; }
-
-        [JsonProperty("occupied")]
         public bool Occupied { get; set; }
-
-        [JsonProperty("unstable")]
         public bool Unstable { get; set; }
-
-        [JsonProperty("waterlogged")]
         public bool Waterlogged { get; set; }
-
-        [JsonProperty("lit")]
         public bool Lit { get; set; }
-
-        [JsonProperty("open")]
+        public bool SignalFire { get; set; }
+        public bool Hanging { get; set; }
         public bool Opened { get; set; }
-
-        [JsonProperty("has_record")]
         public bool HasRecord { get; set; }
-
-        [JsonProperty("locked")]
         public bool Locked { get; set; }
-
-        [JsonProperty("has_bottle_0")]
         public bool HasBottle0 { get; set; }
-
-        [JsonProperty("has_bottle_1")]
         public bool HasBottle1 { get; set; }
-
-        [JsonProperty("has_bottle_2")]
         public bool HasBottle2 { get; set; }
+        public bool HasBook { get; set; }
+        public bool Disarmed { get; set; }
+        public bool Attached { get; set; }
 
-        [JsonProperty("east")]
-        public CustomDirection East { get; set; }
-
-        [JsonProperty("north")]
-        public CustomDirection North { get; set; }
-
-        [JsonProperty("South")]
-        public CustomDirection South { get; set; }
-
-        [JsonProperty("up")]
-        public CustomDirection Up { get; set; }
-
-        [JsonProperty("down")]
-        public CustomDirection Down { get; set; }
-
-        [JsonProperty("west")]
-        public CustomDirection West { get; set; }
-
-        [JsonProperty("axis")]
         public Axis Axis { get; set; }
-
-        [JsonProperty("facing")]
         public BlockFace Facing { get; set; }
-
-        [JsonProperty("instrument")]
         public Instruments Instrument { get; set; }
-
-        [JsonProperty("part")]
         public Part Part { get; set; }
-
-        [JsonProperty("shape")]
         public Shape Shape { get; set; }
-
-        [JsonProperty("half")]
         public Half Half { get; set; }
-
-        [JsonProperty("type")]
         public MinecraftType Type { get; set; }
-
-        [JsonProperty("hinge")]
         public Hinge Hinge { get; set; }
-
-        [JsonProperty("face")]
-        public SignFace Face { get; set; }
-    }
-
-    public enum Hinge
-    {
-        Left,
-
-        Right
-    }
-
-    public enum CustomDirection
-    {
-        //Fire, fences, MushroomBlocks
-        True,
-        False,
-
-        //Redstone
-        Up,
-        Side,
-        None
-    }
-
-    public enum MinecraftType
-    {
-        //Pistons
-        Normal,
-        Sticky,
-
-        //Chests
-        Single,
-        Left,
-        Right
-    }
-
-    public enum Half
-    {
-        //for beds and doors
-        Upper,
-        Lower,
-
-        //for stairs and trap doors
-        Top,
-        Bottom
-    }
-
-    public enum Shape
-    {
-        // For rails
-        NorthSouth,
-        EastWest,
-        AscendingEast,
-        AscendingWest,
-        AscendingNorth,
-        AscendingSouth,
-        SouthEast,
-        SouthWest,
-        NorthWest,
-        NorthEast,
-
-        //for stairs
-        Straight,
-        InnerLeft,
-        InnerRight,
-        OuterLeft,
-        OuterRight
-    }
-
-    public enum Part
-    {
-        Head,
-
-        Foot
-    }
-
-    public enum Instruments
-    {
-        Harp,
-
-        Basedrum,
-
-        Snare,
-
-        Hat,
-
-        Bass,
-
-        Flute,
-
-        Bell,
-
-        Guitar,
-
-        Chime,
-
-        Xylophone
-    }
-
-    public enum SignFace
-    {
-        Floor,
-        Wall,
-        Ceiling
-    }
-
-    public enum Axis
-    {
-        X,
-
-        Y,
-
-        Z
+        public Face Face { get; set; }
+        public Mode Mode { get; set; }
+        public Attachment Attachment { get; set; }
     }
 }

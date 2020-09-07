@@ -1,7 +1,8 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Obsidian.Logging;
 using Obsidian.Util;
-using Obsidian.Util.Extensions;
+using Obsidian.Util.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +23,29 @@ namespace Obsidian
         public static readonly AsyncLogger RegistryLogger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
         public static readonly AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
 
+        private static DefaultContractResolver ContractResolver = new DefaultContractResolver
+        {
+            NamingStrategy = new SnakeCaseNamingStrategy()
+        };
 
+        public static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+        {
+            ContractResolver = ContractResolver,
+            Converters = new List<JsonConverter>
+            {
+                new MinecraftCustomDirectionConverter(),
+                new MinecraftAxisConverter(),
+                new MinecraftFaceConverter(),
+                new MinecraftFacesConverter(),
+                new MinecraftHalfConverter(),
+                new MinecraftHingeConverter(),
+                new MinecraftInstrumentConverter(),
+                new MinecraftPartConverter(),
+                new MinecraftShapeConverter(),
+                new MinecraftTypeConverter(),
+                new MinecraftAttachmentConverter()
+            }
+        };
         private static async Task Main(string[] args)
         {
             string version = "0.1";

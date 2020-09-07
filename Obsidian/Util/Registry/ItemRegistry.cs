@@ -44,8 +44,6 @@ namespace Obsidian.Util.Registry
 
                     Items.Add(material, new Item { Id = item.ProtocolId, Name = itemName });
                     registered++;
-
-                    
                 }
 
                 await Program.RegistryLogger.LogDebugAsync($"Successfully registered {registered} items..");
