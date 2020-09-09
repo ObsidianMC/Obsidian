@@ -40,6 +40,11 @@
         Compound = 0x0a,
 
         /// <summary> TAG_Byte_Array: A length-prefixed array of signed 32-bit integers. </summary>
-        IntArray = 0x0b
+        IntArray = 0x0b,
+
+        /// <summary>
+        /// A length-prefixed array of signed longs. The prefix is a signed integer (thus 4 bytes) and indicates the number of 8 byte longs.
+        /// </summary>
+        LongArray = 0x0c
     }
 }

@@ -615,6 +615,20 @@ namespace Obsidian.Nbt
             }
         }
 
+        public void WriteLongArray([NotNull] string tagName, [NotNull] long[] data)
+        {
+            CheckArray(data, 0, data.Length);
+
+            this.EnforceConstraints(tagName, NbtTagType.LongArray);
+
+            this.writer.Write((byte)NbtTagType.LongArray);
+            this.writer.Write(tagName);
+            this.writer.Write(data.Length);
+
+            for (int i = 0; i < data.Length; i++)
+                this.writer.Write(data[i]);
+        }
+
         #endregion ByteArray and IntArray
 
         /// <summary> Writes a NbtTag object, and all of its child tags, to stream.

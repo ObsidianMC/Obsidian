@@ -349,6 +349,7 @@ namespace Obsidian.Nbt
 
                 case NbtTagType.IntArray:
                 case NbtTagType.ByteArray:
+                case NbtTagType.LongArray:
                     TagLength = reader.ReadInt32();
                     atValue = true;
                     break;
@@ -734,6 +735,12 @@ namespace Obsidian.Nbt
                     }
                     return new NbtIntArray(TagName, ints);
 
+                case NbtTagType.LongArray:
+                    var longs = new long[this.TagLength];
+                    for (int i = 0; i < this.TagLength; i++)
+                        longs[i] = reader.ReadInt64();
+
+                    return new NbtLongArray(TagName, longs);
                 default:
                     throw new InvalidOperationException(NonValueTagError);
             }

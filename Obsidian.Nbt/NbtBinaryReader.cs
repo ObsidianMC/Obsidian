@@ -30,7 +30,7 @@ namespace Obsidian.Nbt
             {
                 throw new EndOfStreamException();
             }
-            else if (type > (int)NbtTagType.IntArray)
+            else if (type > (int)NbtTagType.LongArray)
             {
                 throw new NbtFormatException("NBT tag type out of range: " + type);
             }
