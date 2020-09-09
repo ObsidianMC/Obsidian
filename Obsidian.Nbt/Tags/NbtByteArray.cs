@@ -87,7 +87,6 @@ namespace Obsidian.Nbt.Tags
             if (length < 0)
                 throw new NbtFormatException("Negative length given in TAG_Byte_Array");
 
-
             if (readStream.Selector != null && !readStream.Selector(this))
             {
                 readStream.Skip(length);

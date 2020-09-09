@@ -35,6 +35,7 @@ namespace Obsidian.Nbt
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
+
             SkipEndTags = true;
             CacheTagValues = false;
             ParentTagType = NbtTagType.Unknown;
@@ -741,6 +742,7 @@ namespace Obsidian.Nbt
                         longs[i] = reader.ReadInt64();
 
                     return new NbtLongArray(TagName, longs);
+
                 default:
                     throw new InvalidOperationException(NonValueTagError);
             }

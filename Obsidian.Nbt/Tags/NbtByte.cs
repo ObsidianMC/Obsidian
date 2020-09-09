@@ -85,11 +85,9 @@ namespace Obsidian.Nbt.Tags
             for (int i = 0; i < indentLevel; i++)
                 sb.Append(indentString);
 
-
             sb.Append("TAG_Byte");
             if (!String.IsNullOrEmpty(this.Name))
                 sb.AppendFormat("(\"{0}\")", this.Name);
-
 
             sb.Append(": ");
             sb.Append(this.Value);

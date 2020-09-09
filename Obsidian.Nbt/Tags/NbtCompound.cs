@@ -421,7 +421,6 @@ namespace Obsidian.Nbt.Tags
             foreach (NbtTag tag in this.tags.Values)
                 tag.WriteTag(writeStream);
 
-
             writeStream.Write(NbtTagType.End);
         }
 

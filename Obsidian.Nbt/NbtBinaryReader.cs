@@ -17,8 +17,7 @@ namespace Obsidian.Nbt
         private readonly bool swapNeeded;
         private readonly byte[] stringConversionBuffer = new byte[64];
 
-        public NbtBinaryReader([NotNull] Stream input, bool bigEndian)
-            : base(input)
+        public NbtBinaryReader([NotNull] Stream input, bool bigEndian) : base(input)
         {
             swapNeeded = (BitConverter.IsLittleEndian == bigEndian);
         }

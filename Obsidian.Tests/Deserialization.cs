@@ -188,7 +188,7 @@ namespace Obsidian.Tests
             Assert.Equal(location.X, packet.Location.X);
             Assert.Equal(location.Y, packet.Location.Y);
             Assert.Equal(location.Z, packet.Location.Z);
-            Assert.Equal(hand, packet.Hand);
+            Assert.Equal((Hand)hand, packet.Hand);
             Assert.Equal(cursorX, packet.CursorX);
             Assert.Equal(cursorY, packet.CursorY);
             Assert.Equal(cursorZ, packet.CursorZ);
@@ -211,7 +211,7 @@ namespace Obsidian.Tests
             await stream.WriteVarIntAsync(teleportId);
             stream.Position = 0;
 
-            var packet = PacketSerializer.FastDeserialize<PlayerPositionLook>(stream);
+            var packet = PacketSerializer.FastDeserialize<ClientPlayerPositionLook>(stream);
 
             Assert.Equal(position.X, packet.Position.X);
             Assert.Equal(position.Y, packet.Position.Y);

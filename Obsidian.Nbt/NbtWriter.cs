@@ -28,8 +28,7 @@ namespace Obsidian.Nbt
         /// <remarks> Assumes that data in the stream should be Big-Endian encoded. </remarks>
         /// <exception cref="ArgumentNullException"> <paramref name="stream"/> or <paramref name="rootTagName"/> is <c>null</c>. </exception>
         /// <exception cref="ArgumentException"> <paramref name="stream"/> is not writable. </exception>
-        public NbtWriter([NotNull] Stream stream, [NotNull] String rootTagName)
-            : this(stream, rootTagName, true) { }
+        public NbtWriter([NotNull] Stream stream, [NotNull] string rootTagName) : this(stream, rootTagName, true) { }
 
         /// <summary> Initializes a new instance of the NbtWriter class. </summary>
         /// <param name="stream"> Stream to write to. </param>
@@ -37,7 +36,7 @@ namespace Obsidian.Nbt
         /// <param name="bigEndian"> Whether NBT data should be in Big-Endian encoding. </param>
         /// <exception cref="ArgumentNullException"> <paramref name="stream"/> or <paramref name="rootTagName"/> is <c>null</c>. </exception>
         /// <exception cref="ArgumentException"> <paramref name="stream"/> is not writable. </exception>
-        public NbtWriter([NotNull] Stream stream, [NotNull] String rootTagName, bool bigEndian)
+        public NbtWriter([NotNull] Stream stream, [NotNull] string rootTagName, bool bigEndian)
         {
             if (rootTagName == null)
                 throw new ArgumentNullException("rootTagName");

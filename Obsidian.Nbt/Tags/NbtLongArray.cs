@@ -90,9 +90,7 @@ namespace Obsidian.Nbt.Tags
         {
             int length = readStream.ReadInt32();
             if (length < 0)
-            {
-                throw new NbtFormatException("Negative length given in TAG_Int_Array");
-            }
+                throw new NbtFormatException("Negative length given in TAG_Long_Array");
 
             if (readStream.Selector != null && !readStream.Selector(this))
             {
@@ -112,14 +110,14 @@ namespace Obsidian.Nbt.Tags
         {
             int length = readStream.ReadInt32();
             if (length < 0)
-                throw new NbtFormatException("Negative length given in TAG_LONG_Array");
+                throw new NbtFormatException("Negative length given in TAG_Long_Array");
 
             readStream.Skip(length * sizeof(int));
         }
 
         internal override void WriteTag(NbtBinaryWriter writeStream)
         {
-            writeStream.Write(NbtTagType.IntArray);
+            writeStream.Write(NbtTagType.LongArray);
             if (Name == null)
                 throw new NbtFormatException("Name is null");
 
@@ -137,10 +135,7 @@ namespace Obsidian.Nbt.Tags
         }
 
         /// <inheritdoc />
-        public override object Clone()
-        {
-            return new NbtLongArray(this);
-        }
+        public override object Clone() => new NbtLongArray(this);
 
         internal override void PrettyPrint(StringBuilder sb, string indentString, int indentLevel)
         {
@@ -148,7 +143,7 @@ namespace Obsidian.Nbt.Tags
             {
                 sb.Append(indentString);
             }
-            sb.Append("TAG_LONG_Array");
+            sb.Append("TAG_Long_Array");
             if (!string.IsNullOrEmpty(Name))
             {
                 sb.AppendFormat("(\"{0}\")", Name);

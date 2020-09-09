@@ -84,7 +84,7 @@ namespace Obsidian.Nbt.Tags
 
             if (!string.IsNullOrEmpty(this.Name))
                 sb.AppendFormat("(\"{0}\")", this.Name);
-            
+
             sb.Append(": ");
             sb.Append(this.Value);
         }
