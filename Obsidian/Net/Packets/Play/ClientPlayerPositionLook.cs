@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play
         NONE = 0x00
     }
 
-    public class PlayerPositionLook : Packet
+    public class ClientPlayerPositionLook : Packet
     {
         [Field(0, true)]
         public Position Position { get; set; }
@@ -28,24 +28,17 @@ namespace Obsidian.Net.Packets.Play
         public float Pitch { get; set; }
 
         [Field(3, Type = DataType.Byte)]
-        public PositionFlags Flags { get; private set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+        public PositionFlags Flags { get; set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
         [Field(4, Type = DataType.VarInt)]
-        public int TeleportId { get; private set; }
+        public int TeleportId { get; set; }
 
-        public PlayerPositionLook() : base(0x32) { }
+        public ClientPlayerPositionLook() : base(0x36) { }
 
-        public PlayerPositionLook(byte[] data) : base(0x32, data) { }
-
-        public PlayerPositionLook(Position tranform, PositionFlags flags, int tpId) : base(0x32)
-        {
-            this.Position = tranform;
-            this.Flags = flags;
-            this.TeleportId = tpId;
-        }
+        public ClientPlayerPositionLook(byte[] data) : base(0x36, data) { }
 
     }
-    public class PlayerPositionAndLook : Packet
+    public class ServerPlayerPositionLook : Packet
     {
         [Field(0, true)]
         public Position Position { get; set; }
@@ -59,6 +52,6 @@ namespace Obsidian.Net.Packets.Play
         [Field(3)]
         public bool OnGround { get; set; }
 
-        public PlayerPositionAndLook() : base(0x11) { }
+        public ServerPlayerPositionLook() : base(0x11) { }
     }
 }

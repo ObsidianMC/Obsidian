@@ -356,12 +356,9 @@ namespace Obsidian.Net
 
         public async Task WritePositionAsync(Position value, bool pre14 = true)
         {
-            long pos = ((long)value.X & 0x3FFFFFF << 38) | (((long)value.Y & 0xFFF) << 26) | ((long)value.Z & 0x3FFFFFF);
-
-
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
-            val |= (long)((int)value.Y & 0xFFF) << 26;
-            val |= (long)((int)value.Z & 0x3FFFFFF);
+            val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
+            val |= (long)((int)value.Y & 0xFFF);
 
             await this.WriteLongAsync(val);
         }
@@ -667,22 +664,17 @@ namespace Obsidian.Net
             ulong value = await this.ReadUnsignedLongAsync();
 
             long x = (long)(value >> 38);
-            long y = (long)(value >> 26) & 0xFFF;
-            long z = (long)(value << 38 >> 38);
-
-            if (PacketHandler.Protocol == ProtocolVersion.v1_14)
-            {
-                x = (long)(value >> 38);
-                y = (long)value & 0xFFF;
-                z = (long)(value << 26 >> 38);
-            }
+            long y = (long)(value & 0xFFF);
+            long z = (long)(value << 26 >> 38);
 
             if (x >= Math.Pow(2, 25))
-            { x -= (long)Math.Pow(2, 26); }
+                x -= (long)Math.Pow(2, 26);
+
             if (y >= Math.Pow(2, 11))
-            { y -= (long)Math.Pow(2, 12); }
+                y -= (long)Math.Pow(2, 12);
+
             if (z >= Math.Pow(2, 25))
-            { z -= (long)Math.Pow(2, 26); }
+                z -= (long)Math.Pow(2, 26);
 
             return new Position
             {

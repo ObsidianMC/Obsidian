@@ -5,6 +5,7 @@
         Survival,
         Creative,
         Adventure,
-        Spectator
+        Spectator,
+        Hardcore = 0x8
     }
 }

@@ -52,34 +52,6 @@ namespace Obsidian.Commands
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
         }
-
-        public async Task<CommandNode> ReadFromAsync(MinecraftStream dataStream)
-        {
-            var type = (CommandNodeType)await dataStream.ReadByteAsync();
-            var childrenCount = await dataStream.ReadVarIntAsync();
-
-            for (int i = 0; i < childrenCount; i++)
-            {
-                await dataStream.ReadVarIntAsync();
-            }
-
-            if (type.HasFlag(CommandNodeType.HasRedirect))
-                await dataStream.ReadVarIntAsync();
-
-            if (type.HasFlag(CommandNodeType.Argument) || type.HasFlag(CommandNodeType.Literal))
-            {
-                var name = await dataStream.ReadStringAsync();
-                this.Name = name;
-            }
-
-            if (type.HasFlag(CommandNodeType.Argument))
-            {
-                this.Parser = new CommandParser(await dataStream.ReadStringAsync());
-            }
-
-            return this;
-        }
-
         public void AddChild(CommandNode child) => this.Children.Add(child);
 
     }

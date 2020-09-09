@@ -17,8 +17,8 @@ namespace Obsidian.Net.Packets.Play
         [Field(2, Type = DataType.Int)]
         public Dimension Dimension { get; set; } = Dimension.Overworld;
 
-        [Field(3, Type = DataType.UnsignedByte)]
-        public Difficulty Difficulty { get; set; } = Difficulty.Peaceful;
+        [Field(3)]
+        public long HashedSeed { get; set; }
 
         [Field(4)]
         private byte maxPlayers { get; } = 0;
@@ -26,22 +26,18 @@ namespace Obsidian.Net.Packets.Play
         [Field(5, Type = DataType.String, MaxLength = 16)]
         public LevelType LevelType { get; set; } = LevelType.Default;
 
-        [Field(6)]
-        public bool ReducedDebugInfo { get; set; }
+        [Field(6, Type = DataType.VarInt)]
+        public int ViewDistance { get; set; } = 8;
 
-        public JoinGame() : base(0x25) { }
+        [Field(7)]
+        public bool ReducedDebugInfo { get; set; } = false;
 
-        public JoinGame(byte[] data) : base(0x25, data) { }
+        [Field(8)]
+        public bool EnableRespawnScreen { get; set; } = true;
 
-        public JoinGame(int entityid, Gamemode gamemode, Dimension dimension, Difficulty difficulty, LevelType leveltype, bool debugging) : base(0x25, Array.Empty<byte>())
-        {
-            this.EntityId = entityid;
-            this.GameMode = gamemode;
-            this.Dimension = dimension;
-            this.Difficulty = difficulty;
-            this.LevelType = leveltype;
-            this.ReducedDebugInfo = !debugging;
-        }
+        public JoinGame() : base(0x26) { }
+
+        public JoinGame(byte[] data) : base(0x26, data) { }
     }
 
     public enum LevelType

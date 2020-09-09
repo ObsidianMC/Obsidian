@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play
         public AnimationServerPacket(byte[] data) : base(0x27, data) { }
     }
 
-    public enum Hand
+    public enum Hand : int
     {
         MainHand = 0,
         OffHand = 1
