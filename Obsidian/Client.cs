@@ -123,7 +123,12 @@ namespace Obsidian
 
         internal async Task SendPlayerLookPositionAsync(Position poslook, PositionFlags posflags, int tpid = 0)
         {
-            await this.QueuePacketAsync(new PlayerPositionLook(poslook, posflags, tpid));
+            await this.QueuePacketAsync(new ClientPlayerPositionLook
+            {
+                Position = poslook,
+                Flags = posflags,
+                TeleportId = tpid
+            });
         }
 
         internal async Task SendBlockChangeAsync(BlockChange b)
@@ -168,13 +173,20 @@ namespace Obsidian
 
                     Type type = parameter.Type;
 
-                    if (type == typeof(string)) parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                    else if (type == typeof(double)) parameterNode.Parser = new CommandParser("brigadier:double");
-                    else if (type == typeof(float)) parameterNode.Parser = new CommandParser("brigadier:float");
-                    else if (type == typeof(int)) parameterNode.Parser = new CommandParser("brigadier:integer");
-                    else if (type == typeof(bool)) parameterNode.Parser = new CommandParser("brigadier:bool");
-                    else if (type == typeof(Position)) parameterNode.Parser = new CommandParser("minecraft:vec3");
-                    else continue;
+                    if (type == typeof(string))
+                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                    else if (type == typeof(double))
+                        parameterNode.Parser = new CommandParser("brigadier:double");
+                    else if (type == typeof(float))
+                        parameterNode.Parser = new CommandParser("brigadier:float");
+                    else if (type == typeof(int))
+                        parameterNode.Parser = new CommandParser("brigadier:integer");
+                    else if (type == typeof(bool))
+                        parameterNode.Parser = new CommandParser("brigadier:bool");
+                    else if (type == typeof(Position))
+                        parameterNode.Parser = new CommandParser("minecraft:vec3");
+                    else
+                        continue;
 
                     commandNode.AddChild(parameterNode);
                 }
@@ -459,7 +471,7 @@ namespace Obsidian
                 EntityId = this.id,
                 GameMode = Gamemode.Creative,
                 Dimension = Dimension.Overworld,
-                Difficulty = Difficulty.Peaceful,
+                HashedSeed = 0,//New field
                 ReducedDebugInfo = false
             });
 
@@ -470,7 +482,14 @@ namespace Obsidian
 
             this.Player.Position = new Position(0, 105, 0);
 
-            await this.QueuePacketAsync(new PlayerPositionLook(this.Player.Position, PositionFlags.NONE, 0));
+            await this.QueuePacketAsync(new ClientPlayerPositionLook
+            {
+                Position = this.Player.Position,
+                Yaw = 0,
+                Pitch = 0,
+                Flags = PositionFlags.NONE,
+                TeleportId = 0
+            });
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
@@ -519,12 +538,13 @@ namespace Obsidian
 
         public async Task SendChunkAsync(Chunk chunk)
         {
-            var chunkData = new ChunkDataPacket(chunk.X, chunk.Z);
-
             chunk = this.Server.WorldGenerator.GenerateChunk(chunk);
 
             for (int i = 0; i < 16; i++)
-                chunkData.Sections.Add(new ChunkSection().FillWithLight());
+                chunk.AddSection(new ChunkSection()
+                { 
+                    YBase = i 
+                }.FillWithLight());
 
             for (int x = 0; x < 16; x++)
             {
@@ -534,13 +554,15 @@ namespace Obsidian
                     {
                         var block = chunk.Blocks[x, y, z];
 
-                        chunkData.Sections[6].Container.Set(x, y, z, block);
+                        chunk.Sections[6].Container.Set(x, y, z, block);
                     }
                 }
             }
 
             for (int i = 0; i < 16 * 16; i++)
-                chunkData.Biomes.Add(127); //TODO: Add proper biomes
+                chunk.Biomes.Add(127); //TODO: Add proper biomes
+
+            var chunkData = new ChunkDataPacket(chunk);
 
             await this.QueuePacketAsync(chunkData);
         }

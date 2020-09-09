@@ -39,7 +39,7 @@ namespace Obsidian.ChunkData
         public Block GetStateFromIndex(int index)
         {
             if (index > this.BlockStateCount - 1)
-                throw new IndexOutOfRangeException(nameof(index));
+                throw new IndexOutOfRangeException($"{index} > {this.BlockStateCount - 1}");
 
             return this.BlockStateArray[index];
         }

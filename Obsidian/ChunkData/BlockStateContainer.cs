@@ -42,7 +42,7 @@ namespace Obsidian.ChunkData
             return this.Palette.GetStateFromIndex(storageId);
         }
 
-        public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+        public int GetIndex(int x, int y, int z) => (y * 16 + z) * 16 + x;
 
         //private int GetIndex(int x, int y, int z) => (y << 8) | (z << 4) | x;
 

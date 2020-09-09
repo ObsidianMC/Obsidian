@@ -13,6 +13,8 @@ namespace Obsidian.ChunkData
 
         public bool Overworld = true;
 
+        public int YBase { get; set; }
+
         public ChunkSection(byte bitsPerBlock = 4)
         {
             this.Container = new BlockStateContainer(bitsPerBlock);
@@ -30,6 +32,19 @@ namespace Obsidian.ChunkData
 
             data.Position = 0;
             await data.CopyToAsync(stream);
+        }
+
+        public int GetHighestBlock(int x, int z)
+        {
+            for(int y = 15; y >= 0; y--)
+            {
+                var block = this.Container.Get(x, y, z);
+
+                if (block != null)
+                    return y;
+            }
+
+            return -1;
         }
 
         public ChunkSection FillWithLight()
