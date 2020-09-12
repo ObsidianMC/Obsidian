@@ -84,7 +84,7 @@ namespace Obsidian.Util
                     break;
 
                 case 0x02://Set difficulty
-                    
+
                     break;
 
                 case 0x03:
@@ -116,12 +116,12 @@ namespace Obsidian.Util
 
                 case 0x08:
                     // Click Window Button
-                    
+
                     break;
 
                 case 0x09:// Click Window
                     await Logger.LogDebugAsync("Received click window");
-                    var window = await PacketSerializer.FastDeserializeAsync<ClickWindow>(packet.data);
+                    var window = PacketSerializer.FastDeserialize<ClickWindow>(packet.data);
 
                     await Logger.LogDebugAsync("Received click window");
                     break;
@@ -150,9 +150,10 @@ namespace Obsidian.Util
 
                 case 0x0F:
                     // Keep Alive (serverbound)
-                    var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(new MinecraftStream(packet.data));
+                    var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(packet.data);
                     await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
+
                     // Server is alive, reset missed keepalives.
                     client.missedKeepalives = 0;
                     break;

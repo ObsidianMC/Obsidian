@@ -480,7 +480,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
 
-            this.Player.Position = new Position(0, 105, 0);
+            this.Player.Position = new Position(0, 102, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -514,7 +514,8 @@ namespace Obsidian
                 EntityId = who.client.id,
                 Uuid = who.Uuid,
                 Position = who.Position,
-                Player = who
+                Yaw = 0,
+                Pitch = 0
             });
         }
 

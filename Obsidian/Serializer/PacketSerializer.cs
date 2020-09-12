@@ -124,6 +124,16 @@ namespace Obsidian.Serializer
             return (T)deserializeMethod(stream);
         }
 
+        public static T FastDeserialize<T>(byte[] data) where T : Packet
+        {
+            using var stream = new MinecraftStream(data);
+
+            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+
+            return (T)deserializeMethod(stream);
+        }
+
         public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : Packet
         {
             if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))

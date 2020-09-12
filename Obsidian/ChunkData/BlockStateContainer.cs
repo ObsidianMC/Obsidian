@@ -17,7 +17,7 @@ namespace Obsidian.ChunkData
 
         public IBlockStatePalette Palette { get; }
 
-        public BlockStateContainer(byte bitsPerBlock = 8)
+        public BlockStateContainer(byte bitsPerBlock = 4)
         {
             this.BitsPerBlock = bitsPerBlock;
 

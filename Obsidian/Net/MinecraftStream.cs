@@ -108,7 +108,13 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WriteUuidAsync(Guid value) => await this.WriteAsync(value.ToByteArray());
+        public async Task WriteUuidAsync(Guid value)
+        {
+            var arr = value.ToByteArray();
+
+            await this.WriteLongAsync(BitConverter.ToInt64(arr, 0));
+            await this.WriteLongAsync(BitConverter.ToInt64(arr, 8));
+        }
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 

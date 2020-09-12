@@ -84,10 +84,12 @@ namespace Obsidian.Net
             await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
         }
 
-        public async Task ClearDebug()
+        public Task ClearDebug()
         {
             this.debugMemoryStream.Dispose();
             this.debugMemoryStream = new MemoryStream();
+
+            return Task.CompletedTask;
         }
 
         public override void Flush() => this.BaseStream.Flush();
