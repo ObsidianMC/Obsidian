@@ -81,7 +81,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.Logger = new AsyncLogger($"[Obsidian/{serverId}]", Program.Config.LogLevel, Path.Combine(ServerFolderPath, "latest.log"));
+            this.Logger = new AsyncLogger($"Obsidian/{serverId}", Program.Config.LogLevel, Path.Combine(ServerFolderPath, "latest.log"));
 
             this.Port = config.Port;
             this.Version = version;
@@ -172,8 +172,9 @@ namespace Obsidian
                 return;
             }
 
-            await BlockRegistry.RegisterAllAsync();
-            await ItemRegistry.RegisterAllAsync();
+            await Registry.RegisterBlocksAsync();
+            await Registry.RegisterItemsAsync();
+            await Registry.RegisterBiomesAsync();
 
             await this.Logger.LogMessageAsync($"Loading properties...");
             await this.Operators.InitializeAsync();
@@ -257,7 +258,7 @@ namespace Obsidian
                         break;
                 }
 
-                var b = new BlockChange(location, BlockRegistry.GetBlock(Materials.Cobblestone).Id);
+                var b = new BlockChange(location, Registry.GetBlock(Materials.Cobblestone).Id);
 
                 await client.SendBlockChangeAsync(b);
             }
@@ -349,7 +350,7 @@ namespace Obsidian
 
                     if (this.diggers.TryPeek(out PlayerDigging d))
                     {
-                        var b = new BlockChange(d.Location, BlockRegistry.GetBlock(Materials.Air).Id);
+                        var b = new BlockChange(d.Location, Registry.GetBlock(Materials.Air).Id);
 
                         await player.client.SendBlockChangeAsync(b);
                     }

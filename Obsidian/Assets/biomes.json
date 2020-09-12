@@ -1,0 +1,227 @@
+{
+  "minecraft:ocean": {
+    "protocol_id": 0
+  },
+  "minecraft:plains": {
+    "protocol_id": 1
+  },
+  "minecraft:desert": {
+    "protocol_id": 2
+  },
+  "minecraft:mountains": {
+    "protocol_id": 3
+  },
+  "minecraft:forest": {
+    "protocol_id": 4
+  },
+  "minecraft:taiga": {
+    "protocol_id": 5
+  },
+  "minecraft:swamp": {
+    "protocol_id": 6
+  },
+  "minecraft:river": {
+    "protocol_id": 7
+  },
+  "minecraft:nether": {
+    "protocol_id": 8
+  },
+  "minecraft:the_end": {
+    "protocol_id": 9
+  },
+  "minecraft:frozen_ocean": {
+    "protocol_id": 10
+  },
+  "minecraft:frozen_river": {
+    "protocol_id": 11
+  },
+  "minecraft:snowy_tundra": {
+    "protocol_id": 12
+  },
+  "minecraft:snowy_mountains": {
+    "protocol_id": 13
+  },
+  "minecraft:mushroom_fields": {
+    "protocol_id": 14
+  },
+  "minecraft:mushroom_field_shore": {
+    "protocol_id": 15
+  },
+  "minecraft:beach": {
+    "protocol_id": 16
+  },
+  "minecraft:desert_hills": {
+    "protocol_id": 17
+  },
+  "minecraft:wooded_hills": {
+    "protocol_id": 18
+  },
+  "minecraft:taiga_hills": {
+    "protocol_id": 19
+  },
+  "minecraft:mountain_edge": {
+    "protocol_id": 20
+  },
+  "minecraft:jungle": {
+    "protocol_id": 21
+  },
+  "minecraft:jungle_hills": {
+    "protocol_id": 22
+  },
+  "minecraft:jungle_edge": {
+    "protocol_id": 23
+  },
+  "minecraft:deep_ocean": {
+    "protocol_id": 24
+  },
+  "minecraft:stone_shore": {
+    "protocol_id": 25
+  },
+  "minecraft:snowy_beach": {
+    "protocol_id": 26
+  },
+  "minecraft:birch_forest": {
+    "protocol_id": 27
+  },
+  "minecraft:birch_forest_hills": {
+    "protocol_id": 28
+  },
+  "minecraft:dark_forest": {
+    "protocol_id": 29
+  },
+  "minecraft:snowy_taiga": {
+    "protocol_id": 30
+  },
+  "minecraft:snowy_taiga_hills": {
+    "protocol_id": 31
+  },
+  "minecraft:giant_tree_taiga": {
+    "protocol_id": 32
+  },
+  "minecraft:giant_tree_taiga_hills": {
+    "protocol_id": 33
+  },
+  "minecraft:wooded_mountains": {
+    "protocol_id": 34
+  },
+  "minecraft:savanna": {
+    "protocol_id": 35
+  },
+  "minecraft:savanna_plateau": {
+    "protocol_id": 36
+  },
+  "minecraft:badlands": {
+    "protocol_id": 37
+  },
+  "minecraft:wooded_badlands_plateau": {
+    "protocol_id": 38
+  },
+  "minecraft:badlands_plateau": {
+    "protocol_id": 39
+  },
+  "minecraft:small_end_islands": {
+    "protocol_id": 40
+  },
+  "minecraft:end_midlands": {
+    "protocol_id": 41
+  },
+  "minecraft:end_highlands": {
+    "protocol_id": 42
+  },
+  "minecraft:end_barrens": {
+    "protocol_id": 43
+  },
+  "minecraft:warm_ocean": {
+    "protocol_id": 44
+  },
+  "minecraft:lukewarm_ocean": {
+    "protocol_id": 45
+  },
+  "minecraft:cold_ocean": {
+    "protocol_id": 46
+  },
+  "minecraft:deep_warm_ocean": {
+    "protocol_id": 47
+  },
+  "minecraft:deep_lukewarm_ocean": {
+    "protocol_id": 48
+  },
+  "minecraft:deep_cold_ocean": {
+    "protocol_id": 49
+  },
+  "minecraft:deep_frozen_ocean": {
+    "protocol_id": 50
+  },
+  "minecraft:the_void": {
+    "protocol_id": 127
+  },
+  "minecraft:sunflower_plains": {
+    "protocol_id": 129
+  },
+  "minecraft:desert_lakes": {
+    "protocol_id": 130
+  },
+  "minecraft:gravelly_mountains": {
+    "protocol_id": 131
+  },
+  "minecraft:flower_forest": {
+    "protocol_id": 132
+  },
+  "minecraft:taiga_mountains": {
+    "protocol_id": 133
+  },
+  "minecraft:swamp_hills": {
+    "protocol_id": 134
+  },
+  "minecraft:ice_spikes": {
+    "protocol_id": 140
+  },
+  "minecraft:modified_jungle": {
+    "protocol_id": 149
+  },
+  "minecraft:modified_jungle_edge": {
+    "protocol_id": 151
+  },
+  "minecraft:tall_birch_forest": {
+    "protocol_id": 155
+  },
+  "minecraft:tall_birch_hills": {
+    "protocol_id": 156
+  },
+  "minecraft:dark_forest_hills": {
+    "protocol_id": 157
+  },
+  "minecraft:snowy_taiga_mountains": {
+    "protocol_id": 158
+  },
+  "minecraft:giant_spruce_taiga": {
+    "protocol_id": 160
+  },
+  "minecraft:giant_spruce_taiga_hills": {
+    "protocol_id": 161
+  },
+  "minecraft:modified_gravelly_mountains": {
+    "protocol_id": 162
+  },
+  "minecraft:shattered_savanna": {
+    "protocol_id": 163
+  },
+  "minecraft:shattered_savanna_plateau": {
+    "protocol_id": 164
+  },
+  "minecraft:eroded_badlands": {
+    "protocol_id": 165
+  },
+  "minecraft:modified_wooded_badlands_plateau": {
+    "protocol_id": 166
+  },
+  "minecraft:modified_badlands_plateau": {
+    "protocol_id": 167
+  },
+  "minecraft:bamboo_jungle": {
+    "protocol_id": 168
+  },
+  "minecraft:bamboo_jungle_hills": {
+    "protocol_id": 169
+  }
+}

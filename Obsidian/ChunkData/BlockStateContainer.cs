@@ -1,6 +1,8 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Net;
 using Obsidian.Util.Collection;
+using Obsidian.Util.Extensions;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -15,7 +17,7 @@ namespace Obsidian.ChunkData
 
         public IBlockStatePalette Palette { get; }
 
-        public BlockStateContainer(byte bitsPerBlock = 14)
+        public BlockStateContainer(byte bitsPerBlock = 8)
         {
             this.BitsPerBlock = bitsPerBlock;
 
@@ -42,13 +44,27 @@ namespace Obsidian.ChunkData
             return this.Palette.GetStateFromIndex(storageId);
         }
 
-        public int GetIndex(int x, int y, int z) => (y * 16 + z) * 16 + x;
-
-        //private int GetIndex(int x, int y, int z) => (y << 8) | (z << 4) | x;
+        public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
         public async Task WriteToAsync(MinecraftStream stream)
         {
-            await stream.WriteByteAsync((sbyte)this.BitsPerBlock);
+            short validBlockCount = 0;
+            for (int x = 0; x < 16; x++)
+            {
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int z = 0; z < 16; z++)
+                    {
+                        var block = this.Get(x, y, z);
+
+                        if (block != null && block.NotAir())
+                            validBlockCount++;
+                    }
+                }
+            }
+
+            await stream.WriteShortAsync(validBlockCount);
+            await stream.WriteUnsignedByteAsync(this.BitsPerBlock);
 
             await this.Palette.WriteToAsync(stream);
 

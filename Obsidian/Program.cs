@@ -23,7 +23,7 @@ namespace Obsidian
         public static Random Random = new Random();
 
 
-        public static readonly AsyncLogger RegistryLogger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
+        
         public static readonly AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
 
         private static DefaultContractResolver ContractResolver = new DefaultContractResolver

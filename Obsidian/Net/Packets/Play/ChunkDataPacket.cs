@@ -1,7 +1,7 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.ChunkData;
+using Obsidian.Nbt;
 using Obsidian.World;
 using System;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -12,40 +12,39 @@ namespace Obsidian.Net.Packets.Play
     {
         public Chunk Chunk { get; set; }
 
-        public int changedSectionFilter = 0b1111111111111111;
+        public int changedSectionFilter = 65535;//0b1111111111111111;
 
         public ChunkDataPacket(Chunk chunk) : base(0x22) => this.Chunk = chunk;
 
         protected override async Task ComposeAsync(MinecraftStream stream)
         {
             var sections = this.Chunk.Sections;
-            var biomes = this.Chunk.Biomes;
             var blockEntities = this.Chunk.BlockEntities;
-            //var heightmaps = this.Chunk.Heightmaps;
 
-            bool fullChunk = true; // changedSectionFilter == 0b1111111111111111;
+            bool fullChunk = true;
 
             await stream.WriteIntAsync(this.Chunk.X);
             await stream.WriteIntAsync(this.Chunk.Z);
 
             await stream.WriteBooleanAsync(fullChunk);
 
-            int mask = 0;
-
             await using var dataStream = new MinecraftStream();
 
-            var chunkSectionY = 0;
+            int chunkSectionY = 0;
+            int mask = 0;
+
+            //Read sections to calculate mask and also write sections to a seperate stream
             foreach (var section in sections)
             {
                 if (section == null)
                     throw new InvalidOperationException();
 
-                if (fullChunk || (mask & (1 << chunkSectionY)) != 0)
+                if (fullChunk || (changedSectionFilter & 1 << chunkSectionY) != 0)
                 {
                     mask |= 1 << chunkSectionY;
-
                     await section.WriteToAsync(dataStream);
                 }
+
                 chunkSectionY++;
             }
 
@@ -54,50 +53,28 @@ namespace Obsidian.Net.Packets.Play
 
             await stream.WriteVarIntAsync(mask);
 
-            /*Writing heightmap
+            this.Chunk.CalculateHeightmap();
+            var heightmaps = this.Chunk.Heightmaps;
 
-            var nbtStream = new MemoryStream();
-            var writer = new NbtWriter(nbtStream, "");
+            var writer = new NbtWriter(stream, "");
+            foreach (var (name, heightmap) in heightmaps)
+                writer.WriteLongArray(name, heightmap.GetDataArray().Cast<long>().ToArray());
 
-            foreach (var (name, map) in heightmaps)
-            {
-                writer.WriteLongArray(name, map.GetDataArray().Cast<long>().ToArray());
-            }
-            
             writer.EndCompound();
             writer.Finish();
 
-            nbtStream.Position = 0;
-            var reader = new NbtReader(nbtStream);
-
-            var tag = reader.ReadAsTag();
-
-            Console.WriteLine(tag.ToString());
-
-            nbtStream.Position = 0;
-
-            await nbtStream.CopyToAsync(dataStream);*/
-
             if (fullChunk)
-            {
-                if (biomes.Count != 16 * 16)
-                    throw new InvalidOperationException();
-
-                foreach (int biomeId in biomes)
-                    await dataStream.WriteIntAsync(biomeId);
-            }
-
-            await stream.WriteVarIntAsync((int)dataStream.Length);
+                await this.Chunk.BiomeContainer.WriteToAsync(stream);
 
             dataStream.Position = 0;
+            await stream.WriteVarIntAsync((int)dataStream.Length);
+
             await dataStream.CopyToAsync(stream);
 
-            await stream.WriteVarIntAsync(blockEntities.Count);
+            await stream.WriteVarIntAsync(0);
 
             foreach (var entity in blockEntities)
                 await stream.WriteNbtAsync(entity);
         }
-
-        private int NeededBits(int value) => BitOperations.LeadingZeroCount((uint)value);
     }
 }

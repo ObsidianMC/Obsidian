@@ -3,8 +3,8 @@ using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Obsidian.World
 {
@@ -13,10 +13,11 @@ namespace Obsidian.World
         public int X { get; }
         public int Z { get; }
 
+        public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
+
         public Block[,,] Blocks { get; private set; } = new Block[16, 16, 16];
 
         public List<ChunkSection> Sections { get; private set; } = new List<ChunkSection>();
-        public List<int> Biomes { get; private set; } = new List<int>(16 * 16);
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
 
         public Dictionary<string, Heightmap> Heightmaps { get; private set; } = new Dictionary<string, Heightmap>();
@@ -32,39 +33,13 @@ namespace Obsidian.World
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        this.Blocks[chunkX, chunkY, chunkZ] = BlockRegistry.GetBlock(Materials.Air);
+                        this.Blocks[chunkX, chunkY, chunkZ] = Registry.GetBlock(Materials.Air);
                     }
                 }
             }
 
             this.Heightmaps.Add("MOTION_BLOCKING", new Heightmap("MOTION_BLOCKING", this));
-        }
-
-        public void CalculateHeightmap()
-        {
-            for (int y = 15; y >= 0; y--)
-            {
-                var section = this.Sections[y];
-
-                if (section == null)
-                    continue;
-
-                for (int x = 0; x < 16; x++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        if (this.Sections[y].GetHighestBlock(X, z) != 0)
-                            continue;
-
-                        int height = section.GetHighestBlock(x, z);
-
-                        if (height == -1)
-                            continue;
-
-                        this.Heightmaps["MOTION_BLOCKING"].Set(x, z, y * 16 + height + 1);
-                    }
-                }
-            }
+           // this.Heightmaps.Add("WORLD_SURFACE", new Heightmap("WORLD_SURFACE", this));
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
@@ -73,11 +48,32 @@ namespace Obsidian.World
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
+        public void CalculateHeightmap()
+        {
+            for (int y = 15; y >= 0; y--)
+            {
+                var section = this.Sections.ElementAtOrDefault(y);
+
+                if (section == null)
+                    continue;
+
+                for (int x = 0; x < 16; x++)
+                {
+                    for (int z = 0; z < 16; z++)
+                    {
+                        var height = this.Sections[y].GetHighestBlock(X, z);
+                        if (height < 0)
+                            continue;
+
+                        this.Heightmaps["MOTION_BLOCKING"].Set(x, z, height);
+                    }
+                }
+            }
+        }
+
         public void SetBlock(int x, int y, int z, Block block)
         {
             this.Blocks[x, y, z] = block;
-
-            this.Heightmaps["MOTION_BLOCKING"].Update(x, y, z, block);
         }
 
         internal void AddSection(ChunkSection section) => this.Sections.Add(section);

@@ -32,7 +32,7 @@ namespace SamplePlugin
                     {
                         if ((y == 0 && x >= 3 && x <= 5) || (x == 4 && y >= 0 && y <= 2))
                         {
-                            SetBlock2(x * 2, y * 2, z * 2, BlockRegistry.GetBlock(Materials.Stone));
+                            SetBlock2(x * 2, y * 2, z * 2, Registry.GetBlock(Materials.Stone));
                         }
                     }
                 }

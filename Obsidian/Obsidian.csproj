@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Assets\biomes.json" />
     <None Remove="Serializer\Attributes\NewFile1.txt" />
     <None Remove="Serializer\Enums\NewFile1.txt" />
   </ItemGroup>

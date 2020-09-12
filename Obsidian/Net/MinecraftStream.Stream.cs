@@ -67,6 +67,23 @@ namespace Obsidian.Net
             await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
         }
 
+        public async Task DumpAsync(bool clear = true, string name = "")
+        {
+            if (this.debugMemoryStream == null)
+                throw new Exception("Can't dump a stream who wasn't set to debug.");
+
+            // TODO: Stream the memory stream into a file stream for better performance and stuff :3
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
+
+            var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{name}-" + Path.GetRandomFileName() + ".bin");
+            await File.WriteAllBytesAsync(filePath, this.debugMemoryStream.ToArray());
+
+            if (clear)
+                await ClearDebug();
+
+            await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
+        }
+
         public async Task ClearDebug()
         {
             this.debugMemoryStream.Dispose();

@@ -10,9 +10,9 @@ namespace Obsidian.ChunkData
     {
         public bool IsFull { get { return false; } }
 
-        public int GetIdFromState(Block blockState) => BlockRegistry.BlockStates.Values.ToList().IndexOf(blockState);
+        public int GetIdFromState(Block blockState) => Registry.Blocks.Values.ToList().IndexOf(blockState);
 
-        public Block GetStateFromIndex(int index) => BlockRegistry.BlockStates.Values.ToList()[index];
+        public Block GetStateFromIndex(int index) => Registry.Blocks.Values.ToList()[index];
 
         public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 

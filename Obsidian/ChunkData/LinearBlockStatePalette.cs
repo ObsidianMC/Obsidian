@@ -13,7 +13,7 @@ namespace Obsidian.ChunkData
 
         public bool IsFull => this.BlockStateArray.Length == this.BlockStateCount;
 
-        public LinearBlockStatePalette(int bitCount)
+        public LinearBlockStatePalette(byte bitCount)
         {
             this.BlockStateArray = new Block[1 << bitCount];
         }
@@ -39,13 +39,14 @@ namespace Obsidian.ChunkData
         public Block GetStateFromIndex(int index)
         {
             if (index > this.BlockStateCount - 1)
-                throw new IndexOutOfRangeException($"{index} > {this.BlockStateCount - 1}");
+               return null;
 
             return this.BlockStateArray[index];
         }
 
         public async Task WriteToAsync(MinecraftStream stream)
         {
+            Console.WriteLine(this.BlockStateCount);
             await stream.WriteVarIntAsync(this.BlockStateCount);
 
             for (int i = 0; i < this.BlockStateCount; i++)
@@ -60,7 +61,7 @@ namespace Obsidian.ChunkData
             {
                 int stateId = await stream.ReadVarIntAsync();
 
-                Block blockState = BlockRegistry.FromId(stateId);
+                Block blockState = Registry.GetBlockFromId(stateId);
 
                 this.BlockStateArray[i] = blockState;
                 this.BlockStateCount++;
