@@ -7,6 +7,6 @@ namespace Obsidian.Net.Packets.Play
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
 
-        public EntityPacket() : base(0x27) { }
+        public EntityPacket() : base(0x2C) { }
     }
 }

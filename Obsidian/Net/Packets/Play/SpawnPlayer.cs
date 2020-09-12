@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
 using System;
@@ -22,11 +21,6 @@ namespace Obsidian.Net.Packets.Play
 
         [Field(4)]
         public Angle Pitch { get; set; }
-
-        [Field(5)]
-        public byte EOF = 255;
-
-        public Player Player { get; set; }
 
         public SpawnPlayer() : base(0x05) { }
     }

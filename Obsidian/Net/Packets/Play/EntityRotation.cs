@@ -3,7 +3,7 @@ using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class EntityLook : Packet
+    public class EntityRotation : Packet
     {
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play
         [Field(3)]
         public bool OnGround { get; set; }
 
-        public EntityLook() : base(0x2A) { }
+        public EntityRotation() : base(0x2B) { }
     }
 }

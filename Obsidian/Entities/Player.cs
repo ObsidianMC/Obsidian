@@ -107,9 +107,7 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-                this.UpdatePosition(position, onGround);
-
-                await this.client.Server.BroadcastPacketWithoutQueueAsync(new EntityRelativeMove
+                await this.client.Server.BroadcastPacketAsync(new EntityPosition
                 {
                     EntityId = this.client.id,
 
@@ -119,7 +117,7 @@ namespace Obsidian.Entities
 
                     OnGround = onGround
                 }, this);
-
+                this.UpdatePosition(position, onGround);
             }
         }
 
@@ -130,7 +128,7 @@ namespace Obsidian.Entities
 
             if (isNewRotation)
             {
-                await this.client.Server.BroadcastPacketAsync(new EntityLook
+                await this.client.Server.BroadcastPacketAsync(new EntityRotation
                 {
                     EntityId = this.client.id,
                     OnGround = onGround,
@@ -163,7 +161,7 @@ namespace Obsidian.Entities
                 {
                     if (isNewRotation)
                     {
-                        await this.client.Server.BroadcastPacketAsync(new EntityLookRelativeMove
+                        await this.client.Server.BroadcastPacketAsync(new EntityPositionAndRotation
                         {
                             EntityId = this.client.id,
 
@@ -180,7 +178,7 @@ namespace Obsidian.Entities
                     }
                     else
                     {
-                        await this.client.Server.BroadcastPacketAsync(new EntityRelativeMove
+                        await this.client.Server.BroadcastPacketAsync(new EntityPosition
                         {
                             EntityId = this.client.id,
 
