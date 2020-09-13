@@ -2,11 +2,11 @@
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class EntityPacket : Packet
+    public class EntityMovement : Packet
     {
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
 
-        public EntityPacket() : base(0x2C) { }
+        public EntityMovement() : base(0x2C) { }
     }
 }

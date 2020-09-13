@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class PlayerLook : Packet
+    public class PlayerRotation : Packet
     {
         [Field(0)]
         public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
@@ -15,11 +15,11 @@ namespace Obsidian.Net.Packets.Play
         [Field(2)]
         public bool OnGround { get; set; }
 
-        public PlayerLook() : base(0x12) { }
+        public PlayerRotation() : base(0x12) { }
 
-        public PlayerLook(byte[] data) : base(0x12, data) { }
+        public PlayerRotation(byte[] data) : base(0x12, data) { }
 
-        public PlayerLook(float yaw, float pitch, bool onground) : base(0x12)
+        public PlayerRotation(float yaw, float pitch, bool onground) : base(0x12)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;

@@ -121,7 +121,7 @@ namespace Obsidian.Tests
             await stream.WriteBooleanAsync(onGround);
             stream.Position = 0;
 
-            var packet = PacketSerializer.FastDeserialize<PlayerLook>(stream);
+            var packet = PacketSerializer.FastDeserialize<PlayerRotation>(stream);
 
             Assert.Equal(yaw, packet.Yaw);
             Assert.Equal(pitch, packet.Pitch);

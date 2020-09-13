@@ -382,19 +382,15 @@ namespace Obsidian
 
         private async Task SendSpawnPlayerAsync(Player except)
         {
-            await this.Logger.LogWarningAsync($"Received spawn player sending to other clients... {string.Join(", ", this.OnlinePlayers.Except(except).Select(x => x.Value.Username))}");
-
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
-                await this.Logger.LogWarningAsync($"Sending to: {player.Username} \nExcluded: {except.Username}");
-
-                await player.client.SendEntityAsync(new EntityPacket
+                await player.client.SendEntityAsync(new EntityMovement
                 {
                     EntityId = except.client.id
                 });
                 await player.client.SpawnPlayerAsync(except).ConfigureAwait(false);
 
-                await except.client.SendEntityAsync(new EntityPacket
+                await except.client.SendEntityAsync(new EntityMovement
                 {
                     EntityId = player.client.id
                 });

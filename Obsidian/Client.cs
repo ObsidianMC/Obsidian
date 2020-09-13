@@ -138,7 +138,7 @@ namespace Obsidian
             await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
         }
 
-        internal async Task SendEntityAsync(EntityPacket packet)
+        internal async Task SendEntityAsync(EntityMovement packet)
         {
             await this.QueuePacketAsync(packet);
             await this.Logger.LogDebugAsync($"Sent entity with id {packet.EntityId} for player {this.Player.Username}");
@@ -508,7 +508,6 @@ namespace Obsidian
 
         internal async Task SpawnPlayerAsync(Player who)
         {
-            await this.Logger.LogWarningAsync($"Sending spawn player packet... from: {this.Player.Username}");
             await this.QueuePacketAsync(new SpawnPlayer
             {
                 EntityId = who.client.id,

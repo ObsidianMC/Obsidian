@@ -4,6 +4,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer;
+using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
@@ -169,17 +170,17 @@ namespace Obsidian.Util
                     break;
 
                 case 0x12:
-                    // Player Position And rotation (serverbound)
+                    //Player Position And rotation (serverbound)
                     var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(new MinecraftStream(packet.data));
 
-                    // await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
+                    await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
 
                 case 0x13:
                     // Player rotation
-                    var look = PacketSerializer.FastDeserialize<PlayerLook>(new MinecraftStream(packet.data));
+                    var look = PacketSerializer.FastDeserialize<PlayerRotation>(packet.data);
 
-                    // await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);//this makes player fly all over the place idk why
+                    await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);
                     break;
 
                 case 0x14://Player movement

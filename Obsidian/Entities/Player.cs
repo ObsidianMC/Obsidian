@@ -99,9 +99,9 @@ namespace Obsidian.Entities
 
         internal async Task UpdateAsync(Position position, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128);
-            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128);
-            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
+            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 64);
+            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 64);
+            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 64);
 
             var isNewLocation = position != this.LastPosition;
 
@@ -134,7 +134,7 @@ namespace Obsidian.Entities
                     OnGround = onGround,
                     Yaw = yaw,
                     Pitch = pitch
-                });
+                }, this);
 
                 this.UpdatePosition(yaw, pitch, onGround);
             }
@@ -143,9 +143,9 @@ namespace Obsidian.Entities
         //TODO move all location and rotation properties to the LivingEntity class
         internal async Task UpdateAsync(Position position, Angle yaw, Angle pitch, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 128),
-                 newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 128),
-                 newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 128);
+            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 64);
+            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 64);
+            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 64);
 
             var isNewLocation = position != this.LastPosition;
 
@@ -156,40 +156,35 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-
-                if (Math.Abs(newX) <= short.MaxValue && Math.Abs(newY) <= short.MaxValue && Math.Abs(newZ) <= short.MaxValue)
+                if (isNewRotation)
                 {
-                    if (isNewRotation)
+                    await this.client.Server.BroadcastPacketAsync(new EntityPositionAndRotation
                     {
-                        await this.client.Server.BroadcastPacketAsync(new EntityPositionAndRotation
-                        {
-                            EntityId = this.client.id,
+                        EntityId = this.client.id,
 
-                            DeltaX = newX,
-                            DeltaY = newY,
-                            DeltaZ = newZ,
+                        DeltaX = newX,
+                        DeltaY = newY,
+                        DeltaZ = newZ,
 
-                            Yaw = yaw,
+                        Yaw = yaw,
 
-                            Pitch = pitch,
+                        Pitch = pitch,
 
-                            OnGround = onGround
-                        }, this);
-                    }
-                    else
+                        OnGround = onGround
+                    }, this);
+                }
+                else
+                {
+                    await this.client.Server.BroadcastPacketAsync(new EntityPosition
                     {
-                        await this.client.Server.BroadcastPacketAsync(new EntityPosition
-                        {
-                            EntityId = this.client.id,
+                        EntityId = this.client.id,
 
-                            DeltaX = newX,
-                            DeltaY = newY,
-                            DeltaZ = newZ,
+                        DeltaX = newX,
+                        DeltaY = newY,
+                        DeltaZ = newZ,
 
-                            OnGround = onGround
-                        }, this);
-                    }
-
+                        OnGround = onGround
+                    }, this);
                 }
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
