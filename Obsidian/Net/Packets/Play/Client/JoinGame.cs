@@ -1,7 +1,7 @@
 ﻿using Obsidian.PlayerData;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.World;
+using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Client
 {

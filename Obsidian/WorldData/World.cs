@@ -1,5 +1,4 @@
-﻿using Obsidian;
-using Obsidian.Concurrency;
+﻿using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.PlayerData;
@@ -8,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Obsidian.World
+namespace Obsidian.WorldData
 {
     public class World
     {

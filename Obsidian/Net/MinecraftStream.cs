@@ -30,8 +30,6 @@ namespace Obsidian.Net
 
         #region Writing
 
-
-
         public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
             await this.WriteUnsignedByteAsync(index);
@@ -51,7 +49,7 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.String:
-                    await this.WriteStringAsync((string)value, 3276);
+                    await this.WriteStringAsync((string)value);
                     break;
 
                 case EntityMetadataType.Chat:

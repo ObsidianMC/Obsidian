@@ -1,5 +1,5 @@
 ﻿using Obsidian.Nbt;
-using Obsidian.World;
+using Obsidian.WorldData;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

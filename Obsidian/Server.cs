@@ -17,8 +17,8 @@ using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
-using Obsidian.World;
-using Obsidian.World.Generators;
+using Obsidian.WorldData;
+using Obsidian.WorldData.Generators;
 using Qmmands;
 using System;
 using System.Collections.Concurrent;
@@ -71,7 +71,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
 
-        public World.World World { get; }
+        public WorldData.World World { get; }
 
         public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
 
@@ -110,7 +110,7 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.World = new World.World("", this.WorldGenerator);
+            this.World = new WorldData.World("", this.WorldGenerator);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;

@@ -1,6 +1,6 @@
 ﻿using Obsidian.Util.DataTypes;
 
-namespace Obsidian.World
+namespace Obsidian.WorldData
 {
     public abstract class TileEntity
     {

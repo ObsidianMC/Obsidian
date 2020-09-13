@@ -6,7 +6,7 @@ using Obsidian.Util.Registry;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Obsidian.World
+namespace Obsidian.WorldData
 {
     public class Chunk
     {

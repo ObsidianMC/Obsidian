@@ -21,7 +21,7 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
-using Obsidian.World;
+using Obsidian.WorldData;
 
 using System;
 using System.Collections.Concurrent;
@@ -91,198 +91,7 @@ namespace Obsidian
             this.Dispose(false);
         }
 
-        #region Packet Sending Methods
-
-        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacketAsync(new Disconnect(reason, this.State));
-
-        internal async Task ProcessKeepAlive(long id)
-        {
-            this.ping = (int)(DateTime.Now.Millisecond - id);
-            await this.SendPacketAsync(new KeepAlive(id));
-            this.missedKeepalives += 1; // This will be decreased after an answer is received.
-            if (this.missedKeepalives > this.config.MaxMissedKeepalives)
-            {
-                // Too many keepalives missed, kill this connection.
-                this.Cancellation.Cancel();
-            }
-
-            /////Sending ping change in background
-            ///await Task.Run(async delegate ()
-            ///{
-            ///    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
-            ///    {
-            ///        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
-            ///        {
-            ///            new PlayerInfoUpdatePingAction()
-            ///            {
-            ///                Ping = this.Ping
-            ///            }
-            ///        }), this.MinecraftStream);
-            ///    }
-            ///}).ConfigureAwait(false);
-        }
-
-        internal async Task SendPlayerLookPositionAsync(Position poslook, PositionFlags posflags, int tpid = 0)
-        {
-            await this.QueuePacketAsync(new ClientPlayerPositionLook
-            {
-                Position = poslook,
-                Flags = posflags,
-                TeleportId = tpid
-            });
-        }
-
-        internal async Task SendBlockChangeAsync(BlockChange b)
-        {
-            await this.Logger.LogMessageAsync($"Sending block change to {Player.Username}");
-            await this.QueuePacketAsync(b);
-            await this.Logger.LogMessageAsync($"Block change sent to {Player.Username}");
-        }
-
-        internal async Task SendEntityAsync(EntityMovement packet)
-        {
-            await this.QueuePacketAsync(packet);
-            await this.Logger.LogDebugAsync($"Sent entity with id {packet.EntityId} for player {this.Player.Username}");
-        }
-
-        internal async Task SendDeclareCommandsAsync()
-        {
-            var packet = new DeclareCommands();
-
-            var node = new CommandNode()
-            {
-                Type = CommandNodeType.Root
-            };
-            var index = 0;
-            foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
-            {
-                var commandNode = new CommandNode()
-                {
-                    Name = command.Name,
-                    Type = CommandNodeType.Literal,
-                    Index = ++index
-                };
-
-                foreach (Qmmands.Parameter parameter in command.Parameters)
-                {
-                    var parameterNode = new CommandNode()
-                    {
-                        Name = parameter.Name,
-                        Type = CommandNodeType.Argument,
-                        Index = ++index
-                    };
-
-                    Type type = parameter.Type;
-
-                    if (type == typeof(string))
-                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                    else if (type == typeof(double))
-                        parameterNode.Parser = new CommandParser("brigadier:double");
-                    else if (type == typeof(float))
-                        parameterNode.Parser = new CommandParser("brigadier:float");
-                    else if (type == typeof(int))
-                        parameterNode.Parser = new CommandParser("brigadier:integer");
-                    else if (type == typeof(bool))
-                        parameterNode.Parser = new CommandParser("brigadier:bool");
-                    else if (type == typeof(Position))
-                        parameterNode.Parser = new CommandParser("minecraft:vec3");
-                    else
-                        continue;
-
-                    commandNode.AddChild(parameterNode);
-                }
-
-                if (commandNode.Children.Count > 0)
-                {
-                    commandNode.Children[0].Type |= CommandNodeType.IsExecutabe;
-                }
-                else
-                {
-                    commandNode.Type |= CommandNodeType.IsExecutabe;
-                }
-
-                node.AddChild(commandNode);
-            }
-
-            packet.AddNode(node);
-            await this.QueuePacketAsync(packet);
-            await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
-        }
-
-        internal async Task RemovePlayerFromListAsync(Player player)
-        {
-            var list = new List<PlayerInfoAction>
-            {
-                new PlayerInfoAction
-                {
-                    Uuid = player.Uuid
-                }
-            };
-
-            await this.QueuePacketAsync(new PlayerInfo(4, list));
-            await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
-        }
-
-        internal async Task AddPlayerToListAsync(Player player)
-        {
-            var list = new List<PlayerInfoAction>
-            {
-                new PlayerInfoAddAction
-                {
-                    Name = player.Username,
-                    Uuid = player.Uuid,
-                    Ping = this.Player.Ping,
-                    Gamemode = (int)this.Player.Gamemode,
-                    DisplayName = ChatMessage.Simple(player.Username)
-                }
-            };
-
-            await this.QueuePacketAsync(new PlayerInfo(0, list));
-            await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
-        }
-
-        internal async Task SendPlayerInfoAsync()
-        {
-            var list = new List<PlayerInfoAction>();
-
-            foreach (Player player in this.Server.OnlinePlayers.Values)
-            {
-                var piaa = new PlayerInfoAddAction()
-                {
-                    Name = player.Username,
-                    Uuid = player.Uuid,
-                    Ping = player.Ping,
-                    Gamemode = (int)Player.Gamemode,
-                    DisplayName = ChatMessage.Simple(player.Username)
-                };
-
-                if (this.config.OnlineMode)
-                {
-                    var uuid = player.Uuid.ToString().Replace("-", "");
-                    var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
-                    piaa.Properties.AddRange(skin.Properties);
-                }
-
-                list.Add(piaa);
-            }
-
-            await this.QueuePacketAsync(new PlayerInfo(0, list));
-            await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
-        }
-
-        #endregion Packet Sending Methods
-
-        private async Task<Packet> GetNextPacketAsync()
-        {
-            if (this.compressionEnabled)
-            {
-                return await PacketHandler.ReadCompressedPacketAsync(this.minecraftStream);
-            }
-            else
-            {
-                return await PacketHandler.ReadPacketAsync(this.minecraftStream);
-            }
-        }
+        private Task<Packet> GetNextPacketAsync() => this.compressionEnabled ? PacketHandler.ReadCompressedPacketAsync(this.minecraftStream) : PacketHandler.ReadPacketAsync(this.minecraftStream);
 
         public async Task StartConnectionAsync()
         {
@@ -507,6 +316,176 @@ namespace Obsidian
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
 
+        #region Packet Sending Methods
+
+        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacketAsync(new Disconnect(reason, this.State));
+
+        internal async Task ProcessKeepAlive(long id)
+        {
+            this.ping = (int)(DateTime.Now.Millisecond - id);
+            await this.SendPacketAsync(new KeepAlive(id));
+            this.missedKeepalives += 1; // This will be decreased after an answer is received.
+            if (this.missedKeepalives > this.config.MaxMissedKeepalives)
+            {
+                // Too many keepalives missed, kill this connection.
+                this.Cancellation.Cancel();
+            }
+
+            /////Sending ping change in background
+            ///await Task.Run(async delegate ()
+            ///{
+            ///    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
+            ///    {
+            ///        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
+            ///        {
+            ///            new PlayerInfoUpdatePingAction()
+            ///            {
+            ///                Ping = this.Ping
+            ///            }
+            ///        }), this.MinecraftStream);
+            ///    }
+            ///}).ConfigureAwait(false);
+        }
+
+        internal async Task SendPlayerLookPositionAsync(Position poslook, PositionFlags posflags, int tpid = 0)
+        {
+            await this.QueuePacketAsync(new ClientPlayerPositionLook
+            {
+                Position = poslook,
+                Flags = posflags,
+                TeleportId = tpid
+            });
+        }
+
+        internal Task SendBlockChangeAsync(BlockChange b) => this.QueuePacketAsync(b);
+
+        internal Task SendEntityAsync(EntityMovement packet) => this.QueuePacketAsync(packet);
+
+        internal async Task SendDeclareCommandsAsync()
+        {
+            var packet = new DeclareCommands();
+
+            var node = new CommandNode()
+            {
+                Type = CommandNodeType.Root
+            };
+            var index = 0;
+            foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
+            {
+                var commandNode = new CommandNode()
+                {
+                    Name = command.Name,
+                    Type = CommandNodeType.Literal,
+                    Index = ++index
+                };
+
+                foreach (Qmmands.Parameter parameter in command.Parameters)
+                {
+                    var parameterNode = new CommandNode()
+                    {
+                        Name = parameter.Name,
+                        Type = CommandNodeType.Argument,
+                        Index = ++index
+                    };
+
+                    Type type = parameter.Type;
+
+                    if (type == typeof(string))
+                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                    else if (type == typeof(double))
+                        parameterNode.Parser = new CommandParser("brigadier:double");
+                    else if (type == typeof(float))
+                        parameterNode.Parser = new CommandParser("brigadier:float");
+                    else if (type == typeof(int))
+                        parameterNode.Parser = new CommandParser("brigadier:integer");
+                    else if (type == typeof(bool))
+                        parameterNode.Parser = new CommandParser("brigadier:bool");
+                    else if (type == typeof(Position))
+                        parameterNode.Parser = new CommandParser("minecraft:vec3");
+                    else
+                        continue;
+
+                    commandNode.AddChild(parameterNode);
+                }
+
+                if (commandNode.Children.Count > 0)
+                {
+                    commandNode.Children[0].Type |= CommandNodeType.IsExecutabe;
+                }
+                else
+                {
+                    commandNode.Type |= CommandNodeType.IsExecutabe;
+                }
+
+                node.AddChild(commandNode);
+            }
+
+            packet.AddNode(node);
+            await this.QueuePacketAsync(packet);
+            await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
+        }
+
+        internal async Task RemovePlayerFromListAsync(Player player)
+        {
+            var list = new List<PlayerInfoAction>
+            {
+                new PlayerInfoAction
+                {
+                    Uuid = player.Uuid
+                }
+            };
+
+            await this.QueuePacketAsync(new PlayerInfo(4, list));
+            await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
+        }
+
+        internal async Task AddPlayerToListAsync(Player player)
+        {
+            var list = new List<PlayerInfoAction>
+            {
+                new PlayerInfoAddAction
+                {
+                    Name = player.Username,
+                    Uuid = player.Uuid,
+                    Ping = this.Player.Ping,
+                    Gamemode = (int)this.Player.Gamemode,
+                    DisplayName = ChatMessage.Simple(player.Username)
+                }
+            };
+
+            await this.QueuePacketAsync(new PlayerInfo(0, list));
+            await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
+        }
+
+        internal async Task SendPlayerInfoAsync()
+        {
+            var list = new List<PlayerInfoAction>();
+
+            foreach (Player player in this.Server.OnlinePlayers.Values)
+            {
+                var piaa = new PlayerInfoAddAction()
+                {
+                    Name = player.Username,
+                    Uuid = player.Uuid,
+                    Ping = player.Ping,
+                    Gamemode = (int)Player.Gamemode,
+                    DisplayName = ChatMessage.Simple(player.Username)
+                };
+
+                if (this.config.OnlineMode)
+                {
+                    var uuid = player.Uuid.ToString().Replace("-", "");
+                    var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
+                    piaa.Properties.AddRange(skin.Properties);
+                }
+
+                list.Add(piaa);
+            }
+
+            await this.QueuePacketAsync(new PlayerInfo(0, list));
+            await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
+        }
+
         internal async Task SpawnPlayerAsync(Player who)
         {
             await this.QueuePacketAsync(new SpawnPlayer
@@ -519,25 +498,31 @@ namespace Obsidian
             });
         }
 
-        private async Task SendServerBrand()
+        internal async Task SendPacketAsync(Packet packet)
         {
-            await using var stream = new MinecraftStream();
-            await stream.WriteStringAsync("obsidian");
+            if (this.compressionEnabled)
+            {
+                await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);
+            }
+            else
+            {
+                if (packet is ChunkDataPacket chunk)
+                {
+                    await chunk.WriteAsync(this.minecraftStream);
 
-            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
-            await this.Logger.LogDebugAsync("Sent server brand.");
+                    return;
+                }
+                await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
+            }
         }
 
-        private async Task SendPlayerListDecoration()
+        internal async Task QueuePacketAsync(Packet packet)
         {
-            var header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
-            var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
-
-            await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
-            await this.Logger.LogDebugAsync("Sent player list decoration");
+            this.PacketQueue.Enqueue(packet);
+            await Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.id:X2})");
         }
 
-        public async Task SendChunkAsync(Chunk chunk)
+        internal async Task SendChunkAsync(Chunk chunk)
         {
             chunk = this.Server.WorldGenerator.GenerateChunk(chunk);
 
@@ -561,38 +546,36 @@ namespace Obsidian
             }
 
             for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes
+                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
 
             var chunkData = new ChunkDataPacket(chunk);
 
             await this.QueuePacketAsync(chunkData);
         }
 
-        public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
 
-        public async Task SendPacketAsync(Packet packet)
+        private async Task SendServerBrand()
         {
-            if (this.compressionEnabled)
-            {
-                await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);
-            }
-            else
-            {
-                if (packet is ChunkDataPacket chunk)
-                {
-                    await chunk.WriteAsync(this.minecraftStream);
+            await using var stream = new MinecraftStream();
+            await stream.WriteStringAsync("obsidian");
 
-                    return;
-                }
-                await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
-            }
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+            await this.Logger.LogDebugAsync("Sent server brand.");
         }
 
-        internal async Task QueuePacketAsync(Packet packet)
+        private async Task SendPlayerListDecoration()
         {
-            this.PacketQueue.Enqueue(packet);
-            await Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.id:X2})");
+            var header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
+            var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
+
+            await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
+            await this.Logger.LogDebugAsync("Sent player list decoration");
         }
+
+        private Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
+
+        #endregion Packet Sending Methods
+
         internal void Disconnect() => this.Cancellation.Cancel();
 
         #region dispose methods

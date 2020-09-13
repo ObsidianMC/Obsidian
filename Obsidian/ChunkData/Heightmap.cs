@@ -2,7 +2,7 @@
 using Obsidian.Util.Collection;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
-using Obsidian.World;
+using Obsidian.WorldData;
 using System;
 
 namespace Obsidian.ChunkData

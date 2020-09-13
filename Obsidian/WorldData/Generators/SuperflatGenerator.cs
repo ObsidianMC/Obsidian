@@ -1,7 +1,7 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
 
-namespace Obsidian.World.Generators
+namespace Obsidian.WorldData.Generators
 {
     public class SuperflatGenerator : WorldGenerator
     {

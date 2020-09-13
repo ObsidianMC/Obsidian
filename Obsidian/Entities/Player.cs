@@ -10,6 +10,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
+using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -20,13 +21,7 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
-        public Inventory Inventory { get; private set; } = new Inventory();
-
-        public Inventory OpenedInventory { get; set; }
-
-        public Guid Uuid { get; set; }
-
-
+        #region Location properties
         internal Position LastPosition { get; set; } = new Position();
 
         internal Angle LastPitch { get; set; }
@@ -39,10 +34,18 @@ namespace Obsidian.Entities
         public Angle Pitch { get; set; }
 
         public Angle Yaw { get; set; }
+        #endregion Location properties
 
+        public string Username { get; }
 
-        // Properties set by Minecraft (official)
+        public Inventory Inventory { get; private set; } = new Inventory();
+        public Inventory OpenedInventory { get; set; }
+
+        public Guid Uuid { get; set; }
+
         public PlayerBitMask PlayerBitMask { get; set; }
+        public Gamemode Gamemode { get; set; }
+        public Hand MainHand { get; set; } = Hand.MainHand;
 
         public bool OnGround { get; set; }
         public bool Sleeping { get; set; }
@@ -53,10 +56,8 @@ namespace Obsidian.Entities
         public short SleepTimer { get; set; }
         public short HeldItemSlot { get; set; }
 
-        public Gamemode Gamemode { get; set; }
-
+        public override int EntityId { get; }
         public int Ping => this.client.ping;
-
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
@@ -69,10 +70,10 @@ namespace Obsidian.Entities
         public float FoodSaturationLevel { get; set; }
         public float XpP { get; set; } = 0; // idfk, xp points?
 
-        public Hand MainHand { get; set; } = Hand.MainHand;
-
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
+
+        public World World { get; }
 
         /* Missing for now:
             NbtCompound(inventory)
@@ -87,15 +88,12 @@ namespace Obsidian.Entities
         // As minecraft might just ignore them.
         public ConcurrentHashSet<string> Permissions { get; } = new ConcurrentHashSet<string>();
 
-        public string Username { get; }
-
-        public World.World World;
-
         internal Player(Guid uuid, string username, Client client)
         {
             this.Uuid = uuid;
             this.Username = username;
             this.client = client;
+            this.EntityId = client.id;
         }
 
         internal async Task UpdateAsync(Position position, bool onGround)
@@ -121,7 +119,6 @@ namespace Obsidian.Entities
                 this.UpdatePosition(position, onGround);
             }
         }
-
 
         internal async Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
         {
@@ -190,8 +187,6 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
             }
-
-
         }
 
         public void UpdatePosition(Position pos, bool onGround = true)
@@ -227,23 +222,12 @@ namespace Obsidian.Entities
             this.OnGround = onGround;
         }
 
-
-        internal void CopyPosition(bool withLook = false)
+        public void LoadPerms(List<string> permissions)
         {
-
-            this.LastPosition = this.Position;
-
-            if (withLook)
+            foreach (var perm in permissions)
             {
-                this.LastYaw = this.Yaw;
-                this.LastPitch = this.Pitch;
+                Permissions.Add(perm);
             }
-        }
-
-        internal void CopyLook()
-        {
-            this.LastYaw = this.Yaw;
-            this.LastPitch = this.Pitch;
         }
 
         public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
@@ -258,16 +242,6 @@ namespace Obsidian.Entities
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
 
-        public void LoadPerms(List<string> permissions)
-        {
-            foreach (var perm in permissions)
-            {
-                Permissions.Add(perm);
-            }
-        }
-
-        public Task DisconnectAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
-
         public override async Task WriteAsync(MinecraftStream stream)
         {
             await stream.WriteEntityMetdata(11, EntityMetadataType.Float, AdditionalHearts);
@@ -277,6 +251,21 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(13, EntityMetadataType.Byte, (int)PlayerBitMask);
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, (byte)1);
+        }
+
+        internal void CopyPosition(bool withLook = false)
+        {
+
+            this.LastPosition = this.Position;
+
+            if (withLook)
+                this.CopyLook();
+        }
+
+        internal void CopyLook()
+        {
+            this.LastYaw = this.Yaw;
+            this.LastPitch = this.Pitch;
         }
     }
 

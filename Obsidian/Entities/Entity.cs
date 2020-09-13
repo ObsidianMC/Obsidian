@@ -10,9 +10,7 @@ namespace Obsidian.Entities
     {
         public readonly Timer TickTimer = new Timer();
 
-        public Entity()
-        {
-        }
+        public abstract int EntityId { get; }
 
         public EntityBitMask EntityBitMask { get; set; }
 
@@ -23,6 +21,8 @@ namespace Obsidian.Entities
         public bool CustomNameVisible { get; private set; }
         public bool Silent { get; private set; }
         public bool NoGravity { get; set; }
+
+        public Entity() { }
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {

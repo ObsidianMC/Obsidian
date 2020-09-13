@@ -1,6 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
-using Obsidian.World;
+using Obsidian.WorldData;
 
 namespace SamplePlugin
 {
