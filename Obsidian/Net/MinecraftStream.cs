@@ -8,6 +8,7 @@ using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -151,11 +152,6 @@ namespace Obsidian.Net
                     await this.WriteAsync(await actionValue.ToArrayAsync());
                     break;
 
-                case ChangeGameStateReason gameStateValue:
-                    await this.WriteUnsignedByteAsync(gameStateValue.Reason);
-                    await this.WriteFloatAsync(gameStateValue.Value);
-                    break;
-
                 case List<CommandNode> nodes:
                     await this.WriteVarIntAsync(nodes.Count);
                     foreach (var node in nodes)
@@ -195,12 +191,7 @@ namespace Obsidian.Net
             {
                 case DataType.Auto:
                 {
-                    if (value is ChangeGameStateReason changeGameState)
-                    {
-                        await this.WriteUnsignedByteAsync(changeGameState.Reason);
-                        await this.WriteFloatAsync(changeGameState.Value);
-                    }
-                    else if (value is Player player)
+                    if (value is Player player)
                     {
                         await this.WriteUnsignedByteAsync(0xff);
                     }

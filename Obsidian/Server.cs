@@ -9,6 +9,8 @@ using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
 using Obsidian.Sounds;
 using Obsidian.Util;

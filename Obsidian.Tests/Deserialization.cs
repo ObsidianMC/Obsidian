@@ -137,7 +137,7 @@ namespace Obsidian.Tests
             await stream.WriteVarIntAsync(hand);
             stream.Position = 0;
 
-            var packet = PacketSerializer.FastDeserialize<AnimationServerPacket>(stream);
+            var packet = PacketSerializer.FastDeserialize<Animation>(stream);
 
             Assert.Equal(hand, packet.Hand);
         }

@@ -1,0 +1,23 @@
+﻿using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
+using Obsidian.Util.DataTypes;
+
+namespace Obsidian.Net.Packets.Play.Client
+{
+    public class BlockChange : Packet
+    {
+        [Field(0)]
+        public Position Location { get; private set; }
+
+        [Field(1, Type = DataType.VarInt)]
+        public int BlockId { get; private set; }
+
+        public BlockChange() : base(0x0C) { }
+
+        public BlockChange(Position loc, int block) : base(0x0C)
+        {
+            Location = loc;
+            BlockId = block;
+        }
+    }
+}

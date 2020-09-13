@@ -3,6 +3,7 @@ using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
@@ -313,7 +314,7 @@ namespace Obsidian.Util
 
                 case 0x2A:
                     // Animation (serverbound)
-                    var serverAnim = await PacketSerializer.FastDeserializeAsync<AnimationServerPacket>(packet.data);
+                    var serverAnim = await PacketSerializer.FastDeserializeAsync<Animation>(packet.data);
 
                     await Logger.LogDebugAsync("Received animation (serverbound)");
                     break;

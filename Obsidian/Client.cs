@@ -2,7 +2,6 @@
 using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
-using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Logging;
@@ -11,6 +10,8 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;

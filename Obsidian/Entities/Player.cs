@@ -6,6 +6,7 @@ using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
