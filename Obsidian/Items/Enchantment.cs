@@ -24,7 +24,7 @@ namespace Obsidian.Items
         Thorns,
         DepthStrider,
         FrostWalker,
-        CurseOfBinding,
+        BindingCurse,
         #endregion Armor
 
         #region Weapons
@@ -34,19 +34,15 @@ namespace Obsidian.Items
         Knockback,
         FireAspect,
         Looting,
-        SweepingEdge,
+        Sweeping,
         #endregion Weapons
 
         #region Tools
         Efficiency,
-        SilkTOuch,
+        SilkTouch,
+        Unbreaking,
         Fortune,
         #endregion Tools
-
-        #region Fishing Rod
-        LuckOfTheSea,
-        Lure,
-        #endregion Fishing Rod
 
         #region Bow
         Power,
@@ -55,17 +51,27 @@ namespace Obsidian.Items
         Infinity,
         #endregion Bow
 
+        #region Fishing Rod
+        LuckOfTheSea,
+        Lure,
+        #endregion Fishing Rod
+
         #region Trident
-        Channeling,
-        Riptide,
-        Impaling,
         Loyalty,
+        Impaling,
+        Riptide,
+        Channeling,
         #endregion Trident
+
+        #region Crossbow
+        Multishot,
+        QuickCharge,
+        Piercing,
+        #endregion Crossbow
 
         #region All
         Mending,
         VanishingCurse,
-        Unbreaking
         #endregion All
     }
 }
