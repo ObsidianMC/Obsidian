@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Client
     }
 
     //Do not mess up the order this is how its supposed to be ordered
-    internal enum WindowType : int
+    public enum WindowType : int
     {
         Generic9x1,
         Generic9x2,
