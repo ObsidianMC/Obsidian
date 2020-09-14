@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
+using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer;
 using Obsidian.Util.DataTypes;
@@ -112,24 +114,31 @@ namespace Obsidian.Util
                     break;
 
                 case 0x07:
+                    //TODO look more into this
                     // Window Confirmation (serverbound)
-                    await Logger.LogDebugAsync("Received confirm transaction");
+                    var conf = PacketSerializer.FastDeserialize<WindowConfirmation>(packet.data);
+
+                    await Logger.LogDebugAsync("Window Confirmation (serverbound)");
                     break;
 
                 case 0x08:
                     // Click Window Button
+                    var clicked = PacketSerializer.FastDeserialize<ClickWindowButton>(packet.data);
 
                     break;
 
                 case 0x09:// Click Window
-                    await Logger.LogDebugAsync("Received click window");
                     var window = PacketSerializer.FastDeserialize<ClickWindow>(packet.data);
+
+
 
                     await Logger.LogDebugAsync("Received click window");
                     break;
 
                 case 0x0A:
                     // Close Window (serverbound)
+                    var closedWindow = PacketSerializer.FastDeserialize<CloseWindow>(packet.data);
+
                     await Logger.LogDebugAsync("Received close window");
                     break;
 
@@ -199,6 +208,9 @@ namespace Obsidian.Util
 
                 case 0x17:
                     // Pick Item
+                    var item = PacketSerializer.FastDeserialize<PickItem>(packet.data);
+
+
                     await Logger.LogDebugAsync("Received pick item");
                     break;
 
@@ -238,6 +250,8 @@ namespace Obsidian.Util
 
                 case 0x1E:
                     // Name Item
+                    var nameItem = PacketSerializer.FastDeserialize<NameItem>(packet.data);
+
                     await Logger.LogDebugAsync("Received name item");
                     break;
 
@@ -263,12 +277,11 @@ namespace Obsidian.Util
 
                 case 0x23:
                     // Held Item Change (serverbound)//TODO fix this
-                    //var hic = await CreateAsync(new HeldItemChange(packet.PacketData));
-                    //client.Player.HeldItemSlot = hic.Slot;
+                    var heldItem = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
+                    client.Player.CurrentSlot = heldItem.Slot;
 
 
-                    //await Logger.LogDebugAsync($"Received held item change: {hic.Slot}");
-
+                    await Logger.LogDebugAsync($"Received held item change: {heldItem.Slot}");
                     break;
 
                 case 0x24:
@@ -288,7 +301,7 @@ namespace Obsidian.Util
 
                     var json = JsonConvert.SerializeObject(ca.ClickedItem);
 
-                    client.Player.HeldItemSlot = ca.ClickedSlot;
+                    //client.Player.CurrentSlot = ca.ClickedSlot;
 
                     var dir = Path.Combine(Path.GetTempPath(), "obsidian", "slots");
                     Directory.CreateDirectory(dir);
@@ -326,7 +339,7 @@ namespace Obsidian.Util
 
                 case 0x2C:
                     // Player Block Placement
-                    var pbp = await PacketSerializer.FastDeserializeAsync<PlayerBlockPlacement>(packet.data);
+                    var pbp = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(packet.data);
 
                     await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
                     await Logger.LogDebugAsync("Received player block placement");

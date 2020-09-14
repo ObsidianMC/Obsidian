@@ -54,7 +54,7 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short HeldItemSlot { get; set; }
+        public short CurrentSlot { get; set; }
 
         public override int EntityId { get; }
         public int Ping => this.client.ping;

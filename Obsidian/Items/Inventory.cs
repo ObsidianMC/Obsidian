@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Obsidian.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,11 +7,19 @@ namespace Obsidian.Items
 {
     public class Inventory
     {
+        internal int Id { get; set; }
+
+        internal int ActionsNumber { get; set; }
+        
+        public InventoryType Type { get; set; }
+
         public string Title { get; private set; }
 
         public int Size { get; private set; } = 9 * 3;
 
         public Dictionary<int, ItemStack> Items { get; private set; } = new Dictionary<int, ItemStack>();
+
+        public List<Player> Viewers { get; private set; } = new List<Player>();
 
         public void AddItem(ItemStack item)
         {
@@ -46,5 +55,26 @@ namespace Obsidian.Items
 
             return this.Items.Remove(slot);
         }
+    }
+
+    public enum InventoryType
+    {
+        Generic,
+        Anvil,
+        Beacon,
+        BlastFurnace,
+        BrewingStand,
+        Crafting,
+        Enchantment,
+        Furnace,
+        Grindstone,
+        Hopper,
+        Lectern,
+        Loom,
+        Merchant,
+        ShulkerBox,
+        Smoker,
+        CartographyTable,
+        Stonecutter
     }
 }

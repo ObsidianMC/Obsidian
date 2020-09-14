@@ -7,6 +7,7 @@ namespace Obsidian.Net.Packets.Play.Client
     {
         /// <summary>
         /// 0 for player inventory. -1 For the currently dragged item
+        /// If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
         /// </summary>
         [Field(0)]
         public byte WindowId { get; set; } = 0;

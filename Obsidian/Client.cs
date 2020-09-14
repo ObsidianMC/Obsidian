@@ -54,6 +54,7 @@ namespace Obsidian
 
         internal TcpClient tcp;
 
+        internal int ClickActionNumber;
         internal int ping;
         internal int missedKeepalives;
         internal int id;

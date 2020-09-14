@@ -6,9 +6,9 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Events.EventArgs;
+using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
@@ -59,6 +59,8 @@ namespace Obsidian
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
+        internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
+
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
 
         public CommandService Commands { get; }
@@ -71,7 +73,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
 
-        public WorldData.World World { get; }
+        public World World { get; }
 
         public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
 
