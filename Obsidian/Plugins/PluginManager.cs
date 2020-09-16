@@ -1,5 +1,5 @@
-﻿using Obsidian.Concurrency;
-using Obsidian.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Concurrency;
 using Obsidian.Plugins.Obsidian;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +25,7 @@ namespace Obsidian.Plugins
             this.Plugins = new ConcurrentHashSet<Plugin>();
         }
 
-        internal async Task LoadPluginsAsync(AsyncLogger logger)
+        internal async Task LoadPluginsAsync(ILogger logger)
         {
             if (!Directory.Exists(this.pluginPath))
                 Directory.CreateDirectory(this.pluginPath);
@@ -40,7 +40,7 @@ namespace Obsidian.Plugins
                 await plugin.LoadAsync(Server);
 
                 var authors = string.Join(", ", plugin.Info.Authors);
-                await logger.LogMessageAsync($"Loaded plugin: {plugin.Info.Name} by {authors}");
+                logger.LogInformation($"Loaded plugin: {plugin.Info.Name} by {authors}");
 
                 this.Plugins.Add(plugin);
             }

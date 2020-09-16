@@ -46,7 +46,6 @@ namespace Obsidian.ChunkData
 
         public async Task WriteToAsync(MinecraftStream stream)
         {
-            Console.WriteLine(this.BlockStateCount);
             await stream.WriteVarIntAsync(this.BlockStateCount);
 
             for (int i = 0; i < this.BlockStateCount; i++)

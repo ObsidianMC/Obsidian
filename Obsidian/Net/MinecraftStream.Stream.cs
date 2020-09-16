@@ -1,4 +1,5 @@
-﻿using Obsidian.Net.Packets;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Net.Packets;
 using System;
 using System.IO;
 using System.Threading;
@@ -64,7 +65,7 @@ namespace Obsidian.Net
             if (clear)
                 await ClearDebug();
 
-            await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
+            Program.PacketLogger.LogDebug($"Dumped stream to {filePath}");
         }
 
         public async Task DumpAsync(bool clear = true, string name = "")
@@ -81,7 +82,7 @@ namespace Obsidian.Net
             if (clear)
                 await ClearDebug();
 
-            await Program.PacketLogger.LogDebugAsync($"Dumped stream to {filePath}");
+            Program.PacketLogger.LogDebug($"Dumped stream to {filePath}");
         }
 
         public Task ClearDebug()

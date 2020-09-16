@@ -252,7 +252,6 @@ namespace Obsidian.Net
                 {
                     // TODO: add casing options on Field attribute and support custom naming enums.
                     var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
-                    await Program.PacketLogger.LogDebugAsync($"Writing string: {val}");
                     await this.WriteStringAsync(val, length);
                     break;
                 }

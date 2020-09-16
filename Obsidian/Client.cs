@@ -1,4 +1,5 @@
 ﻿using DaanV2.UUID;
+using Microsoft.Extensions.Logging;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
@@ -71,7 +72,7 @@ namespace Obsidian
         public Server Server { get; private set; }
         public Player Player { get; private set; }
 
-        public AsyncLogger Logger => this.Server.Logger;
+        public ILogger Logger => this.Server.Logger;
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -135,12 +136,12 @@ namespace Obsidian
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
-                                await this.Logger.LogDebugAsync($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
+                                this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
                                 await this.DisconnectAsync(ChatMessage.Simple("you seem suspicious"));
                             }
 
                             this.State = nextState;
-                            await this.Logger.LogMessageAsync($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
+                            this.Logger.LogInformation($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
                         }
                         else
                         {
@@ -152,7 +153,7 @@ namespace Obsidian
                         switch (packet.id)
                         {
                             default:
-                                await this.Logger.LogErrorAsync("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
+                                this.Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
                                 await this.DisconnectAsync(ChatMessage.Simple("Unknown Packet Id."));
                                 break;
 
@@ -161,7 +162,7 @@ namespace Obsidian
 
                                 string username = config.MulitplayerDebugMode ? $"Player{Program.Random.Next(1, 999)}" : loginStart.Username;
 
-                                await this.Logger.LogDebugAsync($"Received login request from user {loginStart.Username}");
+                                this.Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
                                 await this.Server.DisconnectIfConnectedAsync(username);
 
@@ -208,7 +209,7 @@ namespace Obsidian
 
                                 if (response is null)
                                 {
-                                    await this.Logger.LogWarningAsync($"Failed to auth {this.Player.Username}");
+                                    this.Logger.LogWarning($"Failed to auth {this.Player.Username}");
                                     await this.DisconnectAsync(ChatMessage.Simple("Unable to authenticate.."));
                                     break;
                                 }
@@ -234,7 +235,7 @@ namespace Obsidian
                 }
             }
 
-            await Logger.LogMessageAsync($"Disconnected client");
+            Logger.LogInformation($"Disconnected client");
 
             if (this.State == ClientState.Play)
                 await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player));
@@ -255,7 +256,7 @@ namespace Obsidian
                 if (this.PacketQueue.TryDequeue(out var packet))
                 {
                     await this.SendPacketAsync(packet);
-                    await Logger.LogWarningAsync($"Enqueued packet: {packet} (0x{packet.id:X2})");
+                    this.Logger.LogDebug($"Enqueued packet: {packet} (0x{packet.id:X2})");
                 }
             }
         }
@@ -265,13 +266,13 @@ namespace Obsidian
         {
             await this.SendPacketAsync(new SetCompression(compressionThreshold));
             this.compressionEnabled = true;
-            await this.Logger.LogDebugAsync("Compression has been enabled.");
+            this.Logger.LogDebug("Compression has been enabled.");
         }
 
         private async Task ConnectAsync()
         {
             await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
-            await this.Logger.LogDebugAsync($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
+            this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
             this.Player.Gamemode = Gamemode.Creative;
@@ -287,10 +288,10 @@ namespace Obsidian
                 ReducedDebugInfo = false
             });
 
-            await this.Logger.LogDebugAsync("Sent Join Game packet.");
+            this.Logger.LogDebug("Sent Join Game packet.");
 
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
-            await this.Logger.LogDebugAsync("Sent Spawn Position packet.");
+            this.Logger.LogDebug("Sent Spawn Position packet.");
 
             this.Player.Position = new Position(0, 102, 0);
 
@@ -302,7 +303,7 @@ namespace Obsidian
                 Flags = PositionFlags.NONE,
                 TeleportId = 0
             });
-            await this.Logger.LogDebugAsync("Sent Position packet.");
+            this.Logger.LogDebug("Sent Position packet.");
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
@@ -424,7 +425,7 @@ namespace Obsidian
 
             packet.AddNode(node);
             await this.QueuePacketAsync(packet);
-            await this.Logger.LogDebugAsync("Sent Declare Commands packet.");
+            this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
         internal async Task RemovePlayerFromListAsync(Player player)
@@ -438,7 +439,7 @@ namespace Obsidian
             };
 
             await this.QueuePacketAsync(new PlayerInfo(4, list));
-            await this.Logger.LogDebugAsync($"Removed Player to player info list from {this.Player.Username}");
+            this.Logger.LogDebug($"Removed Player to player info list from {this.Player.Username}");
         }
 
         internal async Task AddPlayerToListAsync(Player player)
@@ -456,7 +457,7 @@ namespace Obsidian
             };
 
             await this.QueuePacketAsync(new PlayerInfo(0, list));
-            await this.Logger.LogDebugAsync($"Added Player to player info list from {this.Player.Username}");
+            this.Logger.LogDebug($"Added Player to player info list from {this.Player.Username}");
         }
 
         internal async Task SendPlayerInfoAsync()
@@ -485,7 +486,7 @@ namespace Obsidian
             }
 
             await this.QueuePacketAsync(new PlayerInfo(0, list));
-            await this.Logger.LogDebugAsync($"Sent Player Info packet from {this.Player.Username}");
+            this.Logger.LogDebug($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SpawnPlayerAsync(Player who)
@@ -521,7 +522,7 @@ namespace Obsidian
         internal async Task QueuePacketAsync(Packet packet)
         {
             this.PacketQueue.Enqueue(packet);
-            await Logger.LogWarningAsync($"Queuing packet: {packet} (0x{packet.id:X2})");
+            Logger.LogWarning($"Queuing packet: {packet} (0x{packet.id:X2})");
         }
 
         internal async Task SendChunkAsync(Chunk chunk)
@@ -562,7 +563,7 @@ namespace Obsidian
             await stream.WriteStringAsync("obsidian");
 
             await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
-            await this.Logger.LogDebugAsync("Sent server brand.");
+            this.Logger.LogDebug("Sent server brand.");
         }
 
         private async Task SendPlayerListDecoration()
@@ -571,7 +572,7 @@ namespace Obsidian
             var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
 
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
-            await this.Logger.LogDebugAsync("Sent player list decoration");
+            this.Logger.LogDebug("Sent player list decoration");
         }
 
         private Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));

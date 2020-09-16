@@ -1,13 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.Items;
-using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
+using Obsidian.PlayerData;
 using Obsidian.Serializer;
-using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
@@ -18,7 +17,7 @@ namespace Obsidian.Util
 {
     public class PacketHandler
     {
-        private static readonly AsyncLogger Logger = new AsyncLogger("Packets", LogLevel.Debug, "packets.log");
+        public static ILogger Logger => Program.PacketLogger;
 
         public static ProtocolVersion Protocol = ProtocolVersion.v1_15_2;
 
@@ -84,7 +83,7 @@ namespace Obsidian.Util
 
                 case 0x01:
                     // Query Block NBT
-                    await Logger.LogDebugAsync("Received query block nbt");
+                    Logger.LogDebug("Received query block nbt");
                     break;
 
                 case 0x02://Set difficulty
@@ -93,7 +92,7 @@ namespace Obsidian.Util
 
                 case 0x03:
                     // Incoming chat message
-                    await Logger.LogDebugAsync("Received chat message");
+                    Logger.LogDebug("Received chat message");
                     var message = await PacketSerializer.FastDeserializeAsync<IncomingChatMessage>(packet.data);
 
                     await server.ParseMessage(message.Message, client);
@@ -105,12 +104,12 @@ namespace Obsidian.Util
                 case 0x05:
                     // Client Settings
                     client.ClientSettings = await PacketSerializer.FastDeserializeAsync<ClientSettings>(packet.data);
-                    await Logger.LogDebugAsync("Received client settings");
+                    Logger.LogDebug("Received client settings");
                     break;
 
                 case 0x06:
                     // Tab-Complete
-                    await Logger.LogDebugAsync("Received tab-complete");
+                    Logger.LogDebug("Received tab-complete");
                     break;
 
                 case 0x07:
@@ -118,7 +117,7 @@ namespace Obsidian.Util
                     // Window Confirmation (serverbound)
                     var conf = PacketSerializer.FastDeserialize<WindowConfirmation>(packet.data);
 
-                    await Logger.LogDebugAsync("Window Confirmation (serverbound)");
+                    Logger.LogDebug("Window Confirmation (serverbound)");
                     break;
 
                 case 0x08:
@@ -130,39 +129,122 @@ namespace Obsidian.Util
                 case 0x09:// Click Window
                     var window = PacketSerializer.FastDeserialize<ClickWindow>(packet.data);
 
+                    if (window.WindowId == 0)
+                    {
+                        //This is the player inventory
+                        switch (window.Mode)
+                        {
+                            case InventoryOperationMode.MouseClick://TODO InventoryClickEvent
+                                if(window.ClickedSlot == 0)
+                                {
+                                    client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                }
+                                else
+                                {
+                                    client.Player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
+                                }
+                                break;
+                            case InventoryOperationMode.ShiftMouseClick:
+                                break;
+                            case InventoryOperationMode.NumberKeys:
+                                break;
+                            case InventoryOperationMode.MiddleMouseClick:
+                                break;
+                            case InventoryOperationMode.Drop:
+                                //If clicked slot is -999 that means they clicked outside the inventory
+                                if (window.ClickedSlot != -999)
+                                {
+                                    if (window.Button == 0)
+                                        client.Player.Inventory.RemoveItem(window.ClickedSlot);
+                                    else
+                                        client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                }
+                                break;
+                            case InventoryOperationMode.MouseDrag:
+                                if (window.ClickedSlot == -999)
+                                {
+                                    if (window.Button == 0 || window.Button == 4 || window.Button == 8)
+                                    {
+                                        client.isDragging = true;
+                                    }
+                                    else if (window.Button == 2 || window.Button == 6 || window.Button == 10)
+                                    {
+                                        client.isDragging = false;
+                                    }
+                                }
+                                else if (client.isDragging)
+                                {
+                                    if (client.Player.Gamemode == Gamemode.Creative)
+                                    {
+                                        if (window.Button != 9)
+                                            break;
 
+                                        //creative copy
+                                        client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                        {
+                                            Nbt = window.Item
+                                        });
+                                    }
+                                    else
+                                    {
+                                        if (window.Button != 1 || window.Button != 5)
+                                            break;
 
-                    await Logger.LogDebugAsync("Received click window");
+                                        //survival painting
+                                        client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                        {
+                                            Nbt = window.Item
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    //It shouldn't get here
+                                }
+
+                                break;
+                            case InventoryOperationMode.DoubleClick:
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+
+                    }
+
+                    Logger.LogDebug("Received click window");
                     break;
 
                 case 0x0A:
                     // Close Window (serverbound)
                     var closedWindow = PacketSerializer.FastDeserialize<CloseWindow>(packet.data);
 
-                    await Logger.LogDebugAsync("Received close window");
+                    Logger.LogDebug("Received close window");
                     break;
 
                 case 0x0B:
                     // Plugin Message (serverbound)
                     var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
 
-                    await Logger.LogDebugAsync($"Received plugin message: {msg.Channel}");
+                    Logger.LogDebug($"Received plugin message: {msg.Channel}");
                     break;
 
                 case 0x0C:
                     // Edit Book
-                    await Logger.LogDebugAsync("Received edit book");
+                    Logger.LogDebug("Received edit book");
                     break;
 
                 case 0x0E:
                     //Interact Entity
-                    await Logger.LogDebugAsync("Interact entity");
+                    Logger.LogDebug("Interact entity");
                     break;
 
                 case 0x0F:
                     // Keep Alive (serverbound)
                     var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(packet.data);
-                    await Logger.LogDebugAsync($"Successfully kept alive player {client.Player.Username} with ka id " +
+                    Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
 
                     // Server is alive, reset missed keepalives.
@@ -193,17 +275,17 @@ namespace Obsidian.Util
                     await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);
                     break;
 
-                case 0x14://Player movement
+                case 0x14://Player movement sent every tick when players haven't move
                     break;
 
                 case 0x15:
                     // Vehicle Move (serverbound)
-                    await Logger.LogDebugAsync("Received vehicle move");
+                    Logger.LogDebug("Received vehicle move");
                     break;
 
                 case 0x16:
                     // Steer Boat
-                    await Logger.LogDebugAsync("Received steer boat");
+                    Logger.LogDebug("Received steer boat");
                     break;
 
                 case 0x17:
@@ -211,22 +293,22 @@ namespace Obsidian.Util
                     var item = PacketSerializer.FastDeserialize<PickItem>(packet.data);
 
 
-                    await Logger.LogDebugAsync("Received pick item");
+                    Logger.LogDebug("Received pick item");
                     break;
 
                 case 0x18:
                     // Craft Recipe Request
-                    await Logger.LogDebugAsync("Received craft recipe request");
+                     Logger.LogDebug("Received craft recipe request");
                     break;
 
                 case 0x19:
                     // Player Abilities (serverbound)
-                    await Logger.LogDebugAsync("Received player abilities");
+                    Logger.LogDebug("Received player abilities");
                     break;
 
                 case 0x1A:
                     // Player Digging
-                    await Logger.LogDebugAsync("Received player digging");
+                    Logger.LogDebug("Received player digging");
 
                     var digging = await PacketSerializer.FastDeserializeAsync<PlayerDigging>(packet.data);
 
@@ -235,44 +317,44 @@ namespace Obsidian.Util
 
                 case 0x1B:
                     // Entity Action
-                    await Logger.LogDebugAsync("Received entity action");
+                    Logger.LogDebug("Received entity action");
                     break;
 
                 case 0x1C:
                     // Steer Vehicle
-                    await Logger.LogDebugAsync("Received steer vehicle");
+                    Logger.LogDebug("Received steer vehicle");
                     break;
 
                 case 0x1D:
                     // Recipe Book Data
-                    await Logger.LogDebugAsync("Received recipe book data");
+                    Logger.LogDebug("Received recipe book data");
                     break;
 
                 case 0x1E:
                     // Name Item
                     var nameItem = PacketSerializer.FastDeserialize<NameItem>(packet.data);
 
-                    await Logger.LogDebugAsync("Received name item");
+                    Logger.LogDebug("Received name item");
                     break;
 
                 case 0x1F:
                     // Resource Pack Status
-                    await Logger.LogDebugAsync("Received resource pack status");
+                    Logger.LogDebug("Received resource pack status");
                     break;
 
                 case 0x20:
                     // Advancement Tab
-                    await Logger.LogDebugAsync("Received advancement tab");
+                    Logger.LogDebug("Received advancement tab");
                     break;
 
                 case 0x21:
                     // Select Trade
-                    await Logger.LogDebugAsync("Received select trade");
+                    Logger.LogDebug("Received select trade");
                     break;
 
                 case 0x22:
                     // Set Beacon Effect
-                    await Logger.LogDebugAsync("Received set beacon effect");
+                    Logger.LogDebug("Received set beacon effect");
                     break;
 
                 case 0x23:
@@ -281,22 +363,22 @@ namespace Obsidian.Util
                     client.Player.CurrentSlot = heldItem.Slot;
 
 
-                    await Logger.LogDebugAsync($"Received held item change: {heldItem.Slot}");
+                    Logger.LogDebug($"Received held item change: {heldItem.Slot}");
                     break;
 
                 case 0x24:
                     // Update Command Block
-                    await Logger.LogDebugAsync("Received update command block");
+                    Logger.LogDebug("Received update command block");
                     break;
 
                 case 0x25:
                     // Update Command Block Minecart
-                    await Logger.LogDebugAsync("Received update command block minecart");
+                    Logger.LogDebug("Received update command block minecart");
                     break;
 
                 case 0x26:
                     // Creative Inventory Action
-                    await Logger.LogDebugAsync("Received creative inventory action");
+                    Logger.LogDebug("Received creative inventory action");
                     var ca = await PacketSerializer.DeserializeAsync<CreativeInventoryAction>(packet.data);
 
                     var json = JsonConvert.SerializeObject(ca.ClickedItem);
@@ -313,12 +395,12 @@ namespace Obsidian.Util
 
                 case 0x27:
                     // Update jigsaw Block
-                    await Logger.LogDebugAsync("Received update jigsaw block");
+                    Logger.LogDebug("Received update jigsaw block");
                     break;
 
                 case 0x28:
                     // Update Structure Block
-                    await Logger.LogDebugAsync("Received update structure block");
+                    Logger.LogDebug("Received update structure block");
                     break;
 
                 case 0x29:
@@ -329,12 +411,12 @@ namespace Obsidian.Util
                     // Animation (serverbound)
                     var serverAnim = await PacketSerializer.FastDeserializeAsync<Animation>(packet.data);
 
-                    await Logger.LogDebugAsync("Received animation (serverbound)");
+                    Logger.LogDebug("Received animation (serverbound)");
                     break;
 
                 case 0x2B:
                     // Spectate
-                    await Logger.LogDebugAsync("Received spectate");
+                    Logger.LogDebug("Received spectate");
                     break;
 
                 case 0x2C:
@@ -342,13 +424,13 @@ namespace Obsidian.Util
                     var pbp = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(packet.data);
 
                     await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
-                    await Logger.LogDebugAsync("Received player block placement");
+                    Logger.LogDebug("Received player block placement");
 
                     break;
 
                 case 0x2D:
                     // Use Item
-                    await Logger.LogDebugAsync("Received use item");
+                    Logger.LogDebug("Received use item");
                     break;
             }
         }

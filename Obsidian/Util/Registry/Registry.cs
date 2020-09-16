@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Items;
-using Obsidian.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,11 +15,11 @@ namespace Obsidian.Util.Registry
 {
     public class Registry
     {
-        public static readonly AsyncLogger Logger = new AsyncLogger("Registry", LogLevel.Debug, "registry.log");
+        internal static ILogger Logger { get; set; }
 
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
         public static Dictionary<Materials, Block> Blocks = new Dictionary<Materials, Block>();
-        public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();//TODO biome classes
+        public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
 
         public static async Task RegisterBlocksAsync()
         {
@@ -56,7 +56,7 @@ namespace Obsidian.Util.Registry
                         foreach (var state in states.States)
                             id = state.Default ? state.Id : states.States.First().Id;
 
-                        await Logger.LogDebugAsync($"Registered block: {material} with id: {id}");
+                        Logger.LogDebug($"Registered block: {material} with id: {id}");
 
                         switch (material)
                         {
@@ -635,7 +635,7 @@ namespace Obsidian.Util.Registry
                     }
                 }
 
-                await Logger.LogDebugAsync($"Successfully registered {registered} blocks..");
+                Logger.LogDebug($"Successfully registered {registered} blocks..");
             }
             else
             {
@@ -670,13 +670,13 @@ namespace Obsidian.Util.Registry
                     if (!Enum.TryParse(itemName.Replace("_", ""), true, out Materials material))
                         continue;
 
-                    await Logger.LogDebugAsync($"Registered item: {material} with id: {item.ProtocolId}");
+                    Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
 
                     Items.Add(material, new Item { Id = item.ProtocolId, Name = itemName });
                     registered++;
                 }
 
-                await Logger.LogDebugAsync($"Successfully registered {registered} items..");
+                Logger.LogDebug($"Successfully registered {registered} items..");
             }
 
         }
@@ -708,13 +708,13 @@ namespace Obsidian.Util.Registry
                     if (!Enum.TryParse(itemName.Replace("_", ""), true, out Biomes biome))
                         continue;
 
-                    await Logger.LogDebugAsync($"Registered biome: {biome} with id: {biomeDes.ProtocolId}");
+                    Logger.LogDebug($"Registered biome: {biome} with id: {biomeDes.ProtocolId}");
 
                     Biomes.Add(biome, biomeDes.ProtocolId);
                     registered++;
                 }
 
-                await Logger.LogDebugAsync($"Successfully registered {registered} biomes..");
+                Logger.LogDebug($"Successfully registered {registered} biomes..");
             }
 
         }

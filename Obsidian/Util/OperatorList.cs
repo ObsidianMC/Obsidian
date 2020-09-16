@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.Entities;
 using System;
 using System.Collections.Generic;
@@ -58,7 +59,7 @@ namespace Obsidian.Util
                 var req = new OperatorRequest(p);
                 reqs.Add(req);
 
-                server.Logger.LogWarningAsync($"New operator request from {p.Username}: {req.Code}");
+                server.Logger.LogWarning($"New operator request from {p.Username}: {req.Code}");
             }
 
             return result;

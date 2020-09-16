@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Obsidian.Chat;
-using Obsidian.Logging;
 using Obsidian.Util;
 using Obsidian.Util.Converters;
 using Obsidian.Util.DataTypes;
@@ -21,10 +21,8 @@ namespace Obsidian
 
         public static GlobalConfig Config { get; private set; }
         public static Random Random = new Random();
-
-
         
-        public static readonly AsyncLogger PacketLogger = new AsyncLogger("Packets", LogLevel.Debug, Directory.GetCurrentDirectory());
+        internal static ILogger PacketLogger { get; set; }
 
         private static DefaultContractResolver ContractResolver = new DefaultContractResolver
         {

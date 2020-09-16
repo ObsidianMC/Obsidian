@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Obsidian.Util
 {

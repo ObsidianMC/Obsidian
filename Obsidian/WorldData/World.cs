@@ -1,4 +1,5 @@
-﻿using Obsidian.Concurrency;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.PlayerData;
@@ -125,7 +126,7 @@ namespace Obsidian.WorldData
                 }
             }
 
-            await c.Logger.LogDebugAsync($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+            c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
         private Chunk GetChunk(int x, int z, Client c)

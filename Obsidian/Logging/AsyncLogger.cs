@@ -2,16 +2,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.Logging
 {
-    public class AsyncLogger : IAsyncDisposable
+    /*public class AsyncLogger : IAsyncDisposable
     {
-        private readonly AsyncEvent<LoggerEventArgs> _messageLogged;
-        private readonly ConcurrentQueue<LogMessage> _messages = new ConcurrentQueue<LogMessage>();
+        private readonly AsyncEvent<LoggerEventArgs> messageLogged;
+        private readonly ConcurrentQueue<LogMessage> messages = new ConcurrentQueue<LogMessage>();
         private readonly Task _dispatcherTask;
             
         private CancellationTokenSource Cancellation { get; } = new CancellationTokenSource();
@@ -22,17 +21,17 @@ namespace Obsidian.Logging
         
         public string FilePath { get; }
         
-        public LogLevel LogLevel { get; set; }
+        public LogLevel LogLevel { get; }
 
         public event AsyncEventHandler<LoggerEventArgs> MessageLogged
         {
-            add { this._messageLogged.Register(value); }
-            remove { this._messageLogged.Unregister(value); }
+            add { this.messageLogged.Register(value); }
+            remove { this.messageLogged.Unregister(value); }
         }
 
         internal AsyncLogger(string prefix, LogLevel logLevel, string filePath)
         {
-            this._messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
+            this.messageLogged = new AsyncEvent<LoggerEventArgs>(LogError, "messagelogged");
             this.Prefix = prefix;
             this.LogLevel = logLevel;
             this.FilePath = filePath;
@@ -40,18 +39,20 @@ namespace Obsidian.Logging
             /*_streamWriter = new StreamWriter(this.FilePath, true, Encoding.UTF8)
             {
                 AutoFlush = true
-            };*/
+            };
             _dispatcherTask = Task.Run(TaskLoop);
         }
 
-        public void StopLogging() => Cancellation.Cancel();
+        public AsyncLogger(string prefix, LogLevel logLevel = LogLevel.Info) : this(prefix, logLevel, "") { }
+
+        public void StopLogging() => this.Cancellation.Cancel();
 
         private async Task TaskLoop()
         {
-            while (!Cancellation.IsCancellationRequested)
+            while (!this.Cancellation.IsCancellationRequested)
             {
-                if (_messages.TryDequeue(out LogMessage message))
-                    await LogMessageAsync(message);
+                if (this.messages.TryDequeue(out LogMessage message))
+                    await this.LogMessageAsync(message);
                 
                 await Task.Delay(100);
             }
@@ -61,45 +62,42 @@ namespace Obsidian.Logging
         {
         }
 
-        public async Task LogDebugAsync(string message) => await LogMessageAsync(message, LogLevel.Debug);
+        public async Task LogDebugAsync(string message) => await this.LogMessageAsync(message, LogLevel.Debug);
 
-        public async Task LogWarningAsync(string message) => await LogMessageAsync(message, LogLevel.Warning);
+        public async Task LogWarningAsync(string message) => await this.LogMessageAsync(message, LogLevel.Warn);
 
-        public async Task LogErrorAsync(string message) => await LogMessageAsync(message, LogLevel.Error);
+        public async Task LogErrorAsync(string message) => await this.LogMessageAsync(message, LogLevel.Error);
 
-        public async Task LogMessageAsync(string message) => await LogMessageAsync(message, LogLevel.Info);
+        public async Task LogMessageAsync(string message) => await this.LogMessageAsync(message, LogLevel.Info);
         
-        private async Task LogMessageAsync(string message, LogLevel level) => await LogMessageAsync(new LogMessage(message, level));
+        private async Task LogMessageAsync(string message, LogLevel level) => await this.LogMessageAsync(new LogMessage(message, level));
 
         private async Task LogMessageAsync(LogMessage message, ConsoleColor color)
         {
-            await _messageLogged.InvokeAsync(new LoggerEventArgs(message));
+            await this.messageLogged.InvokeAsync(new LoggerEventArgs(message));
 
             //checking if message should be printed or not
             if (message.Level > LogLevel)
                 return;
 
-            var line = $"[{message.DateTime:t}] [{message.Level}] ";
+            Console.Write($"[{message.DateTime:t}] ");
 
-            if (!string.IsNullOrWhiteSpace(Prefix))
-                line += $"[{Prefix}] ";
-
-            line += message.Message;
-
-            // Console logging is console lagging h
             Console.ForegroundColor = color;
-            Console.WriteLine(line);
+
+            Console.Write($"[{message.Level}] ");
+
+            Console.ResetColor();
+
+            if (!string.IsNullOrWhiteSpace(this.Prefix))
+                Console.Write($"{"",3}[{this.Prefix}] ");
+
+            Console.WriteLine(message.Message);
+           
         }
 
-        private async Task LogMessageAsync(LogMessage message)
-        {
-            var color = message.Level == LogLevel.Debug
-                ? GetConsoleColorByString(Prefix)
-                : GetConsoleColor(message.Level);
+        private async Task LogMessageAsync(LogMessage message) => await LogMessageAsync(message, GetConsoleColor(message.Level));
 
-            await LogMessageAsync(message, color);
-        }
-
+        //I'm sorry but this messes with my eyes so much
         /// <summary>
         /// Returns a console color based on the hash of the text provided. 
         /// </summary>
@@ -125,7 +123,7 @@ namespace Obsidian.Logging
             return logLevel switch
             {
                 LogLevel.Info => ConsoleColor.White,
-                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Warn => ConsoleColor.Yellow,
                 LogLevel.Error => ConsoleColor.DarkRed,
                 LogLevel.Debug => ConsoleColor.Cyan,
                 _ => ConsoleColor.Gray
@@ -136,5 +134,5 @@ namespace Obsidian.Logging
         {
             await _streamWriter.DisposeAsync();
         }
-    }
+    }*/
 }

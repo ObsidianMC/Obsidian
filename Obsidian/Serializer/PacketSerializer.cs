@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer.Dynamic;
@@ -68,7 +69,7 @@ namespace Obsidian.Serializer
             if (packet == null)
                 throw new NullReferenceException(nameof(packet));
 
-            await Program.PacketLogger.LogDebugAsync($"Deserializing {packet}");
+            Program.PacketLogger.LogDebug($"Deserializing {packet}");
 
             var valueDict = (await packet.GetAllMemberNamesAsync()).OrderBy(x => x.Key.Order);
             var members = packet.GetType().GetMembers(PacketExtensions.Flags);
@@ -87,7 +88,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(field.FieldType, dataType, key);
 
-                    await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
+                    Program.PacketLogger.LogDebug($"Setting val {val}");
 
                     field.SetValue(packet, val);
                 }
@@ -100,7 +101,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
 
-                    await Program.PacketLogger.LogDebugAsync($"Setting val {val}");
+                    Program.PacketLogger.LogDebug($"Setting val {val}");
 
                     if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
                         val = (BlockFace)val;
