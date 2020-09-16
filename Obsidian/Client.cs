@@ -49,6 +49,7 @@ namespace Obsidian
         private bool disposed;
         private bool compressionEnabled;
         private bool encryptionEnabled;
+        public bool isDragging;
 
         private const int compressionThreshold = 256;
 
@@ -236,7 +237,7 @@ namespace Obsidian
             await Logger.LogMessageAsync($"Disconnected client");
 
             if (this.State == ClientState.Play)
-                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this));
+                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player));
 
             if (tcp.Connected)
             {
@@ -303,7 +304,7 @@ namespace Obsidian
             });
             await this.Logger.LogDebugAsync("Sent Position packet.");
 
-            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this, DateTimeOffset.Now));
+            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();

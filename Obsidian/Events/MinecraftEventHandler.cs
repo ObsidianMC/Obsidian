@@ -10,7 +10,7 @@ namespace Obsidian.Events
 
         private readonly AsyncEvent<PlayerJoinEventArgs> _playerJoin;
         private readonly AsyncEvent<PlayerLeaveEventArgs> _playerLeave;
-
+        private readonly AsyncEvent<InventoryClickEventArgs> _clickEvent;
         private readonly AsyncEvent _serverTick;
 
         public MinecraftEventHandler()
@@ -20,6 +20,7 @@ namespace Obsidian.Events
             _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
             _playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
             _serverTick = new AsyncEvent(HandleException, "ServerTick");
+            _clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
         }
 
         /// <summary>
@@ -30,6 +31,12 @@ namespace Obsidian.Events
         {
             add { this._packetReceived.Register(value); }
             remove { this._packetReceived.Unregister(value); }
+        }
+
+        public event AsyncEventHandler<InventoryClickEventArgs> InventoryClick
+        {
+            add { this._clickEvent.Register(value); }
+            remove { this._clickEvent.Unregister(value); }
         }
 
         public event AsyncEventHandler<PlayerJoinEventArgs> PlayerJoin
@@ -52,6 +59,13 @@ namespace Obsidian.Events
 
         private void HandleException(string eventname, Exception ex)
         {
+        }
+
+        internal Task InvokeInventoryClickAsync(InventoryClickEventArgs args)
+        {
+            _ = Task.Run(async () => { await this._clickEvent.InvokeAsync(args); });
+
+            return Task.CompletedTask;
         }
 
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs)

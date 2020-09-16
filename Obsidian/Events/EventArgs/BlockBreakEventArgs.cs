@@ -1,22 +1,20 @@
-﻿using Obsidian.Entities;
-using Obsidian.Util;
-using Obsidian.Util.DataTypes;
+﻿using Obsidian.Blocks;
+using Obsidian.Entities;
 
 namespace Obsidian.Events.EventArgs
 {
-    public class BlockBreakEventArgs : BaseMinecraftEventArgs
+    public class BlockBreakEventArgs : PlayerEventArgs
     {
         /// <summary>
-        /// Player who broke the block
+        /// The player who broke the block
         /// </summary>
-        public Player Player { get; }
+        public new Player Player { get; set; }
 
+        /// <summary>
+        /// The block that was broken
+        /// </summary>
+        public Block Block { get; }
 
-
-        internal BlockBreakEventArgs(Client client) : base(client)
-        {
-        }
-
-        public Position Location { get; }
+        internal BlockBreakEventArgs(Player player) : base(player) { }
     }
 }

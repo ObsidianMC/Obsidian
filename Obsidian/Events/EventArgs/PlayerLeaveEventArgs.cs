@@ -2,12 +2,8 @@
 
 namespace Obsidian.Events.EventArgs
 {
-    public class PlayerLeaveEventArgs : BaseMinecraftEventArgs
+    public class PlayerLeaveEventArgs : PlayerEventArgs
     {
-        public Player WhoLeft { get;  }
-        internal PlayerLeaveEventArgs(Client client) : base(client)
-        {
-            this.WhoLeft = client.Player;
-        }
+        internal PlayerLeaveEventArgs(Player player) : base(player) { }
     }
 }

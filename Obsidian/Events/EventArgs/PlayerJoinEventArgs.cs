@@ -3,16 +3,16 @@ using System;
 
 namespace Obsidian.Events.EventArgs
 {
-    public class PlayerJoinEventArgs : BaseMinecraftEventArgs
+    public class PlayerJoinEventArgs : PlayerEventArgs
     {
+        /// <summary>
+        /// The date the player joined
+        /// </summary>
         public DateTimeOffset JoinDate { get; }
 
-        public Player Joined { get; }
-
-        internal PlayerJoinEventArgs(Client client, DateTimeOffset join) : base(client)
+        internal PlayerJoinEventArgs(Player player, DateTimeOffset join) : base(player)
         {
             this.JoinDate = join;
-            this.Joined = client.Player;
         }
     }
 }

@@ -303,7 +303,7 @@ namespace Obsidian
                 if (reason is null)
                     reason = ChatMessage.Simple("Connected from another location");
 
-                await player.DisconnectAsync(reason);
+                await player.KickAsync(reason);
             }
         }
 
@@ -412,21 +412,21 @@ namespace Obsidian
 
         private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.WhoLeft))
-                await other.client.RemovePlayerFromListAsync(e.WhoLeft);
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player))
+                await other.client.RemovePlayerFromListAsync(e.Player);
 
-            await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.WhoLeft.Username));
+            await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }
 
         private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
         {
-            await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Joined.Username));
+            await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
             {
-                await other.client.AddPlayerToListAsync(e.Joined);
+                await other.client.AddPlayerToListAsync(e.Player);
             }
 
-            await this.SendSpawnPlayerAsync(e.Joined);
+            await this.SendSpawnPlayerAsync(e.Player);
         }
 
         #endregion events

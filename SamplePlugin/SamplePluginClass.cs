@@ -1,5 +1,6 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Events.EventArgs;
+using Obsidian.Logging;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Obsidian;
 using Qmmands;
@@ -9,6 +10,7 @@ namespace SamplePlugin
 {
     public class SamplePluginClass : ObsidianPluginClass
     {
+        public readonly AsyncLogger Logger = new AsyncLogger("Sample Plugin");
         public override async Task InitializeAsync()
         {
             this.Info = new PluginInfo().SetName("SamplePlugin")
@@ -25,8 +27,8 @@ namespace SamplePlugin
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            await e.Server.BroadcastAsync($"Player join event from sample plugin! {e.Joined.Username}");
-            await e.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Joined.Username}");
+            await e.Server.BroadcastAsync($"Player join event from sample plugin! {e.Player.Username}");
+            await this.Logger.LogMessageAsync($"Player join event to logger from sample plugin! {e.Player.Username}");
         }
     }
 
