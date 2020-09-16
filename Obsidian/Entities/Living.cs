@@ -28,6 +28,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(10, EntityMetadataType.VarInt, Arrows);
         }
+
     }
 
     public enum HandState

@@ -3,6 +3,8 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util;
@@ -157,11 +159,11 @@ namespace Obsidian.Tests
 
             var packet = PacketSerializer.FastDeserialize<PlayerDigging>(stream);
 
-            Assert.Equal(status, packet.Status);
+            Assert.Equal((DiggingStatus)status, packet.Status);
             Assert.Equal(location.X, packet.Location.X);
             Assert.Equal(location.Y, packet.Location.Y);
             Assert.Equal(location.Z, packet.Location.Z);
-            Assert.Equal(face, packet.Face);
+            Assert.Equal((BlockFace)face, packet.Face);
         }
 
         [Fact]

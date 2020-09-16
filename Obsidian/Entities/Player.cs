@@ -38,6 +38,9 @@ namespace Obsidian.Entities
 
         public string Username { get; }
 
+        /// <summary>
+        /// The players inventory
+        /// </summary>
         public Inventory Inventory { get; private set; } = new Inventory();
         public Inventory OpenedInventory { get; set; }
 
@@ -56,7 +59,6 @@ namespace Obsidian.Entities
         public short SleepTimer { get; set; }
         public short CurrentSlot { get; set; }
 
-        public override int EntityId { get; }
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
         public int FoodLevel { get; set; }
@@ -241,7 +243,7 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
-
+        public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
         public override async Task WriteAsync(MinecraftStream stream)
         {
             await stream.WriteEntityMetdata(11, EntityMetadataType.Float, AdditionalHearts);

@@ -2,16 +2,12 @@
 {
     public class ItemStack : Item
     {
-        public byte ItemCount { get; set; }
-        public byte MetaData { get; set; }
-        public byte Nbt { get; private set; }
+        public int Count { get; set; }
 
-        public ItemStack(int itemId, byte itemCount, byte metadata)
+        public ItemStack(int itemId, int itemCount)
         {
             this.Id = itemId;
-            this.ItemCount = itemCount;
-            this.Nbt = 0;
-            this.MetaData = metadata;
+            this.Count = itemCount;
         }
     }
 }

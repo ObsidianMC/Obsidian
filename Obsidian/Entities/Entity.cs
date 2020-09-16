@@ -6,11 +6,11 @@ using System.Timers;
 
 namespace Obsidian.Entities
 {
-    public abstract class Entity
+    public class Entity
     {
         public readonly Timer TickTimer = new Timer();
 
-        public abstract int EntityId { get; }
+        public int EntityId { get; internal set; }
 
         public EntityBitMask EntityBitMask { get; set; }
 

@@ -6,6 +6,6 @@
 
         public int Id { get; set; }
 
-        public byte Metadata { get; set; }
+        public Slot Nbt { get; set; }
     }
 }

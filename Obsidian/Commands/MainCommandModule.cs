@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Util.DataTypes;
+using Obsidian.Net.Packets.Play.Client;
 
 namespace Obsidian.Commands
 {
