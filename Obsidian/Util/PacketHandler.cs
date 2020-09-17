@@ -129,13 +129,17 @@ namespace Obsidian.Util
                 case 0x09:// Click Window
                     var window = PacketSerializer.FastDeserialize<ClickWindow>(packet.data);
 
+                    Logger.LogDebug("Window click");
+                    Logger.LogDebug($"{JsonConvert.SerializeObject(window, Formatting.Indented)}");
                     if (window.WindowId == 0)
                     {
+                        
                         //This is the player inventory
                         switch (window.Mode)
                         {
                             case InventoryOperationMode.MouseClick://TODO InventoryClickEvent
-                                if(window.ClickedSlot == 0)
+                            {
+                                if (window.Button == 0)
                                 {
                                     client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
                                 }
@@ -144,6 +148,8 @@ namespace Obsidian.Util
                                     client.Player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
                                 }
                                 break;
+                            }
+
                             case InventoryOperationMode.ShiftMouseClick:
                                 break;
                             case InventoryOperationMode.NumberKeys:
@@ -151,6 +157,7 @@ namespace Obsidian.Util
                             case InventoryOperationMode.MiddleMouseClick:
                                 break;
                             case InventoryOperationMode.Drop:
+                            {
                                 //If clicked slot is -999 that means they clicked outside the inventory
                                 if (window.ClickedSlot != -999)
                                 {
@@ -160,7 +167,9 @@ namespace Obsidian.Util
                                         client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
                                 }
                                 break;
+                            }
                             case InventoryOperationMode.MouseDrag:
+                            {
                                 if (window.ClickedSlot == -999)
                                 {
                                     if (window.Button == 0 || window.Button == 4 || window.Button == 8)
@@ -182,7 +191,7 @@ namespace Obsidian.Util
                                         //creative copy
                                         client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
                                         {
-                                            Nbt = window.Item
+                                            Nbt = window.Item.ItemNbt
                                         });
                                     }
                                     else
@@ -193,7 +202,7 @@ namespace Obsidian.Util
                                         //survival painting
                                         client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
                                         {
-                                            Nbt = window.Item
+                                            Nbt = window.Item.ItemNbt
                                         });
                                     }
                                 }
@@ -203,6 +212,7 @@ namespace Obsidian.Util
                                 }
 
                                 break;
+                            }
                             case InventoryOperationMode.DoubleClick:
                                 break;
                             default:
@@ -298,7 +308,7 @@ namespace Obsidian.Util
 
                 case 0x18:
                     // Craft Recipe Request
-                     Logger.LogDebug("Received craft recipe request");
+                    Logger.LogDebug("Received craft recipe request");
                     break;
 
                 case 0x19:
@@ -363,7 +373,7 @@ namespace Obsidian.Util
                     client.Player.CurrentSlot = heldItem.Slot;
 
 
-                    Logger.LogDebug($"Received held item change: {heldItem.Slot}");
+                    //Logger.LogDebug($"Received held item change: {heldItem.Slot}");
                     break;
 
                 case 0x24:
@@ -379,18 +389,15 @@ namespace Obsidian.Util
                 case 0x26:
                     // Creative Inventory Action
                     Logger.LogDebug("Received creative inventory action");
-                    var ca = await PacketSerializer.DeserializeAsync<CreativeInventoryAction>(packet.data);
+                    var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
 
-                    var json = JsonConvert.SerializeObject(ca.ClickedItem);
 
-                    //client.Player.CurrentSlot = ca.ClickedSlot;
+                    client.Player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
+                    {
+                        Nbt = ca.ClickedItem.ItemNbt
+                    });
 
-                    var dir = Path.Combine(Path.GetTempPath(), "obsidian", "slots");
-                    Directory.CreateDirectory(dir);
-
-                    var file = Path.Combine(dir, $"{Path.GetRandomFileName()}-slotData.json");
-
-                    File.WriteAllText(file, json);
+                    Logger.LogDebug(JsonConvert.SerializeObject(client.Player, Formatting.Indented));
                     break;
 
                 case 0x27:

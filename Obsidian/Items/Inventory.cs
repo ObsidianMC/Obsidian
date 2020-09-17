@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Newtonsoft.Json;
+using Obsidian.Entities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,13 +13,11 @@ namespace Obsidian.Items
 
         internal int ActionsNumber { get; set; }
 
-        public Player Owner { get; set; }
-
         public InventoryType Type { get; set; }
 
         public string Title { get; set; }
 
-        public int Size { get; set; } = 9 * 4;
+        public int Size { get; set; } = 9 * 5;
 
         public ConcurrentDictionary<int, ItemStack> Items { get; private set; } = new ConcurrentDictionary<int, ItemStack>();
 
@@ -46,7 +45,7 @@ namespace Obsidian.Items
         public void SetItem(int slot, ItemStack item)
         {
             if (slot > this.Size - 1 || slot < 0)
-                throw new IndexOutOfRangeException(nameof(slot));
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
             if (this.Items.ContainsKey(slot))
                 this.Items[slot] = item;
@@ -68,12 +67,12 @@ namespace Obsidian.Items
         public bool RemoveItem(int slot, int amount = 1)
         {
             if (slot > this.Size - 1 || slot < 0)
-                throw new IndexOutOfRangeException(nameof(slot));
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
             if (!this.Items.ContainsKey(slot))
                 return false;
 
-            if (amount >= 64 || this.Items[slot].Count - amount <= 0 )
+            if (amount >= 64 || this.Items[slot].Count - amount <= 0)
                 return this.Items.TryRemove(slot, out var _);
 
             this.Items[slot].Count -= amount;

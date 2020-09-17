@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
@@ -366,7 +367,7 @@ namespace Obsidian.Net
             return Task.CompletedTask;
         }
 
-        public async Task WriteSlotAsync(Slot slot, ITestOutputHelper output = null)
+        public async Task WriteSlotAsync(Slot slot)
         {
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
@@ -379,7 +380,7 @@ namespace Obsidian.Net
                 writer.WriteByte("Slot", slot.ItemNbt.Slot);
                 writer.WriteByte("Count", (byte)slot.Count);
                 writer.WriteShort("id", (short)slot.Id);
-                writer.WriteShort("Damage", slot.ItemNbt.Damage);
+                writer.WriteInt("Damage", slot.ItemNbt.Damage);
 
                 writer.EndCompound();
 
@@ -387,7 +388,7 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task<Slot> ReadSlotAsync(ITestOutputHelper output = null)
+        public async Task<Slot> ReadSlotAsync()
         {
             var slot = new Slot();
 
@@ -399,9 +400,132 @@ namespace Obsidian.Net
                 slot.Id = await this.ReadVarIntAsync();
                 slot.Count = await this.ReadByteAsync();
 
-                await using var stream = new MemoryStream();
+                /*await using var stream = new MemoryStream();
 
                 await this.CopyToAsync(stream);
+                stream.Position = 0;*/
+
+                var reader = new NbtReader(this);
+
+                while (reader.ReadToFollowing())
+                {
+                    if (!reader.HasName)
+                    {
+                        //TODO?????????
+                        continue;
+                    }
+
+                    slot.ItemNbt = new ItemNbt();
+
+                    if (reader.IsCompound)
+                    {
+                        var root = (NbtCompound)reader.ReadAsTag();
+
+                        Program.PacketLogger.LogDebug(root.ToString());
+                        foreach (var tag in root)
+                        {
+                            Program.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            if (tag.TagType == NbtTagType.Compound)
+                            {
+                                Program.PacketLogger.LogDebug("Other compound");
+                            }
+
+                            switch (tag.Name.ToLower())
+                            {
+                                case "enchantments":
+                                {
+                                    var enchantments = (NbtList)tag;
+
+                                    foreach (var enchant in enchantments)
+                                    {
+                                        if (enchant is NbtCompound compound)
+                                        {
+                                            slot.ItemNbt.Enchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+
+                                    break;
+                                }
+                                case "storedenchantments":
+                                {
+                                    var enchantments = (NbtList)tag;
+
+                                    Program.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+
+                                    foreach (var enchantment in enchantments)
+                                    {
+                                        if (enchantment is NbtCompound compound)
+                                        {
+
+                                            slot.ItemNbt.StoredEnchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+                                    break;
+                                }
+                                case "slot":
+                                {
+                                    slot.ItemNbt.Slot = tag.ByteValue;
+                                    break;
+                                }
+                                case "damage":
+                                {
+                                    
+                                    slot.ItemNbt.Damage = tag.IntValue;
+                                    Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                        }
+                        //slot.ItemNbt.Slot = compound.Get<NbtByte>("Slot").Value;
+                        //slot.ItemNbt.Count = compound.Get<NbtByte>("Count").Value;
+                        //slot.ItemNbt.Id = compound.Get<NbtShort>("id").Value;
+                        //slot.ItemNbt.Damage = compound.Get<NbtShort>("Damage").Value;
+                        //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
+                    }
+                    else
+                    {
+                        Program.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
+                    }
+
+
+
+                }
+
+            }
+
+            return slot;
+        }
+
+        #endregion Writing
+
+        #region Reading
+
+        [ReadMethod(DataType.Slot)]
+        public Slot ReadSlot()
+        {
+            var slot = new Slot();
+
+            var present = this.ReadBoolean();
+            slot.Present = present;
+
+            if (present)
+            {
+                slot.Id = this.ReadVarInt();
+                slot.Count = this.ReadSignedByte();
+
+                using var stream = new MemoryStream();
+
+                this.CopyTo(stream);
                 stream.Position = 0;
 
                 var reader = new NbtReader(stream);
@@ -489,10 +613,6 @@ namespace Obsidian.Net
 
             return slot;
         }
-
-        #endregion Writing
-
-        #region Reading
 
         public async Task<object> ReadAsync(Type type, DataType dataType, FieldAttribute attr, int? readLen = null)
         {

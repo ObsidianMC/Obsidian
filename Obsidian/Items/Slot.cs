@@ -15,11 +15,12 @@ namespace Obsidian.Items
 
     public class ItemNbt
     {
-       // public byte Count { get; set; }
         public byte Slot { get; set; }
 
-        //public short Id { get; set; }
-        public short Damage { get; set; }
+        /// <summary>
+        /// this is the item durability
+        /// </summary>
+        public int Damage { get; set; }
 
         public int RepairCost { get; set; }
         public int CustomModelData { get; set; }

@@ -92,7 +92,7 @@ namespace Obsidian.Util.Extensions
             }
         }
 
-        internal static async Task<Dictionary<FieldAttribute, string>> GetAllMemberNamesAsync(this Packet packet)
+        internal static Dictionary<FieldAttribute, string> GetAllMemberNames(this Packet packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, string>();
@@ -110,7 +110,7 @@ namespace Obsidian.Util.Extensions
             return valueDict;
         }
 
-        internal static async Task<Dictionary<FieldAttribute, object>> GetAllObjectsAsync(this Packet packet)
+        internal static Dictionary<FieldAttribute, object> GetAllObjects(this Packet packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, object>();
@@ -138,7 +138,7 @@ namespace Obsidian.Util.Extensions
             return valueDict;
         }
 
-        internal static async Task<Dictionary<FieldAttribute, (string name, object value)>> GetAllObjectsAndNamesAsync(this Packet packet)
+        internal static Dictionary<FieldAttribute, (string name, object value)> GetAllObjectsAndNames(this Packet packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, (string, object)>();

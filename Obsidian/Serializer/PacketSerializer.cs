@@ -32,7 +32,7 @@ namespace Obsidian.Serializer
 
             await stream.Lock.WaitAsync();
 
-            var valueDict = (await packet.GetAllObjectsAsync()).OrderBy(x => x.Key.Order);
+            var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
 
             await using var dataStream = new MinecraftStream(true);
 
@@ -71,7 +71,7 @@ namespace Obsidian.Serializer
 
             Program.PacketLogger.LogDebug($"Deserializing {packet}");
 
-            var valueDict = (await packet.GetAllMemberNamesAsync()).OrderBy(x => x.Key.Order);
+            var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
             var members = packet.GetType().GetMembers(PacketExtensions.Flags);
 
             int readableBytes = 0;

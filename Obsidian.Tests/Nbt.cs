@@ -21,7 +21,7 @@ namespace Obsidian.Tests
         }
 
         [Fact]
-        public async Task BigTest()
+        public void BigTest()
         {
             var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Tests.Assets.bigtest.nbt");
             var decompressedStream = new MemoryStream();
@@ -111,6 +111,7 @@ namespace Obsidian.Tests
             #endregion lists
         }
 
+        [Fact]
         public async Task ReadSlot()
         {
             await using var stream = new MinecraftStream();
@@ -126,6 +127,7 @@ namespace Obsidian.Tests
                     Damage = 1
                 }
             };
+
             await stream.WriteSlotAsync(dataSlot);
 
             stream.Position = 0;

@@ -6,6 +6,6 @@
 
         public int Id { get; set; }
 
-        public Slot Nbt { get; set; }
+        public ItemNbt Nbt { get; set; }
     }
 }

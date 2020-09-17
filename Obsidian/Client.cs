@@ -313,7 +313,6 @@ namespace Obsidian
             await this.SendServerBrand();
 
             await this.SendChunkAsync(new Chunk(0, 0));
-
             //await this.Server.SendSpawnPlayerAsync(this.Player);//TODO find out why this is breaking
 
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
@@ -519,10 +518,12 @@ namespace Obsidian
             }
         }
 
-        internal async Task QueuePacketAsync(Packet packet)
+        internal Task QueuePacketAsync(Packet packet)
         {
             this.PacketQueue.Enqueue(packet);
             Logger.LogWarning($"Queuing packet: {packet} (0x{packet.id:X2})");
+
+            return Task.CompletedTask;
         }
 
         internal async Task SendChunkAsync(Chunk chunk)
