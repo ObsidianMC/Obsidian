@@ -35,7 +35,7 @@ namespace SamplePlugin
         }
     }
 
-    public class SamplePluginCommands : ModuleBase<CommandContext>
+    public class SamplePluginCommands : ModuleBase<ObsidianContext>
     {
         public CommandService Service { get; set; }
 
@@ -43,6 +43,7 @@ namespace SamplePlugin
         [Description("A sample command added by a sample plugin!")]
         public async Task SampleCommandAsync()
         {
+            
             await this.Context.Server.BroadcastAsync($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
         }
     }

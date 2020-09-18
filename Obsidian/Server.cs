@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.Blocks;
 using Obsidian.Chat;
@@ -49,6 +50,8 @@ namespace Obsidian
 
         private readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
+
+        public IServiceProvider Services { get; private set; } = new ServiceCollection().BuildServiceProvider(true);
 
         public DateTimeOffset StartTime { get; private set; }
 
@@ -111,9 +114,9 @@ namespace Obsidian
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
             this.Commands = new CommandService(new CommandServiceConfiguration()
             {
-                CaseSensitive = false,
+                StringComparison = StringComparison.OrdinalIgnoreCase,
+                IgnoresExtraArguments = true,
                 DefaultRunMode = RunMode.Parallel,
-                IgnoreExtraArguments = true
             });
             this.Commands.AddModule<MainCommandModule>();
             this.Commands.AddTypeParser(new LocationTypeParser());
@@ -195,6 +198,12 @@ namespace Obsidian
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
+
+            this.Logger.LogInformation("Loading services..");
+            //TODO services
+            this.Services = new ServiceCollection()
+                .AddSingleton(this.LoggerProvider)
+                .BuildServiceProvider(true);
 
             this.Logger.LogInformation($"Loading properties...");
             await this.Operators.InitializeAsync();
@@ -292,7 +301,7 @@ namespace Obsidian
             }
 
             //TODO command logging
-            var context = new CommandContext(source, this);
+            var context = new ObsidianContext(source, this, this.Services);
             IResult result = await Commands.ExecuteAsync(output, context);
             if (!result.IsSuccessful)
                 await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);

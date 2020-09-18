@@ -1,17 +1,16 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.DataTypes;
 using Qmmands;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Util.DataTypes;
-using Obsidian.Net.Packets.Play.Client;
 
 namespace Obsidian.Commands
 {
-    public class MainCommandModule : ModuleBase<CommandContext>
+    public class MainCommandModule : ModuleBase<ObsidianContext>
     {
         public CommandService Service { get; set; }
 

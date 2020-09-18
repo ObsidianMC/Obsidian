@@ -7,13 +7,13 @@ namespace Obsidian.Commands.Parsers
 {
     public class LocationTypeParser : TypeParser<Position>
     {
-        public override Task<TypeParserResult<Position>> ParseAsync(Parameter parameter, string value, ICommandContext context, IServiceProvider provider)
+        public override ValueTask<TypeParserResult<Position>> ParseAsync(Parameter parameter, string value, CommandContext context)
         {
             var splitted = value.Split(' ');
             var location = new Position();
 
             int count = 0;
-            var ctx = (CommandContext)context;
+            var ctx = (ObsidianContext)context;
             foreach (var text in splitted)
             {
                 if (double.TryParse(text, out var doubleResult))
@@ -32,7 +32,7 @@ namespace Obsidian.Commands.Parsers
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");
                     }
-                    
+
                 }
                 else if (text.Equals("~"))
                 {
@@ -54,7 +54,7 @@ namespace Obsidian.Commands.Parsers
                 count++;
             }
 
-            return Task.FromResult(TypeParserResult<Position>.Successful(location));
+            return new ValueTask<TypeParserResult<Position>>(TypeParserResult<Position>.Successful(location));
         }
     }
 }

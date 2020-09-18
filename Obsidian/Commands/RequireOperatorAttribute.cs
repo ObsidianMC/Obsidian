@@ -5,20 +5,21 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Commands
 {
-    public class RequireOperatorAttribute : CheckBaseAttribute
+    public class RequireOperatorAttribute : CheckAttribute
     {
-        public override Task<CheckResult> CheckAsync(ICommandContext context, IServiceProvider provider)
+
+        public override ValueTask<CheckResult> CheckAsync(CommandContext context)
         {
-            if (context is CommandContext c)
+            if (context is ObsidianContext c)
             {
                 var player = c.Player;
 
                 if (c.Server.Operators.IsOperator(player))
                 {
-                    return Task.FromResult(CheckResult.Successful);
+                    return new ValueTask<CheckResult>(CheckResult.Successful);
                 }
 
-                return Task.FromResult(CheckResult.Unsuccessful($"Player ({player.Username}) is not in operators list."));
+                return new ValueTask<CheckResult>(CheckResult.Unsuccessful($"Player ({player.Username}) is not in operators list."));
             }
 
             throw new Exception($"This context ({context.ToString()}) is unsupported");
