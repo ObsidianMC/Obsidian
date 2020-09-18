@@ -4,6 +4,7 @@ using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.PlayerData;
 using Obsidian.Serializer;
@@ -92,7 +93,6 @@ namespace Obsidian.Util
 
                 case 0x03:
                     // Incoming chat message
-                    Logger.LogDebug("Received chat message");
                     var message = await PacketSerializer.FastDeserializeAsync<IncomingChatMessage>(packet.data);
 
                     await server.ParseMessage(message.Message, client);
@@ -103,7 +103,7 @@ namespace Obsidian.Util
                     break;
                 case 0x05:
                     // Client Settings
-                    client.ClientSettings = await PacketSerializer.FastDeserializeAsync<ClientSettings>(packet.data);
+                    client.ClientSettings = PacketSerializer.FastDeserialize<ClientSettings>(packet.data);
                     Logger.LogDebug("Received client settings");
                     break;
 
@@ -133,7 +133,7 @@ namespace Obsidian.Util
                     Logger.LogDebug($"{JsonConvert.SerializeObject(window, Formatting.Indented)}");
                     if (window.WindowId == 0)
                     {
-                        
+
                         //This is the player inventory
                         switch (window.Mode)
                         {
@@ -266,14 +266,14 @@ namespace Obsidian.Util
                     break;
 
                 case 0x11:// Player Position
-                    var pos = PacketSerializer.FastDeserialize<PlayerPosition>(new MinecraftStream(packet.data));
+                    var pos = PacketSerializer.FastDeserialize<PlayerPosition>(packet.data);
 
                     await client.Player.UpdateAsync(pos.Position, pos.OnGround);
                     break;
 
                 case 0x12:
                     //Player Position And rotation (serverbound)
-                    var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(new MinecraftStream(packet.data));
+                    var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(packet.data);
 
                     await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
@@ -320,7 +320,7 @@ namespace Obsidian.Util
                     // Player Digging
                     Logger.LogDebug("Received player digging");
 
-                    var digging = await PacketSerializer.FastDeserializeAsync<PlayerDigging>(packet.data);
+                    var digging = PacketSerializer.FastDeserialize<PlayerDigging>(packet.data);
 
                     server.EnqueueDigging(digging);
                     break;
@@ -367,13 +367,25 @@ namespace Obsidian.Util
                     Logger.LogDebug("Received set beacon effect");
                     break;
 
-                case 0x23:
-                    // Held Item Change (serverbound)//TODO fix this
-                    var heldItem = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
-                    client.Player.CurrentSlot = heldItem.Slot;
+                case 0x23:// Held Item Change (serverbound)
 
+                    var heldItemChange = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
+                    client.Player.CurrentSlot = heldItemChange.Slot;
 
-                    //Logger.LogDebug($"Received held item change: {heldItem.Slot}");
+                    var heldItem = client.Player.GetHeldItem();
+
+                    await server.BroadcastPacketAsync(new EntityEquipment
+                    {
+                        EntityId = client.id,
+                        Slot = ESlot.MainHand,
+                        Item = new Slot
+                        {
+                            Present = heldItem.Present,
+                            Count = (sbyte)heldItem.Count,
+                            Id = heldItem.Id,
+                            ItemNbt = heldItem.Nbt
+                        }
+                    }, client.Player);
                     break;
 
                 case 0x24:
@@ -386,19 +398,34 @@ namespace Obsidian.Util
                     Logger.LogDebug("Received update command block minecart");
                     break;
 
-                case 0x26:
-                    // Creative Inventory Action
-                    Logger.LogDebug("Received creative inventory action");
+                case 0x26:// Creative Inventory Action in creative they send this to replace whatever item existed in the slot
+                {
                     var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
-
 
                     client.Player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
                     {
-                        Nbt = ca.ClickedItem.ItemNbt
+                        Nbt = ca.ClickedItem.ItemNbt,
+                        Present = ca.ClickedItem.Present
                     });
 
-                    Logger.LogDebug(JsonConvert.SerializeObject(client.Player, Formatting.Indented));
-                    break;
+                    if (ca.ClickedSlot >= 36 && ca.ClickedSlot <= 44)
+                    {
+                        heldItem = client.Player.GetHeldItem();
+                        await server.BroadcastPacketAsync(new EntityEquipment
+                        {
+                            EntityId = client.id,
+                            Slot = ESlot.MainHand,
+                            Item = new Slot
+                            {
+                                Present = heldItem.Present,
+                                Count = (sbyte)heldItem.Count,
+                                Id = heldItem.Id,
+                                ItemNbt = heldItem.Nbt
+                            }
+                        }, client.Player);
+                    }
+                }
+                break;
 
                 case 0x27:
                     // Update jigsaw Block
@@ -416,7 +443,28 @@ namespace Obsidian.Util
 
                 case 0x2A:
                     // Animation (serverbound)
-                    var serverAnim = await PacketSerializer.FastDeserializeAsync<Animation>(packet.data);
+                    var serverAnim = PacketSerializer.FastDeserialize<Animation>(packet.data);
+
+                    //TODO broadcast entity animation to nearby players
+                    switch (serverAnim.Hand)
+                    {
+                        case Hand.MainHand:
+                            await server.BroadcastPacketAsync(new EntityAnimation
+                            {
+                                EntityId = client.id,
+                                Animation = EAnimation.SwingMainArm
+                            }, client.Player);
+                            break;
+                        case Hand.OffHand:
+                            await server.BroadcastPacketAsync(new EntityAnimation
+                            {
+                                EntityId = client.id,
+                                Animation = EAnimation.SwingOffhand
+                            }, client.Player);
+                            break;
+                        default:
+                            break;
+                    }
 
                     Logger.LogDebug("Received animation (serverbound)");
                     break;
@@ -430,9 +478,7 @@ namespace Obsidian.Util
                     // Player Block Placement
                     var pbp = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(packet.data);
 
-                    await server.BroadcastBlockPlacementAsync(client.Player.Uuid, pbp);
-                    Logger.LogDebug("Received player block placement");
-
+                    await server.BroadcastBlockPlacementAsync(client.Player, pbp);
                     break;
 
                 case 0x2D:

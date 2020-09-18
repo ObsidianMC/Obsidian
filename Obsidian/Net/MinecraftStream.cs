@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ICSharpCode.SharpZipLib.GZip;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.Boss;
 using Obsidian.Chat;
@@ -11,6 +12,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
@@ -376,9 +378,14 @@ namespace Obsidian.Net
                 await this.WriteByteAsync(slot.Count);
 
                 var writer = new NbtWriter(this, "");
+                if (slot.ItemNbt == null)
+                {
+                    writer.EndCompound();
+                    writer.Finish();
+                    return;
+                }
 
-                writer.WriteByte("Slot", slot.ItemNbt.Slot);
-                writer.WriteByte("Count", (byte)slot.Count);
+                //TODO write enchants
                 writer.WriteShort("id", (short)slot.Id);
                 writer.WriteInt("Damage", slot.ItemNbt.Damage);
 
@@ -399,11 +406,6 @@ namespace Obsidian.Net
             {
                 slot.Id = await this.ReadVarIntAsync();
                 slot.Count = await this.ReadByteAsync();
-
-                /*await using var stream = new MemoryStream();
-
-                await this.CopyToAsync(stream);
-                stream.Position = 0;*/
 
                 var reader = new NbtReader(this);
 
@@ -473,11 +475,12 @@ namespace Obsidian.Net
                                 case "slot":
                                 {
                                     slot.ItemNbt.Slot = tag.ByteValue;
+                                    Console.WriteLine($"Setting slot: {slot.ItemNbt.Slot}");
                                     break;
                                 }
                                 case "damage":
                                 {
-                                    
+
                                     slot.ItemNbt.Damage = tag.IntValue;
                                     Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                     break;
@@ -523,12 +526,7 @@ namespace Obsidian.Net
                 slot.Id = this.ReadVarInt();
                 slot.Count = this.ReadSignedByte();
 
-                using var stream = new MemoryStream();
-
-                this.CopyTo(stream);
-                stream.Position = 0;
-
-                var reader = new NbtReader(stream);
+                var reader = new NbtReader(this);
 
                 while (reader.ReadToFollowing())
                 {
@@ -545,11 +543,12 @@ namespace Obsidian.Net
                         var root = (NbtCompound)reader.ReadAsTag();
                         foreach (var tag in root)
                         {
-                            Console.WriteLine($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            Program.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
                             if (tag.TagType == NbtTagType.Compound)
                             {
-                                Console.WriteLine("Other compound");
+                                //TODO???
                             }
+
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":
@@ -588,6 +587,17 @@ namespace Obsidian.Net
                                             });
                                         }
                                     }
+                                    break;
+                                }
+                                case "slot":
+                                {
+                                    slot.ItemNbt.Slot = tag.ByteValue;
+                                    break;
+                                }
+                                case "damage":
+                                {
+
+                                    slot.ItemNbt.Damage = tag.IntValue;
                                     break;
                                 }
                                 default:

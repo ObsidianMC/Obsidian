@@ -1,5 +1,6 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
@@ -190,6 +191,8 @@ namespace Obsidian.Entities
                 this.UpdatePosition(position, yaw, pitch, onGround);
             }
         }
+
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot + 36);
 
         public void UpdatePosition(Position pos, bool onGround = true)
         {

@@ -397,22 +397,17 @@ namespace Obsidian.Net
             ulong value = this.ReadUnsignedLong();
 
             long x = (long)(value >> 38);
-            long y = (long)(value >> 26) & 0xFFF;
-            long z = (long)(value << 38 >> 38);
-
-            if (PacketHandler.Protocol == ProtocolVersion.v1_14)
-            {
-                x = (long)(value >> 38);
-                y = (long)value & 0xFFF;
-                z = (long)(value << 26 >> 38);
-            }
+            long y = (long)(value & 0xFFF);
+            long z = (long)(value << 26 >> 38);
 
             if (x >= Math.Pow(2, 25))
-            { x -= (long)Math.Pow(2, 26); }
+                x -= (long)Math.Pow(2, 26);
+
             if (y >= Math.Pow(2, 11))
-            { y -= (long)Math.Pow(2, 12); }
+                y -= (long)Math.Pow(2, 12);
+
             if (z >= Math.Pow(2, 25))
-            { z -= (long)Math.Pow(2, 26); }
+                z -= (long)Math.Pow(2, 26);
 
             return new Position
             {

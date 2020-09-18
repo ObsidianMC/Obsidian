@@ -359,8 +359,6 @@ namespace Obsidian
             });
         }
 
-        internal Task SendBlockChangeAsync(BlockChange b) => this.QueuePacketAsync(b);
-
         internal Task SendEntityAsync(EntityMovement packet) => this.QueuePacketAsync(packet);
 
         internal async Task SendDeclareCommandsAsync()
@@ -488,18 +486,6 @@ namespace Obsidian
             this.Logger.LogDebug($"Sent Player Info packet from {this.Player.Username}");
         }
 
-        internal async Task SpawnPlayerAsync(Player who)
-        {
-            await this.QueuePacketAsync(new SpawnPlayer
-            {
-                EntityId = who.client.id,
-                Uuid = who.Uuid,
-                Position = who.Position,
-                Yaw = 0,
-                Pitch = 0
-            });
-        }
-
         internal async Task SendPacketAsync(Packet packet)
         {
             if (this.compressionEnabled)
@@ -521,7 +507,7 @@ namespace Obsidian
         internal Task QueuePacketAsync(Packet packet)
         {
             this.PacketQueue.Enqueue(packet);
-            Logger.LogWarning($"Queuing packet: {packet} (0x{packet.id:X2})");
+            this.Logger.LogWarning($"Queuing packet: {packet} (0x{packet.id:X2})");
 
             return Task.CompletedTask;
         }

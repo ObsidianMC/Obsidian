@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -51,6 +50,8 @@ namespace Obsidian.Items
                 this.Items[slot] = item;
             else
                 this.Items.TryAdd(slot, item);
+
+
         }
 
         public ItemStack GetItem(int slot)
@@ -58,8 +59,9 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException(nameof(slot));
 
+            //Assume there's nothing there so we give back air
             if (!this.Items.ContainsKey(slot))
-                throw new KeyNotFoundException(nameof(slot));
+                return new ItemStack(0, 0);
 
             return this.Items.GetValueOrDefault(slot);
         }

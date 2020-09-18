@@ -239,11 +239,11 @@ namespace Obsidian
             this.Logger.LogWarning($"Cancellation has been requested. Stopping server...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Guid senderId, PlayerBlockPlacement pbp)
+        internal async Task BroadcastBlockPlacementAsync(Player player, PlayerBlockPlacement pbp)
         {
-            foreach (var (uuid, player) in this.OnlinePlayers.Where(x => x.Key != senderId))
+            foreach (var (uuid, other) in this.OnlinePlayers.Except(player))
             {
-                var client = player.client;
+                var client = other.client;
 
                 var location = pbp.Location;
                 var face = pbp.Face;
@@ -278,9 +278,8 @@ namespace Obsidian
                         break;
                 }
 
-                var b = new BlockChange(location, Registry.GetBlock(Materials.Cobblestone).Id);
-
-                await client.SendBlockChangeAsync(b);
+                var placedBlock = (Materials)player.GetHeldItem().Id;
+                await client.QueuePacketAsync(new BlockChange(location, Registry.GetBlock(placedBlock).Id));
             }
         }
 
@@ -372,7 +371,7 @@ namespace Obsidian
                     {
                         var b = new BlockChange(d.Location, Registry.GetBlock(Materials.Air).Id);
 
-                        await player.client.SendBlockChangeAsync(b);
+                        await player.client.QueuePacketAsync(b);
                     }
                 }
 
@@ -404,17 +403,25 @@ namespace Obsidian
         {
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
-                await player.client.SendEntityAsync(new EntityMovement
+                await player.client.QueuePacketAsync(new EntityMovement { EntityId = except.client.id });
+                await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = except.client.id
+                    EntityId = except.client.id,
+                    Uuid = except.Uuid,
+                    Position = except.Position,
+                    Yaw = 0,
+                    Pitch = 0
                 });
-                await player.client.SpawnPlayerAsync(except).ConfigureAwait(false);
 
-                await except.client.SendEntityAsync(new EntityMovement
+                await except.client.QueuePacketAsync(new EntityMovement { EntityId = player.client.id });
+                await except.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = player.client.id
+                    EntityId = player.client.id,
+                    Uuid = player.Uuid,
+                    Position = player.Position,
+                    Yaw = 0,
+                    Pitch = 0
                 });
-                await except.client.SpawnPlayerAsync(player).ConfigureAwait(false);
             }
         }
 
