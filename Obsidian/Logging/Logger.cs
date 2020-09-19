@@ -19,7 +19,7 @@ namespace Obsidian.Logging
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            if (this.IsEnabled(logLevel))
+            if (!this.IsEnabled(logLevel))
                 return;
 
             lock (_lock)
@@ -75,7 +75,7 @@ namespace Obsidian.Logging
             }
         }
 
-        public bool IsEnabled(LogLevel logLevel) => logLevel > this.minimumLevel;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= this.minimumLevel;
 
         public IDisposable BeginScope<TState>(TState state) => throw new NotImplementedException();
     }

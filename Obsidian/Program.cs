@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -19,19 +20,20 @@ namespace Obsidian
         private static Dictionary<int, Server> Servers = new Dictionary<int, Server>();
         private static List<Task> Tasks = new List<Task>();
 
+        private static CancellationTokenSource cts = new CancellationTokenSource();
         public static GlobalConfig Config { get; private set; }
         public static Random Random = new Random();
-        
+
         internal static ILogger PacketLogger { get; set; }
 
-        private static DefaultContractResolver ContractResolver = new DefaultContractResolver
+        private static DefaultContractResolver contractResolver = new DefaultContractResolver
         {
             NamingStrategy = new SnakeCaseNamingStrategy()
         };
 
         public static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
-            ContractResolver = ContractResolver,
+            ContractResolver = contractResolver,
             Converters = new List<JsonConverter>
             {
                 new DefaultEnumConverter<CustomDirection>(),
@@ -65,6 +67,7 @@ namespace Obsidian
                 File.WriteAllText("global_config.json", JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
                 Console.WriteLine("Created new global config");
             }
+            Console.CancelKeyPress += Console_CancelKeyPress;
 
             Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText("global_config.json"));
 
@@ -92,17 +95,32 @@ namespace Obsidian
                 if (Servers.Count(x => x.Value.Port == server.Port) > 1)
                     throw new InvalidOperationException("Servers cannot be binded to the same ports");
 
-                Tasks.Add(Task.Run(async delegate ()
-                {
-                    await server.StartServer();
-                }));
+                await Task.Run(server.StartServer);
             }
 
-            await Task.WhenAll(Tasks);//Wait until all servers are dead.
+            await WaitForCancellation();
 
-            // Do some entry stuff for server class
             Console.WriteLine("Server killed. Press any key to Return.");
             Console.ReadKey();
+        }
+
+        public static async Task WaitForCancellation()
+        {
+            while (!cts.IsCancellationRequested)
+                await Task.Delay(50);
+
+        }
+
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            e.Cancel = true;
+            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
+            foreach (var (_, server) in Servers)
+            {
+                server.StopServer();
+            }
+
+            cts.Cancel();
         }
 
         // Cool startup console logo because that's cool

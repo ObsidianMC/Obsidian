@@ -93,7 +93,7 @@ namespace Obsidian
         {
             this.Config = config;
 
-            this.LoggerProvider = new LoggerProvider(LogLevel.Information);
+            this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             //This stuff down here needs to be looked into
             Program.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
@@ -109,6 +109,7 @@ namespace Obsidian
             this.clients = new ConcurrentHashSet<Client>();
 
             this.cts = new CancellationTokenSource();
+
             this.chatmessages = new ConcurrentQueue<QueueChat>();
             this.diggers = new ConcurrentQueue<PlayerDigging>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
@@ -131,7 +132,6 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
-            Console.CancelKeyPress += this.Console_CancelKeyPress;
         }
 
         /// <summary>
@@ -212,45 +212,42 @@ namespace Obsidian
             this.Logger.LogInformation("Loading plugins...");
             await this.PluginManager.LoadPluginsAsync(this.Logger);
 
-            if (this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
-            {
-                this.WorldGenerator = value;
-            }
-            else
-            {
-                this.Logger.LogWarning($"Generator ({this.Config.Generator}) is unknown. Using default generator");
-                this.WorldGenerator = new SuperflatGenerator();
-            }
+            if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
+                this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+
+            this.WorldGenerator = value ?? new SuperflatGenerator();
 
             this.Logger.LogInformation($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator})");
-
-            this.Logger.LogInformation("Starting backend...");
-            await Task.Factory.StartNew(async () => { await this.ServerLoop().ConfigureAwait(false); });
 
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
 
+            _ = Task.Run(this.ServerLoop);
+
             this.Logger.LogDebug($"Listening for new clients...");
+
             this.tcpListener.Start();
 
-            while (!cts.IsCancellationRequested)
+            while (!this.cts.IsCancellationRequested)
             {
-                var tcp = await this.tcpListener.AcceptTcpClientAsync();
+                if (this.tcpListener.Pending())
+                {
+                    var tcp = await this.tcpListener.AcceptTcpClientAsync();
+                    this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
+                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count), this);
+                    this.clients.Add(clnt);
 
-                var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count), this);
-                this.clients.Add(clnt);
-
-                await Task.Factory.StartNew(async () => { await clnt.StartConnectionAsync().ConfigureAwait(false); });
+                    await Task.Run(clnt.StartConnectionAsync);
+                }
             }
 
-            this.Logger.LogWarning($"Cancellation has been requested. Stopping server...");
+            this.Logger.LogWarning("Server is shutting down...");
         }
 
         internal async Task BroadcastBlockPlacementAsync(Player player, PlayerBlockPlacement pbp)
         {
-            foreach (var (uuid, other) in this.OnlinePlayers.Except(player))
+            foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
                 var client = other.client;
 
@@ -335,13 +332,12 @@ namespace Obsidian
 
         internal void StopServer()
         {
-            this.WorldGenerators.Clear(); //Clean up for memory and next boot
             this.cts.Cancel();
+            this.tcpListener.Stop();
+            this.WorldGenerators.Clear(); 
 
             foreach (var client in this.clients)
                 client.Disconnect();
-
-            Console.WriteLine("shutting down..");
         }
 
         private async Task ServerLoop()
@@ -351,7 +347,6 @@ namespace Obsidian
             {
                 await Task.Delay(50);
 
-                this.TotalTicks++;
                 await this.Events.InvokeServerTickAsync();
 
                 keepaliveticks++;
@@ -360,7 +355,7 @@ namespace Obsidian
                     var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var clnt in this.clients.Where(x => x.State == ClientState.Play))
-                        _ = Task.Run(async () => { await clnt.ProcessKeepAlive(keepaliveid); });
+                        _ = Task.Run(async () => await clnt.ProcessKeepAlive(keepaliveid));
 
                     keepaliveticks = 0;
                 }
@@ -373,10 +368,10 @@ namespace Obsidian
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
-                    if (this.chatmessages.TryPeek(out QueueChat msg))
+                    if (this.chatmessages.TryDequeue(out QueueChat msg))
                         await player.SendMessageAsync(msg.Message, msg.Position);
 
-                    if (this.diggers.TryPeek(out PlayerDigging d))
+                    if (this.diggers.TryDequeue(out PlayerDigging d))
                     {
                         var b = new BlockChange(d.Location, Registry.GetBlock(Materials.Air).Id);
 
@@ -384,17 +379,10 @@ namespace Obsidian
                     }
                 }
 
-                this.chatmessages.TryDequeue(out var _);
-                this.diggers.TryDequeue(out var _);
-
                 foreach (var client in clients)
                 {
                     if (!client.tcp.Connected)
-                    {
                         this.clients.TryRemove(client);
-
-                        continue;
-                    }
                 }
             }
         }
@@ -434,11 +422,7 @@ namespace Obsidian
             }
         }
 
-        private void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
-            this.StopServer();
-        }
+
 
         #region events
 
