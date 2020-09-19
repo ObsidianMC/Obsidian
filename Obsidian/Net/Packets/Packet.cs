@@ -60,7 +60,7 @@ namespace Obsidian.Net.Packets
             {
                 Console.WriteLine("compressing");
                 await using var memoryStream = new MemoryStream();
-                await ZLibUtils.WriteCompressedAsync(dataStream, memoryStream);
+                await ZLibUtils.CompressAsync(dataStream, memoryStream);
 
                 var packetLength = dataLength + (int)memoryStream.Length;
 

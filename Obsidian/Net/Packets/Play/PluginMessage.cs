@@ -29,7 +29,7 @@ namespace Obsidian.Net.Packets.Play
                     Type = PluginMessageType.Brand,
                     Value = await stream.ReadStringAsync()
                 },
-                "minecraft:register" => new PluginMessageStore//Payload should be null or a list of strings
+                "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
                 {
                     Type = PluginMessageType.Register,
                     Value = this.PluginData

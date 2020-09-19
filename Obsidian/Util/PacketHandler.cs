@@ -259,7 +259,7 @@ namespace Obsidian.Util
                         case PluginMessageType.UnRegister:
                             server.RegisteredChannels.RemoveWhere(x => x == msg.Channel.ToLower());
                             break;
-                        case PluginMessageType.Custom://This can be ignored for now.
+                        case PluginMessageType.Custom://This can be ignored for now
                         default:
                             break;
                     }

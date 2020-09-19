@@ -94,13 +94,12 @@ namespace Obsidian.Commands
 
         [Command("leave", "kickme")]
         [Description("kicks you")]
-        public Task LeaveAsync()
-            => Context.Client.DisconnectAsync(ChatMessage.Simple("Is this what you wanted?"));
+        public Task LeaveAsync() => this.Context.Player.KickAsync("Is this what you wanted?");
 
         [Command("uptime", "up")]
         [Description("Gets current uptime")]
         public Task UptimeAsync()
-            => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime).ToString()}");
+            => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
 
         [Command("declarecmds", "declarecommands")]
         [Description("Debug command for testing the Declare Commands packet")]
@@ -111,7 +110,7 @@ namespace Obsidian.Commands
         public async Task TeleportAsync(Position location)
         {
             await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await Context.Client.SendPlayerLookPositionAsync(new Position(location.X, location.Y, location.Z), PositionFlags.NONE);
+            await this.Context.Player.TeleportAsync(location);
         }
 
         [Command("op")]

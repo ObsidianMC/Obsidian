@@ -7,33 +7,30 @@ namespace Obsidian.Util
 {
     public static class ZLibUtils
     {
-        //TODO: Make this async >:( - Craftplacer
-        public static byte[] Compress(byte[] to_compress)
+        public static async Task CompressAsync(byte[] byteIn, Stream outStream)
         {
-            byte[] data;
-            using var memstream = new MemoryStream();
+            using var stream = new ZlibStream(new MemoryStream(), CompressionMode.Compress, CompressionLevel.BestCompression);
 
-            using var stream = new ZlibStream(memstream, CompressionMode.Compress, CompressionLevel.BestCompression);
+            await stream.WriteAsync(byteIn, 0, byteIn.Length);
 
-            stream.Write(to_compress, 0, to_compress.Length);
-
-            data = memstream.ToArray();
-
-            return data;
+            await stream.CopyToAsync(outStream);
         }
 
-        public static async Task WriteCompressedAsync(byte[] toCompress, Stream targetStream)
-        {
-            await using var memoryStream = new MemoryStream(toCompress);
-            await using var stream = new ZlibStream(memoryStream, CompressionMode.Compress, CompressionLevel.BestCompression);
-            await stream.WriteAsync(toCompress, 0, toCompress.Length);
-            await stream.CopyToAsync(targetStream);
-        }
-        
-        public static async Task WriteCompressedAsync(Stream inputStream, Stream outputStream)
+        public static async Task CompressAsync(Stream inputStream, Stream outputStream)
         {
             await using var stream = new ZlibStream(inputStream, CompressionMode.Compress, CompressionLevel.BestCompression);
             await stream.CopyToAsync(outputStream);
+        }
+
+        public static async Task<byte[]> DecompressAsync(byte[] byteIn, int size)
+        {
+            using var stream = new ZlibStream(new MemoryStream(byteIn, false), CompressionMode.Decompress, CompressionLevel.BestSpeed);
+
+            var data = new byte[size];
+
+            await stream.ReadAsync(byteIn, 0, size);
+
+            return data;
         }
 
         /// <summary>
@@ -44,10 +41,12 @@ namespace Obsidian.Util
         /// <returns>Decompressed data as a byte array</returns>
         public static byte[] Decompress(byte[] to_decompress, int size_uncompressed)
         {
-            var stream = new ZlibStream(new MemoryStream(to_decompress, false), CompressionMode.Decompress, CompressionLevel.BestSpeed);
+            using var stream = new ZlibStream(new MemoryStream(to_decompress, false), CompressionMode.Decompress, CompressionLevel.BestSpeed);
             byte[] packetData_decompressed = new byte[size_uncompressed];
+
             stream.Read(packetData_decompressed, 0, size_uncompressed);
             stream.Close();
+
             return packetData_decompressed;
         }
 
@@ -58,12 +57,16 @@ namespace Obsidian.Util
         /// <returns>Decompressed data as byte array</returns>
         public static byte[] Decompress(byte[] to_decompress)
         {
-            var stream = new ZlibStream(new MemoryStream(to_decompress, false), CompressionMode.Decompress, CompressionLevel.BestSpeed);
+            using var stream = new ZlibStream(new MemoryStream(to_decompress, false), CompressionMode.Decompress, CompressionLevel.BestSpeed);
+
             byte[] buffer = new byte[16 * 1024];
+
             using var decompressedBuffer = new MemoryStream();
+
             int read;
             while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
                 decompressedBuffer.Write(buffer, 0, read);
+
             return decompressedBuffer.ToArray();
         }
     }

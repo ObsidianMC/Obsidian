@@ -235,6 +235,20 @@ namespace Obsidian.Entities
             }
         }
 
+        public Task TeleportAsync(Position pos) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
+        {
+            Position = pos,
+            Flags = PositionFlags.NONE,
+            TeleportId = 0//TODO teleport id should be unique everytime
+        });
+
+        public Task TeleportAsync(Player to) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
+        {
+            Position = to.Position,
+            Flags = PositionFlags.NONE,
+            TeleportId = 0//TODO teleport id should be unique everytime
+        });
+
         public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
 
         public Task SendMessageAsync(ChatMessage message) => client.QueuePacketAsync(new ChatMessagePacket(message, 0));
@@ -260,7 +274,6 @@ namespace Obsidian.Entities
 
         internal void CopyPosition(bool withLook = false)
         {
-
             this.LastPosition = this.Position;
 
             if (withLook)
