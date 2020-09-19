@@ -3,7 +3,7 @@ using Obsidian.Entities;
 
 namespace Obsidian.Events.EventArgs
 {
-    public class BlockBreakEventArgs : PlayerEventArgs
+    public class BlockBreakEventArgs : PlayerEventArgs, ICancellable
     {
         /// <summary>
         /// The player who broke the block
@@ -14,6 +14,8 @@ namespace Obsidian.Events.EventArgs
         /// The block that was broken
         /// </summary>
         public Block Block { get; }
+
+        public bool Cancel { get; set; }
 
         internal BlockBreakEventArgs(Player player) : base(player) { }
     }

@@ -252,7 +252,7 @@ namespace Obsidian
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
             }
 
-            
+
         }
 
         private async Task ProcessQueue()
@@ -353,16 +353,6 @@ namespace Obsidian
             ///        }), this.MinecraftStream);
             ///    }
             ///}).ConfigureAwait(false);
-        }
-
-        internal async Task SendPlayerLookPositionAsync(Position poslook, PositionFlags posflags, int tpid = 0)
-        {
-            await this.QueuePacketAsync(new ClientPlayerPositionLook
-            {
-                Position = poslook,
-                Flags = posflags,
-                TeleportId = tpid
-            });
         }
 
         internal Task SendEntityAsync(EntityMovement packet) => this.QueuePacketAsync(packet);
@@ -505,12 +495,18 @@ namespace Obsidian
             }
         }
 
-        internal Task QueuePacketAsync(Packet packet)
+        internal async Task QueuePacketAsync(Packet packet)
         {
-            this.PacketQueue.Enqueue(packet);
-            this.Logger.LogWarning($"Queuing packet: {packet} (0x{packet.id:X2})");
+            var args = await this.Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
 
-            return Task.CompletedTask;
+            if (args.Cancel)
+            {
+                this.Logger.LogDebug("A packet was set to queue but an event handler prevented it.");
+                return;
+            }
+
+            this.PacketQueue.Enqueue(packet);
+            this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.id:X2})");
         }
 
         internal async Task SendChunkAsync(Chunk chunk)

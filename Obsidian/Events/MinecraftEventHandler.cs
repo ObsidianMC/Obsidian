@@ -7,6 +7,7 @@ namespace Obsidian.Events
     public class MinecraftEventHandler
     {
         private readonly AsyncEvent<PacketReceivedEventArgs> packetReceived;
+        private readonly AsyncEvent<QueuePacketEventArgs> queuePacket;
 
         private readonly AsyncEvent<PlayerJoinEventArgs> playerJoin;
         private readonly AsyncEvent<PlayerLeaveEventArgs> playerLeave;
@@ -16,11 +17,13 @@ namespace Obsidian.Events
         public MinecraftEventHandler()
         {
             // Events that don't need additional arguments
-            packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
-            playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
-            playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
-            serverTick = new AsyncEvent(HandleException, "ServerTick");
-            clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
+            this.packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
+            this.queuePacket = new AsyncEvent<QueuePacketEventArgs>(HandleException, "QueuePacket");
+
+            this.playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
+            this.playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
+            this.serverTick = new AsyncEvent(HandleException, "ServerTick");
+            this.clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
         }
 
         /// <summary>
@@ -31,6 +34,12 @@ namespace Obsidian.Events
         {
             add { this.packetReceived.Register(value); }
             remove { this.packetReceived.Unregister(value); }
+        }
+
+        public event AsyncEventHandler<QueuePacketEventArgs> QueuePacket
+        {
+            add { this.queuePacket.Register(value); }
+            remove { this.queuePacket.Unregister(value); }
         }
 
         public event AsyncEventHandler<InventoryClickEventArgs> InventoryClick
@@ -59,8 +68,19 @@ namespace Obsidian.Events
 
         private void HandleException(string eventname, Exception ex) { }
 
-        internal Task InvokeInventoryClickAsync(InventoryClickEventArgs args) =>
-            this.clickEvent.InvokeAsync(args);
+        internal async Task<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs args)
+        {
+            await this.queuePacket.InvokeAsync(args);
+
+            return args;
+        }
+
+        internal async Task<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs args)
+        {
+            await this.clickEvent.InvokeAsync(args);
+
+            return args;
+        }
 
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
             this.packetReceived.InvokeAsync(eventArgs);

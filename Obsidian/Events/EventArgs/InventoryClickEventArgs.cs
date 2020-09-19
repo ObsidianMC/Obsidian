@@ -3,7 +3,7 @@ using Obsidian.Items;
 
 namespace Obsidian.Events.EventArgs
 {
-    public class InventoryClickEventArgs : PlayerEventArgs
+    public class InventoryClickEventArgs : PlayerEventArgs, ICancellable
     {
         /// <summary>
         /// Gets the clicked inventory
@@ -25,6 +25,8 @@ namespace Obsidian.Events.EventArgs
         /// Gets the slot that was clicked
         /// </summary>
         public int Slot { get; set; }
+
+        public bool Cancel { get; set; }
 
         internal InventoryClickEventArgs(Player player, Inventory inventory) : base(player) 
         {
