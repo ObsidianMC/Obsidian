@@ -6,21 +6,21 @@ namespace Obsidian.Events
 {
     public class MinecraftEventHandler
     {
-        private readonly AsyncEvent<PacketReceivedEventArgs> _packetReceived;
+        private readonly AsyncEvent<PacketReceivedEventArgs> packetReceived;
 
-        private readonly AsyncEvent<PlayerJoinEventArgs> _playerJoin;
-        private readonly AsyncEvent<PlayerLeaveEventArgs> _playerLeave;
-        private readonly AsyncEvent<InventoryClickEventArgs> _clickEvent;
-        private readonly AsyncEvent _serverTick;
+        private readonly AsyncEvent<PlayerJoinEventArgs> playerJoin;
+        private readonly AsyncEvent<PlayerLeaveEventArgs> playerLeave;
+        private readonly AsyncEvent<InventoryClickEventArgs> clickEvent;
+        private readonly AsyncEvent serverTick;
 
         public MinecraftEventHandler()
         {
             // Events that don't need additional arguments
-            _packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
-            _playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
-            _playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
-            _serverTick = new AsyncEvent(HandleException, "ServerTick");
-            _clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
+            packetReceived = new AsyncEvent<PacketReceivedEventArgs>(HandleException, "PacketReceived");
+            playerJoin = new AsyncEvent<PlayerJoinEventArgs>(HandleException, "PlayerJoin");
+            playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
+            serverTick = new AsyncEvent(HandleException, "ServerTick");
+            clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
         }
 
         /// <summary>
@@ -29,70 +29,48 @@ namespace Obsidian.Events
         /// </summary>
         public event AsyncEventHandler<PacketReceivedEventArgs> PacketReceived
         {
-            add { this._packetReceived.Register(value); }
-            remove { this._packetReceived.Unregister(value); }
+            add { this.packetReceived.Register(value); }
+            remove { this.packetReceived.Unregister(value); }
         }
 
         public event AsyncEventHandler<InventoryClickEventArgs> InventoryClick
         {
-            add { this._clickEvent.Register(value); }
-            remove { this._clickEvent.Unregister(value); }
+            add { this.clickEvent.Register(value); }
+            remove { this.clickEvent.Unregister(value); }
         }
 
         public event AsyncEventHandler<PlayerJoinEventArgs> PlayerJoin
         {
-            add { this._playerJoin.Register(value); }
-            remove { this._playerJoin.Unregister(value); }
+            add { this.playerJoin.Register(value); }
+            remove { this.playerJoin.Unregister(value); }
         }
 
         public event AsyncEventHandler ServerTick
         {
-            add { this._serverTick.Register(value); }
-            remove { this._serverTick.Unregister(value); }
+            add { this.serverTick.Register(value); }
+            remove { this.serverTick.Unregister(value); }
         }
 
         public event AsyncEventHandler<PlayerLeaveEventArgs> PlayerLeave
         {
-            add { this._playerLeave.Register(value); }
-            remove { this._playerLeave.Unregister(value); }
+            add { this.playerLeave.Register(value); }
+            remove { this.playerLeave.Unregister(value); }
         }
 
-        private void HandleException(string eventname, Exception ex)
-        {
-        }
+        private void HandleException(string eventname, Exception ex) { }
 
-        internal Task InvokeInventoryClickAsync(InventoryClickEventArgs args)
-        {
-            _ = Task.Run(async () => { await this._clickEvent.InvokeAsync(args); });
+        internal Task InvokeInventoryClickAsync(InventoryClickEventArgs args) =>
+            this.clickEvent.InvokeAsync(args);
 
-            return Task.CompletedTask;
-        }
+        internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
+            this.packetReceived.InvokeAsync(eventArgs);
+        internal Task InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
+            this.playerJoin.InvokeAsync(eventArgs);
 
-        internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs)
-        {
-            _ = Task.Run(async () => { await this._packetReceived.InvokeAsync(eventArgs); });
+        internal Task InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs) =>
+            this.playerLeave.InvokeAsync(eventArgs);
 
-            return Task.CompletedTask;
-        }
-
-        internal Task InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs)
-        {
-            _ = Task.Run(async () => { await this._playerJoin.InvokeAsync(eventArgs); });
-
-            return Task.CompletedTask;
-        }
-
-        internal Task InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs)
-        {
-            _ = Task.Run(async () => { await this._playerLeave.InvokeAsync(eventArgs); });
-
-            return Task.CompletedTask;
-        }
-
-        internal Task InvokeServerTickAsync()
-        {
-            _ = Task.Run(async () => { await this._serverTick.InvokeAsync(); });
-            return Task.CompletedTask;
-        }
+        internal Task InvokeServerTickAsync() =>
+            this.serverTick.InvokeAsync();
     }
 }

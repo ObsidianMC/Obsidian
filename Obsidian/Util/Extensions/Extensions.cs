@@ -11,13 +11,14 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Obsidian.Util.Extensions
 {
     public static class Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
-
         public static bool NotAir(this BlockState state) => !(state is BlockAir);
         public static bool NotFluid(this BlockState state) => !(state is BlockFluid);
 
@@ -58,7 +59,7 @@ namespace Obsidian.Util.Extensions
         public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
         {
             var newDict = new Dictionary<Guid, Player>();
-            foreach((Guid uuid, Player player) in source)
+            foreach ((Guid uuid, Player player) in source)
             {
                 if (players.Any(x => x.Uuid == uuid))
                     continue;

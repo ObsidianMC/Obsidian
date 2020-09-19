@@ -247,6 +247,8 @@ namespace Obsidian
                 if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
             }
+
+            
         }
 
         private async Task ProcessQueue()
@@ -364,12 +366,13 @@ namespace Obsidian
         internal async Task SendDeclareCommandsAsync()
         {
             var packet = new DeclareCommands();
+            var index = 0;
 
             var node = new CommandNode()
             {
                 Type = CommandNodeType.Root
             };
-            var index = 0;
+
             foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
             {
                 var commandNode = new CommandNode()
@@ -378,7 +381,6 @@ namespace Obsidian
                     Type = CommandNodeType.Literal,
                     Index = ++index
                 };
-
                 foreach (Qmmands.Parameter parameter in command.Parameters)
                 {
                     var parameterNode = new CommandNode()
@@ -387,7 +389,6 @@ namespace Obsidian
                         Type = CommandNodeType.Argument,
                         Index = ++index
                     };
-
                     Type type = parameter.Type;
 
                     if (type == typeof(string))
@@ -409,13 +410,9 @@ namespace Obsidian
                 }
 
                 if (commandNode.Children.Count > 0)
-                {
                     commandNode.Children[0].Type |= CommandNodeType.IsExecutabe;
-                }
                 else
-                {
                     commandNode.Type |= CommandNodeType.IsExecutabe;
-                }
 
                 node.AddChild(commandNode);
             }
