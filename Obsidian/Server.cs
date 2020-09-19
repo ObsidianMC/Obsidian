@@ -68,6 +68,8 @@ namespace Obsidian
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
 
+        public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();
+
         public CommandService Commands { get; }
         public Config Config { get; }
 

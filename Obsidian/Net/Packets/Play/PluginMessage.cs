@@ -1,16 +1,10 @@
 ﻿using Obsidian.Serializer.Attributes;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
     public class PluginMessage : Packet
     {
-        private readonly List<PluginMessageHandler> handlers = new List<PluginMessageHandler>()
-        {
-            new MinecraftBrand()
-        };
-
         [Field(0)]
         public string Channel { get; private set; }
 
@@ -19,24 +13,50 @@ namespace Obsidian.Net.Packets.Play
 
         public PluginMessage() : base(0x19) { }
 
-        public PluginMessage(string channel, byte[] data) : base(0x19, data)
+        public PluginMessage(string channel, byte[] data) : base(0x19)
         {
             this.Channel = channel;
             this.PluginData = data;
         }
+
+        public async ValueTask<PluginMessageStore> HandleAsync()
+        {
+            using var stream = new MinecraftStream(this.PluginData);
+            var result = this.Channel switch
+            {
+                "minecraft:brand" => new PluginMessageStore
+                {
+                    Type = PluginMessageType.Brand,
+                    Value = await stream.ReadStringAsync()
+                },
+                "minecraft:register" => new PluginMessageStore//Payload should be null or a list of strings
+                {
+                    Type = PluginMessageType.Register,
+                    Value = this.PluginData
+                },
+                "minecraft:unregister" => new PluginMessageStore
+                {
+                    Type = PluginMessageType.UnRegister
+                },
+                _ => throw new System.NotImplementedException()
+            };
+
+            return result;
+        }
     }
 
-    public abstract class PluginMessageHandler
+    public enum PluginMessageType
     {
-        public abstract string Channel { get; }
-
-        public abstract Task HandleAsync(MinecraftStream stream);
+        Brand,
+        Register,
+        UnRegister,
+        Custom
     }
 
-    public class MinecraftBrand : PluginMessageHandler
+    public class PluginMessageStore
     {
-        public override string Channel => "minecraft:brand";
+        public PluginMessageType Type { get; set; }
 
-        public override async Task HandleAsync(MinecraftStream stream) => await stream.ReadStringAsync();
+        public object Value { get; set; }
     }
 }

@@ -234,12 +234,39 @@ namespace Obsidian.Util
                     Logger.LogDebug("Received close window");
                     break;
 
-                case 0x0B:
-                    // Plugin Message (serverbound)
+                case 0x0B: // Plugin Message (serverbound)
+                {
                     var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
 
+                    var result = await msg.HandleAsync();
+
+                    switch (result.Type)
+                    {
+                        case PluginMessageType.Brand:
+                            client.Brand = result.Value.ToString();
+                            break;
+                        case PluginMessageType.Register:
+                        {
+                            using var stream = new MinecraftStream(msg.PluginData);
+                            var len = await stream.ReadVarIntAsync();
+
+                            //Idk how this would work so I'm assuming a length will be sent first
+                            for (int i = 0; i < len; i++)
+                                server.RegisteredChannels.Add(await stream.ReadStringAsync());
+
+                            break;
+                        }
+                        case PluginMessageType.UnRegister:
+                            server.RegisteredChannels.RemoveWhere(x => x == msg.Channel.ToLower());
+                            break;
+                        case PluginMessageType.Custom://This can be ignored for now.
+                        default:
+                            break;
+                    }
+
                     Logger.LogDebug($"Received plugin message: {msg.Channel}");
-                    break;
+                }
+                break;
 
                 case 0x0C:
                     // Edit Book

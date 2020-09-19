@@ -5,7 +5,6 @@ using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
-using Obsidian.Logging;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
@@ -60,6 +59,11 @@ namespace Obsidian
         internal int ping;
         internal int missedKeepalives;
         internal int id;
+
+        /// <summary>
+        /// The client brand
+        /// </summary>
+        public string Brand { get; set; }
 
         public ClientSettings ClientSettings { get; internal set; }
 
