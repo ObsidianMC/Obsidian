@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Entities
 {
-    public enum EntityType : byte
+    public enum EntityType : int
     {
         AreaEffectCloud,
         ArmorStand,
@@ -105,6 +105,5 @@
         LightningBolt,
         Player,
         FishingBobber,
-
     }
 }

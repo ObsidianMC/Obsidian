@@ -241,7 +241,7 @@ namespace Obsidian
                     var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count), this);
                     this.clients.Add(clnt);
 
-                    await Task.Run(clnt.StartConnectionAsync);
+                    _ = Task.Run(clnt.StartConnectionAsync);
                 }
             }
 
@@ -337,7 +337,7 @@ namespace Obsidian
         {
             this.cts.Cancel();
             this.tcpListener.Stop();
-            this.WorldGenerators.Clear(); 
+            this.WorldGenerators.Clear();
 
             foreach (var client in this.clients)
                 client.Disconnect();
@@ -403,20 +403,20 @@ namespace Obsidian
         {
             foreach (var (_, player) in this.OnlinePlayers.Except(except))
             {
-                await player.client.QueuePacketAsync(new EntityMovement { EntityId = except.client.id });
+                await player.client.QueuePacketAsync(new EntityMovement { EntityId = except.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = except.client.id,
+                    EntityId = except.EntityId,
                     Uuid = except.Uuid,
                     Position = except.Position,
                     Yaw = 0,
                     Pitch = 0
                 });
 
-                await except.client.QueuePacketAsync(new EntityMovement { EntityId = player.client.id });
+                await except.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
                 await except.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = player.client.id,
+                    EntityId = player.EntityId,
                     Uuid = player.Uuid,
                     Position = player.Position,
                     Yaw = 0,
@@ -439,13 +439,14 @@ namespace Obsidian
 
         private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
         {
+            var joined = e.Player;
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
             {
-                await other.client.AddPlayerToListAsync(e.Player);
+                await other.client.AddPlayerToListAsync(joined);
             }
 
-            await this.SendSpawnPlayerAsync(e.Player);
+            await this.SendSpawnPlayerAsync(joined);
         }
 
         #endregion events

@@ -56,7 +56,7 @@ namespace Obsidian
 
         internal TcpClient tcp;
 
-        internal int ClickActionNumber;
+        internal int clickActionNumber;
         internal int ping;
         internal int missedKeepalives;
         internal int id;
@@ -534,7 +534,6 @@ namespace Obsidian
 
             await this.QueuePacketAsync(chunkData);
         }
-
 
         private async Task SendServerBrand()
         {
