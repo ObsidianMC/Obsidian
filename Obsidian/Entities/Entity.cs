@@ -14,6 +14,8 @@ namespace Obsidian.Entities
 
         public EntityBitMask EntityBitMask { get; set; }
 
+        public Pose Pose { get; set; } = Pose.Standing;
+
         public int Air { get; set; } = 300;
 
         public ChatMessage CustomName { get; private set; }
@@ -26,17 +28,34 @@ namespace Obsidian.Entities
 
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)EntityBitMask);
+            await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)this.EntityBitMask);
 
-            await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
+            await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, this.Air);
 
-            if (CustomName != null)
-                await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, CustomName);
+            await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, this.CustomName, this.CustomName != null);
 
-            await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
-            await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
-            await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
+            await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, this.CustomNameVisible);
+            await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, this.Silent);
+            await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, this.NoGravity);
+            await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
         }
+    }
+
+    public enum Pose
+    {
+        Standing,
+
+        FallFlying,
+
+        Sleeping,
+
+        Swimming,
+
+        SpinAttack,
+
+        Sneaking,
+
+        Dying
     }
 
     [Flags]

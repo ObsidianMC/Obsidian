@@ -1,4 +1,5 @@
 ﻿using Obsidian.Net;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Threading.Tasks;
 
@@ -14,25 +15,31 @@ namespace Obsidian.Entities
 
         public bool AmbientPotionEffect { get; set; }
 
-        public int Arrows { get; set; }
+        public int AbsorbedArrows { get; set; }
+
+        public int AbsorbtionAmount { get; set; }
+
+        public Position BlockPosition { get; set; }
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteEntityMetdata(6, EntityMetadataType.Byte, (byte)LivingBitMask);
+            await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Float, Health);
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Byte, (byte)this.LivingBitMask);
 
-            await stream.WriteEntityMetdata(8, EntityMetadataType.VarInt, (int)ActiveEffectColor);
+            await stream.WriteEntityMetdata(8, EntityMetadataType.Float, this.Health);
 
-            await stream.WriteEntityMetdata(9, EntityMetadataType.Boolean, AmbientPotionEffect);
+            await stream.WriteEntityMetdata(9, EntityMetadataType.VarInt, (int)this.ActiveEffectColor);
 
-            await stream.WriteEntityMetdata(10, EntityMetadataType.VarInt, Arrows);
+            await stream.WriteEntityMetdata(10, EntityMetadataType.Boolean, this.AmbientPotionEffect);
+
+            await stream.WriteEntityMetdata(11, EntityMetadataType.VarInt, this.AbsorbedArrows);
+
+            await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
+
+            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BlockPosition, this.BlockPosition != null);
         }
 
-    }
-
-    public enum HandState
-    {
     }
 
     [Flags]

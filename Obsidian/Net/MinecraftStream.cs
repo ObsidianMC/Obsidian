@@ -1,5 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.GZip;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.Boss;
 using Obsidian.Chat;
@@ -12,7 +11,6 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
@@ -21,7 +19,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
 
 namespace Obsidian.Net
 {
@@ -61,7 +58,9 @@ namespace Obsidian.Net
 
                 case EntityMetadataType.OptChat:
                     await this.WriteBooleanAsync(optional);
-                    await this.WriteChatAsync((ChatMessage)value);
+
+                    if (optional)
+                        await this.WriteChatAsync((ChatMessage)value);
                     break;
 
                 case EntityMetadataType.Slot:
@@ -81,7 +80,10 @@ namespace Obsidian.Net
 
                 case EntityMetadataType.OptPosition:
                     await this.WriteBooleanAsync(optional);
-                    await this.WritePositionAsync((Position)value);
+
+                    if (optional)
+                        await this.WritePositionAsync((Position)value);
+
                     break;
 
                 case EntityMetadataType.Direction:
@@ -89,7 +91,9 @@ namespace Obsidian.Net
 
                 case EntityMetadataType.OptUuid:
                     await this.WriteBooleanAsync(optional);
-                    await this.WriteUuidAsync((Guid)value);
+
+                    if (optional)
+                        await this.WriteUuidAsync((Guid)value);
                     break;
 
                 case EntityMetadataType.OptBlockId:
@@ -97,11 +101,19 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.Nbt:
-                    break;
-
                 case EntityMetadataType.Particle:
+                case EntityMetadataType.VillagerData:
+                case EntityMetadataType.OptVarInt:
+                    if (optional)
+                    {
+                        await this.WriteVarIntAsync(0);
+                        break;
+                    }
+                    await this.WriteVarIntAsync(1 + (int)value);
                     break;
-
+                case EntityMetadataType.Pose:
+                    await this.WriteVarIntAsync((Pose)value);
+                    break;
                 default:
                     break;
             }
@@ -810,38 +822,5 @@ namespace Obsidian.Net
         #endregion Reading
     }
 
-    public enum EntityMetadataType : int
-    {
-        Byte,
 
-        VarInt,
-
-        Float,
-
-        String,
-
-        Chat,
-
-        OptChat,
-
-        Slot,
-
-        Boolean,
-
-        Rotation,
-
-        Position,
-
-        OptPosition,
-
-        Direction,
-
-        OptUuid,
-
-        OptBlockId,
-
-        Nbt,
-
-        Particle
-    }
 }

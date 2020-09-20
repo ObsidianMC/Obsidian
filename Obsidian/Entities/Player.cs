@@ -261,15 +261,24 @@ namespace Obsidian.Entities
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
+
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteEntityMetdata(11, EntityMetadataType.Float, AdditionalHearts);
+            await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, XpP);
+            await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
 
-            await stream.WriteEntityMetdata(13, EntityMetadataType.Byte, (int)PlayerBitMask);
+            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
 
-            await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, (byte)1);
+            await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (int)this.PlayerBitMask);
+
+            await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.MainHand);
+
+            if (this.LeftShoulder != null)
+                await stream.WriteEntityMetdata(18, EntityMetadataType.Nbt, this.LeftShoulder);
+
+            if (this.RightShoulder != null)
+                await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.RightShoulder);
         }
 
         internal void CopyPosition(bool withLook = false)
