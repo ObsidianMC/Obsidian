@@ -1,4 +1,5 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util.DataTypes;
 using Qmmands;
@@ -115,36 +116,28 @@ namespace Obsidian.Commands
 
         [Command("op")]
         [RequireOperator]
-        public async Task GiveOpAsync(string username)
+        public async Task GiveOpAsync(Player player)
         {
-            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c => c.Username == username);
-            if (player != null)
-            {
-                Context.Server.Operators.AddOperator(player);
-            }
-            else
-            {
-                Context.Server.Operators.AddOperator(username);
-            }
+            var onlinePlayers = this.Context.Server.OnlinePlayers;
+            if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
+                return;
 
-            await Context.Player.SendMessageAsync($"Made {username} a server operator");
+            Context.Server.Operators.AddOperator(player);
+
+            await Context.Player.SendMessageAsync($"Made {player} a server operator");
         }
 
         [Command("deop")]
         [RequireOperator]
-        public async Task UnclaimOpAsync(string username)
+        public async Task UnclaimOpAsync(Player player)
         {
-            var player = Context.Server.OnlinePlayers.Values.FirstOrDefault(c => c.Username == username);
-            if (player != null)
-            {
-                Context.Server.Operators.AddOperator(player);
-            }
-            else
-            {
-                Context.Server.Operators.AddOperator(username);
-            }
+            var onlinePlayers = this.Context.Server.OnlinePlayers;
+            if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
+                return;
 
-            await Context.Player.SendMessageAsync($"Made {username} no longer a server operator");
+            Context.Server.Operators.RemoveOperator(player);
+
+            await Context.Player.SendMessageAsync($"Made {player} no longer a server operator");
         }
 
         [Command("oprequest", "opreq")]

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
+using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -355,8 +356,6 @@ namespace Obsidian
             ///}).ConfigureAwait(false);
         }
 
-        internal Task SendEntityAsync(EntityMovement packet) => this.QueuePacketAsync(packet);
-
         internal async Task SendDeclareCommandsAsync()
         {
             var packet = new DeclareCommands();
@@ -397,16 +396,15 @@ namespace Obsidian
                         parameterNode.Parser = new CommandParser("brigadier:bool");
                     else if (type == typeof(Position))
                         parameterNode.Parser = new CommandParser("minecraft:vec3");
+                    else if(type == typeof(Player))
+                        parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
                     else
                         continue;
 
                     commandNode.AddChild(parameterNode);
                 }
 
-                if (commandNode.Children.Count > 0)
-                    commandNode.Children[0].Type |= CommandNodeType.IsExecutabe;
-                else
-                    commandNode.Type |= CommandNodeType.IsExecutabe;
+                commandNode.Type |= CommandNodeType.IsExecutabe;
 
                 node.AddChild(commandNode);
             }
@@ -427,7 +425,6 @@ namespace Obsidian
             };
 
             await this.QueuePacketAsync(new PlayerInfo(4, list));
-            this.Logger.LogDebug($"Removed Player to player info list from {this.Player.Username}");
         }
 
         internal async Task AddPlayerToListAsync(Player player)
@@ -445,7 +442,6 @@ namespace Obsidian
             };
 
             await this.QueuePacketAsync(new PlayerInfo(0, list));
-            this.Logger.LogDebug($"Added Player to player info list from {this.Player.Username}");
         }
 
         internal async Task SendPlayerInfoAsync()
@@ -474,7 +470,6 @@ namespace Obsidian
             }
 
             await this.QueuePacketAsync(new PlayerInfo(0, list));
-            this.Logger.LogDebug($"Sent Player Info packet from {this.Player.Username}");
         }
 
         internal async Task SendPacketAsync(Packet packet)

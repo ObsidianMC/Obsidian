@@ -285,6 +285,8 @@ namespace Obsidian.Entities
             this.LastYaw = this.Yaw;
             this.LastPitch = this.Pitch;
         }
+
+        public override string ToString() => this.Username;
     }
 
     [Flags]

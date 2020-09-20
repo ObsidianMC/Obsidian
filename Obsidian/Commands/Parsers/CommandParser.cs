@@ -12,9 +12,6 @@ namespace Obsidian.Commands
 
         public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteStringAsync(this.Identifier);
 
-        public override string ToString()
-        {
-            return this.Identifier;
-        }
+        public override string ToString() => this.Identifier;
     }
 }

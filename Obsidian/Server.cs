@@ -123,6 +123,7 @@ namespace Obsidian
             });
             this.Commands.AddModule<MainCommandModule>();
             this.Commands.AddTypeParser(new LocationTypeParser());
+            this.Commands.AddTypeParser(new PlayerTypeParser());
 
 
             this.Events = new MinecraftEventHandler();
