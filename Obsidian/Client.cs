@@ -385,7 +385,7 @@ namespace Obsidian
                     Type type = parameter.Type;
 
                     if (type == typeof(string))
-                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.SingleWord);
                     else if (type == typeof(double))
                         parameterNode.Parser = new CommandParser("brigadier:double");
                     else if (type == typeof(float))

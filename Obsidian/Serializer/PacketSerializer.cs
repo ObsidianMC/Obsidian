@@ -34,7 +34,7 @@ namespace Obsidian.Serializer
 
             var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
 
-            await using var dataStream = new MinecraftStream(true);
+            await using var dataStream = new MinecraftStream();
 
             foreach (var (key, value) in valueDict)
             {
@@ -54,7 +54,7 @@ namespace Obsidian.Serializer
             await stream.WriteVarIntAsync(packet.id);
 
             dataStream.Position = 0;
-            await dataStream.DumpAsync(packet: packet);
+           // await dataStream.DumpAsync(packet: packet);
 
             await dataStream.CopyToAsync(stream);
 
@@ -69,7 +69,7 @@ namespace Obsidian.Serializer
             if (packet == null)
                 throw new NullReferenceException(nameof(packet));
 
-            Program.PacketLogger.LogDebug($"Deserializing {packet}");
+            //Program.PacketLogger.LogDebug($"Deserializing {packet}");
 
             var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
             var members = packet.GetType().GetMembers(PacketExtensions.Flags);
@@ -88,7 +88,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(field.FieldType, dataType, key);
 
-                    Program.PacketLogger.LogDebug($"Setting val {val}");
+                    //Program.PacketLogger.LogDebug($"Setting val {val}");
 
                     field.SetValue(packet, val);
                 }
@@ -101,7 +101,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
 
-                    Program.PacketLogger.LogDebug($"Setting val {val}");
+                    //Program.PacketLogger.LogDebug($"Setting val {val}");
 
                     if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
                         val = (BlockFace)val;

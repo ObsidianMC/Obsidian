@@ -11,7 +11,7 @@ namespace Obsidian.ChunkData
     public class Heightmap
     {
         public const string MOTION_BLOCKING = "MOTION_BLOCKING";
-        public string HeightmapType { get; set; }//TODO turn this into an enum
+        public HeightmapType HeightmapType { get; set; }
 
         internal readonly DataArray data = new DataArray(9, 256);
 
@@ -19,12 +19,12 @@ namespace Obsidian.ChunkData
 
         public Predicate<BlockState> Predicate;
 
-        public Heightmap(string type, Chunk chunk)
+        public Heightmap(HeightmapType type, Chunk chunk)
         {
             this.HeightmapType = type;
             this.chunk = chunk;
 
-            if (type == MOTION_BLOCKING)
+            if (type == HeightmapType.MotionBlocking)
                 this.Predicate = (block) => block.NotAir() || block.NotFluid();
         }
 
@@ -80,5 +80,17 @@ namespace Obsidian.ChunkData
         {
             return this.data.Storage;
         }
+    }
+
+    public enum HeightmapType
+    {
+        MotionBlocking,
+        MotionBlockingNoLeaves,
+
+        OceanFloor,
+        OceanFloorWG,
+
+        WorldSurface,
+        WorldSurfaceWG
     }
 }

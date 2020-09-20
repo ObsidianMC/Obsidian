@@ -1,4 +1,5 @@
 ﻿using Obsidian.Nbt;
+using Obsidian.Util.Extensions;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
@@ -55,8 +56,8 @@ namespace Obsidian.Net.Packets.Play.Client
             var heightmaps = this.Chunk.Heightmaps;
 
             var writer = new NbtWriter(stream, "");
-            foreach (var (name, heightmap) in heightmaps)
-                writer.WriteLongArray(name, heightmap.GetDataArray().Cast<long>().ToArray());
+            foreach (var (type, heightmap) in heightmaps)
+                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
 
             writer.EndCompound();
             writer.Finish();

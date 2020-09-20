@@ -20,7 +20,7 @@ namespace Obsidian.WorldData
         public List<ChunkSection> Sections { get; private set; } = new List<ChunkSection>();
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
 
-        public Dictionary<string, Heightmap> Heightmaps { get; private set; } = new Dictionary<string, Heightmap>();
+        public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
         public Chunk(int x, int z)
         {
@@ -38,7 +38,7 @@ namespace Obsidian.WorldData
                 }
             }
 
-            this.Heightmaps.Add("MOTION_BLOCKING", new Heightmap("MOTION_BLOCKING", this));
+            this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
            // this.Heightmaps.Add("WORLD_SURFACE", new Heightmap("WORLD_SURFACE", this));
         }
 
@@ -65,7 +65,7 @@ namespace Obsidian.WorldData
                         if (height < 0)
                             continue;
 
-                        this.Heightmaps["MOTION_BLOCKING"].Set(x, z, height);
+                        this.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, height);
                     }
                 }
             }
