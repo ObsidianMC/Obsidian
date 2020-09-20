@@ -295,21 +295,21 @@ namespace Obsidian.Util
                 case 0x11:// Player Position
                     var pos = PacketSerializer.FastDeserialize<PlayerPosition>(packet.data);
 
-                    await client.Player.UpdateAsync(pos.Position, pos.OnGround);
+                    await client.Player.UpdateAsync(server, pos.Position, pos.OnGround);
                     break;
 
                 case 0x12:
                     //Player Position And rotation (serverbound)
                     var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(packet.data);
 
-                    await client.Player.UpdateAsync(ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
+                    await client.Player.UpdateAsync(server, ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
 
                 case 0x13:
                     // Player rotation
                     var look = PacketSerializer.FastDeserialize<PlayerRotation>(packet.data);
 
-                    await client.Player.UpdateAsync(look.Yaw, look.Pitch, look.OnGround);
+                    await client.Player.UpdateAsync(server, look.Yaw, look.Pitch, look.OnGround);
                     break;
 
                 case 0x14://Player movement sent every tick when players haven't move

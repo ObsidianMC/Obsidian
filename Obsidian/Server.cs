@@ -243,6 +243,7 @@ namespace Obsidian
 
                     _ = Task.Run(clnt.StartConnectionAsync);
                 }
+                await Task.Delay(50);
             }
 
             this.Logger.LogWarning("Server is shutting down...");
@@ -310,6 +311,12 @@ namespace Obsidian
         internal async Task BroadcastPacketAsync(Packet packet, params Player[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Except(excluded))
+                await player.client.QueuePacketAsync(packet);
+        }
+
+        internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)
+        {
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
@@ -399,22 +406,22 @@ namespace Obsidian
             await this.RegisterAsync(new TestBlocksGenerator());
         }
 
-        private async Task SendSpawnPlayerAsync(Player except)
+        private async Task SendSpawnPlayerAsync(Player joined)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Except(except))
+            foreach (var (_, player) in this.OnlinePlayers.Except(joined))
             {
-                await player.client.QueuePacketAsync(new EntityMovement { EntityId = except.EntityId });
+                await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = except.EntityId,
-                    Uuid = except.Uuid,
-                    Position = except.Position,
+                    EntityId = joined.EntityId,
+                    Uuid = joined.Uuid,
+                    Position = joined.Position,
                     Yaw = 0,
                     Pitch = 0
                 });
 
-                await except.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await except.client.QueuePacketAsync(new SpawnPlayer
+                await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
+                await joined.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
@@ -422,6 +429,8 @@ namespace Obsidian
                     Yaw = 0,
                     Pitch = 0
                 });
+
+                this.Logger.LogDebug($"Spawning entity: {player.EntityId} - {joined.EntityId}");
             }
         }
 

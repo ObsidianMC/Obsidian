@@ -312,15 +312,14 @@ namespace Obsidian
             });
             this.Logger.LogDebug("Sent Position packet.");
 
-            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
             await this.SendServerBrand();
 
+            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+
             await this.SendChunkAsync(new Chunk(0, 0));
-            //await this.Server.SendSpawnPlayerAsync(this.Player);//TODO find out why this is breaking
 
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }

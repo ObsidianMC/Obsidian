@@ -1,5 +1,6 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Net;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Threading.Tasks;
 using System.Timers;
@@ -9,6 +10,12 @@ namespace Obsidian.Entities
     public class Entity
     {
         public readonly Timer TickTimer = new Timer();
+
+        #region Location properties
+        internal Position LastPosition { get; set; } = new Position();
+
+        public Position Position { get; set; } = new Position();        
+        #endregion Location properties
 
         public int EntityId { get; internal set; }
 
@@ -39,6 +46,7 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, this.NoGravity);
             await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
         }
+
     }
 
     public enum Pose
