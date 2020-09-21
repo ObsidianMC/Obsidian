@@ -1,20 +1,28 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.PlayerData;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
 {
     public class World
     {
-        public Level WorldData { get; internal set; }
+        public Level Data { get; internal set; }
 
         public List<Player> Players { get; }
+
+        public WorldGenerator Generator { get; internal set; }
+
+        public Server Server { get; set; }
 
         // This one later comes back in the regions,
         // but might be easier for internal management purposes
@@ -23,12 +31,11 @@ namespace Obsidian.WorldData
         internal string folder { get; }
         internal bool Loaded { get; set; }
 
-        private readonly ConcurrentHashSet<Chunk> LoadedChunks;
-        private readonly WorldGenerator worldgen;
+        public ConcurrentHashSet<Chunk> LoadedChunks { get; private set; } = new ConcurrentHashSet<Chunk>();
 
-        public World(string folder, WorldGenerator worldgen)
+        public World(string folder, Server server)
         {
-            this.WorldData = new Level
+            this.Data = new Level
             {
                 Time = 1200,
                 Gametype = (int)Gamemode.Survival,
@@ -39,9 +46,7 @@ namespace Obsidian.WorldData
 
             this.Entities = new List<object>();
             this.folder = folder;
-
-            this.LoadedChunks = new ConcurrentHashSet<Chunk>();
-            this.worldgen = worldgen;
+            this.Server = server;
         }
 
         public async Task UpdateChunksForClientAsync(Client c)
@@ -66,9 +71,9 @@ namespace Obsidian.WorldData
                 for (int i = (chunkz - dist); i < (chunkz + dist); i++)
                 {
                     // TODO: implement
-//                    await c.UnloadChunkAsync((chunkx - dist), i);
+                    //                    await c.UnloadChunkAsync((chunkx - dist), i);
 
-                    await c.SendChunkAsync(this.GetChunk((chunkx + dist), i, c));
+                    //await c.SendChunkAsync(this.GetChunk((chunkx + dist), i, c));
                 }
             }
 
@@ -79,7 +84,7 @@ namespace Obsidian.WorldData
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                    await c.SendChunkAsync(this.GetChunk((chunkx - dist), i, c));
+                   // await c.SendChunkAsync(this.GetChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -90,7 +95,7 @@ namespace Obsidian.WorldData
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
 
-                    await c.SendChunkAsync(this.GetChunk(i, (chunkz + dist), c));
+                    //await c.SendChunkAsync(this.GetChunk(i, (chunkz + dist), c));
                 }
             }
 
@@ -101,7 +106,7 @@ namespace Obsidian.WorldData
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
 
-                    await c.SendChunkAsync(this.GetChunk(i, (chunkz - dist), c));
+                    //await c.SendChunkAsync(this.GetChunk(i, (chunkz - dist), c));
                 }
             }
         }
@@ -122,18 +127,28 @@ namespace Obsidian.WorldData
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    await c.SendChunkAsync(this.GetChunk(cx, cz, c));
+                    //await c.SendChunkAsync(this.GetChunk(cx, cz, c));
                 }
             }
 
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
-        private Chunk GetChunk(int x, int z, Client c)
+        public Block GetBlock(int x, int y, int z)
         {
-            // TODO: loading existing chunks
-            return c.Server.WorldGenerator.GenerateChunk(new Chunk(x, z));
+            var chunk = this.GetChunk(x >> 4, z >> 4);
+
+            return chunk.GetBlock(x, y, z);
         }
+
+        public Block GetBlock(Position location)
+        {
+            var chunk = this.GetChunk((int)location.X >> 4, (int)location.Z >> 4);
+
+            return chunk.GetBlock(location);
+        }
+
+        private Chunk GetChunk(int x, int z) => this.LoadedChunks.FirstOrDefault(c => c.X == x && c.Z == z);
 
         public int TransformToChunk(double input)
         {
@@ -148,7 +163,7 @@ namespace Obsidian.WorldData
             DataFile.LoadFromFile(DataPath);
 
             var levelcompound = DataFile.RootTag;
-            this.WorldData = new Level()
+            this.Data = new Level()
             {
                 Hardcore = levelcompound["hardcore"].ByteValue == 1, // lel lazy bool conversion I guess
                 MapFeatures = levelcompound["MapFeatures"].ByteValue == 1,
@@ -173,7 +188,7 @@ namespace Obsidian.WorldData
             this.Loaded = true;
         }
 
-        public void SetTime(long newTime) => this.WorldData.Time = newTime;
+        public void SetTime(long newTime) => this.Data.Time = newTime;
 
         public void AddPlayer(Player player) => this.Players.Add(player);
 
@@ -184,7 +199,7 @@ namespace Obsidian.WorldData
 
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(folder, "players", $"{uuid.ToString()}.dat");
+            var playerfile = Path.Combine(folder, "players", $"{uuid}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
@@ -214,6 +229,36 @@ namespace Obsidian.WorldData
                 // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
             };
             this.Players.Add(player);
+        }
+
+        internal void GenerateWorld()
+        {
+            this.Server.Logger.LogInformation("Generating chunk..");
+            var chunk = this.Generator.GenerateChunk(0, 0);
+
+            for (int i = 0; i < 16; i++)
+                chunk.AddSection(new ChunkSection()
+                {
+                    YBase = i >> 4
+                }.FillWithLight());
+
+            for (int x = 0; x < 16; x++)
+            {
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int z = 0; z < 16; z++)
+                    {
+                        var block = chunk.Blocks[x, y, z];
+
+                        chunk.Sections[0].SetBlock(x, y, z, block);
+                    }
+                }
+            }
+
+            for (int i = 0; i < 1024; i++)
+                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
+
+            this.LoadedChunks.Add(chunk);
         }
 
         // This would also save the file back to the world folder.

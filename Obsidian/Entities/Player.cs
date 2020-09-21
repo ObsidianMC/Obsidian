@@ -139,9 +139,9 @@ namespace Obsidian.Entities
                 await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.RightShoulder);
         }
 
-        
-
         public override string ToString() => this.Username;
+
+        public static implicit operator int(Player player) => player.EntityId;
     }
 
     [Flags]

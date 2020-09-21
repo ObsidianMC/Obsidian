@@ -1,6 +1,7 @@
 ﻿using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
+using System;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
@@ -18,6 +19,13 @@ namespace Obsidian.Net.Packets.Play.Server
         public PlayerDigging() : base(0x1A) { }
 
         public PlayerDigging(byte[] packetdata) : base(0x1A, packetdata) { }
+    }
+
+    public class PlayerDiggingStore
+    {
+        public Guid Player { get; set; }
+
+        public PlayerDigging Packet { get; set; }
     }
 
     public enum DiggingStatus : int

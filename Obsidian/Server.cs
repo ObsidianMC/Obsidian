@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.Blocks;
 using Obsidian.Chat;
+using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
@@ -44,7 +45,6 @@ namespace Obsidian
     public class Server
     {
         private readonly ConcurrentQueue<QueueChat> chatmessages;
-        private readonly ConcurrentQueue<PlayerDigging> diggers;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
 
@@ -55,7 +55,7 @@ namespace Obsidian
 
         public DateTimeOffset StartTime { get; private set; }
 
-        public WorldGenerator WorldGenerator { get; private set; }
+        
 
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
@@ -113,7 +113,6 @@ namespace Obsidian
             this.cts = new CancellationTokenSource();
 
             this.chatmessages = new ConcurrentQueue<QueueChat>();
-            this.diggers = new ConcurrentQueue<PlayerDigging>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
             this.Commands = new CommandService(new CommandServiceConfiguration()
             {
@@ -131,7 +130,7 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.World = new World("", this.WorldGenerator);
+            this.World = new World("", this);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -218,9 +217,11 @@ namespace Obsidian
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
 
-            this.WorldGenerator = value ?? new SuperflatGenerator();
+            this.World.Generator = value ?? new SuperflatGenerator();
 
-            this.Logger.LogInformation($"World generator set to {this.WorldGenerator.Id} ({this.WorldGenerator})");
+            this.Logger.LogInformation($"World generator set to {this.World.Generator.Id} ({this.World.Generator})");
+
+            this.World.GenerateWorld();
 
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
@@ -308,12 +309,6 @@ namespace Obsidian
                 await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
         }
 
-        internal async Task BroadcastPacketAsync(Packet packet, params Player[] excluded)
-        {
-            foreach (var (_, player) in this.OnlinePlayers.Except(excluded))
-                await player.client.QueuePacketAsync(packet);
-        }
-
         internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
@@ -338,7 +333,48 @@ namespace Obsidian
             }
         }
 
-        internal void EnqueueDigging(PlayerDigging d) => this.diggers.Enqueue(d);
+        internal async Task BroadcastBlockBreakAsync(PlayerDiggingStore store)
+        {
+            var d = store.Packet;
+            var blockId = Registry.GetBlock(Materials.Air).Id;
+
+            switch (d.Status)
+            {
+                case DiggingStatus.StartedDigging:
+                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    {
+                        Location = d.Location,
+                        Block = this.World.GetBlock(d.Location).Id,
+                        Status = d.Status,
+                        Successful = true
+                    });
+                    break;
+                case DiggingStatus.CancelledDigging:
+                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    {
+                        Location = d.Location,
+                        Block = this.World.GetBlock(d.Location).Id,
+                        Status = d.Status,
+                        Successful = true
+                    });
+                    break;
+                case DiggingStatus.FinishedDigging:
+                {
+                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    {
+                        Location = d.Location,
+                        Block = this.World.GetBlock(d.Location).Id,
+                        Status = d.Status,
+                        Successful = true
+                    });
+
+                    await this.BroadcastPacketAsync(new BlockChange(d.Location, blockId));
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
 
         internal void StopServer()
         {
@@ -380,13 +416,6 @@ namespace Obsidian
 
                     if (this.chatmessages.TryDequeue(out QueueChat msg))
                         await player.SendMessageAsync(msg.Message, msg.Position);
-
-                    if (this.diggers.TryDequeue(out PlayerDigging d))
-                    {
-                        var b = new BlockChange(d.Location, Registry.GetBlock(Materials.Air).Id);
-
-                        await player.client.QueuePacketAsync(b);
-                    }
                 }
 
                 foreach (var client in clients)

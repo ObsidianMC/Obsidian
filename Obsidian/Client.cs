@@ -265,6 +265,8 @@ namespace Obsidian
                     await this.SendPacketAsync(packet);
                     this.Logger.LogDebug($"Enqueued packet: {packet} (0x{packet.id:X2})");
                 }
+
+                await Task.Delay(50);
             }
         }
 
@@ -289,7 +291,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new JoinGame
             {
                 EntityId = this.id,
-                GameMode = Gamemode.Creative,
+                GameMode = Gamemode.Survival,
                 Dimension = Dimension.Overworld,
                 HashedSeed = 0,//New field
                 ReducedDebugInfo = false
@@ -300,7 +302,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            this.Player.Position = new Position(0, 102, 0);
+            this.Player.Position = new Position(0, 6, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -319,7 +321,7 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-            await this.SendChunkAsync(new Chunk(0, 0));
+            await this.LoadChunksAsync();
 
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
@@ -395,7 +397,7 @@ namespace Obsidian
                         parameterNode.Parser = new CommandParser("brigadier:bool");
                     else if (type == typeof(Position))
                         parameterNode.Parser = new CommandParser("minecraft:vec3");
-                    else if(type == typeof(Player))
+                    else if (type == typeof(Player))
                         parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
                     else
                         continue;
@@ -503,36 +505,13 @@ namespace Obsidian
             this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.id:X2})");
         }
 
-        internal async Task SendChunkAsync(Chunk chunk)
+        internal async Task LoadChunksAsync()
         {
-            chunk = this.Server.WorldGenerator.GenerateChunk(chunk);
-
-            for (int i = 0; i < 16; i++)
-                chunk.AddSection(new ChunkSection()
-                {
-                    YBase = i >> 4
-                }.FillWithLight());
-
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        var block = chunk.Blocks[x, y, z];
-
-                        chunk.Sections[6].SetBlock(x, y, z, block);
-                    }
-                }
-            }
-
-            for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
-
-            var chunkData = new ChunkDataPacket(chunk);
-
-            await this.QueuePacketAsync(chunkData);
+            foreach (var chunk in this.Server.World.LoadedChunks)
+                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
         }
+
+        internal Task SendChunkAsync(Chunk chunk) => this.QueuePacketAsync(new ChunkDataPacket(chunk));
 
         private async Task SendServerBrand()
         {

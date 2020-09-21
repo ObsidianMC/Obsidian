@@ -5,22 +5,21 @@ namespace Obsidian.WorldData.Generators
 {
     public class SuperflatGenerator : WorldGenerator
     {
-        public SuperflatGenerator() : base("superflat")
-        {
-        }
+        public SuperflatGenerator() : base("superflat") { }
 
-        public override Chunk GenerateChunk(Chunk chunk)
+        public override Chunk GenerateChunk(int x, int z)
         {
-            for (var x = 0; x < 16; x++)
+            var chunk = new Chunk(x, z);
+            for (var x1 = 0; x1 < 16; x1++)
             {
-                for (var z = 0; z < 16; z++)
+                for (var z1 = 0; z1 < 16; z1++)
                 {
-                    chunk.SetBlock(x, 5, z, Registry.GetBlock(Materials.GrassBlock));
-                    chunk.SetBlock(x, 4, z, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x, 3, z, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x, 2, z, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x, 1, z, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x, 0, z, Registry.GetBlock(Materials.Bedrock));
+                    chunk.SetBlock(x1, 5, z1, Registry.GetBlock(Materials.GrassBlock));
+                    chunk.SetBlock(x1, 4, z1, Registry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x1, 3, z1, Registry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x1, 2, z1, Registry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x1, 1, z1, Registry.GetBlock(Materials.Dirt));
+                    chunk.SetBlock(x1, 0, z1, Registry.GetBlock(Materials.Bedrock));
                 }
             }
 

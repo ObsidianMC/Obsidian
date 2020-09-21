@@ -5,12 +5,12 @@ namespace Obsidian.WorldData.Generators
 {
     public class TestBlocksGenerator : WorldGenerator
     {
-        public TestBlocksGenerator() : base("test")
-        {
-        }
+        public TestBlocksGenerator() : base("test") { }
 
-        public override Chunk GenerateChunk(Chunk chunk)
+        public override Chunk GenerateChunk(int x, int z)
         {
+            var chunk = new Chunk(x, z);
+
             int countX = 0;
             int countZ = 0;
 

@@ -343,13 +343,14 @@ namespace Obsidian.Util
                     Logger.LogDebug("Received player abilities");
                     break;
 
-                case 0x1A:
-                    // Player Digging
-                    Logger.LogDebug("Received player digging");
-
+                case 0x1A:// Player Digging
                     var digging = PacketSerializer.FastDeserialize<PlayerDigging>(packet.data);
 
-                    server.EnqueueDigging(digging);
+                    await server.BroadcastBlockBreakAsync(new PlayerDiggingStore
+                    {
+                        Player = client.Player.Uuid,
+                        Packet = digging
+                    });
                     break;
 
                 case 0x1B:
