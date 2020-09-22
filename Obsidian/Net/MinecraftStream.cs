@@ -64,7 +64,7 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.Slot:
-                    await this.WriteUnsignedByteAsync((byte)value);
+                    await this.WriteSlotAsync((Slot)value);
                     break;
 
                 case EntityMetadataType.Boolean:
@@ -355,6 +355,13 @@ namespace Obsidian.Net
                     await this.WriteSlotAsync((Slot)value);
                     break;
                 }
+                case DataType.EntityMetadata:
+                {
+                    var ent = (Entity)value;
+                    await ent.WriteAsync(this);
+                    await this.WriteUnsignedByteAsync(0xff);
+                    break;
+                }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
@@ -400,6 +407,7 @@ namespace Obsidian.Net
                 //TODO write enchants
                 writer.WriteShort("id", (short)slot.Id);
                 writer.WriteInt("Damage", slot.ItemNbt.Damage);
+                writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
 

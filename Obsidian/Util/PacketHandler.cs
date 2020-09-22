@@ -329,7 +329,6 @@ namespace Obsidian.Util
                     // Pick Item
                     var item = PacketSerializer.FastDeserialize<PickItem>(packet.data);
 
-
                     Logger.LogDebug("Received pick item");
                     break;
 
@@ -354,7 +353,9 @@ namespace Obsidian.Util
                     break;
 
                 case 0x1B:
-                    // Entity Action
+                    //TODO Entity Action
+                    var action = PacketSerializer.FastDeserialize<EntityAction>(packet.data);
+
                     Logger.LogDebug("Received entity action");
                     break;
 
@@ -493,8 +494,6 @@ namespace Obsidian.Util
                         default:
                             break;
                     }
-
-                    Logger.LogDebug("Received animation (serverbound)");
                     break;
 
                 case 0x2B:

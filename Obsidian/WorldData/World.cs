@@ -26,7 +26,7 @@ namespace Obsidian.WorldData
 
         // This one later comes back in the regions,
         // but might be easier for internal management purposes
-        public List<object> Entities { get; }
+        public List<Entity> Entities { get; }
 
         internal string folder { get; }
         internal bool Loaded { get; set; }
@@ -44,7 +44,7 @@ namespace Obsidian.WorldData
 
             this.Players = new List<Player>();
 
-            this.Entities = new List<object>();
+            this.Entities = new List<Entity>();
             this.folder = folder;
             this.Server = server;
         }

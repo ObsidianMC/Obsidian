@@ -47,6 +47,7 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
         }
 
+        public virtual Task TickAsync() => Task.CompletedTask;
     }
 
     public enum Pose

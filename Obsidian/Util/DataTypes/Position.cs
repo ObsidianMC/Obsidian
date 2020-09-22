@@ -89,6 +89,15 @@ namespace Obsidian.Util.DataTypes
             return num * num;
         }
 
+        public Position Add(double x, double y, double z)
+        {
+            this.X += x;
+            this.Y += y;
+            this.Z += z;
+
+            return this;
+        }
+
         public static Position Min(Position value1, Position value2)
         {
             return new Position(
