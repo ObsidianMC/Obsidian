@@ -2,7 +2,7 @@
 {
     public class BlockSnow : Block
     {
-        internal BlockSnow(string name, int id) : base(name, id)
+        internal BlockSnow(string name, int id) : base(name, id, Materials.Snow)
         {
         }
     }

@@ -2,7 +2,7 @@
 {
     public class BlockJukebox : Block
     {
-        internal BlockJukebox(string name, int id) : base(name, id)
+        internal BlockJukebox(string name, int id) : base(name, id, Materials.Jukebox)
         {
         }
     }

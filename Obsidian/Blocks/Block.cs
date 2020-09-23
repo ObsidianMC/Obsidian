@@ -4,7 +4,7 @@
     {
         public byte Metadata { get; set; }
 
-        internal Block(string name, int id) : base(name, id)
+        internal Block(string name, int id, Materials type) : base(name, id, type)
         {
         }
 

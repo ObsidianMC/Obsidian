@@ -2,7 +2,7 @@
 {
     public class BlockFloorSign : Block
     {
-        internal BlockFloorSign(string name, int id) : base(name, id)
+        internal BlockFloorSign(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

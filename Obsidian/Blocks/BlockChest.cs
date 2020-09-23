@@ -2,7 +2,7 @@
 {
     public class BlockChest : Block
     {
-        internal BlockChest(string name, int id) : base(name, id)
+        internal BlockChest(string name, int id) : base(name, id, Materials.Chest)
         {
         }
     }

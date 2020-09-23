@@ -2,11 +2,7 @@
 {
     public class BlockGrass : Block
     {
-        internal BlockGrass() : base("grass", 8)
-        {
-        }
-
-        internal BlockGrass(string name, int id) : base(name, id)
+        internal BlockGrass(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

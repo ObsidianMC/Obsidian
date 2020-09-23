@@ -2,7 +2,7 @@
 {
     public class BlockAir : Block
     {
-        internal BlockAir() : base("air", 0)
+        internal BlockAir() : base("air", 0, Materials.Air)
         {
         }
     }

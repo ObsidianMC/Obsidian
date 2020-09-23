@@ -2,7 +2,7 @@
 {
     public class BlockStemAttached : Block
     {
-        internal BlockStemAttached(string name, int id) : base(name, id)
+        internal BlockStemAttached(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

@@ -2,7 +2,7 @@
 {
     public class BlockMycel : Block
     {
-        internal BlockMycel(string name, int id) : base(name, id)
+        internal BlockMycel(string name, int id) : base(name, id, Materials.Mycelium)
         {
         }
     }

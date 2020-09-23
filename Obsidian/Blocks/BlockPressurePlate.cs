@@ -2,7 +2,7 @@
 {
     public class BlockPressurePlate : Block
     {
-        internal BlockPressurePlate(string name, int id) : base(name, id)
+        internal BlockPressurePlate(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

@@ -2,7 +2,7 @@
 {
     public class BlockFlower : Block
     {
-        internal BlockFlower(string name, int id) : base(name, id)
+        internal BlockFlower(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

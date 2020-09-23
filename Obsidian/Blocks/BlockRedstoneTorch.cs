@@ -2,7 +2,7 @@
 {
     public class BlockRedstoneTorch : Block
     {
-        internal BlockRedstoneTorch(string name, int id) : base(name, id)
+        internal BlockRedstoneTorch(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

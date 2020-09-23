@@ -2,7 +2,7 @@
 {
     public class BlockPiston : Block
     {
-        internal BlockPiston(string name, int id) : base(name, id)
+        internal BlockPiston(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }

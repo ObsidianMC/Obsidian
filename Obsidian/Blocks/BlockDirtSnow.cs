@@ -2,8 +2,6 @@
 {
     public class BlockDirtSnow : BlockGrass
     {
-        internal BlockDirtSnow() : base("podzol", 12)
-        {
-        }
+        internal BlockDirtSnow(string name, int id, Materials type) : base(name, id, type) { }
     }
 }

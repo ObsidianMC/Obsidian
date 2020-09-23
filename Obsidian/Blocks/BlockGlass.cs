@@ -2,7 +2,7 @@
 {
     public class BlockGlass : Block
     {
-        internal BlockGlass(string name, int id) : base(name, id)
+        internal BlockGlass(string name, int id) : base(name, id, Materials.GrassBlock)
         {
         }
     }

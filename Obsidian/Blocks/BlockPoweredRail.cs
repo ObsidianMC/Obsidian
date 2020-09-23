@@ -2,7 +2,7 @@
 {
     public class BlockPoweredRail : Block
     {
-        internal BlockPoweredRail(string name, int id) : base(name, id)
+        internal BlockPoweredRail(string name, int id, Materials type) : base(name, id, type)
         {
         }
     }
