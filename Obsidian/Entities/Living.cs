@@ -39,7 +39,7 @@ namespace Obsidian.Entities
             var lastPos = this.LastPosition * 32 * 64;
 
             short newX = (short)(newPos.X - lastPos.X);
-            short newY = (short)(newPos.Y - lastPos.Y );
+            short newY = (short)(newPos.Y - lastPos.Y);
             short newZ = (short)(newPos.Z - lastPos.Z);
 
             var isNewLocation = position != this.LastPosition;

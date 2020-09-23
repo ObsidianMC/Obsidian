@@ -728,17 +728,6 @@ namespace Obsidian.Util.Registry
             return null;
         }
 
-        public static Materials GetMaterialFromId(int id)
-        {
-            foreach (var (key, value) in Blocks)
-            {
-                if (value.Id == id)
-                    return key;
-            }
-
-            return Materials.Air;
-        }
-
         public static Block GetBlockFromId(int id)
         {
             foreach (var (key, value) in Blocks)

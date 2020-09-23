@@ -338,7 +338,6 @@ namespace Obsidian
             var d = store.Packet;
             var airBlock = Registry.GetBlock(Materials.Air).Id;
             var minedBlock = this.World.GetBlock(d.Location);
-            var blockMat = Registry.GetMaterialFromId(minedBlock.Id);
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
@@ -384,7 +383,7 @@ namespace Obsidian
                     {
                         EntityId = player + this.World.Entities.Count + 1,
                         Count = 1,
-                        Id = Registry.GetItem(blockMat).Id,
+                        Id = Registry.GetItem(minedBlock.Type).Id,
                         EntityBitMask = EntityBitMask.Glowing
                     };
                     this.World.Entities.Add(item);
@@ -524,6 +523,8 @@ namespace Obsidian
                 await other.client.AddPlayerToListAsync(joined);
             }
 
+            //Need a delay here or players start flying
+            await Task.Delay(500);
             await this.SendSpawnPlayerAsync(joined);
         }
 
