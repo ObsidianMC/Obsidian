@@ -55,7 +55,7 @@ namespace Obsidian
 
         public DateTimeOffset StartTime { get; private set; }
 
-        
+
 
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
@@ -239,7 +239,7 @@ namespace Obsidian
                     var tcp = await this.tcpListener.AcceptTcpClientAsync();
                     this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count), this);
+                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.Entities.Count), this);
                     this.clients.Add(clnt);
 
                     _ = Task.Run(clnt.StartConnectionAsync);
@@ -315,9 +315,9 @@ namespace Obsidian
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal async Task BroadcastPacketWithoutQueueAsync(Packet packet, params Player[] excluded)
+        internal async Task BroadcastPacketWithoutQueueAsync(Packet packet, params int[] excluded)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Except(excluded))
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.SendPacketAsync(packet);
         }
 
@@ -336,39 +336,79 @@ namespace Obsidian
         internal async Task BroadcastBlockBreakAsync(PlayerDiggingStore store)
         {
             var d = store.Packet;
-            var blockId = Registry.GetBlock(Materials.Air).Id;
+            var airBlock = Registry.GetBlock(Materials.Air).Id;
+            var minedBlock = this.World.GetBlock(d.Location);
+            var blockMat = Registry.GetMaterialFromId(minedBlock.Id);
+
+            var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
             switch (d.Status)
             {
                 case DiggingStatus.StartedDigging:
-                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
                         Location = d.Location,
-                        Block = this.World.GetBlock(d.Location).Id,
+                        Block = minedBlock.Id,
                         Status = d.Status,
                         Successful = true
                     });
                     break;
                 case DiggingStatus.CancelledDigging:
-                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
                         Location = d.Location,
-                        Block = this.World.GetBlock(d.Location).Id,
+                        Block = minedBlock.Id,
                         Status = d.Status,
                         Successful = true
                     });
                     break;
                 case DiggingStatus.FinishedDigging:
                 {
-                    await this.BroadcastPacketAsync(new AcknowledgePlayerDigging
+                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
                         Location = d.Location,
-                        Block = this.World.GetBlock(d.Location).Id,
+                        Block = minedBlock.Id,
                         Status = d.Status,
                         Successful = true
                     });
+                    await this.BroadcastPacketWithoutQueueAsync(new BlockBreakAnimation
+                    {
+                        EntityId = player,
+                        Location = d.Location,
+                        DestroyStage = -1
+                    });
 
-                    await this.BroadcastPacketAsync(new BlockChange(d.Location, blockId));
+                    await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, airBlock));
+
+                    var item = new ItemEntity
+                    {
+                        EntityId = player + this.World.Entities.Count + 1,
+                        Count = 1,
+                        Id = Registry.GetItem(blockMat).Id,
+                        EntityBitMask = EntityBitMask.Glowing
+                    };
+                    this.World.Entities.Add(item);
+                    this.Logger.LogDebug($"{item.EntityId} new ID");
+
+                    await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
+                    {
+                        EntityId = item.EntityId,
+                        Uuid = Guid.NewGuid(),
+                        Type = EntityType.Item,
+                        Position = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
+                        (Program.Random.NextDouble() * 0.5F) + 0.25D,
+                        (Program.Random.NextDouble() * 0.5F) + 0.25D),
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 1,
+                        Velocity = new Velocity((short)(d.Location.X * (8000 / 20)), (short)(d.Location.Y * (8000 / 20)), (short)(d.Location.Z * (8000 / 20)))
+                    });
+
+                    await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
+                    {
+                        EntityId = item.EntityId,
+                        Entity = item
+                    });
                     break;
                 }
                 default:
@@ -414,9 +454,11 @@ namespace Obsidian
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
-                    if (this.chatmessages.TryDequeue(out QueueChat msg))
+                    if (this.chatmessages.TryPeek(out QueueChat msg))
                         await player.SendMessageAsync(msg.Message, msg.Position);
                 }
+
+                this.chatmessages.TryDequeue(out var _);
 
                 foreach (var client in clients)
                 {
@@ -439,7 +481,7 @@ namespace Obsidian
         {
             foreach (var (_, player) in this.OnlinePlayers.Except(joined))
             {
-                await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
+                //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = joined.EntityId,
@@ -449,7 +491,7 @@ namespace Obsidian
                     Pitch = 0
                 });
 
-                await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
+                //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
                 await joined.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = player.EntityId,

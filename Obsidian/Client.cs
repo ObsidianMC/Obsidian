@@ -238,6 +238,8 @@ namespace Obsidian
                         await PacketHandler.HandlePlayPackets(packet, this);
                         break;
                 }
+
+                //await Task.Delay(50);
             }
 
             Logger.LogInformation($"Disconnected client");
@@ -252,8 +254,6 @@ namespace Obsidian
                 if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
             }
-
-
         }
 
         private async Task ProcessQueue()

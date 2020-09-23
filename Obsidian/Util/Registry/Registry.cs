@@ -727,6 +727,17 @@ namespace Obsidian.Util.Registry
             return null;
         }
 
+        public static Materials GetMaterialFromId(int id)
+        {
+            foreach (var (key, value) in Blocks)
+            {
+                if (value.Id == id)
+                    return key;
+            }
+
+            return Materials.Air;
+        }
+
         public static Block GetBlockFromId(int id)
         {
             foreach (var (key, value) in Blocks)
@@ -734,6 +745,25 @@ namespace Obsidian.Util.Registry
                 if (value.Id == id)
                     return value;
             }
+
+            return null;
+        }
+
+        public static Item GetItem(int id)
+        {
+            foreach(var (key, value) in Items)
+            {
+                if (value.Id == id)
+                    return value;
+            }
+
+            return null;
+        }
+
+        public static Item GetItem(Materials mat)
+        {
+            if (Items.TryGetValue(mat, out Item result))
+                return result;
 
             return null;
         }

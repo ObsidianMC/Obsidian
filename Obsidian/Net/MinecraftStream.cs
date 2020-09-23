@@ -359,6 +359,7 @@ namespace Obsidian.Net
                 {
                     var ent = (Entity)value;
                     await ent.WriteAsync(this);
+
                     await this.WriteUnsignedByteAsync(0xff);
                     break;
                 }
@@ -367,7 +368,7 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task WritePositionAsync(Position value, bool pre14 = true)
+        public async Task WritePositionAsync(Position value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
             val |= (long)((int)value.Z & 0x3FFFFFF) << 12;

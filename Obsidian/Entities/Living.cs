@@ -35,15 +35,18 @@ namespace Obsidian.Entities
 
         internal async Task UpdateAsync(Server server, Position position, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 64);
-            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 64);
-            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 64);
+            var newPos = position * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
+
+            short newX = (short)(newPos.X - lastPos.X);
+            short newY = (short)(newPos.Y - lastPos.Y );
+            short newZ = (short)(newPos.Z - lastPos.Z);
 
             var isNewLocation = position != this.LastPosition;
 
             if (isNewLocation)
             {
-                await server.BroadcastPacketAsync(new EntityPosition
+                await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
                 {
                     EntityId = this.EntityId,
 
@@ -63,7 +66,7 @@ namespace Obsidian.Entities
 
             if (isNewRotation)
             {
-                await server.BroadcastPacketAsync(new EntityRotation
+                await server.BroadcastPacketWithoutQueueAsync(new EntityRotation
                 {
                     EntityId = this.EntityId,
                     OnGround = onGround,
@@ -77,9 +80,12 @@ namespace Obsidian.Entities
 
         internal async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.LastPosition.X * 32) * 64);
-            short newY = (short)((position.Y * 32 - this.LastPosition.Y * 32) * 64);
-            short newZ = (short)((position.Z * 32 - this.LastPosition.Z * 32) * 64);
+            var newPos = position * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
+
+            short newX = (short)(newPos.X - lastPos.X);
+            short newY = (short)(newPos.Y - lastPos.Y);
+            short newZ = (short)(newPos.Z - lastPos.Z);
 
             var isNewLocation = position != this.LastPosition;
 
@@ -92,7 +98,7 @@ namespace Obsidian.Entities
             {
                 if (isNewRotation)
                 {
-                    await server.BroadcastPacketAsync(new EntityPositionAndRotation
+                    await server.BroadcastPacketWithoutQueueAsync(new EntityPositionAndRotation
                     {
                         EntityId = this.EntityId,
 
@@ -109,7 +115,7 @@ namespace Obsidian.Entities
                 }
                 else
                 {
-                    await server.BroadcastPacketAsync(new EntityPosition
+                    await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
                     {
                         EntityId = this.EntityId,
 
