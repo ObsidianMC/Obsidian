@@ -11,8 +11,6 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Obsidian.Util.Extensions
 {

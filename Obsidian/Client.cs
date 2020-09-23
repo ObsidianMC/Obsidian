@@ -159,7 +159,7 @@ namespace Obsidian
                         {
                             default:
                                 this.Logger.LogError("Client in state Login tried to send an unimplemented packet. Forcing it to disconnect.");
-                                await this.DisconnectAsync(ChatMessage.Simple("Unknown Packet Id."));
+                                await this.DisconnectAsync("Unknown Packet Id.");
                                 break;
 
                             case 0x00:
@@ -194,17 +194,14 @@ namespace Obsidian
                                 await this.ConnectAsync();
                                 break;
                             case 0x01:
-                                var encryptionResponse = await PacketSerializer.FastDeserializeAsync<EncryptionResponse>(packet.data);
+                                var encryptionResponse = PacketSerializer.FastDeserialize<EncryptionResponse>(packet.data);
 
                                 this.sharedKey = this.packetCryptography.Decrypt(encryptionResponse.SharedSecret);
                                 var decryptedToken = this.packetCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-                                var decryptedTokenString = Convert.ToBase64String(decryptedToken);
-                                var tokenString = Convert.ToBase64String(this.randomToken);
-
-                                if (!decryptedTokenString.Equals(tokenString))
+                                if (!decryptedToken.SequenceEqual(this.randomToken))
                                 {
-                                    await this.DisconnectAsync(ChatMessage.Simple("Invalid token.."));
+                                    await this.DisconnectAsync("Invalid token..");
                                     break;
                                 }
 
@@ -215,7 +212,7 @@ namespace Obsidian
                                 if (response is null)
                                 {
                                     this.Logger.LogWarning($"Failed to auth {this.Player.Username}");
-                                    await this.DisconnectAsync(ChatMessage.Simple("Unable to authenticate.."));
+                                    await this.DisconnectAsync("Unable to authenticate..");
                                     break;
                                 }
 

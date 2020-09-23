@@ -500,8 +500,6 @@ namespace Obsidian
                     Yaw = 0,
                     Pitch = 0
                 });
-
-                this.Logger.LogDebug($"Spawning entity: {player.EntityId} - {joined.EntityId}");
             }
         }
 

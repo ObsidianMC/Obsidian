@@ -7,7 +7,7 @@ namespace Obsidian.Chat
     public class ChatMessage
     {
         ///<summary>Makes a new Chat object with plain text (therefore the name "Simple")</summary>
-        public static ChatMessage Simple(string text) => new ChatMessage() {Text=text};
+        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text };
 
         [JsonProperty("text", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Text;
@@ -72,7 +72,7 @@ namespace Obsidian.Chat
             return this;
         }
 
-
+        public static implicit operator ChatMessage(string text) => Simple(text);
         public override string ToString() => JsonConvert.SerializeObject(this, Program.JsonSettings);
     }
 }
