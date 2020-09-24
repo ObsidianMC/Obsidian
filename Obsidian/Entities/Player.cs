@@ -11,6 +11,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -60,8 +61,6 @@ namespace Obsidian.Entities
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
 
-        public World World { get; }
-
         /* Missing for now:
             NbtCompound(inventory)
             NbtList(Motion)
@@ -83,6 +82,78 @@ namespace Obsidian.Entities
             this.EntityId = client.id;
         }
 
+        internal override async Task UpdateAsync(Server server, Position position, bool onGround)
+        {
+            await base.UpdateAsync(server, position, onGround);
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            {
+                if (entity is ItemEntity item)
+                {
+                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    {
+                        CollectedEntityId = item.EntityId,
+                        CollectorEntityId = this.EntityId,
+                        PickupItemCount = item.Count
+                    });
+
+                    var its = new ItemStack(item.Id, item.Count)
+                    {
+                        Present = true,
+                        Nbt = item.Nbt,
+                        Type = Registry.GetItem(item.Id).Type
+                    };
+                    var slot = this.Inventory.AddItem(its);
+
+                    await server.BroadcastPacketAsync(new SetSlot
+                    {
+                        Slot = (short)slot,
+
+                        WindowId = 0,
+
+                        SlotData = its
+                    });
+                    _ = item.RemoveAsync();
+                }
+            }
+        }
+
+        internal override async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        {
+            await base.UpdateAsync(server, yaw, pitch, onGround);
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            {
+                if (entity is ItemEntity item)
+                {
+                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    {
+                        CollectedEntityId = item.EntityId,
+                        CollectorEntityId = this.EntityId,
+                        PickupItemCount = item.Count
+                    });
+
+                    var its = new ItemStack(item.Id, item.Count)
+                    {
+                        Present = true,
+                        Nbt = item.Nbt,
+                        Type = Registry.GetItem(item.Id).Type
+                    };
+                    var slot = this.Inventory.AddItem(its);
+
+                    await server.BroadcastPacketAsync(new SetSlot
+                    {
+                        Slot = (short)slot,
+
+                        WindowId = 0,
+
+                        SlotData = its
+                    });
+                    _ = item.RemoveAsync();
+                }
+            }
+        }
+
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot + 36);
 
         public void LoadPerms(List<string> permissions)
@@ -97,14 +168,14 @@ namespace Obsidian.Entities
         {
             Position = pos,
             Flags = PositionFlags.NONE,
-            TeleportId = 0//TODO teleport id should be unique everytime
+            TeleportId = Program.Random.Next(0, 999)
         });
 
         public Task TeleportAsync(Player to) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
         {
             Position = to.Location,
             Flags = PositionFlags.NONE,
-            TeleportId = 0//TODO teleport id should be unique everytime
+            TeleportId = Program.Random.Next(0, 999)
         });
 
         public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));

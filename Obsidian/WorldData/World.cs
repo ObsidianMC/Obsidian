@@ -133,6 +133,16 @@ namespace Obsidian.WorldData
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
+        public async Task DestroyEntityAsync(Entity entity)
+        {
+            var destroyed = new DestroyEntities { Count = 1 };
+            destroyed.AddEntity(entity);
+
+            await this.Server.BroadcastPacketAsync(destroyed);
+
+            this.Entities.TryRemove(entity);
+        }
+
         public Block GetBlock(int x, int y, int z)
         {
             var chunk = this.GetChunk(x >> 4, z >> 4);
@@ -149,22 +159,11 @@ namespace Obsidian.WorldData
 
         private Chunk GetChunk(int x, int z) => this.LoadedChunks.FirstOrDefault(c => c.X == x && c.Z == z);
 
-        public IEnumerable<Entity> GetEntitiesNear(Position location, float distance = 10) =>
-            this.Entities.Where(x => Position.DistanceTo(x.Location, location) <= distance);
+        public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10) => this.Entities.Where(x => Position.DistanceTo(x.Location, location) <= distance);
 
         public int TransformToChunk(double input)
         {
             return (int)Math.Floor(input / 16);
-        }
-
-        public async Task DestroyEntityAsync(Entity entity)
-        {
-            var destroyed = new DestroyEntities { Count = 1 };
-            destroyed.AddEntity(entity);
-
-            await this.Server.BroadcastPacketAsync(destroyed);
-
-            this.Entities.TryRemove(entity);
         }
 
         public void Load()
@@ -243,6 +242,13 @@ namespace Obsidian.WorldData
             this.Players.Add(player);
         }
 
+        // This would also save the file back to the world folder.
+        public void UnloadPlayer(Guid uuid)
+        {
+            // TODO save changed data to file [uuid].dat
+            this.Players.RemoveAll(x => x.Uuid == uuid);
+        }
+
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating chunk..");
@@ -271,13 +277,6 @@ namespace Obsidian.WorldData
                 chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
 
             this.LoadedChunks.Add(chunk);
-        }
-
-        // This would also save the file back to the world folder.
-        public void UnloadPlayer(Guid uuid)
-        {
-            // TODO save changed data to file [uuid].dat
-            this.Players.RemoveAll(x => x.Uuid == uuid);
         }
     }
 

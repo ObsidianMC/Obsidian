@@ -175,7 +175,10 @@ namespace Obsidian
                                 {
                                     var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
 
-                                    this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this);
+                                    this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this)
+                                    {
+                                        World = this.Server.World
+                                    };
 
                                     this.packetCryptography.GenerateKeyPair();
 
@@ -188,7 +191,10 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this);
+                                this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this)
+                                {
+                                    World = this.Server.World
+                                };
 
                                 //await this.SetCompression();
                                 await this.ConnectAsync();

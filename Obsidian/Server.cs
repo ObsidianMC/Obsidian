@@ -55,20 +55,20 @@ namespace Obsidian
 
         public DateTimeOffset StartTime { get; private set; }
 
-
-
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
 
         public OperatorList Operators { get; }
 
+        internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
+
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
-        internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
+        public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
 
-        public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();
+        public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();        
 
         public CommandService Commands { get; }
         public Config Config { get; }

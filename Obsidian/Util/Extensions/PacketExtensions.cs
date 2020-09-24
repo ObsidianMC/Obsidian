@@ -77,7 +77,7 @@ namespace Obsidian.Util.Extensions
                             return DataType.UUID;
                         else if (type == typeof(byte[]))
                             return DataType.ByteArray;
-                        else if (type == typeof(Slot))
+                        else if (type == typeof(ItemStack))
                             return DataType.Slot; 
 
                         return DataType.Auto;

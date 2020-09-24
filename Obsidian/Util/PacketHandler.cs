@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -73,13 +74,17 @@ namespace Obsidian.Util
         public static async Task HandlePlayPackets(Packet packet, Client client)
         {
             Server server = client.Server;
+            Player player = client.Player;
+
             switch (packet.id)
             {
-                case 0x00:
-                    // Teleport Confirm
-                    // GET X Y Z FROM PACKET TODO
-                    //this.Player.Position = new Position((int)x, (int)y, (int)z);
-                    //await Logger.LogDebugAsync("Received teleport confirm");
+                case 0x00: // Teleport Confirm
+                    var confirm = PacketSerializer.FastDeserialize<TeleportConfirm>(packet.data);
+
+                    if (confirm.TeleportId == player.TeleportId)
+                        break;
+
+                    await player.TeleportAsync(player.LastLocation);//Teleport them back we didn't send this packet
                     break;
 
                 case 0x01:
@@ -141,11 +146,11 @@ namespace Obsidian.Util
                             {
                                 if (window.Button == 0)
                                 {
-                                    client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                    player.Inventory.RemoveItem(window.ClickedSlot, 64);
                                 }
                                 else
                                 {
-                                    client.Player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
+                                    player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
                                 }
                                 break;
                             }
@@ -162,9 +167,9 @@ namespace Obsidian.Util
                                 if (window.ClickedSlot != -999)
                                 {
                                     if (window.Button == 0)
-                                        client.Player.Inventory.RemoveItem(window.ClickedSlot);
+                                        player.Inventory.RemoveItem(window.ClickedSlot);
                                     else
-                                        client.Player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                        player.Inventory.RemoveItem(window.ClickedSlot, 64);
                                 }
                                 break;
                             }
@@ -183,15 +188,15 @@ namespace Obsidian.Util
                                 }
                                 else if (client.isDragging)
                                 {
-                                    if (client.Player.Gamemode == Gamemode.Creative)
+                                    if (player.Gamemode == Gamemode.Creative)
                                     {
                                         if (window.Button != 9)
                                             break;
 
                                         //creative copy
-                                        client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                        player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
                                         {
-                                            Nbt = window.Item.ItemNbt
+                                            Nbt = window.Item.Nbt
                                         });
                                     }
                                     else
@@ -200,9 +205,9 @@ namespace Obsidian.Util
                                             break;
 
                                         //survival painting
-                                        client.Player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                        player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
                                         {
-                                            Nbt = window.Item.ItemNbt
+                                            Nbt = window.Item.Nbt
                                         });
                                     }
                                 }
@@ -281,7 +286,7 @@ namespace Obsidian.Util
                 case 0x0F:
                     // Keep Alive (serverbound)
                     var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(packet.data);
-                    Logger.LogDebug($"Successfully kept alive player {client.Player.Username} with ka id " +
+                    Logger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
                         $"{keepalive.KeepAliveId} previously missed {client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
 
                     // Server is alive, reset missed keepalives.
@@ -295,21 +300,21 @@ namespace Obsidian.Util
                 case 0x11:// Player Position
                     var pos = PacketSerializer.FastDeserialize<PlayerPosition>(packet.data);
 
-                    await client.Player.UpdateAsync(server, pos.Position, pos.OnGround);
+                    await player.UpdateAsync(server, pos.Position, pos.OnGround);
                     break;
 
                 case 0x12:
                     //Player Position And rotation (serverbound)
                     var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(packet.data);
 
-                    await client.Player.UpdateAsync(server, ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
+                    await player.UpdateAsync(server, ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
                     break;
 
                 case 0x13:
                     // Player rotation
                     var look = PacketSerializer.FastDeserialize<PlayerRotation>(packet.data);
 
-                    await client.Player.UpdateAsync(server, look.Yaw, look.Pitch, look.OnGround);
+                    await player.UpdateAsync(server, look.Yaw, look.Pitch, look.OnGround);
                     break;
 
                 case 0x14://Player movement sent every tick when players haven't move
@@ -347,7 +352,7 @@ namespace Obsidian.Util
 
                     await server.BroadcastBlockBreakAsync(new PlayerDiggingStore
                     {
-                        Player = client.Player.Uuid,
+                        Player = player.Uuid,
                         Packet = digging
                     });
                     break;
@@ -399,22 +404,22 @@ namespace Obsidian.Util
                 case 0x23:// Held Item Change (serverbound)
 
                     var heldItemChange = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
-                    client.Player.CurrentSlot = heldItemChange.Slot;
+                    player.CurrentSlot = heldItemChange.Slot;
 
-                    var heldItem = client.Player.GetHeldItem();
+                    var heldItem = player.GetHeldItem();
 
                     await server.BroadcastPacketAsync(new EntityEquipment
                     {
                         EntityId = client.id,
                         Slot = ESlot.MainHand,
-                        Item = new Slot
+                        Item = new ItemStack
                         {
                             Present = heldItem.Present,
                             Count = (sbyte)heldItem.Count,
                             Id = heldItem.Id,
-                            ItemNbt = heldItem.Nbt
+                            Nbt = heldItem.Nbt
                         }
-                    }, client.Player);
+                    }, player);
                     break;
 
                 case 0x24:
@@ -431,27 +436,27 @@ namespace Obsidian.Util
                 {
                     var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
 
-                    client.Player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
+                    player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
                     {
-                        Nbt = ca.ClickedItem.ItemNbt,
+                        Nbt = ca.ClickedItem.Nbt,
                         Present = ca.ClickedItem.Present
                     });
 
                     if (ca.ClickedSlot >= 36 && ca.ClickedSlot <= 44)
                     {
-                        heldItem = client.Player.GetHeldItem();
+                        heldItem = player.GetHeldItem();
                         await server.BroadcastPacketAsync(new EntityEquipment
                         {
                             EntityId = client.id,
                             Slot = ESlot.MainHand,
-                            Item = new Slot
+                            Item = new ItemStack
                             {
                                 Present = heldItem.Present,
                                 Count = (sbyte)heldItem.Count,
                                 Id = heldItem.Id,
-                                ItemNbt = heldItem.Nbt
+                                Nbt = heldItem.Nbt
                             }
-                        }, client.Player);
+                        }, player);
                     }
                 }
                 break;
@@ -482,14 +487,14 @@ namespace Obsidian.Util
                             {
                                 EntityId = client.id,
                                 Animation = EAnimation.SwingMainArm
-                            }, client.Player);
+                            }, player);
                             break;
                         case Hand.OffHand:
                             await server.BroadcastPacketAsync(new EntityAnimation
                             {
                                 EntityId = client.id,
                                 Animation = EAnimation.SwingOffhand
-                            }, client.Player);
+                            }, player);
                             break;
                         default:
                             break;
@@ -505,7 +510,7 @@ namespace Obsidian.Util
                     // Player Block Placement
                     var pbp = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(packet.data);
 
-                    await server.BroadcastBlockPlacementAsync(client.Player, pbp);
+                    await server.BroadcastBlockPlacementAsync(player, pbp);
                     break;
 
                 case 0x2D:

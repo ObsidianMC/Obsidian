@@ -1,8 +1,5 @@
 ﻿using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Util.DataTypes;
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
@@ -19,32 +16,30 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new Slot
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack
             {
                 Present = true,
                 Id = this.Id,
                 Count = this.Count,
-                ItemNbt = this.Nbt
+                Nbt = this.Nbt
             });
         }
 
-        public override async Task TickAsync()
+        public override Task TickAsync()
         {
-            foreach (var ent in this.World.GetEntitiesNear(this.Location, 5))
+            foreach (var ent in this.World.GetEntitiesNear(this.Location, 1.5))
             {
                 if (ent is ItemEntity item)
                 {
                     if (item == this)
                         continue;
 
-                    if (Position.DistanceTo(this.Location, item.Location) <= 1.5)
-                    {
-                        this.Count += item.Count;
-                        _ = item.RemoveAsync();//TODO call entity merge event
-                    }
-
+                    this.Count += item.Count;
+                    _ = item.RemoveAsync();//TODO call entity merge event
                 }
             }
+
+            return Task.CompletedTask;
         }
     }
 }

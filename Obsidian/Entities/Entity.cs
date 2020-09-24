@@ -14,16 +14,19 @@ namespace Obsidian.Entities
     {
         public readonly Timer TickTimer = new Timer();
 
+        //TODO set players world to whichever world he was last connected to
         public World World { get; set; }
 
         #region Location properties
         internal Position LastLocation { get; set; } = new Position();
 
-        public Position Location { get; set; } = new Position();
-
         internal Angle LastPitch { get; set; }
 
         internal Angle LastYaw { get; set; }
+
+        internal int TeleportId { get; set; }
+
+        public Position Location { get; set; } = new Position();
 
         public Angle Pitch { get; set; }
 
@@ -49,7 +52,7 @@ namespace Obsidian.Entities
 
         #region update methods
 
-        internal async Task UpdateAsync(Server server, Position position, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, Position position, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastLocation * 32 * 64;
@@ -72,11 +75,12 @@ namespace Obsidian.Entities
 
                     OnGround = onGround
                 }, this.EntityId);
+
                 this.UpdatePosition(position, onGround);
             }
         }
 
-        internal async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
         {
             var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
 
@@ -94,7 +98,7 @@ namespace Obsidian.Entities
             }
         }
 
-        internal async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastLocation * 32 * 64;
