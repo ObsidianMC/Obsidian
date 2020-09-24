@@ -134,6 +134,7 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
+            this.Events.ServerTick += this.Events_ServerTick;
         }
 
         /// <summary>
@@ -384,8 +385,13 @@ namespace Obsidian
                         EntityId = player + this.World.Entities.Count + 1,
                         Count = 1,
                         Id = Registry.GetItem(minedBlock.Type).Id,
-                        EntityBitMask = EntityBitMask.Glowing
+                        EntityBitMask = EntityBitMask.Glowing,
+                        World = this.World,
+                        Location = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
+                        (Program.Random.NextDouble() * 0.5F) + 0.25D,
+                        (Program.Random.NextDouble() * 0.5F) + 0.25D)
                     };
+
                     this.World.Entities.Add(item);
                     this.Logger.LogDebug($"{item.EntityId} new ID");
 
@@ -394,9 +400,7 @@ namespace Obsidian
                         EntityId = item.EntityId,
                         Uuid = Guid.NewGuid(),
                         Type = EntityType.Item,
-                        Position = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
-                        (Program.Random.NextDouble() * 0.5F) + 0.25D,
-                        (Program.Random.NextDouble() * 0.5F) + 0.25D),
+                        Position = item.Location,
                         Pitch = 0,
                         Yaw = 0,
                         Data = 1,
@@ -449,7 +453,7 @@ namespace Obsidian
                 {
                     if (this.Config.Baah.HasValue)
                     {
-                        var pos = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
+                        var pos = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
                         await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
@@ -485,7 +489,7 @@ namespace Obsidian
                 {
                     EntityId = joined.EntityId,
                     Uuid = joined.Uuid,
-                    Position = joined.Position,
+                    Position = joined.Location,
                     Yaw = 0,
                     Pitch = 0
                 });
@@ -495,14 +499,12 @@ namespace Obsidian
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
-                    Position = player.Position,
+                    Position = player.Location,
                     Yaw = 0,
                     Pitch = 0
                 });
             }
         }
-
-
 
         #region events
 
@@ -519,13 +521,17 @@ namespace Obsidian
             var joined = e.Player;
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
-            {
                 await other.client.AddPlayerToListAsync(joined);
-            }
 
             //Need a delay here or players start flying
             await Task.Delay(500);
             await this.SendSpawnPlayerAsync(joined);
+        }
+
+        private async Task Events_ServerTick()
+        {
+            foreach (var ents in this.World.Entities)
+                await ents.TickAsync();
         }
 
         #endregion events

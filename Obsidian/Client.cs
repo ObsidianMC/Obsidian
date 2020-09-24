@@ -299,11 +299,11 @@ namespace Obsidian
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            this.Player.Position = new Position(0, 6, 0);
+            this.Player.Location = new Position(0, 6, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
-                Position = this.Player.Position,
+                Position = this.Player.Location,
                 Yaw = 0,
                 Pitch = 0,
                 Flags = PositionFlags.NONE,

@@ -50,7 +50,7 @@ namespace Obsidian.Util.DataTypes
         /// </summary>
         public double Distance
         {
-            get { return DistanceTo(Zero); }
+            get { return DistanceTo(this, Zero); }
         }
 
         public bool Equals(Position other)
@@ -74,17 +74,17 @@ namespace Obsidian.Util.DataTypes
         /// <summary>
         ///     Calculates the distance between two Position objects.
         /// </summary>
-        public double DistanceTo(Position other)
+        public static double DistanceTo(Position from, Position to)
         {
-            return Math.Sqrt(Square(other.X - X) +
-                             Square(other.Y - Y) +
-                             Square(other.Z - Z));
+            return Math.Sqrt(Square(to.X - from.X) +
+                             Square(to.Y - from.Y) +
+                             Square(to.Z - from.Z));
         }
 
         /// <summary>
         ///     Calculates the square of a num.
         /// </summary>
-        private double Square(double num)
+        private static double Square(double num)
         {
             return num * num;
         }

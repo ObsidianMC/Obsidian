@@ -102,7 +102,7 @@ namespace Obsidian.Entities
 
         public Task TeleportAsync(Player to) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
         {
-            Position = to.Position,
+            Position = to.Location,
             Flags = PositionFlags.NONE,
             TeleportId = 0//TODO teleport id should be unique everytime
         });
@@ -140,8 +140,6 @@ namespace Obsidian.Entities
         }
 
         public override string ToString() => this.Username;
-
-        public static implicit operator int(Player player) => player.EntityId;
     }
 
     [Flags]

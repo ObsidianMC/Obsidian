@@ -4,9 +4,11 @@ using Obsidian.ChunkData;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Util.DataTypes;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,17 +20,17 @@ namespace Obsidian.WorldData
     {
         public Level Data { get; internal set; }
 
-        public List<Player> Players { get; }
+        public List<Player> Players { get; private set; } = new List<Player>();
 
         public WorldGenerator Generator { get; internal set; }
 
-        public Server Server { get; set; }
+        public Server Server { get; }
 
         // This one later comes back in the regions,
         // but might be easier for internal management purposes
-        public List<Entity> Entities { get; }
+        public ConcurrentHashSet<Entity> Entities { get; private set; } = new ConcurrentHashSet<Entity>();
 
-        internal string folder { get; }
+        internal string Folder { get; }
         internal bool Loaded { get; set; }
 
         public ConcurrentHashSet<Chunk> LoadedChunks { get; private set; } = new ConcurrentHashSet<Chunk>();
@@ -42,10 +44,7 @@ namespace Obsidian.WorldData
                 GeneratorName = WorldType.Default.ToString()
             };
 
-            this.Players = new List<Player>();
-
-            this.Entities = new List<Entity>();
-            this.folder = folder;
+            this.Folder = folder;
             this.Server = server;
         }
 
@@ -53,11 +52,11 @@ namespace Obsidian.WorldData
         {
             int dist = c.ClientSettings?.ViewDistance ?? 8;
 
-            int oldchunkx = this.TransformToChunk(c.Player.LastPosition?.X ?? 0);
-            int chunkx = this.TransformToChunk(c.Player.Position?.X ?? 0);
+            int oldchunkx = this.TransformToChunk(c.Player.LastLocation?.X ?? 0);
+            int chunkx = this.TransformToChunk(c.Player.Location?.X ?? 0);
 
-            int oldchunkz = this.TransformToChunk(c.Player.LastPosition?.Z ?? 0);
-            int chunkz = this.TransformToChunk(c.Player.Position?.Z ?? 0);
+            int oldchunkz = this.TransformToChunk(c.Player.LastLocation?.Z ?? 0);
+            int chunkz = this.TransformToChunk(c.Player.Location?.Z ?? 0);
 
             if (Math.Abs(chunkz - oldchunkz) > dist || Math.Abs(chunkx - oldchunkx) > dist)
             {
@@ -84,7 +83,7 @@ namespace Obsidian.WorldData
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
 
-                   // await c.SendChunkAsync(this.GetChunk((chunkx - dist), i, c));
+                    // await c.SendChunkAsync(this.GetChunk((chunkx - dist), i, c));
                 }
             }
 
@@ -150,14 +149,27 @@ namespace Obsidian.WorldData
 
         private Chunk GetChunk(int x, int z) => this.LoadedChunks.FirstOrDefault(c => c.X == x && c.Z == z);
 
+        public IEnumerable<Entity> GetEntitiesNear(Position location, float distance = 10) =>
+            this.Entities.Where(x => Position.DistanceTo(x.Location, location) <= distance);
+
         public int TransformToChunk(double input)
         {
             return (int)Math.Floor(input / 16);
         }
 
+        public async Task DestroyEntityAsync(Entity entity)
+        {
+            var destroyed = new DestroyEntities { Count = 1 };
+            destroyed.AddEntity(entity);
+
+            await this.Server.BroadcastPacketAsync(destroyed);
+
+            this.Entities.TryRemove(entity);
+        }
+
         public void Load()
         {
-            var DataPath = Path.Combine(folder, "level.dat");
+            var DataPath = Path.Combine(Folder, "level.dat");
 
             var DataFile = new NbtFile();
             DataFile.LoadFromFile(DataPath);
@@ -199,7 +211,7 @@ namespace Obsidian.WorldData
 
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(folder, "players", $"{uuid}.dat");
+            var playerfile = Path.Combine(Folder, "players", $"{uuid}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);

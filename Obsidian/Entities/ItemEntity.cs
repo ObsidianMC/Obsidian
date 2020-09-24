@@ -1,5 +1,8 @@
 ﻿using Obsidian.Items;
 using Obsidian.Net;
+using Obsidian.Util.DataTypes;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
@@ -27,7 +30,21 @@ namespace Obsidian.Entities
 
         public override async Task TickAsync()
         {
-            
+            foreach (var ent in this.World.GetEntitiesNear(this.Location, 5))
+            {
+                if (ent is ItemEntity item)
+                {
+                    if (item == this)
+                        continue;
+
+                    if (Position.DistanceTo(this.Location, item.Location) <= 1.5)
+                    {
+                        this.Count += item.Count;
+                        _ = item.RemoveAsync();//TODO call entity merge event
+                    }
+
+                }
+            }
         }
     }
 }

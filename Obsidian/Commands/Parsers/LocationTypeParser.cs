@@ -39,13 +39,13 @@ namespace Obsidian.Commands.Parsers
                     switch (count)
                     {
                         case 0:
-                            location.X = ctx.Player.Position.X;
+                            location.X = ctx.Player.Location.X;
                             break;
                         case 1:
-                            location.Y = ctx.Player.Position.Y;
+                            location.Y = ctx.Player.Location.Y;
                             break;
                         case 2:
-                            location.Z = ctx.Player.Position.Z;
+                            location.Z = ctx.Player.Location.Z;
                             break;
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");

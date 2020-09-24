@@ -76,11 +76,11 @@ namespace Obsidian.Commands
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
 
-            int oldchunkx = world.TransformToChunk(c.Player.LastPosition?.X ?? int.MaxValue);
-            int chunkx = world.TransformToChunk(c.Player.Position?.X ?? 0);
+            int oldchunkx = world.TransformToChunk(c.Player.LastLocation?.X ?? int.MaxValue);
+            int chunkx = world.TransformToChunk(c.Player.Location?.X ?? 0);
 
-            int oldchunkz = world.TransformToChunk(c.Player.LastPosition?.Z ?? int.MaxValue);
-            int chunkz = world.TransformToChunk(c.Player.Position?.Z ?? 0);
+            int oldchunkz = world.TransformToChunk(c.Player.LastLocation?.Z ?? int.MaxValue);
+            int chunkz = world.TransformToChunk(c.Player.Location?.Z ?? 0);
 
             await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
         }
