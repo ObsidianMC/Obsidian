@@ -64,7 +64,7 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.Slot:
-                    await this.WriteSlotAsync((Slot)value);
+                    await this.WriteSlotAsync((ItemStack)value);
                     break;
 
                 case EntityMetadataType.Boolean:
@@ -357,7 +357,7 @@ namespace Obsidian.Net
                 }
                 case DataType.Slot:
                 {
-                    await this.WriteSlotAsync((Slot)value);
+                    await this.WriteSlotAsync((ItemStack)value);
                     break;
                 }
                 case DataType.EntityMetadata:
@@ -394,16 +394,16 @@ namespace Obsidian.Net
             return Task.CompletedTask;
         }
 
-        public async Task WriteSlotAsync(Slot slot)
+        public async Task WriteSlotAsync(ItemStack slot)
         {
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
                 await this.WriteVarIntAsync(slot.Id);
-                await this.WriteByteAsync(slot.Count);
+                await this.WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
-                if (slot.ItemNbt == null)
+                if (slot.Nbt == null)
                 {
                     writer.EndCompound();
                     writer.Finish();
@@ -412,7 +412,7 @@ namespace Obsidian.Net
 
                 //TODO write enchants
                 writer.WriteShort("id", (short)slot.Id);
-                writer.WriteInt("Damage", slot.ItemNbt.Damage);
+                writer.WriteInt("Damage", slot.Nbt.Damage);
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
@@ -421,9 +421,9 @@ namespace Obsidian.Net
             }
         }
 
-        public async Task<Slot> ReadSlotAsync()
+        public async Task<ItemStack> ReadSlotAsync()
         {
-            var slot = new Slot();
+            var slot = new ItemStack();
 
             var present = await this.ReadBooleanAsync();
             slot.Present = present;
@@ -443,7 +443,7 @@ namespace Obsidian.Net
                         continue;
                     }
 
-                    slot.ItemNbt = new ItemNbt();
+                    slot.Nbt = new ItemNbt();
 
                     if (reader.IsCompound)
                     {
@@ -468,7 +468,7 @@ namespace Obsidian.Net
                                     {
                                         if (enchant is NbtCompound compound)
                                         {
-                                            slot.ItemNbt.Enchantments.Add(new Enchantment
+                                            slot.Nbt.Enchantments.Add(new Enchantment
                                             {
                                                 Id = compound.Get<NbtString>("id").Value,
                                                 Level = compound.Get<NbtShort>("lvl").Value
@@ -489,7 +489,7 @@ namespace Obsidian.Net
                                         if (enchantment is NbtCompound compound)
                                         {
 
-                                            slot.ItemNbt.StoredEnchantments.Add(new Enchantment
+                                            slot.Nbt.StoredEnchantments.Add(new Enchantment
                                             {
                                                 Id = compound.Get<NbtString>("id").Value,
                                                 Level = compound.Get<NbtShort>("lvl").Value
@@ -500,14 +500,14 @@ namespace Obsidian.Net
                                 }
                                 case "slot":
                                 {
-                                    slot.ItemNbt.Slot = tag.ByteValue;
-                                    Console.WriteLine($"Setting slot: {slot.ItemNbt.Slot}");
+                                    slot.Nbt.Slot = tag.ByteValue;
+                                    Console.WriteLine($"Setting slot: {slot.Nbt.Slot}");
                                     break;
                                 }
                                 case "damage":
                                 {
 
-                                    slot.ItemNbt.Damage = tag.IntValue;
+                                    slot.Nbt.Damage = tag.IntValue;
                                     Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                     break;
                                 }
@@ -540,9 +540,9 @@ namespace Obsidian.Net
         #region Reading
 
         [ReadMethod(DataType.Slot)]
-        public Slot ReadSlot()
+        public ItemStack ReadSlot()
         {
-            var slot = new Slot();
+            var slot = new ItemStack();
 
             var present = this.ReadBoolean();
             slot.Present = present;
@@ -562,7 +562,7 @@ namespace Obsidian.Net
                         continue;
                     }
 
-                    slot.ItemNbt = new ItemNbt();
+                    slot.Nbt = new ItemNbt();
 
                     if (reader.IsCompound)
                     {
@@ -585,7 +585,7 @@ namespace Obsidian.Net
                                     {
                                         if (enchant is NbtCompound compound)
                                         {
-                                            slot.ItemNbt.Enchantments.Add(new Enchantment
+                                            slot.Nbt.Enchantments.Add(new Enchantment
                                             {
                                                 Id = compound.Get<NbtString>("id").Value,
                                                 Level = compound.Get<NbtShort>("lvl").Value
@@ -606,7 +606,7 @@ namespace Obsidian.Net
                                         if (enchantment is NbtCompound compound)
                                         {
 
-                                            slot.ItemNbt.StoredEnchantments.Add(new Enchantment
+                                            slot.Nbt.StoredEnchantments.Add(new Enchantment
                                             {
                                                 Id = compound.Get<NbtString>("id").Value,
                                                 Level = compound.Get<NbtShort>("lvl").Value
@@ -617,13 +617,13 @@ namespace Obsidian.Net
                                 }
                                 case "slot":
                                 {
-                                    slot.ItemNbt.Slot = tag.ByteValue;
+                                    slot.Nbt.Slot = tag.ByteValue;
                                     break;
                                 }
                                 case "damage":
                                 {
 
-                                    slot.ItemNbt.Damage = tag.IntValue;
+                                    slot.Nbt.Damage = tag.IntValue;
                                     break;
                                 }
                                 default:

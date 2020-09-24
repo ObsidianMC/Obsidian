@@ -2,17 +2,6 @@
 
 namespace Obsidian.Items
 {
-    public class Slot
-    {
-        public bool Present { get; set; }
-
-        public int Id { get; set; }
-
-        public sbyte Count { get; set; }
-
-        public ItemNbt ItemNbt { get; set; }
-    }
-
     public class ItemNbt
     {
         public byte Slot { get; set; }

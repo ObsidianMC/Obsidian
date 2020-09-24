@@ -2,9 +2,11 @@
 {
     public class ItemStack : Item
     {
-        public bool Present { get; set; }
+        internal bool Present { get; set; }
 
         public int Count { get; set; }
+
+        public ItemStack() { }
 
         public ItemStack(int itemId, int itemCount)
         {

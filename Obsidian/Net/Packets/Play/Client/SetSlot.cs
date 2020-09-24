@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public short Slot { get; set; }
 
         [Field(2)]
-        public Slot SlotData { get; set; }
+        public ItemStack SlotData { get; set; }
 
         public SetSlot() : base(0x17) { }
     }

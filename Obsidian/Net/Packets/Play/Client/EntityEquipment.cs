@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public ESlot Slot { get; set; }
 
         [Field(2)]
-        public Slot Item { get; set; }
+        public ItemStack Item { get; set; }
 
         public EntityEquipment() : base(0x47) { }
     }

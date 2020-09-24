@@ -42,7 +42,7 @@ namespace Obsidian.Net.Packets.Play.Server
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
         /// </summary>
         [Field(5)]
-        public Slot Item { get; set; }
+        public ItemStack Item { get; set; }
 
         public ClickWindow() : base(0x09) { }
     }

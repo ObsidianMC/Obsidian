@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public short ClickedSlot { get; set; }
 
         [Field(1)]
-        public Slot ClickedItem { get; set; }
+        public ItemStack ClickedItem { get; set; }
 
         public CreativeInventoryAction() : base(0x26) { }
     }
