@@ -20,8 +20,8 @@ namespace Obsidian.Net
         [ReadMethod(DataType.UnsignedByte)]
         public byte ReadUnsignedByte()
         {
-            var buffer = new byte[1];
-            this.Read(buffer);
+            Span<byte> buffer = stackalloc byte[1];
+            BaseStream.Read(buffer);
             return buffer[0];
         }
 
@@ -70,18 +70,18 @@ namespace Obsidian.Net
         [ReadMethod(DataType.UnsignedShort)]
         public ushort ReadUnsignedShort()
         {
-            var buffer = new byte[2];
+            Span<byte> buffer = stackalloc byte[2];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToUInt16(buffer);
         }
 
         public async Task<ushort> ReadUnsignedShortAsync()
         {
-            var buffer = new byte[2];
+           var buffer = new byte[2];
             await this.ReadAsync(buffer);
             if (BitConverter.IsLittleEndian)
             {
@@ -93,11 +93,11 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Short)]
         public short ReadShort()
         {
-            var buffer = new byte[2];
+            Span<byte> buffer = stackalloc byte[2];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToInt16(buffer);
         }
@@ -116,11 +116,11 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Int)]
         public int ReadInt()
         {
-            var buffer = new byte[4];
+            Span<byte> buffer = stackalloc byte[4];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToInt32(buffer);
         }
@@ -139,11 +139,11 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Long)]
         public long ReadLong()
         {
-            var buffer = new byte[8];
+            Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToInt64(buffer);
         }
@@ -161,11 +161,11 @@ namespace Obsidian.Net
 
         public ulong ReadUnsignedLong()
         {
-            var buffer = new byte[8];
+            Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToUInt64(buffer);
         }
@@ -184,11 +184,11 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Float)]
         public float ReadFloat()
         {
-            var buffer = new byte[4];
+            Span<byte> buffer = stackalloc byte[4];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToSingle(buffer);
         }
@@ -207,11 +207,11 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Double)]
         public double ReadDouble()
         {
-            var buffer = new byte[8];
+            Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Reverse();
             }
             return BitConverter.ToDouble(buffer);
         }
