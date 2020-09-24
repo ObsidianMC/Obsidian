@@ -33,12 +33,28 @@ namespace Obsidian.Items
             }
         }
 
-        public void AddItem(ItemStack item)
+        public int AddItem(ItemStack item)
         {
-            int lastIndex = this.Items.Keys.OrderByDescending(x => x).FirstOrDefault();
-            lastIndex = lastIndex == 0 ? 0 : lastIndex + 1;
+            for (int i = 9; i < 45; i++)
+            {
+                if (!this.Items.ContainsKey(i))
+                {
+                    this.Items.TryAdd(i, item);
 
-            this.Items.TryAdd(lastIndex, item);
+                    return i;
+                }
+                else
+                {
+                    if (this.Items[i] != item)
+                        continue;
+
+                    this.Items[i].Count += item.Count;
+
+                    return i;
+                }
+            }
+
+            return 9;
         }
 
         public void SetItem(int slot, ItemStack item)
@@ -50,8 +66,6 @@ namespace Obsidian.Items
                 this.Items[slot] = item;
             else
                 this.Items.TryAdd(slot, item);
-
-
         }
 
         public ItemStack GetItem(int slot)
