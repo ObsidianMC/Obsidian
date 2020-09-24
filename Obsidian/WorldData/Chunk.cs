@@ -1,5 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
+using Obsidian.Entities;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
@@ -19,6 +20,8 @@ namespace Obsidian.WorldData
 
         public List<ChunkSection> Sections { get; private set; } = new List<ChunkSection>();
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
+
+        public List<Entity> Entities { get; private set; } = new List<Entity>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 

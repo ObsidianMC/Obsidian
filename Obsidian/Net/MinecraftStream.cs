@@ -336,6 +336,11 @@ namespace Obsidian.Net
                         foreach (var action in actions)
                             await action.WriteAsync(this);
                     }
+                    else if (value is List<int> ids)
+                    {
+                        foreach (var id in ids)
+                            await this.WriteVarIntAsync(id);
+                    }
                     break;
                 }
                 case DataType.ByteArray:

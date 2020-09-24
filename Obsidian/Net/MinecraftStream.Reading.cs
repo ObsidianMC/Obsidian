@@ -81,7 +81,7 @@ namespace Obsidian.Net
 
         public async Task<ushort> ReadUnsignedShortAsync()
         {
-           var buffer = new byte[2];
+            var buffer = new byte[2];
             await this.ReadAsync(buffer);
             if (BitConverter.IsLittleEndian)
             {
