@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Items
+﻿using Obsidian.Util.Registry;
+
+namespace Obsidian.Items
 {
     public class ItemStack : Item
     {
@@ -12,6 +14,7 @@
         {
             this.Id = itemId;
             this.Count = itemCount;
+            this.Type = Registry.GetItem(itemId).Type;
         }
     }
 }

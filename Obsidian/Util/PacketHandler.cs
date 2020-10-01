@@ -134,8 +134,8 @@ namespace Obsidian.Util
                 case 0x09:// Click Window
                     var window = PacketSerializer.FastDeserialize<ClickWindow>(packet.data);
 
-                    Logger.LogDebug("Window click");
-                    Logger.LogDebug($"{JsonConvert.SerializeObject(window, Formatting.Indented)}");
+                    //Logger.LogDebug("Window click");
+                    //Logger.LogDebug($"{JsonConvert.SerializeObject(window, Formatting.Indented)}");
                     if (window.WindowId == 0)
                     {
 
@@ -228,8 +228,6 @@ namespace Obsidian.Util
                     {
 
                     }
-
-                    Logger.LogDebug("Received click window");
                     break;
 
                 case 0x0A:
@@ -350,18 +348,18 @@ namespace Obsidian.Util
                 case 0x1A:// Player Digging
                     var digging = PacketSerializer.FastDeserialize<PlayerDigging>(packet.data);
 
-                    await server.BroadcastBlockBreakAsync(new PlayerDiggingStore
+                    _ = Task.Run(() => server.BroadcastBlockBreakAsync(new PlayerDiggingStore
                     {
                         Player = player.Uuid,
                         Packet = digging
-                    });
+                    }));
                     break;
 
                 case 0x1B:
                     //TODO Entity Action
                     var action = PacketSerializer.FastDeserialize<EntityAction>(packet.data);
 
-                    Logger.LogDebug("Received entity action");
+                    //Logger.LogDebug("Received entity action");
                     break;
 
                 case 0x1C:

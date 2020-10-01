@@ -86,7 +86,7 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, position, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
             {
                 if (entity is ItemEntity item)
                 {
@@ -97,23 +97,56 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var its = new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
                         Nbt = item.Nbt,
                         Type = Registry.GetItem(item.Id).Type
-                    };
-                    var slot = this.Inventory.AddItem(its);
+                    });
 
-                    await server.BroadcastPacketAsync(new SetSlot
+                    await this.client.SendPacketAsync(new SetSlot
                     {
                         Slot = (short)slot,
 
                         WindowId = 0,
 
-                        SlotData = its
+                        SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = item.RemoveAsync();
+                    _ = Task.Run(() => item.RemoveAsync());
+                }
+            }
+        }
+
+        internal override async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        {
+            await base.UpdateAsync(server, position, yaw, pitch, onGround);
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
+            {
+                if (entity is ItemEntity item)
+                {
+                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    {
+                        CollectedEntityId = item.EntityId,
+                        CollectorEntityId = this.EntityId,
+                        PickupItemCount = item.Count
+                    });
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    {
+                        Present = true,
+                        Nbt = item.Nbt,
+                        Type = Registry.GetItem(item.Id).Type
+                    });
+
+                    await this.client.SendPacketAsync(new SetSlot
+                    {
+                        Slot = (short)slot,
+
+                        WindowId = 0,
+
+                        SlotData = this.Inventory.GetItem(slot)
+                    });
+                    _ = Task.Run(() => item.RemoveAsync());
                 }
             }
         }
@@ -133,23 +166,22 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var its = new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
                         Nbt = item.Nbt,
                         Type = Registry.GetItem(item.Id).Type
-                    };
-                    var slot = this.Inventory.AddItem(its);
+                    });
 
-                    await server.BroadcastPacketAsync(new SetSlot
+                    await this.client.SendPacketAsync(new SetSlot
                     {
                         Slot = (short)slot,
 
                         WindowId = 0,
 
-                        SlotData = its
+                        SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = item.RemoveAsync();
+                    _ = Task.Run(() => item.RemoveAsync());
                 }
             }
         }

@@ -377,6 +377,7 @@ namespace Obsidian
                     Type = CommandNodeType.Literal,
                     Index = ++index
                 };
+
                 foreach (Qmmands.Parameter parameter in command.Parameters)
                 {
                     var parameterNode = new CommandNode()

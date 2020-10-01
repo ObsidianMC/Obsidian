@@ -33,6 +33,12 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync(ChatMessage.Simple("done"));
         }
 
+        [Command("test")]
+        public async Task TestAsync(string test1, string test2, string test3)
+        {
+            await this.Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
+        }
+
         [Command("plugins")]
         [Description("Lists plugins.")]
         public async Task PluginsAsync()

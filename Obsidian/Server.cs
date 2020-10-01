@@ -290,8 +290,8 @@ namespace Obsidian
                         break;
                 }
 
-                var placedBlock = (Materials)player.GetHeldItem().Id;
-                await client.QueuePacketAsync(new BlockChange(location, Registry.GetBlock(placedBlock).Id));
+                player.Inventory.RemoveItem(player.CurrentSlot);
+                await client.QueuePacketAsync(new BlockChange(location, Registry.GetBlock(player.GetHeldItem().Type).Id));
             }
         }
 

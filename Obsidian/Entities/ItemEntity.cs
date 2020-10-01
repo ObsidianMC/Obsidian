@@ -27,7 +27,7 @@ namespace Obsidian.Entities
 
         public override Task TickAsync()
         {
-            foreach (var ent in this.World.GetEntitiesNear(this.Location, 1.5))
+            foreach (var ent in this.World.GetEntitiesNear(this.Location, .5))
             {
                 if (ent is ItemEntity item)
                 {
@@ -35,7 +35,8 @@ namespace Obsidian.Entities
                         continue;
 
                     this.Count += item.Count;
-                    _ = item.RemoveAsync();//TODO call entity merge event
+
+                    _ = item.RemoveAsync();//TODO find a better way to removed item entities that merged
                 }
             }
 
