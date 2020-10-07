@@ -437,12 +437,6 @@ namespace Obsidian.Net
 
                 while (reader.ReadToFollowing())
                 {
-                    if (!reader.HasName)
-                    {
-                        //TODO?????????
-                        continue;
-                    }
-
                     slot.Nbt = new ItemNbt();
 
                     if (reader.IsCompound)
@@ -556,12 +550,6 @@ namespace Obsidian.Net
 
                 while (reader.ReadToFollowing())
                 {
-                    if (!reader.HasName)
-                    {
-                        //TODO?????????
-                        continue;
-                    }
-
                     slot.Nbt = new ItemNbt();
 
                     if (reader.IsCompound)
@@ -570,11 +558,6 @@ namespace Obsidian.Net
                         foreach (var tag in root)
                         {
                             Program.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
-                            if (tag.TagType == NbtTagType.Compound)
-                            {
-                                //TODO???
-                            }
-
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":
@@ -605,7 +588,6 @@ namespace Obsidian.Net
                                     {
                                         if (enchantment is NbtCompound compound)
                                         {
-
                                             slot.Nbt.StoredEnchantments.Add(new Enchantment
                                             {
                                                 Id = compound.Get<NbtString>("id").Value,

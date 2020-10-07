@@ -157,14 +157,11 @@ namespace Obsidian.WorldData
             return chunk.GetBlock(location);
         }
 
-        private Chunk GetChunk(int x, int z) => this.LoadedChunks.FirstOrDefault(c => c.X == x && c.Z == z);
+        private Chunk GetChunk(int x, int z) => this.LoadedChunks.SingleOrDefault(c => c.X == x && c.Z == z);
 
-        public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10) => this.Entities.Where(x => Position.DistanceTo(x.Location, location) <= distance);
+        public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10) => this.Entities.Where(x => Position.DistanceTo(location, x.Location) <= distance);
 
-        public int TransformToChunk(double input)
-        {
-            return (int)Math.Floor(input / 16);
-        }
+        public int TransformToChunk(double input) => (int)Math.Floor(input / 16);
 
         public void Load()
         {
@@ -206,7 +203,10 @@ namespace Obsidian.WorldData
         public void RemovePlayer(Player player) => this.Players.Remove(player);
 
         //TODO
-        public void Save() { }
+        public void Save()
+        {
+
+        }
 
         public void LoadPlayer(Guid uuid)
         {

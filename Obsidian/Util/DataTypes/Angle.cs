@@ -10,8 +10,8 @@ namespace Obsidian.Util.DataTypes
         public byte Value { get; set; }
         public float Degrees
         {
-            get => Value * 360f / 256f;
-            set => Value = (byte)(NormalizeDegree(value) * 360f / 256f);
+            get => Value / 255f * 360f;
+            set => Value = (byte)(NormalizeDegree(value) / 360f * 255f );
         }
 
         public Angle(byte value)
