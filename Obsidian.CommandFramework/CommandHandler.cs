@@ -1,7 +1,6 @@
 ﻿using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +15,7 @@ namespace Obsidian.CommandFramework
 
         public CommandHandler()
         {
-            
+
         }
 
         public void RegisterContextType<T>()
@@ -37,16 +36,16 @@ namespace Obsidian.CommandFramework
 
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
-            if(!this._contextType.IsAssignableFrom(ctx.GetType()))
+            if (!this._contextType.IsAssignableFrom(ctx.GetType()))
             {
                 throw new Exception("Your context does not match the registered context type.");
             }
 
             // split the command message into command and args.
-            var args = _parseCommand(ctx._message);
+            var args = ParseCommand(ctx._message);
 
             // finding the right command method
-            var commands = this._commandClasses.SelectMany(x => x.GetType().GetMethods())
+            var commands = _commandClasses.SelectMany(x => x.GetType().GetMethods())
                 .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute)));
 
             // shitty complex linq statement that basically gets our command. maybe could use optimization. idk.
@@ -60,74 +59,47 @@ namespace Obsidian.CommandFramework
             await Task.Yield();
         }
 
-        #region parsing text
-        private List<string> _parseCommand(string msg)
+        #region Parsing text
+        internal List<string> ParseCommand(string text)
         {
             var list = new List<string>();
+            var sb = new StringBuilder();
 
-            StringBuilder buffer = new StringBuilder();
-            bool quote = false;
-            bool escape = false;
-
-            for(int i = 0; i < msg.Length; i++)
+            for (int i = 0; i < text.Length; i++)
             {
-                if(!quote) // in quote
+                if (text[i] == ' ')
+                    continue;
+
+                int end = text.IndexOf(' ', i);
+                if (end == -1 && i != text.Length - 1)
                 {
-                    if(msg[i] == ' ')
+                    list.Add(text[i..]);
+                    break;
+                }
+
+                if (text[i] == '"')
+                {
+                    for (int j = i + 1; j < text.Length; j++)
                     {
-                        // on space, next word
-                        list.Add(buffer.ToString());
-                        buffer.Clear(); // clear buffer
-                        continue;
+                        if (text[j] == '"')
+                        {
+                            i = j;
+                            break;
+                        }
+                        else if (text[j] == '\\')
+                        {
+                            j++;
+                        }
+                        sb.Append(text[j]);
                     }
-                    else if(msg[i] == '"')
-                    {
-                        // enter quote
-                        quote = true;
-                        continue;
-                    }
+                    list.Add(sb.ToString());
+                    sb.Clear();
                 }
                 else
                 {
-                    if(escape) // handle special chars like \n, \r, etc..
-                    {
-                        // TODO: add more cases
-                        if(msg[i] == 'n')
-                        {
-                            buffer.Append('\n');
-                        }
-                        else if(msg[i] == 'r')
-                        {
-                            buffer.Append('\r');
-                        }
-                        escape = false;
-                        continue;
-                    }
-                    else
-                    {
-                        if (msg[i] == '"')
-                        {
-                            // exit quotes
-                            quote = false;
-                            continue;
-                        }
-                        else if (msg[i] == '\\')
-                        {
-                            // escape next quote
-                            escape = true;
-                            continue;
-                        }
-                    }
+                    list.Add(text[i..end]);
+                    i = end;
                 }
-
-                // add to buffer
-                buffer.Append(msg[i]);
-            }
-
-            // ensuring last parameter is added.
-            if(buffer.Length < 1)
-            {
-                list.Add(buffer.ToString());
             }
 
             return list;

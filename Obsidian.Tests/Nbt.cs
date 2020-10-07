@@ -111,35 +111,35 @@ namespace Obsidian.Tests
             #endregion lists
         }
 
-        [Fact]
-        public async Task ReadSlot()
-        {
-            await using var stream = new MinecraftStream();
+        //[Fact]
+        //public async Task ReadSlot()
+        //{
+        //    await using var stream = new MinecraftStream();
 
-            var dataSlot = new Slot
-            {
-                Count = 0,
-                Id = 25,
-                Present = true,
-                ItemNbt = new ItemNbt
-                {
-                    Slot = 1,
-                    Damage = 1
-                }
-            };
+        //    var dataSlot = new Slot
+        //    {
+        //        Count = 0,
+        //        Id = 25,
+        //        Present = true,
+        //        ItemNbt = new ItemNbt
+        //        {
+        //            Slot = 1,
+        //            Damage = 1
+        //        }
+        //    };
 
-            await stream.WriteSlotAsync(dataSlot);
+        //    await stream.WriteSlotAsync(dataSlot);
 
-            stream.Position = 0;
+        //    stream.Position = 0;
 
-            var slot = await stream.ReadSlotAsync();
+        //    var slot = await stream.ReadSlotAsync();
 
-            Assert.True(slot.Present);
-            Assert.Equal(0, slot.Count);
-            Assert.Equal(25, slot.Id);
+        //    Assert.True(slot.Present);
+        //    Assert.Equal(0, slot.Count);
+        //    Assert.Equal(25, slot.Id);
 
-            Assert.Equal(1, slot.ItemNbt.Slot);
-            Assert.Equal(1, slot.ItemNbt.Damage);
-        }
+        //    Assert.Equal(1, slot.ItemNbt.Slot);
+        //    Assert.Equal(1, slot.ItemNbt.Damage);
+        //}
     }
 }
