@@ -143,17 +143,17 @@ namespace Obsidian.Util
                         switch (window.Mode)
                         {
                             case InventoryOperationMode.MouseClick://TODO InventoryClickEvent
-                            {
-                                if (window.Button == 0)
                                 {
-                                    player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                    if (window.Button == 0)
+                                    {
+                                        player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                    }
+                                    else
+                                    {
+                                        player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
+                                    }
+                                    break;
                                 }
-                                else
-                                {
-                                    player.Inventory.RemoveItem(window.ClickedSlot, window.Item.Count / 2);
-                                }
-                                break;
-                            }
 
                             case InventoryOperationMode.ShiftMouseClick:
                                 break;
@@ -162,62 +162,63 @@ namespace Obsidian.Util
                             case InventoryOperationMode.MiddleMouseClick:
                                 break;
                             case InventoryOperationMode.Drop:
-                            {
-                                //If clicked slot is -999 that means they clicked outside the inventory
-                                if (window.ClickedSlot != -999)
                                 {
-                                    if (window.Button == 0)
-                                        player.Inventory.RemoveItem(window.ClickedSlot);
-                                    else
-                                        player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                    //If clicked slot is -999 that means they clicked outside the inventory
+                                    if (window.ClickedSlot != -999)
+                                    {
+                                        Logger.LogDebug("Dropped Item");
+                                        if (window.Button == 0)
+                                            player.Inventory.RemoveItem(window.ClickedSlot);
+                                        else
+                                            player.Inventory.RemoveItem(window.ClickedSlot, 64);
+                                    }
+                                    break;
                                 }
-                                break;
-                            }
                             case InventoryOperationMode.MouseDrag:
-                            {
-                                if (window.ClickedSlot == -999)
                                 {
-                                    if (window.Button == 0 || window.Button == 4 || window.Button == 8)
+                                    if (window.ClickedSlot == -999)
                                     {
-                                        client.isDragging = true;
-                                    }
-                                    else if (window.Button == 2 || window.Button == 6 || window.Button == 10)
-                                    {
-                                        client.isDragging = false;
-                                    }
-                                }
-                                else if (client.isDragging)
-                                {
-                                    if (player.Gamemode == Gamemode.Creative)
-                                    {
-                                        if (window.Button != 9)
-                                            break;
-
-                                        //creative copy
-                                        player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                        if (window.Button == 0 || window.Button == 4 || window.Button == 8)
                                         {
-                                            Nbt = window.Item.Nbt
-                                        });
+                                            client.isDragging = true;
+                                        }
+                                        else if (window.Button == 2 || window.Button == 6 || window.Button == 10)
+                                        {
+                                            client.isDragging = false;
+                                        }
+                                    }
+                                    else if (client.isDragging)
+                                    {
+                                        if (player.Gamemode == Gamemode.Creative)
+                                        {
+                                            if (window.Button != 9)
+                                                break;
+
+                                            //creative copy
+                                            player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                            {
+                                                Nbt = window.Item.Nbt
+                                            });
+                                        }
+                                        else
+                                        {
+                                            if (window.Button != 1 || window.Button != 5)
+                                                break;
+
+                                            //survival painting
+                                            player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
+                                            {
+                                                Nbt = window.Item.Nbt
+                                            });
+                                        }
                                     }
                                     else
                                     {
-                                        if (window.Button != 1 || window.Button != 5)
-                                            break;
-
-                                        //survival painting
-                                        player.Inventory.SetItem(window.ClickedSlot, new ItemStack(window.Item.Id, window.Item.Count)
-                                        {
-                                            Nbt = window.Item.Nbt
-                                        });
+                                        //It shouldn't get here
                                     }
-                                }
-                                else
-                                {
-                                    //It shouldn't get here
-                                }
 
-                                break;
-                            }
+                                    break;
+                                }
                             case InventoryOperationMode.DoubleClick:
                                 break;
                             default:
@@ -238,38 +239,38 @@ namespace Obsidian.Util
                     break;
 
                 case 0x0B: // Plugin Message (serverbound)
-                {
-                    var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
-
-                    var result = await msg.HandleAsync();
-
-                    switch (result.Type)
                     {
-                        case PluginMessageType.Brand:
-                            client.Brand = result.Value.ToString();
-                            break;
-                        case PluginMessageType.Register:
+                        var msg = await PacketSerializer.DeserializeAsync<PluginMessage>(packet.data);
+
+                        var result = await msg.HandleAsync();
+
+                        switch (result.Type)
                         {
-                            using var stream = new MinecraftStream(msg.PluginData);
-                            var len = await stream.ReadVarIntAsync();
+                            case PluginMessageType.Brand:
+                                client.Brand = result.Value.ToString();
+                                break;
+                            case PluginMessageType.Register:
+                                {
+                                    using var stream = new MinecraftStream(msg.PluginData);
+                                    var len = await stream.ReadVarIntAsync();
 
-                            //Idk how this would work so I'm assuming a length will be sent first
-                            for (int i = 0; i < len; i++)
-                                server.RegisteredChannels.Add(await stream.ReadStringAsync());
+                                    //Idk how this would work so I'm assuming a length will be sent first
+                                    for (int i = 0; i < len; i++)
+                                        server.RegisteredChannels.Add(await stream.ReadStringAsync());
 
-                            break;
+                                    break;
+                                }
+                            case PluginMessageType.UnRegister:
+                                server.RegisteredChannels.RemoveWhere(x => x == msg.Channel.ToLower());
+                                break;
+                            case PluginMessageType.Custom://This can be ignored for now
+                            default:
+                                break;
                         }
-                        case PluginMessageType.UnRegister:
-                            server.RegisteredChannels.RemoveWhere(x => x == msg.Channel.ToLower());
-                            break;
-                        case PluginMessageType.Custom://This can be ignored for now
-                        default:
-                            break;
-                    }
 
-                    Logger.LogDebug($"Received plugin message: {msg.Channel}");
-                }
-                break;
+                        Logger.LogDebug($"Received plugin message: {msg.Channel}");
+                    }
+                    break;
 
                 case 0x0C:
                     // Edit Book
@@ -348,11 +349,11 @@ namespace Obsidian.Util
                 case 0x1A:// Player Digging
                     var digging = PacketSerializer.FastDeserialize<PlayerDigging>(packet.data);
 
-                    _ = Task.Run(() => server.BroadcastBlockBreakAsync(new PlayerDiggingStore
+                    await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
                     {
                         Player = player.Uuid,
                         Packet = digging
-                    }));
+                    });
                     break;
 
                 case 0x1B:
@@ -400,9 +401,8 @@ namespace Obsidian.Util
                     break;
 
                 case 0x23:// Held Item Change (serverbound)
-
                     var heldItemChange = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
-                    player.CurrentSlot = heldItemChange.Slot;
+                    player.CurrentSlot = (short)(heldItemChange.Slot + 36);
 
                     var heldItem = player.GetHeldItem();
 
@@ -431,33 +431,33 @@ namespace Obsidian.Util
                     break;
 
                 case 0x26:// Creative Inventory Action in creative they send this to replace whatever item existed in the slot
-                {
-                    var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
-
-                    player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
                     {
-                        Nbt = ca.ClickedItem.Nbt,
-                        Present = ca.ClickedItem.Present
-                    });
+                        var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
 
-                    if (ca.ClickedSlot >= 36 && ca.ClickedSlot <= 44)
-                    {
-                        heldItem = player.GetHeldItem();
-                        await server.BroadcastPacketAsync(new EntityEquipment
+                        player.Inventory.SetItem(ca.ClickedSlot, new ItemStack(ca.ClickedItem.Id, ca.ClickedItem.Count)
                         {
-                            EntityId = client.id,
-                            Slot = ESlot.MainHand,
-                            Item = new ItemStack
+                            Nbt = ca.ClickedItem.Nbt,
+                            Present = ca.ClickedItem.Present
+                        });
+
+                        if (ca.ClickedSlot >= 36 && ca.ClickedSlot <= 44)
+                        {
+                            heldItem = player.GetHeldItem();
+                            await server.BroadcastPacketAsync(new EntityEquipment
                             {
-                                Present = heldItem.Present,
-                                Count = (sbyte)heldItem.Count,
-                                Id = heldItem.Id,
-                                Nbt = heldItem.Nbt
-                            }
-                        }, player);
+                                EntityId = client.id,
+                                Slot = ESlot.MainHand,
+                                Item = new ItemStack
+                                {
+                                    Present = heldItem.Present,
+                                    Count = (sbyte)heldItem.Count,
+                                    Id = heldItem.Id,
+                                    Nbt = heldItem.Nbt
+                                }
+                            }, player);
+                        }
                     }
-                }
-                break;
+                    break;
 
                 case 0x27:
                     // Update jigsaw Block

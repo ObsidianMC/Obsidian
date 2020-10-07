@@ -43,7 +43,7 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; set; } = 36;
 
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
@@ -51,6 +51,8 @@ namespace Obsidian.Entities
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
+
+        public double HeadY { get; private set; }
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
@@ -86,10 +88,15 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, position, onGround);
 
+            this.HeadY = position.Y + 1.62;
+
             foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
             {
                 if (entity is ItemEntity item)
                 {
+                    if (!item.CanPickup)
+                        continue;
+
                     await server.BroadcastPacketWithoutQueueAsync(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
@@ -100,8 +107,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt,
-                        Type = Registry.GetItem(item.Id).Type
+                        Nbt = item.Nbt
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -112,7 +118,8 @@ namespace Obsidian.Entities
 
                         SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = Task.Run(() => item.RemoveAsync());
+
+                    await item.RemoveAsync();
                 }
             }
         }
@@ -121,10 +128,15 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
+            this.HeadY = position.Y + 1.62;
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, .8))
             {
                 if (entity is ItemEntity item)
                 {
+                    if (!item.CanPickup)
+                        continue;
+
                     await server.BroadcastPacketWithoutQueueAsync(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
@@ -134,8 +146,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt,
-                        Type = Registry.GetItem(item.Id).Type
+                        Nbt = item.Nbt
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -146,7 +157,8 @@ namespace Obsidian.Entities
 
                         SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = Task.Run(() => item.RemoveAsync());
+
+                    await item.RemoveAsync();
                 }
             }
         }
@@ -169,8 +181,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt,
-                        Type = Registry.GetItem(item.Id).Type
+                        Nbt = item.Nbt
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -186,7 +197,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot + 36);
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
         public void LoadPerms(List<string> permissions)
         {
