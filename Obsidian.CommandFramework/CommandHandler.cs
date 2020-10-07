@@ -12,7 +12,7 @@ namespace Obsidian.CommandFramework
     public class CommandHandler
     {
         private Type _contextType;
-        private List<Type> _commandTypes;
+        private List<BaseCommandClass> _commandClasses;
 
         public CommandHandler()
         {
@@ -30,15 +30,9 @@ namespace Obsidian.CommandFramework
             throw new Exception("BaseCommandContext is not assignable from your Type!");
         }
 
-        public void RegisterCommandClass<T>()
+        public void RegisterCommandClass<T>() where T : BaseCommandClass
         {
-            if(typeof(BaseCommandClass).IsAssignableFrom(typeof(T)))
-            {
-                this._commandTypes.Add(typeof(T));
-                return;
-            }
-
-            throw new Exception("BaseCommandClass is not assignable from your Type!");
+            _commandClasses.Add((BaseCommandClass)Activator.CreateInstance(typeof(T)));
         }
 
         public async Task ProcessCommand(BaseCommandContext ctx)
@@ -51,20 +45,17 @@ namespace Obsidian.CommandFramework
             // split the command message into command and args.
             var args = _parseCommand(ctx._message);
 
-            // Find class and command to execute, this is taken from a private project.
-            // TODO fix and update this.
-            foreach (Type typ in this._commandTypes)
-            {
-                foreach (var method in typ.GetMethods())
-                {
-                    if (method.CustomAttributes.Any(x => x.AttributeType == typeof(CommandAttribute)))
-                    {
-                        var attribute = method.CustomAttributes.First(x => x.AttributeType == typeof(CommandAttribute));
-                        var commandname = (string)attribute.ConstructorArguments.First().Value;
-                        Console.WriteLine($"found a method with command name {commandname}");
-                    }
-                }
-            }
+            // finding the right command method
+            var commands = this._commandClasses.SelectMany(x => x.GetType().GetMethods())
+                .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute)));
+
+            // shitty complex linq statement that basically gets our command. maybe could use optimization. idk.
+            var method = commands.First(x => (string)x.CustomAttributes.First(y => y.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value == args[0]);
+
+            // TODO parse args. commands have no args rn.
+
+            // use this methodinfo to run?
+            method.Invoke(_commandClasses.First(x => x.GetType() == method.DeclaringType), null);
 
             await Task.Yield();
         }
