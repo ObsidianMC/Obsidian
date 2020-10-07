@@ -89,30 +89,32 @@ namespace Obsidian.CommandFramework
                 }
                 else
                 {
-                    if(msg[i] == '"' && !escape)
-                    {
-                        // exit quotes
-                        quote = false;
-                        continue;
-                    }
-                    else if(msg[i] == '\\')
-                    {
-                        // escape next quote
-                        escape = true;
-                        continue;
-                    }
-
                     if(escape) // handle special chars like \n, \r, etc..
                     {
                         // TODO: add more cases
                         if(msg[i] == 'n')
                         {
                             buffer.Append('\n');
-                            continue;
                         }
                         else if(msg[i] == 'r')
                         {
                             buffer.Append('\r');
+                        }
+                        escape = false;
+                        continue;
+                    }
+                    else
+                    {
+                        if (msg[i] == '"')
+                        {
+                            // exit quotes
+                            quote = false;
+                            continue;
+                        }
+                        else if (msg[i] == '\\')
+                        {
+                            // escape next quote
+                            escape = true;
                             continue;
                         }
                     }
