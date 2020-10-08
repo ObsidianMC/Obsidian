@@ -10,15 +10,15 @@ namespace Obsidian.Tests
         [Fact]
         public void Parsing()
         {
-            TryParse(@"/command arg1  ""arg2 with \"" character"" arg3 ",
-                "/command", "arg1", @"arg2 with "" character", "arg3");
+            TryParse(text: @"/command arg1  ""arg2 with \"" character"" arg3 ",
+                     expected: new[] { "/command", "arg1", @"arg2 with "" character", "arg3" });
         }
 
-        private void TryParse(string text, params string[] expected)
+        private void TryParse(string text, string[] expected)
         {
             string[] result = commandHandler.ParseCommand(text).ToArray();
 
-            Assert.Equal(result, expected);
+            Assert.Equal(expected, result);
         }
     }
 }
