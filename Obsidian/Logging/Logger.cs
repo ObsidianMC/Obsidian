@@ -7,14 +7,14 @@ namespace Obsidian.Logging
     {
         private static readonly object _lock = new object();
 
-        private LogLevel minimumLevel { get; }
+        private LogLevel MinimumLevel { get; }
 
-        private string prefix { get; }
+        private string Prefix { get; }
 
         internal Logger(string prefix, LogLevel minLevel = LogLevel.Debug)
         {
-            this.minimumLevel = minLevel;
-            this.prefix = prefix;
+            this.MinimumLevel = minLevel;
+            this.Prefix = prefix;
         }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
@@ -38,7 +38,7 @@ namespace Obsidian.Logging
                     _ => ConsoleColor.Gray,
                 };
 
-                Console.Write($"" + logLevel switch
+                Console.Write(logLevel switch
                 {
                     LogLevel.Trace => "[Trace] ",
                     LogLevel.Debug => "[Debug] ",
@@ -51,20 +51,20 @@ namespace Obsidian.Logging
                 });
                 Console.ResetColor();
 
-                //This is here because of weird formatting 
-                if (this.prefix.Split("/").Length > 0)
+                // This is here because of weird formatting 
+                if (this.Prefix.Split("/").Length > 0)
                 {
                     if(logLevel == LogLevel.Debug || logLevel == LogLevel.Error)
-                        Console.Write($"{""}[{prefix}] ");
+                        Console.Write($"{""}[{Prefix}] ");
                     else
-                        Console.Write($"{"",1}[{prefix}] ");
+                        Console.Write($"{"",1}[{Prefix}] ");
                 }
                 else
                 {
-                    if (prefix.Length >= 12)
-                        Console.Write($"{"", 1}[{prefix}] ");
+                    if (Prefix.Length >= 12)
+                        Console.Write($"{"", 1}[{Prefix}] ");
                     else
-                        Console.Write($"[{prefix}] ");
+                        Console.Write($"[{Prefix}] ");
                 }
 
                 var message = formatter(state, exception);
@@ -75,7 +75,7 @@ namespace Obsidian.Logging
             }
         }
 
-        public bool IsEnabled(LogLevel logLevel) => logLevel >= this.minimumLevel;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= this.MinimumLevel;
 
         public IDisposable BeginScope<TState>(TState state) => throw new NotImplementedException();
     }
