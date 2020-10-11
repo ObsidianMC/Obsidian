@@ -6,12 +6,15 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
+using Obsidian.Util;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
@@ -20,54 +23,53 @@ namespace Obsidian.WorldData
     {
         public Level Data { get; internal set; }
 
-        public List<Player> Players { get; private set; } = new List<Player>();
+        public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new ConcurrentDictionary<Guid, Player>();
 
         public WorldGenerator Generator { get; internal set; }
 
         public Server Server { get; }
 
-        // This one later comes back in the regions,
-        // but might be easier for internal management purposes
-        public ConcurrentHashSet<Entity> Entities { get; private set; } = new ConcurrentHashSet<Entity>();
+        public ConcurrentDictionary<long, Region> Regions { get; private set; } = new ConcurrentDictionary<long, Region>();
 
-        internal string Folder { get; }
+        internal string Name { get; }
         internal bool Loaded { get; set; }
 
-        public ConcurrentHashSet<Chunk> LoadedChunks { get; private set; } = new ConcurrentHashSet<Chunk>();
-
-        public World(string folder, Server server)
+        internal World(string name, Server server)
         {
             this.Data = new Level
             {
                 Time = 1200,
-                Gametype = (int)Gamemode.Survival,
+                GameType = (int)Gamemode.Survival,
                 GeneratorName = WorldType.Default.ToString()
             };
 
-            this.Folder = folder;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
+
+            this.Init();
         }
+
+        public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
 
         public async Task UpdateChunksForClientAsync(Client c)
         {
             int dist = c.ClientSettings?.ViewDistance ?? 8;
 
-            int oldchunkx = this.TransformToChunk(c.Player.LastLocation?.X ?? 0);
-            int chunkx = this.TransformToChunk(c.Player.Location?.X ?? 0);
+            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
 
-            int oldchunkz = this.TransformToChunk(c.Player.LastLocation?.Z ?? 0);
-            int chunkz = this.TransformToChunk(c.Player.Location?.Z ?? 0);
+            (int newChunkX, int newChunkZ) = c.Player.Location.ToChunkCoord();
 
-            if (Math.Abs(chunkz - oldchunkz) > dist || Math.Abs(chunkx - oldchunkx) > dist)
+
+            if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist)
             {
                 // This is a teleport!!!1 Send full new chunk data.
-                await this.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+                await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
                 return;
             }
 
-            if (chunkx > oldchunkx)
+            if (newChunkX > oldChunkX)
             {
-                for (int i = (chunkz - dist); i < (chunkz + dist); i++)
+                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
                 {
                     // TODO: implement
                     //                    await c.UnloadChunkAsync((chunkx - dist), i);
@@ -76,9 +78,9 @@ namespace Obsidian.WorldData
                 }
             }
 
-            if (chunkx < oldchunkx)
+            if (newChunkX < oldChunkZ)
             {
-                for (int i = (chunkz - dist); i < (chunkz + dist); i++)
+                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
                 {
                     // TODO: implement
                     //await c.UnloadChunkAsync((chunkx + dist), i);
@@ -87,9 +89,9 @@ namespace Obsidian.WorldData
                 }
             }
 
-            if (chunkz > oldchunkz)
+            if (newChunkZ > oldChunkZ)
             {
-                for (int i = (chunkx - dist); i < (chunkx + dist); i++)
+                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
                 {
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz - dist));
@@ -98,9 +100,9 @@ namespace Obsidian.WorldData
                 }
             }
 
-            if (chunkz < oldchunkz)
+            if (newChunkZ < oldChunkZ)
             {
-                for (int i = (chunkx - dist); i < (chunkx + dist); i++)
+                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
                 {
                     // TODO: implement
                     //await c.UnloadChunkAsync(i, (chunkz + dist));
@@ -133,39 +135,98 @@ namespace Obsidian.WorldData
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
-        public async Task DestroyEntityAsync(Entity entity)
+        public async Task<bool> DestroyEntityAsync(Entity entity)
         {
             var destroyed = new DestroyEntities { Count = 1 };
             destroyed.AddEntity(entity);
 
             await this.Server.BroadcastPacketAsync(destroyed);
 
-            this.Entities.TryRemove(entity);
+            var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
+
+            var region = this.GetRegion(chunkX, chunkZ);
+
+            if (region is null)
+                throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
+
+            return region.Entities.TryRemove(entity.EntityId, out _);
+        }
+
+        public Region GetRegion(int chunkX, int chunkZ)
+        {
+            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+
+            return this.Regions.SingleOrDefault(x => x.Key == value).Value;
+        }
+
+        public Region GetRegion(Position location)
+        {
+            var (chunkX, chunkZ) = location.ToChunkCoord();
+
+            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+
+            return this.Regions.SingleOrDefault(x => x.Key == value).Value;
+        }
+
+        public Chunk GetChunk(int x, int z)
+        {
+            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+
+            var region = this.GetRegion(chunkX, chunkZ);
+
+            if (region == null)
+                return null;
+
+            return region.LoadedChunks.SingleOrDefault(c => c.X == chunkX && c.Z == chunkZ);
+        }
+
+        public Chunk GetChunk(Position location)
+        {
+            var (chunkX, chunkZ) = location.ToChunkCoord();
+
+            var region = this.GetRegion(chunkX, chunkZ);
+
+            if (region == null)
+                return null;
+
+            return region.LoadedChunks.SingleOrDefault(c => c.X == chunkX && c.Z == chunkZ);
         }
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x >> 4, z >> 4);
+            var chunk = this.GetChunk(x, z);
 
             return chunk.GetBlock(x, y, z);
         }
 
         public Block GetBlock(Position location)
         {
-            var chunk = this.GetChunk((int)location.X >> 4, (int)location.Z >> 4);
+            (int x, int z) = location.ToChunkCoord();
+            var chunk = this.GetChunk(x, z);
 
             return chunk.GetBlock(location);
         }
 
-        private Chunk GetChunk(int x, int z) => this.LoadedChunks.SingleOrDefault(c => c.X == x && c.Z == z);
+        public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10)
+        {
+            var (chunkX, chunkZ) = location.ToChunkCoord();
 
-        public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10) => this.Entities.Where(x => Position.DistanceTo(location, x.Location) <= distance);
+            var region = this.GetRegion(chunkX, chunkZ);
 
-        public int TransformToChunk(double input) => (int)Math.Floor(input / 16);
+            if (region is null)
+                throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
+            return region.Entities.Select(x => x.Value).Where(x => Position.DistanceTo(location, x.Location) <= distance);
+        }
+
+        public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
+
+        public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
+
+        //TODO
         public void Load()
         {
-            var DataPath = Path.Combine(Folder, "level.dat");
+            var DataPath = Path.Combine(Name, "level.dat");
 
             var DataFile = new NbtFile();
             DataFile.LoadFromFile(DataPath);
@@ -177,7 +238,7 @@ namespace Obsidian.WorldData
                 MapFeatures = levelcompound["MapFeatures"].ByteValue == 1,
                 Raining = levelcompound["raining"].ByteValue == 1,
                 Thundering = levelcompound["thundering"].ByteValue == 1,
-                Gametype = levelcompound["GameType"].IntValue,
+                GameType = (Gamemode)levelcompound["GameType"].IntValue,
                 GeneratorVersion = levelcompound["generatorVersion"].IntValue,
                 RainTime = levelcompound["rainTime"].IntValue,
                 SpawnX = levelcompound["SpawnX"].IntValue,
@@ -187,7 +248,6 @@ namespace Obsidian.WorldData
                 Version = levelcompound["version"].IntValue,
                 LastPlayed = levelcompound["LastPlayed"].LongValue,
                 RandomSeed = levelcompound["RandomSeed"].LongValue,
-                SizeOnDisk = levelcompound["SizeOnDisk"].LongValue,
                 Time = levelcompound["Time"].LongValue,
                 GeneratorName = levelcompound["generatorName"].StringValue,
                 LevelName = levelcompound["LevelName"].StringValue
@@ -196,21 +256,13 @@ namespace Obsidian.WorldData
             this.Loaded = true;
         }
 
-        public void SetTime(long newTime) => this.Data.Time = newTime;
-
-        public void AddPlayer(Player player) => this.Players.Add(player);
-
-        public void RemovePlayer(Player player) => this.Players.Remove(player);
-
-        //TODO
         public void Save()
         {
 
         }
-
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(Folder, "players", $"{uuid}.dat");
+            var playerfile = Path.Combine(Name, "players", $"{uuid}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
@@ -239,14 +291,40 @@ namespace Obsidian.WorldData
                 XpP = playercompound["XpP"].FloatValue
                 // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
             };
-            this.Players.Add(player);
+            this.Players.TryAdd(uuid, player);
         }
 
-        // This would also save the file back to the world folder.
         public void UnloadPlayer(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
-            this.Players.RemoveAll(x => x.Uuid == uuid);
+            this.Players.TryRemove(uuid, out Player player);
+        }
+
+        public Region GenerateRegion(Chunk chunk)
+        {
+            long value = Helpers.IntsToLong(chunk.X >> 5, chunk.Z >> 5);
+
+            int regionX = chunk.X >> 5, regionZ = chunk.Z >> 5;
+
+            this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
+
+            var region = new Region(regionX, regionZ);
+
+            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
+
+            if (this.Regions.ContainsKey(value))
+                return this.Regions[value];
+
+            region.LoadedChunks.Add(chunk);
+
+            this.Regions.TryAdd(value, region);
+
+            return region;
+        }
+
+        internal void Init()
+        {
+
         }
 
         internal void GenerateWorld()
@@ -276,7 +354,19 @@ namespace Obsidian.WorldData
             for (int i = 0; i < 1024; i++)
                 chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
 
-            this.LoadedChunks.Add(chunk);
+            this.GenerateRegion(chunk);
+        }
+
+        internal bool TryAddEntity(Entity entity)
+        {
+            var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
+
+            var region = this.GetRegion(chunkX, chunkZ);
+
+            if (region is null)
+                throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
+
+            return region.Entities.TryAdd(entity.EntityId, entity);
         }
     }
 

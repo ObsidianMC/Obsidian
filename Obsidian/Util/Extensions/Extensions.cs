@@ -2,6 +2,7 @@
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Plugins;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -19,6 +20,12 @@ namespace Obsidian.Util.Extensions
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
         public static bool NotAir(this BlockState state) => !(state is BlockAir);
         public static bool NotFluid(this BlockState state) => !(state is BlockFluid);
+
+        public static int ToChunkCoord(this double value) => (int)value >> 4;
+
+        public static int ToChunkCoord(this int value) => value >> 4;
+
+        public static (int x, int z) ToChunkCoord(this Position value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 

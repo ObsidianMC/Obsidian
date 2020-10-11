@@ -48,7 +48,7 @@ namespace Obsidian
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
 
-        private readonly CancellationTokenSource cts;
+        internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
         public IServiceProvider Services { get; private set; } = new ServiceCollection().BuildServiceProvider(true);
@@ -130,7 +130,7 @@ namespace Obsidian
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.World = new World("", this);
+            this.World = new World("world", this);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -240,7 +240,7 @@ namespace Obsidian
                     var tcp = await this.tcpListener.AcceptTcpClientAsync();
                     this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.Entities.Count), this);
+                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
                     this.clients.Add(clnt);
 
                     _ = Task.Run(clnt.StartConnectionAsync);
@@ -335,10 +335,11 @@ namespace Obsidian
             }
         }
 
-        private void AddEntity(Entity entity)
+        private bool TryAddEntity(Entity entity)
         {
-            this.World.Entities.Add(entity);
             this.Logger.LogDebug($"{entity.EntityId} new ID");
+
+            return this.World.TryAddEntity(entity);
         }
 
         internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store)
@@ -363,7 +364,7 @@ namespace Obsidian
 
                         var item = new ItemEntity
                         {
-                            EntityId = player + this.World.Entities.Count + 1,
+                            EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = droppedItem.Id,
                             EntityBitMask = EntityBitMask.Glowing,
@@ -371,7 +372,7 @@ namespace Obsidian
                             Location = loc
                         };
 
-                        this.AddEntity(item);
+                        this.TryAddEntity(item);
 
                         var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
                         var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
@@ -453,7 +454,7 @@ namespace Obsidian
 
                         var item = new ItemEntity
                         {
-                            EntityId = player + this.World.Entities.Count + 1,
+                            EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = Registry.GetItem(block.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
@@ -463,7 +464,7 @@ namespace Obsidian
                             (Program.Random.NextDouble() * 0.5F) + 0.25D)
                         };
 
-                        this.AddEntity(item);
+                        this.TryAddEntity(item);
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
                         {
@@ -600,8 +601,7 @@ namespace Obsidian
 
         private async Task Events_ServerTick()
         {
-            foreach (var ents in this.World.Entities)
-                await ents.TickAsync();
+           
         }
 
         #endregion events

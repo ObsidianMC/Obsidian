@@ -1,7 +1,7 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Extensions;
 using Qmmands;
 using System;
 using System.Collections.Generic;
@@ -81,14 +81,10 @@ namespace Obsidian.Commands
             var world = Context.Server.World;
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
+            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
+            (int chunkX, int chunkZ) = c.Player.Location.ToChunkCoord();
 
-            int oldchunkx = world.TransformToChunk(c.Player.LastLocation?.X ?? int.MaxValue);
-            int chunkx = world.TransformToChunk(c.Player.Location?.X ?? 0);
-
-            int oldchunkz = world.TransformToChunk(c.Player.LastLocation?.Z ?? int.MaxValue);
-            int chunkz = world.TransformToChunk(c.Player.Location?.Z ?? 0);
-
-            await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+            await world.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, chunkX, chunkZ, c);
         }
 
         [Command("echo")]
