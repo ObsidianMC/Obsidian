@@ -163,9 +163,7 @@ namespace Obsidian.WorldData
         {
             var (chunkX, chunkZ) = location.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
-
-            return this.Regions.SingleOrDefault(x => x.Key == value).Value;
+            return this.GetRegion(chunkX, chunkZ);
         }
 
         public Chunk GetChunk(int x, int z)
@@ -180,17 +178,7 @@ namespace Obsidian.WorldData
             return region.LoadedChunks.SingleOrDefault(c => c.X == chunkX && c.Z == chunkZ);
         }
 
-        public Chunk GetChunk(Position location)
-        {
-            var (chunkX, chunkZ) = location.ToChunkCoord();
-
-            var region = this.GetRegion(chunkX, chunkZ);
-
-            if (region == null)
-                return null;
-
-            return region.LoadedChunks.SingleOrDefault(c => c.X == chunkX && c.Z == chunkZ);
-        }
+        public Chunk GetChunk(Position location) => this.GetChunk((int)location.X, (int)location.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
@@ -199,13 +187,7 @@ namespace Obsidian.WorldData
             return chunk.GetBlock(x, y, z);
         }
 
-        public Block GetBlock(Position location)
-        {
-            (int x, int z) = location.ToChunkCoord();
-            var chunk = this.GetChunk(x, z);
-
-            return chunk.GetBlock(location);
-        }
+        public Block GetBlock(Position location) => this.GetBlock((int)location.X, (int)location.Y, (int)location.Z);
 
         public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10)
         {
