@@ -1,11 +1,9 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.Entities;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Obsidian.WorldData
 {
@@ -20,8 +18,6 @@ namespace Obsidian.WorldData
 
         public List<ChunkSection> Sections { get; private set; } = new List<ChunkSection>();
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
-
-        public List<Entity> Entities { get; private set; } = new List<Entity>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
@@ -42,7 +38,7 @@ namespace Obsidian.WorldData
             }
 
             this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
-           // this.Heightmaps.Add("WORLD_SURFACE", new Heightmap("WORLD_SURFACE", this));
+            // this.Heightmaps.Add("WORLD_SURFACE", new Heightmap("WORLD_SURFACE", this));
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
@@ -55,7 +51,7 @@ namespace Obsidian.WorldData
         {
             for (int y = 15; y >= 0; y--)
             {
-                var section = this.Sections.ElementAtOrDefault(y);
+                var section = this.Sections[y];
 
                 if (section == null)
                     continue;
@@ -77,6 +73,16 @@ namespace Obsidian.WorldData
         public void SetBlock(int x, int y, int z, Block block)
         {
             this.Blocks[x, y, z] = block;
+
+            foreach(var section in this.Sections)
+            {
+                var bl = section.GetBlock(x, y, z);
+                if(bl != null)
+                {
+                    section.SetBlock(x, y, z, block);
+                    break;
+                }
+            }
         }
 
         internal void AddSection(ChunkSection section) => this.Sections.Add(section);

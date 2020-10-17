@@ -7,6 +7,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Util;
+using Obsidian.Util.Collection;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
@@ -175,7 +176,7 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            return region.LoadedChunks.SingleOrDefault(c => c.X == chunkX && c.Z == chunkZ);
+            return region.LoadedChunks[chunkX, chunkZ];
         }
 
         public Chunk GetChunk(Position location) => this.GetChunk((int)location.X, (int)location.Z);
@@ -188,6 +189,17 @@ namespace Obsidian.WorldData
         }
 
         public Block GetBlock(Position location) => this.GetBlock((int)location.X, (int)location.Y, (int)location.Z);
+
+        public void SetBlock(int x, int y, int z, Block block)
+        {
+            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+
+            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+
+            this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
+        }
+
+        public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
 
         public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10)
         {
@@ -205,6 +217,7 @@ namespace Obsidian.WorldData
 
         public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
+        #region world loading/saving
         //TODO
         public void Load()
         {
@@ -242,6 +255,7 @@ namespace Obsidian.WorldData
         {
 
         }
+
         public void LoadPlayer(Guid uuid)
         {
             var playerfile = Path.Combine(Name, "players", $"{uuid}.dat");
@@ -281,6 +295,7 @@ namespace Obsidian.WorldData
             // TODO save changed data to file [uuid].dat
             this.Players.TryRemove(uuid, out Player player);
         }
+        #endregion
 
         public Region GenerateRegion(Chunk chunk)
         {
@@ -297,7 +312,7 @@ namespace Obsidian.WorldData
             if (this.Regions.ContainsKey(value))
                 return this.Regions[value];
 
-            region.LoadedChunks.Add(chunk);
+            region.LoadedChunks.Add(chunk.X, chunk.Z, chunk);
 
             this.Regions.TryAdd(value, region);
 
@@ -315,10 +330,7 @@ namespace Obsidian.WorldData
             var chunk = this.Generator.GenerateChunk(0, 0);
 
             for (int i = 0; i < 16; i++)
-                chunk.AddSection(new ChunkSection()
-                {
-                    YBase = i >> 4
-                }.FillWithLight());
+                chunk.AddSection(new ChunkSection().FillWithLight());
 
             for (int x = 0; x < 16; x++)
             {

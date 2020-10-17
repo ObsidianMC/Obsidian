@@ -262,7 +262,7 @@ namespace Obsidian
                 var location = pbp.Location;
                 var face = pbp.Face;
 
-                switch (face)
+                switch (face)//TODO fix this for logs
                 {
                     case BlockFace.Bottom:
                         location.Y -= 1;
@@ -292,7 +292,11 @@ namespace Obsidian
                         break;
                 }
 
-                await client.QueuePacketAsync(new BlockChange(location, Registry.GetBlock(player.GetHeldItem().Type).Id));
+                var block = Registry.GetBlock(player.GetHeldItem().Type);
+
+                this.World.SetBlock(location, block);
+
+                await client.QueuePacketAsync(new BlockChange(location, block.Id));
             }
         }
 
@@ -346,7 +350,6 @@ namespace Obsidian
         {
             var d = store.Packet;
 
-            var airBlock = Registry.GetBlock(Materials.Air).Id;
             var block = this.World.GetBlock(d.Location);
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
@@ -450,7 +453,9 @@ namespace Obsidian
                             DestroyStage = -1
                         });
 
-                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, airBlock));
+                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, 0));
+
+                        this.World.SetBlock(d.Location, Registry.GetBlock(Materials.Air));
 
                         var item = new ItemEntity
                         {
@@ -601,7 +606,7 @@ namespace Obsidian
 
         private async Task Events_ServerTick()
         {
-           
+
         }
 
         #endregion events

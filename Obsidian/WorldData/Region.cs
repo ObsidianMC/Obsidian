@@ -1,5 +1,6 @@
 ﻿using Obsidian.Concurrency;
 using Obsidian.Entities;
+using Obsidian.Util.Collection;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
 
-        public ConcurrentHashSet<Chunk> LoadedChunks { get; private set; } = new ConcurrentHashSet<Chunk>();
+        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(15, 15);
 
         internal Region(int x, int z)
         {
