@@ -1,7 +1,6 @@
 ﻿using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +15,7 @@ namespace Obsidian.CommandFramework
 
         public CommandHandler()
         {
-            
+
         }
 
         public void RegisterContextType<T>()
@@ -37,16 +36,16 @@ namespace Obsidian.CommandFramework
 
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
-            if(!this._contextType.IsAssignableFrom(ctx.GetType()))
+            if (!this._contextType.IsAssignableFrom(ctx.GetType()))
             {
                 throw new Exception("Your context does not match the registered context type.");
             }
 
             // split the command message into command and args.
-            var args = _parseCommand(ctx._message);
+            var args = ParseCommand(ctx._message);
 
             // finding the right command method
-            var commands = this._commandClasses.SelectMany(x => x.GetType().GetMethods())
+            var commands = _commandClasses.SelectMany(x => x.GetType().GetMethods())
                 .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute)));
 
             // shitty complex linq statement that basically gets our command. maybe could use optimization. idk.
@@ -60,11 +59,10 @@ namespace Obsidian.CommandFramework
             await Task.Yield();
         }
 
-        #region parsing text
-        private List<string> _parseCommand(string msg)
+        #region Parsing text
+        internal List<string> ParseCommand(string text)
         {
             var list = new List<string>();
-
             return list;
         }
         #endregion
