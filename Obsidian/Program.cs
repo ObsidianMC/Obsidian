@@ -26,7 +26,7 @@ namespace Obsidian
 
         internal static ILogger PacketLogger { get; set; }
 
-        private static DefaultContractResolver contractResolver = new DefaultContractResolver
+        internal static DefaultContractResolver contractResolver = new DefaultContractResolver
         {
             NamingStrategy = new SnakeCaseNamingStrategy()
         };
@@ -48,7 +48,7 @@ namespace Obsidian
                 new DefaultEnumConverter<CustomDirection>(),
                 new DefaultEnumConverter<MinecraftType>(),
                 new DefaultEnumConverter<Attachment>(),
-                new DefaultEnumConverter<ETextAction>(),
+                new DefaultEnumConverter<ETextAction>()
             }
         };
         private static async Task Main(string[] args)

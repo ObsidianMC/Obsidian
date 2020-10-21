@@ -73,16 +73,6 @@ namespace Obsidian.WorldData
         public void SetBlock(int x, int y, int z, Block block)
         {
             this.Blocks[x, y, z] = block;
-
-            foreach(var section in this.Sections)
-            {
-                var bl = section.GetBlock(x, y, z);
-                if(bl != null)
-                {
-                    section.SetBlock(x, y, z, block);
-                    break;
-                }
-            }
         }
 
         internal void AddSection(ChunkSection section) => this.Sections.Add(section);

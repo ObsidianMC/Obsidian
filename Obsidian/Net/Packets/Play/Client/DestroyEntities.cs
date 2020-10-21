@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, Type = DataType.Array)]
         public List<int> EntityIds { get; set; } = new List<int>();
 
-        public DestroyEntities() : base(0x38) { }
+        public DestroyEntities() : base(0x36) { }
 
         public void AddEntity(int entity) => this.EntityIds.Add(entity);
 

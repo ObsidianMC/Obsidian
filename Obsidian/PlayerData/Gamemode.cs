@@ -6,6 +6,6 @@
         Creative,
         Adventure,
         Spectator,
-        Hardcore = 0x8
+        Hardcore = 0x8,
     }
 }

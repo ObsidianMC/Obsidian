@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(2, Type = DataType.VarInt)]
         public int JumpBoost { get; set; }
 
-        public EntityAction() : base(0x1B) { }
+        public EntityAction() : base(0x1C) { }
     }
 
     public enum EAction

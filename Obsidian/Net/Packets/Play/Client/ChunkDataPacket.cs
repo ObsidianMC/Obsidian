@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public int changedSectionFilter = 65535;//0b1111111111111111;
 
-        public ChunkDataPacket(Chunk chunk) : base(0x22) => this.Chunk = chunk;
+        public ChunkDataPacket(Chunk chunk) : base(0x20) => this.Chunk = chunk;
 
         protected override async Task ComposeAsync(MinecraftStream stream)
         {
@@ -72,8 +72,8 @@ namespace Obsidian.Net.Packets.Play.Client
 
             await stream.WriteVarIntAsync(0);
 
-            foreach (var entity in blockEntities)
-                await stream.WriteNbtAsync(entity);
+            //foreach (var entity in blockEntities)
+             //   await stream.WriteNbtAsync(entity);
         }
     }
 }

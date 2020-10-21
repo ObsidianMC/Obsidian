@@ -1,5 +1,4 @@
 ﻿using Obsidian.Net;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -10,7 +9,8 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUuidAsync(this.Uuid);
+            await base.WriteAsync(stream);
+
             await stream.WriteVarIntAsync(this.Gamemode);
         }
     }

@@ -32,7 +32,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(7)]
         public Velocity Velocity { get; set; }
 
-        public SpawnLivingEntity() : base(0x03) { }
+        public SpawnLivingEntity() : base(0x02) { }
 
     }
 }

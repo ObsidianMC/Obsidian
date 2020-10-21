@@ -13,6 +13,6 @@ namespace Obsidian.Net.Packets.Play
         [Field(2)]
         public bool Accepted { get; set; }
 
-        public WindowConfirmation() : base(0x13) { }
+        public WindowConfirmation() : base(0x11) { }
     }
 }

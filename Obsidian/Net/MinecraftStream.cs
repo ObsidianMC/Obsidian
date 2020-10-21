@@ -13,6 +13,8 @@ using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
+using Obsidian.Util.Registry.Codecs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -200,174 +202,234 @@ namespace Obsidian.Net
             switch (type)
             {
                 case DataType.Auto:
-                {
-                    if (value is Player player)
                     {
-                        await this.WriteUnsignedByteAsync(0xff);
-                    }
-                    else
-                    {
-                        await this.WriteAutoAsync(value);
-                    }
-
-                    break;
-                }
-                case DataType.Angle:
-                {
-                    await this.WriteAngleAsync((Angle)value);
-                    break;
-                }
-                case DataType.Boolean:
-                {
-                    await this.WriteBooleanAsync((bool)value);
-                    break;
-                }
-                case DataType.Byte:
-                {
-                    await this.WriteByteAsync((sbyte)value);
-                    break;
-                }
-                case DataType.UnsignedByte:
-                {
-                    await this.WriteUnsignedByteAsync((byte)value);
-                    break;
-                }
-                case DataType.Short:
-                {
-                    await this.WriteShortAsync((short)value);
-                    break;
-                }
-                case DataType.UnsignedShort:
-                {
-                    await this.WriteUnsignedShortAsync((ushort)value);
-                    break;
-                }
-                case DataType.Int:
-                {
-                    await this.WriteIntAsync((int)value);
-                    break;
-                }
-                case DataType.Long:
-                {
-                    await this.WriteLongAsync((long)value);
-                    break;
-                }
-                case DataType.Float:
-                {
-                    await this.WriteFloatAsync((float)value);
-                    break;
-                }
-                case DataType.Double:
-                {
-                    await this.WriteDoubleAsync((double)value);
-                    break;
-                }
-
-                case DataType.String:
-                {
-                    // TODO: add casing options on Field attribute and support custom naming enums.
-                    var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
-                    await this.WriteStringAsync(val, length);
-                    break;
-                }
-                case DataType.Chat:
-                {
-                    await this.WriteChatAsync((ChatMessage)value);
-                    break;
-                }
-                case DataType.VarInt:
-                {
-                    await this.WriteVarIntAsync((int)value);
-                    break;
-                }
-                case DataType.VarLong:
-                {
-                    await this.WriteVarLongAsync((long)value);
-                    break;
-                }
-                case DataType.Position:
-                {
-                    if (value is Position position)
-                    {
-                        if (attribute.Absolute)
+                        if (value is Player player)
                         {
-                            await this.WriteDoubleAsync(position.X);
-                            await this.WriteDoubleAsync(position.Y);
-                            await this.WriteDoubleAsync(position.Z);
-                            break;
+                            await this.WriteUnsignedByteAsync(0xff);
+                        }
+                        else
+                        {
+                            await this.WriteAutoAsync(value);
                         }
 
-                        await this.WritePositionAsync(position);
+                        break;
                     }
-                    else if (value is SoundPosition soundPosition)
+                case DataType.Angle:
                     {
-                        await this.WriteIntAsync(soundPosition.X);
-                        await this.WriteIntAsync(soundPosition.Y);
-                        await this.WriteIntAsync(soundPosition.Z);
+                        await this.WriteAngleAsync((Angle)value);
+                        break;
+                    }
+                case DataType.Boolean:
+                    {
+                        await this.WriteBooleanAsync((bool)value);
+                        break;
+                    }
+                case DataType.Byte:
+                    {
+                        await this.WriteByteAsync((sbyte)value);
+                        break;
+                    }
+                case DataType.UnsignedByte:
+                    {
+                        await this.WriteUnsignedByteAsync((byte)value);
+                        break;
+                    }
+                case DataType.Short:
+                    {
+                        await this.WriteShortAsync((short)value);
+                        break;
+                    }
+                case DataType.UnsignedShort:
+                    {
+                        await this.WriteUnsignedShortAsync((ushort)value);
+                        break;
+                    }
+                case DataType.Int:
+                    {
+                        await this.WriteIntAsync((int)value);
+                        break;
+                    }
+                case DataType.Long:
+                    {
+                        await this.WriteLongAsync((long)value);
+                        break;
+                    }
+                case DataType.Float:
+                    {
+                        await this.WriteFloatAsync((float)value);
+                        break;
+                    }
+                case DataType.Double:
+                    {
+                        await this.WriteDoubleAsync((double)value);
+                        break;
                     }
 
-                    break;
-                }
+                case DataType.String:
+                    {
+                        // TODO: add casing options on Field attribute and support custom naming enums.
+                        var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
+                        await this.WriteStringAsync(val, length);
+                        break;
+                    }
+                case DataType.Chat:
+                    {
+                        await this.WriteChatAsync((ChatMessage)value);
+                        break;
+                    }
+                case DataType.VarInt:
+                    {
+                        await this.WriteVarIntAsync((int)value);
+                        break;
+                    }
+                case DataType.VarLong:
+                    {
+                        await this.WriteVarLongAsync((long)value);
+                        break;
+                    }
+                case DataType.Position:
+                    {
+                        if (value is Position position)
+                        {
+                            if (attribute.Absolute)
+                            {
+                                await this.WriteDoubleAsync(position.X);
+                                await this.WriteDoubleAsync(position.Y);
+                                await this.WriteDoubleAsync(position.Z);
+                                break;
+                            }
+
+                            await this.WritePositionAsync(position);
+                        }
+                        else if (value is SoundPosition soundPosition)
+                        {
+                            await this.WriteIntAsync(soundPosition.X);
+                            await this.WriteIntAsync(soundPosition.Y);
+                            await this.WriteIntAsync(soundPosition.Z);
+                        }
+
+                        break;
+                    }
                 case DataType.Velocity:
-                {
-                    var velocity = (Velocity)value;
+                    {
+                        var velocity = (Velocity)value;
 
-                    await this.WriteShortAsync(velocity.X);
-                    await this.WriteShortAsync(velocity.Y);
-                    await this.WriteShortAsync(velocity.Z);
-                    break;
-                }
+                        await this.WriteShortAsync(velocity.X);
+                        await this.WriteShortAsync(velocity.Y);
+                        await this.WriteShortAsync(velocity.Z);
+                        break;
+                    }
                 case DataType.UUID:
-                {
-                    await this.WriteUuidAsync((Guid)value);
-                    break;
-                }
+                    {
+                        await this.WriteUuidAsync((Guid)value);
+                        break;
+                    }
                 case DataType.Array:
-                {
-                    if (value is List<CommandNode> nodes)
                     {
-                        foreach (var node in nodes)
-                            await node.CopyToAsync(this);
-                    }
-                    else if (value is List<PlayerInfoAction> actions)
-                    {
-                        await this.WriteVarIntAsync(actions.Count);
+                        if (value is List<CommandNode> nodes)
+                        {
+                            foreach (var node in nodes)
+                                await node.CopyToAsync(this);
+                        }
+                        else if (value is List<PlayerInfoAction> actions)
+                        {
+                            await this.WriteVarIntAsync(actions.Count);
 
-                        foreach (var action in actions)
-                            await action.WriteAsync(this);
+                            foreach (var action in actions)
+                                await action.WriteAsync(this);
+                        }
+                        else if (value is List<int> ids)
+                        {
+                            foreach (var id in ids)
+                                await this.WriteVarIntAsync(id);
+                        }
+                        else if (value is List<string> values)
+                        {
+                            foreach (var vals in values)
+                                await this.WriteStringAsync(vals);
+                        }
+                        else if (value is List<long> vals)
+                        {
+                            foreach (var val in vals)
+                                await this.WriteLongAsync(val);
+                        }
+                        break;
                     }
-                    else if (value is List<int> ids)
-                    {
-                        foreach (var id in ids)
-                            await this.WriteVarIntAsync(id);
-                    }
-                    break;
-                }
                 case DataType.ByteArray:
-                {
-                    var array = (byte[])value;
-                    if (attribute.CountLength)
                     {
-                        await this.WriteVarIntAsync(array.Length);
-                        await this.WriteAsync(array);
+                        var array = (byte[])value;
+                        if (attribute.CountLength)
+                        {
+                            await this.WriteVarIntAsync(array.Length);
+                            await this.WriteAsync(array);
+                        }
+                        else
+                            await this.WriteAsync(array);
+                        break;
                     }
-                    else
-                        await this.WriteAsync(array);
-                    break;
-                }
                 case DataType.Slot:
-                {
-                    await this.WriteSlotAsync((ItemStack)value);
-                    break;
-                }
+                    {
+                        await this.WriteSlotAsync((ItemStack)value);
+                        break;
+                    }
                 case DataType.EntityMetadata:
-                {
-                    var ent = (Entity)value;
-                    await ent.WriteAsync(this);
+                    {
+                        var ent = (Entity)value;
+                        await ent.WriteAsync(this);
 
-                    await this.WriteUnsignedByteAsync(0xff);
-                    break;
-                }
+                        await this.WriteUnsignedByteAsync(0xff);
+                        break;
+                    }
+                case DataType.NbtTag:
+                    {
+                        if (value is MixedCodec codecs)
+                        {
+                            var dimensions = new NbtCompound(codecs.Dimensions.Name)
+                            {
+                                 new NbtString("type", codecs.Dimensions.Name)
+                            };
+
+                            var list = new NbtList("value", NbtTagType.Compound);
+
+                            foreach (var codec in codecs.Dimensions)
+                            {
+                                codec.Write(list);
+                            }
+
+                            dimensions.Add(list);
+
+                            #region biomes
+                            var biomeCompound = new NbtCompound(codecs.Biomes.Name)
+                            {
+                                new NbtString("type", codecs.Biomes.Name)
+                            };
+
+                            var biomes = new NbtList("value", NbtTagType.Compound);
+
+                            foreach (var biome in codecs.Biomes)
+                            {
+                                biome.Write(biomes);
+                            }
+
+                            biomeCompound.Add(biomes);
+                            #endregion
+                            var compound = new NbtCompound("")
+                            {
+                                dimensions,
+                                biomeCompound
+                            };
+                            var nbt = new NbtFile(compound);
+
+                            nbt.SaveToStream(this, NbtCompression.None);
+                        }
+                        else if (value is DimensionCodec codec)
+                        {
+                            var nbt = new NbtFile(codec.ToNbt());
+
+                            nbt.SaveToStream(this, NbtCompression.None);
+                        }
+                        break;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
@@ -455,56 +517,56 @@ namespace Obsidian.Net
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":
-                                {
-                                    var enchantments = (NbtList)tag;
-
-                                    foreach (var enchant in enchantments)
                                     {
-                                        if (enchant is NbtCompound compound)
-                                        {
-                                            slot.Nbt.Enchantments.Add(new Enchantment
-                                            {
-                                                Id = compound.Get<NbtString>("id").Value,
-                                                Level = compound.Get<NbtShort>("lvl").Value
-                                            });
-                                        }
-                                    }
+                                        var enchantments = (NbtList)tag;
 
-                                    break;
-                                }
+                                        foreach (var enchant in enchantments)
+                                        {
+                                            if (enchant is NbtCompound compound)
+                                            {
+                                                slot.Nbt.Enchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+
+                                        break;
+                                    }
                                 case "storedenchantments":
-                                {
-                                    var enchantments = (NbtList)tag;
-
-                                    Program.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
-
-                                    foreach (var enchantment in enchantments)
                                     {
-                                        if (enchantment is NbtCompound compound)
+                                        var enchantments = (NbtList)tag;
+
+                                        Program.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+
+                                        foreach (var enchantment in enchantments)
                                         {
-
-                                            slot.Nbt.StoredEnchantments.Add(new Enchantment
+                                            if (enchantment is NbtCompound compound)
                                             {
-                                                Id = compound.Get<NbtString>("id").Value,
-                                                Level = compound.Get<NbtShort>("lvl").Value
-                                            });
-                                        }
-                                    }
-                                    break;
-                                }
-                                case "slot":
-                                {
-                                    slot.Nbt.Slot = tag.ByteValue;
-                                    Console.WriteLine($"Setting slot: {slot.Nbt.Slot}");
-                                    break;
-                                }
-                                case "damage":
-                                {
 
-                                    slot.Nbt.Damage = tag.IntValue;
-                                    Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
-                                    break;
-                                }
+                                                slot.Nbt.StoredEnchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+                                        break;
+                                    }
+                                case "slot":
+                                    {
+                                        slot.Nbt.Slot = tag.ByteValue;
+                                        Console.WriteLine($"Setting slot: {slot.Nbt.Slot}");
+                                        break;
+                                    }
+                                case "damage":
+                                    {
+
+                                        slot.Nbt.Damage = tag.IntValue;
+                                        Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        break;
+                                    }
                                 default:
                                     break;
                             }
@@ -561,53 +623,53 @@ namespace Obsidian.Net
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":
-                                {
-                                    var enchantments = (NbtList)tag;
-
-                                    foreach (var enchant in enchantments)
                                     {
-                                        if (enchant is NbtCompound compound)
-                                        {
-                                            slot.Nbt.Enchantments.Add(new Enchantment
-                                            {
-                                                Id = compound.Get<NbtString>("id").Value,
-                                                Level = compound.Get<NbtShort>("lvl").Value
-                                            });
-                                        }
-                                    }
+                                        var enchantments = (NbtList)tag;
 
-                                    break;
-                                }
+                                        foreach (var enchant in enchantments)
+                                        {
+                                            if (enchant is NbtCompound compound)
+                                            {
+                                                slot.Nbt.Enchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+
+                                        break;
+                                    }
                                 case "storedenchantments":
-                                {
-                                    var enchantments = (NbtList)tag;
-
-                                    Console.WriteLine($"List Type: {enchantments.ListType}");
-
-                                    foreach (var enchantment in enchantments)
                                     {
-                                        if (enchantment is NbtCompound compound)
-                                        {
-                                            slot.Nbt.StoredEnchantments.Add(new Enchantment
-                                            {
-                                                Id = compound.Get<NbtString>("id").Value,
-                                                Level = compound.Get<NbtShort>("lvl").Value
-                                            });
-                                        }
-                                    }
-                                    break;
-                                }
-                                case "slot":
-                                {
-                                    slot.Nbt.Slot = tag.ByteValue;
-                                    break;
-                                }
-                                case "damage":
-                                {
+                                        var enchantments = (NbtList)tag;
 
-                                    slot.Nbt.Damage = tag.IntValue;
-                                    break;
-                                }
+                                        Console.WriteLine($"List Type: {enchantments.ListType}");
+
+                                        foreach (var enchantment in enchantments)
+                                        {
+                                            if (enchantment is NbtCompound compound)
+                                            {
+                                                slot.Nbt.StoredEnchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+                                        break;
+                                    }
+                                case "slot":
+                                    {
+                                        slot.Nbt.Slot = tag.ByteValue;
+                                        break;
+                                    }
+                                case "damage":
+                                    {
+
+                                        slot.Nbt.Damage = tag.IntValue;
+                                        break;
+                                    }
                                 default:
                                     break;
                             }
@@ -667,19 +729,19 @@ namespace Obsidian.Net
                 case DataType.VarLong:
                     return await this.ReadVarLongAsync();
                 case DataType.Position:
-                {
-                    if (type == typeof(Position))
                     {
-                        if (attr.Absolute)
-                            return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
+                        if (type == typeof(Position))
+                        {
+                            if (attr.Absolute)
+                                return new Position(await this.ReadDoubleAsync(), await this.ReadDoubleAsync(), await this.ReadDoubleAsync());
 
-                        return await this.ReadPositionAsync();
+                            return await this.ReadPositionAsync();
+                        }
+                        else if (type == typeof(SoundPosition))
+                            return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
+
+                        return null;
                     }
-                    else if (type == typeof(SoundPosition))
-                        return new SoundPosition(await this.ReadIntAsync(), await this.ReadIntAsync(), await this.ReadIntAsync());
-
-                    return null;
-                }
                 case DataType.Angle:
                     return this.ReadFloatAsync();
                 case DataType.UUID:
@@ -688,15 +750,15 @@ namespace Obsidian.Net
                     return new Velocity(await this.ReadShortAsync(), await this.ReadShortAsync(), await this.ReadShortAsync());
                 case DataType.EntityMetadata:
                 case DataType.Slot:
-                {
-                    return await this.ReadSlotAsync();
-                }
+                    {
+                        return await this.ReadSlotAsync();
+                    }
                 case DataType.ByteArray:
-                {
-                    int len = readLen.Value;
-                    var arr = await this.ReadUInt8ArrayAsync(len);
-                    return arr;
-                }
+                    {
+                        int len = readLen.Value;
+                        var arr = await this.ReadUInt8ArrayAsync(len);
+                        return arr;
+                    }
                 case DataType.NbtTag:
                 case DataType.Array:
                 default:

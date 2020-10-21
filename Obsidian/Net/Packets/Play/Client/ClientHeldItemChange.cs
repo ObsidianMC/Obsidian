@@ -7,11 +7,11 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(0)]
         public byte Slot { get; }
 
-        public ClientHeldItemChange(byte slot) : base(0x40)
+        public ClientHeldItemChange(byte slot) : base(0x3F)
         {
             this.Slot = slot;
         }
 
-        public ClientHeldItemChange(byte[] data) : base(0x40, data) { }
+        public ClientHeldItemChange(byte[] data) : base(0x3F, data) { }
     }
 }

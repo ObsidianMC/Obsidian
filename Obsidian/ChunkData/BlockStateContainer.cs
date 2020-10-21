@@ -17,11 +17,11 @@ namespace Obsidian.ChunkData
 
         public IBlockStatePalette Palette { get; }
 
-        public BlockStateContainer(byte bitsPerBlock = 4)
+        public BlockStateContainer(byte bitsPerBlock = 14)
         {
             this.BitsPerBlock = bitsPerBlock;
 
-            this.BlockStorage = new DataArray(bitsPerBlock);
+            this.BlockStorage = new DataArray(bitsPerBlock, 4096);
 
             this.Palette = bitsPerBlock.DeterminePalette();
         }

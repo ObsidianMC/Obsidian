@@ -18,6 +18,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public sbyte DestroyStage { get; set; }
 
-        public BlockBreakAnimation() : base(0x09) { }
+        public BlockBreakAnimation() : base(0x08) { }
     }
 }

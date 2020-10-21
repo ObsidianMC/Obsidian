@@ -21,6 +21,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public ItemStack SlotData { get; set; }
 
-        public SetSlot() : base(0x17) { }
+        public SetSlot() : base(0x15) { }
     }
 }

@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public ChatMessage Title { get; set; }
 
-        public OpenWindow() : base(0x2F) { }
+        public OpenWindow() : base(0x2D) { }
     }
 
     //Do not mess up the order this is how its supposed to be ordered

@@ -324,6 +324,10 @@ namespace Obsidian.Nbt.Tags
                         newTag = new NbtIntArray();
                         break;
 
+                    case NbtTagType.LongArray:
+                        newTag = new NbtLongArray();
+                        break;
+
                     default:
                         throw new NbtFormatException("Unsupported tag type found in NBT_Compound: " + nextTag);
                 }
@@ -333,6 +337,7 @@ namespace Obsidian.Nbt.Tags
                 {
                     // ReSharper disable AssignNullToNotNullAttribute
                     // newTag.Name is never null
+                    Console.WriteLine(newTag.Name);
                     this.tags.Add(newTag.Name, newTag);
                     // ReSharper restore AssignNullToNotNullAttribute
                 }
@@ -393,6 +398,10 @@ namespace Obsidian.Nbt.Tags
 
                     case NbtTagType.IntArray:
                         newTag = new NbtIntArray();
+                        break;
+
+                    case NbtTagType.LongArray:
+                        newTag = new NbtLongArray();
                         break;
 
                     default:

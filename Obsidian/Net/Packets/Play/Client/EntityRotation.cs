@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(3)]
         public bool OnGround { get; set; }
 
-        public EntityRotation() : base(0x2B) { }
+        public EntityRotation() : base(0x29) { }
     }
 }

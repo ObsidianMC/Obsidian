@@ -10,9 +10,9 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, true)]
         public int Z { get; private set; }
 
-        public UnloadChunk(byte[] data) : base(0x1E, data) { }
+        public UnloadChunk(byte[] data) : base(0x1C, data) { }
 
-        public UnloadChunk(int x, int z) : base(0x1E)
+        public UnloadChunk(int x, int z) : base(0x1C)
         {
             this.X = x;
             this.Z = z;

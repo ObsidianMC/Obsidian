@@ -22,7 +22,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public float Pitch { get; set; }
 
-        public SoundEffect(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x52)
+        public SoundEffect(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f) : base(0x51)
         {
             this.SoundId = soundId;
             this.Position = position;

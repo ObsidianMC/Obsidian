@@ -4,6 +4,11 @@ using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Items;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.Converters;
+using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry.Codecs;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +18,21 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
+
+    public class BaseCodec
+    {
+        public string Name { get; set; }
+
+        public int Id { get; set; }
+
+
+    }
+
+    public class ElementCodec
+    {
+        public string PiglinSafe { get; set; }
+    }
+
     public class Registry
     {
         internal static ILogger Logger { get; set; }
@@ -20,6 +40,10 @@ namespace Obsidian.Util.Registry
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
         public static Dictionary<Materials, Block> Blocks = new Dictionary<Materials, Block>();
         public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
+        public static CodecCollection<BiomeCodec> BiomeCodecs = new CodecCollection<BiomeCodec>
+        {
+            Name = "minecraft:worldgen/biome"
+        };
 
         public static async Task RegisterBlocksAsync()
         {
@@ -686,38 +710,69 @@ namespace Obsidian.Util.Registry
         {
             var file = new FileInfo("Assets/biomes.json");
 
-            if (file.Exists)
+            if (!file.Exists)
+                return;
+
+            using var fs = file.OpenRead();
+            using var read = new StreamReader(fs, new UTF8Encoding(false));
+
+            var json = await read.ReadToEndAsync();
+
+            var type = JObject.Parse(json);
+
+            using var enumerator = type.GetEnumerator();
+            int registered = 0;
+
+            while (enumerator.MoveNext())
             {
-                using var fs = file.OpenRead();
-                using var read = new StreamReader(fs, new UTF8Encoding(false));
+                var (name, token) = enumerator.Current;
 
-                var json = await read.ReadToEndAsync();
+                var itemName = name.Split(":")[1];
 
-                var type = JObject.Parse(json);
+                var biomeDes = JsonConvert.DeserializeObject<BaseRegistryJson>(token.ToString());
 
-                using var enumerator = type.GetEnumerator();
-                int registered = 0;
+                if (!Enum.TryParse(itemName.Replace("_", ""), true, out Biomes biome))
+                    continue;
 
-                while (enumerator.MoveNext())
-                {
-                    var (name, token) = enumerator.Current;
+                Logger.LogDebug($"Registered biome: {biome} with id: {biomeDes.ProtocolId}");
 
-                    var itemName = name.Split(":")[1];
-
-                    var biomeDes = JsonConvert.DeserializeObject<BaseRegistryJson>(token.ToString());
-
-                    if (!Enum.TryParse(itemName.Replace("_", ""), true, out Biomes biome))
-                        continue;
-
-                    Logger.LogDebug($"Registered biome: {biome} with id: {biomeDes.ProtocolId}");
-
-                    Biomes.Add(biome, biomeDes.ProtocolId);
-                    registered++;
-                }
-
-                Logger.LogDebug($"Successfully registered {registered} biomes..");
+                Biomes.Add(biome, biomeDes.ProtocolId);
+                registered++;
             }
 
+            Logger.LogDebug($"Successfully registered {registered} biomes..");
+
+            var codecBiomes = new FileInfo("Assets/biome_dimension_codec.json");
+
+            if (!codecBiomes.Exists)
+                return;
+
+            using var cfs = codecBiomes.OpenRead();
+            using var cread = new StreamReader(cfs, new UTF8Encoding(false));
+
+            json = await cread.ReadToEndAsync();
+
+            type = JObject.Parse(json);
+
+            using var cenumerator = type.GetEnumerator();
+
+            registered = 0;
+            while (cenumerator.MoveNext())
+            {
+                var (name, token) = cenumerator.Current;
+
+                foreach(var obj in token)
+                {
+                    var val = obj.ToString();
+                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Program.JsonSettings);
+
+                    BiomeCodecs.Add(codec);
+
+                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+                    registered++;
+                }
+            }
+            Logger.LogDebug($"Successfully registered {registered} codec biomes");
         }
 
         public static Block GetBlock(Materials mat)
@@ -765,6 +820,4 @@ namespace Obsidian.Util.Registry
         }
 
     }
-
-
 }

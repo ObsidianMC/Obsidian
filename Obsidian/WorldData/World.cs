@@ -208,7 +208,7 @@ namespace Obsidian.WorldData
             var region = this.GetRegion(chunkX, chunkZ);
 
             if (region is null)
-                throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
+                return new List<Entity>();
 
             return region.Entities.Select(x => x.Value).Where(x => Position.DistanceTo(location, x.Location) <= distance);
         }
@@ -299,9 +299,9 @@ namespace Obsidian.WorldData
 
         public Region GenerateRegion(Chunk chunk)
         {
-            long value = Helpers.IntsToLong(chunk.X >> 5, chunk.Z >> 5);
-
             int regionX = chunk.X >> 5, regionZ = chunk.Z >> 5;
+
+            long value = Helpers.IntsToLong(regionX, regionZ);
 
             this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
 

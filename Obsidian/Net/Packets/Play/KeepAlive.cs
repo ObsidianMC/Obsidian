@@ -7,13 +7,13 @@ namespace Obsidian.Net.Packets.Play
         [Field(0)]
         public long KeepAliveId { get; set; }
 
-        public KeepAlive() : base(0x21) { }
+        public KeepAlive() : base(0x1F) { }
 
-        public KeepAlive(long id) : base(0x21)
+        public KeepAlive(long id) : base(0x1F)
         {
             this.KeepAliveId = id;
         }
 
-        public KeepAlive(byte[] data) : base(0x21, data) { }
+        public KeepAlive(byte[] data) : base(0x1F, data) { }
     }
 }

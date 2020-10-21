@@ -22,6 +22,7 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
+using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 
 using System;
@@ -283,7 +284,7 @@ namespace Obsidian
 
         private async Task ConnectAsync()
         {
-            await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
+            await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
@@ -294,18 +295,37 @@ namespace Obsidian
             await this.QueuePacketAsync(new JoinGame
             {
                 EntityId = this.id,
-                GameMode = Gamemode.Survival,
-                Dimension = Dimension.Overworld,
-                HashedSeed = 0,//New field
-                ReducedDebugInfo = false
+
+                Gamemode = Gamemode.Creative,
+
+                WorldCount = 1,
+                WorldNames = new List<string> { "minecraft:world" },
+
+                Codecs = new MixedCodec
+                {
+                    Dimensions = this.Server.DefaultDimensions,
+                    Biomes = Registry.BiomeCodecs
+                },
+
+                Dimension = this.Server.DefaultDimensions.SingleOrDefault(x => x.Name.EqualsIgnoreCase("minecraft:overworld")),
+
+                WorldName = "minecraft:world",
+
+                HashedSeed = 0,
+
+                ReducedDebugInfo = false,
+
+                EnableRespawnScreen = true,
+
+                Flat = true
             });
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 60, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            this.Player.Location = new Position(0, 6, 0);
+            this.Player.Location = new Position(0, 60, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -510,8 +530,13 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
-                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+            foreach (Chunk chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
+            {
+                if (chunk == null)
+                    continue;
+
+                await this.SendPacketAsync(new ChunkDataPacket(chunk));
+            }
         }
 
         internal Task SendChunkAsync(Chunk chunk) => this.QueuePacketAsync(new ChunkDataPacket(chunk));

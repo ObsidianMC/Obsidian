@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Login
         [Field(0)]
         private readonly ChatMessage Reason;
 
-        public Disconnect(ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x1B : 0x00)
+        public Disconnect(ChatMessage reason, ClientState state) : base(state == ClientState.Play ? 0x19 : 0x00)
         {
             this.Reason = reason;
         }

@@ -19,6 +19,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(3)]
         public bool Successful { get; set; }
 
-        public AcknowledgePlayerDigging() : base(0x08) { }
+        public AcknowledgePlayerDigging() : base(0x07) { }
     }
 }
