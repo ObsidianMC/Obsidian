@@ -9,7 +9,27 @@ namespace Obsidian.CommandFramework.Entities
     {
         public string CommandName;
         public string Description;
-        public bool HasSubcommands;
-        public bool RequiresOp;
+        public CommandParam[] Parameters;
+
+        public CommandInfo(string name, string desc, CommandParam[] parameters)
+        {
+            CommandName = name;
+            Description = desc;
+            Parameters = parameters;
+        }
+    }
+
+    public struct CommandParam
+    {
+        public string Name;
+        public Type Type;
+        public bool Remainder;
+
+        public CommandParam(string name, Type type)
+        {
+            this.Name = name; 
+            this.Type = type;
+            this.Remainder = false; // TODO support for remainders
+        }
     }
 }

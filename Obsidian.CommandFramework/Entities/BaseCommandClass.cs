@@ -6,5 +6,6 @@ namespace Obsidian.CommandFramework.Entities
 {
     public class BaseCommandClass
     {
+        CommandHandler Commands;
     }
 }

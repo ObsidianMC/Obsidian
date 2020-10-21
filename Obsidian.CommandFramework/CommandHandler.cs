@@ -54,14 +54,48 @@ namespace Obsidian.CommandFramework
             _commandClasses.Add(typeof(T));
         }
 
-        public CommandInfo[] GetCommandHelp(string[] input)
+        public CommandInfo[] GetAllCommands()
         {
-            // TODO implement returning command info
-            return null;
+            List<CommandInfo> infos = new List<CommandInfo>();
+
+            foreach(var c in _commandClasses)
+            {
+                infos.AddRange(GetSubCommands(c));
+            }
+
+            return infos.ToArray();
         }
+
+        private CommandInfo[] GetSubCommands(Type t, string parent = "")
+        {
+            List<CommandInfo> infos = new List<CommandInfo>();
+
+            var classes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
+            foreach(var c in classes)
+            {
+                infos.AddRange(GetSubCommands(c, string.Join(' ', parent, (string)c.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments.First().Value).Trim(' ')));
+            }
+
+            foreach(var m in t.GetMethods().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
+            {
+                string desc = "";
+                if(m.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
+                {
+                    desc = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments.First().Value;
+                }
+                infos.Add(new CommandInfo(string.Join(' ', parent, (string)m.CustomAttributes.First(y => y.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value).Trim(' '), desc, GetParams(m)));
+            }
+
+            return infos.ToArray();
+        }
+
+        private CommandParam[] GetParams(MethodInfo method)
+            => method.GetParameters().Skip(1).Select(x => new CommandParam(x.Name, x.ParameterType)).ToArray();
 
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
+            ctx.Commands = this;
+
             if (!this._contextType.IsAssignableFrom(ctx.GetType()))
             {
                 throw new Exception("Your context does not match the registered context type.");

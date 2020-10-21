@@ -370,49 +370,49 @@ namespace Obsidian
             };
 
             // TODO port to new framework
-            //foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
-            //{
-            //    var commandNode = new CommandNode()
-            //    {
-            //        Name = command.Name,
-            //        Type = CommandNodeType.Literal,
-            //        Index = ++index
-            //    };
+            foreach (Obsidian.CommandFramework.Entities.CommandInfo command in this.Server.Commands.GetAllCommands())
+            {
+                var commandNode = new CommandNode()
+                {
+                    Name = command.CommandName,
+                    Type = CommandNodeType.Literal,
+                    Index = ++index
+                };
 
-            //    foreach (Qmmands.Parameter parameter in command.Parameters)
-            //    {
-            //        var parameterNode = new CommandNode()
-            //        {
-            //            Name = parameter.Name,
-            //            Type = CommandNodeType.Argument,
-            //            Index = ++index
-            //        };
-            //        Type type = parameter.Type;
+                foreach (Obsidian.CommandFramework.Entities.CommandParam parameter in command.Parameters)
+                {
+                    var parameterNode = new CommandNode()
+                    {
+                        Name = parameter.Name,
+                        Type = CommandNodeType.Argument,
+                        Index = ++index
+                    };
+                    Type type = parameter.Type;
 
-            //        if (type == typeof(string))
-            //            parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.SingleWord);
-            //        else if (type == typeof(double))
-            //            parameterNode.Parser = new CommandParser("brigadier:double");
-            //        else if (type == typeof(float))
-            //            parameterNode.Parser = new CommandParser("brigadier:float");
-            //        else if (type == typeof(int))
-            //            parameterNode.Parser = new CommandParser("brigadier:integer");
-            //        else if (type == typeof(bool))
-            //            parameterNode.Parser = new CommandParser("brigadier:bool");
-            //        else if (type == typeof(Position))
-            //            parameterNode.Parser = new CommandParser("minecraft:vec3");
-            //        else if (type == typeof(Player))
-            //            parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-            //        else
-            //            continue;
+                    if (type == typeof(string))
+                        parameterNode.Parser = new StringCommandParser(parameter.Remainder ? StringType.GreedyPhrase : StringType.SingleWord);
+                    else if (type == typeof(double))
+                        parameterNode.Parser = new CommandParser("brigadier:double");
+                    else if (type == typeof(float))
+                        parameterNode.Parser = new CommandParser("brigadier:float");
+                    else if (type == typeof(int))
+                        parameterNode.Parser = new CommandParser("brigadier:integer");
+                    else if (type == typeof(bool))
+                        parameterNode.Parser = new CommandParser("brigadier:bool");
+                    else if (type == typeof(Position))
+                        parameterNode.Parser = new CommandParser("minecraft:vec3");
+                    else if (type == typeof(Player))
+                        parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
+                    else
+                        continue;
 
-            //        commandNode.AddChild(parameterNode);
-            //    }
+                    commandNode.AddChild(parameterNode);
+                }
 
-            //    commandNode.Type |= CommandNodeType.IsExecutabe;
+                commandNode.Type |= CommandNodeType.IsExecutabe;
 
-            //    node.AddChild(commandNode);
-            //}
+                node.AddChild(commandNode);
+            }
 
             packet.AddNode(node);
             await this.QueuePacketAsync(packet);
