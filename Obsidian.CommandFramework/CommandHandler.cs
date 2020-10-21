@@ -1,4 +1,5 @@
-﻿using Obsidian.CommandFramework.Attributes;
+﻿using Obsidian.CommandFramework.ArgumentParsers;
+using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,26 @@ namespace Obsidian.CommandFramework
         private Type _contextType;
         private List<Type> _commandClasses;
         private CommandParser _commandParser;
+        private List<BaseArgumentParser> _argumentParsers;
 
         public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
             this._commandClasses = new List<Type>();
+            this._argumentParsers = new List<BaseArgumentParser>();
+
+            var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
+            // use reflection to find all predefined argument parsers
+
+            foreach (var parser in parsers)
+            {
+                _argumentParsers.Add((BaseArgumentParser)Activator.CreateInstance(parser));
+            }
+        }
+
+        public void AddArgumentParser(BaseArgumentParser parser)
+        {
+            this._argumentParsers.Add(parser);
         }
 
         public void RegisterContextType<T>()
@@ -45,7 +61,7 @@ namespace Obsidian.CommandFramework
             }
 
             // split the command message into command and args.
-            if(_commandParser.IsCommandQualified(ctx._message, out string qualified))
+            if (_commandParser.IsCommandQualified(ctx._message, out string qualified))
             {
                 // if string is "command-qualified" we'll try to execute it.
                 var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
@@ -65,8 +81,40 @@ namespace Obsidian.CommandFramework
 
             var obj = Activator.CreateInstance(method.DeclaringType);
 
+            var methodparams = method.GetParameters();
+
+            var parsedargs = new object[methodparams.Length];
+
+            for (int i = 0; i < methodparams.Length; i++)
+            {
+                var paraminfo = methodparams[i];
+                var arg = qualified.args[i];
+
+                if (_argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
+                {
+                    var parsertype = _argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
+                    var parser = Activator.CreateInstance(parsertype);
+
+                    var parseargs = new object[2] { arg, null };
+
+                    // cast with reflection?
+                    if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))
+                    {
+                        parsedargs[i] = parseargs[1];
+                    }
+                    else
+                    {
+                        throw new Exception("Invalid arguments!");
+                    }
+                }
+                else
+                {
+                    throw new Exception("Invalid arguments!");
+                }
+            }
+
             // TODO parse args
-            var task = (Task)method.Invoke(obj, new object[0]);
+            var task = (Task)method.Invoke(obj, parsedargs);
 
             await task;
         }
@@ -76,24 +124,24 @@ namespace Obsidian.CommandFramework
             // get args
             string[] args = cmd.Skip(1).ToArray();
 
-            foreach(var cmdclass in types)
+            foreach (var cmdclass in types)
             {
                 // gets methods with command attribute
                 var qualifiedmethods = cmdclass.GetMethods()
                     .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute) && (string)y.ConstructorArguments.First().Value == cmd[0]))
                     .ToArray();
 
-                if(qualifiedmethods.Count() > 0)
+                if (qualifiedmethods.Count() > 0)
                 {
                     // return found methods
                     return (qualifiedmethods, args);
                 }
-                
+
                 var qualifiedclasses = cmdclass.GetNestedTypes()
                     .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute) && (string)y.ConstructorArguments.First().Value == cmd[0]))
                     .ToArray();
 
-                if(qualifiedclasses.Count() > 0)
+                if (qualifiedclasses.Count() > 0)
                 {
                     // repeat search on subclasses
                     return searchForQualifiedMethods(qualifiedclasses, args);

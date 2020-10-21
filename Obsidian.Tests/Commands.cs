@@ -29,25 +29,38 @@ namespace Obsidian.Tests
             cmd.RegisterCommandClass<Command>();
             cmd.RegisterContextType<BaseCommandContext>();
 
-            await cmd.ProcessCommand(new BaseCommandContext("/ping"));
-            await cmd.ProcessCommand(new BaseCommandContext("/pong ping"));
+            await cmd.ProcessCommand(new BaseCommandContext("/ping 69 hello"));
+            Assert.Equal(69, Command.arg1out);
+            Assert.Equal("hello", Command.arg2out);
+
+            await cmd.ProcessCommand(new BaseCommandContext("/pong ping 420 bye"));
+            Assert.Equal(420, Command.arg1out);
+            Assert.Equal("bye", Command.arg2out);
         }
 
         public class Command : BaseCommandClass
         {
-            [Command("ping")]
-            public async Task ping()
-            {
+            public static int arg1out = 0;
+            public static string arg2out = "";
 
+            [Command("ping")]
+            [CommandInfo(description: "ping")]
+            public async Task ping(int arg1, string arg2)
+            {
+                arg1out = arg1;
+                arg2out = arg2;
             }
 
             [CommandGroup("pong")]
+            [CommandInfo(description: "pong")]
             public class Pong
             {
                 [Command("ping")]
-                public async Task ping()
+                [CommandInfo(description: "ping")]
+                public async Task ping(int arg1, string arg2)
                 {
-
+                    arg1out = arg1;
+                    arg2out = arg2;
                 }
             }
         }
