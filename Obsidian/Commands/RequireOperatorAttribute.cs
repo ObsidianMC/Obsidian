@@ -1,28 +1,22 @@
-﻿using Qmmands;
-
+﻿using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Entities;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
 {
-    public class RequireOperatorAttribute : CheckAttribute
+    public class RequireOperatorAttribute : BaseExecutionCheckAttribute
     {
-
-        public override ValueTask<CheckResult> CheckAsync(CommandContext context)
+        public override async Task<bool> RunChecksAsync(BaseCommandContext ctx)
         {
-            if (context is ObsidianContext c)
+            if (ctx is ObsidianContext c)
             {
                 var player = c.Player;
 
-                if (c.Server.Operators.IsOperator(player))
-                {
-                    return new ValueTask<CheckResult>(CheckResult.Successful);
-                }
-
-                return new ValueTask<CheckResult>(CheckResult.Unsuccessful($"Player ({player.Username}) is not in operators list."));
+                return c.Server.Operators.IsOperator(player);
             }
 
-            throw new Exception($"This context ({context.ToString()}) is unsupported");
+            throw new Exception($"This context ({ctx.ToString()}) is unsupported");
         }
     }
 }

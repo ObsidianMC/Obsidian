@@ -53,6 +53,12 @@ namespace Obsidian.CommandFramework
             _commandClasses.Add(typeof(T));
         }
 
+        public CommandInfo[] GetCommandHelp(string[] input)
+        {
+            // TODO implement returning command info
+            return null;
+        }
+
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
             if (!this._contextType.IsAssignableFrom(ctx.GetType()))
@@ -77,13 +83,14 @@ namespace Obsidian.CommandFramework
             var qualified = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
             // now find the methodinfo with the right amount of args and execute that
 
-            var method = qualified.method.First(x => x.GetParameters().Count() == qualified.args.Count());
+            var method = qualified.method.First(x => x.GetParameters().Count() + 1 == qualified.args.Count());
 
             var obj = Activator.CreateInstance(method.DeclaringType);
 
             var methodparams = method.GetParameters();
 
-            var parsedargs = new object[methodparams.Length];
+            var parsedargs = new object[methodparams.Length + 1];
+            parsedargs[0] = (object)ctx;
 
             for (int i = 0; i < methodparams.Length; i++)
             {
@@ -100,7 +107,7 @@ namespace Obsidian.CommandFramework
                     // cast with reflection?
                     if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))
                     {
-                        parsedargs[i] = parseargs[1];
+                        parsedargs[i + 1] = parseargs[1];
                     }
                     else
                     {
