@@ -103,12 +103,12 @@ namespace Obsidian.CommandFramework
                     var parsertype = _argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
                     var parser = Activator.CreateInstance(parsertype);
 
-                    var parseargs = new object[2] { arg, null };
+                    var parseargs = new object[3] { (object)arg, (object)ctx, null };
 
                     // cast with reflection?
                     if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))
                     {
-                        parsedargs[i + 1] = parseargs[1];
+                        parsedargs[i + 1] = parseargs[2];
                     }
                     else
                     {
