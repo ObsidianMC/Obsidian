@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Obsidian.Tests
 {
-    public class CommandTokenizing
+    public class Commands
     {
         [Fact]
         public async Task TestTokenizing()

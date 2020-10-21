@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Obsidian.CommandFramework.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public class CommandAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class)]
+    public class CommandGroupAttribute : Attribute
     {
-        public CommandAttribute(string commandname)
+        public CommandGroupAttribute(string groupname)
         {
 
         }
