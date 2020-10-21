@@ -21,6 +21,7 @@ namespace Obsidian.Tests
             Assert.Equal(split, expected);
         }
 
+        // TODO overload support is not here yet, there has to be a loop through qualified commands in CommandHandler.cs:executeCommand
         [Fact]
         public async Task TestCommandExec()
         {
@@ -36,6 +37,14 @@ namespace Obsidian.Tests
             await cmd.ProcessCommand(new BaseCommandContext("/pong ping 420 bye"));
             Assert.Equal(420, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
+
+            await cmd.ProcessCommand(new BaseCommandContext("/ping 12 12"));
+            Assert.Equal(69, Command.arg1out);
+            Assert.Equal("bye", Command.arg2out);
+
+            await cmd.ProcessCommand(new BaseCommandContext("/ping 69 hey bye"));
+            Assert.Equal(69, Command.arg1out);
+            Assert.Equal("bye", Command.arg2out);
         }
 
         public class Command : BaseCommandClass
@@ -45,10 +54,22 @@ namespace Obsidian.Tests
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
-            public async Task ping(int arg1, string arg2)
+            public async Task ping(BaseCommandContext ctx, int arg1, int arg2)
+            {
+            }
+
+            [Command("ping")]
+            [CommandInfo(description: "ping")]
+            public async Task ping(BaseCommandContext ctx, int arg1, string arg2)
             {
                 arg1out = arg1;
                 arg2out = arg2;
+            }
+
+            [Command("ping")]
+            [CommandInfo(description: "ping")]
+            public async Task ping(BaseCommandContext ctx, int arg1, string arg2, string arg3)
+            {
             }
 
             [CommandGroup("pong")]
@@ -57,7 +78,7 @@ namespace Obsidian.Tests
             {
                 [Command("ping")]
                 [CommandInfo(description: "ping")]
-                public async Task ping(int arg1, string arg2)
+                public async Task ping(BaseCommandContext ctx, int arg1, string arg2)
                 {
                     arg1out = arg1;
                     arg2out = arg2;

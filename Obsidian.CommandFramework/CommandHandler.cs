@@ -129,6 +129,7 @@ namespace Obsidian.CommandFramework
             var parsedargs = new object[methodparams.Length + 1];
             parsedargs[0] = (object)ctx;
 
+            // TODO add overload support
             for (int i = 0; i < methodparams.Length; i++)
             {
                 var paraminfo = methodparams[i];
