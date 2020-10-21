@@ -114,10 +114,13 @@ namespace Obsidian
 
             this.chatmessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
+
+
             this.Commands = new CommandHandler("/");
             this.Commands.RegisterCommandClass<MainCommandModule>();
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
+            this.Commands.RegisterContextType<ObsidianContext>();
 
 
             this.Events = new MinecraftEventHandler();
@@ -301,7 +304,13 @@ namespace Obsidian
             //TODO command logging
             // TODO error handling for commands
             var context = new ObsidianContext(message, source, this);
-            await Commands.ProcessCommand(context);
+            try
+            {
+                await Commands.ProcessCommand(context);
+            }catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)

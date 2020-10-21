@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Entities;
 using Obsidian.Commands;
 using Obsidian.Events.EventArgs;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Obsidian;
-using Qmmands;
 using System.Threading.Tasks;
 
 namespace SamplePlugin
@@ -21,7 +22,7 @@ namespace SamplePlugin
                 .SetVersion("0.1")
                 .SetDescription("A sample plugin! <3");
 
-            this.Server.Commands.AddModule<SamplePluginCommands>();
+            this.Server.Commands.RegisterCommandClass<SamplePluginCommands>();
 
             this.Server.Events.PlayerJoin += OnPlayerJoin;
 
@@ -35,16 +36,14 @@ namespace SamplePlugin
         }
     }
 
-    public class SamplePluginCommands : ModuleBase<ObsidianContext>
+    public class SamplePluginCommands : BaseCommandClass
     {
-        public CommandService Service { get; set; }
-
         [Command("samplecommand")]
-        [Description("A sample command added by a sample plugin!")]
-        public async Task SampleCommandAsync()
+        [CommandInfo("A sample command added by a sample plugin!")]
+        public async Task SampleCommandAsync(ObsidianContext ctx)
         {
             
-            await this.Context.Server.BroadcastAsync($"Sample command executed by {Context.Player.Username} from within a sample plugin!!!");
+            await ctx.Server.BroadcastAsync($"Sample command executed by {ctx.Player.Username} from within a sample plugin!!!");
         }
     }
 }

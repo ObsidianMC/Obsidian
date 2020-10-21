@@ -182,6 +182,7 @@ namespace Obsidian.Commands
 #if DEBUG
 
         [Command("breakpoint")]
+        [RequireOperator]
         public async Task BreakpointAsync(ObsidianContext Context)
         {
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");

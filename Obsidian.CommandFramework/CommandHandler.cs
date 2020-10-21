@@ -3,6 +3,7 @@ using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -83,11 +84,11 @@ namespace Obsidian.CommandFramework
             var qualified = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
             // now find the methodinfo with the right amount of args and execute that
 
-            var method = qualified.method.First(x => x.GetParameters().Count() + 1 == qualified.args.Count());
+            var method = qualified.method.First(x => x.GetParameters().Count() - 1 == qualified.args.Count());
 
             var obj = Activator.CreateInstance(method.DeclaringType);
 
-            var methodparams = method.GetParameters();
+            var methodparams = method.GetParameters().Skip(1).ToArray();
 
             var parsedargs = new object[methodparams.Length + 1];
             parsedargs[0] = (object)ctx;
@@ -120,7 +121,18 @@ namespace Obsidian.CommandFramework
                 }
             }
 
-            // TODO parse args
+            // do execution checks
+            var checks = method.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType));
+
+            foreach(var c in checks)
+            {
+                var check = (BaseExecutionCheckAttribute)Activator.CreateInstance(c.AttributeType);
+                if(!await check.RunChecksAsync(ctx))
+                {
+                    throw new Exception("One or more execution checks failed!");
+                }
+            }
+
             var task = (Task)method.Invoke(obj, parsedargs);
 
             await task;
