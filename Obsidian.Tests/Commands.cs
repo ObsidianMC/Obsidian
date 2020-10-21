@@ -1,4 +1,6 @@
 ﻿using Obsidian.CommandFramework;
+using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Entities;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -19,5 +21,35 @@ namespace Obsidian.Tests
             Assert.Equal(split, expected);
         }
 
+        [Fact]
+        public async Task TestCommandExec()
+        {
+            var cmd = new CommandHandler("/");
+
+            cmd.RegisterCommandClass<Command>();
+            cmd.RegisterContextType<BaseCommandContext>();
+
+            await cmd.ProcessCommand(new BaseCommandContext("/ping"));
+            await cmd.ProcessCommand(new BaseCommandContext("/pong ping"));
+        }
+
+        public class Command : BaseCommandClass
+        {
+            [Command("ping")]
+            public async Task ping()
+            {
+
+            }
+
+            [CommandGroup("pong")]
+            public class Pong
+            {
+                [Command("ping")]
+                public async Task ping()
+                {
+
+                }
+            }
+        }
     }
 }

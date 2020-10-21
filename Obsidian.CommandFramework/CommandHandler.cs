@@ -18,6 +18,7 @@ namespace Obsidian.CommandFramework
         public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
+            this._commandClasses = new List<Type>();
         }
 
         public void RegisterContextType<T>()
@@ -50,14 +51,24 @@ namespace Obsidian.CommandFramework
                 var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
 
                 // [0] is the command name, all other values are arguments.
+                await executeCommand(command, ctx);
             }
             await Task.Yield();
         }
 
-        private void executeCommand(string[] command, BaseCommandContext ctx)
+        private async Task executeCommand(string[] command, BaseCommandContext ctx)
         {
-            var commandwithargs = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
+            var qualified = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
             // now find the methodinfo with the right amount of args and execute that
+
+            var method = qualified.method.First(x => x.GetParameters().Count() == qualified.args.Count());
+
+            var obj = Activator.CreateInstance(method.DeclaringType);
+
+            // TODO parse args
+            var task = (Task)method.Invoke(obj, new object[0]);
+
+            await task;
         }
 
         private (MethodInfo[] method, string[] args) searchForQualifiedMethods(Type[] types, string[] cmd)
