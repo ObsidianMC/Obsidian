@@ -65,6 +65,7 @@ namespace Obsidian.CommandFramework
                             buffer.Append('\b');
                             break;
                     }
+                    escape = false;
                 }
                 else if(input[i] == '\\')
                 {
