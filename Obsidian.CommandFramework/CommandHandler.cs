@@ -90,7 +90,8 @@ namespace Obsidian.CommandFramework
         }
 
         private CommandParam[] GetParams(MethodInfo method)
-            => method.GetParameters().Skip(1).Select(x => new CommandParam(x.Name, x.ParameterType)).ToArray();
+            => method.GetParameters().Skip(1).Select(x => new CommandParam(x.Name, x.ParameterType,
+                x.CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType)))).ToArray();
 
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
@@ -118,7 +119,8 @@ namespace Obsidian.CommandFramework
             var qualified = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
             // now find the methodinfo with the right amount of args and execute that
 
-            var method = qualified.method.First(x => x.GetParameters().Count() - 1 == qualified.args.Count());
+            var method = qualified.method.First(x => x.GetParameters().Count() - 1 == qualified.args.Count() 
+            || x.GetParameters().Last().CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType)));
 
             var obj = Activator.CreateInstance(method.DeclaringType);
 
@@ -131,6 +133,11 @@ namespace Obsidian.CommandFramework
             {
                 var paraminfo = methodparams[i];
                 var arg = qualified.args[i];
+
+                if(qualified.args.Length > methodparams.Length && i == methodparams.Length - 1)
+                {
+                    arg = string.Join(' ', qualified.args.Skip(i));
+                }
 
                 if (_argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
                 {
@@ -146,12 +153,12 @@ namespace Obsidian.CommandFramework
                     }
                     else
                     {
-                        throw new Exception("Invalid arguments!");
+                        throw new Exception($"Argument '{arg}' was not parseable to {paraminfo.ParameterType.Name}!");
                     }
                 }
                 else
                 {
-                    throw new Exception("Invalid arguments!");
+                    throw new Exception($"No valid argumentparser found for type {paraminfo.ParameterType.Name}!");
                 }
             }
 

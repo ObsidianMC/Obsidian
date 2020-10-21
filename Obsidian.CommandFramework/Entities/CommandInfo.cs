@@ -25,11 +25,11 @@ namespace Obsidian.CommandFramework.Entities
         public Type Type;
         public bool Remainder;
 
-        public CommandParam(string name, Type type)
+        public CommandParam(string name, Type type, bool remainder)
         {
             this.Name = name; 
             this.Type = type;
-            this.Remainder = false; // TODO support for remainders
+            this.Remainder = remainder;
         }
     }
 }

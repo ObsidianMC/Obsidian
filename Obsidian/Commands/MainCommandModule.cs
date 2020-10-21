@@ -18,11 +18,11 @@ namespace Obsidian.Commands
         [CommandInfo("Lists available commands.")]
         public async Task HelpAsync(ObsidianContext Context)
         {
+            await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
             foreach (var cmd in Context.Commands.GetAllCommands())
             {
                 await Context.Player.SendMessageAsync($"{ChatColor.DarkGreen}{cmd.CommandName}{ChatColor.Reset}: {cmd.Description}");
             }
-            await Context.Player.SendMessageAsync("TODO");
         }
 
         [Command("forceskins")]
