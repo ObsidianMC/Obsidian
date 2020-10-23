@@ -5,7 +5,7 @@ namespace Obsidian.Logging
 {
     public class Logger : ILogger<Server>
     {
-        private static readonly object _lock = new object();
+        protected static readonly object _lock = new object();
 
         private LogLevel MinimumLevel { get; }
 

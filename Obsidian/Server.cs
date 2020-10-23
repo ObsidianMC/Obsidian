@@ -57,6 +57,7 @@ namespace Obsidian
 
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
+        public PluginManager_ Plugins { get; }
 
         public OperatorList Operators { get; }
 
@@ -90,7 +91,7 @@ namespace Obsidian
         /// <summary>
         /// Creates a new Server instance.
         /// </summary>
-        /// <param name="version">Version the server is running.</param>
+        /// <param name="version">Version the server is running. <i>(independent of minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
         {
             this.Config = config;
@@ -124,13 +125,16 @@ namespace Obsidian
             this.Commands.AddTypeParser(new LocationTypeParser());
             this.Commands.AddTypeParser(new PlayerTypeParser());
 
-
             this.Events = new MinecraftEventHandler();
+
+            this.Plugins = new PluginManager_(Events, LoggerProvider.CreateLogger("PluginManager"));
+            this.Plugins.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.Plugins.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
             this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
-            this.World = new World("", this);
+            this.World = new World(string.Empty, this);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -201,6 +205,8 @@ namespace Obsidian
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
+
+            await Plugins.LoadPluginAsync("https://gist.github.com/Seb-stian/2b889768029baf1b2b1036eef9c9d93d"); // !!!
 
             this.Logger.LogInformation("Loading services..");
             //TODO services

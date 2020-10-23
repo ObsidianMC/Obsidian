@@ -123,7 +123,7 @@ namespace Obsidian
             {
                 server.StopServer();
             }
-
+            
             cts.Cancel();
         }
 

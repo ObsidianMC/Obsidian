@@ -1,7 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.Plugins;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using Obsidian.Plugins;
 
 namespace Obsidian.Util.Extensions
 {
@@ -22,11 +22,10 @@ namespace Obsidian.Util.Extensions
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
-        //this is for ints
+        // this is for ints
         public static int GetUnsignedRightShift(this int value, int s) => value >> s;
 
-        //this is for longs
-
+        // this is for longs
         public static long GetUnsignedRightShift(this long value, int s) => (long)((ulong)value >> s);
 
         public static string GetConfigPath(this Plugin plugin)
@@ -73,7 +72,6 @@ namespace Obsidian.Util.Extensions
         public static string ToSnakeCase(this string str) => string.Join("_", pattern.Matches(str)).ToLower();
         public static string ToCamelCase(this string str)
         {
-
             return new string(
               new CultureInfo("en-US", false)
                 .TextInfo
@@ -96,7 +94,7 @@ namespace Obsidian.Util.Extensions
             return amount;
         }
 
-        //https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
+        // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
         public static string MinecraftShaDigest(this byte[] data)
         {
             var hash = new SHA1Managed().ComputeHash(data);

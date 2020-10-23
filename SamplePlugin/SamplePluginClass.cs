@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Commands;
 using Obsidian.Events.EventArgs;
-using Obsidian.Plugins;
-using Obsidian.Plugins.Obsidian;
+using Obsidian.API;
+using Obsidian.API.Obsidian;
 using Qmmands;
 using System.Threading.Tasks;
 

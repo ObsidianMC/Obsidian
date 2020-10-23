@@ -29,6 +29,7 @@
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
     <PackageReference Include="DaanV2.UUID.Net" Version="1.0.4" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.8" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
@@ -50,6 +51,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
+    <ProjectReference Include="..\Obsidian.Plugins.API\Obsidian.API.csproj" />
   </ItemGroup>
 
 </Project>
