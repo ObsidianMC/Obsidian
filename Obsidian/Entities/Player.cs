@@ -43,7 +43,7 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; set; } = 36;
 
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
@@ -51,6 +51,8 @@ namespace Obsidian.Entities
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
+
+        public double HeadY { get; private set; }
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
@@ -86,10 +88,15 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, position, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            this.HeadY = position.Y + 1.62;
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
             {
                 if (entity is ItemEntity item)
                 {
+                    if (!item.CanPickup)
+                        continue;
+
                     await server.BroadcastPacketWithoutQueueAsync(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
@@ -97,23 +104,61 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var its = new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt,
-                        Type = Registry.GetItem(item.Id).Type
-                    };
-                    var slot = this.Inventory.AddItem(its);
+                        Nbt = item.Nbt
+                    });
 
-                    await server.BroadcastPacketAsync(new SetSlot
+                    await this.client.SendPacketAsync(new SetSlot
                     {
                         Slot = (short)slot,
 
                         WindowId = 0,
 
-                        SlotData = its
+                        SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = item.RemoveAsync();
+
+                    await item.RemoveAsync();
+                }
+            }
+        }
+
+        internal override async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        {
+            await base.UpdateAsync(server, position, yaw, pitch, onGround);
+
+            this.HeadY = position.Y + 1.62;
+
+            foreach (var entity in this.World.GetEntitiesNear(this.Location, .8))
+            {
+                if (entity is ItemEntity item)
+                {
+                    if (!item.CanPickup)
+                        continue;
+
+                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    {
+                        CollectedEntityId = item.EntityId,
+                        CollectorEntityId = this.EntityId,
+                        PickupItemCount = item.Count
+                    });
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    {
+                        Present = true,
+                        Nbt = item.Nbt
+                    });
+
+                    await this.client.SendPacketAsync(new SetSlot
+                    {
+                        Slot = (short)slot,
+
+                        WindowId = 0,
+
+                        SlotData = this.Inventory.GetItem(slot)
+                    });
+
+                    await item.RemoveAsync();
                 }
             }
         }
@@ -133,28 +178,26 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var its = new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt,
-                        Type = Registry.GetItem(item.Id).Type
-                    };
-                    var slot = this.Inventory.AddItem(its);
+                        Nbt = item.Nbt
+                    });
 
-                    await server.BroadcastPacketAsync(new SetSlot
+                    await this.client.SendPacketAsync(new SetSlot
                     {
                         Slot = (short)slot,
 
                         WindowId = 0,
 
-                        SlotData = its
+                        SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = item.RemoveAsync();
+                    _ = Task.Run(() => item.RemoveAsync());
                 }
             }
         }
 
-        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot + 36);
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
         public void LoadPerms(List<string> permissions)
         {

@@ -377,6 +377,7 @@ namespace Obsidian
                     Type = CommandNodeType.Literal,
                     Index = ++index
                 };
+
                 foreach (Qmmands.Parameter parameter in command.Parameters)
                 {
                     var parameterNode = new CommandNode()
@@ -509,7 +510,7 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            foreach (var chunk in this.Server.World.LoadedChunks)
+            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
                 await this.QueuePacketAsync(new ChunkDataPacket(chunk));
         }
 

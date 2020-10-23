@@ -116,12 +116,12 @@ namespace Obsidian.Tests
         {
             await using var stream = new MinecraftStream();
 
-            var dataSlot = new Slot
+            var dataSlot = new ItemStack
             {
                 Count = 0,
                 Id = 25,
                 Present = true,
-                ItemNbt = new ItemNbt
+                Nbt = new ItemNbt
                 {
                     Slot = 1,
                     Damage = 1
@@ -138,8 +138,8 @@ namespace Obsidian.Tests
             Assert.Equal(0, slot.Count);
             Assert.Equal(25, slot.Id);
 
-            Assert.Equal(1, slot.ItemNbt.Slot);
-            Assert.Equal(1, slot.ItemNbt.Damage);
+            Assert.Equal(1, slot.Nbt.Slot);
+            Assert.Equal(1, slot.Nbt.Damage);
         }
     }
 }

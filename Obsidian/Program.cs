@@ -118,12 +118,9 @@ namespace Obsidian
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
-            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
             foreach (var (_, server) in Servers)
-            {
                 server.StopServer();
-            }
-            
+
             cts.Cancel();
         }
 

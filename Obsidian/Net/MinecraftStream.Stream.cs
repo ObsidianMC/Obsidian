@@ -2,6 +2,7 @@
 using Obsidian.Net.Packets;
 using System;
 using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -97,9 +98,33 @@ namespace Obsidian.Net
 
         public override int Read(byte[] buffer, int offset, int count) => this.BaseStream.Read(buffer, offset, count);
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => await this.BaseStream.ReadAsync(buffer, offset, count);
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var read = await this.BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-        public virtual async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default) => await this.BaseStream.ReadAsync(buffer, cancellationToken);
+                return read;
+            }
+            catch (Exception) 
+            {
+                return 0;
+            }//TODO better handling of this//TODO better handling of this
+        }
+
+        public virtual async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var read = await this.BaseStream.ReadAsync(buffer, cancellationToken);
+
+                return read;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }//TODO better handling of this//TODO better handling of this
+        }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

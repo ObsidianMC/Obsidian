@@ -39,6 +39,5 @@
         // Optional X
         // Array of X
         // X Enum
-        // Byte Array
     }
 }

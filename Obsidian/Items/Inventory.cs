@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -35,27 +36,42 @@ namespace Obsidian.Items
 
         public int AddItem(ItemStack item)
         {
-            for (int i = 9; i < 45; i++)
+            for (int i = 36; i < 45; i++)
             {
-                if (!this.Items.ContainsKey(i))
+                if (this.Items.TryGetValue(i, out var invItem))
                 {
-                    this.Items.TryAdd(i, item);
-
-                    return i;
-                }
-                else
-                {
-                    if (this.Items[i] != item)
+                    if (invItem.Count >= 64)
                         continue;
 
-                    this.Items[i].Count += item.Count;
+                    invItem.Count += item.Count;
 
                     return i;
                 }
+
+                if (this.TryAddItem(i, item))
+                    return i;
+            }
+
+            for (int i = 9; i < 36; i++)
+            {
+                if (this.Items.TryGetValue(i, out var invItem))
+                {
+                    if (invItem.Count >= 64)
+                        continue;
+
+                    invItem.Count += item.Count;
+
+                    return i;
+                }
+
+                if (this.TryAddItem(i, item))
+                    return i;
             }
 
             return 9;
         }
+
+        private bool TryAddItem(int index, ItemStack item) => this.Items.TryAdd(index, item);
 
         public void SetItem(int slot, ItemStack item)
         {
