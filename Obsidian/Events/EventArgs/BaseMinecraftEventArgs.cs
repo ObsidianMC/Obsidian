@@ -15,6 +15,4 @@
             this.Server = server;
         }
     }
-
-
 }

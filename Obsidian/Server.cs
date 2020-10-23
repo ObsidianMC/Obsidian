@@ -90,7 +90,7 @@ namespace Obsidian
         /// <summary>
         /// Creates a new Server instance.
         /// </summary>
-        /// <param name="version">Version the server is running.</param>
+        /// <param name="version">Version the server is running. <i>(independent of minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
         {
             this.Config = config;
@@ -124,10 +124,10 @@ namespace Obsidian
             this.Commands.AddTypeParser(new LocationTypeParser());
             this.Commands.AddTypeParser(new PlayerTypeParser());
 
-
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(this);
+            this.PluginManager = new PluginManager(Events, LoggerProvider.CreateLogger("Plugin Manager"));
+
             this.Operators = new OperatorList(this);
 
             this.World = new World("world", this);
@@ -213,7 +213,9 @@ namespace Obsidian
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
-            await this.PluginManager.LoadPluginsAsync(this.Logger);
+            this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+            await PluginManager.LoadPluginAsync("https://www.github.com/Seb-stian/SampleObsidianPlugin"); // !!!
 
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");

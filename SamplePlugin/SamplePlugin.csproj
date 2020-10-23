@@ -1,34 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-	<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-	<LangVersion>8.0</LangVersion>
+    <PreserveCompilationContext>false</PreserveCompilationContext>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>C:\Users\LostT\Documents\Repos\Obsidian\Obsidian\bin\Debug\netcoreapp3.1\Server-0\plugins\</OutputPath>
+    <OutputPath>..\Obsidian\bin\Debug\netcoreapp3.1\Server-0\plugins\</OutputPath>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="plugin.json" />
+    <Compile Remove="RawPlugin.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="plugin.json" />
+    <Content Include="RawPlugin.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="DickWorldGenerator.cs" />
-    <Resource Include="SamplePluginClass.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Qmmands" Version="3.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+    <ProjectReference Include="..\Obsidian.Plugins.API\Obsidian.API.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
