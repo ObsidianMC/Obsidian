@@ -29,7 +29,7 @@ namespace Obsidian.Plugins.PluginProviders
                 {
                     ".cs" => UncompiledPluginProvider,
                     ".dll" => CompiledPluginProvider,
-                    _ => throw new NotSupportedException()
+                    _ => null
                 };
             }
         }

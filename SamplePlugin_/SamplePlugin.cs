@@ -5,7 +5,7 @@ using Obsidian.API.Plugins.Services;
 using System;
 using System.Threading.Tasks;
 
-namespace SamplePlugin_
+namespace SamplePlugin
 {
     [Plugin(Name = "Sample Plugin", Version = "1.0",
             Authors = "Obsidian Team", Description = "My sample plugin.",

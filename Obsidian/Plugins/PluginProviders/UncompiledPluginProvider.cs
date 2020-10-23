@@ -37,7 +37,7 @@ namespace Obsidian.Plugins.PluginProviders
             catch
             {
                 logger.LogError($"Reloading '{Path.GetFileName(path)}' failed, file is not accessible.");
-                return new PluginContainer(null, new PluginInfo_(name), null, null, name);
+                return new PluginContainer(null, new PluginInfo(name), null, null, name);
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(SourceText.From(fileStream));
             fileStream.Close();
@@ -61,7 +61,7 @@ namespace Obsidian.Plugins.PluginProviders
                     }
                 }
 
-                return new PluginContainer(null, new PluginInfo_(name), null, null, name);
+                return new PluginContainer(null, new PluginInfo(name), null, null, name);
             }
             else
             {

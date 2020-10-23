@@ -10,7 +10,7 @@ namespace Obsidian.Plugins
     public class PluginContainer
     {
         public PluginBase Plugin { get; }
-        public PluginInfo_ Info { get; }
+        public PluginInfo Info { get; }
         public string Source { get; internal set; }
         public Assembly Assembly { get; }
         public AssemblyLoadContext LoadContext { get; }
@@ -30,7 +30,7 @@ namespace Obsidian.Plugins
         internal List<IDisposable> DisposableServices { get; } = new List<IDisposable>();
         internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new Dictionary<EventContainer, Delegate>();
 
-        public PluginContainer(PluginBase plugin, PluginInfo_ info, Assembly assembly, AssemblyLoadContext loadContext, string source)
+        public PluginContainer(PluginBase plugin, PluginInfo info, Assembly assembly, AssemblyLoadContext loadContext, string source)
         {
             Plugin = plugin;
             Info = info;

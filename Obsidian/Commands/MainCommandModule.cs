@@ -1,6 +1,5 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util.DataTypes;
 using Qmmands;
 using System;
@@ -44,20 +43,20 @@ namespace Obsidian.Commands
 
             var messages = new List<ChatMessage>();
 
-            foreach (var pls in Context.Server.PluginManager.Plugins)
-                if (pls.Info.ProjectUrl != null)
+            foreach (var pluginContainer in Context.Server.PluginManager.Plugins)
+                if (pluginContainer.Info.ProjectUrl != null)
                 {
                     messages.Add(new ChatMessage
                     {
-                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
-                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pls.Info.ProjectUrl }
+                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, ",
+                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri }
                     });
                 }
                 else
                 {
                     messages.Add(new ChatMessage
                     {
-                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, "
+                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, "
                     });
                 }
 

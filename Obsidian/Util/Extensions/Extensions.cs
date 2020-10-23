@@ -5,12 +5,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using Obsidian.Plugins;
 
 namespace Obsidian.Util.Extensions
 {
@@ -27,14 +25,6 @@ namespace Obsidian.Util.Extensions
 
         // this is for longs
         public static long GetUnsignedRightShift(this long value, int s) => (long)((ulong)value >> s);
-
-        public static string GetConfigPath(this Plugin plugin)
-        {
-            var path = plugin.Path;
-            var folder = Path.GetDirectoryName(path);
-            var fileName = Path.GetFileNameWithoutExtension(path);
-            return Path.Combine(folder, fileName) + ".json";
-        }
 
         public static bool IsNullOrEmpty(this string value) => string.IsNullOrEmpty(value);
 

@@ -57,7 +57,6 @@ namespace Obsidian
 
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
-        public PluginManager_ Plugins { get; }
 
         public OperatorList Operators { get; }
 
@@ -127,11 +126,8 @@ namespace Obsidian
 
             this.Events = new MinecraftEventHandler();
 
-            this.Plugins = new PluginManager_(Events, LoggerProvider.CreateLogger("PluginManager"));
-            this.Plugins.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-            this.Plugins.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+            this.PluginManager = new PluginManager(Events, LoggerProvider.CreateLogger("Plugin Manager"));
 
-            this.PluginManager = new PluginManager(this);
             this.Operators = new OperatorList(this);
 
             this.World = new World(string.Empty, this);
@@ -206,8 +202,6 @@ namespace Obsidian
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
 
-            await Plugins.LoadPluginAsync("https://gist.github.com/Seb-stian/2b889768029baf1b2b1036eef9c9d93d"); // !!!
-
             this.Logger.LogInformation("Loading services..");
             //TODO services
             this.Services = new ServiceCollection()
@@ -219,7 +213,9 @@ namespace Obsidian
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
-            await this.PluginManager.LoadPluginsAsync(this.Logger);
+            this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+            await PluginManager.LoadPluginAsync("https://www.github.com/Seb-stian/SampleObsidianPlugin"); // !!!
 
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");

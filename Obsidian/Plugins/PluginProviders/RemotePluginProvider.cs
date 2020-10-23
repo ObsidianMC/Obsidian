@@ -241,7 +241,7 @@ namespace Obsidian.Plugins.PluginProviders
         private PluginContainer Failed(string name, string path, ILogger logger = default, string reason = null)
         {
             logger?.LogError($"Loading plugin {name} failed with reason: {reason}");
-            return new PluginContainer(null, new PluginInfo_(name), null, null, path);
+            return new PluginContainer(null, new PluginInfo(name), null, null, path);
         }
     }
 }

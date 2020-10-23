@@ -36,7 +36,7 @@ namespace Obsidian.Plugins.PluginProviders
 
             string name = assembly.GetName().Name;
             var attribute = pluginType.GetCustomAttribute<PluginAttribute>();
-            var info = attribute != null ? new PluginInfo_(name, attribute) : new PluginInfo_(name);
+            var info = attribute != null ? new PluginInfo(name, attribute) : new PluginInfo(name);
 
             if (attribute == null)
                 logger?.LogWarning($"Plugin is missing {nameof(PluginAttribute)}. Name defaults to '{info.Name}', version defaults to {info.Version}.");
