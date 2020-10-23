@@ -1,16 +1,15 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Obsidian.Util.Collection
 {
-    public class DenseCollection<T> : IEnumerable<T>
+    public class DenseCollection<T> : IEnumerable<T> where T : class
     {
-        private object lockObject = new object();
+        private readonly object lockObject = new object();
 
-        private T[] source;
+        private readonly T[] source;
 
-        public int Count => this.source.Length;
+        public int Count { get; private set; } = 0;
 
         public int Width { get; }
 
@@ -18,9 +17,9 @@ namespace Obsidian.Util.Collection
 
         public DenseCollection(int width, int height)
         {
-            this.Width = width;
-            this.Height = height;
-            this.source = new T[width * height];
+            Width = width;
+            Height = height;
+            source = new T[width * height];
         }
 
         public T this[int x, int z]
@@ -35,7 +34,7 @@ namespace Obsidian.Util.Collection
                 if (z < 0)
                     z = 32 + z;
 
-                return this.source[x + z * this.Width];
+                return source[x + z * Width];
             }
 
             set
@@ -50,24 +49,27 @@ namespace Obsidian.Util.Collection
                     if (z < 0)
                         z = 32 + z;
 
-                    this.source[x + z * this.Width] = value;
+                    int index = x + z * Width;
+
+                    if (value != null && source[index] == null)
+                        Count++;
+                    else if (value == null && source[index] != null)
+                        Count--;
+
+                    source[index] = value;
                 }
             }
         }
 
-        public void Add(int x, int z, T item)
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public IEnumerator<T> GetEnumerator()
         {
-            lock (lockObject) this[x, z] = item;
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != null)
+                    yield return source[i];
+            }
         }
-
-        public void Remove(int x, int z)
-        {
-            var removeAt = x + z * this.Width;
-            lock (lockObject) this.source = this.source.Where((s, index) => index != removeAt).ToArray();
-        }
-
-        public IEnumerator GetEnumerator() => this.source.GetEnumerator();
-
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => (IEnumerator<T>)this.source.ToArray().GetEnumerator();
     }
 }
