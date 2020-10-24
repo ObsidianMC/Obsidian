@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -18,11 +19,14 @@ namespace Obsidian.Commands
         [CommandInfo("Lists available commands.")]
         public async Task HelpAsync(ObsidianContext Context)
         {
+            StringBuilder help = new StringBuilder();
             await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
             foreach (var cmd in Context.Commands.GetAllCommands())
             {
-                await Context.Player.SendMessageAsync($"{ChatColor.DarkGreen}{cmd.CommandName}{ChatColor.Reset}: {cmd.Description}");
+                help.Append($"{ChatColor.DarkGreen}{cmd.CommandName}{ChatColor.Reset}: {cmd.Description}\n");
             }
+
+            await Context.Player.SendMessageAsync(help.ToString());
         }
 
         [Command("forceskins")]

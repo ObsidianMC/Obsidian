@@ -196,19 +196,29 @@ namespace Obsidian.Entities
             }
         }
 
-        public Task TeleportAsync(Position pos) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
+        public async Task TeleportAsync(Position pos)
         {
-            Position = pos,
-            Flags = PositionFlags.NONE,
-            TeleportId = Program.Random.Next(0, 999)
-        });
+            var tid = Program.Random.Next(0, 999);
+            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            {
+                Position = pos,
+                Flags = PositionFlags.NONE,
+                TeleportId = tid
+            });
+            this.TeleportId = tid;
+        }
 
-        public Task TeleportAsync(Player to) => this.client.QueuePacketAsync(new ClientPlayerPositionLook
+        public async Task TeleportAsync(Player to)
         {
-            Position = to.Location,
-            Flags = PositionFlags.NONE,
-            TeleportId = Program.Random.Next(0, 999)
-        });
+            var tid = Program.Random.Next(0, 999);
+            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            {
+                Position = to.Location,
+                Flags = PositionFlags.NONE,
+                TeleportId = tid
+            });
+            this.TeleportId = tid;
+        }
 
         public Task SendMessageAsync(string message, sbyte position = 0) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position));
 
