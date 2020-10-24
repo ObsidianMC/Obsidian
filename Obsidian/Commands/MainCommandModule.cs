@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Mime;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -37,7 +36,7 @@ namespace Obsidian.Commands
         [Command("test")]
         public async Task TestAsync(string test1, string test2, string test3)
         {
-            await this.Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
+            await Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
         }
 
         [Command("plugins", "pl")]
@@ -50,30 +49,18 @@ namespace Obsidian.Commands
             };
 
             var messages = new List<ChatMessage>();
-            int plugins_i = 0;
-            foreach (var pluginContainer in Context.Server.PluginManager.Plugins)
+            for (int i = 0; i < Context.Server.PluginManager.Plugins.Count; i++)
             {
-                if (pluginContainer.Info.ProjectUrl != null)
-                {
-                    messages.Add(new ChatMessage
-                    {
-                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name,
-                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri }
-                    });
-                }
-                else
-                {
-                    messages.Add(new ChatMessage
-                    {
-                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name
-                    });
-                }
+                var pluginContainer = Context.Server.PluginManager.Plugins[i];
+
+                var plugin = new ChatMessage();
+                plugin.Text = ChatColor.DarkGreen + pluginContainer.Info.Name;
+                if (pluginContainer.Info.ProjectUrl != null) plugin.ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
                 messages.Add(new ChatMessage
                 {
-                    Text = $"{ChatColor.Reset}" + (plugins_i + 1 < Context.Server.PluginManager.Plugins.Count ? ", " : "")
+                    Text = $"{ChatColor.Reset}{(i + 1 < Context.Server.PluginManager.Plugins.Count ? ", " : "")}"
                 });
-                plugins_i++;
             }
 
             if (messages.Count > 0)
