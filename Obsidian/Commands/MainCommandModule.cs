@@ -114,9 +114,9 @@ namespace Obsidian.Commands
 
         [Command("tp")]
         [CommandInfo("teleports you to a location")]
-        public async Task TeleportAsync(ObsidianContext Context, Position location)
+        public async Task TeleportAsync(ObsidianContext Context, [Remaining]Position location)
         {
-            await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
+            await Context.Player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
             await Context.Player.TeleportAsync(location);
         }
 
