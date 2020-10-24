@@ -23,6 +23,8 @@
   <ItemGroup>
     <None Remove="Assets\biomes.json" />
     <None Remove="Assets\biome_dimension_codec.json" />
+    <None Remove="Assets\default_dimensions.json" />
+    <None Remove="Assets\default_dimensions.xaml" />
     <None Remove="Serializer\Attributes\NewFile1.txt" />
     <None Remove="Serializer\Enums\NewFile1.txt" />
   </ItemGroup>
@@ -41,6 +43,16 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="Assets\default_dimensions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

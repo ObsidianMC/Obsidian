@@ -23,6 +23,7 @@ using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
+using Obsidian.Util.Registry.Codecs;
 using Obsidian.WorldData;
 
 using System;
@@ -292,6 +293,8 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
+            Registry.DefaultDimensions.TryGetValue(0, out var codec); //TODO support custom dimensions and savve client dimensionns
+
             await this.QueuePacketAsync(new JoinGame
             {
                 EntityId = this.id,
@@ -303,13 +306,13 @@ namespace Obsidian
 
                 Codecs = new MixedCodec
                 {
-                    Dimensions = this.Server.DefaultDimensions,
-                    Biomes = Registry.BiomeCodecs
+                    Dimensions = Registry.DefaultDimensions,
+                    Biomes = Registry.DefaultBiomes
                 },
 
-                Dimension = this.Server.DefaultDimensions.SingleOrDefault(x => x.Name.EqualsIgnoreCase("minecraft:overworld")),
+                Dimension = codec,
 
-                WorldName = "minecraft:world",
+                DimensionName = codec.Name,
 
                 HashedSeed = 0,
 
@@ -322,10 +325,10 @@ namespace Obsidian
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 60, 0)));
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 61, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
-            this.Player.Location = new Position(0, 60, 0);
+            this.Player.Location = new Position(0, 61, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -530,11 +533,8 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            foreach (Chunk chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
+            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
             {
-                if (chunk == null)
-                    continue;
-
                 await this.SendPacketAsync(new ChunkDataPacket(chunk));
             }
         }

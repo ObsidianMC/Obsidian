@@ -4,7 +4,7 @@ using Obsidian.Nbt.Tags;
 using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
 
-namespace Obsidian.Util.Registry.Codecs
+namespace Obsidian.Util.Registry.Codecs.Biomes
 {
     public class BiomeElement
     {

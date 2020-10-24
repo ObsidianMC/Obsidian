@@ -312,7 +312,7 @@ namespace Obsidian.WorldData
             if (this.Regions.ContainsKey(value))
                 return this.Regions[value];
 
-            region.LoadedChunks.Add(chunk.X, chunk.Z, chunk);
+            region.LoadedChunks[chunk.X, chunk.Z] = chunk;
 
             this.Regions.TryAdd(value, region);
 

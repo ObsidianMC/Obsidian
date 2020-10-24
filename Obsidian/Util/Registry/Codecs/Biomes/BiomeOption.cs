@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Obsidian.Util.Registry.Codecs
+namespace Obsidian.Util.Registry.Codecs.Biomes
 {
     public class BiomeOption
     {

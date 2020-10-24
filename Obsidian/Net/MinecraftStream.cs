@@ -15,6 +15,7 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs;
+using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -391,7 +392,7 @@ namespace Obsidian.Net
 
                             var list = new NbtList("value", NbtTagType.Compound);
 
-                            foreach (var codec in codecs.Dimensions)
+                            foreach (var (_, codec) in codecs.Dimensions)
                             {
                                 codec.Write(list);
                             }
@@ -406,7 +407,7 @@ namespace Obsidian.Net
 
                             var biomes = new NbtList("value", NbtTagType.Compound);
 
-                            foreach (var biome in codecs.Biomes)
+                            foreach (var (_, biome) in codecs.Biomes)
                             {
                                 biome.Write(biomes);
                             }

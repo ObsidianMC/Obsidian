@@ -3,7 +3,7 @@ using Obsidian.Util.Converters;
 
 namespace Obsidian.Util.Registry.Codecs
 {
-    public class BiomeMusicEffect
+    public class BiomeMusicEffect.Biomes
     {
         [JsonConverter(typeof(DefaultObjectConverter))]
         public bool ReplaceCurrentMusic { get; set; }

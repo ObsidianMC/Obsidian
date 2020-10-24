@@ -4,11 +4,8 @@ using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Items;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Util.Converters;
-using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs;
-using Org.BouncyCastle.Bcpg.OpenPgp;
+using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,20 +16,6 @@ using System.Threading.Tasks;
 namespace Obsidian.Util.Registry
 {
 
-    public class BaseCodec
-    {
-        public string Name { get; set; }
-
-        public int Id { get; set; }
-
-
-    }
-
-    public class ElementCodec
-    {
-        public string PiglinSafe { get; set; }
-    }
-
     public class Registry
     {
         internal static ILogger Logger { get; set; }
@@ -40,10 +23,10 @@ namespace Obsidian.Util.Registry
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
         public static Dictionary<Materials, Block> Blocks = new Dictionary<Materials, Block>();
         public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
-        public static CodecCollection<BiomeCodec> BiomeCodecs = new CodecCollection<BiomeCodec>
-        {
-            Name = "minecraft:worldgen/biome"
-        };
+      
+        internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
+
+        internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
 
         public static async Task RegisterBlocksAsync()
         {
@@ -766,7 +749,7 @@ namespace Obsidian.Util.Registry
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Program.JsonSettings);
 
-                    BiomeCodecs.Add(codec);
+                    DefaultBiomes.TryAdd(codec.Name, codec);
 
                     Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
@@ -775,6 +758,40 @@ namespace Obsidian.Util.Registry
             Logger.LogDebug($"Successfully registered {registered} codec biomes");
         }
 
+        public static async Task RegisterDimensionsAsync()
+        {
+            var dimesnions = new FileInfo("Assets/default_dimensions.json");
+
+            if (!dimesnions.Exists)
+                return;
+
+            using var cfs = dimesnions.OpenRead();
+            using var cread = new StreamReader(cfs, new UTF8Encoding(false));
+
+            var json = await cread.ReadToEndAsync();
+
+            var type = JObject.Parse(json);
+
+            using var cenumerator = type.GetEnumerator();
+
+            var registered = 0;
+            while (cenumerator.MoveNext())
+            {
+                var (name, token) = cenumerator.Current;
+
+                foreach (var obj in token)
+                {
+                    var val = obj.ToString();
+                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Program.JsonSettings);
+
+                    DefaultDimensions.TryAdd(codec.Id, codec);
+
+                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+                    registered++;
+                }
+            }
+            Logger.LogDebug($"Successfully registered {registered} codec biomes");
+        }
         public static Block GetBlock(Materials mat)
         {
             if (Blocks.TryGetValue(mat, out Block result))

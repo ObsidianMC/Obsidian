@@ -65,16 +65,6 @@ namespace Obsidian
 
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
-        internal CodecCollection<DimensionCodec> DefaultDimensions { get; } = new CodecCollection<DimensionCodec>
-        {
-            Name = "minecraft:dimension_type"
-        };
-
-        internal CodecCollection<BiomeCodec> DefaultBiomes { get; } = new CodecCollection<BiomeCodec>
-        {
-            Name = "minecraft:worldgen/biome"
-        };
-
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
@@ -214,126 +204,8 @@ namespace Obsidian
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
-
-            DefaultDimensions.AddRange(new List<DimensionCodec>
-            {
-                    new DimensionCodec
-                    {
-                        Id = 0,
-
-                        Name = "minecraft:overworld",
-
-                        PiglinSafe = false,
-                        Natural = true,
-
-                        AmbientLight = 0.0f,
-
-                        Infiniburn = "minecraft:infiniburn_overworld",
-
-                        RespawnAnchorWorks = false,
-                        HasSkylight = true,
-                        BedWorks = true,
-
-                        Effects = "minecraft:overworld",
-
-                        HasRaids = true,
-
-                        LogicalHeight = 256,
-                        CoordinateScale = 1,
-
-                        Ultrawarm = false,
-                        HasCeiling = false
-                    },
-
-                    new DimensionCodec
-                    {
-                        Id = 1,
-
-                        Name = "minecraft:overworld_caves",
-
-                        PiglinSafe = false,
-                        Natural = true,
-
-                        AmbientLight = 0.0f,
-
-                        Infiniburn = "minecraft:infiniburn_overworld",
-
-                        RespawnAnchorWorks = false,
-                        HasSkylight = true,
-                        BedWorks = true,
-
-                        Effects = "minecraft:overworld",
-
-                        HasRaids = true,
-
-                        LogicalHeight = 256,
-                        CoordinateScale = 1,
-
-                        Ultrawarm = false,
-                        HasCeiling = true
-                    },
-
-                    new DimensionCodec
-                    {
-                        Id = 2,
-
-                        Name = "minecraft:the_nether",
-
-                        PiglinSafe = true,
-                        Natural = false,
-
-                        AmbientLight = 0.1f,
-
-                        Infiniburn = "minecraft:infiniburn_nether",
-
-                        RespawnAnchorWorks = true,
-                        HasSkylight = false,
-                        BedWorks = false,
-
-                        Effects = "minecraft:the_nether",
-
-                        FixedTime = 18000,
-
-                        HasRaids = false,
-
-                        LogicalHeight = 128,
-                        CoordinateScale = 8,
-
-                        Ultrawarm = true,
-                        HasCeiling = true
-                    },
-
-                    new DimensionCodec
-                    {
-                        Id = 3,
-
-                        Name = "minecraft:the_end",
-
-                        PiglinSafe = false,
-                        Natural = false,
-
-                        AmbientLight = 0.0f,
-
-                        Infiniburn = "minecraft:infiniburn_end",
-
-                        RespawnAnchorWorks = false,
-                        HasSkylight = false,
-                        BedWorks = false,
-
-                        Effects = "minecraft:the_end",
-
-                        FixedTime = 6000,
-
-                        HasRaids = true,
-
-                        LogicalHeight = 256,
-                        CoordinateScale = 1,
-
-                        Ultrawarm = false,
-                        HasCeiling = false
-                    }
-            });
-
+            await Registry.RegisterDimensionsAsync();
+            
             this.Logger.LogInformation("Loading services..");
             //TODO services
             this.Services = new ServiceCollection()

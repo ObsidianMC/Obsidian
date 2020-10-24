@@ -26,6 +26,10 @@ namespace Obsidian.Util.Converters
             {
                 val = val.TrimEnd('B');
                 return val == "1";
+            }else if (val.EndsWith('L'))
+            {
+                val = val.TrimEnd('L');
+                return long.Parse(val);
             }
 
             return reader.Value ?? null;

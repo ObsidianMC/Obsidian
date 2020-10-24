@@ -1,7 +1,7 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 
-namespace Obsidian.Util.Registry.Codecs
+namespace Obsidian.Util.Registry.Codecs.Biomes
 {
     public class BiomeAdditionSound
     {

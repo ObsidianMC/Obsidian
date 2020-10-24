@@ -3,7 +3,7 @@ using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.Converters;
 
-namespace Obsidian.Util.Registry.Codecs
+namespace Obsidian.Util.Registry.Codecs.Biomes
 {
     public class BiomeParticle
     {

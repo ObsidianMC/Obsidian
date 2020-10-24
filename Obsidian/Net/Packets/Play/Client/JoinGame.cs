@@ -2,15 +2,16 @@
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry.Codecs;
+using Obsidian.Util.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
     public class MixedCodec
     {
-        public CodecCollection<DimensionCodec> Dimensions { get; set; }
+        public CodecCollection<int, DimensionCodec> Dimensions { get; set; }
 
-        public CodecCollection<BiomeCodec> Biomes { get; set; }
+        public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
     public class JoinGame : Packet
     {
@@ -39,7 +40,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public DimensionCodec Dimension { get; set; }
 
         [Field(8)]
-        public string WorldName { get; set; }
+        public string DimensionName { get; set; }
 
         [Field(9)]
         public long HashedSeed { get; set; }
