@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Obsidian.CommandFramework\Obsidian.CommandFramework.csproj" />
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
     <ProjectReference Include="..\Obsidian\Obsidian.csproj" />
   </ItemGroup>

@@ -1,47 +1,51 @@
 ﻿using Obsidian.Chat;
+using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
-using Qmmands;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
 {
-    public class MainCommandModule : ModuleBase<ObsidianContext>
+    public class MainCommandModule : BaseCommandClass
     {
-        public CommandService Service { get; set; }
-
         [Command("help", "commands")]
-        [Description("Lists available commands.")]
-        public async Task HelpAsync()
+        [CommandInfo("Lists available commands.")]
+        public async Task HelpAsync(ObsidianContext Context)
         {
-            foreach (var cmd in Service.GetAllCommands())
+            StringBuilder help = new StringBuilder();
+            await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
+            foreach (var cmd in Context.Commands.GetAllCommands())
             {
-                await Context.Player.SendMessageAsync($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}");
+                help.Append($"{ChatColor.DarkGreen}{cmd.CommandName}{ChatColor.Reset}: {cmd.Description}\n");
             }
+
+            await Context.Player.SendMessageAsync(help.ToString());
         }
 
         [Command("forceskins")]
-        [Description("forces skin reload")]
-        public async Task ForceSkinAsync()
+        [CommandInfo("forces skin reload")]
+        public async Task ForceSkinAsync(ObsidianContext Context)
         {
             await Context.Client.SendPlayerInfoAsync();
             await Context.Player.SendMessageAsync(ChatMessage.Simple("done"));
         }
 
         [Command("test")]
-        public async Task TestAsync(string test1, string test2, string test3)
+        public async Task TestAsync(ObsidianContext Context, string test1, string test2, string test3)
         {
-            await this.Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
+            await Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
         }
 
         [Command("plugins")]
-        [Description("Lists plugins.")]
-        public async Task PluginsAsync()
+        [CommandInfo("Lists plugins.")]
+        public async Task PluginsAsync(ObsidianContext Context)
         {
             var message = new ChatMessage
             {
@@ -75,7 +79,7 @@ namespace Obsidian.Commands
         }
 
         [Command("forcechunkreload")]
-        public async Task ForceChunkReloadAsync()
+        public async Task ForceChunkReloadAsync(ObsidianContext Context)
         {
             var c = Context.Client;
             var world = Context.Server.World;
@@ -88,39 +92,39 @@ namespace Obsidian.Commands
         }
 
         [Command("echo")]
-        [Description("Echoes given text.")]
-        public Task EchoAsync([Remainder] string text) => Context.Server.BroadcastAsync(text);
+        [CommandInfo("Echoes given text.")]
+        public Task EchoAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text);
 
         [Command("announce")]
-        [Description("makes an announcement")]
-        public Task AnnounceAsync([Remainder] string text) => Context.Server.BroadcastAsync(text, 2);
+        [CommandInfo("makes an announcement")]
+        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, 2);
 
         [Command("leave", "kickme")]
-        [Description("kicks you")]
-        public Task LeaveAsync() => this.Context.Player.KickAsync("Is this what you wanted?");
+        [CommandInfo("kicks you")]
+        public Task LeaveAsync(ObsidianContext Context) => Context.Player.KickAsync("Is this what you wanted?");
 
         [Command("uptime", "up")]
-        [Description("Gets current uptime")]
-        public Task UptimeAsync()
+        [CommandInfo("Gets current uptime")]
+        public Task UptimeAsync(ObsidianContext Context)
             => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
 
         [Command("declarecmds", "declarecommands")]
-        [Description("Debug command for testing the Declare Commands packet")]
-        public Task DeclareCommandsTestAsync() => Context.Client.SendDeclareCommandsAsync();
+        [CommandInfo("Debug command for testing the Declare Commands packet")]
+        public Task DeclareCommandsTestAsync(ObsidianContext Context) => Context.Client.SendDeclareCommandsAsync();
 
         [Command("tp")]
-        [Description("teleports you to a location")]
-        public async Task TeleportAsync(Position location)
+        [CommandInfo("teleports you to a location")]
+        public async Task TeleportAsync(ObsidianContext Context, [Remaining]Position location)
         {
-            await Context.Player.SendMessageAsync("ight homie tryna tp you (and sip dicks)");
-            await this.Context.Player.TeleportAsync(location);
+            await Context.Player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
+            await Context.Player.TeleportAsync(location);
         }
 
         [Command("op")]
         [RequireOperator]
-        public async Task GiveOpAsync(Player player)
+        public async Task GiveOpAsync(ObsidianContext Context, Player player)
         {
-            var onlinePlayers = this.Context.Server.OnlinePlayers;
+            var onlinePlayers = Context.Server.OnlinePlayers;
             if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
                 return;
 
@@ -131,9 +135,9 @@ namespace Obsidian.Commands
 
         [Command("deop")]
         [RequireOperator]
-        public async Task UnclaimOpAsync(Player player)
+        public async Task UnclaimOpAsync(ObsidianContext Context, Player player)
         {
-            var onlinePlayers = this.Context.Server.OnlinePlayers;
+            var onlinePlayers = Context.Server.OnlinePlayers;
             if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
                 return;
 
@@ -143,7 +147,7 @@ namespace Obsidian.Commands
         }
 
         [Command("oprequest", "opreq")]
-        public async Task RequestOpAsync(string code = null)
+        public async Task RequestOpAsync(ObsidianContext Context, string code = null)
         {
             if (!Context.Server.Config.AllowOperatorRequests)
             {
@@ -169,8 +173,8 @@ namespace Obsidian.Commands
         }
 
         [Command("obsidian")]
-        [Description("Shows obsidian popup")]
-        public async Task ObsidianAsync()
+        [CommandInfo("Shows obsidian popup")]
+        public async Task ObsidianAsync(ObsidianContext Context)
         {
             await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
         }
@@ -178,7 +182,8 @@ namespace Obsidian.Commands
 #if DEBUG
 
         [Command("breakpoint")]
-        public async Task BreakpointAsync()
+        [RequireOperator]
+        public async Task BreakpointAsync(ObsidianContext Context)
         {
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);

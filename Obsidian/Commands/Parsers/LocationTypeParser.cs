@@ -1,15 +1,18 @@
-﻿using Obsidian.Util.DataTypes;
-using Qmmands;
+﻿using Obsidian.CommandFramework.ArgumentParsers;
+using Obsidian.CommandFramework.Entities;
+using Obsidian.Util.DataTypes;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Parsers
 {
-    public class LocationTypeParser : TypeParser<Position>
+    public class LocationTypeParser : BaseArgumentParser<Position>
     {
-        public override ValueTask<TypeParserResult<Position>> ParseAsync(Parameter parameter, string value, CommandContext context)
+        public override bool TryParseArgument(string input, BaseCommandContext context, out Position result)
         {
-            var splitted = value.Split(' ');
+            result = null;
+
+            var splitted = input.Split(' ');
             var location = new Position();
 
             int count = 0;
@@ -54,7 +57,8 @@ namespace Obsidian.Commands.Parsers
                 count++;
             }
 
-            return new ValueTask<TypeParserResult<Position>>(TypeParserResult<Position>.Successful(location));
+            result = location;
+            return true;
         }
     }
 }

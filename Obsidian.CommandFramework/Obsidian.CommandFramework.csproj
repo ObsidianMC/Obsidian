@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-	<LangVersion>8.0</LangVersion>
-    <AssemblyName>Obsidian.API</AssemblyName>
-    <RootNamespace>Obsidian.API</RootNamespace>
   </PropertyGroup>
 
 </Project>

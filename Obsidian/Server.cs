@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
+using Obsidian.CommandFramework;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
@@ -23,7 +24,6 @@ using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
-using Qmmands;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -70,7 +70,7 @@ namespace Obsidian
 
         public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();
 
-        public CommandService Commands { get; }
+        public CommandHandler Commands { get; }
         public Config Config { get; }
 
         public ILogger Logger { get; }
@@ -114,15 +114,13 @@ namespace Obsidian
 
             this.chatmessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
-            this.Commands = new CommandService(new CommandServiceConfiguration()
-            {
-                StringComparison = StringComparison.OrdinalIgnoreCase,
-                IgnoresExtraArguments = true,
-                DefaultRunMode = RunMode.Parallel,
-            });
-            this.Commands.AddModule<MainCommandModule>();
-            this.Commands.AddTypeParser(new LocationTypeParser());
-            this.Commands.AddTypeParser(new PlayerTypeParser());
+
+
+            this.Commands = new CommandHandler("/");
+            this.Commands.RegisterCommandClass<MainCommandModule>();
+            this.Commands.AddArgumentParser(new LocationTypeParser());
+            this.Commands.AddArgumentParser(new PlayerTypeParser());
+            this.Commands.RegisterContextType<ObsidianContext>();
 
             this.Events = new MinecraftEventHandler();
 
@@ -304,17 +302,22 @@ namespace Obsidian
 
         internal async Task ParseMessage(string message, Client source, sbyte position = 0)
         {
-            if (!CommandUtilities.HasPrefix(message, '/', out string output))
+            if (!message.StartsWith('/'))
             {
                 await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
                 return;
             }
 
             //TODO command logging
-            var context = new ObsidianContext(source, this, this.Services);
-            IResult result = await Commands.ExecuteAsync(output, context);
-            if (!result.IsSuccessful)
-                await context.Player.SendMessageAsync($"{ChatColor.Red}Command error: {(result as FailedResult).Reason}", position);
+            // TODO error handling for commands
+            var context = new ObsidianContext(message, source, this);
+            try
+            {
+                await Commands.ProcessCommand(context);
+            }catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)
