@@ -71,7 +71,7 @@ namespace Obsidian.Util
         {
             var players = server.OnlinePlayers.Values;
 
-            Max = 1000000;
+            Max = server.Config.MaxPlayers;
             Online = players.Count();
 
             if (this.Online > 0)

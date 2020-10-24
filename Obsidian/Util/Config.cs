@@ -21,6 +21,9 @@ namespace Obsidian.Util
 
         [JsonProperty("onlineMode")]
         public bool OnlineMode = false;
+        
+        [JsonProperty("maxPlayers")]
+        public int MaxPlayers = 1000000;
 
         [JsonProperty("operatorRequests")]
         public bool AllowOperatorRequests;
