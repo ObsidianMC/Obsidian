@@ -48,7 +48,7 @@ namespace Obsidian
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
 
-        private readonly CancellationTokenSource cts;
+        internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
         public IServiceProvider Services { get; private set; } = new ServiceCollection().BuildServiceProvider(true);
@@ -68,7 +68,7 @@ namespace Obsidian
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
 
-        public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();        
+        public HashSet<string> RegisteredChannels { get; private set; } = new HashSet<string>();
 
         public CommandHandler Commands { get; }
         public Config Config { get; }
@@ -90,7 +90,7 @@ namespace Obsidian
         /// <summary>
         /// Creates a new Server instance.
         /// </summary>
-        /// <param name="version">Version the server is running.</param>
+        /// <param name="version">Version the server is running. <i>(independent of minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
         {
             this.Config = config;
@@ -122,13 +122,13 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new PlayerTypeParser());
             this.Commands.RegisterContextType<ObsidianContext>();
 
-
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(this);
+            this.PluginManager = new PluginManager(Events, LoggerProvider.CreateLogger("Plugin Manager"));
+
             this.Operators = new OperatorList(this);
 
-            this.World = new World("", this);
+            this.World = new World("world", this);
 
             this.Events.PlayerLeave += this.Events_PlayerLeave;
             this.Events.PlayerJoin += this.Events_PlayerJoin;
@@ -211,7 +211,9 @@ namespace Obsidian
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
-            await this.PluginManager.LoadPluginsAsync(this.Logger);
+            this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+            await PluginManager.LoadPluginAsync("https://www.github.com/Seb-stian/SampleObsidianPlugin"); // !!!
 
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
@@ -238,7 +240,7 @@ namespace Obsidian
                     var tcp = await this.tcpListener.AcceptTcpClientAsync();
                     this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.Entities.Count), this);
+                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
                     this.clients.Add(clnt);
 
                     _ = Task.Run(clnt.StartConnectionAsync);
@@ -251,6 +253,8 @@ namespace Obsidian
 
         internal async Task BroadcastBlockPlacementAsync(Player player, PlayerBlockPlacement pbp)
         {
+            player.Inventory.RemoveItem(player.CurrentSlot);
+
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
                 var client = other.client;
@@ -258,7 +262,7 @@ namespace Obsidian
                 var location = pbp.Location;
                 var face = pbp.Face;
 
-                switch (face)
+                switch (face)//TODO fix this for logs
                 {
                     case BlockFace.Bottom:
                         location.Y -= 1;
@@ -288,8 +292,11 @@ namespace Obsidian
                         break;
                 }
 
-                player.Inventory.RemoveItem(player.CurrentSlot);
-                await client.QueuePacketAsync(new BlockChange(location, Registry.GetBlock(player.GetHeldItem().Type).Id));
+                var block = Registry.GetBlock(player.GetHeldItem().Type);
+
+                this.World.SetBlock(location, block);
+
+                await client.QueuePacketAsync(new BlockChange(location, block.Id));
             }
         }
 
@@ -337,21 +344,91 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastBlockBreakAsync(PlayerDiggingStore store)
+        private bool TryAddEntity(Entity entity)
+        {
+            this.Logger.LogDebug($"{entity.EntityId} new ID");
+
+            return this.World.TryAddEntity(entity);
+        }
+
+        internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store)
         {
             var d = store.Packet;
-            var airBlock = Registry.GetBlock(Materials.Air).Id;
-            var minedBlock = this.World.GetBlock(d.Location);
+
+            var block = this.World.GetBlock(d.Location);
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
             switch (d.Status)
             {
+                case DiggingStatus.DropItem:
+                    {
+                        var droppedItem = player.GetHeldItem();
+
+                        if (droppedItem is null || droppedItem.Type == Materials.Air)
+                            return;
+
+                        var loc = new Position(player.Location.X, player.HeadY - 0.3, player.Location.Z);
+
+                        var item = new ItemEntity
+                        {
+                            EntityId = player + this.World.TotalLoadedEntities() + 1,
+                            Count = 1,
+                            Id = droppedItem.Id,
+                            EntityBitMask = EntityBitMask.Glowing,
+                            World = this.World,
+                            Location = loc
+                        };
+
+                        this.TryAddEntity(item);
+
+                        var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
+                        var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
+
+                        var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
+                        var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
+
+                        var f5 = Program.Random.NextDouble() * ((float)Math.PI * 2f);
+                        var f6 = 0.02f * Program.Random.NextDouble();
+
+                        var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
+                            (short)((double)(-f8 * 0.3F + 0.1F + (Program.Random.NextDouble() - Program.Random.NextDouble()) * 0.1F)),
+                            (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
+
+                        await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
+                        {
+                            EntityId = item.EntityId,
+                            Uuid = Guid.NewGuid(),
+                            Type = EntityType.Item,
+                            Position = item.Location,
+                            Pitch = 0,
+                            Yaw = 0,
+                            Data = 1,
+                            Velocity = vel
+                        });
+                        await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
+                        {
+                            EntityId = item.EntityId,
+                            Entity = item
+                        });
+
+                        await player.client.SendPacketAsync(new SetSlot
+                        {
+                            Slot = player.CurrentSlot,
+
+                            WindowId = 0,
+
+                            SlotData = player.Inventory.GetItem(player.CurrentSlot) - 1
+                        });
+
+                        player.Inventory.RemoveItem(player.CurrentSlot);
+                        break;
+                    }
                 case DiggingStatus.StartedDigging:
                     await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
                         Location = d.Location,
-                        Block = minedBlock.Id,
+                        Block = block.Id,
                         Status = d.Status,
                         Successful = true
                     });
@@ -360,63 +437,64 @@ namespace Obsidian
                     await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
                         Location = d.Location,
-                        Block = minedBlock.Id,
+                        Block = block.Id,
                         Status = d.Status,
                         Successful = true
                     });
                     break;
                 case DiggingStatus.FinishedDigging:
-                {
-                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
-                        Location = d.Location,
-                        Block = minedBlock.Id,
-                        Status = d.Status,
-                        Successful = true
-                    });
-                    await this.BroadcastPacketWithoutQueueAsync(new BlockBreakAnimation
-                    {
-                        EntityId = player,
-                        Location = d.Location,
-                        DestroyStage = -1
-                    });
+                        await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
+                        {
+                            Location = d.Location,
+                            Block = block.Id,
+                            Status = d.Status,
+                            Successful = true
+                        });
+                        await this.BroadcastPacketWithoutQueueAsync(new BlockBreakAnimation
+                        {
+                            EntityId = player,
+                            Location = d.Location,
+                            DestroyStage = -1
+                        });
 
-                    await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, airBlock));
+                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, 0));
 
-                    var item = new ItemEntity
-                    {
-                        EntityId = player + this.World.Entities.Count + 1,
-                        Count = 1,
-                        Id = Registry.GetItem(minedBlock.Type).Id,
-                        EntityBitMask = EntityBitMask.Glowing,
-                        World = this.World,
-                        Location = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
-                        (Program.Random.NextDouble() * 0.5F) + 0.25D,
-                        (Program.Random.NextDouble() * 0.5F) + 0.25D)
-                    };
+                        this.World.SetBlock(d.Location, Registry.GetBlock(Materials.Air));
 
-                    this.World.Entities.Add(item);
-                    this.Logger.LogDebug($"{item.EntityId} new ID");
+                        var item = new ItemEntity
+                        {
+                            EntityId = player + this.World.TotalLoadedEntities() + 1,
+                            Count = 1,
+                            Id = Registry.GetItem(block.Type).Id,
+                            EntityBitMask = EntityBitMask.Glowing,
+                            World = this.World,
+                            Location = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Program.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Program.Random.NextDouble() * 0.5F) + 0.25D)
+                        };
 
-                    await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
-                    {
-                        EntityId = item.EntityId,
-                        Uuid = Guid.NewGuid(),
-                        Type = EntityType.Item,
-                        Position = item.Location,
-                        Pitch = 0,
-                        Yaw = 0,
-                        Data = 1,
-                        Velocity = new Velocity((short)(d.Location.X * (8000 / 20)), (short)(d.Location.Y * (8000 / 20)), (short)(d.Location.Z * (8000 / 20)))
-                    });
+                        this.TryAddEntity(item);
 
-                    await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
-                    {
-                        EntityId = item.EntityId,
-                        Entity = item
-                    });
-                    break;
-                }
+                        await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
+                        {
+                            EntityId = item.EntityId,
+                            Uuid = Guid.NewGuid(),
+                            Type = EntityType.Item,
+                            Position = item.Location,
+                            Pitch = 0,
+                            Yaw = 0,
+                            Data = 1,
+                            Velocity = new Velocity((short)(d.Location.X * (8000 / 20)), (short)(d.Location.Y * (8000 / 20)), (short)(d.Location.Z * (8000 / 20)))
+                        });
+
+                        await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
+                        {
+                            EntityId = item.EntityId,
+                            Entity = item
+                        });
+                        break;
+                    }
                 default:
                     break;
             }
@@ -533,8 +611,7 @@ namespace Obsidian
 
         private async Task Events_ServerTick()
         {
-            foreach (var ents in this.World.Entities)
-                await ents.TickAsync();
+
         }
 
         #endregion events

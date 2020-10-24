@@ -8,6 +8,7 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -53,10 +54,14 @@ namespace Obsidian
         };
         private static async Task Main(string[] args)
         {
+#if RELEASE
             string version = "0.1";
-#if DEBUG
-            version += "-DEV";
+#else
+            string version = "0.1-DEV";
 #endif
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+            Console.Title = $"Obsidian {version}";
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
             Console.WriteLine(asciilogo);
@@ -108,17 +113,13 @@ namespace Obsidian
         {
             while (!cts.IsCancellationRequested)
                 await Task.Delay(50);
-
         }
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
-            // TODO: TRY TO GRACEFULLY SHUT DOWN THE SERVER WE DONT WANT ERRORS REEEEEEEEEEE
             foreach (var (_, server) in Servers)
-            {
                 server.StopServer();
-            }
 
             cts.Cancel();
         }

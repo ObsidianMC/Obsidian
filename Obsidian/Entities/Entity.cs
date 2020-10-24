@@ -14,7 +14,6 @@ namespace Obsidian.Entities
     {
         public readonly Timer TickTimer = new Timer();
 
-        //TODO set players world to whichever world he was last connected to
         public World World { get; set; }
 
         #region Location properties
@@ -82,7 +81,7 @@ namespace Obsidian.Entities
 
         internal virtual async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
         {
-            var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
+            var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
 
             if (isNewRotation)
             {
@@ -94,6 +93,7 @@ namespace Obsidian.Entities
                     Pitch = pitch
                 }, this.EntityId);
 
+                this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
             }
         }
@@ -109,10 +109,8 @@ namespace Obsidian.Entities
 
             var isNewLocation = position != this.LastLocation;
 
-            var isNewRotation = yaw.Value != this.LastYaw.Value || pitch.Value != this.LastPitch.Value;
+            var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
 
-            if (isNewRotation)
-                this.CopyLook();
 
             if (isNewLocation)
             {
@@ -132,6 +130,8 @@ namespace Obsidian.Entities
 
                         OnGround = onGround
                     }, this.EntityId);
+
+                    this.CopyLook();
                 }
                 else
                 {

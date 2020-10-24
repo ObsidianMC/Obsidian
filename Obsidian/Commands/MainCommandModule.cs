@@ -2,8 +2,8 @@
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util.DataTypes;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -54,20 +54,20 @@ namespace Obsidian.Commands
 
             var messages = new List<ChatMessage>();
 
-            foreach (var pls in Context.Server.PluginManager.Plugins)
-                if (pls.Info.ProjectUrl != null)
+            foreach (var pluginContainer in Context.Server.PluginManager.Plugins)
+                if (pluginContainer.Info.ProjectUrl != null)
                 {
                     messages.Add(new ChatMessage
                     {
-                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, ",
-                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pls.Info.ProjectUrl }
+                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, ",
+                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri }
                     });
                 }
                 else
                 {
                     messages.Add(new ChatMessage
                     {
-                        Text = ChatColor.DarkGreen + pls.Info.Name + $"{ChatColor.Reset}, "
+                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, "
                     });
                 }
 
@@ -85,14 +85,10 @@ namespace Obsidian.Commands
             var world = Context.Server.World;
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
+            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
+            (int chunkX, int chunkZ) = c.Player.Location.ToChunkCoord();
 
-            int oldchunkx = world.TransformToChunk(c.Player.LastLocation?.X ?? int.MaxValue);
-            int chunkx = world.TransformToChunk(c.Player.Location?.X ?? 0);
-
-            int oldchunkz = world.TransformToChunk(c.Player.LastLocation?.Z ?? int.MaxValue);
-            int chunkz = world.TransformToChunk(c.Player.Location?.Z ?? 0);
-
-            await world.ResendBaseChunksAsync(dist, oldchunkx, oldchunkz, chunkx, chunkz, c);
+            await world.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, chunkX, chunkZ, c);
         }
 
         [Command("echo")]

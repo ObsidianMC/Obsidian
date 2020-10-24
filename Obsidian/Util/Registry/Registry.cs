@@ -673,7 +673,7 @@ namespace Obsidian.Util.Registry
 
                     Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
 
-                    Items.Add(material, new Item { Id = item.ProtocolId, Name = itemName, Type = material });
+                    Items.Add(material, new Item(material) { Id = item.ProtocolId, Name = itemName });
                     registered++;
                 }
 
@@ -741,7 +741,7 @@ namespace Obsidian.Util.Registry
 
         public static Item GetItem(int id)
         {
-            foreach(var (key, value) in Items)
+            foreach (var (key, value) in Items)
             {
                 if (value.Id == id)
                     return value;
