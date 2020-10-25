@@ -115,12 +115,19 @@ namespace Obsidian
             this.chatmessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
-
+            Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
+
+            Logger.LogDebug("Registering commands...");
             this.Commands.RegisterCommandClass<MainCommandModule>();
+
+            Logger.LogDebug("Registering custom argument parsers...");
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
+
+            Logger.LogDebug("Registering command context type...");
             this.Commands.RegisterContextType<ObsidianContext>();
+            Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
 

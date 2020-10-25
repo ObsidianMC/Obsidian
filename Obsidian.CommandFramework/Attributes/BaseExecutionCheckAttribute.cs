@@ -8,6 +8,9 @@ namespace Obsidian.CommandFramework.Attributes
 {
     public abstract class BaseExecutionCheckAttribute : Attribute
     {
-        public abstract Task<bool> RunChecksAsync(BaseCommandContext ctx);
+        public virtual async Task<bool> RunChecksAsync(BaseCommandContext ctx)
+        {
+            throw new Exception($"RunChecksAsync was not implemented for {this.GetType().Name}!");
+        }
     }
 }

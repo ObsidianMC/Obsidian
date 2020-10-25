@@ -21,12 +21,19 @@ namespace Obsidian.Commands
         {
             StringBuilder help = new StringBuilder();
             await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
-            foreach (var cmd in Context.Commands.GetAllCommands())
+            foreach (var cmd in Context.Commands.GetAllCommands().Where(x => x.Parent == null))
             {
-                help.Append($"{ChatColor.DarkGreen}{cmd.CommandName}{ChatColor.Reset}: {cmd.Description}\n");
+                help.Append($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}\n");
             }
 
             await Context.Player.SendMessageAsync(help.ToString());
+        }
+
+        [CommandOverload]
+        public async Task HelpAsync(ObsidianContext Context, [Remaining]string cmd)
+        {
+            // TODO subcommand help
+            await Context.Player.SendMessageAsync("Overload test");
         }
 
         [Command("forceskins")]
