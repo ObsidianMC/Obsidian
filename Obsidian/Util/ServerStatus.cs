@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Obsidian.Util
@@ -37,7 +38,16 @@ namespace Obsidian.Util
             this.Version = new ServerVersion();
             this.Players = new ServerPlayers(server);
             this.Description = new ServerDescription(server);
-            this.Favicon = b64obsidian; //TOOD: add proper image
+            if (File.Exists("favicon.png"))
+            {
+                byte[] imageArray = System.IO.File.ReadAllBytes(@"favicon.png");
+                string b64 = Convert.ToBase64String(imageArray);
+                this.Favicon = $"data:image/png;base64,{b64}";
+            }
+            else
+            {
+                this.Favicon = b64obsidian; //TOOD: add proper image
+            }
         }
     }
 
