@@ -1,4 +1,5 @@
 ﻿using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace Obsidian.CommandFramework.Entities
         public string[] Aliases { get; private set; }
 
         public Command Parent { get; private set; }
-        
+
         public string Description { get; private set; }
 
         public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
@@ -37,13 +38,13 @@ namespace Obsidian.CommandFramework.Entities
 
         public bool CheckCommand(string[] input, Command parent)
         {
-            if (this.Parent == parent)
+            if (this.Parent == parent && input.Count() > 0)
             {
                 if (this.Name == input[0])
                 {
                     return true;
                 }
-                else if(this.Aliases.Count() > 0)
+                else if (this.Aliases.Count() > 0)
                 {
                     return this.Aliases.Contains(input[0]);
                 }
@@ -61,7 +62,7 @@ namespace Obsidian.CommandFramework.Entities
             var c = this;
             string name = c.Name;
 
-            while(c.Parent != null)
+            while (c.Parent != null)
             {
                 name = $"{c.Parent.Name} {name}";
                 c = c.Parent;
@@ -79,6 +80,12 @@ namespace Obsidian.CommandFramework.Entities
         public async Task ExecuteAsync<T>(T context, string[] args) where T : BaseCommandContext
         {
             // Find matching overload
+            if (!this.Overloads.Any(x => x.GetParameters().Count() - 1 == args.Count()
+             || x.GetParameters().Last().CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType))))
+            {
+                throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+            }
+
             var method = this.Overloads.First(x => x.GetParameters().Count() - 1 == args.Count()
             || x.GetParameters().Last().CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType)));
 
@@ -124,12 +131,12 @@ namespace Obsidian.CommandFramework.Entities
                     else
                     {
                         // Argument can't be parsed to the parser's type.
-                        throw new Exception($"Argument '{arg}' was not parseable to {paraminfo.ParameterType.Name}!");
+                        throw new CommandArgumentParsingException($"Argument '{arg}' was not parseable to {paraminfo.ParameterType.Name}!");
                     }
                 }
                 else
                 {
-                    throw new Exception($"No valid argumentparser found for type {paraminfo.ParameterType.Name}!");
+                    throw new NoSuchParserException($"No valid argumentparser found for type {paraminfo.ParameterType.Name}!");
                 }
             }
 
@@ -143,7 +150,7 @@ namespace Obsidian.CommandFramework.Entities
                 {
                     // A check failed.
                     // TODO: Tell user what arg failed?
-                    throw new Exception("One or more execution checks failed!");
+                    throw new CommandExecutionCheckException($"One or more execution checks failed.");
                 }
             }
 

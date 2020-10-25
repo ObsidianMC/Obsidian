@@ -15,8 +15,16 @@ namespace Obsidian.Commands.Parsers
 
             Player player = null;
 
-            if (ctx.Server.OnlinePlayers.TryGetValue(Guid.Parse(input), out Player pl) || ctx.Server.OnlinePlayers.Any(x => x.Value.Username == input))
-                player = pl ?? ctx.Server.OnlinePlayers.FirstOrDefault(x => x.Value.Username == input).Value;
+            if(Guid.TryParse(input, out Guid guid))
+            {
+                // is valid GUID, try find with guid
+                ctx.Server.OnlinePlayers.TryGetValue(guid, out player);
+            }
+            else
+            {
+                // is not valid guid, try find with name
+                player = ctx.Server.OnlinePlayers.FirstOrDefault(x => x.Value.Username == input).Value;
+            }
 
             result = player;
             return true;

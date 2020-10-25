@@ -1,6 +1,7 @@
 ﻿using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
+using Obsidian.CommandFramework.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -134,7 +135,7 @@ namespace Obsidian.CommandFramework
 
             if (!this._contextType.IsAssignableFrom(ctx.GetType()))
             {
-                throw new Exception("Your context does not match the registered context type.");
+                throw new InvalidCommandContextTypeException("Your context does not match the registered context type.");
             }
 
             // split the command message into command and args.
@@ -164,7 +165,7 @@ namespace Obsidian.CommandFramework
             if (cmd != null)
                 await cmd.ExecuteAsync(ctx, args);
             else
-                throw new Exception("No such command was found!");
+                throw new CommandNotFoundException("No such command was found!");
         }
     }
 }

@@ -378,12 +378,12 @@ namespace Obsidian
                 {
                     var commandNode = new CommandNode()
                     {
-                        Name = command.GetQualifiedName(),
+                        Name = command.Name,
                         Type = CommandNodeType.Literal,
                         Index = ++index
                     };
 
-                    foreach (var parameter in overload.GetParameters().Skip(1))
+                    foreach (var parameter in command.Overloads.First().GetParameters().Skip(1))
                     {
                         var parameterNode = new CommandNode()
                         {

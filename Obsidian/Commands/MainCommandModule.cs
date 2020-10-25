@@ -23,10 +23,52 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
             foreach (var cmd in Context.Commands.GetAllCommands().Where(x => x.Parent == null))
             {
-                help.Append($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}\n");
+                // only list commands the user may execute.
+                var success = true;
+                foreach(var check in cmd.ExecutionChecks)
+                {
+                    if(!await check.RunChecksAsync(Context))
+                    {
+                        // at least one check failed
+                        success = false;
+                    }
+                }
+
+                if (success)
+                {
+                    help.Append($"{ChatColor.DarkGreen}{cmd.Name}{ChatColor.Reset}: {cmd.Description}\n");
+                }
             }
 
             await Context.Player.SendMessageAsync(help.ToString());
+        }
+
+        [CommandGroup("group")]
+        public class Group
+        {
+            [GroupCommand]
+            public async Task ExecuteAsync(ObsidianContext ctx)
+            {
+                await ctx.Player.SendMessageAsync("group command", 1);
+            }
+
+            [GroupCommand]
+            public async Task ExecuteAsync(ObsidianContext ctx, int test)
+            {
+                await ctx.Player.SendMessageAsync($"group command overload {test}", 1);
+            }
+
+            [Command("sub")]
+            public async Task SubCommandAsync(ObsidianContext ctx)
+            {
+                await ctx.Player.SendMessageAsync("group subcommand", 1);
+            }
+
+            [CommandOverload]
+            public async Task SubCommandAsync(ObsidianContext ctx, int test)
+            {
+                await ctx.Player.SendMessageAsync($"group subcommand overload {test}", 1);
+            }
         }
 
         [CommandOverload]
