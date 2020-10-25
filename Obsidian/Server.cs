@@ -221,7 +221,11 @@ namespace Obsidian
             this.Logger.LogInformation("Loading plugins...");
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
-            await PluginManager.LoadPluginAsync("https://www.github.com/Seb-stian/SampleObsidianPlugin"); // !!!
+
+            foreach(var pluginlink in Config.DownloadPlugins)
+            {
+                await PluginManager.LoadPluginAsync(pluginlink); // !!!
+            }
 
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
