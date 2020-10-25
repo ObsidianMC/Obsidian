@@ -15,9 +15,12 @@ namespace Obsidian.ChunkData
 
         public bool Overworld = true;
 
-        public ChunkSection(byte bitsPerBlock = 4)
+        public int? YBase { get; }
+
+        public ChunkSection(byte bitsPerBlock = 4, int? yBase = null)
         {
             this.Container = new BlockStateContainer(bitsPerBlock);
+            this.YBase = YBase;
         }
 
         public async Task WriteToAsync(MinecraftStream stream)

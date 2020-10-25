@@ -2,6 +2,7 @@
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry.Codecs;
+using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
 

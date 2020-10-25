@@ -3,9 +3,14 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
+using Obsidian.Entities;
 using Obsidian.Items;
+using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs;
+using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
+using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +20,12 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
+    public class DomainTag
+    {
+        public string TagName { get; set; }
+
+        public string BaseTagName { get; set; }
+    }
 
     public class Registry
     {
@@ -23,7 +34,9 @@ namespace Obsidian.Util.Registry
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
         public static Dictionary<Materials, Block> Blocks = new Dictionary<Materials, Block>();
         public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
-      
+
+        public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
+
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
         internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
@@ -47,13 +60,13 @@ namespace Obsidian.Util.Registry
                 {
                     while (enumerator.MoveNext())
                     {
-                        var (name, token) = enumerator.Current;
+                        var (blockName, token) = enumerator.Current;
 
-                        var blockName = name.Split(":")[1];
+                        var name = blockName.Split(":")[1];
 
                         var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Program.JsonSettings);
 
-                        if (!Enum.TryParse(blockName.Replace("_", ""), true, out Materials material))
+                        if (!Enum.TryParse(name.Replace("_", ""), true, out Materials material))
                             continue;
 
                         if (states.States.Length <= 0)
@@ -639,6 +652,14 @@ namespace Obsidian.Util.Registry
                                 Blocks.Add(material, new Block(blockName, id, material));
                                 break;
                         }
+
+                        foreach (var state in states.States)
+                        {
+                            if (id == state.Id)
+                                continue;
+
+                            Blocks[material].States.Add(new BlockState(state.Id));
+                        }
                         registered++;
                     }
                 }
@@ -680,7 +701,7 @@ namespace Obsidian.Util.Registry
 
                     Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
 
-                    Items.Add(material, new Item(material) { Id = item.ProtocolId, Name = itemName });
+                    Items.Add(material, new Item(material) { Id = item.ProtocolId, UnlocalizedName = name });
                     registered++;
                 }
 
@@ -744,7 +765,7 @@ namespace Obsidian.Util.Registry
             {
                 var (name, token) = cenumerator.Current;
 
-                foreach(var obj in token)
+                foreach (var obj in token)
                 {
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Program.JsonSettings);
@@ -792,43 +813,159 @@ namespace Obsidian.Util.Registry
             }
             Logger.LogDebug($"Successfully registered {registered} codec biomes");
         }
-        public static Block GetBlock(Materials mat)
-        {
-            if (Blocks.TryGetValue(mat, out Block result))
-                return result;
 
-            return null;
-        }
-
-        public static Block GetBlockFromId(int id)
+        public static async Task RegisterTagsAsync()
         {
-            foreach (var (key, value) in Blocks)
+            var domains = new Dictionary<string, List<DomainTag>>();
+            var registered = 0;
+            foreach (var directory in Directory.GetDirectories("Assets/Tags"))
             {
-                if (value.Id == id)
-                    return value;
+                var repl = directory.Replace(@"\", @"/");
+
+                var baseTagName = repl.Split("/")[2];
+
+                foreach (var file in Directory.GetFiles(directory))
+                {
+                    var fi = new FileInfo(file);
+
+                    using var fs = fi.OpenRead();
+                    using var read = new StreamReader(fs, new UTF8Encoding(false));
+
+                    var json = await read.ReadToEndAsync();
+
+                    var type = JObject.Parse(json);
+
+                    using var enumerator = type.GetEnumerator();
+
+                    while (enumerator.MoveNext())
+                    {
+                        var (name, token) = enumerator.Current;
+
+                        if (name.EqualsIgnoreCase("values"))
+                        {
+                            var tagName = fi.Name.Replace(".json", "");
+
+                            var list = token.ToObject<List<string>>();
+
+                            var ids = new List<int>();
+
+                            foreach (var item in list)
+                            {
+                                if (item.StartsWith("#"))
+                                {
+                                    var start = item.TrimStart('#');
+
+                                    if (domains.ContainsKey(start))
+                                        domains[start].Add(new DomainTag
+                                        {
+                                            TagName = tagName,
+                                            BaseTagName = baseTagName
+                                        });
+                                    else
+                                        domains.Add(start, new List<DomainTag>
+                                        {
+                                            new DomainTag
+                                            {
+                                                TagName = tagName,
+                                                BaseTagName = baseTagName
+                                            }
+                                        });
+
+                                    continue;
+                                }
+
+                                object obj = null;
+                                switch (baseTagName)
+                                {
+                                    case "blocks":
+                                        obj = GetBlock(item);
+                                        break;
+                                    case "items":
+                                        obj = GetItem(item);
+                                        break;
+                                    default:
+                                        if (Enum.TryParse<EntityType>(item.Replace("minecraft:", "").Replace("_", ""), true, out var entityType))
+                                            obj = (int)entityType;
+                                        else if (Enum.TryParse<Fluids>(item.Replace("minecraft:", "").Replace("_", ""), true, out var fluid))
+                                            obj = (int)fluid;
+                                        break;
+                                }
+
+                                if (obj is Block block)
+                                    ids.Add(block.Id);
+                                else if (obj is Item returnItem)
+                                    ids.Add(returnItem.Id);
+                                else if (obj is int value)
+                                    ids.Add(value);
+                            }
+
+                            if (Tags.ContainsKey(baseTagName))
+                            {
+                                Tags[baseTagName].Add(new Tag
+                                {
+                                    Name = tagName,
+                                    Entries = ids,
+                                    Count = ids.Count
+                                });
+                            }
+                            else
+                            {
+                                Tags.Add(baseTagName, new List<Tag>
+                                {
+                                    new Tag
+                                    {
+                                        Name = tagName,
+                                        Entries = ids,
+                                        Count = ids.Count
+                                    }
+                                });
+                            }
+                            Logger.LogDebug($"Registered tag {baseTagName}:{tagName}");
+                        }
+                    }
+                    registered++;
+                }
             }
 
-            return null;
-        }
-
-        public static Item GetItem(int id)
-        {
-            foreach (var (key, value) in Items)
+            if (domains.Count > 0)
             {
-                if (value.Id == id)
-                    return value;
+                foreach (var (t, domainTags) in domains)
+                {
+                    var item = t.Replace("minecraft:", "");
+
+                    foreach (var domainTag in domainTags)
+                    {
+                        var index = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(item));
+
+                        var tag = Tags[domainTag.BaseTagName][index];
+
+                        var tagIndex = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(domainTag.TagName));
+
+                        Tags[domainTag.BaseTagName][tagIndex].Count += tag.Count;
+
+                        Tags[domainTag.BaseTagName][tagIndex].Entries.AddRange(tag.Entries);
+
+                        Logger.LogDebug($"Registering domain: {item} to {domainTag.BaseTagName}:{domainTag.TagName}");
+                        registered++;
+                    }
+
+                }
             }
 
-            return null;
+            Logger.LogDebug($"Registered { registered} tags");
         }
 
-        public static Item GetItem(Materials mat)
-        {
-            if (Items.TryGetValue(mat, out Item result))
-                return result;
+        public static Block GetBlock(Materials mat) => Blocks.GetValueOrDefault(mat);
 
-            return null;
-        }
+        public static Block GetBlock(int id) => Blocks.Values.SingleOrDefault(x => x.Id == id);
+
+        public static Block GetBlock(string unlocalizedName) =>
+            Blocks.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+
+        public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
+        public static Item GetItem(Materials mat) => Items.GetValueOrDefault(mat);
+        public static Item GetItem(string unlocalizedName) =>
+            Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
         class BaseRegistryJson
         {

@@ -323,10 +323,31 @@ namespace Obsidian
                 Flat = true
             });
 
-            this.Logger.LogDebug("Sent Join Game packet.");
+            await this.SendServerBrand();
+
+            await this.QueuePacketAsync(new TagsPacket
+            {
+                Blocks = Registry.Tags["blocks"],
+
+                Items = Registry.Tags["items"],
+
+                Fluid = Registry.Tags["fluids"],
+
+                Entities = Registry.Tags["entity_types"]
+            });
+
+            await this.SendDeclareCommandsAsync();
+            await this.SendPlayerInfoAsync();
+            await this.SendPlayerListDecoration();
+            
+            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+
+            await this.LoadChunksAsync();
 
             await this.QueuePacketAsync(new SpawnPosition(new Position(0, 61, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
+
+            this.Logger.LogDebug("Sent Join Game packet.");
 
             this.Player.Location = new Position(0, 61, 0);
 
@@ -339,15 +360,6 @@ namespace Obsidian
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");
-
-            await this.SendDeclareCommandsAsync();
-            await this.SendPlayerInfoAsync();
-            await this.SendPlayerListDecoration();
-            await this.SendServerBrand();
-
-            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-
-            await this.LoadChunksAsync();
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
 

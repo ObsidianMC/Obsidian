@@ -354,6 +354,19 @@ namespace Obsidian.Net
                             foreach (var val in vals)
                                 await this.WriteLongAsync(val);
                         }
+                        else if (value is List<Tag> tags)
+                        {
+                            await this.WriteVarIntAsync(tags.Count);
+
+                            foreach (var tag in tags)
+                            {
+                                await this.WriteStringAsync(tag.Name);
+                                await this.WriteVarIntAsync(tag.Count);
+
+                                foreach (var entry in tag.Entries)                                
+                                    await this.WriteVarIntAsync(entry);
+                            }
+                        }
                         break;
                     }
                 case DataType.ByteArray:

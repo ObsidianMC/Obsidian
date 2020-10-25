@@ -205,7 +205,8 @@ namespace Obsidian
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
             await Registry.RegisterDimensionsAsync();
-            
+            await Registry.RegisterTagsAsync();
+
             this.Logger.LogInformation("Loading services..");
             //TODO services
             this.Services = new ServiceCollection()
