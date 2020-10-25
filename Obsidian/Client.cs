@@ -369,16 +369,17 @@ namespace Obsidian
                 Type = CommandNodeType.Root
             };
 
-            foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
+            // TODO port to new framework
+            foreach (Obsidian.CommandFramework.Entities.CommandInfo command in this.Server.Commands.GetAllCommands())
             {
                 var commandNode = new CommandNode()
                 {
-                    Name = command.Name,
+                    Name = command.CommandName,
                     Type = CommandNodeType.Literal,
                     Index = ++index
                 };
 
-                foreach (Qmmands.Parameter parameter in command.Parameters)
+                foreach (Obsidian.CommandFramework.Entities.CommandParam parameter in command.Parameters)
                 {
                     var parameterNode = new CommandNode()
                     {
@@ -389,7 +390,7 @@ namespace Obsidian
                     Type type = parameter.Type;
 
                     if (type == typeof(string))
-                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.SingleWord);
+                        parameterNode.Parser = new StringCommandParser(parameter.Remainder ? StringType.GreedyPhrase : StringType.SingleWord);
                     else if (type == typeof(double))
                         parameterNode.Parser = new CommandParser("brigadier:double");
                     else if (type == typeof(float))
