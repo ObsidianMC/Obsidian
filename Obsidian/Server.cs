@@ -4,6 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
 using Obsidian.CommandFramework;
+using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
@@ -115,12 +116,19 @@ namespace Obsidian
             this.chatmessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
-
+            Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
+
+            Logger.LogDebug("Registering commands...");
             this.Commands.RegisterCommandClass<MainCommandModule>();
+
+            Logger.LogDebug("Registering custom argument parsers...");
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
+
+            Logger.LogDebug("Registering command context type...");
             this.Commands.RegisterContextType<ObsidianContext>();
+            Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
 
@@ -314,9 +322,31 @@ namespace Obsidian
             try
             {
                 await Commands.ProcessCommand(context);
-            }catch(Exception ex)
+            }
+            catch (CommandArgumentParsingException ex)
             {
-                Console.WriteLine(ex.ToString());
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Invalid arguments! Parsing failed." });
+            }
+            catch (CommandExecutionCheckException ex)
+            {
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}You can not execute this command." });
+            }
+            catch (CommandNotFoundException ex)
+            {
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such command was found." });
+            }
+            catch (NoSuchParserException ex)
+            {
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}The command you executed has a argument that has no matching parser." });
+            }
+            catch(InvalidCommandOverloadException ex)
+            {
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such overload is available for this command." });
+            }
+            catch (Exception ex)
+            {
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {ex.Message}" });
+                Logger.LogError(ex, ex.Message);
             }
         }
 

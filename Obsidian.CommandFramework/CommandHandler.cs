@@ -1,8 +1,10 @@
 ﻿using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
+using Obsidian.CommandFramework.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -13,15 +15,15 @@ namespace Obsidian.CommandFramework
 {
     public class CommandHandler
     {
-        private Type _contextType;
-        private List<Type> _commandClasses;
-        private CommandParser _commandParser;
-        private List<BaseArgumentParser> _argumentParsers;
+        internal Type _contextType;
+        internal List<Command> _commands;
+        internal CommandParser _commandParser;
+        internal List<BaseArgumentParser> _argumentParsers;
 
         public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
-            this._commandClasses = new List<Type>();
+            this._commands = new List<Command>();
             this._argumentParsers = new List<BaseArgumentParser>();
 
             var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
@@ -33,65 +35,99 @@ namespace Obsidian.CommandFramework
             }
         }
 
+        public Command[] GetAllCommands()
+        {
+            return _commands.ToArray();
+        }
+
         public void AddArgumentParser(BaseArgumentParser parser)
         {
             this._argumentParsers.Add(parser);
         }
 
-        public void RegisterContextType<T>()
+        public void RegisterContextType<T>() where T : BaseCommandContext
         {
-            if (typeof(BaseCommandContext).IsAssignableFrom(typeof(T)))
-            {
-                this._contextType = typeof(T);
-                return;
-            }
-
-            throw new Exception("BaseCommandContext is not assignable from your Type!");
+            this._contextType = typeof(T);
         }
 
         public void RegisterCommandClass<T>() where T : BaseCommandClass
         {
-            _commandClasses.Add(typeof(T));
+            var t = typeof(T);
+
+            registerSubgroups(t);
+            registerSubcommands(t);
         }
 
-        public CommandInfo[] GetAllCommands()
+        private void registerSubgroups(Type t, Command parent = null)
         {
-            List<CommandInfo> infos = new List<CommandInfo>();
+            // find all command groups under this command
+            var subtypes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
 
-            foreach(var c in _commandClasses)
+            foreach(var st in subtypes)
             {
-                infos.AddRange(GetSubCommands(c));
-            }
+                // Get command name from first constructor argument for command attribute.
+                var name = (string)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments[0].Value;
+                // Get aliases
+                var baliases = (ReadOnlyCollection<System.Reflection.CustomAttributeTypedArgument>)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments[1].Value;
+                var aliases = baliases.Select(x => (string)x.Value);
 
-            return infos.ToArray();
-        }
+                var checks = st.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType))
+                    .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
 
-        private CommandInfo[] GetSubCommands(Type t, string parent = "")
-        {
-            List<CommandInfo> infos = new List<CommandInfo>();
+                var desc = "";
 
-            var classes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
-            foreach(var c in classes)
-            {
-                infos.AddRange(GetSubCommands(c, string.Join(' ', parent, (string)c.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments.First().Value).Trim(' ')));
-            }
-
-            foreach(var m in t.GetMethods().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
-            {
-                string desc = "";
-                if(m.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
+                if(st.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
                 {
-                    desc = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments.First().Value;
+                    desc = (string)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments[0].Value;
                 }
-                infos.Add(new CommandInfo(string.Join(' ', parent, (string)m.CustomAttributes.First(y => y.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value).Trim(' '), desc, GetParams(m)));
-            }
 
-            return infos.ToArray();
+                var cmd = new Command(name, aliases.ToArray(), desc, parent, checks, this);
+
+                registerSubgroups(st, cmd);
+                registerSubcommands(st, cmd);
+
+                this._commands.Add(cmd);
+            }
         }
 
-        private CommandParam[] GetParams(MethodInfo method)
-            => method.GetParameters().Skip(1).Select(x => new CommandParam(x.Name, x.ParameterType,
-                x.CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType)))).ToArray();
+        private void registerSubcommands(Type t, Command parent = null)
+        {
+            // loop through methods and find valid commands
+            var methods = t.GetMethods();
+
+            if(parent != null)
+            {
+                // Adding all methods with GroupCommand attribute
+                parent.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute))));
+            }
+
+            // Selecting all methods that have the CommandAttribute.
+            foreach(var m in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
+            {
+                // Get command name from first constructor argument for command attribute.
+                var name = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments[0].Value;
+                // Get aliases
+                var baliases = (ReadOnlyCollection<System.Reflection.CustomAttributeTypedArgument>)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments[1].Value;
+                var aliases = baliases.Select(x => (string)x.Value);
+                var checks = m.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType))
+                    .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
+
+                var desc = "";
+
+                if (m.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
+                {
+                    desc = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments[0].Value;
+                }
+
+                var cmd = new Command(name, aliases.ToArray(), desc, parent, checks, this);
+                cmd.Overloads.Add(m);
+
+                // Add overloads.
+                cmd.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
+
+                this._commands.Add(cmd);
+            }
+        }
 
         public async Task ProcessCommand(BaseCommandContext ctx)
         {
@@ -99,7 +135,7 @@ namespace Obsidian.CommandFramework
 
             if (!this._contextType.IsAssignableFrom(ctx.GetType()))
             {
-                throw new Exception("Your context does not match the registered context type.");
+                throw new InvalidCommandContextTypeException("Your context does not match the registered context type.");
             }
 
             // split the command message into command and args.
@@ -116,100 +152,20 @@ namespace Obsidian.CommandFramework
 
         private async Task executeCommand(string[] command, BaseCommandContext ctx)
         {
-            var qualified = searchForQualifiedMethods(this._commandClasses.ToArray(), command);
-            // now find the methodinfo with the right amount of args and execute that
+            Command cmd = null;
+            var args = command;
 
-            var method = qualified.method.First(x => x.GetParameters().Count() - 1 == qualified.args.Count() 
-            || x.GetParameters().Last().CustomAttributes.Any(y => typeof(RemainingAttribute).IsAssignableFrom(y.AttributeType)));
-
-            var obj = Activator.CreateInstance(method.DeclaringType);
-
-            var methodparams = method.GetParameters().Skip(1).ToArray();
-
-            var parsedargs = new object[methodparams.Length + 1];
-            parsedargs[0] = (object)ctx;
-
-            // TODO add overload support
-            for (int i = 0; i < methodparams.Length; i++)
+            // Search for correct Command class in this._commands.
+            while(_commands.Any(x => x.CheckCommand(args, cmd)))
             {
-                var paraminfo = methodparams[i];
-                var arg = qualified.args[i];
-
-                if(qualified.args.Length > methodparams.Length && i == methodparams.Length - 1)
-                {
-                    arg = string.Join(' ', qualified.args.Skip(i));
-                }
-
-                if (_argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
-                {
-                    var parsertype = _argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
-                    var parser = Activator.CreateInstance(parsertype);
-
-                    var parseargs = new object[3] { (object)arg, (object)ctx, null };
-
-                    // cast with reflection?
-                    if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))
-                    {
-                        parsedargs[i + 1] = parseargs[2];
-                    }
-                    else
-                    {
-                        throw new Exception($"Argument '{arg}' was not parseable to {paraminfo.ParameterType.Name}!");
-                    }
-                }
-                else
-                {
-                    throw new Exception($"No valid argumentparser found for type {paraminfo.ParameterType.Name}!");
-                }
+                cmd = _commands.First(x => x.CheckCommand(args, cmd));
+                args = args.Skip(1).ToArray();
             }
 
-            // do execution checks
-            var checks = method.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType));
-
-            foreach(var c in checks)
-            {
-                var check = (BaseExecutionCheckAttribute)Activator.CreateInstance(c.AttributeType);
-                if(!await check.RunChecksAsync(ctx))
-                {
-                    throw new Exception("One or more execution checks failed!");
-                }
-            }
-
-            var task = (Task)method.Invoke(obj, parsedargs);
-
-            await task;
-        }
-
-        private (MethodInfo[] method, string[] args) searchForQualifiedMethods(Type[] types, string[] cmd)
-        {
-            // get args
-            string[] args = cmd.Skip(1).ToArray();
-
-            foreach (var cmdclass in types)
-            {
-                // gets methods with command attribute
-                var qualifiedmethods = cmdclass.GetMethods()
-                    .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute) && (string)y.ConstructorArguments.First().Value == cmd[0]))
-                    .ToArray();
-
-                if (qualifiedmethods.Count() > 0)
-                {
-                    // return found methods
-                    return (qualifiedmethods, args);
-                }
-
-                var qualifiedclasses = cmdclass.GetNestedTypes()
-                    .Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute) && (string)y.ConstructorArguments.First().Value == cmd[0]))
-                    .ToArray();
-
-                if (qualifiedclasses.Count() > 0)
-                {
-                    // repeat search on subclasses
-                    return searchForQualifiedMethods(qualifiedclasses, args);
-                }
-            }
-
-            throw new Exception("No qualified commands found");
+            if (cmd != null)
+                await cmd.ExecuteAsync(ctx, args);
+            else
+                throw new CommandNotFoundException("No such command was found!");
         }
     }
 }
