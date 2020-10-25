@@ -5,15 +5,15 @@ namespace Obsidian.Util.Collection
     public sealed class DataArray
     {
         private readonly byte BitsPerBlock;
-        private readonly ulong BlockMask;
+        private readonly long BlockMask;
 
-        public ulong[] Storage { get; }
+        public long[] Storage { get; }
 
         public DataArray(byte bitsPerBlock, int arraySize = 4096)
         {
             this.BitsPerBlock = bitsPerBlock;
             this.BlockMask = (1u << BitsPerBlock) - 1;
-            this.Storage = new ulong[arraySize * this.BitsPerBlock / 64];
+            this.Storage = new long[arraySize * this.BitsPerBlock / 64];
         }
 
         private (int indexOffset, int bitOffset) GetOffset(int serialIndex)

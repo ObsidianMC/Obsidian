@@ -32,13 +32,12 @@ namespace Obsidian.WorldData
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        this.Blocks[chunkX, chunkY, chunkZ] = Registry.GetBlock(Materials.Stone);
+                        this.Blocks[chunkX, chunkY, chunkZ] = Registry.GetBlock(Materials.Air);
                     }
                 }
             }
 
             this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
-            // this.Heightmaps.Add("WORLD_SURFACE", new Heightmap("WORLD_SURFACE", this));
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);

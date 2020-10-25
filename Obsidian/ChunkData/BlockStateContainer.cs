@@ -2,29 +2,17 @@
 using Obsidian.Net;
 using Obsidian.Util.Collection;
 using Obsidian.Util.Extensions;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
-    public class BlockStateContainer
+    public abstract class BlockStateContainer
     {
-        // private const byte BitsPerEntry = 14;
+        public abstract byte BitsPerBlock { get; }
 
-        public byte BitsPerBlock { get; }
+        public abstract DataArray BlockStorage { get; }
 
-        public DataArray BlockStorage { get; set; }
-
-        public IBlockStatePalette Palette { get; }
-
-        public BlockStateContainer(byte bitsPerBlock = 14)
-        {
-            this.BitsPerBlock = bitsPerBlock;
-
-            this.BlockStorage = new DataArray(bitsPerBlock, 4096);
-
-            this.Palette = bitsPerBlock.DeterminePalette();
-        }
+        public abstract IBlockStatePalette Palette { get; }
 
         public void Set(int x, int y, int z, BlockState blockState)
         {

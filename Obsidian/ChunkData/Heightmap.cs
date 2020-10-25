@@ -76,7 +76,7 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int z) => x + z * 16;
 
-        public ulong[] GetDataArray()
+        public long[] GetDataArray()
         {
             return this.data.Storage;
         }

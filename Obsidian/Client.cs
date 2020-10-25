@@ -545,7 +545,7 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
+            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)
             {
                 await this.SendPacketAsync(new ChunkDataPacket(chunk));
             }
