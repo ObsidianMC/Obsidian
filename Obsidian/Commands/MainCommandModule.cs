@@ -1,4 +1,4 @@
-﻿using Obsidian.Chat;
+using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
@@ -25,9 +25,9 @@ namespace Obsidian.Commands
             {
                 // only list commands the user may execute.
                 var success = true;
-                foreach(var check in cmd.ExecutionChecks)
+                foreach (var check in cmd.ExecutionChecks)
                 {
-                    if(!await check.RunChecksAsync(Context))
+                    if (!await check.RunChecksAsync(Context))
                     {
                         // at least one check failed
                         success = false;
@@ -42,6 +42,24 @@ namespace Obsidian.Commands
 
             await Context.Player.SendMessageAsync(help.ToString());
         }
+
+        [Command("tps")]
+        public async Task TPSAsync(ObsidianContext ctx)
+        {
+            ChatColor color;
+
+            if (ctx.Server.TPS > 15) color = ChatColor.BrightGreen;
+            else if (ctx.Server.TPS > 10) color = ChatColor.Yellow;
+            else color = ChatColor.Red;
+
+            var message = new ChatMessage
+            {
+                Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
+            };
+            await ctx.Player.SendMessageAsync(message);
+
+        }
+
 
         [CommandGroup("group")]
         public class Group
@@ -72,7 +90,7 @@ namespace Obsidian.Commands
         }
 
         [CommandOverload]
-        public async Task HelpAsync(ObsidianContext Context, [Remaining]string cmd)
+        public async Task HelpAsync(ObsidianContext Context, [Remaining] string cmd)
         {
             // TODO subcommand help
             await Context.Player.SendMessageAsync("Overload test");
@@ -163,7 +181,7 @@ namespace Obsidian.Commands
 
         [Command("tp")]
         [CommandInfo("teleports you to a location")]
-        public async Task TeleportAsync(ObsidianContext Context, [Remaining]Position location)
+        public async Task TeleportAsync(ObsidianContext Context, [Remaining] Position location)
         {
             await Context.Player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
             await Context.Player.TeleportAsync(location);
