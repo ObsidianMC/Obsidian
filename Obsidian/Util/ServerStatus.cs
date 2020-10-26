@@ -38,11 +38,22 @@ namespace Obsidian.Util
             this.Version = new ServerVersion();
             this.Players = new ServerPlayers(server);
             this.Description = new ServerDescription(server);
-            if (File.Exists("favicon.png"))
+            var favicon_file = "favicon.png";
+            if (File.Exists(favicon_file))
             {
                 byte[] imageArray = System.IO.File.ReadAllBytes(@"favicon.png");
-                string b64 = Convert.ToBase64String(imageArray);
-                this.Favicon = $"data:image/png;base64,{b64}";
+                byte[] valid_PNG_Header = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+                var isValidImage = !valid_PNG_Header.Select((x, i) => x.Equals(imageArray[i])).Contains(false);
+                if (isValidImage)
+                {
+                    string b64 = Convert.ToBase64String(imageArray);
+                    this.Favicon = $"data:image/png;base64,{b64}";
+                }
+                else
+                {
+                    // This is an invalid PNG file!
+                    this.Favicon = b64obsidian;
+                }
             }
             else
             {
