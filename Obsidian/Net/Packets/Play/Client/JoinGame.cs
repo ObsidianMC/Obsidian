@@ -59,7 +59,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public bool EnableRespawnScreen { get; set; } = true;
 
         [Field(14)]
-        public bool Debug { get; set; } = true;
+        public bool Debug { get; set; } = false;
 
         [Field(15)]
         public bool Flat { get; set; } = false;
