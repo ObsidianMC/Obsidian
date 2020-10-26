@@ -344,12 +344,12 @@ namespace Obsidian
 
             await this.LoadChunksAsync();
 
-            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 61, 0)));
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 6, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            this.Player.Location = new Position(0, 61, 0);
+            this.Player.Location = new Position(0, 6, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -547,6 +547,8 @@ namespace Obsidian
         {
             foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)
             {
+                Console.WriteLine("sending chunks");
+
                 await this.SendPacketAsync(new ChunkDataPacket(chunk));
             }
         }

@@ -32,7 +32,7 @@ namespace Obsidian.WorldData
                 {
                     for (int chunkZ = 0; chunkZ < 16; chunkZ++)
                     {
-                        this.Blocks[chunkX, chunkY, chunkZ] = Registry.GetBlock(Materials.Air);
+                        this.Blocks[chunkX, chunkY, chunkZ] = Registry.GetBlock(Materials.VoidAir);
                     }
                 }
             }

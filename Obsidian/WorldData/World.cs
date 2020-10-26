@@ -10,6 +10,7 @@ using Obsidian.Util;
 using Obsidian.Util.Collection;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -330,7 +331,7 @@ namespace Obsidian.WorldData
             var chunk = this.Generator.GenerateChunk(0, 0);
 
             for (int i = 0; i < 16; i++)
-                chunk.AddSection(new ChunkSection().FillWithLight());
+                chunk.AddSection(new ChunkSection());
 
             for (int x = 0; x < 16; x++)
             {
@@ -346,7 +347,7 @@ namespace Obsidian.WorldData
             }
 
             for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
+                chunk.BiomeContainer.Biomes.Add(127);
 
             this.GenerateRegion(chunk);
         }

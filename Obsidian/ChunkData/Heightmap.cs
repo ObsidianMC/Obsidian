@@ -76,10 +76,7 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int z) => x + z * 16;
 
-        public long[] GetDataArray()
-        {
-            return this.data.Storage;
-        }
+        public long[] GetDataArray() => this.data.Storage;
     }
 
     public enum HeightmapType
