@@ -2,6 +2,7 @@
 
 ---
 
+[![Build status](https://ci.appveyor.com/api/projects/status/769b1l83ibgqexsl?svg=true)](https://ci.appveyor.com/project/Naamloos/obsidian) 
 [![Discord](https://img.shields.io/discord/438803108978753536.svg)](https://discord.gg/SpFWNdV)
 
 [WIP] A C# implementation of the Minecraft server protocol. (NET Core)
