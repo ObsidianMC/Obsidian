@@ -44,6 +44,7 @@ namespace Obsidian.Commands
         }
 
         [Command("tps")]
+        [CommandInfo("Gets server TPS")]
         public async Task TPSAsync(ObsidianContext ctx)
         {
             ChatColor color;
