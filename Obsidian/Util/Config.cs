@@ -46,9 +46,6 @@ namespace Obsidian.Util
         [JsonProperty("maxMissedKeepAlives")]
         public int MaxMissedKeepalives = 15;
 
-        [JsonProperty("maxPlayers")]
-        public int MaxPlayers = 1000000;
-
         [JsonProperty("downloadplugins")]
         public string[] DownloadPlugins = new string[1]{ "https://www.github.com/Seb-stian/SampleObsidianPlugin" };
     }

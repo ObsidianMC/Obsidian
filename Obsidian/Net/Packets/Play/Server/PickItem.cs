@@ -7,6 +7,6 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(0)]
         public int SlotToUse { get; set; }
 
-        public PickItem() : base(0x17) { }
+        public PickItem() : base(0x18) { }
     }
 }

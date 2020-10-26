@@ -15,11 +15,11 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(2)]
         public bool OnGround { get; set; }
 
-        public PlayerRotation() : base(0x12) { }
+        public PlayerRotation() : base(0x14) { }
 
-        public PlayerRotation(byte[] data) : base(0x12, data) { }
+        public PlayerRotation(byte[] data) : base(0x14, data) { }
 
-        public PlayerRotation(float yaw, float pitch, bool onground) : base(0x12)
+        public PlayerRotation(float yaw, float pitch, bool onground) : base(0x14)
         {
             this.Yaw = yaw;
             this.Pitch = pitch;

@@ -10,6 +10,7 @@ using Obsidian.Util;
 using Obsidian.Util.Collection;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -208,7 +209,7 @@ namespace Obsidian.WorldData
             var region = this.GetRegion(chunkX, chunkZ);
 
             if (region is null)
-                throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
+                return new List<Entity>();
 
             return region.Entities.Select(x => x.Value).Where(x => Position.DistanceTo(location, x.Location) <= distance);
         }
@@ -299,9 +300,9 @@ namespace Obsidian.WorldData
 
         public Region GenerateRegion(Chunk chunk)
         {
-            long value = Helpers.IntsToLong(chunk.X >> 5, chunk.Z >> 5);
-
             int regionX = chunk.X >> 5, regionZ = chunk.Z >> 5;
+
+            long value = Helpers.IntsToLong(regionX, regionZ);
 
             this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
 
@@ -329,24 +330,8 @@ namespace Obsidian.WorldData
             this.Server.Logger.LogInformation("Generating chunk..");
             var chunk = this.Generator.GenerateChunk(0, 0);
 
-            for (int i = 0; i < 16; i++)
-                chunk.AddSection(new ChunkSection().FillWithLight());
-
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        var block = chunk.Blocks[x, y, z];
-
-                        chunk.Sections[0].SetBlock(x, y, z, block);
-                    }
-                }
-            }
-
             for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(0); //TODO: Add proper biomes & for some reason not all the block biomes get set properly...
+                chunk.BiomeContainer.Biomes.Add(127);
 
             this.GenerateRegion(chunk);
         }

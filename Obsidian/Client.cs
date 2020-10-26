@@ -23,6 +23,8 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
+using Obsidian.Util.Registry;
+using Obsidian.Util.Registry.Codecs;
 using Obsidian.WorldData;
 
 using System;
@@ -284,7 +286,7 @@ namespace Obsidian
 
         private async Task ConnectAsync()
         {
-            await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid.ToString(), this.Player.Username));
+            await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
@@ -292,19 +294,62 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
+            Registry.DefaultDimensions.TryGetValue(0, out var codec); //TODO support custom dimensions and savve client dimensionns
+
             await this.QueuePacketAsync(new JoinGame
             {
                 EntityId = this.id,
-                GameMode = Gamemode.Survival,
-                Dimension = Dimension.Overworld,
-                HashedSeed = 0,//New field
-                ReducedDebugInfo = false
+
+                Gamemode = Gamemode.Creative,
+
+                WorldCount = 1,
+                WorldNames = new List<string> { "minecraft:world" },
+
+                Codecs = new MixedCodec
+                {
+                    Dimensions = Registry.DefaultDimensions,
+                    Biomes = Registry.DefaultBiomes
+                },
+
+                Dimension = codec,
+
+                DimensionName = codec.Name,
+
+                HashedSeed = 0,
+
+                ReducedDebugInfo = false,
+
+                EnableRespawnScreen = true,
+
+                Flat = true
             });
 
-            this.Logger.LogDebug("Sent Join Game packet.");
+            await this.SendServerBrand();
 
-            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 100, 0)));
+            //TODO figure out why tags make air blocks a fluid
+            /*await this.QueuePacketAsync(new TagsPacket
+            {
+                Blocks = Registry.Tags["blocks"],
+
+                Items = Registry.Tags["items"],
+
+                Fluid = Registry.Tags["fluids"],
+
+                Entities = Registry.Tags["entity_types"]
+            });*/
+
+            await this.SendDeclareCommandsAsync();
+            await this.SendPlayerInfoAsync();
+            await this.SendPlayerListDecoration();
+            
+            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+
+            await this.LoadChunksAsync();
+
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 6, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
+
+            this.Logger.LogDebug("Sent Join Game packet.");
 
             this.Player.Location = new Position(0, 6, 0);
 
@@ -317,16 +362,7 @@ namespace Obsidian
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");
-
-            // TODO fix 
-            await this.SendDeclareCommandsAsync();
-            await this.SendPlayerInfoAsync();
-            await this.SendPlayerListDecoration();
-            await this.SendServerBrand();
-
-            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-
-            await this.LoadChunksAsync();
+            
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
 
@@ -516,8 +552,10 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)//TODO fix later
-                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+            foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)
+            {
+                await this.SendPacketAsync(new ChunkDataPacket(chunk));
+            }
         }
 
         internal Task SendChunkAsync(Chunk chunk) => this.QueuePacketAsync(new ChunkDataPacket(chunk));

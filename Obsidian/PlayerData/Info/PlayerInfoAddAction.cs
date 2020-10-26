@@ -1,7 +1,6 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Util.Mojang;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,7 +22,7 @@ namespace Obsidian.PlayerData.Info
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteUuidAsync(this.Uuid);
+            await base.WriteAsync(stream);
 
             await stream.WriteStringAsync(this.Name, 16);
 

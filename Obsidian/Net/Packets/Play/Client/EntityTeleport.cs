@@ -21,6 +21,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public bool OnGround { get; set; }
 
-        public EntityTeleport() : base(0x57) { }
+        public EntityTeleport() : base(0x56) { }
     }
 }

@@ -22,6 +22,158 @@
 
   <ItemGroup>
     <None Remove="Assets\biomes.json" />
+    <None Remove="Assets\biome_dimension_codec.json" />
+    <None Remove="Assets\default_dimensions.json" />
+    <None Remove="Assets\default_dimensions.xaml" />
+    <None Remove="Assets\entity_types.json" />
+    <None Remove="Assets\fluids.json" />
+    <None Remove="Assets\Tags\blocks\acacia_logs.json" />
+    <None Remove="Assets\Tags\blocks\anvil.json" />
+    <None Remove="Assets\Tags\blocks\bamboo_plantable_on.json" />
+    <None Remove="Assets\Tags\blocks\banners.json" />
+    <None Remove="Assets\Tags\blocks\base_stone_nether.json" />
+    <None Remove="Assets\Tags\blocks\base_stone_overworld.json" />
+    <None Remove="Assets\Tags\blocks\beacon_base_blocks.json" />
+    <None Remove="Assets\Tags\blocks\beds.json" />
+    <None Remove="Assets\Tags\blocks\beehives.json" />
+    <None Remove="Assets\Tags\blocks\bee_growables.json" />
+    <None Remove="Assets\Tags\blocks\birch_logs.json" />
+    <None Remove="Assets\Tags\blocks\buttons.json" />
+    <None Remove="Assets\Tags\blocks\campfires.json" />
+    <None Remove="Assets\Tags\blocks\carpets.json" />
+    <None Remove="Assets\Tags\blocks\climbable.json" />
+    <None Remove="Assets\Tags\blocks\corals.json" />
+    <None Remove="Assets\Tags\blocks\coral_blocks.json" />
+    <None Remove="Assets\Tags\blocks\coral_plants.json" />
+    <None Remove="Assets\Tags\blocks\crimson_stems.json" />
+    <None Remove="Assets\Tags\blocks\crops.json" />
+    <None Remove="Assets\Tags\blocks\dark_oak_logs.json" />
+    <None Remove="Assets\Tags\blocks\doors.json" />
+    <None Remove="Assets\Tags\blocks\dragon_immune.json" />
+    <None Remove="Assets\Tags\blocks\enderman_holdable.json" />
+    <None Remove="Assets\Tags\blocks\fences.json" />
+    <None Remove="Assets\Tags\blocks\fence_gates.json" />
+    <None Remove="Assets\Tags\blocks\fire.json" />
+    <None Remove="Assets\Tags\blocks\flowers.json" />
+    <None Remove="Assets\Tags\blocks\flower_pots.json" />
+    <None Remove="Assets\Tags\blocks\gold_ores.json" />
+    <None Remove="Assets\Tags\blocks\guarded_by_piglins.json" />
+    <None Remove="Assets\Tags\blocks\hoglin_repellents.json" />
+    <None Remove="Assets\Tags\blocks\ice.json" />
+    <None Remove="Assets\Tags\blocks\impermeable.json" />
+    <None Remove="Assets\Tags\blocks\infiniburn_end.json" />
+    <None Remove="Assets\Tags\blocks\infiniburn_nether.json" />
+    <None Remove="Assets\Tags\blocks\infiniburn_overworld.json" />
+    <None Remove="Assets\Tags\blocks\jungle_logs.json" />
+    <None Remove="Assets\Tags\blocks\leaves.json" />
+    <None Remove="Assets\Tags\blocks\logs.json" />
+    <None Remove="Assets\Tags\blocks\logs_that_burn.json" />
+    <None Remove="Assets\Tags\blocks\mushroom_grow_block.json" />
+    <None Remove="Assets\Tags\blocks\non_flammable_wood.json" />
+    <None Remove="Assets\Tags\blocks\nylium.json" />
+    <None Remove="Assets\Tags\blocks\oak_logs.json" />
+    <None Remove="Assets\Tags\blocks\piglin_repellents.json" />
+    <None Remove="Assets\Tags\blocks\planks.json" />
+    <None Remove="Assets\Tags\blocks\portals.json" />
+    <None Remove="Assets\Tags\blocks\pressure_plates.json" />
+    <None Remove="Assets\Tags\blocks\prevent_mob_spawning_inside.json" />
+    <None Remove="Assets\Tags\blocks\rails.json" />
+    <None Remove="Assets\Tags\blocks\sand.json" />
+    <None Remove="Assets\Tags\blocks\saplings.json" />
+    <None Remove="Assets\Tags\blocks\shulker_boxes.json" />
+    <None Remove="Assets\Tags\blocks\signs.json" />
+    <None Remove="Assets\Tags\blocks\slabs.json" />
+    <None Remove="Assets\Tags\blocks\small_flowers.json" />
+    <None Remove="Assets\Tags\blocks\soul_fire_base_blocks.json" />
+    <None Remove="Assets\Tags\blocks\soul_speed_blocks.json" />
+    <None Remove="Assets\Tags\blocks\spruce_logs.json" />
+    <None Remove="Assets\Tags\blocks\stairs.json" />
+    <None Remove="Assets\Tags\blocks\standing_signs.json" />
+    <None Remove="Assets\Tags\blocks\stone_bricks.json" />
+    <None Remove="Assets\Tags\blocks\stone_pressure_plates.json" />
+    <None Remove="Assets\Tags\blocks\strider_warm_blocks.json" />
+    <None Remove="Assets\Tags\blocks\tall_flowers.json" />
+    <None Remove="Assets\Tags\blocks\trapdoors.json" />
+    <None Remove="Assets\Tags\blocks\underwater_bonemeals.json" />
+    <None Remove="Assets\Tags\blocks\unstable_bottom_center.json" />
+    <None Remove="Assets\Tags\blocks\valid_spawn.json" />
+    <None Remove="Assets\Tags\blocks\walls.json" />
+    <None Remove="Assets\Tags\blocks\wall_corals.json" />
+    <None Remove="Assets\Tags\blocks\wall_post_override.json" />
+    <None Remove="Assets\Tags\blocks\wall_signs.json" />
+    <None Remove="Assets\Tags\blocks\warped_stems.json" />
+    <None Remove="Assets\Tags\blocks\wart_blocks.json" />
+    <None Remove="Assets\Tags\blocks\wither_immune.json" />
+    <None Remove="Assets\Tags\blocks\wither_summon_base_blocks.json" />
+    <None Remove="Assets\Tags\blocks\wooden_buttons.json" />
+    <None Remove="Assets\Tags\blocks\wooden_doors.json" />
+    <None Remove="Assets\Tags\blocks\wooden_fences.json" />
+    <None Remove="Assets\Tags\blocks\wooden_pressure_plates.json" />
+    <None Remove="Assets\Tags\blocks\wooden_slabs.json" />
+    <None Remove="Assets\Tags\blocks\wooden_stairs.json" />
+    <None Remove="Assets\Tags\blocks\wooden_trapdoors.json" />
+    <None Remove="Assets\Tags\blocks\wool.json" />
+    <None Remove="Assets\Tags\entity_types\arrows.json" />
+    <None Remove="Assets\Tags\entity_types\beehive_inhabitors.json" />
+    <None Remove="Assets\Tags\entity_types\impact_projectiles.json" />
+    <None Remove="Assets\Tags\entity_types\raiders.json" />
+    <None Remove="Assets\Tags\entity_types\skeletons.json" />
+    <None Remove="Assets\Tags\fluids\lava.json" />
+    <None Remove="Assets\Tags\fluids\water.json" />
+    <None Remove="Assets\Tags\items\acacia_logs.json" />
+    <None Remove="Assets\Tags\items\anvil.json" />
+    <None Remove="Assets\Tags\items\arrows.json" />
+    <None Remove="Assets\Tags\items\banners.json" />
+    <None Remove="Assets\Tags\items\beacon_payment_items.json" />
+    <None Remove="Assets\Tags\items\beds.json" />
+    <None Remove="Assets\Tags\items\birch_logs.json" />
+    <None Remove="Assets\Tags\items\boats.json" />
+    <None Remove="Assets\Tags\items\buttons.json" />
+    <None Remove="Assets\Tags\items\carpets.json" />
+    <None Remove="Assets\Tags\items\coals.json" />
+    <None Remove="Assets\Tags\items\creeper_drop_music_discs.json" />
+    <None Remove="Assets\Tags\items\crimson_stems.json" />
+    <None Remove="Assets\Tags\items\dark_oak_logs.json" />
+    <None Remove="Assets\Tags\items\doors.json" />
+    <None Remove="Assets\Tags\items\fences.json" />
+    <None Remove="Assets\Tags\items\fishes.json" />
+    <None Remove="Assets\Tags\items\flowers.json" />
+    <None Remove="Assets\Tags\items\gold_ores.json" />
+    <None Remove="Assets\Tags\items\jungle_logs.json" />
+    <None Remove="Assets\Tags\items\leaves.json" />
+    <None Remove="Assets\Tags\items\lectern_books.json" />
+    <None Remove="Assets\Tags\items\logs.json" />
+    <None Remove="Assets\Tags\items\logs_that_burn.json" />
+    <None Remove="Assets\Tags\items\music_discs.json" />
+    <None Remove="Assets\Tags\items\non_flammable_wood.json" />
+    <None Remove="Assets\Tags\items\oak_logs.json" />
+    <None Remove="Assets\Tags\items\piglin_loved.json" />
+    <None Remove="Assets\Tags\items\piglin_repellents.json" />
+    <None Remove="Assets\Tags\items\planks.json" />
+    <None Remove="Assets\Tags\items\rails.json" />
+    <None Remove="Assets\Tags\items\sand.json" />
+    <None Remove="Assets\Tags\items\saplings.json" />
+    <None Remove="Assets\Tags\items\signs.json" />
+    <None Remove="Assets\Tags\items\slabs.json" />
+    <None Remove="Assets\Tags\items\small_flowers.json" />
+    <None Remove="Assets\Tags\items\soul_fire_base_blocks.json" />
+    <None Remove="Assets\Tags\items\spruce_logs.json" />
+    <None Remove="Assets\Tags\items\stairs.json" />
+    <None Remove="Assets\Tags\items\stone_bricks.json" />
+    <None Remove="Assets\Tags\items\stone_crafting_materials.json" />
+    <None Remove="Assets\Tags\items\stone_tool_materials.json" />
+    <None Remove="Assets\Tags\items\tall_flowers.json" />
+    <None Remove="Assets\Tags\items\trapdoors.json" />
+    <None Remove="Assets\Tags\items\walls.json" />
+    <None Remove="Assets\Tags\items\warped_stems.json" />
+    <None Remove="Assets\Tags\items\wooden_buttons.json" />
+    <None Remove="Assets\Tags\items\wooden_doors.json" />
+    <None Remove="Assets\Tags\items\wooden_fences.json" />
+    <None Remove="Assets\Tags\items\wooden_pressure_plates.json" />
+    <None Remove="Assets\Tags\items\wooden_slabs.json" />
+    <None Remove="Assets\Tags\items\wooden_stairs.json" />
+    <None Remove="Assets\Tags\items\wooden_trapdoors.json" />
+    <None Remove="Assets\Tags\items\wool.json" />
     <None Remove="Serializer\Attributes\NewFile1.txt" />
     <None Remove="Serializer\Enums\NewFile1.txt" />
   </ItemGroup>
@@ -41,13 +193,461 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="blocks.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Tags\blocks\acacia_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\anvil.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\bamboo_plantable_on.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\banners.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\base_stone_nether.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\base_stone_overworld.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\beacon_base_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\beds.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\beehives.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\bee_growables.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\birch_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\buttons.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\campfires.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\carpets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\climbable.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\corals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\coral_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\coral_plants.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\crimson_stems.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\crops.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\dark_oak_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\doors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\dragon_immune.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\enderman_holdable.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\fences.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\fence_gates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\fire.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\flower_pots.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\gold_ores.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\guarded_by_piglins.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\hoglin_repellents.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\ice.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\impermeable.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\infiniburn_end.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\infiniburn_nether.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\infiniburn_overworld.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\jungle_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\leaves.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\logs_that_burn.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\mushroom_grow_block.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\non_flammable_wood.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\nylium.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\oak_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\piglin_repellents.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\planks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\portals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\pressure_plates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\prevent_mob_spawning_inside.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\rails.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\sand.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\saplings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\shulker_boxes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\signs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\slabs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\small_flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\soul_fire_base_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\soul_speed_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\spruce_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\stairs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\standing_signs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\stone_bricks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\stone_pressure_plates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\strider_warm_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\tall_flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\trapdoors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\underwater_bonemeals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\unstable_bottom_center.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\valid_spawn.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\walls.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wall_corals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wall_post_override.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wall_signs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\warped_stems.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wart_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wither_immune.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wither_summon_base_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_buttons.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_doors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_fences.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_pressure_plates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_slabs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_stairs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wooden_trapdoors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\blocks\wool.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\entity_types\arrows.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\entity_types\beehive_inhabitors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\entity_types\impact_projectiles.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\entity_types\raiders.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\entity_types\skeletons.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\fluids\lava.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\fluids\water.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\acacia_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\anvil.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\arrows.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\banners.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\beacon_payment_items.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\beds.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\birch_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\boats.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\buttons.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\carpets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\coals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\creeper_drop_music_discs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\crimson_stems.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\dark_oak_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\doors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\fences.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\fishes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\gold_ores.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\jungle_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\leaves.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\lectern_books.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\logs_that_burn.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\music_discs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\non_flammable_wood.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\oak_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\piglin_loved.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\piglin_repellents.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\planks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\rails.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\sand.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\saplings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\signs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\slabs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\small_flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\soul_fire_base_blocks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\spruce_logs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\stairs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\stone_bricks.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\stone_crafting_materials.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\stone_tool_materials.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\tall_flowers.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\trapdoors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\walls.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\warped_stems.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_buttons.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_doors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_fences.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_pressure_plates.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_slabs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_stairs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wooden_trapdoors.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Assets\Tags\items\wool.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="Assets\default_dimensions.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Net;
 using Obsidian.Util.Registry;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -60,7 +59,7 @@ namespace Obsidian.ChunkData
             {
                 int stateId = await stream.ReadVarIntAsync();
 
-                Block blockState = Registry.GetBlockFromId(stateId);
+                Block blockState = Registry.GetBlock(stateId);
 
                 this.BlockStateArray[i] = blockState;
                 this.BlockStateCount++;

@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, Type = DataType.UnsignedByte)]
         public EAnimation Animation { get; set; }
 
-        public EntityAnimation() : base(0x06) { }
+        public EntityAnimation() : base(0x05) { }
     }
 
     public enum EAnimation : byte

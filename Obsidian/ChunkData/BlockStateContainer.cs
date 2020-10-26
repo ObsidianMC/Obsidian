@@ -1,32 +1,19 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Net;
 using Obsidian.Util.Collection;
-using Obsidian.Util.Extensions;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
 {
-    public class BlockStateContainer
+    public abstract class BlockStateContainer
     {
-        // private const byte BitsPerEntry = 14;
+        public abstract byte BitsPerBlock { get; }
 
-        public byte BitsPerBlock { get; }
+        public abstract DataArray BlockStorage { get; }
 
-        public DataArray BlockStorage { get; set; }
+        public abstract IBlockStatePalette Palette { get; }
 
-        public IBlockStatePalette Palette { get; }
-
-        public BlockStateContainer(byte bitsPerBlock = 4)
-        {
-            this.BitsPerBlock = bitsPerBlock;
-
-            this.BlockStorage = new DataArray(bitsPerBlock);
-
-            this.Palette = bitsPerBlock.DeterminePalette();
-        }
-
-        public void Set(int x, int y, int z, BlockState blockState)
+        protected void Set(int x, int y, int z, BlockState blockState)
         {
             var blockIndex = this.GetIndex(x, y, z);
 
@@ -35,9 +22,9 @@ namespace Obsidian.ChunkData
             this.BlockStorage[blockIndex] = paletteIndex;
         }
 
-        public void Set(double x, double y, double z, BlockState blockState) => this.Set((int)x, (int)y, (int)z, blockState);
+        protected void Set(double x, double y, double z, BlockState blockState) => this.Set((int)x, (int)y, (int)z, blockState);
 
-        public BlockState Get(int x, int y, int z)
+        protected BlockState Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 
@@ -57,7 +44,7 @@ namespace Obsidian.ChunkData
                     {
                         var block = this.Get(x, y, z);
 
-                        if (block != null && block.NotAir())
+                        if (block != null && !block.IsAir)
                             validBlockCount++;
                     }
                 }

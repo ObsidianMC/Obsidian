@@ -73,7 +73,7 @@ namespace Obsidian.Nbt
         /// <param name="tagName"> Name to give to this compound tag. May not be null. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed compound tag was expected -OR- a tag of a different type was expected. </exception>
-        public void BeginCompound([NotNull] String tagName)
+        public void BeginCompound([NotNull] string tagName)
         {
             EnforceConstraints(tagName, NbtTagType.Compound);
             GoDown(NbtTagType.Compound);
@@ -108,7 +108,7 @@ namespace Obsidian.Nbt
             {
                 throw new ArgumentOutOfRangeException("size", "List size may not be negative.");
             }
-            if (elementType < NbtTagType.Byte || elementType > NbtTagType.IntArray)
+            if (elementType < NbtTagType.Byte || elementType > NbtTagType.LongArray)
             {
                 throw new ArgumentOutOfRangeException("elementType");
             }
@@ -129,13 +129,13 @@ namespace Obsidian.Nbt
         /// an unnamed list tag was expected -OR- a tag of a different type was expected. </exception>
         /// <exception cref="ArgumentOutOfRangeException"> <paramref name="size"/> is negative -OR-
         /// <paramref name="elementType"/> is not a valid NbtTagType. </exception>
-        public void BeginList([NotNull] String tagName, NbtTagType elementType, int size)
+        public void BeginList([NotNull] string tagName, NbtTagType elementType, int size)
         {
             if (size < 0)
             {
                 throw new ArgumentOutOfRangeException("size", "List size may not be negative.");
             }
-            if (elementType < NbtTagType.Byte || elementType > NbtTagType.IntArray)
+            if (elementType < NbtTagType.Byte || elementType > NbtTagType.LongArray)
             {
                 throw new ArgumentOutOfRangeException("elementType");
             }
@@ -187,7 +187,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The unsigned byte to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed byte tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteByte([NotNull] String tagName, byte value)
+        public void WriteByte([NotNull] string tagName, byte value)
         {
             EnforceConstraints(tagName, NbtTagType.Byte);
             writer.Write((byte)NbtTagType.Byte);
@@ -211,7 +211,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The unsigned byte to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed byte tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteDouble([NotNull] String tagName, double value)
+        public void WriteDouble([NotNull] string tagName, double value)
         {
             EnforceConstraints(tagName, NbtTagType.Double);
             writer.Write((byte)NbtTagType.Double);
@@ -235,7 +235,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The four-byte floating-point value to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed float tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteFloat([NotNull] String tagName, float value)
+        public void WriteFloat([NotNull] string tagName, float value)
         {
             EnforceConstraints(tagName, NbtTagType.Float);
             writer.Write((byte)NbtTagType.Float);
@@ -259,7 +259,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The four-byte signed integer to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed int tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteInt([NotNull] String tagName, int value)
+        public void WriteInt([NotNull] string tagName, int value)
         {
             EnforceConstraints(tagName, NbtTagType.Int);
             writer.Write((byte)NbtTagType.Int);
@@ -283,7 +283,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The eight-byte signed integer to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed long tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteLong([NotNull] String tagName, long value)
+        public void WriteLong([NotNull] string tagName, long value)
         {
             EnforceConstraints(tagName, NbtTagType.Long);
             writer.Write((byte)NbtTagType.Long);
@@ -307,7 +307,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The two-byte signed integer to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed short tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteShort([NotNull] String tagName, short value)
+        public void WriteShort([NotNull] string tagName, short value)
         {
             EnforceConstraints(tagName, NbtTagType.Short);
             writer.Write((byte)NbtTagType.Short);
@@ -320,7 +320,7 @@ namespace Obsidian.Nbt
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// a named string tag was expected -OR- a tag of a different type was expected -OR-
         /// the size of a parent list has been exceeded. </exception>
-        public void WriteString([NotNull] String value)
+        public void WriteString([NotNull] string value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -333,7 +333,7 @@ namespace Obsidian.Nbt
         /// <param name="value"> The string to write. </param>
         /// <exception cref="NbtFormatException"> No more tags can be written -OR-
         /// an unnamed string tag was expected -OR- a tag of a different type was expected. </exception>
-        public void WriteString([NotNull] String tagName, [NotNull] String value)
+        public void WriteString([NotNull] string tagName, [NotNull] String value)
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -387,7 +387,7 @@ namespace Obsidian.Nbt
         /// an unnamed byte array tag was expected -OR- a tag of a different type was expected. </exception>
         /// <exception cref="ArgumentNullException"> <paramref name="tagName"/> or
         /// <paramref name="data"/> is null </exception>
-        public void WriteByteArray([NotNull] String tagName, [NotNull] byte[] data)
+        public void WriteByteArray([NotNull] string tagName, [NotNull] byte[] data)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -407,7 +407,7 @@ namespace Obsidian.Nbt
         /// <paramref name="data"/> is null </exception>
         /// <exception cref="ArgumentException"> <paramref name="count"/> is greater than
         /// <paramref name="offset"/> subtracted from the array length. </exception>
-        public void WriteByteArray([NotNull] String tagName, [NotNull] byte[] data, int offset, int count)
+        public void WriteByteArray([NotNull] string tagName, [NotNull] byte[] data, int offset, int count)
         {
             CheckArray(data, offset, count);
             EnforceConstraints(tagName, NbtTagType.ByteArray);
@@ -489,7 +489,7 @@ namespace Obsidian.Nbt
         /// <exception cref="ArgumentOutOfRangeException"> <paramref name="count"/> is negative. </exception>
         /// <exception cref="ArgumentNullException"> <paramref name="dataSource"/> is null. </exception>
         /// <exception cref="ArgumentException"> Given stream does not support reading. </exception>
-        public void WriteByteArray([NotNull] String tagName, [NotNull] Stream dataSource, int count)
+        public void WriteByteArray([NotNull] string tagName, [NotNull] Stream dataSource, int count)
         {
             if (dataSource == null)
                 throw new ArgumentNullException("dataSource");
@@ -513,7 +513,7 @@ namespace Obsidian.Nbt
         /// <exception cref="ArgumentNullException"> <paramref name="dataSource"/> is null. </exception>
         /// <exception cref="ArgumentException"> Given stream does not support reading -OR-
         /// <paramref name="buffer"/> size is 0. </exception>
-        public void WriteByteArray([NotNull] String tagName, [NotNull] Stream dataSource, int count,
+        public void WriteByteArray([NotNull] string tagName, [NotNull] Stream dataSource, int count,
                                    [NotNull] byte[] buffer)
         {
             if (dataSource == null)
@@ -581,7 +581,7 @@ namespace Obsidian.Nbt
         /// an unnamed int array tag was expected -OR- a tag of a different type was expected. </exception>
         /// <exception cref="ArgumentNullException"> <paramref name="tagName"/> or
         /// <paramref name="data"/> is null </exception>
-        public void WriteIntArray([NotNull] String tagName, [NotNull] int[] data)
+        public void WriteIntArray([NotNull] string tagName, [NotNull] int[] data)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -601,7 +601,7 @@ namespace Obsidian.Nbt
         /// <paramref name="data"/> is null </exception>
         /// <exception cref="ArgumentException"> <paramref name="count"/> is greater than
         /// <paramref name="offset"/> subtracted from the array length. </exception>
-        public void WriteIntArray([NotNull] String tagName, [NotNull] int[] data, int offset, int count)
+        public void WriteIntArray([NotNull] string tagName, [NotNull] int[] data, int offset, int count)
         {
             CheckArray(data, offset, count);
             EnforceConstraints(tagName, NbtTagType.IntArray);
@@ -700,7 +700,7 @@ namespace Obsidian.Nbt
             }
         }
 
-        private void EnforceConstraints([CanBeNull] String name, NbtTagType desiredType)
+        private void EnforceConstraints([CanBeNull] string name, NbtTagType desiredType)
         {
             if (IsDone)
             {
@@ -708,7 +708,7 @@ namespace Obsidian.Nbt
             }
             if (parentType == NbtTagType.List)
             {
-                if (name != null)
+                if (!string.IsNullOrEmpty(name))
                 {
                     throw new NbtFormatException("Expecting an unnamed tag.");
                 }

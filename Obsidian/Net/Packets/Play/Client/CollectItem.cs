@@ -14,6 +14,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2, Type = DataType.VarInt)]
         public int PickupItemCount { get; set; }
 
-        public CollectItem() : base(0x56) { }
+        public CollectItem() : base(0x55) { }
     }
 }

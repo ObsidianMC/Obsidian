@@ -27,9 +27,9 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(6)]
         public bool InsideBlock { get; set; }
 
-        public PlayerBlockPlacement() : base(0x2C) { }
+        public PlayerBlockPlacement() : base(0x2E) { }
 
-        public PlayerBlockPlacement(byte[] data) : base(0x2C, data) { }
+        public PlayerBlockPlacement(byte[] data) : base(0x2E, data) { }
 
     }
 

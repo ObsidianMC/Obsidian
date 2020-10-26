@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2, Type = DataType.VarInt)]
         public int RootIndex = 0;
 
-        public DeclareCommands() : base(0x12) { }
+        public DeclareCommands() : base(0x10) { }
 
         public void AddNode(CommandNode node)
         {

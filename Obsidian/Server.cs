@@ -13,6 +13,8 @@ using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Items;
 using Obsidian.Logging;
+using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
@@ -23,6 +25,7 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
+using Obsidian.Util.Registry.Codecs;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -209,6 +212,8 @@ namespace Obsidian
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
             await Registry.RegisterBiomesAsync();
+            await Registry.RegisterDimensionsAsync();
+            await Registry.RegisterTagsAsync();
 
             this.Logger.LogInformation("Loading services..");
             //TODO services

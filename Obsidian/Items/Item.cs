@@ -4,7 +4,7 @@ namespace Obsidian.Items
 {
     public class Item
     {
-        public string Name { get; set; }
+        public string UnlocalizedName { get; set; }
 
         public Materials Type { get; }
 

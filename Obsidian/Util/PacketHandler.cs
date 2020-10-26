@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net;
@@ -12,7 +11,6 @@ using Obsidian.Serializer;
 using Obsidian.Util.Extensions;
 using SharpCompress.Compressors.Deflate;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Obsidian.Util
@@ -21,7 +19,7 @@ namespace Obsidian.Util
     {
         public static ILogger Logger => Program.PacketLogger;
 
-        public static ProtocolVersion Protocol = ProtocolVersion.v1_15_2;
+        public const ProtocolVersion Protocol = ProtocolVersion.v1_16_3;
 
         public const float MaxDiggingRadius = 6;
 
@@ -284,6 +282,10 @@ namespace Obsidian.Util
                     break;
 
                 case 0x0F:
+                    //Generate structure
+                    break;
+
+                case 0x10:
                     // Keep Alive (serverbound)
                     var keepalive = PacketSerializer.FastDeserialize<KeepAlive>(packet.data);
                     Logger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
@@ -293,61 +295,62 @@ namespace Obsidian.Util
                     client.missedKeepalives = 0;
                     break;
 
-                case 0x10:
-                    //Lock difficulty
-                    break;
-
-                case 0x11:// Player Position
-                    var pos = PacketSerializer.FastDeserialize<PlayerPosition>(packet.data);
-
-                    await player.UpdateAsync(server, pos.Position, pos.OnGround);
+                case 0x11://Lock Difficulty
                     break;
 
                 case 0x12:
+                    // Player Position
+                    var pos = PacketSerializer.FastDeserialize<PlayerPosition>(packet.data);
+
+                    await player.UpdateAsync(server, pos.Position, pos.OnGround);
+
+                    break;
+
+                case 0x13:
                     //Player Position And rotation (serverbound)
                     var ppos = PacketSerializer.FastDeserialize<ServerPlayerPositionLook>(packet.data);
 
                     await player.UpdateAsync(server, ppos.Position, ppos.Yaw, ppos.Pitch, ppos.OnGround);
+
                     break;
 
-                case 0x13:
-                    // Player rotation
+                case 0x14:// Player rotation
                     var look = PacketSerializer.FastDeserialize<PlayerRotation>(packet.data);
 
                     await player.UpdateAsync(server, look.Yaw, look.Pitch, look.OnGround);
                     break;
 
-                case 0x14://Player movement sent every tick when players haven't move
+                case 0x15://Player movement
                     break;
 
-                case 0x15:
-                    // Vehicle Move (serverbound)
-                    Logger.LogDebug("Received vehicle move");
+                case 0x16:// Vehicle Move (serverbound)
                     break;
 
-                case 0x16:
-                    // Steer Boat
-                    Logger.LogDebug("Received steer boat");
+                case 0x17://Steer boat
                     break;
 
-                case 0x17:
+                case 0x18:
                     // Pick Item
                     var item = PacketSerializer.FastDeserialize<PickItem>(packet.data);
 
                     Logger.LogDebug("Received pick item");
-                    break;
 
-                case 0x18:
-                    // Craft Recipe Request
-                    Logger.LogDebug("Received craft recipe request");
                     break;
 
                 case 0x19:
+                    // Craft Recipe Request
+                    Logger.LogDebug("Received craft recipe request");
+
+                    break;
+
+                case 0x1A:
                     // Player Abilities (serverbound)
                     Logger.LogDebug("Received player abilities");
                     break;
 
-                case 0x1A:// Player Digging
+                case 0x1B:
+                    // Player Digging
+
                     var digging = PacketSerializer.FastDeserialize<PlayerDigging>(packet.data);
 
                     await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
@@ -355,53 +358,44 @@ namespace Obsidian.Util
                         Player = player.Uuid,
                         Packet = digging
                     });
+
                     break;
 
-                case 0x1B:
+                case 0x1C:
                     //TODO Entity Action
                     var action = PacketSerializer.FastDeserialize<EntityAction>(packet.data);
 
                     //Logger.LogDebug("Received entity action");
-                    break;
 
-                case 0x1C:
-                    // Steer Vehicle
-                    Logger.LogDebug("Received steer vehicle");
                     break;
 
                 case 0x1D:
-                    // Recipe Book Data
-                    Logger.LogDebug("Received recipe book data");
+                    // Steer Vehicle
                     break;
 
-                case 0x1E:
-                    // Name Item
+                case 0x1E:// Set Displayed Recipe
+                    break;
+
+                case 0x1F://Set recipe book state
+                    break;
+
+                case 0x20:// Name Item
                     var nameItem = PacketSerializer.FastDeserialize<NameItem>(packet.data);
-
-                    Logger.LogDebug("Received name item");
                     break;
 
-                case 0x1F:
-                    // Resource Pack Status
-                    Logger.LogDebug("Received resource pack status");
+                case 0x21://Resource pack status
                     break;
 
-                case 0x20:
-                    // Advancement Tab
-                    Logger.LogDebug("Received advancement tab");
+                case 0x22://Advancement tab
                     break;
 
-                case 0x21:
-                    // Select Trade
-                    Logger.LogDebug("Received select trade");
+                case 0x23://Select trade
                     break;
 
-                case 0x22:
-                    // Set Beacon Effect
-                    Logger.LogDebug("Received set beacon effect");
+                case 0x24://Set beacon effect
                     break;
 
-                case 0x23:// Held Item Change (serverbound)
+                case 0x25:// Held Item Change (serverbound)
                     var heldItemChange = PacketSerializer.FastDeserialize<ServerHeldItemChange>(packet.data);
                     player.CurrentSlot = (short)(heldItemChange.Slot + 36);
 
@@ -421,17 +415,16 @@ namespace Obsidian.Util
                     }, player);
                     break;
 
-                case 0x24:
-                    // Update Command Block
-                    Logger.LogDebug("Received update command block");
+                case 0x26://Update command block
                     break;
 
-                case 0x25:
-                    // Update Command Block Minecart
-                    Logger.LogDebug("Received update command block minecart");
+                case 0x27://Update command block minecart
                     break;
 
-                case 0x26:// Creative Inventory Action in creative they send this to replace whatever item existed in the slot
+                case 0x28://Update jigsaw block
+                    break;
+
+                case 0x29:// Creative Inventory Action in creative they send this to replace whatever item existed in the slot
                     {
                         var ca = PacketSerializer.FastDeserialize<CreativeInventoryAction>(packet.data);
 
@@ -460,22 +453,13 @@ namespace Obsidian.Util
                     }
                     break;
 
-                case 0x27:
-                    // Update jigsaw Block
-                    Logger.LogDebug("Received update jigsaw block");
+                case 0x2A://Update structure block
                     break;
 
-                case 0x28:
-                    // Update Structure Block
-                    Logger.LogDebug("Received update structure block");
+                case 0x2B://Update sign
                     break;
 
-                case 0x29:
-                    // Update sign
-                    break;
-
-                case 0x2A:
-                    // Animation (serverbound)
+                case 0x2C:// Animation (serverbound)
                     var serverAnim = PacketSerializer.FastDeserialize<Animation>(packet.data);
 
                     //TODO broadcast entity animation to nearby players
@@ -500,21 +484,14 @@ namespace Obsidian.Util
                     }
                     break;
 
-                case 0x2B:
-                    // Spectate
-                    Logger.LogDebug("Received spectate");
+                case 0x2D://Spectate
                     break;
-
-                case 0x2C:
-                    // Player Block Placement
+                case 0x2E:// Player Block Placement
                     var pbp = PacketSerializer.FastDeserialize<PlayerBlockPlacement>(packet.data);
 
                     await server.BroadcastBlockPlacementAsync(player, pbp);
                     break;
-
-                case 0x2D:
-                    // Use Item
-                    Logger.LogDebug("Received use item");
+                case 0x2F://Use item
                     break;
             }
         }

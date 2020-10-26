@@ -23,7 +23,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public float Pitch { get; }
 
-        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume) : base(0x1A)
+        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume) : base(0x18)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
