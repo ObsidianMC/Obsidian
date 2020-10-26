@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Obsidian.Plugins.API\Obsidian.API.csproj">
+    <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

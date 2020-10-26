@@ -20,7 +20,7 @@ namespace Obsidian.Plugins.PluginProviders
 
         static RemotePluginProvider()
         {
-            client = new HttpClient();
+            client = Util.Mojang.MinecraftAPI.Http;
             client.DefaultRequestHeaders.Add("User-Agent", "ObsidianServer");
         }
 
@@ -113,8 +113,8 @@ namespace Obsidian.Plugins.PluginProviders
             var syntaxTrees = fileStreams.Select(fileStream => CSharpSyntaxTree.ParseText(SourceText.From(fileStream)));
             var compilation = CSharpCompilation.Create(repository.name,
                                                        syntaxTrees,
-                                                       UncompiledPluginProvider.metadataReferences,
-                                                       UncompiledPluginProvider.compilationOptions);
+                                                       UncompiledPluginProvider.MetadataReferences,
+                                                       UncompiledPluginProvider.CompilationOptions);
             using var memoryStream = new MemoryStream();
             EmitResult compilationResult = compilation.Emit(memoryStream);
             if (!compilationResult.Success)
@@ -174,7 +174,7 @@ namespace Obsidian.Plugins.PluginProviders
             }
 
             if (!csproj.HasValue)
-                return (null, null);
+                return default;
 
             string csprojPath = csproj.Value.GetProperty("path").GetString();
             return (await GetXmlFileAsync(repository.owner, repository.name, treeName, csprojPath), csprojPath);
@@ -182,7 +182,7 @@ namespace Obsidian.Plugins.PluginProviders
 
         private async Task<JsonDocument> ScanDirectoryAsync(string owner, string name, string tree)
         {
-            var stream = await GetFileStreamAsync($"https://api.github.com/repos/{owner}/{name}/git/trees/{tree}?recursive=1");
+            using var stream = await GetFileStreamAsync($"https://api.github.com/repos/{owner}/{name}/git/trees/{tree}?recursive=1");
             if (stream == null)
                 return null;
             return await JsonDocument.ParseAsync(stream);
@@ -190,7 +190,7 @@ namespace Obsidian.Plugins.PluginProviders
 
         private async Task<JsonDocument> GetJsonFileAsync(string owner, string name, string tree, string path)
         {
-            var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
+            using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
             if (stream == null)
                 return null;
             return await JsonDocument.ParseAsync(stream);
@@ -198,7 +198,7 @@ namespace Obsidian.Plugins.PluginProviders
 
         private async Task<XmlDocument> GetXmlFileAsync(string owner, string name, string tree, string path)
         {
-            var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
+            using var stream = await GetFileStreamAsync($"https://www.github.com/{owner}/{name}/raw/{tree}/{path}");
             if (stream == null)
                 return null;
 
@@ -241,7 +241,7 @@ namespace Obsidian.Plugins.PluginProviders
         private PluginContainer Failed(string name, string path, ILogger logger = default, string reason = null)
         {
             logger?.LogError($"Loading plugin {name} failed with reason: {reason}");
-            return new PluginContainer(null, new PluginInfo(name), null, null, path);
+            return new PluginContainer(new PluginInfo(name), path);
         }
     }
 }

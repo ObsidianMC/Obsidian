@@ -104,8 +104,10 @@ namespace Obsidian.Plugins
 
             serviceProvider.InjectServices(plugin, logger);
 
+            plugin.RegisterDependencies(this, logger);
+
             plugin.Permissions = permissions;
-            plugin.PermissionsChanged += OnPluginPermissionsChanged;
+            plugin.PermissionsChanged += OnPluginStateChanged;
 
             if (plugin.IsReady)
             {
@@ -116,6 +118,7 @@ namespace Obsidian.Plugins
                 RegisterEvents(plugin);
                 plugin.Plugin.Invoke(loadEvent);
                 plugin.Loaded = true;
+                ExposePluginAsDependency(plugin);
             }
             else
             {
@@ -177,12 +180,15 @@ namespace Obsidian.Plugins
             plugin.LoadContext.Unloading += _ => logger?.LogInformation($"Finished unloading {plugin.Info.Name} plugin");
         }
 
+        /// <summary>
+        /// Will cause selected plugin to be unloaded asynchronously.
+        /// </summary>
         public async Task UnloadPluginAsync(PluginContainer plugin)
         {
             await Task.Run(() => UnloadPlugin(plugin));
         }
 
-        private void OnPluginPermissionsChanged(PluginContainer plugin)
+        private void OnPluginStateChanged(PluginContainer plugin)
         {
             if (plugin.IsReady)
             {
@@ -244,6 +250,7 @@ namespace Obsidian.Plugins
             }
 
             RegisterEvents(plugin);
+            ExposePluginAsDependency(plugin);
         }
 
         private void GetEvents(object eventSource)
@@ -275,13 +282,40 @@ namespace Obsidian.Plugins
 
         private void UnregisterEvents(PluginContainer plugin)
         {
-            var pluginType = plugin.GetType();
             foreach (var @event in events)
             {
                 if (plugin.EventHandlers.TryGetValue(@event, out var handler))
                 {
                     @event.Event.RemoveEventHandler(plugin, handler);
                     plugin.EventHandlers.Remove(@event);
+                }
+            }
+        }
+
+        private void ExposePluginAsDependency(PluginContainer plugin)
+        {
+            lock (plugins)
+            {
+                foreach (var other in plugins)
+                {
+                    other.TryAddDependency(plugin, logger);
+                }
+            }
+
+            lock (stagedPlugins)
+            {
+                for (int i = 0; i < stagedPlugins.Count; i++)
+                {
+                    var other = stagedPlugins[i];
+                    if (other.TryAddDependency(plugin, logger))
+                    {
+                        OnPluginStateChanged(other);
+                        if (other.Loaded)
+                        {
+                            i--;
+                            logger?.LogDebug($"Plugin {other.Info.Name} unstaged. Required dependencies were supplied.");
+                        }
+                    }
                 }
             }
         }

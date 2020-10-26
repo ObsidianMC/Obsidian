@@ -9,7 +9,7 @@ namespace SamplePlugin
 
         public void OnLoad()
         {
-            Logger.Log("HELLO FROM RAW PLUGIN!!!");
+            Logger.Log("Hello from Raw Plugin!");
         }
     }
 }

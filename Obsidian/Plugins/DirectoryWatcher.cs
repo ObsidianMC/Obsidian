@@ -23,7 +23,7 @@ namespace Obsidian.Plugins
         {
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException(path);
-            
+
             foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
             {
                 if (TestFilter(file))

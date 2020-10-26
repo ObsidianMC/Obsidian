@@ -8,7 +8,7 @@ namespace Obsidian.Plugins.Services
         public LoggerService(PluginContainer plugin) : base(plugin.Info.Name, LogLevel.Debug)
         {
         }
-        
+
         internal LoggerService(string prefix, LogLevel minLevel = LogLevel.Debug) : base(prefix, minLevel)
         {
         }

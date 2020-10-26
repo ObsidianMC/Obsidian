@@ -6,7 +6,7 @@ namespace Obsidian.Plugins.ServiceProviders
     public abstract class SecuredServiceBase : ISecuredService
     {
         internal abstract PluginPermissions NeededPermission { get; }
-        
+
         internal bool HasPermission { get; set; }
         public bool IsUsable => HasPermission;
 

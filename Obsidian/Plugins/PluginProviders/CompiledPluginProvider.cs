@@ -19,14 +19,14 @@ namespace Obsidian.Plugins.PluginProviders
 
         internal PluginContainer HandlePlugin(PluginLoadContext loadContext, Assembly assembly, string path, ILogger logger)
         {
-            Type baseType = typeof(PluginBase);
-            Type pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(baseType));
+            Type pluginType = assembly.GetTypes().FirstOrDefault(type => type.IsSubclassOf(typeof(PluginBase)));
 
             PluginBase plugin;
             if (pluginType == null || pluginType.GetConstructor(Array.Empty<Type>()) == null)
             {
                 plugin = default;
                 logger?.LogError("Loaded assembly contains no type implementing PluginBase with public parameterless constructor.");
+                return new PluginContainer(new PluginInfo(Path.GetFileNameWithoutExtension(path)), path);
             }
             else
             {

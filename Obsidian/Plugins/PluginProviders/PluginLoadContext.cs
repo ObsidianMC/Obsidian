@@ -16,7 +16,7 @@ namespace Obsidian.Plugins.PluginProviders
         {
             resolver = new AssemblyDependencyResolver(path);
         }
-        
+
         protected override Assembly Load(AssemblyName assemblyName)
         {
             string assemblyPath = resolver?.ResolveAssemblyToPath(assemblyName);

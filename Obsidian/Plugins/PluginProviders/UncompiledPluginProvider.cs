@@ -11,14 +11,28 @@ namespace Obsidian.Plugins.PluginProviders
 {
     public class UncompiledPluginProvider : IPluginProvider
     {
-        internal static PortableExecutableReference[] metadataReferences;
-        internal static CSharpCompilationOptions compilationOptions;
-        
+        private static WeakReference<PortableExecutableReference[]> _metadataReferences = new WeakReference<PortableExecutableReference[]>(null);
+        internal static PortableExecutableReference[] MetadataReferences
+        {
+            get
+            {
+                if (_metadataReferences.TryGetTarget(out var value) && value != null)
+                    return value;
+                var references = GetPortableExecutableReferences();
+                _metadataReferences.SetTarget(references);
+                return references;
+            }
+        }
+        internal static CSharpCompilationOptions CompilationOptions { get; set; }
+
         static UncompiledPluginProvider()
         {
-            var trustedAssembliesPaths = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
-            metadataReferences = trustedAssembliesPaths.Select(reference => MetadataReference.CreateFromFile(reference)).ToArray();
-            compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, optimizationLevel: OptimizationLevel.Release);
+            CompilationOptions = new CSharpCompilationOptions(outputKind: OutputKind.DynamicallyLinkedLibrary,
+#if RELEASE
+                                                              optimizationLevel: OptimizationLevel.Release);
+#elif DEBUG
+                                                              optimizationLevel: OptimizationLevel.Debug);
+#endif
         }
 
         public UncompiledPluginProvider()
@@ -37,14 +51,14 @@ namespace Obsidian.Plugins.PluginProviders
             catch
             {
                 logger.LogError($"Reloading '{Path.GetFileName(path)}' failed, file is not accessible.");
-                return new PluginContainer(null, new PluginInfo(name), null, null, name);
+                return new PluginContainer(new PluginInfo(name), name);
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(SourceText.From(fileStream));
-            fileStream.Close();
+            fileStream.Dispose();
             var compilation = CSharpCompilation.Create(name,
                                                        new[] { syntaxTree },
-                                                       metadataReferences,
-                                                       compilationOptions);
+                                                       MetadataReferences,
+                                                       CompilationOptions);
             using var memoryStream = new MemoryStream();
             EmitResult emitResult = compilation.Emit(memoryStream);
             
@@ -61,7 +75,7 @@ namespace Obsidian.Plugins.PluginProviders
                     }
                 }
 
-                return new PluginContainer(null, new PluginInfo(name), null, null, name);
+                return new PluginContainer(new PluginInfo(name), name);
             }
             else
             {
@@ -71,6 +85,12 @@ namespace Obsidian.Plugins.PluginProviders
                 var assembly = loadContext.LoadFromStream(memoryStream);
                 return PluginProviderSelector.CompiledPluginProvider.HandlePlugin(loadContext, assembly, path, logger);
             }
+        }
+
+        private static PortableExecutableReference[] GetPortableExecutableReferences()
+        {
+            var trustedAssembliesPaths = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")).Split(Path.PathSeparator);
+            return trustedAssembliesPaths.Select(reference => MetadataReference.CreateFromFile(reference)).ToArray();
         }
     }
 }

@@ -18,9 +18,10 @@ namespace Obsidian.API.Plugins
         /// </summary>
         public string MinVersion { get; set; }
 
-        /// <summary>
-        /// Name of the dependency that should be injected. Keep as null to use property name.
-        /// </summary>
-        public string Alias { get; set; }
+        public Version GetMinVersion()
+        {
+            Version.TryParse(MinVersion, out var result);
+            return result;
+        }
     }
 }

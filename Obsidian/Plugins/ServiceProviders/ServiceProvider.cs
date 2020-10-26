@@ -19,7 +19,7 @@ namespace Obsidian.Plugins.ServiceProviders
         private ServiceProvider()
         {
         }
-        
+
         public void InjectServices(PluginContainer container, ILogger logger)
         {
             var serviceCache = new Dictionary<Type, object>();

@@ -17,7 +17,7 @@ namespace Obsidian.Plugins.PluginProviders
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException();
-            
+
             if (IsUrl(path))
             {
                 return RemotePluginProvider;

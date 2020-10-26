@@ -52,8 +52,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
-    <ProjectReference Include="..\Obsidian.Plugins.API\Obsidian.API.csproj" />
   </ItemGroup>
 
 </Project>
