@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,7 +52,7 @@ namespace Obsidian.Util
                 }
                 else
                 {
-                    // This is an invalid PNG file!
+                    server.Logger.LogError("The favicon.png is invalid! Skipping it.");
                     this.Favicon = b64obsidian;
                 }
             }
@@ -92,7 +93,7 @@ namespace Obsidian.Util
         {
             var players = server.OnlinePlayers.Values;
 
-            Max = 1000000;
+            Max = server.Config.MaxPlayers;
             Online = players.Count();
 
             if (this.Online > 0)
