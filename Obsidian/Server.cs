@@ -28,6 +28,7 @@ using Obsidian.WorldData.Generators;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -54,6 +55,7 @@ namespace Obsidian
 
         public IServiceProvider Services { get; private set; } = new ServiceCollection().BuildServiceProvider(true);
 
+        public short TPS { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
 
         public MinecraftEventHandler Events { get; }
@@ -547,6 +549,10 @@ namespace Obsidian
         private async Task ServerLoop()
         {
             var keepaliveticks = 0;
+            Stopwatch sw = new Stopwatch();
+
+            short itersPerSecond = 0; //counter for iterations per second
+            sw.Start(); 
             while (!this.cts.IsCancellationRequested)
             {
                 await Task.Delay(50);
@@ -563,6 +569,7 @@ namespace Obsidian
 
                     keepaliveticks = 0;
                 }
+                
 
                 foreach (var (uuid, player) in this.OnlinePlayers)
                 {
@@ -583,6 +590,17 @@ namespace Obsidian
                     if (!client.tcp.Connected)
                         this.clients.TryRemove(client);
                 }
+                itersPerSecond++;
+
+                //if Stopwatch elapsed time more than 1000 ms (1s) reset counter, restart stopwatch, and set TPS property
+                if (sw.ElapsedMilliseconds >= 1000) 
+                {
+                    TPS = itersPerSecond; 
+                    itersPerSecond = 0;
+                    sw.Restart();
+                }
+
+
             }
         }
 
