@@ -7,6 +7,6 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(0)]
         public short Slot { get; set; }
 
-        public ServerHeldItemChange() : base(0x23) { }
+        public ServerHeldItemChange() : base(0x25) { }
     }
 }

@@ -12,11 +12,11 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public bool OnGround { get; private set; }
 
-        public PlayerPosition() : base(0x10) { }
+        public PlayerPosition() : base(0x12) { }
 
-        public PlayerPosition(byte[] data) : base(0x10, data) { }
+        public PlayerPosition(byte[] data) : base(0x12, data) { }
 
-        public PlayerPosition(Position pos, bool onground) : base(0x10)
+        public PlayerPosition(Position pos, bool onground) : base(0x12)
         {
             this.Position = pos;
             this.OnGround = onground;

@@ -7,9 +7,9 @@ namespace Obsidian.Net.Packets.Play
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public Hand Hand { get; set; }
 
-        public Animation() : base(0x2A) { }
+        public Animation() : base(0x2C) { }
 
-        public Animation(byte[] data) : base(0x2A, data) { }
+        public Animation(byte[] data) : base(0x2C, data) { }
     }
 
     public enum Hand : int

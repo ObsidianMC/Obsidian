@@ -33,9 +33,9 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4, Type = DataType.VarInt)]
         public int TeleportId { get; set; }
 
-        public ClientPlayerPositionLook() : base(0x36) { }
+        public ClientPlayerPositionLook() : base(0x34) { }
 
-        public ClientPlayerPositionLook(byte[] data) : base(0x36, data) { }
+        public ClientPlayerPositionLook(byte[] data) : base(0x34, data) { }
     }
     
 }

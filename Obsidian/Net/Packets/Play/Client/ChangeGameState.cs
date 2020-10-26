@@ -12,9 +12,9 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, Type = DataType.Float)]
         public abstract T Value { get; set; }
 
-        public ChangeGameState() : base(0x1F) { }
+        public ChangeGameState() : base(0x1D) { }
 
-        public ChangeGameState(ChangeGameStateReason reason) : base(0x1F)
+        public ChangeGameState(ChangeGameStateReason reason) : base(0x1D)
         {
             this.Reason = reason;
         }

@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(3)]
         public bool OnGround { get; set; }
 
-        public ServerPlayerPositionLook() : base(0x11) { }
+        public ServerPlayerPositionLook() : base(0x34) { }
     }
 }

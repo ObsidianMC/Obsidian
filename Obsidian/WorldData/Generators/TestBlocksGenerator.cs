@@ -16,7 +16,7 @@ namespace Obsidian.WorldData.Generators
 
             foreach (var block in Registry.Blocks.Values)
             {
-                if (block is BlockAir || block is BlockBed)
+                if (block.IsAir || block is BlockBed)
                     continue;
 
                 if (countX == 16)

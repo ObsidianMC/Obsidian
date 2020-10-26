@@ -17,7 +17,6 @@ namespace Obsidian.Util.Extensions
     public static class Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
-        public static bool NotAir(this BlockState state) => !(state is BlockAir);
         public static bool NotFluid(this BlockState state) => !(state is BlockFluid);
 
         public static int ToChunkCoord(this double value) => (int)value >> 4;

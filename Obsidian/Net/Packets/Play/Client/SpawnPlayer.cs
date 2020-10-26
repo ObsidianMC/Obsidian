@@ -22,6 +22,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public Angle Pitch { get; set; }
 
-        public SpawnPlayer() : base(0x05) { }
+        public SpawnPlayer() : base(0x04) { }
     }
 }

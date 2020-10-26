@@ -11,6 +11,6 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(1)]
         public ItemStack ClickedItem { get; set; }
 
-        public CreativeInventoryAction() : base(0x26) { }
+        public CreativeInventoryAction() : base(0x29) { }
     }
 }

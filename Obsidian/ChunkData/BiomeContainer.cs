@@ -12,8 +12,10 @@ namespace Obsidian.ChunkData
 
         public async Task WriteToAsync(MinecraftStream stream)
         {
+            await stream.WriteVarIntAsync(1024);
+
             foreach (var biome in this.Biomes)
-                await stream.WriteIntAsync(biome);
+                await stream.WriteVarIntAsync(biome);
         }
     }
 

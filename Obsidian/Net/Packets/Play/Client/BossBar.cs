@@ -12,8 +12,8 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1)]
         public BossBarAction Action { get; private set; }
 
-        public BossBar() : base(0x0D) { }
-        public BossBar(Guid uuid, BossBarAction action) : base(0x0D)
+        public BossBar() : base(0x0C) { }
+        public BossBar(Guid uuid, BossBarAction action) : base(0x0C)
         {
             this.UUID = uuid;
             this.Action = action ?? throw new ArgumentNullException(nameof(action));

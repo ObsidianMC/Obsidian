@@ -25,7 +25,7 @@ namespace Obsidian.ChunkData
             this.chunk = chunk;
 
             if (type == HeightmapType.MotionBlocking)
-                this.Predicate = (block) => block.NotAir() || block.NotFluid();
+                this.Predicate = (block) => !block.IsAir || block.NotFluid();
         }
 
         public bool Update(int x, int y, int z, BlockState blockState)
@@ -76,10 +76,7 @@ namespace Obsidian.ChunkData
 
         private int GetIndex(int x, int z) => x + z * 16;
 
-        public ulong[] GetDataArray()
-        {
-            return this.data.Storage;
-        }
+        public long[] GetDataArray() => this.data.Storage;
     }
 
     public enum HeightmapType

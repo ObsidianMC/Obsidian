@@ -1,7 +1,5 @@
-﻿using Obsidian.Concurrency;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Util.Collection;
-using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;

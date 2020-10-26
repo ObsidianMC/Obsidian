@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1)]
         public ChatMessage Footer { get; }
 
-        public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer) : base(0x54)
+        public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer) : base(0x53)
         {
             var empty = new ChatMessage()
             {
