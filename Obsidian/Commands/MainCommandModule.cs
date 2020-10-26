@@ -92,8 +92,8 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
         }
 
-        [Command("plugins")]
-        [CommandInfo("Lists plugins.")]
+        [Command("plugins", "pl")]
+        [Description("Lists plugins.")]
         public async Task PluginsAsync(ObsidianContext Context)
         {
             var message = new ChatMessage
@@ -102,29 +102,26 @@ namespace Obsidian.Commands
             };
 
             var messages = new List<ChatMessage>();
+            
+            for (int i = 0; i < Context.Server.PluginManager.Plugins.Count; i++)
+            {
+                var pluginContainer = Context.Server.PluginManager.Plugins[i];
 
-            foreach (var pluginContainer in Context.Server.PluginManager.Plugins)
-                if (pluginContainer.Info.ProjectUrl != null)
-                {
-                    messages.Add(new ChatMessage
-                    {
-                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, ",
-                        ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri }
-                    });
-                }
-                else
-                {
-                    messages.Add(new ChatMessage
-                    {
-                        Text = ChatColor.DarkGreen + pluginContainer.Info.Name + $"{ChatColor.Reset}, "
-                    });
-                }
+                var plugin = new ChatMessage();
+                plugin.Text = ChatColor.DarkGreen + pluginContainer.Info.Name;
+                if (pluginContainer.Info.ProjectUrl != null) plugin.ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
+                messages.Add(plugin);
+
+                messages.Add(new ChatMessage
+                {
+                    Text = $"{ChatColor.Reset}{(i + 1 < Context.Server.PluginManager.Plugins.Count ? ", " : "")}"
+                });
+            }
             if (messages.Count > 0)
                 message.AddExtra(messages);
 
             await Context.Player.SendMessageAsync(message);
-            //await Context.Player.SendMessageAsync(pls);
         }
 
         [Command("forcechunkreload")]
