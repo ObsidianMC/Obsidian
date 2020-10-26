@@ -375,7 +375,7 @@ namespace Obsidian
             this.ping = (int)(DateTime.Now.Millisecond - id);
             await this.SendPacketAsync(new KeepAlive(id));
             this.missedKeepalives += 1; // This will be decreased after an answer is received.
-            if (this.missedKeepalives > this.config.MaxMissedKeepalives)
+            if (this.missedKeepalives > this.config.MaxMissedKeepAlives)
             {
                 // Too many keepalives missed, kill this connection.
                 this.Cancellation.Cancel();

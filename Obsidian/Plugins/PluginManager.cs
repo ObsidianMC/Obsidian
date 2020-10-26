@@ -18,6 +18,12 @@ namespace Obsidian.Plugins
         public IReadOnlyList<PluginContainer> Plugins => plugins;
 
         /// <summary>
+        /// List of all staged plugins.
+        /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
+        /// </summary>
+        public IReadOnlyList<PluginContainer> StagedPlugins => stagedPlugins;
+
+        /// <summary>
         /// Utility class, responding to file changes inside watched directories.
         /// </summary>
         public DirectoryWatcher DirectoryWatcher { get; } = new DirectoryWatcher();
