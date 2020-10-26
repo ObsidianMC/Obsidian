@@ -111,7 +111,7 @@ namespace Obsidian.Commands
         }
 
         [Command("plugins", "pl")]
-        [CommandInfo("Lists plugins.")]
+        [CommandInfo("Gets all plugins")]
         public async Task PluginsAsync(ObsidianContext Context)
         {
             var message = new ChatMessage
