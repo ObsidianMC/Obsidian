@@ -80,9 +80,6 @@ namespace Obsidian.Util.Registry
 
                         switch (material)
                         {
-                            case Materials.Air:
-                                Blocks.Add(material, new BlockAir());
-                                break;
                             case Materials.GrassBlock:
                                 Blocks.Add(material, new BlockGrass(blockName, id, material));
                                 break;
@@ -476,7 +473,6 @@ namespace Obsidian.Util.Registry
                             case Materials.OakFence:
                                 Blocks.Add(material, new BlockFence(blockName, id, material));
                                 break;
-
                             case Materials.Pumpkin:
                                 Blocks.Add(material, new BlockPumpkin(blockName, id));
                                 break;

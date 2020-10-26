@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Util.Registry.Enums
 {
-    public enum Fluids
+    public enum Fluids : int
     {
         Empty,
 

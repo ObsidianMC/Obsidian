@@ -325,7 +325,8 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            await this.QueuePacketAsync(new TagsPacket
+            //TODO figure out why tags make air blocks a fluid
+            /*await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
 
@@ -334,7 +335,7 @@ namespace Obsidian
                 Fluid = Registry.Tags["fluids"],
 
                 Entities = Registry.Tags["entity_types"]
-            });
+            });*/
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
@@ -547,8 +548,6 @@ namespace Obsidian
         {
             foreach (var chunk in this.Server.World.GetRegion(0, 0).LoadedChunks)
             {
-                Console.WriteLine("sending chunks");
-
                 await this.SendPacketAsync(new ChunkDataPacket(chunk));
             }
         }

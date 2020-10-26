@@ -8,6 +8,8 @@
 
         public Materials Type { get; }
 
+        public bool IsAir => this.Type == Materials.Air || this.Type == Materials.CaveAir || this.Type == Materials.VoidAir;
+
         internal BlockState(int id)
         {
             this.Id = id;

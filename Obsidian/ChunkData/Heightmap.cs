@@ -25,7 +25,7 @@ namespace Obsidian.ChunkData
             this.chunk = chunk;
 
             if (type == HeightmapType.MotionBlocking)
-                this.Predicate = (block) => block.NotAir() || block.NotFluid();
+                this.Predicate = (block) => !block.IsAir || block.NotFluid();
         }
 
         public bool Update(int x, int y, int z, BlockState blockState)

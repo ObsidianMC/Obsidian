@@ -330,22 +330,6 @@ namespace Obsidian.WorldData
             this.Server.Logger.LogInformation("Generating chunk..");
             var chunk = this.Generator.GenerateChunk(0, 0);
 
-            for (int i = 0; i < 16; i++)
-                chunk.AddSection(new ChunkSection());
-
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        var block = chunk.Blocks[x, y, z];
-
-                        chunk.Sections[0].SetBlock(x, y, z, block);
-                    }
-                }
-            }
-
             for (int i = 0; i < 1024; i++)
                 chunk.BiomeContainer.Biomes.Add(127);
 
