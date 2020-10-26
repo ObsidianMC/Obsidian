@@ -82,7 +82,8 @@ namespace Obsidian.Util
                     if (confirm.TeleportId == player.TeleportId)
                         break;
 
-                    await player.TeleportAsync(player.LastLocation);//Teleport them back we didn't send this packet
+                    await player.KickAsync("Invalid teleport... cheater?");
+                    //await player.TeleportAsync(player.LastLocation);//Teleport them back we didn't send this packet
                     break;
 
                 case 0x01:

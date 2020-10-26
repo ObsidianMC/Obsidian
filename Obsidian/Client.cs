@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Chat;
 using Obsidian.ChunkData;
+using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
@@ -361,6 +362,7 @@ namespace Obsidian
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");
+            
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
         }
 
@@ -405,48 +407,52 @@ namespace Obsidian
                 Type = CommandNodeType.Root
             };
 
-            foreach (Qmmands.Command command in this.Server.Commands.GetAllCommands())
+            // TODO overloads
+            foreach (Obsidian.CommandFramework.Entities.Command command in this.Server.Commands.GetAllCommands())
             {
-                var commandNode = new CommandNode()
+                foreach (var overload in command.Overloads)
                 {
-                    Name = command.Name,
-                    Type = CommandNodeType.Literal,
-                    Index = ++index
-                };
-
-                foreach (Qmmands.Parameter parameter in command.Parameters)
-                {
-                    var parameterNode = new CommandNode()
+                    var commandNode = new CommandNode()
                     {
-                        Name = parameter.Name,
-                        Type = CommandNodeType.Argument,
+                        Name = command.Name,
+                        Type = CommandNodeType.Literal,
                         Index = ++index
                     };
-                    Type type = parameter.Type;
 
-                    if (type == typeof(string))
-                        parameterNode.Parser = new StringCommandParser(parameter.IsRemainder ? StringType.GreedyPhrase : StringType.SingleWord);
-                    else if (type == typeof(double))
-                        parameterNode.Parser = new CommandParser("brigadier:double");
-                    else if (type == typeof(float))
-                        parameterNode.Parser = new CommandParser("brigadier:float");
-                    else if (type == typeof(int))
-                        parameterNode.Parser = new CommandParser("brigadier:integer");
-                    else if (type == typeof(bool))
-                        parameterNode.Parser = new CommandParser("brigadier:bool");
-                    else if (type == typeof(Position))
-                        parameterNode.Parser = new CommandParser("minecraft:vec3");
-                    else if (type == typeof(Player))
-                        parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-                    else
-                        continue;
+                    foreach (var parameter in command.Overloads.First().GetParameters().Skip(1))
+                    {
+                        var parameterNode = new CommandNode()
+                        {
+                            Name = parameter.Name,
+                            Type = CommandNodeType.Argument,
+                            Index = ++index
+                        };
+                        Type type = parameter.ParameterType;
 
-                    commandNode.AddChild(parameterNode);
+                        if (type == typeof(string))
+                            parameterNode.Parser = new StringCommandParser(parameter.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.SingleWord);
+                        else if (type == typeof(double))
+                            parameterNode.Parser = new CommandParser("brigadier:double");
+                        else if (type == typeof(float))
+                            parameterNode.Parser = new CommandParser("brigadier:float");
+                        else if (type == typeof(int))
+                            parameterNode.Parser = new CommandParser("brigadier:integer");
+                        else if (type == typeof(bool))
+                            parameterNode.Parser = new CommandParser("brigadier:bool");
+                        else if (type == typeof(Position))
+                            parameterNode.Parser = new CommandParser("minecraft:vec3");
+                        else if (type == typeof(Player))
+                            parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
+                        else
+                            continue;
+
+                        commandNode.AddChild(parameterNode);
+                    }
+
+                    commandNode.Type |= CommandNodeType.IsExecutabe;
+
+                    node.AddChild(commandNode);
                 }
-
-                commandNode.Type |= CommandNodeType.IsExecutabe;
-
-                node.AddChild(commandNode);
             }
 
             packet.AddNode(node);

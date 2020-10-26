@@ -5,7 +5,7 @@ namespace Obsidian.Util
     public class Config
     {
         [JsonProperty("motd")]
-        public string Motd = "§dObsidian §rv§c0.1§a-DEVEL\n§r§lRunning on .NET Core 3.1 <3";
+        public string Motd = "§dObsidian §rv§c0.1§a-DEV\n§r§lRunning on .NET Core 3.1 <3";
 
         [JsonProperty("port")]
         public int Port = 25565;
@@ -21,6 +21,9 @@ namespace Obsidian.Util
 
         [JsonProperty("onlineMode")]
         public bool OnlineMode = false;
+        
+        [JsonProperty("maxPlayers")]
+        public int MaxPlayers = 1000000;
 
         [JsonProperty("operatorRequests")]
         public bool AllowOperatorRequests;
@@ -42,5 +45,11 @@ namespace Obsidian.Util
 
         [JsonProperty("maxMissedKeepAlives")]
         public int MaxMissedKeepalives = 15;
+
+        [JsonProperty("maxPlayers")]
+        public int MaxPlayers = 1000000;
+
+        [JsonProperty("downloadplugins")]
+        public string[] DownloadPlugins = new string[1]{ "https://www.github.com/Seb-stian/SampleObsidianPlugin" };
     }
 }

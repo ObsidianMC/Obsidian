@@ -1,62 +1,37 @@
-﻿using JetBrains.Annotations;
-using Newtonsoft.Json;
+﻿using Obsidian.API.Plugins;
 using System;
-using System.Linq;
 
 namespace Obsidian.Plugins
 {
     public class PluginInfo
     {
-        [JsonProperty]
-        public string Name { get; internal set; }
+        public string Name { get; }
+        public Version Version { get; }
+        public string Description { get; }
+        public string Authors { get; }
+        public Uri ProjectUrl { get; }
 
-        [JsonProperty]
-        public string[] Authors { get; internal set; } = Array.Empty<string>();
-
-        [JsonProperty]
-        public string Version { get; internal set; }
-
-        [JsonProperty]
-        public string Description { get; internal set; }
-
-
-        [CanBeNull]
-        [JsonProperty]
-        public string ProjectUrl { get; internal set; }
-
-        public PluginInfo() { }
-
-        public PluginInfo SetName(string name)
+        public PluginInfo(string name)
         {
-            this.Name = name;
-
-            return this;
+            Name = name;
+            Version = new Version(1, 0);
+            Description = string.Empty;
+            Authors = "Unknown";
         }
 
-        public PluginInfo AddAuthor(string author)
+        public PluginInfo(string name, PluginAttribute attribute)
         {
-            this.Authors.Append(author);
+            Name = attribute.Name ?? name;
+            Description = attribute.Description ?? string.Empty;
+            Authors = attribute.Authors ?? "Unknown";
 
-            return this;
-        }
+            if (Version.TryParse(attribute.Version, out var version))
+                Version = version;
+            else
+                Version = new Version(1, 0);
 
-        public PluginInfo SetVersion(string version)
-        {
-            this.Version = version;
-            return this;
-        }
-
-        public PluginInfo SetDescription(string description)
-        {
-            this.Description = description;
-
-            return this;
-        }
-
-        public PluginInfo SetProjectUrl(string url)
-        {
-            this.ProjectUrl = url;
-            return this;
+            if (Uri.TryCreate(attribute.ProjectUrl, UriKind.Absolute, out var url) && (url.Scheme == Uri.UriSchemeHttp || url.Scheme == Uri.UriSchemeHttps))
+                ProjectUrl = url;
         }
     }
 }
