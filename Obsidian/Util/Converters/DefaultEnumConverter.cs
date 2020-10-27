@@ -19,7 +19,7 @@ namespace Obsidian.Util.Converters
 
         public override void WriteJson(JsonWriter writer, [AllowNull] T value, JsonSerializer serializer)
         {
-            writer.WriteValue(value.ToString().ToLower().ToSnakeCase());
+            writer.WriteValue(value.ToString().ToSnakeCase());
         }
     }
 }
