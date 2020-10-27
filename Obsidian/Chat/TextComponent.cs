@@ -1,11 +1,12 @@
 ﻿using Newtonsoft.Json;
+using Obsidian.Util.Converters;
 // ReSharper disable InconsistentNaming
 
 namespace Obsidian.Chat
 {
     public class TextComponent
     {
-        [JsonProperty("action")]
+        [JsonProperty("action"), JsonConverter(typeof(DefaultEnumConverter<ETextAction>))]
         public ETextAction Action;
 
         [JsonProperty("value")]

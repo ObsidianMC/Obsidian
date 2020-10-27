@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
@@ -44,6 +46,7 @@ namespace Obsidian.Commands
         }
 
         [Command("tps")]
+        [CommandInfo("Gets server TPS")]
         public async Task TPSAsync(ObsidianContext ctx)
         {
             ChatColor color;
@@ -114,20 +117,26 @@ namespace Obsidian.Commands
         [CommandInfo("Gets all plugins")]
         public async Task PluginsAsync(ObsidianContext Context)
         {
+            var pluginCount = Context.Server.PluginManager.Plugins.Count;
             var message = new ChatMessage
             {
-                Text = $"{ChatColor.Gold}List of plugins: ",
+                Text = $"{ChatColor.Reset}List of plugins ({ChatColor.Gold}{pluginCount}{ChatColor.Reset}): ",
             };
 
             var messages = new List<ChatMessage>();
             
-            for (int i = 0; i < Context.Server.PluginManager.Plugins.Count; i++)
+            for (int i = 0; i < pluginCount; i++)
             {
                 var pluginContainer = Context.Server.PluginManager.Plugins[i];
+                var info = pluginContainer.Info;
 
                 var plugin = new ChatMessage();
-                plugin.Text = ChatColor.DarkGreen + pluginContainer.Info.Name;
-                if (pluginContainer.Info.ProjectUrl != null) plugin.ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
+                var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? ChatColor.DarkGreen : ChatColor.DarkRed;
+                plugin.Text = colorByState + pluginContainer.Info.Name;
+
+                plugin.HoverEvent = new TextComponent { Action = ETextAction.ShowText, Value = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
+                if (pluginContainer.Info.ProjectUrl != null)
+                    plugin.ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
                 messages.Add(plugin);
 
@@ -138,7 +147,7 @@ namespace Obsidian.Commands
             }
             if (messages.Count > 0)
                 message.AddExtra(messages);
-
+            
             await Context.Player.SendMessageAsync(message);
         }
 

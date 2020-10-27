@@ -19,6 +19,7 @@ using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,10 +125,9 @@ namespace Obsidian.Net
 
         public async Task WriteUuidAsync(Guid value)
         {
-            var arr = value.ToByteArray();
-
-            await this.WriteLongAsync(BitConverter.ToInt64(arr, 0));
-            await this.WriteLongAsync(BitConverter.ToInt64(arr, 8));
+            //var arr = value.ToByteArray();
+            BigInteger uuid = BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
+            await this.WriteAsync(uuid.ToByteArray(true, true));
         }
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
