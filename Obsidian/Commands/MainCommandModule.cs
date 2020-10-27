@@ -146,7 +146,7 @@ namespace Obsidian.Commands
             }
             if (messages.Count > 0)
                 message.AddExtra(messages);
-            Context.Server.Logger.LogDebug(JsonConvert.SerializeObject(message));
+            
             await Context.Player.SendMessageAsync(message);
         }
 
