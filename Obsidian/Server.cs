@@ -229,7 +229,7 @@ namespace Obsidian
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
-            foreach(var pluginlink in Config.DownloadPlugins)
+            foreach (var pluginlink in Config.DownloadPlugins)
             {
                 await PluginManager.LoadPluginAsync(pluginlink); // !!!
             }

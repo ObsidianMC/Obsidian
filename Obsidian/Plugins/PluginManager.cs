@@ -2,6 +2,7 @@
 using Obsidian.API.Plugins;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -122,7 +123,7 @@ namespace Obsidian.Plugins
                     plugins.Add(plugin);
                 }
                 RegisterEvents(plugin);
-                plugin.Plugin.Invoke(loadEvent);
+                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }
@@ -251,7 +252,7 @@ namespace Obsidian.Plugins
 
             if (!plugin.Loaded)
             {
-                plugin.Plugin.Invoke(loadEvent);
+                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
                 plugin.Loaded = true;
             }
 

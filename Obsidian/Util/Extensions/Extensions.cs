@@ -11,6 +11,7 @@ using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Obsidian.Util.Extensions
 {
@@ -111,6 +112,12 @@ namespace Obsidian.Util.Extensions
             {
                 return b.ToString("x").TrimStart('0');
             }
+        }
+
+        public static void TryRunSynchronously(this Task task)
+        {
+            if (task.Status == TaskStatus.Created)
+                task.RunSynchronously();
         }
     }
 }
