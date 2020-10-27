@@ -21,7 +21,7 @@ namespace Obsidian.Util
 
         [JsonProperty("onlineMode")]
         public bool OnlineMode = false;
-        
+
         [JsonProperty("maxPlayers")]
         public int MaxPlayers = 1000000;
 
@@ -44,9 +44,9 @@ namespace Obsidian.Util
         public bool? Baah;
 
         [JsonProperty("maxMissedKeepAlives")]
-        public int MaxMissedKeepalives = 15;
+        public int MaxMissedKeepAlives = 15;
 
         [JsonProperty("downloadplugins")]
-        public string[] DownloadPlugins = new string[1]{ "https://www.github.com/Seb-stian/SampleObsidianPlugin" };
+        public string[] DownloadPlugins = new string[] { "https://www.github.com/Seb-stian/SampleObsidianPlugin" };
     }
 }
