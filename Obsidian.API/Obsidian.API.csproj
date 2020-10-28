@@ -5,7 +5,6 @@
 	<LangVersion>8.0</LangVersion>
     <AssemblyName>Obsidian.API</AssemblyName>
     <RootNamespace>Obsidian.API</RootNamespace>
-    <Configurations>Debug;Release;PacketDebug</Configurations>
   </PropertyGroup>
 
 </Project>

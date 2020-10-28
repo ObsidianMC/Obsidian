@@ -30,7 +30,7 @@ namespace Obsidian.Plugins.PluginProviders
             CompilationOptions = new CSharpCompilationOptions(outputKind: OutputKind.DynamicallyLinkedLibrary,
 #if RELEASE
                                                               optimizationLevel: OptimizationLevel.Release);
-#else
+#elif DEBUG
                                                               optimizationLevel: OptimizationLevel.Debug);
 #endif
         }
