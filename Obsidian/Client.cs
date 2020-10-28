@@ -1,7 +1,6 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
 using Obsidian.Chat;
-using Obsidian.ChunkData;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -24,7 +23,6 @@ using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
-using Obsidian.Util.Registry.Codecs;
 using Obsidian.WorldData;
 
 using System;
@@ -97,10 +95,7 @@ namespace Obsidian
             this.minecraftStream = new MinecraftStream(parentStream);
         }
 
-        ~Client()
-        {
-            this.Dispose(false);
-        }
+        
 
         private Task<Packet> GetNextPacketAsync() => this.compressionEnabled ? PacketHandler.ReadCompressedPacketAsync(this.minecraftStream) : PacketHandler.ReadPacketAsync(this.minecraftStream);
 
@@ -117,7 +112,7 @@ namespace Obsidian
 
                 switch (this.State)
                 {
-                    case ClientState.Status: //server ping/list
+                    case ClientState.Status: // Server ping/list
                         switch (packet.id)
                         {
                             case 0x00:
@@ -153,7 +148,7 @@ namespace Obsidian
                         }
                         else
                         {
-                            //Handle legacy ping stuff
+                            // Handle legacy ping
                         }
                         break;
 
@@ -276,8 +271,8 @@ namespace Obsidian
             }
         }
 
-        //TODO fix compression
-        private async Task SetCompression()
+        // TODO fix compression
+        private async Task SetCompressionAsync()
         {
             await this.SendPacketAsync(new SetCompression(compressionThreshold));
             this.compressionEnabled = true;
@@ -294,7 +289,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec); //TODO support custom dimensions and savve client dimensionns
+            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and savve client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -326,22 +321,22 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            //TODO figure out why tags make air blocks a fluid
-            /*await this.QueuePacketAsync(new TagsPacket
-            {
-                Blocks = Registry.Tags["blocks"],
+            // TODO figure out why tags make air blocks a fluid
+            //await this.QueuePacketAsync(new TagsPacket
+            //{
+            //    Blocks = Registry.Tags["blocks"],
 
-                Items = Registry.Tags["items"],
+            //    Items = Registry.Tags["items"],
 
-                Fluid = Registry.Tags["fluids"],
+            //    Fluid = Registry.Tags["fluids"],
 
-                Entities = Registry.Tags["entity_types"]
-            });*/
+            //    Entities = Registry.Tags["entity_types"]
+            //});
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
-            
+
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
             await this.LoadChunksAsync();
@@ -362,15 +357,16 @@ namespace Obsidian
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");
-            
-            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);//TODO fix its sending chunks too fast
+
+            // TODO fix its sending chunks too fast
+            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         #region Packet Sending Methods
 
         internal Task DisconnectAsync(ChatMessage reason) => this.SendPacketAsync(new Disconnect(reason, this.State));
 
-        internal async Task ProcessKeepAlive(long id)
+        internal async Task ProcessKeepAliveAsync(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
             await this.SendPacketAsync(new KeepAlive(id));
@@ -381,20 +377,20 @@ namespace Obsidian
                 this.Cancellation.Cancel();
             }
 
-            /////Sending ping change in background
-            ///await Task.Run(async delegate ()
-            ///{
-            ///    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
-            ///    {
-            ///        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
-            ///        {
-            ///            new PlayerInfoUpdatePingAction()
-            ///            {
-            ///                Ping = this.Ping
-            ///            }
-            ///        }), this.MinecraftStream);
-            ///    }
-            ///}).ConfigureAwait(false);
+            //// Sending ping change in background
+            //await Task.Run(async delegate ()
+            //{
+            //    foreach (Client client in OriginServer.Clients.Where(c => c.IsPlaying))
+            //    {
+            //        await PacketHandler.CreateAsync(new PlayerInfo(2, new List<PlayerInfoAction>()
+            //        {
+            //            new PlayerInfoUpdatePingAction()
+            //            {
+            //                Ping = this.Ping
+            //            }
+            //        }), this.MinecraftStream);
+            //    }
+            //}).ConfigureAwait(false);
         }
 
         internal async Task SendDeclareCommandsAsync()
@@ -584,7 +580,7 @@ namespace Obsidian
 
         internal void Disconnect() => this.Cancellation.Cancel();
 
-        #region dispose methods
+        #region Dispose methods
         protected virtual void Dispose(bool disposing)
         {
             if (this.disposed)
@@ -620,7 +616,11 @@ namespace Obsidian
 
             GC.SuppressFinalize(this);
         }
-
         #endregion
+
+        ~Client()
+        {
+            this.Dispose(false);
+        }
     }
 }

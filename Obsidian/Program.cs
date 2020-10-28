@@ -108,7 +108,7 @@ namespace Obsidian
             if (Servers.GroupBy(entry => entry.Value.Port).Any(group => group.Count() > 1))
                 throw new InvalidOperationException("Multiple servers cannot be binded to the same port");
 
-            var serverTasks = Servers.Select(entry => entry.Value.StartServer());
+            var serverTasks = Servers.Select(entry => entry.Value.StartServerAsync());
 
             await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 

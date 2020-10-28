@@ -99,7 +99,7 @@ namespace Obsidian.Util
                     // Incoming chat message
                     var message = await PacketSerializer.FastDeserializeAsync<IncomingChatMessage>(packet.data);
 
-                    await server.ParseMessage(message.Message, client);
+                    await server.ParseMessageAsync(message.Message, client);
                     break;
 
                 case 0x04:
