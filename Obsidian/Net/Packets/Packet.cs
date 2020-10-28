@@ -42,6 +42,9 @@ namespace Obsidian.Net.Packets
             await dataStream.CopyToAsync(stream);
 
             stream.Lock.Release();
+#if PACKETDEBUG
+            savePacketFile(this, false);
+#endif
         }
 
         public virtual async Task WriteCompressedAsync(MinecraftStream stream, int threshold = 0)
@@ -85,10 +88,43 @@ namespace Obsidian.Net.Packets
         {
             using var stream = new MinecraftStream(data ?? this.data);
             await PopulateAsync(stream);
+#if PACKETDEBUG
+            savePacketFile(this, true);
+#endif
         }
 
         protected virtual Task ComposeAsync(MinecraftStream stream) => Task.CompletedTask;
 
         protected virtual Task PopulateAsync(MinecraftStream stream) => Task.CompletedTask;
+
+#if PACKETDEBUG
+        private static int incomingorder = 0;
+        private static int outgoingorder = 0;
+        private static int uniqueid = new Random().Next();
+        internal static void savePacketFile(Packet p, bool incoming)
+        {
+            // do not await. It will block if you do.
+            Task.Run(() =>
+            {
+                var filename = p.GetType().Name;
+                var data = p.data;
+                var path = Path.Combine("debugpackets", incoming ? "incoming" : "outgoing");
+                FileStream fs;
+                if (incoming)
+                {
+                    fs = File.Create(Path.Combine(path, $"{incomingorder}.{filename}.bin"));
+                    incomingorder++;
+                }
+                else
+                {
+                    fs = File.Create(Path.Combine(path, $"{outgoingorder}.{filename}.bin"));
+                    outgoingorder++;
+                }
+
+                fs.Write(data, 0, data.Length);
+                fs.Close();
+            });
+        }
+#endif
     }
 }

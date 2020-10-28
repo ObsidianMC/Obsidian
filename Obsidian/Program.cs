@@ -82,6 +82,17 @@ namespace Obsidian
                 Console.WriteLine("Created new global configuration file");
             }
 
+#if PACKETDEBUG
+            var incoming = Path.Combine("debugpackets", "incoming");
+            var outgoing = Path.Combine("debugpackets", "outgoing");
+            if (!Directory.Exists("debugpackets"))
+                Directory.CreateDirectory("debugpackets");
+            if (!Directory.Exists(incoming))
+                Directory.CreateDirectory(incoming);
+            if (!Directory.Exists(outgoing))
+                Directory.CreateDirectory(outgoing);
+#endif
+
             for (int i = 0; i < GlobalConfig.ServerCount; i++)
             {
                 string serverDir = $"Server-{i}";

@@ -10,6 +10,7 @@
     <Product>Obsidian Conversion Utility</Product>
     <Company>Obsidian Team</Company>
     <LangVersion>8.0</LangVersion>
+    <Configurations>Debug;Release;PacketDebug</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
