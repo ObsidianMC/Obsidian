@@ -351,12 +351,12 @@ namespace Obsidian.WorldData
                 return this.Regions[value];
 
             List<Position> chunksToGen = new List<Position>();
-            for (int x=0; x<16; x++)
+            for (int x=0; x<4; x++)
             {
-                for (int z=0; z<16; z++)
+                for (int z=0; z<4; z++)
                 {
-                    int cx = (regionX * 16) + x;
-                    int cz = (regionZ * 16) + z;
+                    int cx = (regionX * 4) + x;
+                    int cz = (regionZ * 4) + z;
                     chunksToGen.Add(new Position(cx, 0, cz));
                 }
             }
@@ -378,7 +378,7 @@ namespace Obsidian.WorldData
             Parallel.ForEach(chunkLocs, (loc) =>
             {
                 this.Server.Logger.LogInformation($"Generating chunk {loc}");
-                var c = Generator.GenerateChunk((int)loc.X, (int)loc.Y);
+                var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
                 for (int i = 0; i < 1024; i++)
                     c.BiomeContainer.Biomes.Add(127);
                 chunks.Add(c);
