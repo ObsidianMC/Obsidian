@@ -26,13 +26,13 @@ using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace Obsidian
 {
@@ -73,7 +73,7 @@ namespace Obsidian
 
         public ClientState State { get; private set; } = ClientState.Handshaking;
 
-        public ConcurrentQueue<Packet> PacketQueue { get; } = new ConcurrentQueue<Packet>();
+        public BufferBlock<Packet> PacketQueue { get; } = new BufferBlock<Packet>();
 
         public Server Server { get; private set; }
         public Player Player { get; private set; }
@@ -95,13 +95,11 @@ namespace Obsidian
             this.minecraftStream = new MinecraftStream(parentStream);
         }
 
-        
-
         private Task<Packet> GetNextPacketAsync() => this.compressionEnabled ? PacketHandler.ReadCompressedPacketAsync(this.minecraftStream) : PacketHandler.ReadPacketAsync(this.minecraftStream);
 
         public async Task StartConnectionAsync()
         {
-            _ = Task.Run(ProcessQueue);
+            _ = Task.Run(() => ProcessQueueAsync(Cancellation.Token));
 
             while (!Cancellation.IsCancellationRequested && this.tcp.Connected)
             {
@@ -257,17 +255,29 @@ namespace Obsidian
             }
         }
 
-        private async Task ProcessQueue()
+        private async Task ProcessQueueAsync(CancellationToken cancellationToken = default)
         {
-            while (!Cancellation.IsCancellationRequested && this.tcp.Connected)
+            while (true)
             {
-                if (this.PacketQueue.TryDequeue(out var packet))
+                Packet packet;
+                try
                 {
-                    await this.SendPacketAsync(packet);
-                    this.Logger.LogDebug($"Enqueued packet: {packet} (0x{packet.id:X2})");
+                    packet = await this.PacketQueue.ReceiveAsync(cancellationToken);
+                }
+                catch (Exception e) when (e is OperationCanceledException || e is InvalidOperationException)
+                {
+                    // Operation was cancelled or PacketQueue was marked as complete -> stop processing queue
+                    return;
+                }
+                catch
+                {
+                    throw;
                 }
 
-                await Task.Delay(50);
+                if (!tcp.Connected)
+                    return;
+
+                await this.SendPacketAsync(packet);
             }
         }
 
@@ -542,7 +552,7 @@ namespace Obsidian
                 return;
             }
 
-            this.PacketQueue.Enqueue(packet);
+            await this.PacketQueue.SendAsync(packet);
             this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.id:X2})");
         }
 
