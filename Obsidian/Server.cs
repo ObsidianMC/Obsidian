@@ -616,6 +616,7 @@ namespace Obsidian
         {
             await this.RegisterAsync(new SuperflatGenerator());
             await this.RegisterAsync(new TestBlocksGenerator());
+            await this.RegisterAsync(new OverworldGenerator());
         }
 
         private async Task SendSpawnPlayerAsync(Player joined)

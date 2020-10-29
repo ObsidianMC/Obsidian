@@ -130,7 +130,13 @@ namespace Obsidian.WorldData
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    //await c.SendChunkAsync(this.GetChunk(cx, cz, c));
+                    var chk = GetChunk(cx * 16, cz * 16);
+                    if (chk is null)
+                    {
+                        chk = this.Generator.GenerateChunk(cx, cz);
+                    }
+
+                    await c.SendChunkAsync(chk);
                 }
             }
 
@@ -177,7 +183,8 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            return region.LoadedChunks[chunkX, chunkZ];
+            var chunk = region.LoadedChunks[chunkX, chunkZ];
+            return chunk;
         }
 
         public Chunk GetChunk(Position location) => this.GetChunk((int)location.X, (int)location.Z);
@@ -329,11 +336,13 @@ namespace Obsidian.WorldData
         {
             this.Server.Logger.LogInformation("Generating chunk..");
             var chunk = this.Generator.GenerateChunk(0, 0);
+            var chunk2 = this.Generator.GenerateChunk(0, 1);
 
             for (int i = 0; i < 1024; i++)
                 chunk.BiomeContainer.Biomes.Add(127);
 
             this.GenerateRegion(chunk);
+
         }
 
         internal bool TryAddEntity(Entity entity)
