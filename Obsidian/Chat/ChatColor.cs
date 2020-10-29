@@ -5,16 +5,14 @@ namespace Obsidian.Chat
     public struct ChatColor
     {
         public Color Color { get; }
-
         public char Code { get; }
-
         public string Name { get; }
 
         public ChatColor(char code, string name, Color? color = null)
         {
             this.Code = code;
             this.Name = name;
-            if (color.HasValue && color.Value != Color.Transparent)
+            if (color.HasValue)
             {
                 this.Color = color.Value;
             }
@@ -24,7 +22,7 @@ namespace Obsidian.Chat
             }
         }
 
-        public override string ToString() => "§" + this.Code;
+        public override string ToString() => $"§{Code}";
 
         //0-9
         public static readonly ChatColor Black = new ChatColor('0', "black", Color.FromArgb(0, 0, 0));
