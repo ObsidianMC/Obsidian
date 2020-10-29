@@ -335,12 +335,12 @@ namespace Obsidian
 
             await this.LoadChunksAsync();
 
-            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 6, 0)));
+            await this.QueuePacketAsync(new SpawnPosition(new Position(0, 70, 0)));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            this.Player.Location = new Position(0, 6, 0);
+            this.Player.Location = new Position(0, 70, 0);
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
