@@ -10,6 +10,6 @@
 
         public static long IntsToLong(int a, int b) => ((long)b << 32) | (uint)a;
 
-        public static int AbsMod(int x, int mod) => (x % mod + mod) % mod;
+        public static int Modulo(int x, int mod) => (x % mod + mod) % mod;
     }
 }

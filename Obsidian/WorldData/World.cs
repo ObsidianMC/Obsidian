@@ -185,7 +185,7 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            var chunk = region.LoadedChunks[Helpers.AbsMod(chunkX, 4), Helpers.AbsMod(chunkZ, 4)];
+            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, 4), Helpers.Modulo(chunkZ, 4)];
             return chunk;
         }
 
@@ -356,7 +356,7 @@ namespace Obsidian.WorldData
 
             foreach (Chunk chunk in chunks)
             {
-                var index = (Helpers.AbsMod(chunk.X, 4), Helpers.AbsMod(chunk.Z, 4));
+                var index = (Helpers.Modulo(chunk.X, 4), Helpers.Modulo(chunk.Z, 4));
                 region.LoadedChunks[index.Item1, index.Item2] = chunk;
             }
 
