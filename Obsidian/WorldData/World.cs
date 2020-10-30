@@ -126,11 +126,21 @@ namespace Obsidian.WorldData
             //}
 
             // load new chunks
+            var chunksToGen = new List<Position>();
+
             for (int cx = (x - dist); cx < (x + dist); cx++)
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    //await c.SendChunkAsync(this.GetChunk(cx, cz, c));
+                    var chk = GetChunk(cx, cz);
+                    if (chk is null)
+                    {
+                        chunksToGen.Add(new Position(cx, 0, cz));
+                    }
+                    else
+                    {
+                        await c.SendChunkAsync(chk);
+                    }                   
                 }
             }
 
@@ -156,7 +166,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegion(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+            long value = Helpers.IntsToLong(chunkX >> 2, chunkZ >> 2);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -168,23 +178,22 @@ namespace Obsidian.WorldData
             return this.GetRegion(chunkX, chunkZ);
         }
 
-        public Chunk GetChunk(int x, int z)
+        public Chunk GetChunk(int chunkX, int chunkZ)
         {
-            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
-
             var region = this.GetRegion(chunkX, chunkZ);
 
             if (region == null)
                 return null;
 
-            return region.LoadedChunks[chunkX, chunkZ];
+            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, 4), Helpers.Modulo(chunkZ, 4)];
+            return chunk;
         }
 
-        public Chunk GetChunk(Position location) => this.GetChunk((int)location.X, (int)location.Z);
+        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X<<4, (int)worldLocation.Z<<4);
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x, z);
+            var chunk = this.GetChunk(x<<4, z<<4);
 
             return chunk.GetBlock(x, y, z);
         }
@@ -320,6 +329,56 @@ namespace Obsidian.WorldData
             return region;
         }
 
+        public Region GenerateRegion(int regionX, int regionZ)
+        {
+            long value = Helpers.IntsToLong(regionX, regionZ);
+
+            this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
+
+            var region = new Region(regionX, regionZ);
+
+            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
+
+            if (this.Regions.ContainsKey(value))
+                return this.Regions[value];
+
+            List<Position> chunksToGen = new List<Position>();
+            for (int x=0; x<4; x++)
+            {
+                for (int z=0; z<4; z++)
+                {
+                    int cx = (regionX * 4) + x;
+                    int cz = (regionZ * 4) + z;
+                    chunksToGen.Add(new Position(cx, 0, cz));
+                }
+            }
+            var chunks = GenerateChunks(chunksToGen);
+
+            foreach (Chunk chunk in chunks)
+            {
+                var index = (Helpers.Modulo(chunk.X, 4), Helpers.Modulo(chunk.Z, 4));
+                region.LoadedChunks[index.Item1, index.Item2] = chunk;
+            }
+
+            this.Regions.TryAdd(value, region);
+
+            return region;
+        }
+
+        public List<Chunk> GenerateChunks(List<Position> chunkLocs)
+        {
+            ConcurrentBag<Chunk> chunks = new ConcurrentBag<Chunk>();
+            Parallel.ForEach(chunkLocs, (loc) =>
+            {
+                this.Server.Logger.LogInformation($"Generating chunk {loc}");
+                var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
+                for (int i = 0; i < 1024; i++)
+                    c.BiomeContainer.Biomes.Add(127);
+                chunks.Add(c);
+            });
+            return chunks.ToList();
+        }
+
         internal void Init()
         {
 
@@ -327,13 +386,22 @@ namespace Obsidian.WorldData
 
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating chunk..");
-            var chunk = this.Generator.GenerateChunk(0, 0);
+            this.Server.Logger.LogInformation("Generating world..");
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                    this.GenerateRegion(x, z);
+                }
+            }
+ 
+            /*var chunk = this.Generator.GenerateChunk(0, 0);
 
             for (int i = 0; i < 1024; i++)
                 chunk.BiomeContainer.Biomes.Add(127);
 
             this.GenerateRegion(chunk);
+*/
         }
 
         internal bool TryAddEntity(Entity entity)
