@@ -726,7 +726,23 @@ namespace Obsidian.WorldData.Generators.Overworld
                     // [Scaled-dune-detail module]: This scale/bias module shrinks the dune
                     // details by a large amount.  This is necessary so that the subsequent
                     // noise modules in this subgroup can add this detail to the sand-dunes
-                    // module.\
+                    // module.
+                    Source1 = new ScaleBias
+                    {
+                        Scale = 0.25,
+                        Bias = 0.25,
+                        // [Dune-detail module]: This noise module uses Voronoi polygons to
+                        // generate the detail to add to the dunes.  By enabling the distance
+                        // algorithm, small polygonal pits are generated; the edges of the pits
+                        // are joined to the edges of nearby pits.
+                        Source0 = new Cell
+                        {
+                            Seed = Settings.Seed + 81,
+                            Frequency = 16183.25,
+                            Displacement = 0,
+                            EnableDistance = true,
+                        },
+                    },
                 },
             };
 

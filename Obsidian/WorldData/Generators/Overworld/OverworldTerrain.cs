@@ -37,7 +37,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         public double Terrain(float x, float z)
         {
             //return generatorModule.GetValue(x, 5, z);
-            return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch + 30;
+            return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch + 25;
         }
 
         public double Underground(float x, float z)

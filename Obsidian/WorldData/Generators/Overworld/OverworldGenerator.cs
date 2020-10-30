@@ -25,13 +25,9 @@ namespace Obsidian.WorldData.Generators
             {
                 for (int bz=0; bz<16; bz++)
                 {
-                    try
-                    {
-                        terY = terrain.Terrain(bx + (cx * 16), bz + (cz * 16));
-                        rY = terrain.Underground(bx + (cx * 16), bz + (cz * 16)) - 5 + terY;
-                        bY = terrain.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
-                    }
-                    catch (Exception e) { }
+                    terY = terrain.Terrain(bx + (cx * 16), bz + (cz * 16));
+                    rY = terrain.Underground(bx + (cx * 16), bz + (cz * 16)) - 5 + terY;
+                    bY = terrain.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
 
                     terrainHeightmap[bx, bz] = terY;
                     rockHeightmap[bx, bz] = rY;
@@ -116,9 +112,6 @@ namespace Obsidian.WorldData.Generators
 
                         chunk.SetBlock(bx, by, bz, Registry.GetBlock(m));
                     }
-
-                    // Add grass
-
                 }
             }
 

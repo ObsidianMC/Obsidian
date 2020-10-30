@@ -191,7 +191,7 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            var chunk = region.LoadedChunks[chunkX % 4, chunkZ % 4];
+            var chunk = region.LoadedChunks[Helpers.AbsMod(chunkX, 4), Helpers.AbsMod(chunkZ, 4)];
             return chunk;
         }
 
@@ -362,7 +362,8 @@ namespace Obsidian.WorldData
 
             foreach (Chunk chunk in chunks)
             {
-                region.LoadedChunks[chunk.X % 4, chunk.Z % 4] = chunk;
+                var index = (Helpers.AbsMod(chunk.X, 4), Helpers.AbsMod(chunk.Z, 4));
+                region.LoadedChunks[index.Item1, index.Item2] = chunk;
             }
 
             this.Regions.TryAdd(value, region);
@@ -392,11 +393,14 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            this.GenerateRegion(0, 0);
-            this.GenerateRegion(0, 1);
-            this.GenerateRegion(1, 0);
-            this.GenerateRegion(1, 1);
-
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int z = -1; z <= 1; z++)
+                {
+                    this.GenerateRegion(x, z);
+                }
+            }
+ 
             /*var chunk = this.Generator.GenerateChunk(0, 0);
 
             for (int i = 0; i < 1024; i++)
