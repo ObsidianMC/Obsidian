@@ -54,7 +54,8 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public bool Cave(float x, float y, float z)
         {
-            return cavePerlin.GetValue(x*generatorSettings.CaveHorizStretch, y*generatorSettings.CaveVertStretch, z*generatorSettings.CaveHorizStretch) > generatorSettings.CaveFillPercent;
+            var value = cavePerlin.GetValue(x * generatorSettings.CaveHorizStretch, y * generatorSettings.CaveVertStretch, z * generatorSettings.CaveHorizStretch)
+            return value < generatorSettings.CaveFillPercent;
         }
     }
 }
