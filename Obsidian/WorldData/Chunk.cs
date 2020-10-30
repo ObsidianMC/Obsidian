@@ -62,7 +62,7 @@ namespace Obsidian.WorldData
         {
             var value = (short)((x << 8) | (z << 4) | y);
 
-            this.Blocks[value] = block; this.Blocks[value] = block;
+            this.Blocks[value] = block;
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }

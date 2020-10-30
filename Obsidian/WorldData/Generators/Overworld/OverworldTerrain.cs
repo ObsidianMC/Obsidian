@@ -10,6 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld
     {
         private Simplex cavePerlin;
         private Perlin biomePerlin;
+        private Multiply oreNoise;
 
         private OverworldTerrainSettings generatorSettings;
         private OverworldTerrainGenerator generator;
@@ -34,6 +35,17 @@ namespace Obsidian.WorldData.Generators.Overworld
                 OctaveCount = 3,
                 Persistence = 0.53
             };
+
+            oreNoise = new Multiply
+            {
+                Source0 = new Checkerboard(),
+                Source1 = new Perlin
+                {
+                    Frequency = 1.14,
+                    Lacunarity = 2.222,
+                    Seed = generatorSettings.Seed
+                }
+            };
         }
 
         public double Terrain(float x, float z)
@@ -54,8 +66,14 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public bool Cave(float x, float y, float z)
         {
-            var value = cavePerlin.GetValue(x * generatorSettings.CaveHorizStretch, y * generatorSettings.CaveVertStretch, z * generatorSettings.CaveHorizStretch)
-            return value < generatorSettings.CaveFillPercent;
+            var value = cavePerlin.GetValue(x * generatorSettings.CaveHorizStretch, y * generatorSettings.CaveVertStretch, z * generatorSettings.CaveHorizStretch);
+            return value < generatorSettings.CaveFillPercent && value > 0;
+        }
+
+        public bool Coal(float x, float y, float z)
+        {
+            var value = oreNoise.GetValue(x/18, y/6, z/18);
+            return value < 0.05 && value > 0;
         }
     }
 }

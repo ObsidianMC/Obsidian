@@ -89,7 +89,7 @@ namespace Obsidian.WorldData.Generators
                             if (by == (int)terrainY)
                             {
                                 m = Materials.GrassBlock;
-                                chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
+                                //chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
                             }
                             else
                             {
@@ -114,6 +114,7 @@ namespace Obsidian.WorldData.Generators
                 }
             }
 
+            GenerateCoal(chunk, rockHeightmap);
             CarveCaves(chunk, terrainHeightmap, bedrockHeightmap);
             return chunk;
         }
@@ -125,7 +126,7 @@ namespace Obsidian.WorldData.Generators
                 for (int bz = 0; bz < 16; bz++)
                 {
                     int tY = (int)thm[bx, bz];
-                    int brY = (int)bhm[bx, bz];
+                    int brY = Math.Min((int)bhm[bx, bz], 70);
                     for (int by = brY; by < tY; by++)
                     {
                         bool caveAir = terrain.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
@@ -134,6 +135,28 @@ namespace Obsidian.WorldData.Generators
                             chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CaveAir));
                         }
                     }                    
+                }
+            }
+        }
+
+        private void GenerateCoal(Chunk chunk, double[,] rockHeighmap)
+        {
+            for (int bx = 0; bx < 16; bx++)
+            {
+                for (int bz = 0; bz < 16; bz++)
+                {
+                    var worldX = (chunk.X * 16) + bx;
+                    var worldZ = (chunk.Z * 16) + bz;
+                    var rockY = (int)rockHeighmap[bx, bz];
+
+                    for (int by = 24; by < rockY; by++)
+                    {
+                        bool isCoal = terrain.Coal(worldX, by, worldZ);
+                        if(isCoal)
+                        {
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.GrassBlock));
+                        }
+                    }
                 }
             }
         }
