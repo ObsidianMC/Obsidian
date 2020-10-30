@@ -193,7 +193,7 @@ namespace Obsidian.WorldData
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x<<4, z<<4);
+            var chunk = this.GetChunk(x>>4, z>>4);
 
             return chunk.GetBlock(x, y, z);
         }
