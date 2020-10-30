@@ -364,7 +364,7 @@ namespace Obsidian.WorldData
 
             foreach (Chunk chunk in chunks)
             {
-                region.LoadedChunks[chunk.X, chunk.Z] = chunk;
+                region.LoadedChunks[chunk.X % 4, chunk.Z % 4] = chunk;
             }
 
             this.Regions.TryAdd(value, region);
@@ -395,6 +395,9 @@ namespace Obsidian.WorldData
         {
             this.Server.Logger.LogInformation("Generating world..");
             this.GenerateRegion(0, 0);
+            this.GenerateRegion(0, 1);
+            this.GenerateRegion(1, 0);
+            this.GenerateRegion(1, 1);
 
             /*var chunk = this.Generator.GenerateChunk(0, 0);
 

@@ -168,12 +168,12 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public OverworldTerrainSettings()
         {
-            Seed = 68468405;
+            Seed = 6868405;
             MinElev = 0;
             MaxElev = 128;
             ContinentFrequency = 0.8;
 
-            ContinentHeightScale = 8 / 512.0;
+            ContinentHeightScale = 1; // 16 / 512.0;
             TerrainOffset = 0.25;
 
             RiverDepth = 6 / 512.0;
@@ -199,8 +199,8 @@ namespace Obsidian.WorldData.Generators.Overworld
             CaveVertStretch = 0.75;
             CaveHorizStretch = 0.064;
 
-            TerrainHorizStretch = 0.0145;
-            TerrainVertStretch = 0.5;
+            TerrainHorizStretch = 0.0095;
+            TerrainVertStretch = 0.46;
         }
     }
 }
