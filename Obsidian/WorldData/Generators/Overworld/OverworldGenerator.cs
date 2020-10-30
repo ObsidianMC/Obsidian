@@ -45,7 +45,6 @@ namespace Obsidian.WorldData.Generators
                         // Air
                         if (by > terrainY && by > 60)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Air));
                             continue;
                         }
 
