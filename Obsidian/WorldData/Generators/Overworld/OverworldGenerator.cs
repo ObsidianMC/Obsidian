@@ -7,29 +7,32 @@ namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
+        private double[,] terrainHeightmap, rockHeightmap, bedrockHeightmap;
+        private Chunk chunk;
+
         private OverworldTerrain terrain = new OverworldTerrain();
         public OverworldGenerator() : base("overworld") {}
 
         public override Chunk GenerateChunk(int cx, int cz)
         {
-            var chunk = new Chunk(cx, cz);
+            chunk = new Chunk(cx, cz);
 
             // Build terrain map for this chunk
-            double[,] terrainHeightmap = new double[16, 16];
-            double[,] rockHeightmap = new double[16, 16];
-            double[,] bedrockHeightmap = new double[16, 16];
-            double terY = 60;
+            terrainHeightmap = new double[16, 16];
+            rockHeightmap = new double[16, 16];
+            bedrockHeightmap = new double[16, 16];
+            double tY = 60;
             double rY = 2;
             double bY = 1;
             for (int bx=0; bx<16; bx++)
             {
                 for (int bz=0; bz<16; bz++)
                 {
-                    terY = terrain.Terrain(bx + (cx * 16), bz + (cz * 16));
-                    rY = terrain.Underground(bx + (cx * 16), bz + (cz * 16)) - 5 + terY;
+                    tY = terrain.Terrain(bx + (cx * 16), bz + (cz * 16));
+                    rY = terrain.Underground(bx + (cx * 16), bz + (cz * 16)) - 5 + tY;
                     bY = terrain.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
 
-                    terrainHeightmap[bx, bz] = terY;
+                    terrainHeightmap[bx, bz] = tY;
                     rockHeightmap[bx, bz] = rY;
                     bedrockHeightmap[bx, bz] = bY;
                 }
@@ -115,7 +118,28 @@ namespace Obsidian.WorldData.Generators
                 }
             }
 
+            //CarveCaves();
             return chunk;
+        }
+
+        private void CarveCaves()
+        {
+            for (int bx = 0; bx < 16; bx++)
+            {
+                for (int bz = 0; bz < 16; bz++)
+                {
+                    int tY = (int) terrainHeightmap[bx, bz];
+                    int brY = (int) bedrockHeightmap[bx, bz];
+                    for (int by = brY; by < tY; by++)
+                    {
+                        double caveNoise = terrain.Cave(bx, by, bz);
+                        if (caveNoise > 0.1)
+                        {
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Air));
+                        }
+                    }                    
+                }
+            }
         }
     }
 }
