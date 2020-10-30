@@ -1458,7 +1458,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 {
                     LowerBound = Settings.SeaLevel,
                     UpperBound = Settings.ContinentHeightScale + Settings.SeaLevel,
-                    EdgeFalloff = Settings.ContinentHeightScale = Settings.SeaLevel,
+                    EdgeFalloff = Settings.ContinentHeightScale - Settings.SeaLevel,
                     Source0 = continentsWithBadlands,
                     // [Add-rivers-to-continents module]: This addition module adds the
                     // rivers to the continents-with-badlands subgroup.  Because the scaled-

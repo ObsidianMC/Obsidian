@@ -44,7 +44,7 @@ namespace Obsidian.WorldData.Generators
                 for (int bz = 0; bz < 16; bz++)
                 {
                     double terrainY = terrainHeightmap[bx, bz];
-                    for (int by = 0; by < 256; by++)
+                    for (int by = 255; by >= 0; by--)
                     {
                         // Air
                         if (by > terrainY && by > 60)
@@ -83,17 +83,18 @@ namespace Obsidian.WorldData.Generators
                         }
                         
                         // Beach
-                        else if (terrainY < 63.85) //decimal here to blend from sand to grass
+                        else if (terrainY < 63.85) // magic decimals are for blending
                         { 
                             m = Materials.Sand;
                         }
 
                         // Grass
-                        else if (terrainY < 74)
+                        else if (terrainY < 88.35)
                         {
                             if (by == (int)terrainY)
                             {
                                 m = Materials.GrassBlock;
+                                chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
                             }
                             else
                             {
@@ -102,13 +103,21 @@ namespace Obsidian.WorldData.Generators
                         }
                         
                         // Mountains
-                        else
+                        else if (terrainY < 94.35)
                         {
                             m = Materials.Stone;
                         }
 
+                        // Snow caps
+                        else
+                        {
+                            m = Materials.SnowBlock;
+                        }
+
                         chunk.SetBlock(bx, by, bz, Registry.GetBlock(m));
                     }
+
+                    // Add grass
 
                 }
             }
