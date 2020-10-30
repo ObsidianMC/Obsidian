@@ -133,7 +133,7 @@ namespace Obsidian.WorldData
             {
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
-                    var chk = GetChunk(cx * 16, cz * 16);
+                    var chk = GetChunk(cx, cz);
                     if (chk is null)
                     {
                         chunksToGen.Add(new Position(cx, 0, cz));
@@ -172,7 +172,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegion(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+            long value = Helpers.IntsToLong(chunkX >> 2, chunkZ >> 2);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -184,16 +184,14 @@ namespace Obsidian.WorldData
             return this.GetRegion(chunkX, chunkZ);
         }
 
-        public Chunk GetChunk(int x, int z)
+        public Chunk GetChunk(int chunkX, int chunkZ)
         {
-            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
-
             var region = this.GetRegion(chunkX, chunkZ);
 
             if (region == null)
                 return null;
 
-            var chunk = region.LoadedChunks[chunkX, chunkZ];
+            var chunk = region.LoadedChunks[chunkX % 4, chunkZ % 4];
             return chunk;
         }
 
@@ -201,7 +199,7 @@ namespace Obsidian.WorldData
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x, z);
+            var chunk = this.GetChunk(x<<4, z<<4);
 
             return chunk.GetBlock(x, y, z);
         }
