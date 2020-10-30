@@ -18,7 +18,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace Obsidian.WorldData
 {
@@ -190,7 +189,7 @@ namespace Obsidian.WorldData
             return chunk;
         }
 
-        public Chunk GetChunk(Position location) => this.GetChunk((int)location.X, (int)location.Z);
+        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X<<4, (int)worldLocation.Z<<4);
 
         public Block GetBlock(int x, int y, int z)
         {
