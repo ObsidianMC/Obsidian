@@ -112,8 +112,7 @@ namespace Obsidian
 
             await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 
-            Console.WriteLine("" +
-                "Server(s) killed. Press any key to return...");
+            Console.WriteLine("Server(s) killed. Press any key to return...");
             Console.ReadKey(intercept: false);
         }
 

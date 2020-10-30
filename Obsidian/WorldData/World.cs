@@ -145,11 +145,6 @@ namespace Obsidian.WorldData
                 }
             }
 
-/*
-            chk = this.Generator.GenerateChunk(cx, cz);
-            for (int i = 0; i < 1024; i++)
-                chk.BiomeContainer.Biomes.Add(127);
-*/
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }
 
