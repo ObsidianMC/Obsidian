@@ -27,3 +27,11 @@
 - [Tides](https://github.com/Tides) (developer)
 - [Craftplacer](https://github.com/Craftplacer/) (developer)
 - [Seb-stian](https://github.com/Seb-stian) (developer)
+
+## Contributors
+Big thanks to everyone that contributed!
+<a href="https://github.com/naamloos/obsidian/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=naamloos/obsidian" />
+</a>
+
+Made with [contributors-img](https://contributors-img.web.app).
