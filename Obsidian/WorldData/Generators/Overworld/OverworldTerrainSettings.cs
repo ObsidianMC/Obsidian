@@ -196,8 +196,8 @@ namespace Obsidian.WorldData.Generators.Overworld
             BadlandsLacunarity = 2.000890625;
 
             CaveFillPercent = 0.33;
-            CaveVertStretch = 0.75;
-            CaveHorizStretch = 0.064;
+            CaveVertStretch = 0.015;
+            CaveHorizStretch = 0.014;
 
             TerrainHorizStretch = 0.001195;
             TerrainVertStretch = 0.60;

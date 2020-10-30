@@ -1,5 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
+using SharpNoise.Models;
 using SharpNoise.Modules;
 using System.Runtime.InteropServices;
 
@@ -7,7 +8,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 {
     internal class OverworldTerrain
     {
-        private Perlin cavePerlin;
+        private Simplex cavePerlin;
         private Perlin biomePerlin;
 
         private OverworldTerrainSettings generatorSettings;
@@ -26,12 +27,12 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Frequency = 3
             };
 
-            cavePerlin = new Perlin
+            cavePerlin = new Simplex
             {
-                Seed = generatorSettings.Seed,
-                Lacunarity = 0,
-                Quality = SharpNoise.NoiseQuality.Fast,
-                OctaveCount = 2
+                Frequency = 3.14,
+                Lacunarity = 1.7234,
+                OctaveCount = 3,
+                Persistence = 0.53
             };
         }
 
@@ -51,9 +52,9 @@ namespace Obsidian.WorldData.Generators.Overworld
             return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 2, z * generatorSettings.TerrainHorizStretch) / 30.0;
         }
 
-        public double Cave(float x, float y, float z)
+        public bool Cave(float x, float y, float z)
         {
-            return cavePerlin.GetValue(x, y/256, z);
+            return cavePerlin.GetValue(x*generatorSettings.CaveHorizStretch, y*generatorSettings.CaveVertStretch, z*generatorSettings.CaveHorizStretch) > generatorSettings.CaveFillPercent;
         }
     }
 }

@@ -7,20 +7,17 @@ namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
-        private double[,] terrainHeightmap, rockHeightmap, bedrockHeightmap;
-        private Chunk chunk;
-
         private OverworldTerrain terrain = new OverworldTerrain();
         public OverworldGenerator() : base("overworld") {}
 
         public override Chunk GenerateChunk(int cx, int cz)
         {
-            chunk = new Chunk(cx, cz);
+            var chunk = new Chunk(cx, cz);
 
             // Build terrain map for this chunk
-            terrainHeightmap = new double[16, 16];
-            rockHeightmap = new double[16, 16];
-            bedrockHeightmap = new double[16, 16];
+            var terrainHeightmap = new double[16, 16];
+            var rockHeightmap = new double[16, 16];
+            var bedrockHeightmap = new double[16, 16];
             double tY = 60;
             double rY = 2;
             double bY = 1;
@@ -118,24 +115,24 @@ namespace Obsidian.WorldData.Generators
                 }
             }
 
-            //CarveCaves();
+            CarveCaves(chunk, terrainHeightmap, bedrockHeightmap);
             return chunk;
         }
 
-        private void CarveCaves()
+        private void CarveCaves(Chunk chunk, double[,] thm, double[,] bhm)
         {
             for (int bx = 0; bx < 16; bx++)
             {
                 for (int bz = 0; bz < 16; bz++)
                 {
-                    int tY = (int) terrainHeightmap[bx, bz];
-                    int brY = (int) bedrockHeightmap[bx, bz];
+                    int tY = (int)thm[bx, bz];
+                    int brY = (int)bhm[bx, bz];
                     for (int by = brY; by < tY; by++)
                     {
-                        double caveNoise = terrain.Cave(bx, by, bz);
-                        if (caveNoise > 0.1)
+                        bool caveAir = terrain.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
+                        if (caveAir)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Air));
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CaveAir));
                         }
                     }                    
                 }

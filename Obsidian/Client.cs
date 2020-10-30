@@ -542,9 +542,9 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            for (int x=0; x<=1; x++)
+            for (int x=-1; x<=1; x++)
             {
-                for (int z=0; z<=1; z++)
+                for (int z=-1; z<=1; z++)
                 {
                     foreach (var chunk in this.Server.World.GetRegion(x, z).LoadedChunks)
                     {
