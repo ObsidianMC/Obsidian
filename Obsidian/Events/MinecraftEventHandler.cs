@@ -12,6 +12,7 @@ namespace Obsidian.Events
         private readonly AsyncEvent<PlayerJoinEventArgs> playerJoin;
         private readonly AsyncEvent<PlayerLeaveEventArgs> playerLeave;
         private readonly AsyncEvent<InventoryClickEventArgs> clickEvent;
+        private readonly AsyncEvent<BlockInteractEventArgs> blockInteract;
         private readonly AsyncEvent serverTick;
 
         public MinecraftEventHandler()
@@ -24,6 +25,7 @@ namespace Obsidian.Events
             this.playerLeave = new AsyncEvent<PlayerLeaveEventArgs>(HandleException, "PlayerLeave");
             this.serverTick = new AsyncEvent(HandleException, "ServerTick");
             this.clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
+            this.blockInteract = new AsyncEvent<BlockInteractEventArgs>(HandleException, "Block Interact");
         }
 
         /// <summary>
@@ -66,6 +68,12 @@ namespace Obsidian.Events
             remove { this.playerLeave.Unregister(value); }
         }
 
+        public event AsyncEventHandler<BlockInteractEventArgs> BlockInteract
+        {
+            add { this.blockInteract.Register(value); }
+            remove { this.blockInteract.Unregister(value); }
+        }
+
         private void HandleException(string eventname, Exception ex) { }
 
         internal async Task<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs args)
@@ -80,6 +88,13 @@ namespace Obsidian.Events
             await this.clickEvent.InvokeAsync(args);
 
             return args;
+        }
+
+        internal async Task<BlockInteractEventArgs> InvokeBlockInteractAsync(BlockInteractEventArgs eventArgs)
+        {
+            await this.blockInteract.InvokeAsync(eventArgs);
+
+            return eventArgs;
         }
 
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>

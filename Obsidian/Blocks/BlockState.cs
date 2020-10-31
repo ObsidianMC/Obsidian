@@ -21,5 +21,7 @@
             this.UnlocalizedName = unlocalizedName;
             this.Type = type;
         }
+
+        public override string ToString() => this.Type.ToString();
     }
 }
