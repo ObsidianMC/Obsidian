@@ -1,13 +1,15 @@
 ﻿using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using System;
+using System.Linq;
 
 namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
-        private OverworldTerrain terrain = new OverworldTerrain();
+        private OverworldNoise noiseGen = new OverworldNoise();
         public OverworldGenerator() : base("overworld") {}
 
         public override Chunk GenerateChunk(int cx, int cz)
@@ -18,126 +20,84 @@ namespace Obsidian.WorldData.Generators
             var terrainHeightmap = new double[16, 16];
             var rockHeightmap = new double[16, 16];
             var bedrockHeightmap = new double[16, 16];
-            double tY = 60;
-            double rY = 2;
-            double bY = 1;
+
+            var terrainHeights = new double[256];
+
             for (int bx=0; bx<16; bx++)
             {
                 for (int bz=0; bz<16; bz++)
                 {
-                    tY = terrain.Terrain(bx + (cx * 16), bz + (cz * 16));
-                    rY = terrain.Underground(bx + (cx * 16), bz + (cz * 16)) - 5 + tY;
-                    bY = terrain.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
+                    terrainHeights[(bx*16)+bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
+                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
+                    bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
+                    
+                    if (noiseGen.isRiver(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 181, bz, Registry.GetBlock(Materials.LightBlueStainedGlass));
 
-                    terrainHeightmap[bx, bz] = tY;
-                    rockHeightmap[bx, bz] = rY;
-                    bedrockHeightmap[bx, bz] = bY;
+                    if (noiseGen.isMountain(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 180, bz, Registry.GetBlock(Materials.GrayStainedGlass));
+
+                    if (noiseGen.isHills(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 179, bz, Registry.GetBlock(Materials.GreenStainedGlass));
+                    
+                    if (noiseGen.isPlains(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 178, bz, Registry.GetBlock(Materials.LimeStainedGlass));
+                    
+                    if (noiseGen.isBadlands(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 177, bz, Registry.GetBlock(Materials.BrownStainedGlass));
                 }
             }
 
-            for (int bx = 0; bx < 16; bx++)
+            var avgHeight = terrainHeights.Average();
+            var heightStdDev = Math.Sqrt(terrainHeights.Average(v => Math.Pow(v - avgHeight, 2)));
+            int biome = 0;
+            if (avgHeight <= 45) { biome = (int) Biomes.DeepOcean; }
+            else if (avgHeight <= 56) { biome = (int) Biomes.Ocean; }
+            else if (avgHeight <=63)
             {
-                for (int bz = 0; bz < 16; bz++)
+                if (heightStdDev > 0.6)
                 {
-                    double terrainY = terrainHeightmap[bx, bz];
-                    for (int by = 255; by >= 0; by--)
-                    {
-                        // Air
-                        if (by > terrainY && by > 60)
-                        {
-                            continue;
-                        }
-
-                        // Bedrock
-                        if (by < bedrockHeightmap[bx, bz])
-                        {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Bedrock));
-                            continue;
-                        }
-
-                        // Underground
-                        if (by <= rockHeightmap[bx, bz])
-                        {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Stone));
-                            continue;
-                        }
-
-                        Materials m = Materials.WetSponge;
-
-                        // Ocean/River
-                        if (terrainY <= 60)
-                        {
-                            if (by > terrainY)
-                            {
-                                m = Materials.Water;
-                            }
-                            else if (by <= terrainY)
-                            {
-                                m = Materials.Gravel;
-                            }
-                        }
-                        
-                        // Beach
-                        else if (terrainY < 63.85) // magic decimals are for blending
-                        { 
-                            m = Materials.Sand;
-                        }
-
-                        // Grass
-                        else if (terrainY < 88.35)
-                        {
-                            if (by == (int)terrainY)
-                            {
-                                m = Materials.GrassBlock;
-                                //chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
-                            }
-                            else
-                            {
-                                m = Materials.Dirt;
-                            }
-                        }
-                        
-                        // Mountains
-                        else if (terrainY < 94.35)
-                        {
-                            m = Materials.Stone;
-                        }
-
-                        // Snow caps
-                        else
-                        {
-                            m = Materials.SnowBlock;
-                        }
-
-                        chunk.SetBlock(bx, by, bz, Registry.GetBlock(m));
-                    }
+                    biome = (int) Biomes.Badlands; 
+                }
+                else
+                {
+                    biome = (int) Biomes.Plains;
                 }
             }
+            else if (avgHeight <= 73)
+            {
+                if (heightStdDev > 1)
+                {
+                    biome = (int)Biomes.WoodedHills;
+                }
+                else
+                {
+                    biome = (int) Biomes.Forest;
+                }
+            }
+            else if (avgHeight <= 85)
+            {
+                if (heightStdDev > 1.5)
+                {
+                    biome = (int) Biomes.MountainEdge;
+                } else
+                {
+                    biome = (int) Biomes.GravellyMountains;
+                }
+            }
+            else {  biome = (int) Biomes.Mountains; }
+
+            for (int i = 0; i < 1024; i++)
+                chunk.BiomeContainer.Biomes.Add(biome);
+
+            ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap);
 
             GenerateCoal(chunk, rockHeightmap);
-            CarveCaves(chunk, terrainHeightmap, bedrockHeightmap);
+            ChunkBuilder.CarveCaves(noiseGen, chunk, rockHeightmap, bedrockHeightmap);
             return chunk;
         }
 
-        private void CarveCaves(Chunk chunk, double[,] thm, double[,] bhm)
-        {
-            for (int bx = 0; bx < 16; bx++)
-            {
-                for (int bz = 0; bz < 16; bz++)
-                {
-                    int tY = (int)thm[bx, bz];
-                    int brY = Math.Min((int)bhm[bx, bz], 70);
-                    for (int by = brY; by < tY; by++)
-                    {
-                        bool caveAir = terrain.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
-                        if (caveAir)
-                        {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CaveAir));
-                        }
-                    }                    
-                }
-            }
-        }
+        
 
         private void GenerateCoal(Chunk chunk, double[,] rockHeighmap)
         {
@@ -151,10 +111,10 @@ namespace Obsidian.WorldData.Generators
 
                     for (int by = 24; by < rockY; by++)
                     {
-                        bool isCoal = terrain.Coal(worldX, by, worldZ);
+                        bool isCoal = noiseGen.Coal(worldX, by, worldZ);
                         if(isCoal)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.GrassBlock));
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CoalOre));
                         }
                     }
                 }
