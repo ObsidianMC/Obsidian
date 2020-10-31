@@ -51,12 +51,7 @@ namespace Obsidian.Plugins
             LoadContext = loadContext;
             Source = source;
 
-            NeedsPermissions = PluginPermissions.None;
-            AssemblyName[] referencedAssemblies = Assembly.GetReferencedAssemblies();
-            for (int i = 0; i < referencedAssemblies.Length; i++)
-            {
-                NeedsPermissions |= GetNeededAssemblyPermission(referencedAssemblies[i]);
-            }
+            NeedsPermissions = AssemblySafetyManager.GetNeededPermissions(assembly);
 
             pluginType = plugin.GetType();
             ClassName = pluginType.Name;
@@ -270,32 +265,6 @@ namespace Obsidian.Plugins
                 }
             }
             PermissionsChanged?.Invoke(this);
-        }
-
-        private PluginPermissions GetNeededAssemblyPermission(AssemblyName assembly)
-        {
-            if (assembly.Name.StartsWith("System.IO"))
-                return PluginPermissions.FileAccess;
-
-            if (assembly.Name.StartsWith("System.Net"))
-                return PluginPermissions.InternetAccess;
-
-            if (assembly.Name.StartsWith("System.Reflection"))
-                return PluginPermissions.Reflection;
-
-            if (assembly.Name.StartsWith("System.Runtime.Interop"))
-                return PluginPermissions.Interop;
-
-            if (assembly.Name.StartsWith("System.Diagnostics") && assembly.Name != "System.Diagnostics.Debug")
-                return PluginPermissions.RunningSubprocesses;
-
-            if (assembly.Name.StartsWith("Microsoft.CSharp"))
-                return PluginPermissions.Compilation;
-
-            if (!assembly.Name.StartsWith("System") && !assembly.Name.StartsWith("Microsoft") && !assembly.Name.StartsWith("Obsidian.API"))
-                return PluginPermissions.ThirdPartyLibraries;
-
-            return PluginPermissions.None;
         }
         #endregion
     }
