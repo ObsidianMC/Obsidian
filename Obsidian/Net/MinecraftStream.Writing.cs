@@ -10,7 +10,7 @@ namespace Obsidian.Net
         public async Task WriteByteAsync(sbyte value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
 #endif
 
             await this.WriteUnsignedByteAsync((byte)value);
@@ -19,7 +19,7 @@ namespace Obsidian.Net
         public async Task WriteUnsignedByteAsync(byte value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
 #endif
 
             await this.WriteAsync(new[] { value });
@@ -28,7 +28,7 @@ namespace Obsidian.Net
         public async Task WriteBooleanAsync(bool value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
 #endif
 
             await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
@@ -37,7 +37,7 @@ namespace Obsidian.Net
         public async Task WriteUnsignedShortAsync(ushort value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -51,7 +51,7 @@ namespace Obsidian.Net
         public async Task WriteShortAsync(short value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Short ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Short ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -65,7 +65,7 @@ namespace Obsidian.Net
         public async Task WriteIntAsync(int value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Int ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Int ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -79,7 +79,7 @@ namespace Obsidian.Net
         public async Task WriteLongAsync(long value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Long ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Long ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -93,7 +93,7 @@ namespace Obsidian.Net
         public async Task WriteFloatAsync(float value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Float ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Float ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -107,7 +107,7 @@ namespace Obsidian.Net
         public async Task WriteDoubleAsync(double value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing Double ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing Double ({value})");
 #endif
 
             var write = BitConverter.GetBytes(value);
@@ -120,7 +120,7 @@ namespace Obsidian.Net
 
         public async Task WriteStringAsync(string value, int maxLength = short.MaxValue)
         {
-            //await Program.PacketLogger.LogDebugAsync($"Writing String ({value})");
+            //await Globals.PacketLogger.LogDebugAsync($"Writing String ({value})");
 
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -134,7 +134,7 @@ namespace Obsidian.Net
         }
         public async Task WriteVarIntAsync(int value)
         {
-            //await Program.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
+            //await Globals.PacketLogger.LogDebugAsync($"Writing VarInt ({value})");
 
             var v = (uint)value;
 
@@ -172,7 +172,7 @@ namespace Obsidian.Net
         public async Task WriteVarLongAsync(long value)
         {
 #if PACKETLOG
-            await Program.PacketLogger.LogDebugAsync($"Writing VarLong ({value})");
+            await Globals.PacketLogger.LogDebugAsync($"Writing VarLong ({value})");
 #endif
 
             var v = (ulong)value;

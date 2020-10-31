@@ -17,7 +17,7 @@ namespace Obsidian.Util
 {
     public class PacketHandler
     {
-        public static ILogger Logger => Program.PacketLogger;
+        public static ILogger Logger => Globals.PacketLogger;
 
         public const ProtocolVersion Protocol = ProtocolVersion.v1_16_3;
 

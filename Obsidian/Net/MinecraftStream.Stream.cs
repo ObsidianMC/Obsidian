@@ -66,7 +66,7 @@ namespace Obsidian.Net
             if (clear)
                 await ClearDebug();
 
-            Program.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+            Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
         }
 
         public async Task DumpAsync(bool clear = true, string name = "")
@@ -83,7 +83,7 @@ namespace Obsidian.Net
             if (clear)
                 await ClearDebug();
 
-            Program.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+            Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
         }
 
         public Task ClearDebug()

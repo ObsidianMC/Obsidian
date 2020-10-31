@@ -64,7 +64,7 @@ namespace Obsidian.Util.Registry
 
                         var name = blockName.Split(":")[1];
 
-                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Program.JsonSettings);
+                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
 
                         if (!Enum.TryParse(name.Replace("_", ""), true, out Materials material))
                             continue;
@@ -764,7 +764,7 @@ namespace Obsidian.Util.Registry
                 foreach (var obj in token)
                 {
                     var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Program.JsonSettings);
+                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
 
                     DefaultBiomes.TryAdd(codec.Name, codec);
 
@@ -799,7 +799,7 @@ namespace Obsidian.Util.Registry
                 foreach (var obj in token)
                 {
                     var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Program.JsonSettings);
+                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Globals.JsonSettings);
 
                     DefaultDimensions.TryAdd(codec.Id, codec);
 
