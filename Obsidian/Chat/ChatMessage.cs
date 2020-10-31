@@ -57,6 +57,6 @@ namespace Obsidian.Chat
         }
 
         public static implicit operator ChatMessage(string text) => Simple(text);
-        public override string ToString() => JsonConvert.SerializeObject(this, Program.JsonSettings);
+        public override string ToString() => JsonConvert.SerializeObject(this, Globals.JsonSettings);
     }
 }

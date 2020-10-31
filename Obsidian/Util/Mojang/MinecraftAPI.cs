@@ -9,7 +9,7 @@ namespace Obsidian.Util.Mojang
 {
     public class MinecraftAPI
     {
-        public static HttpClient Http = new HttpClient();
+        public static HttpClient Http = Globals.HttpClient;
 
         public static async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
         {

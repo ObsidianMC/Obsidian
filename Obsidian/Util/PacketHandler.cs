@@ -21,7 +21,7 @@ namespace Obsidian
 {
     public class PacketHandler
     {
-        public static ILogger Logger => Program.PacketLogger;
+        public static ILogger Logger => Globals.PacketLogger;
 
         public static async Task<Packet> ReadPacketAsync(MinecraftStream stream)
         {

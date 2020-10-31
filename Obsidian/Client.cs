@@ -171,7 +171,7 @@ namespace Obsidian
                             case 0x00:
                                 var loginStart = await PacketSerializer.FastDeserializeAsync<LoginStart>(packet.data);
 
-                                string username = config.MulitplayerDebugMode ? $"Player{Program.Random.Next(1, 999)}" : loginStart.Username;
+                                string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
                                 this.Logger.LogDebug($"Received login request from user {loginStart.Username}");
 

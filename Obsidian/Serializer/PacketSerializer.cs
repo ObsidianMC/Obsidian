@@ -39,7 +39,7 @@ namespace Obsidian.Serializer
 
             foreach (var (key, value) in valueDict)
             {
-                //await Program.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
+                //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
 
                 var dataType = key.Type;
 
@@ -70,7 +70,7 @@ namespace Obsidian.Serializer
             if (packet == null)
                 throw new NullReferenceException(nameof(packet));
 
-            //Program.PacketLogger.LogDebug($"Deserializing {packet}");
+            //Globals.PacketLogger.LogDebug($"Deserializing {packet}");
 
             var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
             var members = packet.GetType().GetMembers(PacketExtensions.Flags);
@@ -89,7 +89,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(field.FieldType, dataType, key);
 
-                    //Program.PacketLogger.LogDebug($"Setting val {val}");
+                    //Globals.PacketLogger.LogDebug($"Setting val {val}");
 
                     field.SetValue(packet, val);
                 }
@@ -102,7 +102,7 @@ namespace Obsidian.Serializer
 
                     var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
 
-                    //Program.PacketLogger.LogDebug($"Setting val {val}");
+                    //Globals.PacketLogger.LogDebug($"Setting val {val}");
 
                     if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
                         val = (BlockFace)val;

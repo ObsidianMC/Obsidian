@@ -99,7 +99,7 @@ namespace Obsidian
             this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into
-            Program.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
             Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
@@ -378,11 +378,11 @@ namespace Obsidian
                         var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
                         var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
 
-                        var f5 = Program.Random.NextDouble() * ((float)Math.PI * 2f);
-                        var f6 = 0.02f * Program.Random.NextDouble();
+                        var f5 = Globals.Random.NextDouble() * ((float)Math.PI * 2f);
+                        var f6 = 0.02f * Globals.Random.NextDouble();
 
                         var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
-                            (short)((double)(-f8 * 0.3F + 0.1F + (Program.Random.NextDouble() - Program.Random.NextDouble()) * 0.1F)),
+                            (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
                             (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
@@ -459,9 +459,9 @@ namespace Obsidian
                             Id = Registry.GetItem(block.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Location = digging.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D)
+                            Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D)
                         };
 
                         this.TryAddEntity(player.World, item);

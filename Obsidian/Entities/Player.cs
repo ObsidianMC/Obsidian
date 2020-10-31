@@ -213,7 +213,7 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Position pos)
         {
-            var tid = Program.Random.Next(0, 999);
+            var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
@@ -225,7 +225,7 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Player to)
         {
-            var tid = Program.Random.Next(0, 999);
+            var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = to.Location,

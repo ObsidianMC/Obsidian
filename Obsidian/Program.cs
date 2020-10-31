@@ -1,11 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Obsidian.Chat;
+﻿using Newtonsoft.Json;
 using Obsidian.Util;
-using Obsidian.Util.Converters;
-using Obsidian.Util.DataTypes;
-using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,38 +14,7 @@ namespace Obsidian
         private static Dictionary<int, Server> Servers = new Dictionary<int, Server>();
         private static TaskCompletionSource<bool> cancelKeyPress = new TaskCompletionSource<bool>();
 
-        public static GlobalConfig GlobalConfig { get; private set; }
         private const string globalConfigFile = "global_config.json";
-
-        public static Random Random = new Random();
-
-        internal static ILogger PacketLogger { get; set; }
-
-        internal static DefaultContractResolver contractResolver = new DefaultContractResolver
-        {
-            NamingStrategy = new SnakeCaseNamingStrategy()
-        };
-
-        public static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
-        {
-            ContractResolver = contractResolver,
-            Converters = new List<JsonConverter>
-            {
-                new DefaultEnumConverter<CustomDirection>(),
-                new DefaultEnumConverter<Axis>(),
-                new DefaultEnumConverter<Face>(),
-                new DefaultEnumConverter<BlockFace>(),
-                new DefaultEnumConverter<Half>(),
-                new DefaultEnumConverter<Hinge>(),
-                new DefaultEnumConverter<Instruments>(),
-                new DefaultEnumConverter<Part>(),
-                new DefaultEnumConverter<Shape>(),
-                new DefaultEnumConverter<CustomDirection>(),
-                new DefaultEnumConverter<MinecraftType>(),
-                new DefaultEnumConverter<Attachment>(),
-                new DefaultEnumConverter<ETextAction>()
-            }
-        };
 
         private static async Task Main()
         {
@@ -73,16 +36,16 @@ namespace Obsidian
 
             if (File.Exists(globalConfigFile))
             {
-                GlobalConfig = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(globalConfigFile));
+                Globals.Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(globalConfigFile));
             }
             else
             {
-                GlobalConfig = new GlobalConfig();
-                File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(GlobalConfig, Formatting.Indented));
+                Globals.Config = new GlobalConfig();
+                File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
                 Console.WriteLine("Created new global configuration file");
             }
 
-            for (int i = 0; i < GlobalConfig.ServerCount; i++)
+            for (int i = 0; i < Globals.Config.ServerCount; i++)
             {
                 string serverDir = $"Server-{i}";
 
