@@ -1,7 +1,8 @@
 ﻿using System.IO;
 using System.Security;
+using Obsidian.API.Plugins.Services.Common;
 
-namespace Obsidian.API.Plugins.Services.Common
+namespace Obsidian.API.Plugins.Services.IO
 {
     /// <summary>
     /// Provides the base interface for file services.
