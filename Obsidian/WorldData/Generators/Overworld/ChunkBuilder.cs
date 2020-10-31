@@ -2,12 +2,13 @@
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using System;
+using System.Reflection.PortableExecutable;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
     public static class ChunkBuilder
     {
-        public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] undergroundHeightmap, double[,] bedrockHeightmap)
+        public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] undergroundHeightmap, double[,] bedrockHeightmap, bool debug=false)
         {
             for (int bx = 0; bx < 16; bx++)
             {
@@ -32,7 +33,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         // Underground
                         if (by <= undergroundHeightmap[bx, bz])
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Stone));
+                            if (!debug) { chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.Stone)); }
                             continue;
                         }
 
@@ -77,7 +78,6 @@ namespace Obsidian.WorldData.Generators.Overworld
                             if (by == (int)terrainY)
                             {
                                 m = Materials.GrassBlock;
-                                chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
                             }
                             else
                             {
@@ -91,7 +91,6 @@ namespace Obsidian.WorldData.Generators.Overworld
                             if (by == (int)terrainY)
                             {
                                 m = Materials.GrassBlock;
-                                //chunk.SetBlock(bx, by+1, bz, Registry.GetBlock(Materials.Grass));
                             }
                             else
                             {
@@ -117,7 +116,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             }
         }
 
-        public static void CarveCaves(OverworldNoise noiseGen, Chunk chunk, double[,] rhm, double[,] bhm)
+        public static void CarveCaves(OverworldNoise noiseGen, Chunk chunk, double[,] rhm, double[,] bhm, bool debug=false)
         {
             for (int bx = 0; bx < 16; bx++)
             {
@@ -130,7 +129,9 @@ namespace Obsidian.WorldData.Generators.Overworld
                         bool caveAir = noiseGen.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
                         if (caveAir)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CaveAir));
+                            Materials mat = Materials.CaveAir;
+                            if(debug) { mat = Materials.LightGrayStainedGlass; }
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(mat));
                         }
                     }
                 }

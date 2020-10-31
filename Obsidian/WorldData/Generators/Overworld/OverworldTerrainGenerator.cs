@@ -17,6 +17,8 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public Module RiversPos { get; private set; }
 
+        public Cache BaseContinents { get; private set; }
+
         public Cache ContinentsWithMountains { get; private set; }
 
         public Cache ContinentsWithPlains { get; private set; }
@@ -44,7 +46,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Base-continent-definition subgroup]: Caches the output value from the
             // clamped-continent module.
-            var baseContinent = new Cache
+            BaseContinents = new Cache
             {
                 // [Clamped-continent module]: Finally, a clamp module modifies the
                 // carved-continent module to ensure that the output value of this
@@ -151,8 +153,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                     EdgeFalloff = 0.0625,
                     LowerBound = Settings.SeaLevel - 0.0375,
                     UpperBound = Settings.SeaLevel + 1000.0375,
-                    Control = baseContinent,
-                    Source0 = baseContinent,
+                    Control = BaseContinents,
+                    Source0 = BaseContinents,
                     // [Warped-base-continent-definition module]: This turbulence module
                     // warps the output value from the intermediate-turbulence module.  This
                     // turbulence has a higher frequency, but lower power, than the
@@ -182,7 +184,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                 Frequency = Settings.ContinentFrequency * 15.25,
                                 Power = Settings.ContinentFrequency / 113.75,
                                 Roughness = 12,
-                                Source0 = baseContinent,
+                                Source0 = BaseContinents,
                             },
                         },
                     },
@@ -1493,7 +1495,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         // elevation units and is negative; this is required for Add-rivers-to-continents.
                         Source1 = new ScaleBias
                         {
-                            Scale = Settings.RiverDepth / 3.0,
+                            Scale = Settings.RiverDepth / 2.0,
                             Bias = -Settings.RiverDepth / 2.0,
                             Source0 = riverPositions,
                         },
