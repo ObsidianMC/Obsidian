@@ -3,13 +3,13 @@
 namespace Obsidian.API.Plugins
 {
     /// <summary>
-    /// Indicates that a field/property should be set to an instance of a plugin with the same name.
+    /// Indicates that the field/property should have it's value injected with a plugin.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public class DependencyAttribute : Attribute
     {
         /// <summary>
-        /// Indicates that the plugin can run without this dependency.
+        /// Indicates whether the plugin can run without this dependency.
         /// </summary>
         public bool Optional { get; set; }
 
@@ -18,10 +18,14 @@ namespace Obsidian.API.Plugins
         /// </summary>
         public string MinVersion { get; set; }
 
+        /// <summary>
+        /// Gets <see cref="MinVersion"/> parsed to <see cref="Version"/> if possible, otherwise returns <c>new Version()</c>.
+        /// </summary>
+        /// <returns><see cref="MinVersion"/> parsed to <see cref="Version"/> if possible, otherwise returns <c>new Version()</c>.</returns>
         public Version GetMinVersion()
         {
             Version.TryParse(MinVersion, out var result);
-            return result;
+            return result ?? new Version();
         }
     }
 }

@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Obsidian.API.Plugins.Services
 {
+    /// <summary>
+    /// Represents a service used for loading and using native libraries.
+    /// </summary>
     public interface INativeLoader : ISecuredService
     {
         /// <summary>

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Obsidian.API.Plugins.Services
 {
+    /// <summary>
+    /// Represents a service used for reading from files.s
+    /// </summary>
     public interface IFileReader : IFileService
     {
         /// <summary>

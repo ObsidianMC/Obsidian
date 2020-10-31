@@ -6,6 +6,9 @@ using Obsidian.API.Plugins.Services.Common;
 
 namespace Obsidian.API.Plugins.Services
 {
+    /// <summary>
+    /// Represents a service used for creating and writing to files.
+    /// </summary>
     public interface IFileWriter : IFileService
     {
         /// <summary>

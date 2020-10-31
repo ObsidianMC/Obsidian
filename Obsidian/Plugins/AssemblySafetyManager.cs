@@ -37,7 +37,7 @@ namespace Obsidian.Plugins
                 if (assemblyName.Name.StartsWith("System.IO"))
                     return PluginPermissions.FileAccess;
                 if (assemblyName.Name.StartsWith("System.Net"))
-                    return PluginPermissions.InternetAccess;
+                    return PluginPermissions.NetworkAccess;
                 if (assemblyName.Name.StartsWith("System.Runtime.Interop"))
                     return PluginPermissions.Interop;
             }

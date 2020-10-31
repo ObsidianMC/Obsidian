@@ -3,6 +3,9 @@ using System.Security;
 
 namespace Obsidian.API.Plugins.Services.Common
 {
+    /// <summary>
+    /// Provides the base interface for file services.
+    /// </summary>
     public interface IFileService : ISecuredService
     {
         /// <summary>
