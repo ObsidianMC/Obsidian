@@ -81,5 +81,27 @@ namespace Obsidian.Plugins.Services
         {
             return writer.WriteLineAsync(value);
         }
+
+        public override void Flush()
+        {
+            writer.Flush();
+        }
+
+        public override Task FlushAsync()
+        {
+            return writer.FlushAsync();
+        }
+
+        public override void Dispose()
+        {
+            writer.Dispose();
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            writer.Dispose();
+            return base.DisposeAsync();
+        }
     }
 }

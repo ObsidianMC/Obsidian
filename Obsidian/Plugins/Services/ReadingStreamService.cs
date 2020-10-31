@@ -46,5 +46,17 @@ namespace Obsidian.Plugins.Services
         {
             return reader.ReadToEndAsync();
         }
+
+        public override void Dispose()
+        {
+            reader.Dispose();
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            reader.Dispose();
+            return base.DisposeAsync();
+        }
     }
 }
