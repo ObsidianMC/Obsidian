@@ -48,8 +48,8 @@ namespace Obsidian.WorldData.Generators
                     else
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
 
-                    var biometemp = noiseGen.GetBiome(bx + (cx * 16), 0, bz + (cz * 16));
-                    var biomeHumidity = noiseGen.GetBiome(bx + (cx * 16), 255, bz + (cz * 16));
+                    var biometemp = noiseGen.GetBiomeTemp(bx + (cx * 16), 0, bz + (cz * 16));
+                    var biomeHumidity = noiseGen.GetBiomeHumidity(bx + (cx * 16), 255, bz + (cz * 16));
                     if (biometemp > 0)
                     {
                         chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.RedStainedGlass));

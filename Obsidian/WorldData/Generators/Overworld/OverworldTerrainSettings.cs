@@ -199,7 +199,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             CaveVertStretch = 0.035;
             CaveHorizStretch = 0.022;
 
-            TerrainHorizStretch = 0.0001; // 0.008; //  
+            TerrainHorizStretch = 0.0006; // 0.008; //  
             TerrainVertStretch = 0.60; // 0.4; //
         }
     }
