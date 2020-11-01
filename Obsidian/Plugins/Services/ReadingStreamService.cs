@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Obsidian.Plugins.Services
@@ -15,16 +14,10 @@ namespace Obsidian.Plugins.Services
             name = fileStream.Name;
         }
 
-        public ReadingStreamService(NetworkStream networkStream)
+        public ReadingStreamService(Stream stream)
         {
-            stream = networkStream;
-            reader = new StreamReader(networkStream);
-        }
-
-        public ReadingStreamService(MemoryStream memoryStream)
-        {
-            stream = memoryStream;
-            reader = new StreamReader(memoryStream);
+            this.stream = stream;
+            reader = new StreamReader(stream);
         }
 
         public override string ReadLine()
@@ -45,6 +38,18 @@ namespace Obsidian.Plugins.Services
         public override Task<string> ReadToEndAsync()
         {
             return reader.ReadToEndAsync();
+        }
+
+        public override void Dispose()
+        {
+            reader.Dispose();
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            reader.Dispose();
+            return base.DisposeAsync();
         }
     }
 }

@@ -31,22 +31,22 @@ namespace Obsidian.Plugins.Services
             return stream.CopyToAsync((destination as StreamService).stream);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             stream.Dispose();
         }
 
-        public ValueTask DisposeAsync()
+        public virtual ValueTask DisposeAsync()
         {
             return stream.DisposeAsync();
         }
 
-        public void Flush()
+        public virtual void Flush()
         {
             stream.Flush();
         }
 
-        public Task FlushAsync()
+        public virtual Task FlushAsync()
         {
             return stream.FlushAsync();
         }
