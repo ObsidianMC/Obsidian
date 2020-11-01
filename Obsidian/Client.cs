@@ -101,7 +101,14 @@ namespace Obsidian
             var sendPacketBlock = new ActionBlock<Packet>(async packet =>
             {
                 if (tcp.Connected)
-                    await SendPacketAsync(packet);
+                    try
+                    {
+                        await SendPacketAsync(packet);
+                    }
+                    catch (Exception)
+                    {
+                        // Catch random blocking exceptions
+                    }
             },
             blockOptions);
 
