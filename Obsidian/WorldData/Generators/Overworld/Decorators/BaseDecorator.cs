@@ -1,19 +1,17 @@
 ﻿using Obsidian.ChunkData;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public abstract class BaseDecorator
+    public abstract class BaseDecorator : IDecorator
     {
-        private Biomes biome;
+        protected Biomes biome;
 
         protected BaseDecorator(Biomes biome)
         {
             this.biome = biome;
         }
 
-        public abstract void Decorate(Chunk chunk, double terrainY, (int x, int z) pos);
+        public abstract void Decorate(Chunk chunk, Position pos, OverworldNoise noise);
     }
 }

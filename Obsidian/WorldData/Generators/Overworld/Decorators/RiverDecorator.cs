@@ -1,22 +1,22 @@
 ﻿using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public static class RiverDecorator
+    public class RiverDecorator : BaseDecorator
     {
-        public static void Decorate(Chunk chunk, double terrainY, (int x, int z) pos, OverworldNoise noise)
+
+        public RiverDecorator(Biomes biome) : base(biome)
         {
-            if (terrainY > 60) // river above water level
+        }
+
+        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
+        {
+            if (pos.Y > 60) // river above water level
             {
-                var waterPos = new Position(pos.x, (int)terrainY, pos.z);
-                var sandPos = new Position(pos.x, (int)terrainY-1, pos.z);
-                chunk.SetBlock(waterPos, Registry.GetBlock(Materials.Water));
-                chunk.SetBlock(sandPos, Registry.GetBlock(Materials.Sand));
+                chunk.SetBlock(pos, Registry.GetBlock(Materials.Water));
+                chunk.SetBlock(pos + (0, -1, 0), Registry.GetBlock(Materials.Sand));
             }
         }
     }

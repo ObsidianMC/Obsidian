@@ -1,7 +1,5 @@
 ﻿using Obsidian.ChunkData;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Obsidian.Util.DataTypes;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
@@ -11,9 +9,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
         }
 
-        public override void Decorate(Chunk chunk, double terrainY, (int x, int z) pos)
+        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-            throw new NotImplementedException();
         }
     }
 }
