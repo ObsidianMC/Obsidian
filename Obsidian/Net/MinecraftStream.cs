@@ -127,7 +127,7 @@ namespace Obsidian.Net
         {
             //var arr = value.ToByteArray();
             BigInteger uuid = BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            await this.WriteAsync(uuid.ToByteArray(true, true));
+            await this.WriteAsync(uuid.ToByteArray(false, true));
         }
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());

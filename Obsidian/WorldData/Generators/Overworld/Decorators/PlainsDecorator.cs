@@ -52,7 +52,27 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                         }
                     }
                 }
-            }    
+            }
+
+            // If on the edge of the chunk, check if neighboring chunks need leaves.
+            if (pos.x == 0)
+            {
+                // Check out to 2 blocks into the neighboring chunk's noisemap and see if there's a tree center (top log)
+
+            }
+            else if (pos.x == 15)
+            {
+
+            }
+            if (pos.z == 0)
+            {
+
+            }
+            else if (pos.z == 15)
+            {
+
+            }
+
         }
     }
 }
