@@ -1,5 +1,6 @@
 // This is the data about one world. It gets saved as level.dat.
 
+using Obsidian.API;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using System.Collections.Generic;

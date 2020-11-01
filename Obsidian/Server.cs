@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
@@ -42,7 +43,7 @@ namespace Obsidian
         public sbyte Position;
     }
 
-    public class Server
+    public class Server : IServer
     {
         private readonly ConcurrentQueue<QueueChat> chatMessages;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
@@ -64,7 +65,7 @@ namespace Obsidian
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
-
+        
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
@@ -151,6 +152,10 @@ namespace Obsidian
         public bool IsPlayerOnline(string username) => this.OnlinePlayers.Any(x => x.Value.Username == username);
 
         public bool IsPlayerOnline(Guid uuid) => this.OnlinePlayers.ContainsKey(uuid);
+
+        public IPlayer GetPlayer(string username) => this.OnlinePlayers.FirstOrDefault(player => player.Value.Username == username).Value;
+
+        public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
         /// <summary>
         /// Sends a message to all players on the server.

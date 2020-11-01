@@ -1,5 +1,6 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
