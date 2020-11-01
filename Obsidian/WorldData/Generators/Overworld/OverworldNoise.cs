@@ -57,12 +57,12 @@ namespace Obsidian.WorldData.Generators.Overworld
                 // creates the large, deep rivers.
                 Source0 = new RidgedMulti
                 {
-                    Seed = generatorSettings.Seed + 100,
-                    Frequency = 18.75,
+                    Seed = generatorSettings.Seed + 101,
+                    Frequency = 43.25,
                     Lacunarity = generatorSettings.ContinentLacunarity,
                     OctaveCount = 1,
-                    Quality = NoiseQuality.Best,
-                },
+                    Quality = NoiseQuality.Fast,
+                }
             };
 
             BiomeHumidity = new Curve
@@ -84,7 +84,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     Frequency = 43.25,
                     Lacunarity = generatorSettings.ContinentLacunarity,
                     OctaveCount = 1,
-                    Quality = NoiseQuality.Best,
+                    Quality = NoiseQuality.Fast,
                 },
             };
 
@@ -170,6 +170,6 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// <param name="y"></param>
         /// <param name="z"></param>
         /// <returns></returns>
-        public double Decoration(double x, double y, double z) => BiomeNoise.GetValue(x, y+5, z);
+        public double Decoration(double x, double y, double z) => coalNoise.GetValue(x, y+5, z);
     }
 }

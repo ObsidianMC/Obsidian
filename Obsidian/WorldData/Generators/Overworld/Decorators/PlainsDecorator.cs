@@ -23,19 +23,19 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
 
             var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
-            if (poppyNoise > 1.7)
+            if (poppyNoise > 1)
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
 
             var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
-            if (dandyNoise > 1.7)
+            if (dandyNoise > 1)
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
 
             var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
-            if (cornFlowerNoise > 1.7)
+            if (cornFlowerNoise > 1)
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Cornflower));
 
             var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
-            if (azureNoise > 1.7)
+            if (azureNoise > 1)
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.AzureBluet));
 
 

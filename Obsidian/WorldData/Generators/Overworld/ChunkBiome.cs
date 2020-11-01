@@ -10,8 +10,8 @@ namespace Obsidian.WorldData.Generators.Overworld
         public static Biomes GetBiome(int worldX, int worldZ, OverworldNoise noiseGen)
         {
             Biomes b = Biomes.Nether;
-            bool isHot = noiseGen.GetBiomeTemp(worldX, 0, worldZ) > 0;
-            bool isHumid = noiseGen.GetBiomeHumidity(worldX, 255, worldZ) > 0;
+            bool isHot = noiseGen.GetBiomeTemp(worldX, 0, worldZ) < 0;
+            bool isHumid = noiseGen.GetBiomeHumidity(worldX, 0, worldZ) < 0;
 
             // River
             if (noiseGen.isRiver(worldX, worldZ))

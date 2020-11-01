@@ -27,7 +27,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 chunk.SetBlock(pos + (0, y, 0), sandstone);
 
             var bushNoise = noise.Decoration(worldX * 0.1, 0, worldZ * 0.1);
-            if (bushNoise > 0 && bushNoise < 0.1) // 10% chance for bush
+            if (bushNoise > 0 && bushNoise < 0.05) // 5% chance for bush
                 chunk.SetBlock(pos + (0, 1, 0), deadbush);
 
             var cactusNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
