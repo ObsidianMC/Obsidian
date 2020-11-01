@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
@@ -42,7 +44,7 @@ namespace Obsidian
         public sbyte Position;
     }
 
-    public class Server
+    public class Server : IServer
     {
         private readonly ConcurrentQueue<QueueChat> chatMessages;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
@@ -64,7 +66,7 @@ namespace Obsidian
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
-
+        
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
@@ -151,6 +153,10 @@ namespace Obsidian
         public bool IsPlayerOnline(string username) => this.OnlinePlayers.Any(x => x.Value.Username == username);
 
         public bool IsPlayerOnline(Guid uuid) => this.OnlinePlayers.ContainsKey(uuid);
+
+        public IPlayer GetPlayer(string username) => this.OnlinePlayers.FirstOrDefault(player => player.Value.Username == username).Value;
+
+        public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
         /// <summary>
         /// Sends a message to all players on the server.
@@ -563,22 +569,23 @@ namespace Obsidian
             await this.RegisterAsync(new OverworldDebugGenerator());
         }
 
-        private async Task SendSpawnPlayerAsync(Player joined)
+        private async Task SendSpawnPlayerAsync(IPlayer joined)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined))
+            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
             {
+                var joinedPlayer = joined as Player;
                 //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = joined.EntityId,
-                    Uuid = joined.Uuid,
-                    Position = joined.Location,
+                    EntityId = joinedPlayer.EntityId,
+                    Uuid = joinedPlayer.Uuid,
+                    Position = joinedPlayer.Location,
                     Yaw = 0,
                     Pitch = 0
                 });
 
                 //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joined.client.QueuePacketAsync(new SpawnPlayer
+                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
@@ -592,7 +599,7 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player))
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
                 await other.client.RemovePlayerFromListAsync(e.Player);
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));

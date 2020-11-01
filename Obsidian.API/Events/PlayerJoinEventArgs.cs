@@ -1,16 +1,15 @@
-﻿using Obsidian.Entities;
-using System;
+﻿using System;
 
-namespace Obsidian.Events.EventArgs
+namespace Obsidian.API.Events
 {
     public class PlayerJoinEventArgs : PlayerEventArgs
     {
         /// <summary>
-        /// The date the player joined
+        /// The date the player joined.
         /// </summary>
         public DateTimeOffset JoinDate { get; }
 
-        internal PlayerJoinEventArgs(Player player, DateTimeOffset join) : base(player)
+        public PlayerJoinEventArgs(IPlayer player, DateTimeOffset join) : base(player)
         {
             this.JoinDate = join;
         }

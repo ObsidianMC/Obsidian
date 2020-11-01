@@ -1,5 +1,7 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
@@ -450,7 +452,7 @@ namespace Obsidian
             this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
-        internal async Task RemovePlayerFromListAsync(Player player)
+        internal async Task RemovePlayerFromListAsync(IPlayer player)
         {
             var list = new List<PlayerInfoAction>
             {
@@ -463,7 +465,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerInfo(4, list));
         }
 
-        internal async Task AddPlayerToListAsync(Player player)
+        internal async Task AddPlayerToListAsync(IPlayer player)
         {
             var list = new List<PlayerInfoAction>
             {

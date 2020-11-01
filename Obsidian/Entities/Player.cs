@@ -1,27 +1,25 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
-using Obsidian.Blocks;
+using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.PlayerData;
 using Obsidian.Sounds;
 using Obsidian.Util.DataTypes;
-using Obsidian.Util.Registry;
-using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
-    public class Player : Living
+    public class Player : Living, IPlayer
     {
         internal readonly Client client;
+
+        public IServer Server => client.Server;
 
         public string Username { get; }
 
