@@ -15,12 +15,22 @@ namespace Obsidian.WorldData.Generators.Overworld
     {
         public OverworldTerrainSettings Settings { get; set; }
 
+        public Module RiversPos { get; private set; }
+
+        public Cache BaseContinents { get; private set; }
+
+        public Cache ContinentsWithMountains { get; private set; }
+
+        public Cache ContinentsWithPlains { get; private set; }
+
+        public Cache ContinentsWithHills { get; private set; }
+
+        public Cache ContinentsWithBadlands { get; private set; }
+
         public OverworldTerrainGenerator(OverworldTerrainSettings settings)
         {
             Settings = settings;
         }
-
-        public Module RiverPositions { get; set; }
 
         #region Module Groups
 
@@ -36,7 +46,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Base-continent-definition subgroup]: Caches the output value from the
             // clamped-continent module.
-            var baseContinent = new Cache
+            BaseContinents = new Cache
             {
                 // [Clamped-continent module]: Finally, a clamp module modifies the
                 // carved-continent module to ensure that the output value of this
@@ -143,8 +153,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                     EdgeFalloff = 0.0625,
                     LowerBound = Settings.SeaLevel - 0.0375,
                     UpperBound = Settings.SeaLevel + 1000.0375,
-                    Control = baseContinent,
-                    Source0 = baseContinent,
+                    Control = BaseContinents,
+                    Source0 = BaseContinents,
                     // [Warped-base-continent-definition module]: This turbulence module
                     // warps the output value from the intermediate-turbulence module.  This
                     // turbulence has a higher frequency, but lower power, than the
@@ -174,7 +184,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                 Frequency = Settings.ContinentFrequency * 15.25,
                                 Power = Settings.ContinentFrequency / 113.75,
                                 Roughness = 12,
-                                Source0 = baseContinent,
+                                Source0 = BaseContinents,
                             },
                         },
                     },
@@ -183,7 +193,6 @@ namespace Obsidian.WorldData.Generators.Overworld
 
             return continentDefinition;
         }
-
 
         Module CreateTerrainTypeDefinition(Module continentDefinition)
         {
@@ -214,7 +223,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     ControlPoints = new List<double>
                     {
                         -1,
-                        Settings.SeaLevel / 2.0,
+                        Settings.ShelfLevel + Settings.SeaLevel / 2.0,
                         1,
                     },
                     // [Warped-continent module]: This turbulence module slightly warps the
@@ -521,7 +530,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Source0 = new Turbulence
                 {
                     Seed = Settings.Seed + 63,
-                    Frequency = 512,
+                    Frequency = 21617,
                     Power = 1.0 / 117529 * Settings.HillsTwist,
                     Roughness = 6,
                     // [Coarse-turbulence module]: This turbulence module warps the output
@@ -530,7 +539,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     Source0 = new Turbulence
                     {
                         Seed = Settings.Seed + 62,
-                        Frequency = 356,
+                        Frequency = 1531,
                         Power = 1.0 / 16921 * Settings.HillsTwist,
                         Roughness = 4,
                         // [Increased-slope-hilly-terrain module]: To increase the hill slopes at
@@ -582,7 +591,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                         Source0 = new RidgedMulti
                                         {
                                             Seed = Settings.Seed + 61,
-                                            Frequency = 180.5,
+                                            Frequency = 367.5,
                                             Lacunarity = Settings.HillsLacunarity,
                                             OctaveCount = 1,
                                             Quality = NoiseQuality.Best,
@@ -655,10 +664,10 @@ namespace Obsidian.WorldData.Generators.Overworld
                             Source0 = new Billow
                             {
                                 Seed = Settings.Seed + 70,
-                                Frequency = 420,
+                                Frequency = 1097.5,
                                 Persistence = 0.5,
                                 Lacunarity = Settings.PlainsLacunarity,
-                                OctaveCount = 2,
+                                OctaveCount = 8,
                                 Quality = NoiseQuality.Best,
                             },
                         },
@@ -675,10 +684,10 @@ namespace Obsidian.WorldData.Generators.Overworld
                             Source0 = new Billow
                             {
                                 Seed = Settings.Seed + 71,
-                                Frequency = 512.2,
+                                Frequency = 1319.5,
                                 Persistence = 0.5,
                                 Lacunarity = Settings.PlainsLacunarity,
-                                OctaveCount = 3,
+                                OctaveCount = 8,
                                 Quality = NoiseQuality.Best,
                             },
                         },
@@ -888,7 +897,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     Seed = Settings.Seed + 102,
                     Frequency = 9.25,
                     Power = 1.0 / 57.75,
-                    Roughness = 4,
+                    Roughness = 6,
                     // [Combined-rivers module]: This minimum-value module causes the small
                     // rivers to cut into the large rivers.  It does this by selecting the
                     // minimum output values from the large-river-curve module and the small-
@@ -904,13 +913,12 @@ namespace Obsidian.WorldData.Generators.Overworld
                         {
                             ControlPoints = new List<Curve.ControlPoint>
                             {
-                                new Curve.ControlPoint(-2.0000, -2.0000),
-                                new Curve.ControlPoint(-1.0000, -1.2500),
-                                new Curve.ControlPoint(-0.0000, -0.7500),
-                                new Curve.ControlPoint( 0.5000, -0.2500),
-                                new Curve.ControlPoint( 0.6250,  0.8750),
-                                new Curve.ControlPoint( 0.7500,  1.0000),
-                                new Curve.ControlPoint( 2.0000,  1.2500),
+                                new Curve.ControlPoint(-2.000,  2.000),
+                                new Curve.ControlPoint(-1.000,  1.000),
+                                new Curve.ControlPoint(-0.125,  0.875),
+                                new Curve.ControlPoint( 0.000, -1.000),
+                                new Curve.ControlPoint( 1.000, -1.500),
+                                new Curve.ControlPoint( 2.000, -2.000),
                             },
                             // [Large-river-basis module]: This ridged-multifractal-noise module
                             // creates the large, deep rivers.
@@ -932,13 +940,12 @@ namespace Obsidian.WorldData.Generators.Overworld
                         {
                             ControlPoints = new List<Curve.ControlPoint>
                             {
-                                new Curve.ControlPoint(-2.0000, -2.0000),
-                                new Curve.ControlPoint(-1.0000, -1.2500),
-                                new Curve.ControlPoint(-0.0000, -0.7500),
-                                new Curve.ControlPoint( 0.5000, -0.2500),
-                                new Curve.ControlPoint( 0.6250,  0.8750),
-                                new Curve.ControlPoint( 0.7500,  1.0000),
-                                new Curve.ControlPoint( 2.0000,  1.2500),
+                                new Curve.ControlPoint(-2.000,  2.0000),
+                                new Curve.ControlPoint(-1.000,  1.5000),
+                                new Curve.ControlPoint(-0.125,  1.4375),
+                                new Curve.ControlPoint( 0.000,  0.5000),
+                                new Curve.ControlPoint( 1.000,  0.2500),
+                                new Curve.ControlPoint( 2.000,  0.0000),
                             },
                             // [Small-river-basis module]: This ridged-multifractal-noise module
                             // creates the small, shallow rivers.
@@ -1286,7 +1293,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Continents-with-plains subgroup]: Caches the output value from the
             // continents-with-plains module.
-            var continentsWithPlains = new Cache
+            ContinentsWithPlains = new Cache
             {
                 // [Continents-with-plains module]:  This addition module adds the
                 // scaled-plains-terrain group to the base-continent-elevation subgroup.
@@ -1306,7 +1313,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Continents-with-hills subgroup]: Caches the output value from the
             // select-high-elevations module.
-            var continentsWithHills = new Cache
+            ContinentsWithHills = new Cache
             {
                 // [Select-high-elevations module]: This selector module ensures that
                 // the hills only appear at higher elevations.  It does this by selecting
@@ -1319,7 +1326,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     LowerBound = 1 - Settings.HillsAmount,
                     UpperBound = 1001 - Settings.HillsAmount,
                     EdgeFalloff = 0.25,
-                    Source0 = continentsWithPlains,
+                    Source0 = ContinentsWithPlains,
                     // [Continents-with-hills module]:  This addition module adds the scaled-
                     // hilly-terrain group to the base-continent-elevation subgroup.
                     Source1 = new Add
@@ -1340,7 +1347,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Continents-with-mountains subgroup]: Caches the output value from
             // the select-high-elevations module.
-            var continentsWithMountains = new Cache
+            ContinentsWithMountains = new Cache
             {
                 // [Select-high-elevations module]: This selector module ensures that
                 // mountains only appear at higher elevations.  It does this by selecting
@@ -1354,7 +1361,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     LowerBound = 1 - Settings.MountainsAmount,
                     UpperBound = 1001 - Settings.MountainsAmount,
                     EdgeFalloff = 0.25,
-                    Source0 = continentsWithHills,
+                    Source0 = ContinentsWithHills,
                     // [Add-increased-mountain-heights module]: This addition module adds
                     // the increased-mountain-heights module to the continents-and-
                     // mountains module.  The highest continent elevations now have the
@@ -1400,7 +1407,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             //
             // [Continents-with-badlands subgroup]: Caches the output value from the
             // apply-badlands module.
-            var continentsWithBadlands = new Cache
+            ContinentsWithBadlands = new Cache
             {
                 // [Apply-badlands module]: This maximum-value module causes the badlands
                 // to "poke out" from the rest of the terrain.  It does this by ensuring
@@ -1411,7 +1418,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 // terrain.
                 Source0 = new Max
                 {
-                    Source0 = continentsWithMountains,
+                    Source0 = ContinentsWithMountains,
                     // [Select-badlands-positions module]: This selector module places
                     // badlands at random spots on the continents based on the Perlin noise
                     // generated by the badlands-positions module.  To do this, it selects
@@ -1427,7 +1434,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         LowerBound = 1 - Settings.BadlandsAmount,
                         UpperBound = 1001 - Settings.BadlandsAmount,
                         EdgeFalloff = 0.25,
-                        Source0 = continentsWithMountains,
+                        Source0 = ContinentsWithMountains,
                         // [Continents-and-badlands module]:  This addition module adds the
                         // scaled-badlands-terrain group to the base-continent-elevation
                         // subgroup.
@@ -1475,25 +1482,25 @@ namespace Obsidian.WorldData.Generators.Overworld
                     LowerBound = Settings.SeaLevel,
                     UpperBound = Settings.ContinentHeightScale + Settings.SeaLevel,
                     EdgeFalloff = Settings.ContinentHeightScale - Settings.SeaLevel,
-                    Source0 = continentsWithBadlands,
+                    Source0 = ContinentsWithBadlands,
                     // [Add-rivers-to-continents module]: This addition module adds the
                     // rivers to the continents-with-badlands subgroup.  Because the scaled-
                     // rivers module only outputs a negative value, the scaled-rivers module
                     // carves the rivers out of the terrain.
                     Source1 = new Add
                     {
-                        Source0 = continentsWithBadlands,
+                        Source0 = ContinentsWithBadlands,
                         // [Scaled-rivers module]: This scale/bias module scales the output value
                         // from the river-positions group so that it is measured in planetary
                         // elevation units and is negative; this is required for Add-rivers-to-continents.
                         Source1 = new ScaleBias
                         {
-                            Scale = Settings.RiverDepth / 3.0,
+                            Scale = Settings.RiverDepth / 2.0,
                             Bias = -Settings.RiverDepth / 2.0,
                             Source0 = riverPositions,
                         },
                     },
-                    Control = continentsWithBadlands,
+                    Control = ContinentsWithBadlands,
                 },
             };
 
@@ -1537,12 +1544,12 @@ namespace Obsidian.WorldData.Generators.Overworld
             var terrainTypeDefinition = CreateTerrainTypeDefinition(continentDefinition);
             var scaledPlainsTerrain = CreateScaledPlainsTerrain(CreatePlainsTerrain());
             var scaledHillyTerrain = CreateScaledHillyTerrain(CreateHillyTerrain());
-            var scaledMountainousTerrain = CreateScaledMountainousTerrain(CreateMountainousTerrain());
+            var mountainsTerrain = CreateScaledMountainousTerrain(CreateMountainousTerrain());
             var scaledbadlandsTerrain = CreateScaledBadlandsTerrain(CreateBadlandsTerrain());
-            RiverPositions = CreateRiverPositions();
+            RiversPos = CreateRiverPositions();
             var planet = CreateFinalPlanet(continentDefinition, terrainTypeDefinition,
-                scaledPlainsTerrain, scaledHillyTerrain, scaledMountainousTerrain,
-                scaledbadlandsTerrain, RiverPositions);
+                scaledPlainsTerrain, scaledHillyTerrain, mountainsTerrain,
+                scaledbadlandsTerrain, RiversPos);
             return planet;
         }
     }

@@ -334,8 +334,6 @@ namespace Obsidian.WorldData
         {
             long value = Helpers.IntsToLong(regionX, regionZ);
 
-            this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
-
             var region = new Region(regionX, regionZ);
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
@@ -371,10 +369,9 @@ namespace Obsidian.WorldData
             ConcurrentBag<Chunk> chunks = new ConcurrentBag<Chunk>();
             Parallel.ForEach(chunkLocs, (loc) =>
             {
-                this.Server.Logger.LogInformation($"Generating chunk {loc}");
                 var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
-                for (int i = 0; i < 1024; i++)
-                    c.BiomeContainer.Biomes.Add(127);
+/*                for (int i = 0; i < 1024; i++)
+                    c.BiomeContainer.Biomes.Add(127);*/
                 chunks.Add(c);
             });
             return chunks.ToList();
@@ -388,9 +385,9 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -1; x <= 1; x++)
+            for (int x = -6; x <= 6; x++)
             {
-                for (int z = -1; z <= 1; z++)
+                for (int z = -6; z <= 6; z++)
                 {
                     this.GenerateRegion(x, z);
                 }

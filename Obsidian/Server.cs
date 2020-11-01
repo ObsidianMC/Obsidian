@@ -566,6 +566,7 @@ namespace Obsidian
             await this.RegisterAsync(new SuperflatGenerator());
             await this.RegisterAsync(new TestBlocksGenerator());
             await this.RegisterAsync(new OverworldGenerator());
+            await this.RegisterAsync(new OverworldDebugGenerator());
         }
 
         private async Task SendSpawnPlayerAsync(IPlayer joined)
