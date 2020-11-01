@@ -51,7 +51,7 @@ namespace Obsidian.Plugins
             this.logger = logger;
             this.eventSource = eventSource;
 
-            DirectoryWatcher.FileChanged += (path) =>
+            DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
             {
                 var old = plugins.FirstOrDefault(plugin => plugin.Source == path) ??
                     stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
@@ -59,7 +59,7 @@ namespace Obsidian.Plugins
                     UnloadPlugin(old);
 
                 LoadPlugin(path);
-            };
+            });
             DirectoryWatcher.FileRenamed += OnPluginSourceRenamed;
             DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
 
@@ -77,6 +77,12 @@ namespace Obsidian.Plugins
         public PluginContainer LoadPlugin(string path, PluginPermissions permissions = PluginPermissions.None)
         {
             IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
+            if (provider == null)
+            {
+                logger?.LogError($"Couldn't load plugin from path '{path}'");
+                return null;
+            }
+
             PluginContainer plugin = provider.GetPlugin(path, logger);
 
             return HandlePlugin(plugin, permissions);
