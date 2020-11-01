@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
@@ -6,6 +7,7 @@ namespace Obsidian.API
     {
         public string Username { get; }
         public Guid Uuid { get; }
+        public IServer Server { get; }
 
         public Gamemode Gamemode { get; set; }
         public Hand MainHand { get; set; }
@@ -35,5 +37,8 @@ namespace Obsidian.API
         public float FallDistance { get; set; }
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
+
+        public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
+        public Task KickAsync(string reason);
     }
 }

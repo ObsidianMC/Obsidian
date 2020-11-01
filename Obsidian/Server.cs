@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
@@ -567,22 +568,23 @@ namespace Obsidian
             await this.RegisterAsync(new OverworldGenerator());
         }
 
-        private async Task SendSpawnPlayerAsync(Player joined)
+        private async Task SendSpawnPlayerAsync(IPlayer joined)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined))
+            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
             {
+                var joinedPlayer = joined as Player;
                 //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = joined.EntityId,
-                    Uuid = joined.Uuid,
-                    Position = joined.Location,
+                    EntityId = joinedPlayer.EntityId,
+                    Uuid = joinedPlayer.Uuid,
+                    Position = joinedPlayer.Location,
                     Yaw = 0,
                     Pitch = 0
                 });
 
                 //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joined.client.QueuePacketAsync(new SpawnPlayer
+                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
@@ -596,7 +598,7 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player))
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
                 await other.client.RemovePlayerFromListAsync(e.Player);
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));

@@ -1,4 +1,5 @@
-﻿using Obsidian.Events.EventArgs;
+﻿using Obsidian.API.Events;
+using Obsidian.Events.EventArgs;
 using System;
 using System.Threading.Tasks;
 

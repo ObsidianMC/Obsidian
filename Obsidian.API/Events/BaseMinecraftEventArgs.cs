@@ -1,16 +1,16 @@
-﻿namespace Obsidian.Events.EventArgs
+﻿namespace Obsidian.API.Events
 {
     public class BaseMinecraftEventArgs : AsyncEventArgs
     {
         /// <summary>
-        /// Server this event took place in
+        /// Server this event took place in.
         /// </summary>
-        public Server Server { get; }
+        public IServer Server { get; }
 
         /// <summary>
         /// Constructs a new BaseMinecraftEventArgs object.
-        /// <param name="server">The server that's handling this event</param>
-        internal BaseMinecraftEventArgs(Server server)
+        /// <param name="server">The server that's handling this event.</param>
+        internal BaseMinecraftEventArgs(IServer server)
         {
             this.Server = server;
         }

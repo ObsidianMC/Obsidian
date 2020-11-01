@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Events
+﻿namespace Obsidian.API.Events
 {
     public interface ICancellable
     {
