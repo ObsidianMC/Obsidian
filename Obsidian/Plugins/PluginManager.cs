@@ -29,6 +29,8 @@ namespace Obsidian.Plugins
         /// </summary>
         public DirectoryWatcher DirectoryWatcher { get; } = new DirectoryWatcher();
 
+        public PluginPermissions DefaultPermissions { get; set; } = PluginPermissions.None;
+
         private readonly List<PluginContainer> plugins = new List<PluginContainer>();
         private readonly List<PluginContainer> stagedPlugins = new List<PluginContainer>();
         private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
@@ -74,7 +76,16 @@ namespace Obsidian.Plugins
         /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
         /// <param name="permissions">Permissions granted to the plugin.</param>
         /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-        public PluginContainer LoadPlugin(string path, PluginPermissions permissions = PluginPermissions.None)
+        public PluginContainer LoadPlugin(string path) => LoadPlugin(path, DefaultPermissions);
+
+        /// <summary>
+        /// Loads a plugin from selected path.
+        /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
+        /// </summary>
+        /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
+        /// <param name="permissions">Permissions granted to the plugin.</param>
+        /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
+        public PluginContainer LoadPlugin(string path, PluginPermissions permissions)
         {
             IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
             if (provider == null)
@@ -94,7 +105,15 @@ namespace Obsidian.Plugins
         /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
         /// <param name="permissions">Permissions granted to the plugin.</param>
         /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-        public async Task<PluginContainer> LoadPluginAsync(string path, PluginPermissions permissions = PluginPermissions.None)
+        public async Task<PluginContainer> LoadPluginAsync(string path) => await LoadPluginAsync(path, DefaultPermissions);
+
+        /// <summary>
+        /// Loads a plugin from selected path asynchronously.
+        /// </summary>
+        /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
+        /// <param name="permissions">Permissions granted to the plugin.</param>
+        /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
+        public async Task<PluginContainer> LoadPluginAsync(string path, PluginPermissions permissions)
         {
             IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
             if (provider == null)

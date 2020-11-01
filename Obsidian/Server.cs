@@ -216,6 +216,7 @@ namespace Obsidian
 
             this.Logger.LogInformation("Loading plugins...");
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.FileAccess;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
