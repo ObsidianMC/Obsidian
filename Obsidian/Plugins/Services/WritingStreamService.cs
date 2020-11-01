@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Obsidian.Plugins.Services
@@ -15,16 +14,10 @@ namespace Obsidian.Plugins.Services
             name = fileStream.Name;
         }
 
-        public WritingStreamService(NetworkStream networkStream)
+        public WritingStreamService(Stream stream)
         {
-            stream = networkStream;
-            writer = new StreamWriter(networkStream);
-        }
-
-        public WritingStreamService(MemoryStream memoryStream)
-        {
-            stream = memoryStream;
-            writer = new StreamWriter(memoryStream);
+            this.stream = stream;
+            writer = new StreamWriter(stream);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
