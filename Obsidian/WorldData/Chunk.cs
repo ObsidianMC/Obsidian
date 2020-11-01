@@ -3,6 +3,7 @@ using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
+using System;
 using System.Collections.Generic;
 
 namespace Obsidian.WorldData
@@ -53,7 +54,7 @@ namespace Obsidian.WorldData
         public Block GetBlock(int x, int y, int z)
         {
             var value = (short)((x << 8) | (z << 4) | y);
-            return this.Blocks.GetValueOrDefault(value) ?? this.Sections[y >> 4].GetBlock(x, y, z);
+            return this.Blocks.GetValueOrDefault(value) ?? this.Sections[y >> 4].GetBlock(x, y, z) ?? Registry.GetBlock(Materials.Air);
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
@@ -65,6 +66,8 @@ namespace Obsidian.WorldData
             this.Blocks[value] = block;
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
+
+           
         }
 
         public void CalculateHeightmap()

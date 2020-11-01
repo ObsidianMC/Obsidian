@@ -38,6 +38,10 @@ namespace Obsidian.Entities
         public Hand MainHand { get; set; } = Hand.MainHand;
 
         public bool Sleeping { get; set; }
+        public bool Sneaking { get; set; }
+        public bool Sprinting { get; set; }
+        public bool FlyingWithElytra { get; set; }
+        public bool InHorseInventory { get; set; }
 
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
@@ -209,7 +213,7 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Position pos)
         {
-            var tid = Program.Random.Next(0, 999);
+            var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
@@ -221,7 +225,7 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Player to)
         {
-            var tid = Program.Random.Next(0, 999);
+            var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = to.Location,

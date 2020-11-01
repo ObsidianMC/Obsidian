@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Obsidian.API.Plugins.Services.Common
+namespace Obsidian.API.Plugins.Services.IO
 {
     /// <summary>
     /// Provides a generic view of a sequence of bytes.

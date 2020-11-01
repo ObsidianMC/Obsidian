@@ -103,7 +103,7 @@ namespace Obsidian.Util.Extensions
                 if (att == null)
                     continue;
 
-                //Program.PacketLogger.LogDebug($"Adding Member {member.Name}");
+                //Globals.PacketLogger.LogDebug($"Adding Member {member.Name}");
                 valueDict.Add(att, member.Name);
             }
 
@@ -124,13 +124,13 @@ namespace Obsidian.Util.Extensions
                 if (member is FieldInfo field)
                 {
                     var val = field.GetValue(packet);
-                    //Program.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    //Globals.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, val);
                 }
                 else if (member is PropertyInfo property)
                 {
                     var val = property.GetValue(packet);
-                    //Program.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    //Globals.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, val);
                 }
             }
@@ -152,13 +152,13 @@ namespace Obsidian.Util.Extensions
                 if (member is FieldInfo field)
                 {
                     var val = field.GetValue(packet);
-                    //Program.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    //Globals.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, (field.Name, val));
                 }
                 else if (member is PropertyInfo property)
                 {
                     var val = property.GetValue(packet);
-                    //Program.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
+                    //Globals.PacketLogger.LogDebug($"Adding val {(val.GetType().IsEnum ? val.GetType().BaseType : val.GetType())}: ({val})");
                     valueDict.Add(att, (property.Name, val));
                 }
             }

@@ -51,6 +51,8 @@ namespace Obsidian
         internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
+        public const ProtocolVersion Protocol = ProtocolVersion.v1_16_3;
+
         public short TPS { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
 
@@ -97,7 +99,7 @@ namespace Obsidian
             this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into
-            Program.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
             Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
@@ -257,50 +259,11 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, PlayerBlockPlacement pbp)
+        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
         {
-            player.Inventory.RemoveItem(player.CurrentSlot);
-
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
                 var client = other.client;
-
-                var location = pbp.Location;
-                var face = pbp.Face;
-
-                switch (face) // TODO fix this for logs
-                {
-                    case BlockFace.Bottom:
-                        location.Y -= 1;
-                        break;
-
-                    case BlockFace.Top:
-                        location.Y += 1;
-                        break;
-
-                    case BlockFace.North:
-                        location.Z -= 1;
-                        break;
-
-                    case BlockFace.South:
-                        location.Z += 1;
-                        break;
-
-                    case BlockFace.West:
-                        location.X -= 1;
-                        break;
-
-                    case BlockFace.East:
-                        location.X += 1;
-                        break;
-
-                    default:
-                        break;
-                }
-
-                var block = Registry.GetBlock(player.GetHeldItem().Type);
-
-                this.World.SetBlock(location, block);
 
                 await client.QueuePacketAsync(new BlockChange(location, block.Id));
             }
@@ -371,11 +334,11 @@ namespace Obsidian
             }
         }
 
-        private bool TryAddEntity(Entity entity)
+        private bool TryAddEntity(World world, Entity entity)
         {
             this.Logger.LogDebug($"{entity.EntityId} new ID");
 
-            return this.World.TryAddEntity(entity);
+            return world.TryAddEntity(entity);
         }
 
         internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store)
@@ -407,7 +370,7 @@ namespace Obsidian
                             Location = loc
                         };
 
-                        this.TryAddEntity(item);
+                        this.TryAddEntity(player.World, item);
 
                         var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
                         var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
@@ -415,11 +378,11 @@ namespace Obsidian
                         var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
                         var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
 
-                        var f5 = Program.Random.NextDouble() * ((float)Math.PI * 2f);
-                        var f6 = 0.02f * Program.Random.NextDouble();
+                        var f5 = Globals.Random.NextDouble() * ((float)Math.PI * 2f);
+                        var f6 = 0.02f * Globals.Random.NextDouble();
 
                         var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
-                            (short)((double)(-f8 * 0.3F + 0.1F + (Program.Random.NextDouble() - Program.Random.NextDouble()) * 0.1F)),
+                            (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
                             (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
@@ -496,12 +459,12 @@ namespace Obsidian
                             Id = Registry.GetItem(block.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Location = digging.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D)
+                            Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D)
                         };
 
-                        this.TryAddEntity(item);
+                        this.TryAddEntity(player.World, item);
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
                         {

@@ -519,13 +519,13 @@ namespace Obsidian.Net
                     {
                         var root = (NbtCompound)reader.ReadAsTag();
 
-                        Program.PacketLogger.LogDebug(root.ToString());
+                        Globals.PacketLogger.LogDebug(root.ToString());
                         foreach (var tag in root)
                         {
-                            Program.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
                             if (tag.TagType == NbtTagType.Compound)
                             {
-                                Program.PacketLogger.LogDebug("Other compound");
+                                Globals.PacketLogger.LogDebug("Other compound");
                             }
 
                             switch (tag.Name.ToLower())
@@ -552,7 +552,7 @@ namespace Obsidian.Net
                                     {
                                         var enchantments = (NbtList)tag;
 
-                                        Program.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+                                        Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
                                         foreach (var enchantment in enchantments)
                                         {
@@ -578,7 +578,7 @@ namespace Obsidian.Net
                                     {
 
                                         slot.Nbt.Damage = tag.IntValue;
-                                        Program.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                         break;
                                     }
                                 default:
@@ -593,7 +593,7 @@ namespace Obsidian.Net
                     }
                     else
                     {
-                        Program.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
+                        Globals.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
                     }
 
 
@@ -633,7 +633,7 @@ namespace Obsidian.Net
                         var root = (NbtCompound)reader.ReadAsTag();
                         foreach (var tag in root)
                         {
-                            Program.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":

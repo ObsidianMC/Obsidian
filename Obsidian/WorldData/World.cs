@@ -140,7 +140,7 @@ namespace Obsidian.WorldData
                     else
                     {
                         await c.SendChunkAsync(chk);
-                    }                   
+                    }
                 }
             }
 
@@ -189,11 +189,11 @@ namespace Obsidian.WorldData
             return chunk;
         }
 
-        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X<<4, (int)worldLocation.Z<<4);
+        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X << 4, (int)worldLocation.Z << 4);
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x>>4, z>>4);
+            var chunk = this.GetChunk(x >> 4, z >> 4);
 
             return chunk.GetBlock(x, y, z);
         }
@@ -341,9 +341,9 @@ namespace Obsidian.WorldData
                 return this.Regions[value];
 
             List<Position> chunksToGen = new List<Position>();
-            for (int x=0; x<4; x++)
+            for (int x = 0; x < 4; x++)
             {
-                for (int z=0; z<4; z++)
+                for (int z = 0; z < 4; z++)
                 {
                     int cx = (regionX * 4) + x;
                     int cz = (regionZ * 4) + z;
@@ -391,7 +391,7 @@ namespace Obsidian.WorldData
                     this.GenerateRegion(x, z);
                 }
             }
- 
+
             /*var chunk = this.Generator.GenerateChunk(0, 0);
 
             for (int i = 0; i < 1024; i++)

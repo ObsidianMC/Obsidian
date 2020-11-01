@@ -20,7 +20,7 @@ namespace Obsidian.Plugins.PluginProviders
 
         static RemotePluginProvider()
         {
-            client = Util.Mojang.MinecraftAPI.Http;
+            client = Globals.HttpClient;
             client.DefaultRequestHeaders.Add("User-Agent", "ObsidianServer");
         }
 

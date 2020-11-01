@@ -20,13 +20,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
-    public class DomainTag
-    {
-        public string TagName { get; set; }
-
-        public string BaseTagName { get; set; }
-    }
-
     public class Registry
     {
         internal static ILogger Logger { get; set; }
@@ -64,7 +57,7 @@ namespace Obsidian.Util.Registry
 
                         var name = blockName.Split(":")[1];
 
-                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Program.JsonSettings);
+                        var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
 
                         if (!Enum.TryParse(name.Replace("_", ""), true, out Materials material))
                             continue;
@@ -351,7 +344,7 @@ namespace Obsidian.Util.Registry
                                 Blocks.Add(material, new BlockStairs(blockName, id, material));
                                 break;
                             case Materials.Chest:
-                                Blocks.Add(material, new BlockChest(blockName, id));
+                                Blocks.Add(material, new Chest(blockName, id, material));
                                 break;
                             case Materials.RedstoneWire:
                                 Blocks.Add(material, new BlockRedstoneWire(blockName, id));
@@ -764,7 +757,7 @@ namespace Obsidian.Util.Registry
                 foreach (var obj in token)
                 {
                     var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Program.JsonSettings);
+                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
 
                     DefaultBiomes.TryAdd(codec.Name, codec);
 
@@ -799,7 +792,7 @@ namespace Obsidian.Util.Registry
                 foreach (var obj in token)
                 {
                     var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Program.JsonSettings);
+                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Globals.JsonSettings);
 
                     DefaultDimensions.TryAdd(codec.Id, codec);
 
@@ -970,4 +963,12 @@ namespace Obsidian.Util.Registry
         }
 
     }
+
+    public class DomainTag
+    {
+        public string TagName { get; set; }
+
+        public string BaseTagName { get; set; }
+    }
+
 }

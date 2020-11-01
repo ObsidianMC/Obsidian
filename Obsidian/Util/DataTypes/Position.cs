@@ -2,15 +2,13 @@
 
 namespace Obsidian.Util.DataTypes
 {
-    public class Position : IEquatable<Position>
+    public struct Position : IEquatable<Position>
     {
         public double X { get; set; }
         public double Y { get; set; }
         public double Z { get; set; }
 
         public bool Opt { get; set; }
-
-        public Position() { }
 
         public Position(double value, bool opt = false)
         {
@@ -34,60 +32,33 @@ namespace Obsidian.Util.DataTypes
             this.Opt = opt;
         }
 
-        public bool Match(int x, int y, int z)
-        {
-            return this.X == x && this.Y == y && this.Z == z;
-        }
+        public bool Match(int x, int y, int z) => this.X == x && this.Y == y && this.Z == z;
 
-        public override string ToString()
-        {
-            return $"{X}:{Y}:{Z}";
-        }
-
+        public override string ToString() => $"{X}:{Y}:{Z}";
 
         /// <summary>
         ///     Finds the distance of this vector from Position.Zero
         /// </summary>
-        public double Distance
-        {
-            get { return DistanceTo(this, Zero); }
-        }
+        public double Distance => DistanceTo(this, Zero);
 
-        public bool Equals(Position other)
-        {
-            return other.X.Equals(X) && other.Y.Equals(Y) && other.Z.Equals(Z);
-        }
+        public bool Equals(Position other) => other.X.Equals(X) && other.Y.Equals(Y) && other.Z.Equals(Z);
 
         /// <summary>
         ///     Truncates the decimal component of each part of this Position.
         /// </summary>
-        public Position Floor()
-        {
-            return new Position(Math.Floor(X), Math.Floor(Y), Math.Floor(Z));
-        }
+        public Position Floor() => new Position(Math.Floor(X), Math.Floor(Y), Math.Floor(Z));
 
-        public Position Normalize()
-        {
-            return new Position(X / Distance, Y / Distance, Z / Distance);
-        }
+        public Position Normalize() => new Position(X / Distance, Y / Distance, Z / Distance);
 
         /// <summary>
         ///     Calculates the distance between two Position objects.
         /// </summary>
-        public static double DistanceTo(Position from, Position to)
-        {
-            return Math.Sqrt(Square(to.X - from.X) +
-                             Square(to.Y - from.Y) +
-                             Square(to.Z - from.Z));
-        }
+        public static double DistanceTo(Position from, Position to) => Math.Sqrt(Square(to.X - from.X) + Square(to.Y - from.Y) + Square(to.Z - from.Z));
 
         /// <summary>
         ///     Calculates the square of a num.
         /// </summary>
-        private static double Square(double num)
-        {
-            return num * num;
-        }
+        private static double Square(double num) => num * num;
 
         public Position Add(double x, double y, double z)
         {
@@ -98,150 +69,47 @@ namespace Obsidian.Util.DataTypes
             return this;
         }
 
-        public static Position Min(Position value1, Position value2)
-        {
-            return new Position(
-                Math.Min(value1.X, value2.X),
-                Math.Min(value1.Y, value2.Y),
-                Math.Min(value1.Z, value2.Z));
-        }
+        public static Position Min(Position value1, Position value2) =>
+            new Position(Math.Min(value1.X, value2.X), Math.Min(value1.Y, value2.Y), Math.Min(value1.Z, value2.Z));
 
-        public static Position Max(Position value1, Position value2)
-        {
-            return new Position(
-                Math.Max(value1.X, value2.X),
-                Math.Max(value1.Y, value2.Y),
-                Math.Max(value1.Z, value2.Z));
-        }
+        public static Position Max(Position value1, Position value2) =>
+            new Position(Math.Max(value1.X, value2.X), Math.Max(value1.Y, value2.Y), Math.Max(value1.Z, value2.Z));
 
-        public static bool operator !=(Position a, Position b)
-        {
-            return !a.Equals(b);
-        }
+        public static bool operator !=(Position a, Position b) => !a.Equals(b);
 
-        public static bool operator ==(Position a, Position b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(Position a, Position b) => a.Equals(b);
 
-        public static Position operator +(Position a, Position b)
-        {
-            return new Position(
-                a.X + b.X,
-                a.Y + b.Y,
-                a.Z + b.Z);
-        }
+        public static Position operator +(Position a, Position b) => new Position(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 
-        public static Position operator -(Position a, Position b)
-        {
-            return new Position(
-                a.X - b.X,
-                a.Y - b.Y,
-                a.Z - b.Z);
-        }
+        public static Position operator -(Position a, Position b) => new Position(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
-        public static Position operator -(Position a)
-        {
-            return new Position(
-                -a.X,
-                -a.Y,
-                -a.Z);
-        }
+        public static Position operator -(Position a) => new Position(-a.X, -a.Y, -a.Z);
 
-        public static Position operator *(Position a, Position b)
-        {
-            return new Position(
-                a.X * b.X,
-                a.Y * b.Y,
-                a.Z * b.Z);
-        }
+        public static Position operator *(Position a, Position b) => new Position(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
 
-        public static Position operator /(Position a, Position b)
-        {
-            return new Position(
-                a.X / b.X,
-                a.Y / b.Y,
-                a.Z / b.Z);
-        }
+        public static Position operator /(Position a, Position b) => new Position(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
 
-        public static Position operator %(Position a, Position b)
-        {
-            return new Position(a.X % b.X, a.Y % b.Y, a.Z % b.Z);
-        }
+        public static Position operator %(Position a, Position b) => new Position(a.X % b.X, a.Y % b.Y, a.Z % b.Z);
 
-        public static Position operator +(Position a, double b)
-        {
-            return new Position(
-                a.X + b,
-                a.Y + b,
-                a.Z + b);
-        }
+        public static Position operator +(Position a, double b) => new Position(a.X + b, a.Y + b, a.Z + b);
 
-        public static Position operator -(Position a, double b)
-        {
-            return new Position(
-                a.X - b,
-                a.Y - b,
-                a.Z - b);
-        }
+        public static Position operator -(Position a, double b) => new Position(a.X - b, a.Y - b, a.Z - b);
 
-        public static Position operator *(Position a, double b)
-        {
-            return new Position(
-                a.X * b,
-                a.Y * b,
-                a.Z * b);
-        }
+        public static Position operator *(Position a, double b) => new Position(a.X * b, a.Y * b, a.Z * b);
 
-        public static Position operator /(Position a, double b)
-        {
-            return new Position(
-                a.X / b,
-                a.Y / b,
-                a.Z / b);
-        }
+        public static Position operator /(Position a, double b) => new Position(a.X / b, a.Y / b, a.Z / b);
 
-        public static Position operator %(Position a, double b)
-        {
-            return new Position(a.X % b, a.Y % b, a.Y % b);
-        }
+        public static Position operator %(Position a, double b) => new Position(a.X % b, a.Y % b, a.Y % b);
 
-        public static Position operator +(double a, Position b)
-        {
-            return new Position(
-                a + b.X,
-                a + b.Y,
-                a + b.Z);
-        }
+        public static Position operator +(double a, Position b) => new Position(a + b.X, a + b.Y, a + b.Z);
 
-        public static Position operator -(double a, Position b)
-        {
-            return new Position(
-                a - b.X,
-                a - b.Y,
-                a - b.Z);
-        }
+        public static Position operator -(double a, Position b) => new Position(a - b.X, a - b.Y, a - b.Z);
 
-        public static Position operator *(double a, Position b)
-        {
-            return new Position(
-                a * b.X,
-                a * b.Y,
-                a * b.Z);
-        }
+        public static Position operator *(double a, Position b) => new Position(a * b.X, a * b.Y, a * b.Z);
 
-        public static Position operator /(double a, Position b)
-        {
-            return new Position(
-                a / b.X,
-                a / b.Y,
-                a / b.Z);
-        }
+        public static Position operator /(double a, Position b) => new Position(a / b.X, a / b.Y, a / b.Z);
 
-        public static Position operator %(double a, Position b)
-        {
-            return new Position(a % b.X, a % b.Y, a % b.Y);
-        }
+        public static Position operator %(double a, Position b) => new Position(a % b.X, a % b.Y, a % b.Y);
 
         public override bool Equals(object obj)
         {
@@ -272,32 +140,5 @@ namespace Obsidian.Util.DataTypes
         public static readonly Position South = new Position(0, 0, 1);
 
         #endregion Constants
-    }
-
-    public class SoundPosition
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Z { get; set; }
-
-        public SoundPosition() { }
-
-        public SoundPosition(int x, int y, int z)
-        {
-            this.X = (int)((x * 8) / 32.0D);
-            this.Y = (int)((y * 8) / 32.0D);
-            this.Z = (int)((z * 8) / 32.0D);
-        }
-
-        public SoundPosition(double x, double y, double z)
-        {
-            this.X = (int)((x * 8) / 32.0D);
-            this.Y = (int)((y * 8) / 32.0D);
-            this.Z = (int)((z * 8) / 32.0D);
-        }
-
-        public bool Match(int x, int y, int z) => this.X == x && this.Y == y && this.Z == z;
-
-        public override string ToString() => $"{X}:{Y}:{Z}";
     }
 }

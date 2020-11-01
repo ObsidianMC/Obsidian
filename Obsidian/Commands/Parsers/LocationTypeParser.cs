@@ -10,7 +10,7 @@ namespace Obsidian.Commands.Parsers
     {
         public override bool TryParseArgument(string input, BaseCommandContext context, out Position result)
         {
-            result = null;
+            result = default;
 
             var splitted = input.Split(' ');
             var location = new Position();
