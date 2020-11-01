@@ -20,13 +20,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
-    public class DomainTag
-    {
-        public string TagName { get; set; }
-
-        public string BaseTagName { get; set; }
-    }
-
     public class Registry
     {
         internal static ILogger Logger { get; set; }
@@ -351,7 +344,7 @@ namespace Obsidian.Util.Registry
                                 Blocks.Add(material, new BlockStairs(blockName, id, material));
                                 break;
                             case Materials.Chest:
-                                Blocks.Add(material, new BlockChest(blockName, id));
+                                Blocks.Add(material, new Chest(blockName, id, material));
                                 break;
                             case Materials.RedstoneWire:
                                 Blocks.Add(material, new BlockRedstoneWire(blockName, id));
@@ -970,4 +963,12 @@ namespace Obsidian.Util.Registry
         }
 
     }
+
+    public class DomainTag
+    {
+        public string TagName { get; set; }
+
+        public string BaseTagName { get; set; }
+    }
+
 }

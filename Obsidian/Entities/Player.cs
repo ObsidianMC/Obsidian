@@ -38,6 +38,10 @@ namespace Obsidian.Entities
         public Hand MainHand { get; set; } = Hand.MainHand;
 
         public bool Sleeping { get; set; }
+        public bool Sneaking { get; set; }
+        public bool Sprinting { get; set; }
+        public bool FlyingWithElytra { get; set; }
+        public bool InHorseInventory { get; set; }
 
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
