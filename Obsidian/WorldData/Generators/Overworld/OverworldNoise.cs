@@ -1,16 +1,17 @@
 ﻿using ICSharpCode.SharpZipLib;
+using SharpNoise;
 using SharpNoise.Modules;
-
+using System.Collections.Generic;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
     public class OverworldNoise
     {
         private Simplex cavePerlin;
-        private Perlin biomePerlin;
         private Multiply coalNoise;
 
-        private Perlin BiomeTemperatureNoise;
+        private Module BiomeNoise;
+        private Module BiomeHumidity;
 
         private OverworldTerrainSettings generatorSettings;
         private OverworldTerrainGenerator generator;
@@ -21,12 +22,6 @@ namespace Obsidian.WorldData.Generators.Overworld
             generatorSettings = new OverworldTerrainSettings(); //TODO: load settings from a file
             generator = new OverworldTerrainGenerator(generatorSettings);
             generatorModule = generator.CreateModule();
-
-            biomePerlin = new Perlin
-            {
-                Seed = generatorSettings.Seed,
-                Frequency = 3
-            };
 
             cavePerlin = new Simplex
             {
@@ -47,14 +42,52 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             };
 
-            BiomeTemperatureNoise = new Perlin
+            BiomeNoise = new Curve
             {
-                Seed = generatorSettings.Seed,
-                Frequency = 3.14,
-                Lacunarity = 2.1337,
-                OctaveCount = 2,
-                Persistence = 2
+                ControlPoints = new List<Curve.ControlPoint>
+                {
+                    new Curve.ControlPoint(-2.000,  2.000),
+                    new Curve.ControlPoint(-1.000,  1.000),
+                    new Curve.ControlPoint(-0.125,  0.875),
+                    new Curve.ControlPoint( 0.000, -1.000),
+                    new Curve.ControlPoint( 1.000, -1.500),
+                    new Curve.ControlPoint( 2.000, -2.000),
+                },
+                // [Large-river-basis module]: This ridged-multifractal-noise module
+                // creates the large, deep rivers.
+                Source0 = new RidgedMulti
+                {
+                    Seed = generatorSettings.Seed + 101,
+                    Frequency = 43.25,
+                    Lacunarity = generatorSettings.ContinentLacunarity,
+                    OctaveCount = 1,
+                    Quality = NoiseQuality.Fast,
+                }
             };
+
+            BiomeHumidity = new Curve
+            {
+                ControlPoints = new List<Curve.ControlPoint>
+                {
+                    new Curve.ControlPoint(-2.000,  2.0000),
+                    new Curve.ControlPoint(-1.000,  1.5000),
+                    new Curve.ControlPoint(-0.125,  1.4375),
+                    new Curve.ControlPoint( 0.000,  0.5000),
+                    new Curve.ControlPoint( 1.000,  0.2500),
+                    new Curve.ControlPoint( 2.000,  0.0000),
+                },
+                // [Small-river-basis module]: This ridged-multifractal-noise module
+                // creates the small, shallow rivers.
+                Source0 = new RidgedMulti
+                {
+                    Seed = generatorSettings.Seed + 101,
+                    Frequency = 43.25,
+                    Lacunarity = generatorSettings.ContinentLacunarity,
+                    OctaveCount = 1,
+                    Quality = NoiseQuality.Fast,
+                },
+            };
+
         }
 
         public double Terrain(float x, float z)
@@ -120,9 +153,14 @@ namespace Obsidian.WorldData.Generators.Overworld
             return value < -0.4;
         }
 
-        public double GetBiome(int x, int y, int z)
+        public double GetBiomeTemp(int x, int y, int z)
         {
-            return BiomeTemperatureNoise.GetValue(x * 0.0001, y, z * 0.0001);
+            return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
+        }
+
+        public double GetBiomeHumidity(int x, int y, int z)
+        {
+            return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
         }
 
         /// <summary>
@@ -132,6 +170,6 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// <param name="y"></param>
         /// <param name="z"></param>
         /// <returns></returns>
-        public double Decoration(double x, double y, double z) => BiomeTemperatureNoise.GetValue(x, y+5, z);
+        public double Decoration(double x, double y, double z) => coalNoise.GetValue(x, y+5, z);
     }
 }

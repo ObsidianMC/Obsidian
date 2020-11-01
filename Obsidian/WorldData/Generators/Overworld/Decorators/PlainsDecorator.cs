@@ -1,61 +1,80 @@
 ﻿using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public static class PlainsDecorator
+    public class PlainsDecorator : BaseDecorator
     {
-        public static void Decorate(Chunk chunk, double terrainY, (int x, int z) pos, OverworldNoise noise)
+        public PlainsDecorator(Biomes biome) : base(biome)
         {
-            int worldX = (chunk.X << 4) + pos.x;
-            int worldZ = (chunk.Z << 4) + pos.z;
+        }
+
+        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
+        {
+            int worldX = (chunk.X << 4) + (int) pos.X;
+            int worldZ = (chunk.Z << 4) + (int) pos.Z;
+
+            // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
-            if(grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos.x, (int)terrainY + 1, pos.z, Registry.GetBlock(Materials.Grass));
+            if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
 
             var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
-            if (poppyNoise > 1.7)
-                chunk.SetBlock(pos.x, (int)terrainY + 1, pos.z, Registry.GetBlock(Materials.Poppy));
+            if (poppyNoise > 1)
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
 
             var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
-            if (dandyNoise > 1.7)
-                chunk.SetBlock(pos.x, (int)terrainY + 1, pos.z, Registry.GetBlock(Materials.Dandelion));
+            if (dandyNoise > 1)
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
 
             var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
-            if (cornFlowerNoise > 1.7)
-                chunk.SetBlock(pos.x, (int)terrainY + 1, pos.z, Registry.GetBlock(Materials.Cornflower));
+            if (cornFlowerNoise > 1)
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Cornflower));
 
             var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
-            if (azureNoise > 1.7)
-                chunk.SetBlock(pos.x, (int)terrainY + 1, pos.z, Registry.GetBlock(Materials.AzureBluet));
+            if (azureNoise > 1)
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.AzureBluet));
 
+
+            #region Trees
+            // Abandon hope all ye who enter here
+            var oakLeaves = Registry.GetBlock(Materials.OakLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)
             {
-                for (int y = 1; y<=treeHeight; y++)
-                {
-                    chunk.SetBlock(pos.x, (int)terrainY + y, pos.z, Registry.GetBlock(Materials.OakLog)); //TODO orientation
-                }
                 //Leaves
                 for (int y = treeHeight + 1; y > treeHeight - 2; y--)
                 {
-                    for (int x = Math.Max(0, pos.x - 2); x <= Math.Min(15, pos.x + 2); x++)
+                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
                     {
-                        for (int z = Math.Max(0, pos.z - 2); z <= Math.Min(15, pos.z + 2); z++)
+                        for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
                         {
-                            chunk.SetBlock(x, (int)terrainY + y, z, Registry.GetBlock(Materials.OakLeaves));
+                            var loc = new Position(x, y + pos.Y, z).ChunkClamp();
+                            // Skip the top edges.
+                            if (y == treeHeight + 1)
+                            {
+                                if (x != pos.X-2 && x != pos.X+2 && z != pos.Z-2 && z != pos.Z+2)
+                                    chunk.SetBlock(loc, oakLeaves);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(loc, oakLeaves);
+                            }
                         }
                     }
+                }
+                for (int y = 1; y <= treeHeight; y++)
+                {
+                    chunk.SetBlock(pos + (0, y, 0), new Block("oak_log", 74, Materials.OakLog));
                 }
             }
 
             // If on the edge of the chunk, check if neighboring chunks need leaves.
-            if (pos.x == 0)
+            if (pos.X == 0)
             {
                 // Check out to 2 blocks into the neighboring chunk's noisemap and see if there's a tree center (top log)
                 var neighborTree1 = TreeHeight(noise.Decoration((worldX - 1) * 0.1, 13, worldZ * 0.1));
@@ -65,16 +84,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 0; x < rowsToDraw; x++)
                 {
-                    for (int z = Math.Max(0, pos.z - 2); z <= Math.Min(15, pos.z + 2); z++)
+                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            chunk.SetBlock(x, y, z, Registry.GetBlock(Materials.OakLeaves));
+                            var loc = new Position(x, y, z).ChunkClamp();
+                            // Skip the top edges.
+                            if (y == treeY + 1)
+                            {
+                                if (x != rowsToDraw - 1 && z != pos.Z - 2 && z != pos.Z + 2)
+                                    chunk.SetBlock(loc, oakLeaves);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(loc, oakLeaves);
+                            }
                         }
                     }
                 }
             }
-            else if (pos.x == 15)
+            else if (pos.X == 15)
             {
                 // Check out to 2 blocks into the neighboring chunk's noisemap and see if there's a tree center (top log)
                 var neighborTree1 = TreeHeight(noise.Decoration((worldX + 1) * 0.1, 13, worldZ * 0.1));
@@ -84,16 +113,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 15; x > 15 - rowsToDraw; x--)
                 {
-                    for (int z = Math.Max(0, pos.z - 2); z <= Math.Min(15, pos.z + 2); z++)
+                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            chunk.SetBlock(x, y, z, Registry.GetBlock(Materials.OakLeaves));
+                            var loc = new Position(x, y, z).ChunkClamp();
+                            // Skip the top edges.
+                            if (y == treeY + 1)
+                            {
+                                if (x != 16 - rowsToDraw && z != pos.Z - 2 && z != pos.Z + 2)
+                                    chunk.SetBlock(loc, oakLeaves);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(loc, oakLeaves);
+                            }
                         }
                     }
                 }
             }
-            if (pos.z == 0)
+            if (pos.Z == 0)
             {
                 // Check out to 2 blocks into the neighboring chunk's noisemap and see if there's a tree center (top log)
                 var neighborTree1 = TreeHeight(noise.Decoration(worldX * 0.1, 13, (worldZ - 1) * 0.1));
@@ -103,16 +142,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 0; z < rowsToDraw; z++)
                 {
-                    for (int x = Math.Max(0, pos.x - 2); x <= Math.Min(15, pos.x + 2); x++)
+                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            chunk.SetBlock(x, y, z, Registry.GetBlock(Materials.OakLeaves));
+                            var loc = new Position(x, y, z).ChunkClamp();
+                            // Skip the top edges.
+                            if (y == treeY + 1)
+                            {
+                                if (x != pos.X - 2 && x != pos.X + 2 && z != rowsToDraw - 1)
+                                    chunk.SetBlock(loc, oakLeaves);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(loc, oakLeaves);
+                            }
                         }
                     }
                 }
             }
-            else if (pos.z == 15)
+            else if (pos.Z == 15)
             {
                 // Check out to 2 blocks into the neighboring chunk's noisemap and see if there's a tree center (top log)
                 var neighborTree1 = TreeHeight(noise.Decoration(worldX * 0.1, 13, (worldZ + 1) * 0.1));
@@ -122,15 +171,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 15; z > 15 - rowsToDraw; z--)
                 {
-                    for (int x = Math.Max(0, pos.x - 2); x <= Math.Min(15, pos.x + 2); x++)
+                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            chunk.SetBlock(x, y, z, Registry.GetBlock(Materials.OakLeaves));
+                            var loc = new Position(x, y, z).ChunkClamp();
+                            // Skip the top edges.
+                            if (y == treeY + 1)
+                            {
+                                if (x != pos.X - 2 && x != pos.X + 2 && z != 16 - rowsToDraw)
+                                    chunk.SetBlock(loc, oakLeaves);
+                            }
+                            else
+                            {
+                                chunk.SetBlock(loc, oakLeaves);
+                            }
                         }
                     }
                 }
             }
+            #endregion
         }
 
         private static int TreeHeight(double value)  

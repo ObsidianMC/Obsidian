@@ -168,7 +168,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public OverworldTerrainSettings()
         {
-            Seed = 88;
+            Seed = 89;
             MinElev = 0;
             MaxElev = 128;
             ContinentFrequency = 1.85;
@@ -195,7 +195,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             PlainsLacunarity = 2.814453125;
             BadlandsLacunarity = 2.400890625;
 
-            CaveFillPercent = 0.3;
+            CaveFillPercent = 0.5;
             CaveVertStretch = 0.035;
             CaveHorizStretch = 0.022;
 

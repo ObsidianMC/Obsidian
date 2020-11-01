@@ -50,6 +50,12 @@ namespace Obsidian.Util.DataTypes
 
         public Position Normalize() => new Position(X / Distance, Y / Distance, Z / Distance);
 
+        public Position Clamp(Position min, Position max) =>
+            new Position(Math.Clamp(X, min.X, max.X), Math.Clamp(Y, min.Y, max.Y), Math.Clamp(Z, min.Z, max.Z));
+
+        public Position ChunkClamp() =>
+            this.Clamp(Position.Zero, new Position(15, 255, 15));
+
         /// <summary>
         ///     Calculates the distance between two Position objects.
         /// </summary>
@@ -75,11 +81,16 @@ namespace Obsidian.Util.DataTypes
         public static Position Max(Position value1, Position value2) =>
             new Position(Math.Max(value1.X, value2.X), Math.Max(value1.Y, value2.Y), Math.Max(value1.Z, value2.Z));
 
+        public static Position Clamp(Position value, Position min, Position max) =>
+            new Position(Math.Clamp(value.X, min.X, max.X), Math.Clamp(value.Y, min.Y, max.Y), Math.Clamp(value.Z, min.Z, max.Z));
+
         public static bool operator !=(Position a, Position b) => !a.Equals(b);
 
         public static bool operator ==(Position a, Position b) => a.Equals(b);
 
         public static Position operator +(Position a, Position b) => new Position(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+
+        public static Position operator +(Position a, (int x, int y, int z) b) => new Position(a.X + b.x, a.Y + b.y, a.Z + b.z);
 
         public static Position operator -(Position a, Position b) => new Position(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 

@@ -385,9 +385,9 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -6; x <= 6; x++)
+            for (int x = -4; x <= 4; x++)
             {
-                for (int z = -6; z <= 6; z++)
+                for (int z = -4; z <= 4; z++)
                 {
                     this.GenerateRegion(x, z);
                 }

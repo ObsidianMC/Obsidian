@@ -1,20 +1,21 @@
 ﻿using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public static class FrozenRiverDecorator
+    public class FrozenRiverDecorator : BaseDecorator
     {
-        public static void Decorate(Chunk chunk, double terrainY, (int x, int z) pos, OverworldNoise noise)
+        public FrozenRiverDecorator(Biomes biome) : base(biome)
         {
-            if (terrainY == 61) // rivers at sea level
-            {
-                chunk.SetBlock(pos.x, 61, pos.z, Registry.GetBlock(Materials.FrostedIce));
+        }
 
+        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
+        {
+            if (pos.Y == 61) // rivers at sea level
+            {
+                chunk.SetBlock(new Position(pos.X, 61, pos.Z), Registry.GetBlock(Materials.FrostedIce)); // TODO: this is mega broken
             }
         }
     }
