@@ -1,8 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
-using Obsidian.ChunkData;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
@@ -13,8 +13,6 @@ using Obsidian.Events;
 using Obsidian.Events.EventArgs;
 using Obsidian.Items;
 using Obsidian.Logging;
-using Obsidian.Nbt;
-using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
@@ -25,7 +23,6 @@ using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
-using Obsidian.Util.Registry.Codecs;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -47,16 +44,16 @@ namespace Obsidian
         public sbyte Position;
     }
 
-    public class Server
+    public class Server : IServer
     {
-        private readonly ConcurrentQueue<QueueChat> chatmessages;
+        private readonly ConcurrentQueue<QueueChat> chatMessages;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
 
         internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
-        public IServiceProvider Services { get; private set; } = new ServiceCollection().BuildServiceProvider(true);
+        public const ProtocolVersion Protocol = ProtocolVersion.v1_16_3;
 
         public short TPS { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
@@ -69,7 +66,7 @@ namespace Obsidian
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
-
+        
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
@@ -103,8 +100,8 @@ namespace Obsidian
 
             this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
-            //This stuff down here needs to be looked into
-            Program.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            // This stuff down here needs to be looked into
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
             Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
@@ -118,7 +115,7 @@ namespace Obsidian
 
             this.cts = new CancellationTokenSource();
 
-            this.chatmessages = new ConcurrentQueue<QueueChat>();
+            this.chatMessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
             Logger.LogDebug("Initializing command handler...");
@@ -143,49 +140,53 @@ namespace Obsidian
 
             this.World = new World("world", this);
 
-            this.Events.PlayerLeave += this.Events_PlayerLeave;
-            this.Events.PlayerJoin += this.Events_PlayerJoin;
-            this.Events.ServerTick += this.Events_ServerTick;
+            this.Events.PlayerLeave += this.OnPlayerLeave;
+            this.Events.PlayerJoin += this.OnPlayerJoin;
+            this.Events.ServerTick += this.OnServerTick;
         }
 
         /// <summary>
-        /// Checks if a player is online
+        /// Checks if a player is online.
         /// </summary>
-        /// <param name="username">The username you want to check for</param>
-        /// <returns>True if the player is online</returns>
+        /// <param name="username">The username you want to check for.</param>
+        /// <returns>True if the player is online.</returns>
         public bool IsPlayerOnline(string username) => this.OnlinePlayers.Any(x => x.Value.Username == username);
 
         public bool IsPlayerOnline(Guid uuid) => this.OnlinePlayers.ContainsKey(uuid);
 
+        public IPlayer GetPlayer(string username) => this.OnlinePlayers.FirstOrDefault(player => player.Value.Username == username).Value;
+
+        public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
+
         /// <summary>
-        /// Sends a message to all online players on the server
+        /// Sends a message to all players on the server.
         /// </summary>
         public Task BroadcastAsync(string message, sbyte position = 0)
         {
-            this.chatmessages.Enqueue(new QueueChat() { Message = message, Position = position });
+            this.chatMessages.Enqueue(new QueueChat() { Message = message, Position = position });
             this.Logger.LogInformation(message);
 
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Registers a new entity to the server
+        /// Registers a new entity to the server.
         /// </summary>
-        /// <param name="input">A compatible entry</param>
-        /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed</exception>
+        /// <param name="input">A compatible entry.</param>
+        /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed.</exception>
         public Task RegisterAsync(params object[] input)
         {
             foreach (object item in input)
             {
                 switch (item)
                 {
-                    default:
-                        throw new Exception($"Input ({item.GetType()}) can't be handled by RegisterAsync.");
-
                     case WorldGenerator generator:
                         Logger.LogDebug($"Registering {generator.Id}...");
                         this.WorldGenerators.Add(generator.Id, generator);
                         break;
+
+                    default:
+                        throw new Exception($"Input ({item.GetType().Name}) can't be handled by RegisterAsync.");
                 }
             }
 
@@ -193,15 +194,15 @@ namespace Obsidian
         }
 
         /// <summary>
-        /// Starts this server
+        /// Starts this server.
         /// </summary>
-        public async Task StartServer()
+        public async Task StartServerAsync()
         {
             this.StartTime = DateTimeOffset.Now;
 
             this.Logger.LogInformation($"Launching Obsidian Server v{Version} with ID {Id}");
 
-            //Check if MPDM and OM are enabled, if so, we can't handle connections
+            // Check if MPDM and OM are enabled, if so, we can't handle connections
             if (this.Config.MulitplayerDebugMode && this.Config.OnlineMode)
             {
                 this.Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
@@ -215,24 +216,15 @@ namespace Obsidian
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
 
-            this.Logger.LogInformation("Loading services..");
-            //TODO services
-            this.Services = new ServiceCollection()
-                .AddSingleton(this.LoggerProvider)
-                .BuildServiceProvider(true);
-
             this.Logger.LogInformation($"Loading properties...");
             await this.Operators.InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+            this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.FileAccess;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
-
-            foreach(var pluginlink in Config.DownloadPlugins)
-            {
-                await PluginManager.LoadPluginAsync(pluginlink); // !!!
-            }
+            await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                 this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
@@ -259,10 +251,10 @@ namespace Obsidian
                     var tcp = await this.tcpListener.AcceptTcpClientAsync();
                     this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                    var clnt = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
-                    this.clients.Add(clnt);
+                    var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
+                    this.clients.Add(client);
 
-                    _ = Task.Run(clnt.StartConnectionAsync);
+                    _ = Task.Run(client.StartConnectionAsync);
                 }
                 await Task.Delay(50);
             }
@@ -270,56 +262,17 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, PlayerBlockPlacement pbp)
+        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
         {
-            player.Inventory.RemoveItem(player.CurrentSlot);
-
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
                 var client = other.client;
-
-                var location = pbp.Location;
-                var face = pbp.Face;
-
-                switch (face)//TODO fix this for logs
-                {
-                    case BlockFace.Bottom:
-                        location.Y -= 1;
-                        break;
-
-                    case BlockFace.Top:
-                        location.Y += 1;
-                        break;
-
-                    case BlockFace.North:
-                        location.Z -= 1;
-                        break;
-
-                    case BlockFace.South:
-                        location.Z += 1;
-                        break;
-
-                    case BlockFace.West:
-                        location.X -= 1;
-                        break;
-
-                    case BlockFace.East:
-                        location.X += 1;
-                        break;
-
-                    default:
-                        break;
-                }
-
-                var block = Registry.GetBlock(player.GetHeldItem().Type);
-
-                this.World.SetBlock(location, block);
 
                 await client.QueuePacketAsync(new BlockChange(location, block.Id));
             }
         }
 
-        internal async Task ParseMessage(string message, Client source, sbyte position = 0)
+        internal async Task ParseMessageAsync(string message, Client source, sbyte position = 0)
         {
             if (!message.StartsWith('/'))
             {
@@ -327,37 +280,37 @@ namespace Obsidian
                 return;
             }
 
-            //TODO command logging
+            // TODO command logging
             // TODO error handling for commands
             var context = new ObsidianContext(message, source, this);
             try
             {
                 await Commands.ProcessCommand(context);
             }
-            catch (CommandArgumentParsingException ex)
+            catch (CommandArgumentParsingException)
             {
                 await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Invalid arguments! Parsing failed." });
             }
-            catch (CommandExecutionCheckException ex)
+            catch (CommandExecutionCheckException)
             {
                 await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}You can not execute this command." });
             }
-            catch (CommandNotFoundException ex)
+            catch (CommandNotFoundException)
             {
                 await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such command was found." });
             }
-            catch (NoSuchParserException ex)
+            catch (NoSuchParserException)
             {
                 await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}The command you executed has a argument that has no matching parser." });
             }
-            catch(InvalidCommandOverloadException ex)
+            catch (InvalidCommandOverloadException)
             {
                 await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such overload is available for this command." });
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {ex.Message}" });
-                Logger.LogError(ex, ex.Message);
+                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {e.Message}" });
+                Logger.LogError(e, e.Message);
             }
         }
 
@@ -378,29 +331,28 @@ namespace Obsidian
             var player = this.OnlinePlayers.Values.FirstOrDefault(x => x.Username == username);
             if (player != null)
             {
-                if (reason is null)
-                    reason = ChatMessage.Simple("Connected from another location");
+                reason ??= "Connected from another location";
 
                 await player.KickAsync(reason);
             }
         }
 
-        private bool TryAddEntity(Entity entity)
+        private bool TryAddEntity(World world, Entity entity)
         {
             this.Logger.LogDebug($"{entity.EntityId} new ID");
 
-            return this.World.TryAddEntity(entity);
+            return world.TryAddEntity(entity);
         }
 
         internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store)
         {
-            var d = store.Packet;
+            var digging = store.Packet;
 
-            var block = this.World.GetBlock(d.Location);
+            var block = this.World.GetBlock(digging.Location);
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
-            switch (d.Status)
+            switch (digging.Status)
             {
                 case DiggingStatus.DropItem:
                     {
@@ -421,7 +373,7 @@ namespace Obsidian
                             Location = loc
                         };
 
-                        this.TryAddEntity(item);
+                        this.TryAddEntity(player.World, item);
 
                         var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
                         var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
@@ -429,11 +381,11 @@ namespace Obsidian
                         var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
                         var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
 
-                        var f5 = Program.Random.NextDouble() * ((float)Math.PI * 2f);
-                        var f6 = 0.02f * Program.Random.NextDouble();
+                        var f5 = Globals.Random.NextDouble() * ((float)Math.PI * 2f);
+                        var f6 = 0.02f * Globals.Random.NextDouble();
 
                         var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
-                            (short)((double)(-f8 * 0.3F + 0.1F + (Program.Random.NextDouble() - Program.Random.NextDouble()) * 0.1F)),
+                            (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
                             (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
@@ -468,18 +420,18 @@ namespace Obsidian
                 case DiggingStatus.StartedDigging:
                     await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
-                        Location = d.Location,
+                        Location = digging.Location,
                         Block = block.Id,
-                        Status = d.Status,
+                        Status = digging.Status,
                         Successful = true
                     });
                     break;
                 case DiggingStatus.CancelledDigging:
                     await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                     {
-                        Location = d.Location,
+                        Location = digging.Location,
                         Block = block.Id,
-                        Status = d.Status,
+                        Status = digging.Status,
                         Successful = true
                     });
                     break;
@@ -487,21 +439,21 @@ namespace Obsidian
                     {
                         await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
                         {
-                            Location = d.Location,
+                            Location = digging.Location,
                             Block = block.Id,
-                            Status = d.Status,
+                            Status = digging.Status,
                             Successful = true
                         });
                         await this.BroadcastPacketWithoutQueueAsync(new BlockBreakAnimation
                         {
                             EntityId = player,
-                            Location = d.Location,
+                            Location = digging.Location,
                             DestroyStage = -1
                         });
 
-                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(d.Location, 0));
+                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(d.Location, Registry.GetBlock(Materials.Air));
+                        this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
 
                         var item = new ItemEntity
                         {
@@ -510,12 +462,12 @@ namespace Obsidian
                             Id = Registry.GetItem(block.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Location = d.Location.Add((Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D,
-                            (Program.Random.NextDouble() * 0.5F) + 0.25D)
+                            Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D,
+                            (Globals.Random.NextDouble() * 0.5F) + 0.25D)
                         };
 
-                        this.TryAddEntity(item);
+                        this.TryAddEntity(player.World, item);
 
                         await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
                         {
@@ -526,7 +478,7 @@ namespace Obsidian
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = new Velocity((short)(d.Location.X * (8000 / 20)), (short)(d.Location.Y * (8000 / 20)), (short)(d.Location.Z * (8000 / 20)))
+                            Velocity = new Velocity((short)(digging.Location.X * (8000 / 20)), (short)(digging.Location.Y * (8000 / 20)), (short)(digging.Location.Z * (8000 / 20)))
                         });
 
                         await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
@@ -553,42 +505,41 @@ namespace Obsidian
 
         private async Task ServerLoop()
         {
-            var keepaliveticks = 0;
-            Stopwatch sw = new Stopwatch();
+            var keepAliveTicks = 0;
 
-            short itersPerSecond = 0; //counter for iterations per second
-            sw.Start(); 
+            short itersPerSecond = 0;
+            var stopWatch = Stopwatch.StartNew(); // for TPS measuring
+
             while (!this.cts.IsCancellationRequested)
             {
                 await Task.Delay(50);
 
                 await this.Events.InvokeServerTickAsync();
 
-                keepaliveticks++;
-                if (keepaliveticks > 50)
+                keepAliveTicks++;
+                if (keepAliveTicks > 50)
                 {
                     var keepaliveid = DateTime.Now.Millisecond;
 
-                    foreach (var clnt in this.clients.Where(x => x.State == ClientState.Play))
-                        _ = Task.Run(async () => await clnt.ProcessKeepAlive(keepaliveid));
+                    foreach (var client in this.clients.Where(x => x.State == ClientState.Play))
+                        _ = Task.Run(async () => await client.ProcessKeepAliveAsync(keepaliveid));
 
-                    keepaliveticks = 0;
+                    keepAliveTicks = 0;
                 }
-                
 
                 foreach (var (uuid, player) in this.OnlinePlayers)
                 {
                     if (this.Config.Baah.HasValue)
                     {
-                        var pos = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
-                        await player.SendSoundAsync(461, pos, SoundCategory.Master, 1.0f, 1.0f);
+                        var soundPosition = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
+                        await player.SendSoundAsync(461, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
-                    if (this.chatmessages.TryPeek(out QueueChat msg))
+                    if (this.chatMessages.TryPeek(out QueueChat msg))
                         await player.SendMessageAsync(msg.Message, msg.Position);
                 }
 
-                this.chatmessages.TryDequeue(out var _);
+                this.chatMessages.TryDequeue(out var _);
 
                 foreach (var client in clients)
                 {
@@ -597,43 +548,44 @@ namespace Obsidian
                 }
                 itersPerSecond++;
 
-                //if Stopwatch elapsed time more than 1000 ms (1s) reset counter, restart stopwatch, and set TPS property
-                if (sw.ElapsedMilliseconds >= 1000) 
+                // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
+                if (stopWatch.ElapsedMilliseconds >= 1000L)
                 {
-                    TPS = itersPerSecond; 
+                    TPS = itersPerSecond;
                     itersPerSecond = 0;
-                    sw.Restart();
+                    stopWatch.Restart();
                 }
-
-
             }
         }
 
         /// <summary>
-        /// Registers the "obsidian-vanilla" entities and objects
+        /// Registers the "obsidian-vanilla" entities and objects.
         /// </summary>
         private async Task RegisterDefaultAsync()
         {
             await this.RegisterAsync(new SuperflatGenerator());
             await this.RegisterAsync(new TestBlocksGenerator());
+            await this.RegisterAsync(new OverworldGenerator());
+            await this.RegisterAsync(new OverworldDebugGenerator());
         }
 
-        private async Task SendSpawnPlayerAsync(Player joined)
+        private async Task SendSpawnPlayerAsync(IPlayer joined)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined))
+            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
             {
+                var joinedPlayer = joined as Player;
                 //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = joined.EntityId,
-                    Uuid = joined.Uuid,
-                    Position = joined.Location,
+                    EntityId = joinedPlayer.EntityId,
+                    Uuid = joinedPlayer.Uuid,
+                    Position = joinedPlayer.Location,
                     Yaw = 0,
                     Pitch = 0
                 });
 
                 //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joined.client.QueuePacketAsync(new SpawnPlayer
+                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
@@ -644,33 +596,32 @@ namespace Obsidian
             }
         }
 
-        #region events
-
-        private async Task Events_PlayerLeave(PlayerLeaveEventArgs e)
+        #region Events
+        private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player))
+            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
                 await other.client.RemovePlayerFromListAsync(e.Player);
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }
 
-        private async Task Events_PlayerJoin(PlayerJoinEventArgs e)
+        private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
             var joined = e.Player;
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
                 await other.client.AddPlayerToListAsync(joined);
 
-            //Need a delay here or players start flying
+            // Need a delay here, otherwise players start flying
             await Task.Delay(500);
             await this.SendSpawnPlayerAsync(joined);
         }
 
-        private async Task Events_ServerTick()
+        private async Task OnServerTick()
         {
-
+            await Task.CompletedTask;
         }
 
-        #endregion events
+        #endregion Events
     }
 }

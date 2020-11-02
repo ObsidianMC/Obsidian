@@ -1,17 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Obsidian.Chat;
+﻿using Newtonsoft.Json;
 using Obsidian.Util;
-using Obsidian.Util.Converters;
-using Obsidian.Util.DataTypes;
-using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -19,46 +12,18 @@ namespace Obsidian
     public static class Program
     {
         private static Dictionary<int, Server> Servers = new Dictionary<int, Server>();
-        private static List<Task> Tasks = new List<Task>();
+        private static TaskCompletionSource<bool> cancelKeyPress = new TaskCompletionSource<bool>();
 
-        private static CancellationTokenSource cts = new CancellationTokenSource();
-        public static GlobalConfig Config { get; private set; }
-        public static Random Random = new Random();
+        private const string globalConfigFile = "global_config.json";
 
-        internal static ILogger PacketLogger { get; set; }
-
-        internal static DefaultContractResolver contractResolver = new DefaultContractResolver
-        {
-            NamingStrategy = new SnakeCaseNamingStrategy()
-        };
-
-        public static JsonSerializerSettings JsonSettings = new JsonSerializerSettings
-        {
-            ContractResolver = contractResolver,
-            Converters = new List<JsonConverter>
-            {
-                new DefaultEnumConverter<CustomDirection>(),
-                new DefaultEnumConverter<Axis>(),
-                new DefaultEnumConverter<Face>(),
-                new DefaultEnumConverter<BlockFace>(),
-                new DefaultEnumConverter<Half>(),
-                new DefaultEnumConverter<Hinge>(),
-                new DefaultEnumConverter<Instruments>(),
-                new DefaultEnumConverter<Part>(),
-                new DefaultEnumConverter<Shape>(),
-                new DefaultEnumConverter<CustomDirection>(),
-                new DefaultEnumConverter<MinecraftType>(),
-                new DefaultEnumConverter<Attachment>(),
-                new DefaultEnumConverter<ETextAction>()
-            }
-        };
-        private static async Task Main(string[] args)
+        private static async Task Main()
         {
 #if RELEASE
             string version = "0.1";
 #else
             string version = "0.1-DEV";
 #endif
+            // Kept for consistant number parsing
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
             Console.Title = $"Obsidian {version}";
@@ -67,61 +32,60 @@ namespace Obsidian
             Console.WriteLine(asciilogo);
             Console.ResetColor();
 
-            if (!File.Exists("global_config.json"))
+            Console.CancelKeyPress += OnConsoleCancelKeyPressed;
+
+            if (File.Exists(globalConfigFile))
             {
-                File.WriteAllText("global_config.json", JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
-                Console.WriteLine("Created new global config");
+                Globals.Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(globalConfigFile));
             }
-            Console.CancelKeyPress += Console_CancelKeyPress;
+            else
+            {
+                Globals.Config = new GlobalConfig();
+                File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
+                Console.WriteLine("Created new global configuration file");
+            }
 
-            Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText("global_config.json"));
-
-            for (int i = 0; i < Config.ServerCount; i++)
+            for (int i = 0; i < Globals.Config.ServerCount; i++)
             {
                 string serverDir = $"Server-{i}";
 
                 Directory.CreateDirectory(serverDir);
 
                 string configPath = Path.Combine(serverDir, "config.json");
+                Config config;
 
-                if (!File.Exists(configPath))
+                if (File.Exists(configPath))
                 {
-                    File.WriteAllText(configPath, JsonConvert.SerializeObject(new Config(), Formatting.Indented));
-                    Console.WriteLine("Created new config");
+                    config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
                 }
-
-                var config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+                else
+                {
+                    config = new Config();
+                    File.WriteAllText(configPath, JsonConvert.SerializeObject(config, Formatting.Indented));
+                    Console.WriteLine($"Created new configuration file for Server-{i}");
+                }
 
                 Servers.Add(i, new Server(config, version, i));
             }
 
-            foreach (var (key, server) in Servers)
-            {
-                if (Servers.Count(x => x.Value.Port == server.Port) > 1)
-                    throw new InvalidOperationException("Servers cannot be binded to the same ports");
+            if (Servers.GroupBy(entry => entry.Value.Port).Any(group => group.Count() > 1))
+                throw new InvalidOperationException("Multiple servers cannot be binded to the same port");
 
-                await Task.Run(server.StartServer);
-            }
+            var serverTasks = Servers.Select(entry => entry.Value.StartServerAsync());
 
-            await WaitForCancellation();
+            await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 
-            Console.WriteLine("Server killed. Press any key to Return.");
-            Console.ReadKey();
+            Console.WriteLine("Server(s) killed. Press any key to return...");
+            Console.ReadKey(intercept: false);
         }
 
-        public static async Task WaitForCancellation()
-        {
-            while (!cts.IsCancellationRequested)
-                await Task.Delay(50);
-        }
-
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
             foreach (var (_, server) in Servers)
                 server.StopServer();
 
-            cts.Cancel();
+            cancelKeyPress.SetResult(true);
         }
 
         // Cool startup console logo because that's cool

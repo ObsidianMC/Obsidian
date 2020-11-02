@@ -1,4 +1,4 @@
-﻿using Obsidian.Events;
+﻿using Obsidian.API.Events;
 
 namespace Obsidian.Logging
 {

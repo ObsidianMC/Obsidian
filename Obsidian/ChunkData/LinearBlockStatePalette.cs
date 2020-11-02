@@ -37,7 +37,7 @@ namespace Obsidian.ChunkData
 
         public Block GetStateFromIndex(int index)
         {
-            if (index > this.BlockStateCount - 1)
+            if (index > this.BlockStateCount - 1 || index < 0)
                return null;
 
             return this.BlockStateArray[index];

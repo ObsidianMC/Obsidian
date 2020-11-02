@@ -1,4 +1,5 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.API;
+using Obsidian.Serializer.Attributes;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -10,11 +11,5 @@ namespace Obsidian.Net.Packets.Play
         public Animation() : base(0x2C) { }
 
         public Animation(byte[] data) : base(0x2C, data) { }
-    }
-
-    public enum Hand : int
-    {
-        MainHand = 0,
-        OffHand = 1
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Obsidian.API.Plugins
 {
@@ -21,11 +22,37 @@ namespace Obsidian.API.Plugins
 
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
+        /// This method can be used on non-async methods too.
+        /// </summary>
+        public Task InvokeAsync(string methodName, params object[] args)
+        {
+            var method = GetMethod(methodName, args);
+            var result = method.Invoke(this, args);
+            if (result is Task task)
+                return task;
+            return Task.FromResult(result);
+        }
+
+        /// <summary>
+        /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
         public T Invoke<T>(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
             return (T)method.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
+        /// This method can be used on non-async methods too.
+        /// </summary>
+        public Task<T> InvokeAsync<T>(string methodName, params object[] args)
+        {
+            var method = GetMethod(methodName, args);
+            var result = method.Invoke(this, args);
+            if (result is Task<T> task)
+                return task;
+            return Task.FromResult((T)result);
         }
 
         /// <summary>

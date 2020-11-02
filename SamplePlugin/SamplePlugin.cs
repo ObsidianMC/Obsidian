@@ -1,4 +1,6 @@
-﻿using Obsidian.API.Plugins;
+﻿using Obsidian.API;
+using Obsidian.API.Events;
+using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
 using System;
 using System.Threading.Tasks;
@@ -20,17 +22,26 @@ namespace SamplePlugin
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs
-        public void OnLoad()
+        public async Task OnLoad()
         {
             Logger.Log("Sample plugin loaded!");
+            await Task.CompletedTask;
         }
 
         public async Task OnServerTick()
         {
             SampleRemotePlugin.Step();
-            if (SampleRemotePlugin.StepCount % 300 == 0)
-                Logger.Log($"Step {SampleRemotePlugin.StepCount}!");
+            if (SampleRemotePlugin.StepCount % 1000 == 0)
+                Logger.Log($"Reached {SampleRemotePlugin.StepCount} ticks!");
             await Task.CompletedTask;
+        }
+
+        public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
+        {
+            var player = playerJoinEvent.Player;
+            var server = playerJoinEvent.Server;
+
+            await player.SendMessageAsync("Welcome to the server!");
         }
     }
 

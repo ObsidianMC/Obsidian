@@ -3,7 +3,7 @@
 namespace Obsidian.API.Plugins
 {
     /// <summary>
-    /// Adds information to the plugin.
+    /// Provides information about the plugin.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class PluginAttribute : Attribute
@@ -19,7 +19,7 @@ namespace Obsidian.API.Plugins
         public string Version { get; set; }
 
         /// <summary>
-        /// Name(s) of the plugin's creator(s).
+        /// Name(s) of the plugin's author(s).
         /// </summary>
         public string Authors { get; set; }
 
@@ -29,7 +29,7 @@ namespace Obsidian.API.Plugins
         public string Description { get; set; }
 
         /// <summary>
-        /// Url of the website where the plugin is hosted.
+        /// URL address of where the plugin is hosted.
         /// </summary>
         public string ProjectUrl { get; set; }
     }

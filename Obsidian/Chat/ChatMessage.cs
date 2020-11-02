@@ -1,14 +1,10 @@
 using Newtonsoft.Json;
-using Obsidian.Util.Converters;
 using System.Collections.Generic;
 
 namespace Obsidian.Chat
 {
     public class ChatMessage
     {
-        ///<summary>Makes a new Chat object with plain text (therefore the name "Simple")</summary>
-        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text };
-
         [JsonProperty("text", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Text;
 
@@ -36,43 +32,31 @@ namespace Obsidian.Chat
         [JsonProperty("hoverEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public TextComponent HoverEvent;
 
-        //[JsonProperty("with", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        //public List<TextComponent> Components;
-
         [JsonProperty("extra", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<ChatMessage> Extra;
 
-        /*public ChatMessage AddComponent(TextComponent component)
-        {
-            if (this.Components == null)
-                this.Components = new List<TextComponent>();
-
-            this.Components.Add(component);
-
-            return this;
-        }*/
+        /// <summary>
+        /// Creates a new <see cref="ChatMessage"/> object with plain text.
+        /// </summary>
+        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text };
 
         public ChatMessage AddExtra(ChatMessage message)
         {
-            if (this.Extra == null)
-                this.Extra = new List<ChatMessage>();
-
-            this.Extra.Add(message);
+            Extra ??= new List<ChatMessage>();
+            Extra.Add(message);
 
             return this;
         }
 
         public ChatMessage AddExtra(List<ChatMessage> messages)
         {
-            if (this.Extra == null)
-                this.Extra = new List<ChatMessage>();
-
-            this.Extra.AddRange(messages);
+            Extra ??= new List<ChatMessage>(capacity: messages.Count);
+            Extra.AddRange(messages);
 
             return this;
         }
 
         public static implicit operator ChatMessage(string text) => Simple(text);
-        public override string ToString() => JsonConvert.SerializeObject(this, Program.JsonSettings);
+        public override string ToString() => JsonConvert.SerializeObject(this, Globals.JsonSettings);
     }
 }

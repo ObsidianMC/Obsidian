@@ -2,10 +2,13 @@
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using Obsidian.API.Plugins.Services.Common;
+using Obsidian.API.Plugins.Services.IO;
 
 namespace Obsidian.API.Plugins.Services
 {
+    /// <summary>
+    /// Represents a service used for creating and writing to files.
+    /// </summary>
     public interface IFileWriter : IFileService
     {
         /// <summary>

@@ -2,6 +2,7 @@
 using Obsidian.API.Plugins;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace Obsidian.Plugins
         /// </summary>
         public DirectoryWatcher DirectoryWatcher { get; } = new DirectoryWatcher();
 
+        public PluginPermissions DefaultPermissions { get; set; } = PluginPermissions.None;
+
         private readonly List<PluginContainer> plugins = new List<PluginContainer>();
         private readonly List<PluginContainer> stagedPlugins = new List<PluginContainer>();
         private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
@@ -50,7 +53,7 @@ namespace Obsidian.Plugins
             this.logger = logger;
             this.eventSource = eventSource;
 
-            DirectoryWatcher.FileChanged += (path) =>
+            DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
             {
                 var old = plugins.FirstOrDefault(plugin => plugin.Source == path) ??
                     stagedPlugins.FirstOrDefault(plugin => plugin.Source == path);
@@ -58,7 +61,7 @@ namespace Obsidian.Plugins
                     UnloadPlugin(old);
 
                 LoadPlugin(path);
-            };
+            });
             DirectoryWatcher.FileRenamed += OnPluginSourceRenamed;
             DirectoryWatcher.FileDeleted += OnPluginSourceDeleted;
 
@@ -73,9 +76,24 @@ namespace Obsidian.Plugins
         /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
         /// <param name="permissions">Permissions granted to the plugin.</param>
         /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-        public PluginContainer LoadPlugin(string path, PluginPermissions permissions = PluginPermissions.None)
+        public PluginContainer LoadPlugin(string path) => LoadPlugin(path, DefaultPermissions);
+
+        /// <summary>
+        /// Loads a plugin from selected path.
+        /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
+        /// </summary>
+        /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
+        /// <param name="permissions">Permissions granted to the plugin.</param>
+        /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
+        public PluginContainer LoadPlugin(string path, PluginPermissions permissions)
         {
             IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
+            if (provider == null)
+            {
+                logger?.LogError($"Couldn't load plugin from path '{path}'");
+                return null;
+            }
+
             PluginContainer plugin = provider.GetPlugin(path, logger);
 
             return HandlePlugin(plugin, permissions);
@@ -87,7 +105,15 @@ namespace Obsidian.Plugins
         /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
         /// <param name="permissions">Permissions granted to the plugin.</param>
         /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-        public async Task<PluginContainer> LoadPluginAsync(string path, PluginPermissions permissions = PluginPermissions.None)
+        public async Task<PluginContainer> LoadPluginAsync(string path) => await LoadPluginAsync(path, DefaultPermissions);
+
+        /// <summary>
+        /// Loads a plugin from selected path asynchronously.
+        /// </summary>
+        /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
+        /// <param name="permissions">Permissions granted to the plugin.</param>
+        /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
+        public async Task<PluginContainer> LoadPluginAsync(string path, PluginPermissions permissions)
         {
             IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
             if (provider == null)
@@ -122,7 +148,7 @@ namespace Obsidian.Plugins
                     plugins.Add(plugin);
                 }
                 RegisterEvents(plugin);
-                plugin.Plugin.Invoke(loadEvent);
+                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }
@@ -251,7 +277,7 @@ namespace Obsidian.Plugins
 
             if (!plugin.Loaded)
             {
-                plugin.Plugin.Invoke(loadEvent);
+                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
                 plugin.Loaded = true;
             }
 

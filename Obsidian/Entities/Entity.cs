@@ -184,9 +184,7 @@ namespace Obsidian.Entities
         public void UpdatePosition(double x, double y, double z, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location.X = x;
-            this.Location.Y = y;
-            this.Location.Z = z;
+            this.Location = new Position(x, y, z);
             this.OnGround = onGround;
         }
 

@@ -74,7 +74,7 @@ namespace Obsidian.Util
         public ServerVersion(string name = "Obsidian 1.16.3", ProtocolVersion? protocol = null)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Protocol = protocol ?? PacketHandler.Protocol;
+            this.Protocol = protocol ?? Server.Protocol;
         }
     }
 

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.PlayerData
+﻿namespace Obsidian.API
 {
     public enum Gamemode : byte
     {

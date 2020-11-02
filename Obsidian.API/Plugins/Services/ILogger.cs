@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace Obsidian.API.Plugins.Services
 {
     /// <summary>
-    /// Represents a type used to perform logging.
+    /// Represents a service used to perform logging.
     /// </summary>
     public interface ILogger : IService
     {

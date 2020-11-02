@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
