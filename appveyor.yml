@@ -16,6 +16,11 @@ build:
 
 test: off
 
+artifacts:
+- path: '**\*.nupkg'
+  name: nupkg
+
+
 deploy:
 - provider: NuGet
   server: https://www.myget.org/F/obsidian/api/v2/package
