@@ -6,15 +6,25 @@ deploy:
   skip_symbols: true
   symbol_server:           # remove to push symbols to SymbolSource.org
   artifact: /.*(\.|\.s)nupkg/
+  
 before_build:
     - cmd: nuget restore
-dotnet_csproj:
+    
+init:
+- ps: $env:buildVersion = "$env:packageVersion.$env:appveyor_build_number"
+- ps: $env:nugetVersion = "$env:packageVersion-beta-$env:appveyor_build_number"
+- ps: Update-AppveyorBuild -Version $env:buildVersion
+
+assembly_info:
   patch: true
-  file: '**\*.csproj'
-  version: '{version}.${env:APPVEYOR_BUILD_VERSION}'
-  version_prefix: '{version}'
-  package_version: '{version}'
-  assembly_version: '{version}'
-  file_version: '{version}'
-  informational_version: '{version}'
+  file: '**\AssemblyInfo.*'
+  assembly_version: '$(buildVersion)'
+  assembly_file_version: '$(buildVersion)'
+  assembly_informational_version: '$(nugetVersion)'
+
+configuration: Release
+
+build:
+  verbosity: minimal
+
 test: off

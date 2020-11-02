@@ -6,6 +6,14 @@
     <AssemblyName>Obsidian.API</AssemblyName>
     <RootNamespace>Obsidian.API</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.0.0</Version>
+    <Authors>Obsidian Team</Authors>
+    <Company>Obsidian Team</Company>
+    <Product>Obsidian</Product>
+    <Description>The plugin API for Obsidian, a Minecraft server.</Description>
+    <PackageProjectUrl>https://github.com/Naamloos/Obsidian</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Naamloos/Obsidian</RepositoryUrl>
+    <PackageTags>minecraft, obsidian, api, plugin, plugins</PackageTags>
   </PropertyGroup>
 
 </Project>
