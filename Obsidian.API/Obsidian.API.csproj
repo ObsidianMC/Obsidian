@@ -14,6 +14,15 @@
     <PackageProjectUrl>https://github.com/Naamloos/Obsidian</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Naamloos/Obsidian</RepositoryUrl>
     <PackageTags>minecraft, obsidian, api, plugin, plugins</PackageTags>
+    <PackageIconUrl>https://i.imgur.com/jU1lkP4.png</PackageIconUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
