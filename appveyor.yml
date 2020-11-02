@@ -6,9 +6,9 @@ deploy:
   skip_symbols: true
   symbol_server:           # remove to push symbols to SymbolSource.org
   artifact: /.*(\.|\.s)nupkg/
-  before_build:
+before_build:
     - cmd: nuget restore
-  build_script:
-    - ps: >-
+build_script:
+   - ps: >-
     $BUILD_NUMBER = [int]$Env:APPVEYOR_BUILD_NUMBER
     $BUILD_SUFFIX = "dev"
