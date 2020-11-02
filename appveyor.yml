@@ -6,7 +6,6 @@ deploy:
   api_key:
     secure: Q9v7Huzgx+vJC3E8oGhw/mART6brch/Dg+OIJLCo2YCdexCBCMb0/8Nay/Ldq07o
   skip_symbols: true
-  symbol_server:           # remove to push symbols to SymbolSource.org
   artifact: /.*(\.|\.s)nupkg/
   
 before_build:
@@ -17,13 +16,6 @@ init:
 - ps: $env:nugetVersion = "$env:packageVersion-beta-$env:appveyor_build_number"
 - ps: Update-AppveyorBuild -Version $env:buildVersion
 
-assembly_info:
-  patch: true
-  file: '**\AssemblyInfo.*'
-  assembly_version: '$(buildVersion)'
-  assembly_file_version: '$(buildVersion)'
-  assembly_informational_version: '$(nugetVersion)'
-  
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
@@ -33,8 +25,6 @@ dotnet_csproj:
   assembly_version: '$(buildVersion)'
   file_version: '$(buildVersion)'
   informational_version: '$(nugetVersion)'
-
-configuration: Release
 
 build:
   verbosity: minimal
