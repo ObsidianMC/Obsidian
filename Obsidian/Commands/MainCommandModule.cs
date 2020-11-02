@@ -239,7 +239,8 @@ namespace Obsidian.Commands
         public async Task GamemodeAsync(ObsidianContext Context)
         {
             var chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
-            await Context.Player.SendMessageAsync(chatMessage);
+            var player = (Player)Context.Player;
+            await player.SendMessageAsync(chatMessage);
         }
 
         [CommandOverload]
@@ -275,7 +276,8 @@ namespace Obsidian.Commands
             {
                 chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
             }
-            await Context.Player.SendMessageAsync(chatMessage);
+            var player = (Player)Context.Player;
+            await player.SendMessageAsync(chatMessage);
         }
         #endregion
 
