@@ -5,6 +5,7 @@
 	<LangVersion>8.0</LangVersion>
     <AssemblyName>Obsidian.API</AssemblyName>
     <RootNamespace>Obsidian.API</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>
