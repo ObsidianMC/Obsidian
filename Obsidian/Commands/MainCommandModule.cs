@@ -371,10 +371,11 @@ namespace Obsidian.Commands
         [RequireOperator]
         public async Task StopAsync(ObsidianContext Context)
         {
-            await Context.Server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player.Username}{ChatColor.Reset}.");
+            var server = (Server)Context.Server;
+            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player.Username}{ChatColor.Reset}.");
             await Task.Run(() =>
             {
-                Context.Server.StopServer();
+                server.StopServer();
             });
         }
         #endregion
