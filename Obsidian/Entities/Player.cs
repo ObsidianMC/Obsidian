@@ -8,7 +8,6 @@ using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Sounds;
-using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -77,7 +76,8 @@ namespace Obsidian.Entities
         // Not sure whether these should be saved to the NBT file.
         // These could be saved under nbt tags prefixed with "obsidian_"
         // As minecraft might just ignore them.
-        public ConcurrentHashSet<string> Permissions { get; } = new ConcurrentHashSet<string>();
+        public ConcurrentHashSet<string> PlayerPermissions { get; } = new ConcurrentHashSet<string>();
+        public ICollection<string> Permissions => PlayerPermissions;
 
         internal Player(Guid uuid, string username, Client client)
         {
@@ -206,7 +206,7 @@ namespace Obsidian.Entities
         {
             foreach (var perm in permissions)
             {
-                Permissions.Add(perm);
+                PlayerPermissions.Add(perm);
             }
         }
 

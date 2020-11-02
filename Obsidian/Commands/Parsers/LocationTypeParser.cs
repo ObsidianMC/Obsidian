@@ -2,7 +2,6 @@
 using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
-using Obsidian.Util.DataTypes;
 using System;
 using System.Threading.Tasks;
 

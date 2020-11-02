@@ -5,7 +5,6 @@ using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
-using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;

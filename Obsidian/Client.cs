@@ -20,7 +20,6 @@ using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer;
 using Obsidian.Util;
-using Obsidian.Util.DataTypes;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;

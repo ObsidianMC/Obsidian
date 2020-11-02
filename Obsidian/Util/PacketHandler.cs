@@ -11,7 +11,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.PlayerData;
 using Obsidian.Serializer;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using SharpCompress.Compressors.Deflate;

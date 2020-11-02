@@ -1,7 +1,7 @@
 ﻿using Obsidian.Serializer.Attributes;
-using Obsidian.Util.DataTypes;
 using System;
 using Obsidian.Serializer.Enums;
+using Obsidian.API;
 
 namespace Obsidian.Net.Packets.Play.Client
 {

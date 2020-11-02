@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.API
@@ -38,6 +39,8 @@ namespace Obsidian.API
         public float FallDistance { get; set; }
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
+
+        public ICollection<string> Permissions { get; }
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
         public Task KickAsync(string reason);

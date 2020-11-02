@@ -1,7 +1,6 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.API;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util;
-using Obsidian.Util.DataTypes;
 using System;
 using System.IO;
 using System.Text;
