@@ -18,6 +18,7 @@ namespace Obsidian.CommandFramework.Entities
         public Command Parent { get; private set; }
 
         public string Description { get; private set; }
+        public string Usage { get; private set; }
 
         public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
 
@@ -25,7 +26,7 @@ namespace Obsidian.CommandFramework.Entities
 
         internal CommandHandler Handler { get; set; }
 
-        public Command(string name, string[] aliases, string description, Command parent, BaseExecutionCheckAttribute[] checks, CommandHandler handler)
+        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, CommandHandler handler)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -34,6 +35,7 @@ namespace Obsidian.CommandFramework.Entities
             this.Handler = handler;
             this.Overloads = new List<MethodInfo>();
             this.Description = description;
+            this.Usage = usage;
         }
 
         public bool CheckCommand(string[] input, Command parent)

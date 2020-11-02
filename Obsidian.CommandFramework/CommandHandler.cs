@@ -75,13 +75,16 @@ namespace Obsidian.CommandFramework
                     .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
 
                 var desc = "";
+                var usage = "";
 
-                if(st.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
+                if (st.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
                 {
-                    desc = (string)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments[0].Value;
+                    var args = st.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments;
+                    desc = (string)args[0].Value;
+                    if (args.Count >= 2) usage = (string)args[1].Value;
                 }
 
-                var cmd = new Command(name, aliases.ToArray(), desc, parent, checks, this);
+                var cmd = new Command(name, aliases.ToArray(), desc, usage, parent, checks, this);
 
                 registerSubgroups(st, cmd);
                 registerSubcommands(st, cmd);
@@ -113,13 +116,16 @@ namespace Obsidian.CommandFramework
                     .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
 
                 var desc = "";
+                var usage = "";
 
                 if (m.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
                 {
-                    desc = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments[0].Value;
+                    var args = m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments;
+                    desc = (string)args[0].Value;
+                    if(args.Count >= 2) usage = (string)args[1].Value;
                 }
 
-                var cmd = new Command(name, aliases.ToArray(), desc, parent, checks, this);
+                var cmd = new Command(name, aliases.ToArray(), desc, usage, parent, checks, this);
                 cmd.Overloads.Add(m);
 
                 // Add overloads.
