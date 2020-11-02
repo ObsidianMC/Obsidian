@@ -167,7 +167,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegion(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> 2, chunkZ >> 2);
+            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -186,7 +186,7 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, 4), Helpers.Modulo(chunkZ, 4)];
+            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, 32), Helpers.Modulo(chunkZ, 32)];
             return chunk;
         }
 
@@ -333,21 +333,21 @@ namespace Obsidian.WorldData
         public Region GenerateRegion(int regionX, int regionZ)
         {
             long value = Helpers.IntsToLong(regionX, regionZ);
+            
+            if (this.Regions.ContainsKey(value))
+                return this.Regions[value];
 
             var region = new Region(regionX, regionZ);
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
-            if (this.Regions.ContainsKey(value))
-                return this.Regions[value];
-
             List<Position> chunksToGen = new List<Position>();
-            for (int x = 0; x < 4; x++)
+            for (int x = 0; x < 32; x++)
             {
-                for (int z = 0; z < 4; z++)
+                for (int z = 0; z < 32; z++)
                 {
-                    int cx = (regionX * 4) + x;
-                    int cz = (regionZ * 4) + z;
+                    int cx = (regionX << 5) + x;
+                    int cz = (regionZ << 5) + z;
                     chunksToGen.Add(new Position(cx, 0, cz));
                 }
             }
@@ -355,7 +355,7 @@ namespace Obsidian.WorldData
 
             foreach (Chunk chunk in chunks)
             {
-                var index = (Helpers.Modulo(chunk.X, 4), Helpers.Modulo(chunk.Z, 4));
+                var index = (Helpers.Modulo(chunk.X, 32), Helpers.Modulo(chunk.Z, 32));
                 region.LoadedChunks[index.Item1, index.Item2] = chunk;
             }
 
@@ -383,9 +383,9 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -4; x <= 4; x++)
+            for (int x = -1; x <= 0; x++)
             {
-                for (int z = -4; z <= 4; z++)
+                for (int z = -1; z <= 0; z++)
                 {
                     this.GenerateRegion(x, z);
                 }
