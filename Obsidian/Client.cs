@@ -409,49 +409,46 @@ namespace Obsidian
             // TODO overloads
             foreach (Obsidian.CommandFramework.Entities.Command command in this.Server.Commands.GetAllCommands())
             {
-                foreach (var overload in command.Overloads)
+                var commandNode = new CommandNode()
                 {
-                    var commandNode = new CommandNode()
+                    Name = command.Name,
+                    Type = CommandNodeType.Literal,
+                    Index = ++index
+                };
+
+                foreach (var parameter in command.Overloads.First().GetParameters().Skip(1))
+                {
+                    var parameterNode = new CommandNode()
                     {
-                        Name = command.Name,
-                        Type = CommandNodeType.Literal,
+                        Name = parameter.Name,
+                        Type = CommandNodeType.Argument,
                         Index = ++index
                     };
+                    Type type = parameter.ParameterType;
 
-                    foreach (var parameter in command.Overloads.First().GetParameters().Skip(1))
-                    {
-                        var parameterNode = new CommandNode()
-                        {
-                            Name = parameter.Name,
-                            Type = CommandNodeType.Argument,
-                            Index = ++index
-                        };
-                        Type type = parameter.ParameterType;
+                    if (type == typeof(string))
+                        parameterNode.Parser = new StringCommandParser(parameter.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.SingleWord);
+                    else if (type == typeof(double))
+                        parameterNode.Parser = new CommandParser("brigadier:double");
+                    else if (type == typeof(float))
+                        parameterNode.Parser = new CommandParser("brigadier:float");
+                    else if (type == typeof(int))
+                        parameterNode.Parser = new CommandParser("brigadier:integer");
+                    else if (type == typeof(bool))
+                        parameterNode.Parser = new CommandParser("brigadier:bool");
+                    else if (type == typeof(Position))
+                        parameterNode.Parser = new CommandParser("minecraft:vec3");
+                    else if (type == typeof(IPlayer))
+                        parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
+                    else
+                        continue;
 
-                        if (type == typeof(string))
-                            parameterNode.Parser = new StringCommandParser(parameter.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.SingleWord);
-                        else if (type == typeof(double))
-                            parameterNode.Parser = new CommandParser("brigadier:double");
-                        else if (type == typeof(float))
-                            parameterNode.Parser = new CommandParser("brigadier:float");
-                        else if (type == typeof(int))
-                            parameterNode.Parser = new CommandParser("brigadier:integer");
-                        else if (type == typeof(bool))
-                            parameterNode.Parser = new CommandParser("brigadier:bool");
-                        else if (type == typeof(Position))
-                            parameterNode.Parser = new CommandParser("minecraft:vec3");
-                        else if (type == typeof(IPlayer))
-                            parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-                        else
-                            continue;
-
-                        commandNode.AddChild(parameterNode);
-                    }
-
-                    commandNode.Type |= CommandNodeType.IsExecutabe;
-
-                    node.AddChild(commandNode);
+                    commandNode.AddChild(parameterNode);
                 }
+
+                commandNode.Type |= CommandNodeType.IsExecutabe;
+
+                node.AddChild(commandNode);
             }
 
             packet.AddNode(node);
@@ -551,16 +548,16 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            for (int x=-1; x<=1; x++)
+            for (int x = -1; x <= 1; x++)
             {
-                for (int z=-1; z<=1; z++)
+                for (int z = -1; z <= 1; z++)
                 {
                     foreach (var chunk in this.Server.World.GetRegion(x, z).LoadedChunks)
                     {
                         await this.SendPacketAsync(new ChunkDataPacket(chunk));
                     }
                 }
-            } 
+            }
         }
 
         internal Task SendChunkAsync(Chunk chunk) => this.QueuePacketAsync(new ChunkDataPacket(chunk));

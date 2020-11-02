@@ -19,66 +19,84 @@ namespace Obsidian.Commands
     public class MainCommandModule : BaseCommandClass
     {
         #region help
+        const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
-        public async Task HelpAsync(ObsidianContext Context)
+        public async Task HelpAsync(ObsidianContext Context) => await HelpAsync(Context, 1);
+        [CommandOverload]
+        public async Task HelpAsync(ObsidianContext Context, int page)
         {
             var player = (Player)Context.Player;
-            var commands = ChatMessage.Simple("");
-            var header = new ChatMessage()
+            var allcommands = Context.Commands.GetAllCommands();
+            var availablecommands = new List<Command>();
+
+            // filter available commands
+            foreach (var cmd in allcommands)
             {
-                Underline = true,
-                Text = $"List of available commands:"
-            };
-            commands.AddExtra(header);
-            foreach (var cmd in Context.Commands.GetAllCommands().Where(x => x.Parent == null))
-            {
-                // only list commands the user may execute.
                 var success = true;
+                // check commands
+                // only list commands the user may execute.
                 foreach (var check in cmd.ExecutionChecks)
                 {
                     if (!await check.RunChecksAsync(Context))
                     {
-                        // at least one check failed
                         success = false;
                     }
                 }
+                if(success)
+                    availablecommands.Add(cmd);
+            }
 
-                if (success)
+            int commandcount = availablecommands.Count();
+
+            var remainder = commandcount % CommandsPerPage;
+            int pagecount = (commandcount- remainder) / CommandsPerPage; // all commands / page commands - remainder
+            if (remainder > 0)
+                pagecount++; // if remainder, extra page
+
+            if (page < 1 || page > pagecount)
+            {
+                await player.SendMessageAsync(ChatMessage.Simple($"{ChatColor.Red}Invalid help page."));
+                return;
+            }
+
+            var cmdsection = availablecommands.Skip((page - 1) * CommandsPerPage).Take(CommandsPerPage);
+
+            var commands = ChatMessage.Simple("\n");
+            var header = new ChatMessage()
+            {
+                Underline = true,
+                Text = $"List of available commands ({page}/{pagecount}):"
+            };
+            commands.AddExtra(header);
+            foreach (var cmd in cmdsection.Where(x => x.Parent == null))
+            {
+
+                var commandName = new ChatMessage
                 {
-                    var commandName = new ChatMessage
+                    Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage)}",
+                    ClickEvent = new TextComponent
                     {
-                        Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? $"/{cmd.Name}": cmd.Usage)}",
-                        ClickEvent = new TextComponent
-                        {
-                            Action = ETextAction.SuggestCommand,
-                            Value = $"{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} ": cmd.Usage)}"
-                        },
-                        HoverEvent = new TextComponent
-                        {
-                            Action = ETextAction.ShowText,
-                            Value = $"Click to suggest the command"
-                        }
-                    };
-                    commands.AddExtra(commandName);
+                        Action = ETextAction.SuggestCommand,
+                        Value = $"{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} " : cmd.Usage)}"
+                    },
+                    HoverEvent = new TextComponent
+                    {
+                        Action = ETextAction.ShowText,
+                        Value = $"Click to suggest the command"
+                    }
+                };
+                commands.AddExtra(commandName);
 
-                    var commandInfo = new ChatMessage
-                    {
-                        Text = $"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}"
-                    };
-                    commands.AddExtra(commandInfo);
-                }
+                var commandInfo = new ChatMessage
+                {
+                    Text = $"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}"
+                };
+                commands.AddExtra(commandInfo);
+
             }
 
             await player.SendMessageAsync(commands);
-        }
-
-        [CommandOverload]
-        public async Task HelpAsync(ObsidianContext Context, [Remaining] string args_)
-        {
-            var args = args_.Contains(" ") ? args_.Split(" ").ToList() : new List<string> { args_ };
-            // TODO subcommand help
-            await Context.Player.SendMessageAsync($"Help command arguments: {string.Join(" ", args)}");
         }
         #endregion
 
@@ -99,46 +117,6 @@ namespace Obsidian.Commands
             };
             await ctx.Player.SendMessageAsync(message.ToString());
 
-        }
-        #endregion
-
-        #region group
-        [CommandGroup("group")]
-        [CommandInfo("Test group command", "/group [...]")]
-        public class Group
-        {
-            [GroupCommand]
-            public async Task ExecuteAsync(ObsidianContext ctx)
-            {
-                await ctx.Player.SendMessageAsync("group command", 1);
-            }
-
-            [GroupCommand]
-            public async Task ExecuteAsync(ObsidianContext ctx, int test)
-            {
-                await ctx.Player.SendMessageAsync($"group command overload {test}", 1);
-            }
-
-            [Command("sub")]
-            public async Task SubCommandAsync(ObsidianContext ctx)
-            {
-                await ctx.Player.SendMessageAsync("group subcommand", 1);
-            }
-
-            [CommandOverload]
-            public async Task SubCommandAsync(ObsidianContext ctx, int test)
-            {
-                await ctx.Player.SendMessageAsync($"group subcommand overload {test}", 1);
-            }
-        }
-        #endregion
-
-        #region test
-        [Command("test")]
-        [CommandInfo("Test message", "/test <test1> <test2> <test3>")]
-        public async Task TestAsync(ObsidianContext Context, string test1, string test2, string test3)
-        {
-            await Context.Player.SendMessageAsync($"{test1} + {test2} + {test3}");
         }
         #endregion
 
