@@ -2,6 +2,8 @@
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
+using Obsidian.CommandFramework.Attributes;
+using Obsidian.CommandFramework.Entities;
 using System;
 using System.Threading.Tasks;
 
@@ -25,6 +27,7 @@ namespace SamplePlugin
         public async Task OnLoad(IServer server)
         {
             Logger.Log($"Sample plugin loaded! Server version: {server.Version}");
+            server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }
 
@@ -42,6 +45,16 @@ namespace SamplePlugin
             var server = playerJoinEvent.Server;
 
             await player.SendMessageAsync("Welcome to the server!");
+        }
+
+        public class MyCommands : BaseCommandClass
+        {
+            [Command("mycommand")]
+            [CommandInfo("woop dee doo this command is from a plugin")]
+            public async Task MyCommandAsync(ObsidianContext ctx)
+            {
+                await ctx.Player.SendMessageAsync("Hello from plugin command!");
+            }
         }
     }
 

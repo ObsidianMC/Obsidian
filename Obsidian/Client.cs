@@ -440,7 +440,7 @@ namespace Obsidian
                             parameterNode.Parser = new CommandParser("brigadier:bool");
                         else if (type == typeof(Position))
                             parameterNode.Parser = new CommandParser("minecraft:vec3");
-                        else if (type == typeof(Player))
+                        else if (type == typeof(IPlayer))
                             parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
                         else
                             continue;
