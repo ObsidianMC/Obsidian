@@ -4,7 +4,7 @@ before_build:
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  international_version: '{version}'
+  informational_version: '{version}'
 
 build:
   verbosity: minimal
