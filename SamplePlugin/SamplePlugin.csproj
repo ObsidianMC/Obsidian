@@ -28,10 +28,4 @@
     </ProjectReference>
   </ItemGroup>
 
-   <ItemGroup>
-	<ProjectReference Include="..\Obsidian.CommandFramework\Obsidian.CommandFramework.csproj">
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemGroup>
-
 </Project>
