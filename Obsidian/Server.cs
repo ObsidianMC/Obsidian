@@ -4,6 +4,8 @@ using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
+using Obsidian.CommandFramework.ArgumentParsers;
+using Obsidian.CommandFramework.Entities;
 using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -145,6 +147,16 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
+        public void RegisterCommandClass<T>() where T : BaseCommandClass
+        {
+            this.Commands.RegisterCommandClass<T>();
+        }
+
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser
+        {
+            this.Commands.AddArgumentParser(parser);
+        }
+
         /// <summary>
         /// Checks if a player is online.
         /// </summary>
@@ -222,7 +234,7 @@ namespace Obsidian
 
             this.Logger.LogInformation("Loading plugins...");
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-            this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.FileAccess;
+            this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
@@ -282,7 +294,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new ObsidianContext(message, source, this);
+            var context = new ObsidianContext(message, source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);

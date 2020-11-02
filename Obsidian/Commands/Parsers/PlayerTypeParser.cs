@@ -1,4 +1,5 @@
-﻿using Obsidian.CommandFramework.ArgumentParsers;
+﻿using Obsidian.API;
+using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
 using System;
@@ -7,23 +8,24 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Parsers
 {
-    public class PlayerTypeParser : BaseArgumentParser<Player>
+    public class PlayerTypeParser : BaseArgumentParser<IPlayer>
     {
-        public override bool TryParseArgument(string input, BaseCommandContext context, out Player result)
+        public override bool TryParseArgument(string input, BaseCommandContext context, out IPlayer result)
         {
             var ctx = (ObsidianContext)context;
+            var server = (Server)ctx.Server;
 
             Player player = null;
 
             if(Guid.TryParse(input, out Guid guid))
             {
                 // is valid GUID, try find with guid
-                ctx.Server.OnlinePlayers.TryGetValue(guid, out player);
+                server.OnlinePlayers.TryGetValue(guid, out player);
             }
             else
             {
                 // is not valid guid, try find with name
-                player = ctx.Server.OnlinePlayers.FirstOrDefault(x => x.Value.Username == input).Value;
+                player = server.OnlinePlayers.FirstOrDefault(x => x.Value.Username == input).Value;
             }
 
             result = player;

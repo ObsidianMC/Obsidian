@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Obsidian.CommandFramework.ArgumentParsers;
+using Obsidian.CommandFramework.Entities;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.API
@@ -14,5 +16,7 @@ namespace Obsidian.API
         public Task BroadcastAsync(string message, sbyte position = 0);
         public IPlayer GetPlayer(string username);
         public IPlayer GetPlayer(Guid uuid);
+        public void RegisterCommandClass<T>() where T : BaseCommandClass;
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
     }
 }

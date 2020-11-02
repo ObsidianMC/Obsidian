@@ -1,5 +1,7 @@
-﻿using Obsidian.CommandFramework.ArgumentParsers;
+﻿using Obsidian.API;
+using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Entities;
+using Obsidian.Entities;
 using Obsidian.Util.DataTypes;
 using System;
 using System.Threading.Tasks;
@@ -39,16 +41,17 @@ namespace Obsidian.Commands.Parsers
                 }
                 else if (text.Equals("~"))
                 {
+                    var player = (Player)ctx.Player;
                     switch (count)
                     {
                         case 0:
-                            location.X = ctx.Player.Location.X;
+                            location.X = player.Location.X;
                             break;
                         case 1:
-                            location.Y = ctx.Player.Location.Y;
+                            location.Y = player.Location.Y;
                             break;
                         case 2:
-                            location.Z = ctx.Player.Location.Z;
+                            location.Z = player.Location.Z;
                             break;
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
@@ -21,8 +22,9 @@ namespace Obsidian.Commands
         [CommandInfo("Lists available commands.")]
         public async Task HelpAsync(ObsidianContext Context)
         {
+            var player = (Player)Context.Player;
             StringBuilder help = new StringBuilder();
-            await Context.Player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
+            await player.SendMessageAsync(new ChatMessage() { Bold = true, Underline = true, Text = $"***Command Listing***" });
             foreach (var cmd in Context.Commands.GetAllCommands().Where(x => x.Parent == null))
             {
                 // only list commands the user may execute.
@@ -42,7 +44,7 @@ namespace Obsidian.Commands
                 }
             }
 
-            await Context.Player.SendMessageAsync(help.ToString());
+            await player.SendMessageAsync(help.ToString());
         }
 
         [Command("tps")]
@@ -59,7 +61,7 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
             };
-            await ctx.Player.SendMessageAsync(message);
+            await ctx.Player.SendMessageAsync(message.ToString());
 
         }
 
@@ -99,14 +101,6 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync("Overload test");
         }
 
-        [Command("forceskins")]
-        [CommandInfo("forces skin reload")]
-        public async Task ForceSkinAsync(ObsidianContext Context)
-        {
-            await Context.Client.SendPlayerInfoAsync();
-            await Context.Player.SendMessageAsync(ChatMessage.Simple("done"));
-        }
-
         [Command("test")]
         public async Task TestAsync(ObsidianContext Context, string test1, string test2, string test3)
         {
@@ -117,7 +111,9 @@ namespace Obsidian.Commands
         [CommandInfo("Gets all plugins")]
         public async Task PluginsAsync(ObsidianContext Context)
         {
-            var pluginCount = Context.Server.PluginManager.Plugins.Count;
+            var srv = (Server)Context.Server;
+            var player = (Player)Context.Player;
+            var pluginCount = srv.PluginManager.Plugins.Count;
             var message = new ChatMessage
             {
                 Text = $"{ChatColor.Reset}List of plugins ({ChatColor.Gold}{pluginCount}{ChatColor.Reset}): ",
@@ -127,7 +123,7 @@ namespace Obsidian.Commands
             
             for (int i = 0; i < pluginCount; i++)
             {
-                var pluginContainer = Context.Server.PluginManager.Plugins[i];
+                var pluginContainer = srv.PluginManager.Plugins[i];
                 var info = pluginContainer.Info;
 
                 var plugin = new ChatMessage();
@@ -142,20 +138,22 @@ namespace Obsidian.Commands
 
                 messages.Add(new ChatMessage
                 {
-                    Text = $"{ChatColor.Reset}{(i + 1 < Context.Server.PluginManager.Plugins.Count ? ", " : "")}"
+                    Text = $"{ChatColor.Reset}{(i + 1 < srv.PluginManager.Plugins.Count ? ", " : "")}"
                 });
             }
             if (messages.Count > 0)
                 message.AddExtra(messages);
             
-            await Context.Player.SendMessageAsync(message);
+            await player.SendMessageAsync(message);
         }
 
         [Command("forcechunkreload")]
         public async Task ForceChunkReloadAsync(ObsidianContext Context)
         {
-            var c = Context.Client;
-            var world = Context.Server.World;
+            var player = (Player)Context.Player;
+            var server = (Server)Context.Server;
+            var c = player.client;
+            var world = server.World;
 
             int dist = c.ClientSettings?.ViewDistance ?? 1;
             (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
@@ -183,38 +181,41 @@ namespace Obsidian.Commands
 
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet")]
-        public Task DeclareCommandsTestAsync(ObsidianContext Context) => Context.Client.SendDeclareCommandsAsync();
+        public Task DeclareCommandsTestAsync(ObsidianContext Context) => ((Player)Context.Player).client.SendDeclareCommandsAsync();
 
         [Command("tp")]
         [CommandInfo("teleports you to a location")]
         public async Task TeleportAsync(ObsidianContext Context, [Remaining] Position location)
         {
-            await Context.Player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
-            await Context.Player.TeleportAsync(location);
+            var player = (Player)Context.Player;
+            await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
+            await player.TeleportAsync(location);
         }
 
         [Command("op")]
         [RequireOperator]
-        public async Task GiveOpAsync(ObsidianContext Context, Player player)
+        public async Task GiveOpAsync(ObsidianContext Context, IPlayer player)
         {
-            var onlinePlayers = Context.Server.OnlinePlayers;
+            var server = (Server)Context.Server;
+            var onlinePlayers = server.OnlinePlayers;
             if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
                 return;
 
-            Context.Server.Operators.AddOperator(player);
+            server.Operators.AddOperator((Player)player);
 
             await Context.Player.SendMessageAsync($"Made {player} a server operator");
         }
 
         [Command("deop")]
         [RequireOperator]
-        public async Task UnclaimOpAsync(ObsidianContext Context, Player player)
+        public async Task UnclaimOpAsync(ObsidianContext Context, IPlayer player)
         {
-            var onlinePlayers = Context.Server.OnlinePlayers;
+            var server = (Server)Context.Server;
+            var onlinePlayers = server.OnlinePlayers;
             if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
                 return;
 
-            Context.Server.Operators.RemoveOperator(player);
+            server.Operators.RemoveOperator((Player)player);
 
             await Context.Player.SendMessageAsync($"Made {player} no longer a server operator");
         }
@@ -222,20 +223,23 @@ namespace Obsidian.Commands
         [Command("oprequest", "opreq")]
         public async Task RequestOpAsync(ObsidianContext Context, string code = null)
         {
-            if (!Context.Server.Config.AllowOperatorRequests)
+            var server = (Server)Context.Server;
+            var player = (Player)Context.Player;
+
+            if (!server.Config.AllowOperatorRequests)
             {
-                await Context.Player.SendMessageAsync("§cOperator requests are disabled on this server.");
+                await player.SendMessageAsync("§cOperator requests are disabled on this server.");
                 return;
             }
 
-            if (Context.Server.Operators.ProcessRequest(Context.Player, code))
+            if (server.Operators.ProcessRequest(player, code))
             {
-                await Context.Player.SendMessageAsync("Your request has been accepted");
+                await player.SendMessageAsync("Your request has been accepted");
 
                 return;
             }
 
-            if (Context.Server.Operators.CreateRequest(Context.Player))
+            if (server.Operators.CreateRequest(player))
             {
                 await Context.Player.SendMessageAsync("A request has been to the server console");
             }
