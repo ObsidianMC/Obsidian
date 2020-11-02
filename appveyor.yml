@@ -1,4 +1,4 @@
- before_build:
+before_build:
     - cmd: nuget restore
 
 dotnet_csproj:
