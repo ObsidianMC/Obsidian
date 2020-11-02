@@ -8,7 +8,7 @@ deploy:
   artifact: /.*(\.|\.s)nupkg/
 before_build:
     - cmd: nuget restore
-build_script:
-   - ps: |
-        $BUILD_NUMBER = [int]$Env:APPVEYOR_BUILD_NUMBER
-        $BUILD_SUFFIX = "dev"
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '{version}.${env:APPVEYOR_BUILD_VERSION}'
