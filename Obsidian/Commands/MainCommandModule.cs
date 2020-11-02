@@ -236,12 +236,12 @@ namespace Obsidian.Commands
                         var gamemode = (Gamemode)Enum.Parse(typeof(Gamemode), args[0], true);
                         if (Context.Player.Gamemode != gamemode)
                         {
-                            Context.Player.Gamemode = gamemode;
+                            await Context.Player.SetGamemodeAsync(gamemode);
                             chatMessage = ChatMessage.Simple($"{ChatColor.Reset}Your game mode set to {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
                         }
                         else
                         {
-                            Context.Player.Gamemode = gamemode;
+                            await Context.Player.SetGamemodeAsync(gamemode);
                             chatMessage = ChatMessage.Simple($"{ChatColor.Reset}Your current game mode is {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
                         }
                     }

@@ -266,6 +266,12 @@ namespace Obsidian.Entities
         }
 
         public override string ToString() => this.Username;
+
+        public async Task SetGamemodeAsync(Gamemode gamemode)
+        {
+            await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
+            this.Gamemode = gamemode;
+        }
     }
 
     [Flags]

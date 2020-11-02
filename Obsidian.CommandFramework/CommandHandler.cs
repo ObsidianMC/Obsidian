@@ -45,6 +45,7 @@ namespace Obsidian.CommandFramework
 
                 return (string)parsertype.GetMethod("GetParserIdentifier").Invoke(parser, null);
             }
+            Console.WriteLine("big oopsie");
             throw new Exception("No such parser registered!");
         }
         public Command[] GetAllCommands()

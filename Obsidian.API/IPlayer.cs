@@ -40,5 +40,7 @@ namespace Obsidian.API
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
         public Task KickAsync(string reason);
+
+        public Task SetGamemodeAsync(Gamemode gamemode);
     }
 }

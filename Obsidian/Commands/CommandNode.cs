@@ -3,6 +3,8 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -16,6 +18,7 @@ namespace Obsidian.Commands
 
         public CommandNodeType Type { get; set; }
 
+
         public List<CommandNode> Children = new List<CommandNode>();
 
         public string Name { get; set; } = string.Empty;
@@ -28,18 +31,18 @@ namespace Obsidian.Commands
             await dataStream.WriteByteAsync((sbyte)this.Type);
             await dataStream.WriteVarIntAsync(this.Children.Count);
 
-            foreach (CommandNode childNode in this.Children)
+            foreach (var childNode in this.Children.Select(x => x.Index).Distinct())
             {
-                 await dataStream.WriteVarIntAsync(childNode.Index);
+                 await dataStream.WriteVarIntAsync(childNode);
             }
 
-            if (this.Type.HasFlag(CommandNodeType.HasRedirect))
-            {
-                //TODO: Add redirect functionality if needed
-                await dataStream.WriteVarIntAsync(0);
-            }
+            //if (this.Type.HasFlag(CommandNodeType.HasRedirect))
+            //{
+            //    //TODO: Add redirect functionality if needed
+            //    await dataStream.WriteVarIntAsync(0);
+            //}
 
-            if ((this.Type.HasFlag(CommandNodeType.Argument) || this.Type.HasFlag(CommandNodeType.Literal)) && !this.Name.IsNullOrEmpty())
+            if ((this.Type.HasFlag(CommandNodeType.Argument) || this.Type.HasFlag(CommandNodeType.Literal)))
             {
                 await dataStream.WriteStringAsync(this.Name);
             }

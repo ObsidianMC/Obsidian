@@ -398,57 +398,65 @@ namespace Obsidian
 
         internal async Task SendDeclareCommandsAsync()
         {
+            // TODO only build packet for first player, or prebuild packet. Very unlikely to add commands after server start??
             var packet = new DeclareCommands();
             var index = 0;
 
             var node = new CommandNode()
             {
-                Type = CommandNodeType.Root
+                Type = CommandNodeType.Root,
+                Index = index
             };
 
-            // TODO overloads
-            foreach (Obsidian.CommandFramework.Entities.Command command in this.Server.Commands.GetAllCommands())
+            foreach(var cmd in this.Server.Commands.GetAllCommands())
             {
-                var overload = command.Overloads.First();
-                var commandNode = new CommandNode()
+                var cmdnode = new CommandNode()
                 {
-                    Name = command.Name,
-                    Type = CommandNodeType.Literal,
-                    Index = ++index
+                    Index = index++,
+                    Name = cmd.Name,
+                    Type = CommandNodeType.Literal
                 };
+                node.AddChild(cmdnode);
 
-                foreach (var parameter in overload.GetParameters().Skip(1))
+                foreach(var overload in cmd.Overloads.Take(1))
                 {
-                    var parameterNode = new CommandNode()
-                    {
-                        Name = parameter.Name,
-                        Type = CommandNodeType.Argument,
-                        Index = ++index
-                    };
-                    Type type = parameter.ParameterType;
+                    var args = overload.GetParameters().Skip(1); // skipping obsidian context
+                    if(args.Count() < 1)
+                        cmdnode.Type |= CommandNodeType.IsExecutabe;
 
-                    var mctype = this.Server.Commands.FindMinecraftType(type);
+                    var prev = cmdnode;
 
-                    switch (mctype)
+                    foreach(var arg in args)
                     {
-                        case "brigadier:string":
-                            parameterNode.Parser = new StringCommandParser(parameter.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                            break;
-                        case "obsidian:player":
-                            // this is a custom type used by obsidian meaning "only player entities"
-                            parameterNode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-                            break;
-                        default:
-                            parameterNode.Parser = new CommandParser(mctype);
-                            break;
+                        var argnode = new CommandNode()
+                        {
+                            Index = index++,
+                            Name = arg.Name,
+                            Type = CommandNodeType.Argument | CommandNodeType.IsExecutabe
+                        };
+
+                        prev.AddChild(argnode);
+                        prev = argnode;
+
+                        Type type = arg.ParameterType;
+
+                        var mctype = this.Server.Commands.FindMinecraftType(type);
+
+                        switch (mctype)
+                        {
+                            case "brigadier:string":
+                                argnode.Parser = new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase);
+                                break;
+                            case "obsidian:player":
+                                // this is a custom type used by obsidian meaning "only player entities".
+                                argnode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
+                                break;
+                            default:
+                                argnode.Parser = new CommandParser(mctype);
+                                break;
+                        }
                     }
-
-                    commandNode.AddChild(parameterNode);
                 }
-
-                commandNode.Type |= CommandNodeType.IsExecutabe;
-
-                node.AddChild(commandNode);
             }
 
             packet.AddNode(node);
