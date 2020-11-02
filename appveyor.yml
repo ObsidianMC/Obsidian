@@ -22,6 +22,6 @@ deploy:
   api_key:
     secure: Q9v7Huzgx+vJC3E8oGhw/mART6brch/Dg+OIJLCo2YCdexCBCMb0/8Nay/Ldq07o
   skip_symbols: true
-  artifact: '**\*.nupkg'
+  artifact: 'C:\projects\obsidian\Obsidian.API\bin\Debug\Obsidian.API.{version}.nupkg'
   on:
     branch: master
