@@ -48,11 +48,11 @@ namespace Obsidian.Commands
                 {
                     var commandName = new ChatMessage
                     {
-                        Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? cmd.Name: cmd.Usage)}",
+                        Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? $"/{cmd.Name}": cmd.Usage)}",
                         ClickEvent = new TextComponent
                         {
                             Action = ETextAction.SuggestCommand,
-                            Value = $"{(cmd.Usage == "" ? $"{cmd.Name} " : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} ": cmd.Usage)}"
+                            Value = $"{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} ": cmd.Usage)}"
                         },
                         HoverEvent = new TextComponent
                         {
@@ -239,7 +239,8 @@ namespace Obsidian.Commands
         public async Task GamemodeAsync(ObsidianContext Context)
         {
             var chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
-            await Context.Player.SendMessageAsync(chatMessage);
+            var player = (Player)Context.Player;
+            await player.SendMessageAsync(chatMessage);
         }
 
         [CommandOverload]
@@ -275,7 +276,8 @@ namespace Obsidian.Commands
             {
                 chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
             }
-            await Context.Player.SendMessageAsync(chatMessage);
+            var player = (Player)Context.Player;
+            await player.SendMessageAsync(chatMessage);
         }
         #endregion
 
