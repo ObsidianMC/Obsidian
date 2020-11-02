@@ -11,6 +11,8 @@ namespace Obsidian.API.Plugins
     /// </summary>
     public abstract class PluginBase
     {
+        public IPluginInfo Info { get; private set; }
+        
         private Type typeCache;
 
         /// <summary>

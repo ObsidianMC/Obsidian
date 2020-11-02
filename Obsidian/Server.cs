@@ -55,7 +55,8 @@ namespace Obsidian
         internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
-        public const ProtocolVersion Protocol = ProtocolVersion.v1_16_3;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_16_3;
+        public ProtocolVersion Protocol => protocol;
 
         public short TPS { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
@@ -63,12 +64,12 @@ namespace Obsidian
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
 
-        public OperatorList Operators { get; }
+        public IOperatorList Operators { get; }
 
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
-        
+
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new Dictionary<string, WorldGenerator>();
@@ -229,7 +230,7 @@ namespace Obsidian
             await Registry.RegisterTagsAsync();
 
             this.Logger.LogInformation($"Loading properties...");
-            await this.Operators.InitializeAsync();
+            await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
@@ -605,6 +606,15 @@ namespace Obsidian
                     Yaw = 0,
                     Pitch = 0
                 });
+            }
+        }
+
+        public IEnumerable<IPlayer> Players => GetPlayers();
+        private IEnumerable<IPlayer> GetPlayers()
+        {
+            foreach (var (_, player) in OnlinePlayers)
+            {
+                yield return player;
             }
         }
 

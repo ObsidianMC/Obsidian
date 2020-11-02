@@ -8,6 +8,7 @@ namespace Obsidian.API
         public string Username { get; }
         public Guid Uuid { get; }
         public IServer Server { get; }
+        public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
         public Hand MainHand { get; set; }
