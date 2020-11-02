@@ -1,3 +1,5 @@
+version: 1.0.{build}
+
 deploy:
   provider: NuGet
   server: https://www.myget.org/F/obsidian/api/v3/index.json
@@ -21,6 +23,16 @@ assembly_info:
   assembly_version: '$(buildVersion)'
   assembly_file_version: '$(buildVersion)'
   assembly_informational_version: '$(nugetVersion)'
+  
+dotnet_csproj:
+  patch: true
+  file: '**\*.csproj'
+  version: '$(buildVersion)'
+  version_prefix: '$(buildVersion)'
+  package_version: '$(buildVersion)'
+  assembly_version: '$(buildVersion)'
+  file_version: '$(buildVersion)'
+  informational_version: '$(nugetVersion)'
 
 configuration: Release
 
