@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Obsidian.Util.DataTypes
+namespace Obsidian.API
 {
     public enum ContainmentType
     {

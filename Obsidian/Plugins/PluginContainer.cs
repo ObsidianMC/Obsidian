@@ -35,6 +35,7 @@ namespace Obsidian.Plugins
         internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new Dictionary<EventContainer, Delegate>();
 
         private Type pluginType;
+        private static MethodInfo setPluginInfo;
 
         public PluginContainer(PluginInfo info, string source)
         {
@@ -55,6 +56,14 @@ namespace Obsidian.Plugins
 
             pluginType = plugin.GetType();
             ClassName = pluginType.Name;
+
+            InjectInfo();
+        }
+
+        private void InjectInfo()
+        {
+            setPluginInfo ??= typeof(PluginBase).GetMethod("set_Info", BindingFlags.NonPublic | BindingFlags.Instance);
+            setPluginInfo.Invoke(Plugin, new[] { (IPluginInfo)Info });
         }
 
         #region Services

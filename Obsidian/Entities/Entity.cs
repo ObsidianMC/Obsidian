@@ -1,7 +1,8 @@
-﻿using Obsidian.Chat;
+﻿using Obsidian.API;
+using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using Obsidian.WorldData;
 using System;
 using System.Diagnostics.CodeAnalysis;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Obsidian.Entities;
+using Obsidian.API;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util
 {
-    public class OperatorList
+    public class OperatorList : IOperatorList
     {
         private List<Operator> ops;
         private readonly List<OperatorRequest> reqs;
@@ -38,14 +38,14 @@ namespace Obsidian.Util
             }
         }
 
-        public void AddOperator(Player p)
+        public void AddOperator(IPlayer p)
         {
             ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
 
-            updateList();
+            UpdateList();
         }
 
-        public bool CreateRequest(Player p)
+        public bool CreateRequest(IPlayer p)
         {
             if (!server.Config.AllowOperatorRequests)
             {
@@ -65,7 +65,7 @@ namespace Obsidian.Util
             return result;
         }
 
-        public bool ProcessRequest(Player p, string code)
+        public bool ProcessRequest(IPlayer p, string code)
         {
             var result = reqs.FirstOrDefault(r => r.Player == p && r.Code == code);
 
@@ -84,24 +84,24 @@ namespace Obsidian.Util
         public void AddOperator(string username)
         {
             this.ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
-            this.updateList();
+            this.UpdateList();
         }
 
-        public void RemoveOperator(Player p)
+        public void RemoveOperator(IPlayer p)
         {
             this.ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
-            this.updateList();
+            this.UpdateList();
         }
 
         public void RemoveOperator(string value)
         {
             this.ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
-            this.updateList();
+            this.UpdateList();
         }
 
-        public bool IsOperator(Player p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
+        public bool IsOperator(IPlayer p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
 
-        private void updateList()
+        private void UpdateList()
         {
             File.WriteAllText(Path, JsonConvert.SerializeObject(ops));
         }
@@ -117,10 +117,10 @@ namespace Obsidian.Util
 
         private class OperatorRequest
         {
-            public Player Player;
+            public IPlayer Player;
             public string Code;
 
-            public OperatorRequest(Player player)
+            public OperatorRequest(IPlayer player)
             {
                 Player = player ?? throw new ArgumentNullException(nameof(player));
 

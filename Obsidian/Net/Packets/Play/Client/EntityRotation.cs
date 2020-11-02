@@ -1,5 +1,5 @@
 ﻿using Obsidian.Serializer.Attributes;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 
 namespace Obsidian.Net.Packets.Play.Client
 {

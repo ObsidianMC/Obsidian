@@ -5,6 +5,7 @@ using Obsidian.API.Plugins.Services;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SamplePlugin
@@ -26,7 +27,7 @@ namespace SamplePlugin
         // One of server messages, called when an event occurs
         public async Task OnLoad(IServer server)
         {
-            Logger.Log($"Sample plugin loaded! Server version: {server.Version}");
+            Logger.Log($"{Info.Name} loaded!");
             server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }

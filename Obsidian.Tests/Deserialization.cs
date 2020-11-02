@@ -9,7 +9,7 @@ using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using System.Threading.Tasks;
 using Xunit;
 

@@ -8,7 +8,6 @@ using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Sounds;
-using Obsidian.Util.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -20,6 +19,7 @@ namespace Obsidian.Entities
         internal readonly Client client;
 
         public IServer Server => client.Server;
+        public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
 

@@ -1,7 +1,7 @@
-﻿using Obsidian.API.Events;
+﻿using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Entities;
-using Obsidian.Util.DataTypes;
 
 namespace Obsidian.Events.EventArgs
 {
@@ -10,19 +10,16 @@ namespace Obsidian.Events.EventArgs
         public bool Cancel { get; set; }
 
         /// <summary>
-        /// The block that was interacted with
+        /// The block that was interacted with.
         /// </summary>
         public Block Block { get; }
 
         public Position Location { get; }
 
-        public BlockInteractEventArgs(Player who, Block block, Position location) : base(who) 
-        { 
+        public BlockInteractEventArgs(Player who, Block block, Position location) : base(who)
+        {
             this.Block = block;
             this.Location = location;
         }
-
-
-      
     }
 }

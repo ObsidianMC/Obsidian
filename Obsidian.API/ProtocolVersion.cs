@@ -1,5 +1,5 @@
 // ReSharper disable InconsistentNaming
-namespace Obsidian.Util
+namespace Obsidian.API
 {
     public enum ProtocolVersion
     {

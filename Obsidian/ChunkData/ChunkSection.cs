@@ -1,6 +1,6 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.Util.Collection;
-using Obsidian.Util.DataTypes;
 
 namespace Obsidian.ChunkData
 {

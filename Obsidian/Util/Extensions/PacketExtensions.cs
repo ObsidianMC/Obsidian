@@ -4,7 +4,7 @@ using Obsidian.Items;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using System;
 using System.Collections;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Util.DataTypes
+﻿namespace Obsidian.API
 {
     public struct Velocity
     {
