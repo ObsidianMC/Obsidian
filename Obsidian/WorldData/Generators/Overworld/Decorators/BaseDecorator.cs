@@ -1,5 +1,5 @@
 ﻿using Obsidian.ChunkData;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {

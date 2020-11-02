@@ -1,4 +1,4 @@
-﻿using Obsidian.Util.DataTypes;
+﻿using Obsidian.API;
 using Obsidian.Util.Registry.Enums;
 
 namespace Obsidian.Util.Registry

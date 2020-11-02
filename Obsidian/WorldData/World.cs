@@ -9,7 +9,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData;
 using Obsidian.Util;
 using Obsidian.Util.Collection;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using System;

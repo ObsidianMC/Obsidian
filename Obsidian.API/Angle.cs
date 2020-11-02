@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Util.DataTypes
+﻿namespace Obsidian.API
 {
     /// <summary>
     /// A class that represents an angle from 0° to 360° degrees.
@@ -11,7 +9,7 @@ namespace Obsidian.Util.DataTypes
         public float Degrees
         {
             get => Value / 255f * 360f;
-            set => Value = (byte)(NormalizeDegree(value) / 360f * 255f );
+            set => Value = (byte)(NormalizeDegree(value) / 360f * 255f);
         }
 
         public Angle(byte value)

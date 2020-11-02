@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Util;
 using Obsidian.Util.Converters;
-using Obsidian.Util.DataTypes;
 using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;

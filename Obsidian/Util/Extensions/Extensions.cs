@@ -2,7 +2,7 @@
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Plugins;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

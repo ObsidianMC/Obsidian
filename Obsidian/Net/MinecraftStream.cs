@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
@@ -11,10 +12,7 @@ using Obsidian.Net.Packets.Play.Client;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util.DataTypes;
 using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
-using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;

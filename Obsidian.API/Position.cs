@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.Util.DataTypes
+namespace Obsidian.API
 {
     public struct Position : IEquatable<Position>
     {

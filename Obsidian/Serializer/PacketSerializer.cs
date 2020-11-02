@@ -5,7 +5,7 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;

@@ -21,7 +21,7 @@ using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
 using Obsidian.Sounds;
 using Obsidian.Util;
-using Obsidian.Util.DataTypes;
+using Obsidian.API;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
