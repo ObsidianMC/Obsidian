@@ -32,7 +32,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
             var cactusNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
             if (cactusNoise > 0 && cactusNoise < 0.01) // 1% chance for cactus
+            { 
                 chunk.SetBlock(pos + (0, 1, 0), cactus);
+                chunk.SetBlock(pos + (0, 2, 0), cactus);
+                chunk.SetBlock(pos + (0, 3, 0), cactus);
+            }
         }
     }
 }

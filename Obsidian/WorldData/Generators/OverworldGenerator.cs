@@ -1,17 +1,21 @@
 ﻿using Obsidian.Blocks;
-using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
 using System;
-using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
-        private OverworldNoise noiseGen = new OverworldNoise();
-        public OverworldGenerator() : base("overworld") {}
+        private OverworldNoise noiseGen;
+        public OverworldGenerator(string seed) : base("overworld") 
+        {
+            var seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+            noiseGen = new OverworldNoise(seedHash);
+        }
 
         public override Chunk GenerateChunk(int cx, int cz)
         {

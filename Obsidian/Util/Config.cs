@@ -11,7 +11,10 @@ namespace Obsidian.Util
         public int Port = 25565;
 
         [JsonProperty("generator")]
-        public string Generator = "superflat";
+        public string Generator = "overworld";
+
+        [JsonProperty("seed")]
+        public string Seed = "Obsidian691337";
 
         [JsonProperty("joinMessage")]
         public string JoinMessage = "§e{0} joined the game";
