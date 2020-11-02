@@ -31,6 +31,7 @@ namespace Obsidian
             Console.ForegroundColor = ConsoleColor.Black;
             Console.WriteLine(asciilogo);
             Console.ResetColor();
+            Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.ToString().Replace('_', '.')}");
 
             Console.CancelKeyPress += OnConsoleCancelKeyPressed;
 
