@@ -370,8 +370,6 @@ namespace Obsidian.WorldData
             Parallel.ForEach(chunkLocs, (loc) =>
             {
                 var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
-/*                for (int i = 0; i < 1024; i++)
-                    c.BiomeContainer.Biomes.Add(127);*/
                 chunks.Add(c);
             });
             return chunks.ToList();
@@ -392,14 +390,6 @@ namespace Obsidian.WorldData
                     this.GenerateRegion(x, z);
                 }
             }
-
-            /*var chunk = this.Generator.GenerateChunk(0, 0);
-
-            for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(127);
-
-            this.GenerateRegion(chunk);
-*/
         }
 
         internal bool TryAddEntity(Entity entity)

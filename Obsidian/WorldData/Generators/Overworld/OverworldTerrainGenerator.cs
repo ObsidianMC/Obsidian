@@ -264,7 +264,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Source0 = new Turbulence
                 {
                     Seed = Settings.Seed + 33,
-                    Frequency = 21221,
+                    Frequency = 212,
                     Power = 1.0 / 120157.0 * Settings.MountainsTwist,
                     // [Coarse-turbulence module]: This turbulence module warps the output
                     // value from the mountain-and-valleys module, adding some coarse detail
@@ -272,9 +272,9 @@ namespace Obsidian.WorldData.Generators.Overworld
                     Source0 = new Turbulence
                     {
                         Seed = Settings.Seed + 32,
-                        Frequency = 1337,
+                        Frequency = 95,
                         Power = 1.0 / 6730.0 * Settings.MountainsTwist,
-                        Roughness = 4,
+                        Roughness = 1,
                         // [Mountains-and-valleys module]: This blender module merges the
                         // scaled-mountain-ridge module and the scaled-river-valley module
                         // together.  It causes the low-lying areas of the terrain to become
@@ -307,7 +307,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                 Source0 = new RidgedMulti
                                 {
                                     Seed = Settings.Seed + 30,
-                                    Frequency = 1723,
+                                    Frequency = 172,
                                     Lacunarity = Settings.MountainLacunarity,
                                     OctaveCount = 4,
                                     Quality = NoiseQuality.Standard,
@@ -330,7 +330,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                 Source0 = new RidgedMulti
                                 {
                                     Seed = Settings.Seed + 31,
-                                    Frequency = 367,
+                                    Frequency = 36,
                                     Lacunarity = Settings.MountainLacunarity,
                                     OctaveCount = 1,
                                     Quality = NoiseQuality.Best,
@@ -511,7 +511,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return mountainousTerrain;
         }
 
-        Module CreateHillyTerrain()
+        Module CreateHillyTerrain() 
         {
             // Generates the hilly terrain.
             //
@@ -530,18 +530,18 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Source0 = new Turbulence
                 {
                     Seed = Settings.Seed + 63,
-                    Frequency = 21617,
-                    Power = 1.0 / 117529 * Settings.HillsTwist,
-                    Roughness = 6,
+                    Frequency = 6.8,
+                    Power = 1.0 / 11750029 * Settings.HillsTwist,
+                    Roughness = 1,
                     // [Coarse-turbulence module]: This turbulence module warps the output
                     // value from the increased-slope-hilly-terrain module, adding some
                     // coarse detail to it.
                     Source0 = new Turbulence
                     {
                         Seed = Settings.Seed + 62,
-                        Frequency = 1531,
+                        Frequency = 3.14,
                         Power = 1.0 / 16921 * Settings.HillsTwist,
-                        Roughness = 4,
+                        Roughness = 1,
                         // [Increased-slope-hilly-terrain module]: To increase the hill slopes at
                         // higher elevations, this exponential-curve module applies an
                         // exponential curve to the output value the scaled-hills-and-valleys
@@ -555,8 +555,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                             // module, decreasing the heights of the hilltops.
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.75,
-                                Bias = -0.25,
+                                Scale = 0.65,
+                                Bias = -0.35,
                                 // [Mountains-and-valleys module]: This blender module merges the
                                 // scaled-hills module and the scaled-river-valley module together.  It
                                 // causes the low-lying areas of the terrain to become smooth, and causes
@@ -591,9 +591,9 @@ namespace Obsidian.WorldData.Generators.Overworld
                                         Source0 = new RidgedMulti
                                         {
                                             Seed = Settings.Seed + 61,
-                                            Frequency = 367.5,
+                                            Frequency = 4.5,
                                             Lacunarity = Settings.HillsLacunarity,
-                                            OctaveCount = 1,
+                                            OctaveCount = 2,
                                             Quality = NoiseQuality.Best,
                                         },
                                     },
@@ -609,7 +609,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                         Source0 = new Billow
                                         {
                                             Seed = Settings.Seed + 60,
-                                            Frequency = 1663,
+                                            Frequency = 16,
                                             Persistence = 0.5,
                                             Lacunarity = Settings.HillsLacunarity,
                                             OctaveCount = 6,
@@ -626,7 +626,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return hillyTerrain;
         }
 
-        Module CreatePlainsTerrain()
+        public Module CreatePlainsTerrain()
         {
             // Generates the plains terrain.
             //
@@ -657,18 +657,18 @@ namespace Obsidian.WorldData.Generators.Overworld
                         // module.
                         Source0 = new ScaleBias
                         {
-                            Scale = 0.5,
+                            Scale = 0.8,
                             Bias = 0.5,
                             // [Plains-basis-0 module]: This billow-noise module, along with the
                             // plains-basis-1 module, produces the plains.
                             Source0 = new Billow
                             {
                                 Seed = Settings.Seed + 70,
-                                Frequency = 1097.5,
+                                Frequency = 120.5,
                                 Persistence = 0.5,
                                 Lacunarity = Settings.PlainsLacunarity,
                                 OctaveCount = 8,
-                                Quality = NoiseQuality.Best,
+                                Quality = NoiseQuality.Fast,
                             },
                         },
                         // [Positive-plains-basis-1 module]: This scale/bias module makes the
@@ -677,18 +677,18 @@ namespace Obsidian.WorldData.Generators.Overworld
                         // module.
                         Source1 = new ScaleBias
                         {
-                            Scale = 0.5,
+                            Scale = 1,
                             Bias = 0.5,
                             // [Plains-basis-1 module]: This billow-noise module, along with the
                             // plains-basis-2 module, produces the plains.
-                            Source0 = new Billow
+                            Source0 = new Perlin
                             {
                                 Seed = Settings.Seed + 71,
-                                Frequency = 1319.5,
+                                Frequency = 120.5,
                                 Persistence = 0.5,
                                 Lacunarity = Settings.PlainsLacunarity,
                                 OctaveCount = 8,
-                                Quality = NoiseQuality.Best,
+                                Quality = NoiseQuality.Fast,
                             },
                         },
                     },
@@ -726,7 +726,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         Source0 = new RidgedMulti
                         {
                             Seed = Settings.Seed + 80,
-                            Frequency = 6163.5,
+                            Frequency = 613.5,
                             Lacunarity = Settings.BadlandsLacunarity,
                             Quality = NoiseQuality.Best,
                             OctaveCount = 1,
@@ -747,7 +747,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         Source0 = new Cell
                         {
                             Seed = Settings.Seed + 81,
-                            Frequency = 16183.25,
+                            Frequency = 1618.25,
                             Displacement = 0,
                             EnableDistance = true,
                         },
@@ -771,9 +771,9 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Source0 = new Turbulence
                 {
                     Seed = Settings.Seed + 92,
-                    Frequency = 36107,
+                    Frequency = 3610,
                     Power = 1.0 / 211543.0 * Settings.BadlandsTwist,
-                    Roughness = 3,
+                    Roughness = 2,
                     // [Coarse-turbulence module]: This turbulence module warps the output
                     // value from the terraced-cliffs module, adding some coarse detail to
                     // it.
@@ -826,7 +826,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                                     Source0 = new Perlin
                                     {
                                         Seed = Settings.Seed + 90,
-                                        Frequency = Settings.ContinentFrequency * 839,
+                                        Frequency = Settings.ContinentFrequency * 83,
                                         Persistence = 0.5,
                                         Lacunarity = Settings.BadlandsLacunarity,
                                         OctaveCount = 6,
@@ -925,7 +925,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                             Source0 = new RidgedMulti
                             {
                                 Seed = Settings.Seed + 100,
-                                Frequency = 18.75,
+                                Frequency = 68.75,
                                 Lacunarity = Settings.ContinentLacunarity,
                                 OctaveCount = 1,
                                 Quality = NoiseQuality.Best,
@@ -940,19 +940,19 @@ namespace Obsidian.WorldData.Generators.Overworld
                         {
                             ControlPoints = new List<Curve.ControlPoint>
                             {
-                                new Curve.ControlPoint(-2.000,  2.0000),
-                                new Curve.ControlPoint(-1.000,  1.5000),
-                                new Curve.ControlPoint(-0.125,  1.4375),
-                                new Curve.ControlPoint( 0.000,  0.5000),
-                                new Curve.ControlPoint( 1.000,  0.2500),
-                                new Curve.ControlPoint( 2.000,  0.0000),
+                                new Curve.ControlPoint(-2.000,  2.000),
+                                new Curve.ControlPoint(-1.000,  1.000),
+                                new Curve.ControlPoint(-0.125,  0.875),
+                                new Curve.ControlPoint( 0.000, -0.300),
+                                new Curve.ControlPoint( 1.000, -1.500),
+                                new Curve.ControlPoint( 2.000, -2.000),
                             },
                             // [Small-river-basis module]: This ridged-multifractal-noise module
                             // creates the small, shallow rivers.
                             Source0 = new RidgedMulti
                             {
                                 Seed = Settings.Seed + 101,
-                                Frequency = 43.25,
+                                Frequency = 83.25,
                                 Lacunarity = Settings.ContinentLacunarity,
                                 OctaveCount = 1,
                                 Quality = NoiseQuality.Best,
@@ -995,7 +995,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     // output value is measured in planetary elevation units.
                     Source0 = new ScaleBias
                     {
-                        Scale = 0.125,
+                        Scale = 0.0125,
                         Bias = 0.125,
                         Source0 = mountainousTerrain,
                     },
@@ -1068,8 +1068,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                     // measured in planetary elevation units 
                     Source0 = new ScaleBias
                     {
-                        Scale = 0.0625,
-                        Bias = 0.0625,
+                        Scale = 0.01625,
+                        Bias = 0.0425,
                         Source0 = hillyTerrain,
                     },
                     // [Scaled-hilltop-modulation module]: This scale/bias module modifies
@@ -1111,7 +1111,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return scaledHillyTerrain;
         }
 
-        Module CreateScaledPlainsTerrain(Module plainsTerrain)
+        public Module CreateScaledPlainsTerrain(Module plainsTerrain)
         {
             // Scales the output value from the plains-terrain group so
             // that it can be added to the elevations defined by the continent-
@@ -1136,8 +1136,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                 // is measured in planetary elevation units 
                 Source0 = new ScaleBias
                 {
-                    Scale = 0.00390625,
-                    Bias = 0.0078125,
+                    Scale = 0.09,
+                    Bias = 0.05,
                     Source0 = plainsTerrain,
                 },
             };
@@ -1171,7 +1171,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 Source0 = new ScaleBias
                 {
                     Scale = 0.0625,
-                    Bias = 0.0625,
+                    Bias = -0.5625,
                     Source0 = badlandsTerrain,
                 },
             };

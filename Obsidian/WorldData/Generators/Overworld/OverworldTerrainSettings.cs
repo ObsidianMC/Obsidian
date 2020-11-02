@@ -174,26 +174,26 @@ namespace Obsidian.WorldData.Generators.Overworld
             ContinentFrequency = 1.85;
 
             ContinentHeightScale = 1;
-            TerrainOffset = 1;
+            TerrainOffset = 1.3;
 
-            RiverDepth = 0.4; // 6 / 512.0;
-            SeaLevel = -0 / 256.0;
-            ShelfLevel = -68 / 256.0;
+            RiverDepth = 0.5;
+            SeaLevel = 0 / 256.0;
+            ShelfLevel = -10 / 256.0;
 
-            MountainsAmount = 0.5;
-            HillsAmount = 0.75;
-            BadlandsAmount = 0.25;
+            MountainsAmount = 0.61;
+            HillsAmount = 0.60;
+            BadlandsAmount = 0.10;
 
             MountainGlaciation = 1.075; 
-            MountainsTwist = 1.0;
+            MountainsTwist = 2.1337;
             HillsTwist = 1;
-            BadlandsTwist = 1;
+            BadlandsTwist = 3;
 
             ContinentLacunarity = 2.208984375;
             MountainLacunarity = 2.03;
             HillsLacunarity = 2.162109375;
             PlainsLacunarity = 2.814453125;
-            BadlandsLacunarity = 2.400890625;
+            BadlandsLacunarity = 2.200890625;
 
             CaveFillPercent = 0.5;
             CaveVertStretch = 0.035;
