@@ -10,6 +10,7 @@ namespace Obsidian.Commands.Parsers
 {
     public class PlayerTypeParser : BaseArgumentParser<IPlayer>
     {
+        public PlayerTypeParser() : base("obsidian:player") { }
         public override bool TryParseArgument(string input, BaseCommandContext context, out IPlayer result)
         {
             var ctx = (ObsidianContext)context;

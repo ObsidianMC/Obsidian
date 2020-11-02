@@ -35,6 +35,18 @@ namespace Obsidian.CommandFramework
             }
         }
 
+        public string FindMinecraftType(Type t)
+        {
+            if (this._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == t))
+            {
+                // Gets parser
+                var parsertype = this._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == t).GetType();
+                var parser = Activator.CreateInstance(parsertype);
+
+                return (string)parsertype.GetMethod("GetParserIdentifier").Invoke(parser, null);
+            }
+            throw new Exception("No such parser registered!");
+        }
         public Command[] GetAllCommands()
         {
             return _commands.ToArray();

@@ -106,6 +106,7 @@ namespace Obsidian.Commands
         public async Task TPSAsync(ObsidianContext ctx)
         {
             ChatColor color;
+            var player = (Player)ctx.Player;
 
             if (ctx.Server.TPS > 15) color = ChatColor.BrightGreen;
             else if (ctx.Server.TPS > 10) color = ChatColor.Yellow;
@@ -115,7 +116,7 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
             };
-            await ctx.Player.SendMessageAsync(message.ToString());
+            await player.SendMessageAsync(message);
 
         }
         #endregion

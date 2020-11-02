@@ -10,6 +10,7 @@ namespace Obsidian.Commands.Parsers
 {
     public class LocationTypeParser : BaseArgumentParser<Position>
     {
+        public LocationTypeParser() : base("minecraft:vec3") { }
         public override bool TryParseArgument(string input, BaseCommandContext context, out Position result)
         {
             result = default;
