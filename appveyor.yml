@@ -11,6 +11,10 @@ before_build:
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '{version}'
-  version_prefix: '${env:APPVEYOR_BUILD_VERSION}'
+  version: '{version}.${env:APPVEYOR_BUILD_VERSION}'
+  version_prefix: '{version}'
+  package_version: '{version}'
+  assembly_version: '{version}'
+  file_version: '{version}'
+  informational_version: '{version}'
 test: off
