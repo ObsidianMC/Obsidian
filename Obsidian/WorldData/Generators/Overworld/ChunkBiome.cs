@@ -65,7 +65,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     if (isHumid)
                         b = Biomes.JungleHills;
                     else
-                        b = Biomes.Forest;
+                        b = Biomes.DesertHills;
                 }
                 else // Cold Hills
                 {
@@ -94,7 +94,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             // Ocean
-            else
+            else if (noiseGen.isOcean(worldX, worldZ))
             {
                 bool isDeep = noiseGen.isDeepOcean(worldX, worldZ);
                 if (isHot) // Hot Ocean
@@ -132,6 +132,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                     }
                 }
             }
+            else { b = Biomes.Plains; }
             return b;
         }
     }

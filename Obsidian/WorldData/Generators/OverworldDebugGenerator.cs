@@ -9,8 +9,11 @@ namespace Obsidian.WorldData.Generators
 {
     public class OverworldDebugGenerator : WorldGenerator
     {
-        private OverworldNoise noiseGen = new OverworldNoise();
-        public OverworldDebugGenerator() : base("overworlddebug") {}
+        private OverworldNoise noiseGen;
+        public OverworldDebugGenerator(string seed) : base("overworlddebug")
+        {
+            noiseGen = new OverworldNoise(seed.GetHashCode());
+        }
 
         public override Chunk GenerateChunk(int cx, int cz)
         {
