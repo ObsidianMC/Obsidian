@@ -10,17 +10,17 @@ before_build:
     - cmd: nuget restore
     
 init:
-- ps: $env:buildVersion = "$env:packageVersion.$env:appveyor_build_number"
+- ps: $env:buildVersion = ".$env:appveyor_build_number"
 
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '$(buildVersion)'
-  version_prefix: '$(buildVersion)'
-  package_version: '$(buildVersion)'
-  assembly_version: '$(buildVersion)'
-  file_version: '$(buildVersion)'
-  informational_version: '$(buildVersion)'
+  version: '{version}$(buildVersion)'
+  version_prefix: '{version}$(buildVersion)'
+  package_version: '{version}$(buildVersion)'
+  assembly_version: '{version}$(buildVersion)'
+  file_version: '{version}$(buildVersion)'
+  informational_version: '{version}$(buildVersion)'
 
 build:
   verbosity: minimal
