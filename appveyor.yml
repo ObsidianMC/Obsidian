@@ -12,3 +12,4 @@ dotnet_csproj:
   patch: true
   file: '**\*.csproj'
   version: '{version}.${env:APPVEYOR_BUILD_VERSION}'
+test: off
