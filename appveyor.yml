@@ -9,6 +9,6 @@ deploy:
 before_build:
     - cmd: nuget restore
 build_script:
-   - ps: >-
-    $BUILD_NUMBER = [int]$Env:APPVEYOR_BUILD_NUMBER
-    $BUILD_SUFFIX = "dev"
+   - ps: |
+        $BUILD_NUMBER = [int]$Env:APPVEYOR_BUILD_NUMBER
+        $BUILD_SUFFIX = "dev"
