@@ -1,11 +1,6 @@
 before_build:
     - cmd: nuget restore
 
-dotnet_csproj:
-  patch: true
-  file: '**\*.csproj'
-  informational_version: '{version}'
-
 build:
   verbosity: minimal
 
