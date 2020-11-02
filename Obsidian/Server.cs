@@ -134,7 +134,7 @@ namespace Obsidian
 
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(Events, LoggerProvider.CreateLogger("Plugin Manager"));
+            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"));
 
             this.Operators = new OperatorList(this);
 

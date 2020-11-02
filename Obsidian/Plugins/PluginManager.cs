@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Plugins;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
@@ -35,21 +36,27 @@ namespace Obsidian.Plugins
         private readonly List<PluginContainer> stagedPlugins = new List<PluginContainer>();
         private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
         private readonly object eventSource;
+        private readonly IServer server;
         private readonly List<EventContainer> events = new List<EventContainer>();
         private readonly ILogger logger;
 
         private const string loadEvent = "OnLoad";
 
-        public PluginManager() : this(null, null)
+        public PluginManager() : this(null, null, null)
         {
         }
 
-        public PluginManager(object eventSource) : this(eventSource, null)
+        public PluginManager(object eventSource) : this(eventSource, null, null)
         {
         }
 
-        public PluginManager(object eventSource, ILogger logger)
+        public PluginManager(object eventSource, IServer server) : this(eventSource, server, null)
         {
+        }
+
+        public PluginManager(object eventSource, IServer server, ILogger logger)
+        {
+            this.server = server;
             this.logger = logger;
             this.eventSource = eventSource;
 
@@ -148,7 +155,7 @@ namespace Obsidian.Plugins
                     plugins.Add(plugin);
                 }
                 RegisterEvents(plugin);
-                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
+                InvokeOnLoad(plugin);
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }
@@ -277,7 +284,7 @@ namespace Obsidian.Plugins
 
             if (!plugin.Loaded)
             {
-                plugin.Plugin.InvokeAsync(loadEvent).TryRunSynchronously();
+                InvokeOnLoad(plugin);
                 plugin.Loaded = true;
             }
 
@@ -349,6 +356,15 @@ namespace Obsidian.Plugins
                         }
                     }
                 }
+            }
+        }
+
+        private void InvokeOnLoad(PluginContainer plugin)
+        {
+            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server).TryRunSynchronously();
+            if (task.Status == TaskStatus.Faulted)
+            {
+                logger?.LogError(task.Exception?.InnerException, $"Invoking {plugin.Info.Name}.{loadEvent} faulted.");
             }
         }
     }
