@@ -64,7 +64,7 @@ namespace Obsidian
         public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
 
-        public OperatorList Operators { get; }
+        public IOperatorList Operators { get; }
 
         internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
 
@@ -230,7 +230,7 @@ namespace Obsidian
             await Registry.RegisterTagsAsync();
 
             this.Logger.LogInformation($"Loading properties...");
-            await this.Operators.InitializeAsync();
+            await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");

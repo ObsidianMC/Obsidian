@@ -14,6 +14,7 @@ namespace Obsidian.API
         public DateTimeOffset StartTime { get; }
         public ProtocolVersion Protocol { get; }
         public IEnumerable<IPlayer> Players { get; }
+        public IOperatorList Operators { get; }
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, sbyte position = 0);

@@ -20,6 +20,7 @@ namespace Obsidian.Entities
         internal readonly Client client;
 
         public IServer Server => client.Server;
+        public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
 
