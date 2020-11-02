@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Obsidian.API;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,7 +75,7 @@ namespace Obsidian.Util
         public ServerVersion(string name = "Obsidian 1.16.3", ProtocolVersion? protocol = null)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Protocol = protocol ?? Server.Protocol;
+            this.Protocol = protocol ?? Server.protocol;
         }
     }
 

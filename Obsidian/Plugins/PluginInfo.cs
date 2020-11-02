@@ -3,7 +3,7 @@ using System;
 
 namespace Obsidian.Plugins
 {
-    public class PluginInfo
+    public class PluginInfo : IPluginInfo
     {
         public string Name { get; }
         public Version Version { get; }
@@ -11,15 +11,15 @@ namespace Obsidian.Plugins
         public string Authors { get; }
         public Uri ProjectUrl { get; }
 
-        public PluginInfo(string name)
+        internal PluginInfo(string name)
         {
             Name = name;
-            Version = new Version(1, 0);
+            Version = new Version();
             Description = string.Empty;
             Authors = "Unknown";
         }
 
-        public PluginInfo(string name, PluginAttribute attribute)
+        internal PluginInfo(string name, PluginAttribute attribute)
         {
             Name = attribute.Name ?? name;
             Description = attribute.Description ?? string.Empty;

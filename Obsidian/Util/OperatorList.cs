@@ -42,7 +42,7 @@ namespace Obsidian.Util
         {
             ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
 
-            updateList();
+            UpdateList();
         }
 
         public bool CreateRequest(Player p)
@@ -84,24 +84,24 @@ namespace Obsidian.Util
         public void AddOperator(string username)
         {
             this.ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
-            this.updateList();
+            this.UpdateList();
         }
 
         public void RemoveOperator(Player p)
         {
             this.ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
-            this.updateList();
+            this.UpdateList();
         }
 
         public void RemoveOperator(string value)
         {
             this.ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
-            this.updateList();
+            this.UpdateList();
         }
 
         public bool IsOperator(Player p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
 
-        private void updateList()
+        private void UpdateList()
         {
             File.WriteAllText(Path, JsonConvert.SerializeObject(ops));
         }
