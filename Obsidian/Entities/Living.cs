@@ -1,13 +1,11 @@
 ﻿using Obsidian.API;
 using Obsidian.Net;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
-    public class Living : Entity
+    public class Living : Entity, ILiving
     {
-        
         public LivingBitMask LivingBitMask { get; set; }
 
         public float Health { get; set; }
@@ -21,8 +19,6 @@ namespace Obsidian.Entities
         public int AbsorbtionAmount { get; set; }
 
         public Position BedBlockPosition { get; set; }
-
-        
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
@@ -42,16 +38,5 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != null);
         }
-
-    }
-
-    [Flags]
-    public enum LivingBitMask : byte
-    {
-        None = 0x00,
-
-        HandActive = 0x01,
-        ActiveHand = 0x02,
-        InRiptideSpinAttack = 0x04
     }
 }
