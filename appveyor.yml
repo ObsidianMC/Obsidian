@@ -18,10 +18,11 @@ test: off
 
 deploy:
 - provider: NuGet
-  server: https://www.myget.org/F/obsidian/api/v2/package
+  server: https://www.myget.org/F/obsidian/api/v3/index.json
   api_key:
     secure: Q9v7Huzgx+vJC3E8oGhw/mART6brch/Dg+OIJLCo2YCdexCBCMb0/8Nay/Ldq07o
-  skip_symbols: true
-  artifact: /.*(\.|\.s)nupkg/
+  skip_symbols: false
+  symbol_server: https://www.myget.org/F/obsidian/api/v3/index.json
+  artifact: '**\*.nupkg'
   on:
     branch: master
