@@ -27,7 +27,7 @@ namespace SamplePlugin
         // One of server messages, called when an event occurs
         public async Task OnLoad(IServer server)
         {
-            Logger.Log($"{Info.Name} loaded!");
+            Logger.Log($"{Info.Name} loaded! Hello {server.DefaultWorld.Name}!");
             server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }

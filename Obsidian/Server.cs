@@ -90,6 +90,7 @@ namespace Obsidian
         public int Port { get; }
 
         public World World { get; }
+        public IWorld DefaultWorld => World;
 
         public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
 

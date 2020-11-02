@@ -1,28 +1,21 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.Blocks;
-using Obsidian.ChunkData;
-using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.PlayerData;
 using Obsidian.Util;
-using Obsidian.Util.Collection;
-using Obsidian.API;
 using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
 {
-    public class World
+    public class World : IWorld
     {
         public Level Data { get; internal set; }
 
@@ -34,8 +27,11 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<long, Region> Regions { get; private set; } = new ConcurrentDictionary<long, Region>();
 
-        internal string Name { get; }
-        internal bool Loaded { get; set; }
+        public string Name { get; }
+        public bool Loaded { get; private set; }
+
+        public long Time => Data.Time;
+        public Gamemode GameType => (Gamemode)Data.GameType;
 
         internal World(string name, Server server)
         {
@@ -333,7 +329,7 @@ namespace Obsidian.WorldData
         public Region GenerateRegion(int regionX, int regionZ)
         {
             long value = Helpers.IntsToLong(regionX, regionZ);
-            
+
             if (this.Regions.ContainsKey(value))
                 return this.Regions[value];
 
