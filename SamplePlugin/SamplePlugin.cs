@@ -22,9 +22,9 @@ namespace SamplePlugin
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs
-        public async Task OnLoad()
+        public async Task OnLoad(IServer server)
         {
-            Logger.Log("Sample plugin loaded!");
+            Logger.Log($"Sample plugin loaded! Server version: {server.Version}");
             await Task.CompletedTask;
         }
 

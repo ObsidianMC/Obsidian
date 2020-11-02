@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -18,6 +20,48 @@ namespace Obsidian.API.Plugins
         {
             var method = GetMethod(methodName, args);
             return method.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Invokes a method in the class. The actual method can accept less parameters than <c>args</c>.
+        /// If exception occurs, it is returned inside <see cref="AggregateException"/>.
+        /// </summary>
+        public object FriendlyInvoke(string methodName, params object[] args)
+        {
+            var (method, parameterCount) = GetFriendlyMethod(methodName, args);
+            if (parameterCount != args.Length)
+                args = args.Take(parameterCount).ToArray();
+            try
+            {
+                return method.Invoke(this, args);
+            }
+            catch (Exception e)
+            {
+                return new AggregateException(e);
+            }
+        }
+
+        /// <summary>
+        /// Invokes a method in the class. The actual method can accept less parameters than <c>args</c>.
+        /// If exception occurs, it is returned inside <see cref="AggregateException"/>.
+        /// This method can be used on non-async methods too.
+        /// </summary>
+        public Task FriendlyInvokeAsync(string methodName, params object[] args)
+        {
+            var (method, parameterCount) = GetFriendlyMethod(methodName, args);
+            if (parameterCount != args.Length)
+                args = args.Take(parameterCount).ToArray();
+            try
+            {
+                var result = method.Invoke(this, args);
+                if (result is Task task)
+                    return task;
+                return Task.FromResult(result);
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
         }
 
         /// <summary>
@@ -95,11 +139,45 @@ namespace Obsidian.API.Plugins
         {
             typeCache ??= GetType();
             var method = typeCache.GetMethod(methodName, parameterTypes);
-            if (method == null)
-            {
-                throw new MissingMethodException(typeCache.Name, methodName);
-            }
             return method;
+        }
+
+        private (MethodInfo method, int parameterCount) GetFriendlyMethod(string methodName, object[] args)
+        {
+            typeCache ??= GetType();
+            args ??= new object[0];
+            IEnumerable<(MethodInfo method, ParameterInfo[] parameters)> methods = typeCache
+                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .Where(method => method.Name == methodName)
+                .Select(method => (method, parameters: method.GetParameters()))
+                .Where(m => m.parameters.Length <= args.Length)
+                .OrderByDescending(m => m.parameters.Length);
+
+            if (methods.Count() == 0)
+                return (null, -1);
+
+            var types = new Type[args.Length];
+            for (int i = 0; i < args.Length; i++)
+            {
+                types[i] = args[i].GetType();
+            }
+
+            foreach (var (method, parameters) in methods)
+            {
+                bool match = true;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (!parameters[i].ParameterType.IsAssignableFrom(types[i]))
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match)
+                    return (method, parameters.Length);
+            }
+
+            return (null, -1);
         }
     }
 }

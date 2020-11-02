@@ -114,10 +114,11 @@ namespace Obsidian.Util.Extensions
             }
         }
 
-        public static void TryRunSynchronously(this Task task)
+        public static Task TryRunSynchronously(this Task task)
         {
             if (task.Status == TaskStatus.Created)
                 task.RunSynchronously();
+            return task;
         }
     }
 }
