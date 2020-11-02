@@ -412,7 +412,7 @@ namespace Obsidian
             {
                 var cmdnode = new CommandNode()
                 {
-                    Index = index++,
+                    Index = ++index,
                     Name = cmd.Name,
                     Type = CommandNodeType.Literal
                 };
@@ -430,7 +430,7 @@ namespace Obsidian
                     {
                         var argnode = new CommandNode()
                         {
-                            Index = index++,
+                            Index = ++index,
                             Name = arg.Name,
                             Type = CommandNodeType.Argument | CommandNodeType.IsExecutabe
                         };
