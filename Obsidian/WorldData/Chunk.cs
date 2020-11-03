@@ -36,17 +36,6 @@ namespace Obsidian.WorldData
         {
             for (int i = 0; i < 16; i++)
                 this.Sections[i] = new ChunkSection();
-
-            for (int blockX = 0; blockX < 16; blockX++)
-            {
-                for (int blockY = 0; blockY < 256; blockY++)
-                {
-                    for (int blockZ = 0; blockZ < 16; blockZ++)
-                    {
-                        this.SetBlock(blockX, blockY, blockZ, Registry.GetBlock(Materials.Air));
-                    }
-                }
-            }
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
