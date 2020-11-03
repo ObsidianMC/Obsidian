@@ -14,6 +14,7 @@ namespace Obsidian
             registered = true;
 
             IChatMessage.createNew = () => new ChatMessage();
+            ITextComponent.createNew = () => new TextComponent();
         }
     }
 }
