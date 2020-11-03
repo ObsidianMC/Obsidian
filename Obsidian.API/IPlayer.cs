@@ -13,6 +13,7 @@ namespace Obsidian.API
 
         public Gamemode Gamemode { get; set; }
         public Hand MainHand { get; set; }
+        public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
@@ -42,7 +43,13 @@ namespace Obsidian.API
 
         public ICollection<string> Permissions { get; }
 
+        public Task TeleportAsync(Position position);
+        public Task TeleportAsync(IPlayer to);
+        public Task SendMessageAsync(IChatMessage message, Guid? sender = null);
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
+        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+        public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
 
         public Task SetGamemodeAsync(Gamemode gamemode);

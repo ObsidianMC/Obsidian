@@ -1,39 +1,50 @@
 using Newtonsoft.Json;
+using Obsidian.API;
 using System.Collections.Generic;
 
 namespace Obsidian.Chat
 {
-    public class ChatMessage
+    public class ChatMessage : IChatMessage
     {
         [JsonProperty("text", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Text;
+        public string Text { get; set; }
 
         [JsonProperty("bold", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Bold;
+        public bool Bold { get; set; }
 
         [JsonProperty("italic", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Italic;
+        public bool Italic { get; set; }
 
         [JsonProperty("underlined", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Underline;
+        public bool Underline { get; set; }
 
         [JsonProperty("strikethrough", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Strikethrough;
+        public bool Strikethrough { get; set; }
 
         [JsonProperty("obfuscated", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Obfuscated;
+        public bool Obfuscated { get; set; }
 
         [JsonProperty("insertion", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public string Insertion;
+        public string Insertion { get; set; }
 
         [JsonProperty("clickEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public TextComponent ClickEvent;
+        public ITextComponent ClickEvent { get; set; }
 
         [JsonProperty("hoverEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public TextComponent HoverEvent;
+        public ITextComponent HoverEvent { get; set; }
 
         [JsonProperty("extra", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public List<ChatMessage> Extra;
+        public List<ChatMessage> Extra { get; set; }
+
+        [JsonIgnore]
+        public IEnumerable<IChatMessage> Extras => GetExtras();
+        public IEnumerable<IChatMessage> GetExtras()
+        {
+            foreach (var extra in Extra)
+            {
+                yield return extra;
+            }
+        }
 
         /// <summary>
         /// Creates a new <see cref="ChatMessage"/> object with plain text.
@@ -52,6 +63,21 @@ namespace Obsidian.Chat
         {
             Extra ??= new List<ChatMessage>(capacity: messages.Count);
             Extra.AddRange(messages);
+
+            return this;
+        }
+
+        public IChatMessage AddExtra(IChatMessage message)
+        {
+            return AddExtra(message as ChatMessage);
+        }
+
+        public IChatMessage AddExtra(IEnumerable<IChatMessage> messages)
+        {
+            foreach (var message in messages)
+            {
+                AddExtra(message);
+            }
 
             return this;
         }

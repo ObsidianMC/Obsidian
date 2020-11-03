@@ -12,16 +12,14 @@ using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Events.EventArgs;
 using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
-using Obsidian.Sounds;
-using Obsidian.Util;
 using Obsidian.API;
+using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
@@ -101,6 +99,8 @@ namespace Obsidian
         public Server(Config config, string version, int serverId)
         {
             this.Config = config;
+
+            ServerImplementationRegistry.RegisterServerImplementations();
 
             this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");

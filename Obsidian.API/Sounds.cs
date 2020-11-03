@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Sounds
+﻿namespace Obsidian.API
 {
     public enum Sounds
     {

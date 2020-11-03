@@ -7,7 +7,6 @@ using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Sounds;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -222,6 +221,7 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
+        public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
             var tid = Globals.Random.Next(0, 999);
@@ -236,6 +236,7 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
 
+        public Task SendMessageAsync(IChatMessage message, Guid? sender = null) => SendMessageAsync(message as ChatMessage, sender);
         public Task SendMessageAsync(ChatMessage message, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, 0, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
@@ -245,6 +246,7 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
+        public Task KickAsync(IChatMessage reason) => KickAsync(reason as ChatMessage);
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public override async Task WriteAsync(MinecraftStream stream)
@@ -273,22 +275,5 @@ namespace Obsidian.Entities
             await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
-    }
-
-    [Flags]
-    public enum PlayerBitMask : byte
-    {
-        Unused = 0x80,
-
-        CapeEnabled = 0x01,
-        JacketEnabled = 0x02,
-
-        LeftSleeveEnabled = 0x04,
-        RightSleeveEnabled = 0x08,
-
-        LeftPantsLegEnabled = 0x10,
-        RIghtPantsLegEnabled = 0x20,
-
-        HatEnabled = 0x40
     }
 }
