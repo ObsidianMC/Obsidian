@@ -72,9 +72,9 @@ namespace Obsidian.Util
         [JsonProperty("protocol")]
         public ProtocolVersion Protocol { get; set; }
 
-        public ServerVersion(string name = "Obsidian 1.16.4", ProtocolVersion? protocol = null)
+        public ServerVersion(string name = null, ProtocolVersion? protocol = null)
         {
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Name = name ?? $"Obsidian {Enum.GetName(typeof(ProtocolVersion), protocol ?? Server.protocol)}";
             this.Protocol = protocol ?? Server.protocol;
         }
     }
