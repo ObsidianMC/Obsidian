@@ -4,7 +4,7 @@ before_build:
 dotnet_csproj:
   patch: true
   file: '**\*.csproj'
-  version: '1.0.0.0'
+  version: '{version}'
   package_version: '{version}'
   assembly_version: '1.0.0.0'
   file_version: '1.0.0.0' 
