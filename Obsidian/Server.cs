@@ -55,7 +55,7 @@ namespace Obsidian
         internal readonly CancellationTokenSource cts;
         private readonly TcpListener tcpListener;
 
-        public const ProtocolVersion protocol = ProtocolVersion.v1_16_3;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_16_4;
         public ProtocolVersion Protocol => protocol;
 
         public short TPS { get; private set; }
