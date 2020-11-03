@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
-    public interface IPlayer
+    public interface IPlayer : ILiving
     {
         public string Username { get; }
         public Guid Uuid { get; }

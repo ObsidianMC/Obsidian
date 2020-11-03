@@ -2,7 +2,6 @@
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.API;
 using Obsidian.WorldData;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -11,11 +10,12 @@ using System.Timers;
 
 namespace Obsidian.Entities
 {
-    public class Entity : IEquatable<Entity>
+    public class Entity : IEquatable<Entity>, IEntity
     {
         public readonly Timer TickTimer = new Timer();
 
         public World World { get; set; }
+        public IWorld WorldLocation => World;
 
         #region Location properties
         internal Position LastLocation { get; set; } = new Position();
@@ -50,8 +50,7 @@ namespace Obsidian.Entities
 
         public Entity() { }
 
-        #region update methods
-
+        #region Update methods
         internal virtual async Task UpdateAsync(Server server, Position position, bool onGround)
         {
             var newPos = position * 32 * 64;
@@ -244,39 +243,5 @@ namespace Obsidian.Entities
         public static bool operator !=(Entity a, Entity b) => !(a == b);
 
         public override int GetHashCode() => this.EntityId.GetHashCode();
-    }
-
-    public enum Pose
-    {
-        Standing,
-
-        FallFlying,
-
-        Sleeping,
-
-        Swimming,
-
-        SpinAttack,
-
-        Sneaking,
-
-        Dying
-    }
-
-    [Flags]
-    public enum EntityBitMask : byte
-    {
-        None = 0x00,
-        OnFire = 0x01,
-        Crouched = 0x02,
-
-        [Obsolete]
-        Riding = 0x04,
-
-        Sprinting = 0x08,
-        Swimming = 0x10,
-        Invisible = 0x20,
-        Glowing = 0x40,
-        Flying = 0x80
     }
 }

@@ -100,14 +100,7 @@ namespace Obsidian
             var sendPacketBlock = new ActionBlock<Packet>(async packet =>
             {
                 if (tcp.Connected)
-                    try
-                    {
-                        await SendPacketAsync(packet);
-                    }
-                    catch (Exception)
-                    {
-                        // Catch random blocking exceptions
-                    }
+                    await SendPacketAsync(packet);
             },
             blockOptions);
 
@@ -523,20 +516,24 @@ namespace Obsidian
 
         internal async Task SendPacketAsync(Packet packet)
         {
-            if (this.compressionEnabled)
+            try
             {
-                await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);
-            }
-            else
-            {
-                if (packet is ChunkDataPacket chunk)
+                if (this.compressionEnabled)
                 {
-                    await chunk.WriteAsync(this.minecraftStream);
-
-                    return;
+                    await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);
                 }
-                await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
+                else
+                {
+                    if (packet is ChunkDataPacket chunk)
+                    {
+                        await chunk.WriteAsync(this.minecraftStream);
+
+                        return;
+                    }
+                    await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
+                }
             }
+            catch (Exception) { } // when packets are interrupted, threads may hang..
         }
 
         internal async Task QueuePacketAsync(Packet packet)

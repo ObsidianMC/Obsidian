@@ -12,5 +12,7 @@ namespace Obsidian.API
         v1_15_2 = 578,
 
         v1_16_3 = 753,
+
+        v1_16_4 = 754
     }
 }
