@@ -21,5 +21,7 @@ namespace Obsidian.Blocks
             this.Type == Materials.BlastFurnace || this.Type == Materials.Chest || this.Type == Materials.Anvil ||
             this.Type == Materials.ChippedAnvil || this.Type == Materials.DamagedAnvil || this.Type == Materials.EnderChest || 
             this.Type == Materials.TrappedChest || this.Type == Materials.Grindstone || this.Type == Materials.Lectern || this.Type == Materials.BrewingStand;
+
+        public static bool IsIdAir(short id) => id == 0 || id == 625 || id == 624; // air, cave-air, void-air
     }
 }
