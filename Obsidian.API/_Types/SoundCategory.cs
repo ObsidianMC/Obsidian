@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Sounds
+﻿namespace Obsidian.API
 {
     /// <summary>
     /// https://gist.github.com/konwboj/7c0c380d3923443e9d55

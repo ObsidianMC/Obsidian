@@ -5,7 +5,6 @@ using Obsidian.API.Plugins.Services;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace SamplePlugin
@@ -45,7 +44,7 @@ namespace SamplePlugin
             var player = playerJoinEvent.Player;
             var server = playerJoinEvent.Server;
 
-            await player.SendMessageAsync("Welcome to the server!");
+            await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
 
         public class MyCommands : BaseCommandClass

@@ -1,6 +1,6 @@
 ﻿using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Sounds;
+using Obsidian.API;
 using Obsidian.API;
 
 namespace Obsidian.Net.Packets.Play.Client

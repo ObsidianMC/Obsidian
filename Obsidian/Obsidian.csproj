@@ -660,4 +660,8 @@
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Sounds\" />
+  </ItemGroup>
+
 </Project>

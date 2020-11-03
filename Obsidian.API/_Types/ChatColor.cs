@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace Obsidian.Chat
+namespace Obsidian.API
 {
     public struct ChatColor
     {
