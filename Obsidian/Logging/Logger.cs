@@ -55,7 +55,7 @@ namespace Obsidian.Logging
                 // This is here because of weird formatting 
                 if (this.Prefix.Split("/").Length > 0)
                 {
-                    if(logLevel == LogLevel.Debug || logLevel == LogLevel.Error)
+                    if (logLevel == LogLevel.Debug || logLevel == LogLevel.Error)
                         Console.Write($"{""}[{Prefix}] ");
                     else
                         Console.Write($"{"",1}[{Prefix}] ");
@@ -63,7 +63,7 @@ namespace Obsidian.Logging
                 else
                 {
                     if (Prefix.Length >= 12)
-                        Console.Write($"{"", 1}[{Prefix}] ");
+                        Console.Write($"{"",1}[{Prefix}] ");
                     else
                         Console.Write($"[{Prefix}] ");
                 }
@@ -73,28 +73,35 @@ namespace Obsidian.Logging
                 if (message[0] != '§' && msgLst.Length > 1) msgLst[0] = $"r{msgLst[0]}";
                 foreach (var msg in msgLst)
                 {
-                    Console.ForegroundColor = msg[0].ToString().ToLower()[0] switch
+                    if (!string.IsNullOrEmpty(msg))
                     {
-                        '0' => ConsoleColor.Black,
-                        '1' => ConsoleColor.DarkBlue,
-                        '2' => ConsoleColor.DarkGreen,
-                        '3' => ConsoleColor.DarkCyan,
-                        '4' => ConsoleColor.DarkRed,
-                        '5' => ConsoleColor.DarkMagenta,
-                        '6' => ConsoleColor.DarkYellow,
-                        '7' => ConsoleColor.Gray,
-                        '8' => ConsoleColor.DarkGray,
-                        '9' => ConsoleColor.Blue,
-                        'a' => ConsoleColor.Green,
-                        'b' => ConsoleColor.Cyan,
-                        'c' => ConsoleColor.Red,
-                        'd' => ConsoleColor.Magenta,
-                        'e' => ConsoleColor.Yellow,
-                        'f' => ConsoleColor.White,
-                        'r' => ConsoleColor.White,
-                        _ => ConsoleColor.White
-                    };
-                    Console.Write(msg.Substring(1));
+                        Console.ForegroundColor = msg[0].ToString().ToLower()[0] switch
+                        {
+                            '0' => ConsoleColor.Black,
+                            '1' => ConsoleColor.DarkBlue,
+                            '2' => ConsoleColor.DarkGreen,
+                            '3' => ConsoleColor.DarkCyan,
+                            '4' => ConsoleColor.DarkRed,
+                            '5' => ConsoleColor.DarkMagenta,
+                            '6' => ConsoleColor.DarkYellow,
+                            '7' => ConsoleColor.Gray,
+                            '8' => ConsoleColor.DarkGray,
+                            '9' => ConsoleColor.Blue,
+                            'a' => ConsoleColor.Green,
+                            'b' => ConsoleColor.Cyan,
+                            'c' => ConsoleColor.Red,
+                            'd' => ConsoleColor.Magenta,
+                            'e' => ConsoleColor.Yellow,
+                            'f' => ConsoleColor.White,
+                            'r' => ConsoleColor.White,
+                            _ => ConsoleColor.White
+                        };
+                        Console.Write(msg.Substring(1));
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
                 }
                 Console.WriteLine("");
 
