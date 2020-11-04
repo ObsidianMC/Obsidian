@@ -28,7 +28,6 @@ namespace Obsidian.Net.Packets.Play
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.KeepAliveId = await stream.ReadLongAsync();
-
         }
 
         public Task HandleAsync(Obsidian.Server server, Player player)
