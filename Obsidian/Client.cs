@@ -556,8 +556,11 @@ namespace Obsidian
                 {
                     if (packet is ChunkDataPacket chunk)
                     {
-                        await chunk.WriteAsync(this.minecraftStream);
+                        await using var stream = new MinecraftStream();
 
+                        await chunk.WriteAsync(stream);
+
+                        await PacketSerializer.SerializeAsync(packet, stream, this.minecraftStream);
                         return;
                     }
                     await PacketSerializer.SerializeAsync(packet, this.minecraftStream);

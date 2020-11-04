@@ -18,6 +18,23 @@ namespace Obsidian.Serializer
 
         private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
 
+        public static async Task SerializeAsync(IPacket packet, MinecraftStream inputStream, MinecraftStream outputStream)
+        {
+            await outputStream.Lock.WaitAsync();
+
+            var packetLength = packet.Id.GetVarIntLength() + (int)inputStream.Length;
+
+            await outputStream.WriteVarIntAsync(packetLength);
+            await outputStream.WriteVarIntAsync(packet.Id);
+
+            inputStream.Position = 0;
+            // await dataStream.DumpAsync(packet: packet);
+
+            await inputStream.CopyToAsync(outputStream);
+
+            outputStream.Lock.Release();
+        }
+
         public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
         {
             if (packet == null)
@@ -29,8 +46,6 @@ namespace Obsidian.Serializer
             await stream.Lock.WaitAsync();
 
             var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
-
-            Console.WriteLine(valueDict.Count());
 
             await using var dataStream = new MinecraftStream();
 

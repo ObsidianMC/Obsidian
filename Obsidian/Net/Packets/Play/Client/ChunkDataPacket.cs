@@ -11,6 +11,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public class ChunkDataPacket : IPacket
     {
         public Chunk Chunk { get; set; }
+
         public int Id => 0x20;
 
         public int changedSectionFilter = 65535;//0b1111111111111111;
