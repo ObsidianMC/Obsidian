@@ -100,6 +100,7 @@ namespace Obsidian
         {
             this.Config = config;
 
+            SebastiansCube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.LoggerProvider = new LoggerProvider(LogLevel.Debug);

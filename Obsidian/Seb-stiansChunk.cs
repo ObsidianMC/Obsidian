@@ -2,19 +2,19 @@
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian
 {
     public class SebastiansChunk
     {
-        private SebastiansCube[] cubes = new SebastiansCube[cubesHorizontal * cubesHorizontal * cubesVertical];
+        private SebastiansCube[] cubes = new SebastiansCube[cubesTotal];
 
+        private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
         private const int cubesHorizontal = 16 / SebastiansCube.width;
         private const int cubesVertical = 256 / SebastiansCube.height;
-
-        private const int xDiv = cubesHorizontal * 16;
-        private const int zDiv = cubesHorizontal * 16;
-        private const int yDiv = cubesVertical;
+        private const int xMult = cubesTotal / cubesHorizontal;
+        private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
 
         public SebastiansChunk()
         {
@@ -35,13 +35,13 @@ namespace Obsidian
 
         public Block GetBlock(int x, int y, int z)
         {
-            short value = GetValue(x, y, z);
+            short value = GetBlockId(x, y, z);
             return Registry.GetBlock(value);
         }
 
-        private short GetValue(int x, int y, int z)
+        public short GetBlockId(int x, int y, int z)
         {
-            return cubes[x / xDiv + z / zDiv + y / yDiv][x, y, z];
+            return cubes[ComputeIndex(x, y, z)][x, y, z];
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
@@ -49,7 +49,12 @@ namespace Obsidian
         public void SetBlock(int x, int y, int z, Block block)
         {
             var value = (short)block.Id;
-            cubes[x / xDiv + z / zDiv + y / yDiv][x, y, z] = value;
+            cubes[ComputeIndex(x, y, z)][x, y, z] = value;
+        }
+
+        public void SetBlockId(int x, int y, int z, short id)
+        {
+            cubes[ComputeIndex(x, y, z)][x, y, z] = id;
         }
 
         public void CalculateHeightmap(Heightmap target)
@@ -60,7 +65,7 @@ namespace Obsidian
                 {
                     for (int y = cubesVertical * SebastiansCube.height; y >= 0; y--)
                     {
-                        if (Block.IsIdAir(GetValue(x, y, z)))
+                        if (Block.IsIdAir(GetBlockId(x, y, z)))
                             continue;
 
                         target.Set(x, z, value: y);
@@ -68,6 +73,12 @@ namespace Obsidian
                     }
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int ComputeIndex(int x, int y, int z)
+        {
+            return x / SebastiansCube.width * xMult + z / SebastiansCube.width * zMult + y / cubesVertical;
         }
     }
 }
