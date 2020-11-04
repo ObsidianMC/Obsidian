@@ -584,7 +584,7 @@ namespace Obsidian
             this.Logger.LogDebug("Sent player list decoration");
         }
 
-        private Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
+        public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
 
         #endregion Packet Sending Methods
 
