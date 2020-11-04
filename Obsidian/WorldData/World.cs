@@ -121,8 +121,9 @@ namespace Obsidian.WorldData
             }
         }
 
-        public async Task ResendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
+        public async Task ResendBaseChunksAsync(int distance, int oldx, int oldz, int x, int z, Client c)
         {
+            var dist = distance + 3; // for genarator gaps
             // unload old chunks
             for (int cx = oldx - dist; cx < oldx + dist; cx++)
             {
@@ -190,6 +191,11 @@ namespace Obsidian.WorldData
         public Chunk GetChunk(int chunkX, int chunkZ)
         {
             // TODO add behavior that ensures new chunks are loaded when they do not exist
+
+            if(this.Generator.GetType() == typeof(Obsidian.WorldData.Generators.SuperflatGenerator))
+            {
+                return this.Generator.GenerateChunk(chunkX, chunkZ);
+            }
 
             var region = this.GetRegion(chunkX, chunkZ);
 
@@ -393,9 +399,9 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -1; x <= 0; x++)
+            for (int x = -1; x <= 1; x++)
             {
-                for (int z = -1; z <= 0; z++)
+                for (int z = -1; z <= 1; z++)
                 {
                     this.GenerateRegion(x, z);
                 }
