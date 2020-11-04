@@ -98,11 +98,8 @@ namespace Obsidian.Logging
                         };
                         Console.Write(msg.Substring(1));
                     }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
                 }
+                Console.ResetColor();
                 Console.WriteLine("");
 
                 if (exception != null)
