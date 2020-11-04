@@ -27,7 +27,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task ReadAsync(MinecraftStream stream)
         {
-            this.Position = await stream.ReadPositionAsync();
+            this.Position = await stream.ReadAbsolutePositionAsync();
             this.Pitch = await stream.ReadFloatAsync();
             this.Yaw = await stream.ReadFloatAsync();
             this.OnGround = await stream.ReadBooleanAsync();

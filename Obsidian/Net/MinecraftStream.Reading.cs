@@ -432,6 +432,16 @@ namespace Obsidian.Net
             };
         }
 
+        public async Task<Position> ReadAbsolutePositionAsync()
+        {
+            return new Position
+            {
+                X = await this.ReadDoubleAsync(),
+                Y = await this.ReadDoubleAsync(),
+                Z = await this.ReadDoubleAsync()
+            };
+        }
+
         [ReadMethod(DataType.SoundPosition)]
         public SoundPosition ReadSoundPosition() => new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
 

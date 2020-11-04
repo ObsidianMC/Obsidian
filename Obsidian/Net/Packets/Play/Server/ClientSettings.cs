@@ -35,10 +35,10 @@ namespace Obsidian.Net.Packets.Play.Server
         {
             this.Locale = await stream.ReadStringAsync();
             this.ViewDistance = await stream.ReadByteAsync();
-            this.ChatMode = await stream.ReadIntAsync();
+            this.ChatMode = await stream.ReadVarIntAsync();
             this.ChatColors = await stream.ReadBooleanAsync();
             this.SkinParts = await stream.ReadUnsignedByteAsync();
-            this.MainHand = await stream.ReadIntAsync();
+            this.MainHand = await stream.ReadVarIntAsync();
         }
 
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;

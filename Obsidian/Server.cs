@@ -229,6 +229,7 @@ namespace Obsidian
             await Registry.RegisterBiomesAsync();
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
+
             PacketHandler.RegisterHandlers();
 
             this.Logger.LogInformation($"Loading properties...");
