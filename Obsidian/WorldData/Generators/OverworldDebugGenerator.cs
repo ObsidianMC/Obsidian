@@ -4,6 +4,8 @@ using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using System;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Obsidian.WorldData.Generators
 {
@@ -12,7 +14,8 @@ namespace Obsidian.WorldData.Generators
         private OverworldNoise noiseGen;
         public OverworldDebugGenerator(string seed) : base("overworlddebug")
         {
-            noiseGen = new OverworldNoise(seed.GetHashCode());
+            var seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+            noiseGen = new OverworldNoise(seedHash);
         }
 
         public override Chunk GenerateChunk(int cx, int cz)
@@ -30,6 +33,10 @@ namespace Obsidian.WorldData.Generators
             {
                 for (int bz=0; bz<16; bz++)
                 {
+                    for (int by=0; by<256; by++)
+                        chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.Air));
+
+
                     terrainHeights[(bx*16)+bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
                     rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
                     bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
@@ -81,9 +88,6 @@ namespace Obsidian.WorldData.Generators
                     chunk.SetBlock(bx, (int)bedrockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.Bedrock));
                 }
             }*/
-
-            for (int i = 0; i < 1024; i++)
-                chunk.BiomeContainer.Biomes.Add(0);
 
             //ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
 

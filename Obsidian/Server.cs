@@ -467,7 +467,7 @@ namespace Obsidian
 
                         await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
+                        this.World.SetBlock(digging.Location, null);
 
                         var item = new ItemEntity
                         {
