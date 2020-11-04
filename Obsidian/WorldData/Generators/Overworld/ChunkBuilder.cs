@@ -20,12 +20,21 @@ namespace Obsidian.WorldData.Generators.Overworld
             var clay = Registry.GetBlock(Materials.Clay);
             var grassBlock = Registry.GetBlock(Materials.GrassBlock);
             var snowBlock = Registry.GetBlock(Materials.SnowBlock);
+
+            int highestY = 0;
+
+            for (int x = 0; x < 16; x++)
+                for (int z = 0; z < 16; z++)
+                    highestY = Math.Max(highestY, (int) terrainHeightmap[x,z]);
+
+            var skipAbove = ((highestY >> 4) + 1) << 4;
+
             for (int bx = 0; bx < 16; bx++)
             {
                 for (int bz = 0; bz < 16; bz++)
                 {
                     double terrainY = terrainHeightmap[bx, bz];
-                    for (int by = 255; by >= 0; by--)
+                    for (int by = skipAbove; by >= 0; by--)
                     {
                         // Air
                         if (by > terrainY && by > 60)
