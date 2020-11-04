@@ -554,15 +554,6 @@ namespace Obsidian
                 }
                 else
                 {
-                    if (packet is ChunkDataPacket chunk)
-                    {
-                        await using var stream = new MinecraftStream();
-
-                        await chunk.WriteAsync(stream);
-
-                        await PacketSerializer.SerializeAsync(packet, stream, this.minecraftStream);
-                        return;
-                    }
                     await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
                 }
             }

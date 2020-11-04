@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Extensions;
@@ -18,23 +19,6 @@ namespace Obsidian.Serializer
 
         private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
 
-        public static async Task SerializeAsync(IPacket packet, MinecraftStream inputStream, MinecraftStream outputStream)
-        {
-            await outputStream.Lock.WaitAsync();
-
-            var packetLength = packet.Id.GetVarIntLength() + (int)inputStream.Length;
-
-            await outputStream.WriteVarIntAsync(packetLength);
-            await outputStream.WriteVarIntAsync(packet.Id);
-
-            inputStream.Position = 0;
-            // await dataStream.DumpAsync(packet: packet);
-
-            await inputStream.CopyToAsync(outputStream);
-
-            outputStream.Lock.Release();
-        }
-
         public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
         {
             if (packet == null)
@@ -45,20 +29,27 @@ namespace Obsidian.Serializer
 
             await stream.Lock.WaitAsync();
 
-            var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
-
             await using var dataStream = new MinecraftStream();
 
-            foreach (var (key, value) in valueDict)
+            if (packet is ChunkDataPacket chunkData)
             {
-                //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
+                await chunkData.WriteAsync(dataStream);
+            }
+            else
+            {
+                var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
 
-                var dataType = key.Type;
+                foreach (var (key, value) in valueDict)
+                {
+                    //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
 
-                if (dataType == DataType.Auto)
-                    dataType = value.GetType().ToDataType();
+                    var dataType = key.Type;
 
-                await dataStream.WriteAsync(dataType, key, value);
+                    if (dataType == DataType.Auto)
+                        dataType = value.GetType().ToDataType();
+
+                    await dataStream.WriteAsync(dataType, key, value);
+                }
             }
 
             var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
@@ -67,7 +58,7 @@ namespace Obsidian.Serializer
             await stream.WriteVarIntAsync(packet.Id);
 
             dataStream.Position = 0;
-           // await dataStream.DumpAsync(packet: packet);
+            // await dataStream.DumpAsync(packet: packet);
 
             await dataStream.CopyToAsync(stream);
 
