@@ -50,7 +50,7 @@ namespace Obsidian.WorldData
 
         public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
 
-        public async Task UpdateChunksForClientAsync(Client c)
+        public async Task UpdateChunksForClientAsync(Client c, bool forcereload = false)
         {
             // run this on move packet.
 
@@ -61,7 +61,7 @@ namespace Obsidian.WorldData
             (int newChunkX, int newChunkZ) = c.Player.Location.ToChunkCoord();
 
 
-            if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist)
+            if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist || forcereload)
             {
                 // This is a teleport!!!1 Send full new chunk data.
                 await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
@@ -76,7 +76,9 @@ namespace Obsidian.WorldData
                     await c.UnloadChunkAsync((newChunkX - dist), i);
 
                     await c.SendChunkAsync(this.GetChunk((newChunkX + dist), i));
+                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
                 }
+                c.Logger.LogDebug("Crossed chunk border x +1");
             }
 
             // x chunk is old - 1
@@ -87,7 +89,9 @@ namespace Obsidian.WorldData
                     await c.UnloadChunkAsync((newChunkX + dist), i);
 
                     await c.SendChunkAsync(this.GetChunk((newChunkX - dist), i));
+                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
                 }
+                c.Logger.LogDebug("Crossed chunk border x -1");
             }
 
             // z chunk is old + 1
@@ -98,7 +102,9 @@ namespace Obsidian.WorldData
                     await c.UnloadChunkAsync(i, (newChunkZ - dist));
 
                     await c.SendChunkAsync(this.GetChunk(i, (newChunkZ + dist)));
+                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
                 }
+                c.Logger.LogDebug("Crossed chunk border z +1");
             }
 
             // z chunk is old -1
@@ -109,20 +115,22 @@ namespace Obsidian.WorldData
                     await c.UnloadChunkAsync(i, (newChunkZ + dist));
 
                     await c.SendChunkAsync(this.GetChunk(i, (newChunkZ - dist)));
+                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
                 }
+                c.Logger.LogDebug("Crossed chunk border z -1");
             }
         }
 
         public async Task ResendBaseChunksAsync(int dist, int oldx, int oldz, int x, int z, Client c)
         {
             // unload old chunks
-            //for (int cx = oldx - dist; cx < oldx + dist; cx++)
-            //{
-            //    for (int cz = oldz - dist; cz < oldz + dist; cz++)
-            //    {
-            //        await c.UnloadChunkAsync(cx, cz);
-            //    }
-            //}
+            for (int cx = oldx - dist; cx < oldx + dist; cx++)
+            {
+                for (int cz = oldz - dist; cz < oldz + dist; cz++)
+                {
+                    await c.UnloadChunkAsync(cx, cz);
+                }
+            }
 
             // load new chunks
             var chunksToGen = new List<Position>();
@@ -142,6 +150,8 @@ namespace Obsidian.WorldData
                     }
                 }
             }
+
+            await c.SendPacketAsync(new UpdateViewPosition(x, z));
 
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
         }

@@ -52,7 +52,7 @@ namespace Obsidian
         private bool disposed;
         private bool compressionEnabled;
         private bool encryptionEnabled;
-        
+
 
         private const int compressionThreshold = 256;
 
@@ -431,7 +431,7 @@ namespace Obsidian
                 Index = index
             };
 
-            foreach(var cmd in this.Server.Commands.GetAllCommands())
+            foreach (var cmd in this.Server.Commands.GetAllCommands())
             {
                 var cmdnode = new CommandNode()
                 {
@@ -441,15 +441,15 @@ namespace Obsidian
                 };
                 node.AddChild(cmdnode);
 
-                foreach(var overload in cmd.Overloads.Take(1))
+                foreach (var overload in cmd.Overloads.Take(1))
                 {
                     var args = overload.GetParameters().Skip(1); // skipping obsidian context
-                    if(args.Count() < 1)
+                    if (args.Count() < 1)
                         cmdnode.Type |= CommandNodeType.IsExecutabe;
 
                     var prev = cmdnode;
 
-                    foreach(var arg in args)
+                    foreach (var arg in args)
                     {
                         var argnode = new CommandNode()
                         {
@@ -577,19 +577,14 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            for (int x = 0; x <= 0; x++)
-            {
-                for (int z = 0; z <= 0; z++)
-                {
-                    foreach (var chunk in this.Server.World.GetRegion(x, z).LoadedChunks)
-                    {
-                        await this.SendPacketAsync(new ChunkDataPacket(chunk));
-                    }
-                }
-            }
+            await this.Player.World.UpdateChunksForClientAsync(this, true);
         }
 
-        internal Task SendChunkAsync(Chunk chunk) => this.QueuePacketAsync(new ChunkDataPacket(chunk));
+        internal async Task SendChunkAsync(Chunk chunk)
+        {
+            if(chunk != null)
+                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+        }
 
         private async Task SendServerBrand()
         {
