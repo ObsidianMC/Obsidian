@@ -6,8 +6,8 @@ namespace Obsidian.ChunkData
 {
     public class ChunkSection : BlockStateContainer
     {
-        public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
-        public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);
+        //public NibbleArray BlockLightArray = new NibbleArray(16 * 16 * 16);
+        //public NibbleArray SkyLightArray = new NibbleArray(16 * 16 * 16);
 
         public bool Overworld = true;
 
@@ -47,15 +47,15 @@ namespace Obsidian.ChunkData
             return -1;
         }
 
-        public ChunkSection FillWithLight()
-        {
-            for (int i = 0; i < this.BlockLightArray.Data.Length; i++)
-                this.BlockLightArray.Data[i] = 255;
+        //public ChunkSection FillWithLight()
+        //{
+        //    for (int i = 0; i < this.BlockLightArray.Data.Length; i++)
+        //        this.BlockLightArray.Data[i] = 255;
 
-            for (int i = 0; i < this.SkyLightArray.Data.Length; i++)
-                this.SkyLightArray.Data[i] = 255;
+        //    for (int i = 0; i < this.SkyLightArray.Data.Length; i++)
+        //        this.SkyLightArray.Data[i] = 255;
 
-            return this;
-        }
+        //    return this;
+        //}
     }
 }
