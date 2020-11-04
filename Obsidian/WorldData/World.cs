@@ -165,7 +165,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegion(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+            long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -190,11 +190,11 @@ namespace Obsidian.WorldData
             return chunk;
         }
 
-        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X << 4, (int)worldLocation.Z << 4);
+        public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X.ToChunkCoord(), (int)worldLocation.Z.ToChunkCoord());
 
         public Block GetBlock(int x, int y, int z)
         {
-            var chunk = this.GetChunk(x >> 4, z >> 4);
+            var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
 
             return chunk.GetBlock(x, y, z);
         }
@@ -205,7 +205,7 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> 5, chunkZ >> 5);
+            long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
         }
@@ -310,7 +310,7 @@ namespace Obsidian.WorldData
 
         public Region GenerateRegion(Chunk chunk)
         {
-            int regionX = chunk.X >> 5, regionZ = chunk.Z >> 5;
+            int regionX = chunk.X >> Region.CUBIC_REGION_SIZE_SHIFT, regionZ = chunk.Z >> Region.CUBIC_REGION_SIZE_SHIFT;
 
             long value = Helpers.IntsToLong(regionX, regionZ);
 
@@ -346,8 +346,8 @@ namespace Obsidian.WorldData
             {
                 for (int z = 0; z < Region.CUBIC_REGION_SIZE; z++)
                 {
-                    int cx = (regionX << 5) + x;
-                    int cz = (regionZ << 5) + z;
+                    int cx = (regionX << Region.CUBIC_REGION_SIZE_SHIFT) + x;
+                    int cz = (regionZ << Region.CUBIC_REGION_SIZE_SHIFT) + z;
                     chunksToGen.Add(new Position(cx, 0, cz));
                 }
             }
