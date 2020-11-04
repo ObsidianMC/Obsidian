@@ -1,4 +1,5 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.Entities;
+using Obsidian.Nbt;
 using Obsidian.Util.Extensions;
 using Obsidian.WorldData;
 using System;
@@ -7,15 +8,16 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ChunkDataPacket : Packet
+    public class ChunkDataPacket : IPacket
     {
         public Chunk Chunk { get; set; }
+        public int Id => 0x20;
 
         public int changedSectionFilter = 65535;//0b1111111111111111;
 
-        public ChunkDataPacket(Chunk chunk) : base(0x20) => this.Chunk = chunk;
+        public ChunkDataPacket(Chunk chunk) : base() => this.Chunk = chunk;
 
-        protected override async Task ComposeAsync(MinecraftStream stream)
+        public async Task WriteAsync(MinecraftStream stream)
         {
             var sections = this.Chunk.Sections;
             var blockEntities = this.Chunk.BlockEntities;
@@ -75,5 +77,9 @@ namespace Obsidian.Net.Packets.Play.Client
             //foreach (var entity in blockEntities)
              //   await stream.WriteNbtAsync(entity);
         }
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

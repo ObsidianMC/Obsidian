@@ -13,9 +13,9 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// The packet being used to invoke this event
         /// </summary>
-        public Packet Packet { get; private set; }
+        public IPacket Packet { get; private set; }
 
-        internal BasePacketEventArgs(Client client, Packet packet)
+        internal BasePacketEventArgs(Client client, IPacket packet)
         {
             this.Client = client;
             this.Packet = packet;

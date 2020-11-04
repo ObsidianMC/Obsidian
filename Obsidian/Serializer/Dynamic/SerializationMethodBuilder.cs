@@ -23,12 +23,12 @@ namespace Obsidian.Serializer.Dynamic
             readMethods = GetStreamMethods<ReadMethod>();
         }
 
-        internal static MethodInfo BuildSerializationMethod<T>() where T : Packet
+        internal static MethodInfo BuildSerializationMethod<T>() where T : IPacket
         {
             throw new NotImplementedException();
         }
 
-        internal static PacketSerializer.DeserializeDelegate BuildDeserializationMethod<T>() where T : Packet
+        internal static PacketSerializer.DeserializeDelegate BuildDeserializationMethod<T>() where T : IPacket
         {
             var type = typeof(T);
             var fields = GetFields(type).OrderBy((member) => member.Item2.Order);

@@ -1,29 +1,24 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Obsidian.API;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play;
 using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util;
-using Obsidian.API;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Text.Unicode;
 using System.Threading.Tasks;
 
 namespace Obsidian.Serializer
 {
     public static class PacketSerializer
     {
-        internal delegate Packet DeserializeDelegate(MinecraftStream minecraftStream);
+        internal delegate IPacket DeserializeDelegate(MinecraftStream minecraftStream);
 
         private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
 
-        public static async Task SerializeAsync(Packet packet, MinecraftStream stream)
+        public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
         {
             if (packet == null)
                 throw new ArgumentNullException(nameof(packet));
@@ -34,6 +29,8 @@ namespace Obsidian.Serializer
             await stream.Lock.WaitAsync();
 
             var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
+
+            Console.WriteLine(valueDict.Count());
 
             await using var dataStream = new MinecraftStream();
 
@@ -49,10 +46,10 @@ namespace Obsidian.Serializer
                 await dataStream.WriteAsync(dataType, key, value);
             }
 
-            var packetLength = packet.id.GetVarIntLength() + (int)dataStream.Length;
+            var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
 
             await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(packet.id);
+            await stream.WriteVarIntAsync(packet.Id);
 
             dataStream.Position = 0;
            // await dataStream.DumpAsync(packet: packet);
@@ -62,7 +59,7 @@ namespace Obsidian.Serializer
             stream.Lock.Release();
         }
 
-        public static async Task<T> DeserializeAsync<T>(byte[] data) where T : Packet
+        public static async Task<T> DeserializeAsync<T>(byte[] data) where T : IPacket
         {
             await using var stream = new MinecraftStream(data);
             var packet = (T)Activator.CreateInstance(typeof(T));//TODO make sure all packets have default constructors
@@ -116,7 +113,7 @@ namespace Obsidian.Serializer
             return packet;
         }
 
-        public static async Task<T> FastDeserializeAsync<T>(byte[] data) where T : Packet
+        public static async Task<T> FastDeserializeAsync<T>(byte[] data) where T : IPacket
         {
             await using var stream = new MinecraftStream(data);
 
@@ -126,7 +123,7 @@ namespace Obsidian.Serializer
             return (T)deserializeMethod(stream);
         }
 
-        public static T FastDeserialize<T>(byte[] data) where T : Packet
+        public static T FastDeserialize<T>(byte[] data) where T : IPacket
         {
             using var stream = new MinecraftStream(data);
 
@@ -136,7 +133,7 @@ namespace Obsidian.Serializer
             return (T)deserializeMethod(stream);
         }
 
-        public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : Packet
+        public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : IPacket
         {
             if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
                 deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());

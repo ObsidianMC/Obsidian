@@ -1,9 +1,11 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public class EncryptionRequest : Packet
+    public class EncryptionRequest : IPacket
     {
         [Field(0)]
         public string ServerId { get; private set; } = string.Empty;
@@ -20,13 +22,21 @@ namespace Obsidian.Net.Packets.Login
         [Field(4)]
         public byte[] VerifyToken { get; private set; }
 
-        public EncryptionRequest(byte[] publicKey, byte[] verifyToken) : base(0x01)
+        public int Id => 0x01;
+
+        public EncryptionRequest(byte[] publicKey, byte[] verifyToken) 
         {
             this.PublicKey = publicKey;
             this.KeyLength = publicKey.Length;
 
             this.VerifyToken = verifyToken;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         /*protected override async Task ComposeAsync(MinecraftStream stream)
         {

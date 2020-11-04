@@ -1,8 +1,10 @@
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class ClientSettings : Packet
+    public class ClientSettings : IPacket
     {
         [Field(0)]
         public string Locale { get; private set; }
@@ -22,8 +24,23 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(5)]
         public int MainHand { get; private set; }
 
-        public ClientSettings() : base(0x05) { }
+        public int Id => 0x05;
 
-        public ClientSettings(byte[] data) : base(0x05, data) { }   
+        public ClientSettings()  { }
+
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public async Task ReadAsync(MinecraftStream stream)
+        {
+            this.Locale = await stream.ReadStringAsync();
+            this.ViewDistance = await stream.ReadByteAsync();
+            this.ChatMode = await stream.ReadIntAsync();
+            this.ChatColors = await stream.ReadBooleanAsync();
+            this.SkinParts = await stream.ReadUnsignedByteAsync();
+            this.MainHand = await stream.ReadIntAsync();
+        }
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

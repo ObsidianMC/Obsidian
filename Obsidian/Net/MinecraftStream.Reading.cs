@@ -227,7 +227,7 @@ namespace Obsidian.Net
         }
 
         [ReadMethod(DataType.String)]
-        public string ReadString(int maxLength = 0)
+        public string ReadString(int maxLength = 32767)
         {
             var length = ReadVarInt();
             var buffer = new byte[length];
@@ -245,7 +245,7 @@ namespace Obsidian.Net
             return value;
         }
 
-        public async Task<string> ReadStringAsync(int maxLength = 0)
+        public async Task<string> ReadStringAsync(int maxLength = 32767)
         {
             var length = await this.ReadVarIntAsync();
             var buffer = new byte[length];
@@ -323,8 +323,11 @@ namespace Obsidian.Net
             return result;
         }
 
-        public async Task<byte[]> ReadUInt8ArrayAsync(int length)
+        public async Task<byte[]> ReadUInt8ArrayAsync(int length = 0)
         {
+            if (length == 0)
+                length = await this.ReadVarIntAsync();
+
             var result = new byte[length];
             if (length == 0)
                 return result;
