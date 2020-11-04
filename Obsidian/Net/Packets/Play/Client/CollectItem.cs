@@ -1,9 +1,11 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class CollectItem : Packet
+    public class CollectItem : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int CollectedEntityId { get; set; }
@@ -14,6 +16,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2, Type = DataType.VarInt)]
         public int PickupItemCount { get; set; }
 
-        public CollectItem() : base(0x55) { }
+        public int Id => 0x55;
+
+        public CollectItem() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

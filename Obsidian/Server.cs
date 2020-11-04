@@ -230,6 +230,8 @@ namespace Obsidian
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
 
+            PacketHandler.RegisterHandlers();
+
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
@@ -329,13 +331,13 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(IPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal async Task BroadcastPacketWithoutQueueAsync(Packet packet, params int[] excluded)
+        internal async Task BroadcastPacketWithoutQueueAsync(IPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.SendPacketAsync(packet);

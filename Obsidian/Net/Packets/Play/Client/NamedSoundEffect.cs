@@ -1,12 +1,13 @@
 ﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.API;
 using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    internal class NamedSoundEffect : Packet
+    internal class NamedSoundEffect : IPacket
     {
         [Field(0)]
         public string Name { get; }
@@ -23,7 +24,9 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public float Pitch { get; }
 
-        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume) : base(0x18)
+        public int Id => 0x18;
+
+        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -36,5 +39,11 @@ namespace Obsidian.Net.Packets.Play.Client
             this.Volume = volume;
             this.Pitch = pitch;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

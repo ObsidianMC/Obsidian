@@ -2,10 +2,12 @@
 using Obsidian.Serializer.Enums;
 using Obsidian.API;
 using System;
+using Obsidian.Entities;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SpawnPlayer : Packet
+    public class SpawnPlayer : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int EntityId { get; set; }
@@ -22,6 +24,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public Angle Pitch { get; set; }
 
-        public SpawnPlayer() : base(0x04) { }
+        public int Id => 0x04;
+
+        public SpawnPlayer() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,10 +1,12 @@
 ﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class BlockChange : Packet
+    public class BlockChange : IPacket
     {
         [Field(0)]
         public Position Location { get; private set; }
@@ -12,12 +14,20 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, Type = DataType.VarInt)]
         public int BlockId { get; private set; }
 
-        public BlockChange() : base(0x0B) { }
+        public int Id => 0x0B;
 
-        public BlockChange(Position loc, int block) : base(0x0B)
+        public BlockChange() { }
+
+        public BlockChange(Position loc, int block)
         {
             Location = loc;
             BlockId = block;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,9 +1,11 @@
 ﻿using Obsidian.Serializer.Attributes;
 using Obsidian.API;
+using Obsidian.Entities;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class EntityPositionAndRotation : Packet
+    public class EntityPositionAndRotation : IPacket
     {
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
@@ -26,6 +28,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(6)]
         public bool OnGround { get; set; }
 
-        public EntityPositionAndRotation() : base(0x28) { }
+        public int Id => 0x28;
+
+        public EntityPositionAndRotation() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,10 +1,12 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class OpenWindow : Packet
+    public class OpenWindow : IPacket
     {
         [Field(0)]
         public int WindowId { get; set; }
@@ -15,7 +17,15 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public ChatMessage Title { get; set; }
 
-        public OpenWindow() : base(0x2D) { }
+        public int Id => 0x2D;
+
+        public OpenWindow() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 
     //Do not mess up the order this is how its supposed to be ordered

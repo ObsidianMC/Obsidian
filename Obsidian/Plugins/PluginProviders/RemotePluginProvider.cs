@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
@@ -228,6 +229,7 @@ namespace Obsidian.Plugins.PluginProviders
             var response = await client.GetAsync(url);
             if (!response.IsSuccessStatusCode)
                 return null;
+
             return await response.Content.ReadAsStreamAsync();
         }
 
