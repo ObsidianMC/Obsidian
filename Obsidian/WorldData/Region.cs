@@ -14,8 +14,7 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
 
-        internal const int width = 10;
-        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(width, width);
+        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(32, 32);
 
         internal Region(int x, int z)
         {

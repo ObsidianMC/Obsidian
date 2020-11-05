@@ -182,7 +182,7 @@ namespace Obsidian.WorldData
             if (region == null)
                 return null;
 
-            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, Region.width), Helpers.Modulo(chunkZ, Region.width)];
+            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, 32), Helpers.Modulo(chunkZ, 32)];
             return chunk;
         }
 
@@ -338,9 +338,9 @@ namespace Obsidian.WorldData
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
             List<Position> chunksToGen = new List<Position>();
-            for (int x = 0; x < Region.width; x++)
+            for (int x = 0; x < 32; x++)
             {
-                for (int z = 0; z < Region.width; z++)
+                for (int z = 0; z < 32; z++)
                 {
                     int cx = (regionX << 5) + x;
                     int cz = (regionZ << 5) + z;
@@ -351,7 +351,7 @@ namespace Obsidian.WorldData
 
             foreach (Chunk chunk in chunks)
             {
-                var index = (Helpers.Modulo(chunk.X, Region.width), Helpers.Modulo(chunk.Z, Region.width));
+                var index = (Helpers.Modulo(chunk.X, 32), Helpers.Modulo(chunk.Z, 32));
                 region.LoadedChunks[index.Item1, index.Item2] = chunk;
             }
 
