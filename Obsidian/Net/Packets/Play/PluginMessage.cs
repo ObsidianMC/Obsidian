@@ -1,9 +1,10 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class PluginMessage : Packet
+    public class PluginMessage : IPacket
     {
         [Field(0)]
         public string Channel { get; private set; }
@@ -11,9 +12,11 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public byte[] PluginData { get; private set; }
 
-        public PluginMessage() : base(0x17) { }
+        public int Id { get; set; } = 0x17;
 
-        public PluginMessage(string channel, byte[] data) : base(0x17)
+        public PluginMessage() { }
+
+        public PluginMessage(string channel, byte[] data)
         {
             this.Channel = channel;
             this.PluginData = data;
@@ -42,6 +45,43 @@ namespace Obsidian.Net.Packets.Play
             };
 
             return result;
+        }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public async Task ReadAsync(MinecraftStream stream)
+        {
+            this.Channel = await stream.ReadStringAsync();
+            this.PluginData = await stream.ReadUInt8ArrayAsync();
+        }
+
+        public async Task HandleAsync(Obsidian.Server server, Player player)
+        {
+            var result = await this.HandleAsync();
+
+            switch (result.Type)
+            {
+                case PluginMessageType.Brand:
+                    player.client.Brand = result.Value.ToString();
+                    break;
+                case PluginMessageType.Register:
+                    {
+                        using var stream = new MinecraftStream(this.PluginData);
+                        var len = await stream.ReadVarIntAsync();
+
+                        //Idk how this would work so I'm assuming a length will be sent first
+                        for (int i = 0; i < len; i++)
+                            server.RegisteredChannels.Add(await stream.ReadStringAsync());
+
+                        break;
+                    }
+                case PluginMessageType.UnRegister:
+                    server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
+                    break;
+                case PluginMessageType.Custom://This can be ignored for now
+                default:
+                    break;
+            }
         }
     }
 

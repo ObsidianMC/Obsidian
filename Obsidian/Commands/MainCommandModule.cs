@@ -172,11 +172,7 @@ namespace Obsidian.Commands
             var c = player.client;
             var world = server.World;
 
-            int dist = c.ClientSettings?.ViewDistance ?? 1;
-            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
-            (int chunkX, int chunkZ) = c.Player.Location.ToChunkCoord();
-
-            await world.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, chunkX, chunkZ, c);
+            await world.UpdateChunksForClientAsync(c, true);
         }
         #endregion
 

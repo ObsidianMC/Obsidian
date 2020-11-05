@@ -1,11 +1,13 @@
 ﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class AcknowledgePlayerDigging : Packet
+    public class AcknowledgePlayerDigging : IPacket
     {
         [Field(0)]
         public Position Location { get; set; }
@@ -19,6 +21,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(3)]
         public bool Successful { get; set; }
 
-        public AcknowledgePlayerDigging() : base(0x07) { }
+        public int Id => 0x07;
+
+        public AcknowledgePlayerDigging() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

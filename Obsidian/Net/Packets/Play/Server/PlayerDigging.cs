@@ -1,11 +1,13 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.API;
+using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.API;
 using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class PlayerDigging : Packet
+    public class PlayerDigging : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public DiggingStatus Status { get; private set; }
@@ -16,9 +18,27 @@ namespace Obsidian.Net.Packets.Play.Server
         [Field(2, Type = DataType.Byte)]
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
 
-        public PlayerDigging() : base(0x1B) { }
+        public int Id => 0x1B;
 
-        public PlayerDigging(byte[] packetdata) : base(0x1B, packetdata) { }
+        public PlayerDigging()  { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public async Task ReadAsync(MinecraftStream stream)
+        {
+            this.Status = (DiggingStatus)await stream.ReadVarIntAsync();
+            this.Location = await stream.ReadPositionAsync();
+            this.Face = (BlockFace)await stream.ReadByteAsync();
+        }
+
+        public async Task HandleAsync(Obsidian.Server server, Player player)
+        {
+            await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
+            {
+                Player = player.Uuid,
+                Packet = this
+            });
+        }
     }
 
     public class PlayerDiggingStore

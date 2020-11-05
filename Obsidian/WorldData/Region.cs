@@ -8,13 +8,16 @@ namespace Obsidian.WorldData
 {
     public class Region
     {
+        public const int CUBIC_REGION_SIZE_SHIFT = 3;
+        public const int CUBIC_REGION_SIZE = 1 << CUBIC_REGION_SIZE_SHIFT;
+
         private bool cancel = false;
         public int X { get; }
         public int Z { get; }
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
 
-        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(32, 32);
+        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(CUBIC_REGION_SIZE, CUBIC_REGION_SIZE);
 
         internal Region(int x, int z)
         {

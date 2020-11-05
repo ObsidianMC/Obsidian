@@ -7,6 +7,6 @@ namespace Obsidian.Events.EventArgs
     {
         public bool Cancel { get; set; }
 
-        internal QueuePacketEventArgs(Client client, Packet packet) : base(client, packet) { }
+        internal QueuePacketEventArgs(Client client, IPacket packet) : base(client, packet) { }
     }
 }

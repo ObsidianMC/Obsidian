@@ -1,10 +1,12 @@
-﻿using Obsidian.Items;
+﻿using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class EntityEquipment : Packet
+    public class EntityEquipment : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int EntityId { get; set; }
@@ -15,7 +17,15 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public ItemStack Item { get; set; }
 
-        public EntityEquipment() : base(0x47) { }
+        public int Id => 0x47;
+
+        public EntityEquipment() : base() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 
     public enum ESlot : int

@@ -52,7 +52,7 @@ namespace Obsidian.Net
             this.BaseStream = new MemoryStream(data);
         }
 
-        public async Task DumpAsync(bool clear = true, Packet packet = null)
+        public async Task DumpAsync(bool clear = true, IPacket packet = null)
         {
             if (this.debugMemoryStream == null)
                 throw new Exception("Can't dump a stream who wasn't set to debug.");

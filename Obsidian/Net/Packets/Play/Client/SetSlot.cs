@@ -1,9 +1,11 @@
-﻿using Obsidian.Items;
+﻿using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SetSlot : Packet
+    public class SetSlot : IPacket
     {
         /// <summary>
         /// 0 for player inventory. -1 For the currently dragged item
@@ -21,6 +23,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public ItemStack SlotData { get; set; }
 
-        public SetSlot() : base(0x15) { }
+        public int Id => 0x15;
+
+        public SetSlot() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }
