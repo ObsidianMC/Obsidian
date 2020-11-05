@@ -1,10 +1,12 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class TagsPacket : Packet
+    public class TagsPacket : IPacket
     {
         [Field(0, Type = DataType.Array)]
         public List<Tag> Blocks { get; set; }
@@ -18,7 +20,15 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(3, Type = DataType.Array)]
         public List<Tag> Entities { get; set; }
 
-        public TagsPacket() : base(0x5B) { }
+        public int Id => 0x5B;
+
+        public TagsPacket() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 
     public class Tag

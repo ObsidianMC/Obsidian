@@ -69,7 +69,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("oak_log", 74, Materials.DarkOakLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block("dark_oak_log", 74, Materials.DarkOakLog));
                 }
             }
 
@@ -195,7 +195,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         private static int TreeHeight(double value)  
         {
-            return value > 0.6 && value < 0.10 ? (int) (value * 100) + 3 : 0;
+            return value > 0.06 && value < 0.10 ? (int) (value * 100) + 3 : 0;
         }
     }
 }

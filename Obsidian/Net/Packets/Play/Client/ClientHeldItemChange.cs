@@ -1,17 +1,25 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ClientHeldItemChange : Packet
+    public class ClientHeldItemChange : IPacket
     {
         [Field(0)]
         public byte Slot { get; }
 
-        public ClientHeldItemChange(byte slot) : base(0x3F)
+        public int Id => 0x3F;
+
+        public ClientHeldItemChange(byte slot)
         {
             this.Slot = slot;
         }
 
-        public ClientHeldItemChange(byte[] data) : base(0x3F, data) { }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -2,6 +2,8 @@
 using System;
 using Obsidian.Serializer.Enums;
 using Obsidian.API;
+using System.Threading.Tasks;
+using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
@@ -16,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Client
         NONE = 0x00
     }
 
-    public class ClientPlayerPositionLook : Packet
+    public class ClientPlayerPositionLook : IPacket
     {
         [Field(0, true)]
         public Position Position { get; set; }
@@ -33,9 +35,19 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4, Type = DataType.VarInt)]
         public int TeleportId { get; set; }
 
-        public ClientPlayerPositionLook() : base(0x34) { }
+        public int Id => 0x34;
 
-        public ClientPlayerPositionLook(byte[] data) : base(0x34, data) { }
+        public byte[] Data { get; }
+
+        public ClientPlayerPositionLook() { }
+
+        public ClientPlayerPositionLook(byte[] data)  { this.Data = data; }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
     
 }

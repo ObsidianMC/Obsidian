@@ -1,9 +1,11 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public abstract class ChangeGameState<T> : Packet
+    public abstract class ChangeGameState<T> : IPacket
     {
         [Field(0, Type = DataType.UnsignedByte)]
 
@@ -12,12 +14,20 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, Type = DataType.Float)]
         public abstract T Value { get; set; }
 
-        public ChangeGameState() : base(0x1D) { }
+        public int Id => 0x1D;
 
-        public ChangeGameState(ChangeGameStateReason reason) : base(0x1D)
+        public ChangeGameState() { }
+
+        public ChangeGameState(ChangeGameStateReason reason)
         {
             this.Reason = reason;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
     public enum ChangeGameStateReason : byte
     {

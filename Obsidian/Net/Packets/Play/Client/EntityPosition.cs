@@ -1,8 +1,10 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class EntityPosition : Packet
+    public class EntityPosition : IPacket
     {
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public int EntityId { get; set; }
@@ -19,6 +21,14 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(4)]
         public bool OnGround { get; set; }
 
-        public EntityPosition() : base(0x27) { }
+        public int Id => 0x27;
+
+        public EntityPosition() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

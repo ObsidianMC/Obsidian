@@ -26,15 +26,13 @@ namespace Obsidian.WorldData.Generators
             var rockHeightmap = new double[16, 16];
             var bedrockHeightmap = new double[16, 16];
 
-            var terrainHeights = new double[256];
-
             for (int bx=0; bx<16; bx++)
             {
                 for (int bz=0; bz<16; bz++)
                 {
                     int worldX = bx + (cx << 4);
                     int worldZ = bz + (cz << 4);
-                    terrainHeights[(bx*16)+bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(worldX, worldZ);
+                    terrainHeightmap[bx, bz] = noiseGen.Terrain(worldX, worldZ);
                     rockHeightmap[bx, bz] = noiseGen.Underground(worldX, worldZ) + terrainHeightmap[bx, bz] - 5;
                     bedrockHeightmap[bx, bz] = noiseGen.Bedrock(worldX, worldZ) + 1;
 

@@ -1,12 +1,14 @@
 ﻿using Obsidian.Chat;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ChatMessagePacket : Packet
+    public class ChatMessagePacket : IPacket
     {
         [Field(0)]
         public ChatMessage Message { get; private set; }
@@ -20,13 +22,21 @@ namespace Obsidian.Net.Packets.Play.Client
             0, 0
         };
 
-        public ChatMessagePacket() : base(0x0E) { }
+        public int Id => 0x0E;
 
-        public ChatMessagePacket(ChatMessage message, sbyte position, Guid sender) : base(0x0E)
+        public ChatMessagePacket() { }
+
+        public ChatMessagePacket(ChatMessage message, sbyte position, Guid sender)
         {
             this.Message = message;
             this.Position = position;
             //this.Sender = sender;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

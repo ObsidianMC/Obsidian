@@ -1,11 +1,12 @@
 using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
-    public class Handshake : Packet
+    public class Handshake : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public ProtocolVersion Version;
@@ -19,12 +20,12 @@ namespace Obsidian.Net.Packets.Handshaking
         [Field(3, Type = DataType.VarInt)]
         public ClientState NextState;
 
-        public Handshake() : base(0x00)
-        {
-        }
+        public int Id => 0x00;
 
-        public Handshake(byte[] data) : base(0x00, data)
-        {
-        }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

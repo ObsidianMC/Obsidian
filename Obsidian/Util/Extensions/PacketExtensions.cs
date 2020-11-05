@@ -10,12 +10,31 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using Obsidian.Net;
 
 namespace Obsidian.Util.Extensions
 {
     public static class PacketExtensions
     {
         public const BindingFlags Flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+        internal static async Task WriteAsync(this IPacket packet, MinecraftStream stream)
+        {
+            await stream.Lock.WaitAsync();
+
+            await using var dataStream = new MinecraftStream();
+            await packet.WriteAsync(dataStream);
+
+            var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
+
+            await stream.WriteVarIntAsync(packetLength);
+            await stream.WriteVarIntAsync(packet.Id);
+
+            dataStream.Position = 0;
+            await dataStream.CopyToAsync(stream);
+
+            stream.Lock.Release();
+        }
 
         internal static DataType ToDataType(this Type type)
         {
@@ -92,7 +111,7 @@ namespace Obsidian.Util.Extensions
             }
         }
 
-        internal static Dictionary<FieldAttribute, string> GetAllMemberNames(this Packet packet)
+        internal static Dictionary<FieldAttribute, string> GetAllMemberNames(this IPacket packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, string>();
@@ -110,7 +129,7 @@ namespace Obsidian.Util.Extensions
             return valueDict;
         }
 
-        internal static Dictionary<FieldAttribute, object> GetAllObjects(this Packet packet)
+        internal static Dictionary<FieldAttribute, object> GetAllObjects(this IPacket packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, object>();
@@ -138,7 +157,7 @@ namespace Obsidian.Util.Extensions
             return valueDict;
         }
 
-        internal static Dictionary<FieldAttribute, (string name, object value)> GetAllObjectsAndNames(this Packet packet)
+        internal static Dictionary<FieldAttribute, (string name, object value)> GetAllObjectsAndNames(this IPacket packet)
         {
             var members = packet.GetType().GetMembers(Flags);
             var valueDict = new Dictionary<FieldAttribute, (string, object)>();
