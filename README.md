@@ -27,6 +27,7 @@
 - [Tides](https://github.com/Tides) (developer)
 - [Craftplacer](https://github.com/Craftplacer/) (developer)
 - [Seb-stian](https://github.com/Seb-stian) (developer)
+- [Jonpro03](https://github.com/Jonpro03) (developer)
 
 ## Contributors
 Big thanks to everyone that contributed!

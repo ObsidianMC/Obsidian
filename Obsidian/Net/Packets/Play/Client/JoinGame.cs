@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.PlayerData;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -6,6 +7,7 @@ using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
@@ -15,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
-    public class JoinGame : Packet
+    public class JoinGame : IPacket
     {
         [Field(0, Type = DataType.Int)]
         public int EntityId { get; set; }
@@ -65,9 +67,15 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(15)]
         public bool Flat { get; set; } = false;
 
-        public JoinGame() : base(0x24) { }
+        public int Id => 0x24;
 
-        public JoinGame(byte[] data) : base(0x24, data) { }
+        public JoinGame() { }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 
     public enum LevelType

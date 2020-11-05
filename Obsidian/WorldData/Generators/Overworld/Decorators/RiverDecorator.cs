@@ -13,11 +13,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-/*            if (pos.Y > 60) // river above water level
-            {
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Water));
-                chunk.SetBlock(pos + (0, -1, 0), Registry.GetBlock(Materials.Sand));
-            }*/
+            chunk.SetBlock(pos, Registry.GetBlock(Materials.Gravel));
         }
     }
 }

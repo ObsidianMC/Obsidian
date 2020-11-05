@@ -18,7 +18,6 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
-using Obsidian.API;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
@@ -231,11 +230,14 @@ namespace Obsidian
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
 
+            PacketHandler.RegisterHandlers();
+
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.Logger.LogInformation("Loading plugins...");
+            Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
@@ -329,13 +331,13 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(Packet packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(IPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal async Task BroadcastPacketWithoutQueueAsync(Packet packet, params int[] excluded)
+        internal async Task BroadcastPacketWithoutQueueAsync(IPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.SendPacketAsync(packet);

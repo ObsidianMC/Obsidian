@@ -1,14 +1,20 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public class LoginStart : Packet
+    public class LoginStart : IPacket
     {
         [Field(0)]
         public string Username { get; private set; }
 
-        public LoginStart() : base(0x00) { }
+        public int Id => 0x00;
 
-        public LoginStart(byte[] data) : base(0x00, data) { }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -4,6 +4,6 @@ namespace Obsidian.Events.EventArgs
 {
     public class PacketReceivedEventArgs : BasePacketEventArgs
     {
-        internal PacketReceivedEventArgs(Client client, Packet receivedPacket) : base(client, receivedPacket) { }
+        internal PacketReceivedEventArgs(Client client, IPacket receivedPacket) : base(client, receivedPacket) { }
     }
 }
