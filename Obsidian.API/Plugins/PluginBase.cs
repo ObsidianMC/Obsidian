@@ -12,7 +12,8 @@ namespace Obsidian.API.Plugins
     public abstract class PluginBase
     {
         public IPluginInfo Info { get; internal set; }
-        
+        internal Action unload;
+
         private Type typeCache;
 
         /// <summary>
@@ -110,6 +111,14 @@ namespace Obsidian.API.Plugins
         public Action<T> GetPropertySetter<T>(string propertyName)
         {
             return GetMethod<Action<T>>($"set_{propertyName}");
+        }
+
+        /// <summary>
+        /// Causes this plugin to be unloaded.
+        /// </summary>
+        protected void Unload()
+        {
+            unload();
         }
 
         internal object FriendlyInvoke(string methodName, params object[] args)

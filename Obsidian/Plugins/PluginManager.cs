@@ -148,6 +148,8 @@ namespace Obsidian.Plugins
             plugin.Permissions = permissions;
             plugin.PermissionsChanged += OnPluginStateChanged;
 
+            plugin.Plugin.unload = () => UnloadPlugin(plugin);
+
             if (plugin.IsReady)
             {
                 lock (plugins)
@@ -225,6 +227,8 @@ namespace Obsidian.Plugins
 
             plugin.LoadContext.Unload();
             plugin.LoadContext.Unloading += _ => logger?.LogInformation($"Finished unloading {plugin.Info.Name} plugin");
+
+            plugin.Dispose();
         }
 
         /// <summary>

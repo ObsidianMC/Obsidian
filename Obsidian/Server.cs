@@ -18,7 +18,6 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Plugins;
-using Obsidian.API;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
