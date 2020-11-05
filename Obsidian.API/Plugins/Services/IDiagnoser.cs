@@ -23,6 +23,24 @@ namespace Obsidian.API.Plugins.Services
         /// <exception cref="SecurityException"></exception>
         public IProcess[] GetProcesses();
 
+        /// <summary>
+        /// Starts a process resource by specifying the name of an application and a set of command-line arguments, and associates the resource with a new <see cref="IProcess"/> component.
+        /// </summary>
+        /// <param name="fileName">The application or document to start.</param>
+        /// <param name="arguments">The set of command-line arguments to use when starting the application.</param>
+        /// <param name="createWindow">Indicates whether to start the process in a new window.</param>
+        /// <param name="useShell">Indicates whether to use the operating system shell to start the process.</param>
+        /// <returns>A new <see cref="IProcess"/> that is associated with the process resource, or null if no process resource is started. </returns>
         public IProcess StartProcess(string fileName, string arguments = null, bool createWindow = true, bool useShell = false);
+
+        /// <summary>
+        /// Returns a new instance of <see cref="IStopwatch"/>.
+        /// </summary>
+        public IStopwatch GetStopwatch();
+
+        /// <summary>
+        /// Returns a new instance of <see cref="IStopwatch"/> and starts it.
+        /// </summary>
+        public IStopwatch StartStopwatch();
     }
 }

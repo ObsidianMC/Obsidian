@@ -45,7 +45,17 @@ namespace Obsidian.Plugins.Services
                 UseShellExecute = useShell
             };
             var process = Process.Start(processInfo);
-            return new ProcessService(process, this);
+            return process is null ? null : new ProcessService(process, this);
+        }
+
+        public IStopwatch GetStopwatch()
+        {
+            return new StopwatchService(start: false);
+        }
+
+        public IStopwatch StartStopwatch()
+        {
+            return new StopwatchService(start: true);
         }
     }
 }
