@@ -63,7 +63,7 @@ namespace Obsidian
             {
                 for (int z = 0; z < cubesHorizontal * SebastiansCube.width; z++)
                 {
-                    for (int y = cubesVertical * SebastiansCube.height; y >= 0; y--)
+                    for (int y = cubesVertical * SebastiansCube.height - 1; y >= 0; y--)
                     {
                         if (Block.IsIdAir(GetBlockId(x, y, z)))
                             continue;
