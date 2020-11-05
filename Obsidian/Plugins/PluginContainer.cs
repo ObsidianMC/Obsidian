@@ -57,13 +57,7 @@ namespace Obsidian.Plugins
             pluginType = plugin.GetType();
             ClassName = pluginType.Name;
 
-            InjectInfo();
-        }
-
-        private void InjectInfo()
-        {
-            setPluginInfo ??= typeof(PluginBase).GetMethod("set_Info", BindingFlags.NonPublic | BindingFlags.Instance);
-            setPluginInfo.Invoke(Plugin, new[] { (IPluginInfo)Info });
+            Plugin.Info = Info;
         }
 
         #region Services

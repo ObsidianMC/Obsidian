@@ -11,7 +11,7 @@ namespace Obsidian.API.Plugins
     /// </summary>
     public abstract class PluginBase
     {
-        public IPluginInfo Info { get; private set; }
+        public IPluginInfo Info { get; internal set; }
         
         private Type typeCache;
 
@@ -22,25 +22,6 @@ namespace Obsidian.API.Plugins
         {
             var method = GetMethod(methodName, args);
             return method.Invoke(this, args);
-        }
-
-        /// <summary>
-        /// Invokes a method in the class. The actual method can accept less parameters than <c>args</c>.
-        /// If exception occurs, it is returned inside <see cref="AggregateException"/>.
-        /// </summary>
-        public object FriendlyInvoke(string methodName, params object[] args)
-        {
-            var (method, parameterCount) = GetFriendlyMethod(methodName, args);
-            if (parameterCount != args.Length)
-                args = args.Take(parameterCount).ToArray();
-            try
-            {
-                return method.Invoke(this, args);
-            }
-            catch (Exception e)
-            {
-                return new AggregateException(e);
-            }
         }
 
         /// <summary>
@@ -58,6 +39,8 @@ namespace Obsidian.API.Plugins
                 var result = method.Invoke(this, args);
                 if (result is Task task)
                     return task;
+                else if (result is ValueTask valueTask)
+                    return valueTask.AsTask();
                 return Task.FromResult(result);
             }
             catch (Exception e)
@@ -76,6 +59,8 @@ namespace Obsidian.API.Plugins
             var result = method.Invoke(this, args);
             if (result is Task task)
                 return task;
+            else if (result is ValueTask valueTask)
+                return valueTask.AsTask();
             return Task.FromResult(result);
         }
 
@@ -98,6 +83,8 @@ namespace Obsidian.API.Plugins
             var result = method.Invoke(this, args);
             if (result is Task<T> task)
                 return task;
+            else if (result is ValueTask<T> valueTask)
+                return valueTask.AsTask();
             return Task.FromResult((T)result);
         }
 
@@ -123,6 +110,51 @@ namespace Obsidian.API.Plugins
         public Action<T> GetPropertySetter<T>(string propertyName)
         {
             return GetMethod<Action<T>>($"set_{propertyName}");
+        }
+
+        internal object FriendlyInvoke(string methodName, params object[] args)
+        {
+            var (method, parameterCount) = GetFriendlyMethod(methodName, args);
+            if (parameterCount != args.Length)
+                args = args.Take(parameterCount).ToArray();
+            try
+            {
+                return method.Invoke(this, args);
+            }
+            catch (Exception e)
+            {
+                return new AggregateException(e);
+            }
+        }
+
+        internal Exception SafeInvoke(string methodName, params object[] args)
+        {
+            try
+            {
+                Invoke(methodName, args);
+                return null;
+            }
+            catch (Exception e)
+            {
+                return e;
+            }
+        }
+
+        internal Exception SafeInvokeAsync(string methodName, params object[] args)
+        {
+            try
+            {
+                var result = Invoke(methodName, args);
+                if (result is Task task)
+                    task.GetAwaiter().GetResult();
+                else if (result is ValueTask valueTask)
+                    valueTask.GetAwaiter().GetResult();
+                return null;
+            }
+            catch (Exception e)
+            {
+                return e;
+            }
         }
 
         private MethodInfo GetMethod(string methodName, object[] args)
