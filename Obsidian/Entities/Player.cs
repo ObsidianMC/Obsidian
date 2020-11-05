@@ -16,7 +16,7 @@ namespace Obsidian.Entities
     public class Player : Living, IPlayer
     {
         internal readonly Client client;
-
+        
         public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
 
@@ -39,6 +39,8 @@ namespace Obsidian.Entities
         public bool Sprinting { get; set; }
         public bool FlyingWithElytra { get; set; }
         public bool InHorseInventory { get; set; }
+
+        public bool IsDragging { get; set; }
 
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }

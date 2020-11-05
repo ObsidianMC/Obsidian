@@ -1,8 +1,10 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class UnloadChunk : Packet
+    public class UnloadChunk : IPacket
     {
         [Field(0, true)]
         public int X { get; private set; }
@@ -10,12 +12,22 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1, true)]
         public int Z { get; private set; }
 
-        public UnloadChunk(byte[] data) : base(0x1C, data) { }
+        public int Id => 0x1C;
 
-        public UnloadChunk(int x, int z) : base(0x1C)
+        public byte[] Data { get; }
+
+        public UnloadChunk(byte[] data) { this.Data = data; }
+
+        public UnloadChunk(int x, int z)
         {
             this.X = x;
             this.Z = z;
         }
+
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }
