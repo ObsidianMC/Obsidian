@@ -22,5 +22,7 @@ namespace Obsidian.API.Plugins.Services
         /// <returns>An array of type <see cref="IProcess"/> that represents all the process resources running on the local computer.</returns>
         /// <exception cref="SecurityException"></exception>
         public IProcess[] GetProcesses();
+
+        public IProcess StartProcess(string fileName, string arguments = null, bool createWindow = true, bool useShell = false);
     }
 }

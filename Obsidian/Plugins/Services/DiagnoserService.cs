@@ -31,5 +31,21 @@ namespace Obsidian.Plugins.Services
 
             return Process.GetProcesses().Select(process => new ProcessService(process, this)).ToArray();
         }
+
+        public IProcess StartProcess(string fileName, string arguments = null, bool createWindow = true, bool useShell = false)
+        {
+            if (!IsUsable)
+                throw new SecurityException(IDiagnoser.securityExceptionMessage);
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                CreateNoWindow = !createWindow,
+                UseShellExecute = useShell
+            };
+            var process = Process.Start(processInfo);
+            return new ProcessService(process, this);
+        }
     }
 }
