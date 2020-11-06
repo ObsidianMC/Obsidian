@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Chat;
+using Obsidian.Util.Extensions;
 using System;
+using System.Linq;
 
 namespace Obsidian.Logging
 {
@@ -25,21 +28,21 @@ namespace Obsidian.Logging
 
             lock (_lock)
             {
-                Console.Write($"[{DateTimeOffset.Now:HH:mm:ss tt}] ");
+                var prefix = $"[{DateTimeOffset.Now:HH:mm:ss tt}] ";
 
 
-                Console.ForegroundColor = logLevel switch
+                prefix += logLevel switch
                 {
-                    LogLevel.Trace => ConsoleColor.White,
-                    LogLevel.Debug => ConsoleColor.DarkMagenta,
-                    LogLevel.Information => ConsoleColor.Cyan,
-                    LogLevel.Warning => ConsoleColor.Yellow,
-                    LogLevel.Error => ConsoleColor.DarkRed,
-                    LogLevel.Critical => ConsoleColor.Red,
-                    _ => ConsoleColor.Gray,
+                    LogLevel.Trace => ChatColor.White,
+                    LogLevel.Debug => ChatColor.Purple,
+                    LogLevel.Information => ChatColor.Cyan,
+                    LogLevel.Warning => ChatColor.Yellow,
+                    LogLevel.Error => ChatColor.DarkRed,
+                    LogLevel.Critical => ChatColor.Red,
+                    _ => ChatColor.Gray,
                 };
 
-                Console.Write(logLevel switch
+                prefix += logLevel switch
                 {
                     LogLevel.Trace => "[Trace] ",
                     LogLevel.Debug => "[Debug] ",
@@ -48,55 +51,48 @@ namespace Obsidian.Logging
                     LogLevel.Error => "[Error] ",
                     LogLevel.Critical => "[Crit] ",
                     LogLevel.None => "[None] ",
-                    _ => "????] "
-                });
-                Console.ResetColor();
+                    _ => "[????] "
+                };
+                prefix += ChatColor.Reset;
 
                 // This is here because of weird formatting 
                 if (this.Prefix.Split("/").Length > 0)
                 {
                     if (logLevel == LogLevel.Debug || logLevel == LogLevel.Error)
-                        Console.Write($"{""}[{Prefix}] ");
+                        prefix += $"{""}[{Prefix}] ";
                     else
-                        Console.Write($"{"",1}[{Prefix}] ");
+                        prefix += $"{"",1}[{Prefix}] ";
                 }
                 else
                 {
                     if (Prefix.Length >= 12)
-                        Console.Write($"{"",1}[{Prefix}] ");
+                        prefix += $"{"",1}[{Prefix}] ";
                     else
-                        Console.Write($"[{Prefix}] ");
+                        prefix += $"[{Prefix}] ";
                 }
+                prefix.RenderColoredConsoleMessage();
 
                 var message = formatter(state, exception);
                 var msgLst = message.Contains("§") ? message.Split("§") : new string[] { $"r{message}" };
                 if (message[0] != '§' && msgLst.Length > 1) msgLst[0] = $"r{msgLst[0]}";
-                foreach (var msg in msgLst)
+                foreach (var msg_ in msgLst)
                 {
-                    if (!string.IsNullOrEmpty(msg))
+                    if (!string.IsNullOrEmpty(msg_))
                     {
-                        Console.ForegroundColor = msg[0].ToString().ToLower()[0] switch
+                        var colorStr = msg_[0].ToString().ToLower()[0];
+                        
+                        var color = ChatColor.FromCode(colorStr).ToConsoleColor();
+                        //var msg = colorStr.IsRealChatColor()? msg_.Substring(1):msg_;
+                        var msg = msg_;
+                        string[] lines = msg.Contains("\n") ? msg.Split("\n").ToArray() : new string[] { msg };
+
+                        for (int i = 0; i < lines.Length; i++)
                         {
-                            '0' => ConsoleColor.Black,
-                            '1' => ConsoleColor.DarkBlue,
-                            '2' => ConsoleColor.DarkGreen,
-                            '3' => ConsoleColor.DarkCyan,
-                            '4' => ConsoleColor.DarkRed,
-                            '5' => ConsoleColor.DarkMagenta,
-                            '6' => ConsoleColor.DarkYellow,
-                            '7' => ConsoleColor.Gray,
-                            '8' => ConsoleColor.DarkGray,
-                            '9' => ConsoleColor.Blue,
-                            'a' => ConsoleColor.Green,
-                            'b' => ConsoleColor.Cyan,
-                            'c' => ConsoleColor.Red,
-                            'd' => ConsoleColor.Magenta,
-                            'e' => ConsoleColor.Yellow,
-                            'f' => ConsoleColor.White,
-                            'r' => ConsoleColor.White,
-                            _ => ConsoleColor.White
-                        };
-                        Console.Write(msg.Substring(1));
+                            if (i > 0) Console.WriteLine("");
+                            if (i > 0) { prefix.RenderColoredConsoleMessage(); }
+                            //if (color.HasValue) Console.ForegroundColor = color.Value;
+                            $"§{(i > 0 ? $"{colorStr}":"")}{lines[i]}".RenderColoredConsoleMessage();
+                        }
                     }
                 }
                 Console.ResetColor();
