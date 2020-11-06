@@ -49,7 +49,7 @@ namespace Obsidian.Chat
         /// <summary>
         /// Creates a new <see cref="ChatMessage"/> object with plain text.
         /// </summary>
-        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text };
+        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text.Replace('&', '§') };
 
         public ChatMessage AddExtra(ChatMessage message)
         {

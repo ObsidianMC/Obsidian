@@ -22,6 +22,8 @@ namespace Obsidian.API
         public IChatMessage AddExtra(IChatMessage chatMessage);
         public IChatMessage AddExtra(IEnumerable<IChatMessage> chatMessages);
 
+        public static IChatMessage Simple(string text, ChatColor color) => Simple($"{color}{text}");
+
         public static IChatMessage Simple(string text)
         {
             IChatMessage chatMessage = CreateNew();
@@ -29,6 +31,42 @@ namespace Obsidian.API
             return chatMessage;
         }
 
-        public static IChatMessage Simple(string text, ChatColor color) => Simple($"{color}{text}");
+        public IChatMessage WithClickAction(ETextAction action, string value, string translate = null)
+        {
+            ClickEvent = ITextComponent.CreateNew(action, value, translate);
+            return this;
+        }
+
+        public IChatMessage WithHoverAction(ETextAction action, string value, string translate = null)
+        {
+            HoverEvent = ITextComponent.CreateNew(action, value, translate);
+            return this;
+        }
+
+        public IChatMessage AppendText(string text)
+        {
+            if (Text is null)
+            {
+                Text = text;
+            }
+            else
+            {
+                Text += text;
+            }
+            return this;
+        }
+
+        public IChatMessage AppendText(string text, ChatColor color)
+        {
+            if (Text is null)
+            {
+                Text = $"{color}{text}";
+            }
+            else
+            {
+                Text += $"{color}{text}";
+            }
+            return this;
+        }
     }
 }
