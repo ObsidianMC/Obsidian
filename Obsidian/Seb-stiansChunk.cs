@@ -52,11 +52,14 @@ namespace Obsidian
         public void SetBlock(int x, int y, int z, Block block)
         {
             var value = (short)block.Id;
-            cubes[ComputeIndex(x, y, z)][x, y, z] = value;
+            SetBlockId(x, y, z, value);
         }
 
         public void SetBlockId(int x, int y, int z, short id)
         {
+            if (x < 0) x = (x % 16) + 16;
+            if (z < 0) z = (z % 16) + 16;
+
             cubes[ComputeIndex(x, y, z)][x, y, z] = id;
         }
 
