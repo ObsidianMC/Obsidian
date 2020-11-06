@@ -1,5 +1,6 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
@@ -238,7 +239,14 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
 
-        public Task SendMessageAsync(IChatMessage message, Guid? sender = null) => SendMessageAsync(message as ChatMessage, sender);
+        public Task SendMessageAsync(IChatMessage message, Guid? sender = null)
+        {
+            var chatMessage = message as ChatMessage;
+            if (chatMessage is null)
+                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+            return SendMessageAsync(chatMessage, sender);
+        }
+
         public Task SendMessageAsync(ChatMessage message, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, 0, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
@@ -248,7 +256,13 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
-        public Task KickAsync(IChatMessage reason) => KickAsync(reason as ChatMessage);
+        public Task KickAsync(IChatMessage reason)
+        {
+            var chatMessage = reason as ChatMessage;
+            if (chatMessage is null)
+                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+            return KickAsync(chatMessage);
+        }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public override async Task WriteAsync(MinecraftStream stream)
