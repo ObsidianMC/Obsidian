@@ -1,7 +1,6 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.Plugins;
 using Obsidian.API;
 using System;
 using System.Collections.Concurrent;
@@ -12,7 +11,6 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Drawing;
 
 namespace Obsidian.Util.Extensions
 {
@@ -123,26 +121,6 @@ namespace Obsidian.Util.Extensions
         }
 
         #region Playing with coloring
-        public static char ToCode(this ChatColor _, ChatColor color) => color.Code;
-        public static Color ToColor(this ChatColor _, ChatColor color) => color.Color;
-        public static Color ToColor(this ChatColor _, char code) => ChatColor.FromCode(code).ToColor();
-        public static ConsoleColor ToConsoleColor(this ChatColor color) => color.Color.ClosestConsoleColor();
-        //public static ConsoleColor ToConsoleColor(this ChatColor _, char code) => ChatColor.FromCode(code).ToColor().ClosestConsoleColor();
-
-        public static ConsoleColor ClosestConsoleColor(this Color color)
-        {
-            ConsoleColor ret = 0;
-            KnownColor kc = color.ToKnownColor();
-            Console.WriteLine(kc);
-            var kcName = Enum.GetName(typeof(KnownColor), kc);
-            if (kcName.ToLower() == "transparent") ret = ConsoleColor.Gray;
-            else ret = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), kcName, true);
-            Console.WriteLine(ret);
-            return ret;
-        }
-
-        public static string ToName(this ChatColor _, ChatColor color) => color.Name;
-
         public static void RenderColoredConsoleMessage(this string message, bool AddNewLine = false)
         {
             message = message.Replace("&", "§");
@@ -157,7 +135,7 @@ namespace Obsidian.Util.Extensions
                     if (colorStr.IsRealChatColor())
                     {
                         if (colorStr == 'r') Console.ResetColor();
-                        else if (!consoleColor.HasValue) ; // Do nothing bc it is probably setting it bold or italic
+                        else if (!consoleColor.HasValue) ; // Do nothing bc it is probably setting it bold or italic or strikethrough or underline or obfuscated
                         else Console.ForegroundColor = consoleColor.Value;
                     }
                     Console.Write(colorStr.IsRealChatColor() ? msg.Substring(1) : msg);
@@ -166,8 +144,13 @@ namespace Obsidian.Util.Extensions
             Console.ResetColor();
             if (AddNewLine) Console.WriteLine("");
         }
-        public static bool IsRealChatColor(this string suspectedColor) => new Regex("^([a-f]|r|o|k|l|[0-9])$").IsMatch($"{suspectedColor.Replace("§", "").ToLower()[0]}");
-        public static bool IsRealChatColor(this char suspectedColor) => suspectedColor.ToString().ToLower().IsRealChatColor();
+        public static bool IsRealChatColor(this string suspectedColor, bool skipPrefix = false) => (skipPrefix switch
+        {
+            true => new Regex("^([a-f]|r|o|m|n|k|l|[0-9])$"),
+            false => new Regex("^([§|&])([a-f]|r|o|m|n|k|l|[0-9])$")
+        }).IsMatch($"{suspectedColor.ToLower()}");
+    
+        public static bool IsRealChatColor(this char suspectedColor) => suspectedColor.ToString().ToLower().IsRealChatColor(true);
         #endregion
     }
 }

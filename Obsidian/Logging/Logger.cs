@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Util.Extensions;
 using System;
 using System.Linq;
@@ -28,8 +27,9 @@ namespace Obsidian.Logging
 
             lock (_lock)
             {
-                var prefix = $"[{DateTimeOffset.Now:HH:mm:ss tt}] ";
 
+                #region Prefix
+                var prefix = $"[{DateTimeOffset.Now:HH:mm:ss tt}] ";
 
                 prefix += logLevel switch
                 {
@@ -71,32 +71,32 @@ namespace Obsidian.Logging
                         prefix += $"[{Prefix}] ";
                 }
                 prefix.RenderColoredConsoleMessage();
+                #endregion
 
+                #region Message coloring & line break handling
                 var message = formatter(state, exception);
                 var msgLst = message.Contains("§") ? message.Split("§") : new string[] { $"r{message}" };
                 if (message[0] != '§' && msgLst.Length > 1) msgLst[0] = $"r{msgLst[0]}";
-                foreach (var msg_ in msgLst)
+                foreach (var msg in msgLst)
                 {
-                    if (!string.IsNullOrEmpty(msg_))
+                    if (!string.IsNullOrEmpty(msg) && msg.Length > 1)
                     {
-                        var colorStr = msg_[0].ToString().ToLower()[0];
+                        var colorStr = msg[0].ToString().ToLower()[0];
                         
                         var color = ChatColor.FromCode(colorStr).ToConsoleColor();
-                        //var msg = colorStr.IsRealChatColor()? msg_.Substring(1):msg_;
-                        var msg = msg_;
                         string[] lines = msg.Contains("\n") ? msg.Split("\n").ToArray() : new string[] { msg };
 
                         for (int i = 0; i < lines.Length; i++)
                         {
                             if (i > 0) Console.WriteLine("");
                             if (i > 0) { prefix.RenderColoredConsoleMessage(); }
-                            //if (color.HasValue) Console.ForegroundColor = color.Value;
                             $"§{(i > 0 ? $"{colorStr}":"")}{lines[i]}".RenderColoredConsoleMessage();
                         }
                     }
                 }
                 Console.ResetColor();
                 Console.WriteLine("");
+                #endregion
 
                 if (exception != null)
                     Console.WriteLine(exception);

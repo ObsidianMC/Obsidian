@@ -1,16 +1,18 @@
 using System;
 using System.Drawing;
 using System.Linq;
-using System.Security.Cryptography;
 
 namespace Obsidian.API
 {
     public struct ChatColor
     {
+
+        #region Properties
         public Color Color { get; }
         public ConsoleColor? ConsoleColor { get; }
         public char Code { get; }
         public string Name { get; }
+        #endregion
 
         public ChatColor(char code, string name, Color? color = null, ConsoleColor? consoleColor = null)
         {
@@ -34,10 +36,12 @@ namespace Obsidian.API
             }
         }
 
+        #region Methods for properties
         public char ToCode() => Code;
         public Color ToColor() => Color;
         public string ToName() => Name;
-        public System.ConsoleColor? ToConsoleColor() => this.ConsoleColor;
+        public System.ConsoleColor? ToConsoleColor() => ConsoleColor;
+        #endregion
 
         #region FromCode
         public static ChatColor FromCode(string code)
@@ -66,15 +70,21 @@ namespace Obsidian.API
                 'd' => ChatColor.Pink,
                 'e' => ChatColor.Yellow,
                 'f' => ChatColor.White,
+                'k' => ChatColor.Obfuscated,
+                'l' => ChatColor.Bold,
+                'm' => ChatColor.Strikethrough,
+                'n' => ChatColor.Underline,
+                'o' => ChatColor.Italic,
                 'r' => ChatColor.Reset,
-                _ => ChatColor.White
+                _ => ChatColor.Reset // Maybe add an exception?
             };
         }
         #endregion
 
         public override string ToString() => $"§{Code}";
 
-        //0-9
+        #region Colors
+        // 0-9
         public static readonly ChatColor Black = new ChatColor('0', "black", Color.FromArgb(0, 0, 0), System.ConsoleColor.Black);
         public static readonly ChatColor DarkBlue = new ChatColor('1', "dark_blue", Color.FromArgb(0, 0, 42), System.ConsoleColor.DarkBlue);
         public static readonly ChatColor DarkGreen = new ChatColor('2', "dark_green", Color.FromArgb(0, 42, 0), System.ConsoleColor.DarkGreen);
@@ -86,21 +96,23 @@ namespace Obsidian.API
         public static readonly ChatColor DarkGray = new ChatColor('8', "dark_gray", Color.FromArgb(85, 85, 85), System.ConsoleColor.DarkGray);
         public static readonly ChatColor Blue = new ChatColor('9', "blue", Color.FromArgb(85, 85, 255), System.ConsoleColor.Blue);
 
-        //A-F
+        // A-F
         public static readonly ChatColor BrightGreen = new ChatColor('a', "green", Color.FromArgb(85, 255, 85), System.ConsoleColor.Green);
         public static readonly ChatColor Cyan = new ChatColor('b', "aqua", Color.FromArgb(85, 255, 255), System.ConsoleColor.Cyan);
         public static readonly ChatColor Red = new ChatColor('c', "red", Color.FromArgb(255, 85, 85), System.ConsoleColor.Red);
         public static readonly ChatColor Pink = new ChatColor('d', "light_purple", Color.FromArgb(255, 85, 255), System.ConsoleColor.Magenta);
         public static readonly ChatColor Yellow = new ChatColor('e', "yellow", Color.FromArgb(255, 255, 85), System.ConsoleColor.Yellow);
         public static readonly ChatColor White = new ChatColor('f', "white", Color.FromArgb(255, 255, 255), System.ConsoleColor.White);
+        #endregion
 
-        //Effects
+        #region Effects
+        public static readonly ChatColor Obfuscated = new ChatColor('k', "bold");
         public static readonly ChatColor Bold = new ChatColor('l', "bold");
-
+        public static readonly ChatColor Strikethrough = new ChatColor('m', "strikethrough");
+        public static readonly ChatColor Underline = new ChatColor('n', "underline");
+        public static readonly ChatColor Italic = new ChatColor('o', "italic");
         public static readonly ChatColor Reset = new ChatColor('r', "reset");
-        //public static readonly MinecraftColor Red         = new MinecraftColor('c', "red");
-        //public static readonly MinecraftColor Pink        = new MinecraftColor('d', "light_purple");
-        //public static readonly MinecraftColor Yellow      = new MinecraftColor('e', "yellow");
-        //public static readonly MinecraftColor White       = new MinecraftColor('f', "white");
+        #endregion
+
     }
 }
