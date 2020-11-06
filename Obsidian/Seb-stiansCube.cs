@@ -36,7 +36,7 @@ namespace Obsidian
                 if (shared != short.MinValue)
                     return shared;
 
-                return (blocks ??= GetBlocksArray())[ComputeIndex(x, y, z)];
+                return blocks[ComputeIndex(x, y, z)];
             }
 
             set
