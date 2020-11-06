@@ -9,13 +9,12 @@ using System.Runtime.Loader;
 
 namespace Obsidian.Plugins
 {
-    public class PluginContainer
+    public class PluginContainer : IDisposable
     {
-        public PluginBase Plugin { get; }
+        public PluginBase Plugin { get; private set; }
         public PluginInfo Info { get; }
         public string Source { get; internal set; }
-        public Assembly Assembly { get; }
-        public AssemblyLoadContext LoadContext { get; }
+        public AssemblyLoadContext LoadContext { get; private set; }
         public string ClassName { get; }
 
         private PluginPermissions _permissions;
@@ -35,7 +34,6 @@ namespace Obsidian.Plugins
         internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new Dictionary<EventContainer, Delegate>();
 
         private Type pluginType;
-        private static MethodInfo setPluginInfo;
 
         public PluginContainer(PluginInfo info, string source)
         {
@@ -48,7 +46,6 @@ namespace Obsidian.Plugins
         {
             Plugin = plugin;
             Info = info;
-            Assembly = assembly;
             LoadContext = loadContext;
             Source = source;
 
@@ -57,13 +54,7 @@ namespace Obsidian.Plugins
             pluginType = plugin.GetType();
             ClassName = pluginType.Name;
 
-            InjectInfo();
-        }
-
-        private void InjectInfo()
-        {
-            setPluginInfo ??= typeof(PluginBase).GetMethod("set_Info", BindingFlags.NonPublic | BindingFlags.Instance);
-            setPluginInfo.Invoke(Plugin, new[] { (IPluginInfo)Info });
+            Plugin.Info = Info;
         }
 
         #region Services
@@ -276,5 +267,14 @@ namespace Obsidian.Plugins
             PermissionsChanged?.Invoke(this);
         }
         #endregion
+
+        public void Dispose()
+        {
+            Plugin = null;
+            LoadContext = null;
+            pluginType = null;
+            ScheduledDependencyInjections.Clear();
+            EventHandlers.Clear();
+        }
     }
 }

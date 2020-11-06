@@ -148,6 +148,8 @@ namespace Obsidian.Plugins
             plugin.Permissions = permissions;
             plugin.PermissionsChanged += OnPluginStateChanged;
 
+            plugin.Plugin.unload = () => UnloadPlugin(plugin);
+
             if (plugin.IsReady)
             {
                 lock (plugins)
@@ -210,13 +212,23 @@ namespace Obsidian.Plugins
                 service.Dispose();
             }
 
-            if (plugin.Plugin is IDisposable disposable)
+            if (plugin.Plugin is IDisposable)
             {
-                disposable.Dispose();
+                var exception = plugin.Plugin.SafeInvoke("Dispose");
+                if (exception != null)
+                    logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
+            }
+            else if (plugin.Plugin is IAsyncDisposable)
+            {
+                var exception = plugin.Plugin.SafeInvokeAsync("DisposeAsync");
+                if (exception != null)
+                    logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
             }
 
             plugin.LoadContext.Unload();
             plugin.LoadContext.Unloading += _ => logger?.LogInformation($"Finished unloading {plugin.Info.Name} plugin");
+
+            plugin.Dispose();
         }
 
         /// <summary>
@@ -325,7 +337,7 @@ namespace Obsidian.Plugins
             {
                 if (plugin.EventHandlers.TryGetValue(@event, out var handler))
                 {
-                    @event.Event.RemoveEventHandler(plugin, handler);
+                    @event.Event.RemoveEventHandler(eventSource, handler);
                     plugin.EventHandlers.Remove(@event);
                 }
             }
@@ -371,3 +383,4 @@ namespace Obsidian.Plugins
 }
 
 // thank you Roxxel && artemD3V for the invasion <3
+// thank you Jonpro03 for your awesome contributions

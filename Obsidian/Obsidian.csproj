@@ -16,8 +16,11 @@
 
   <ItemGroup>
     <Compile Remove="PluginMessages\**" />
+    <Compile Remove="Sounds\**" />
     <EmbeddedResource Remove="PluginMessages\**" />
+    <EmbeddedResource Remove="Sounds\**" />
     <None Remove="PluginMessages\**" />
+    <None Remove="Sounds\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -658,10 +661,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Sounds\" />
   </ItemGroup>
 
 </Project>

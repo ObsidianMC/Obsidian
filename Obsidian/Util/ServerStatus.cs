@@ -116,6 +116,6 @@ namespace Obsidian.Util
         [JsonProperty("text")]
         public string Text;
 
-        public ServerDescription(Server server) => this.Text = server.Config.Motd;
+        public ServerDescription(Server server) => this.Text = server.Config.Motd.Replace('&', '§');
     }
 }
