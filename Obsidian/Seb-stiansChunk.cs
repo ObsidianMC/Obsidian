@@ -41,6 +41,9 @@ namespace Obsidian
 
         public short GetBlockId(int x, int y, int z)
         {
+            if (x < 0) x = (x % 16) + 16;
+            if (z < 0) z = (z % 16) + 16;
+            
             return cubes[ComputeIndex(x, y, z)][x, y, z];
         }
 
@@ -72,6 +75,14 @@ namespace Obsidian
                         break;
                     }
                 }
+            }
+        }
+
+        public void CheckHomogeneity()
+        {
+            for (int i = 0; i < cubes.Length; i++)
+            {
+                cubes[i].CheckHomogeneity();
             }
         }
 

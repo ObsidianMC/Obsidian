@@ -386,6 +386,7 @@ namespace Obsidian.WorldData
             Parallel.ForEach(chunkLocs, (loc) =>
             {
                 var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
+                c.CheckHomogeneity();
                 chunks.Add(c);
             });
             return chunks.ToList();

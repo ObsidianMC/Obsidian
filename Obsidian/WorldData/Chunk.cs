@@ -23,12 +23,12 @@ namespace Obsidian.WorldData
 
         public Chunk(int x, int z)
         {
-            this.X = x;
-            this.Z = z;
+            X = x;
+            Z = z;
 
-            this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
+            Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
 
-            this.Init();
+            Init();
         }
 
         private void Init()
@@ -41,6 +41,11 @@ namespace Obsidian.WorldData
 
         public Block GetBlock(int x, int y, int z)
         {
+            x %= 16;
+            if (x < 0) x += 16;
+            z %= 16;
+            if (z < 0) z += 16;
+            
             return SebastiansChunk.GetBlock(x, y, z);
         }
 
@@ -48,7 +53,12 @@ namespace Obsidian.WorldData
 
         public void SetBlock(int x, int y, int z, Block block)
         {
-            SebastiansChunk.SetBlock(x, y, z, block);
+            int x2 = x / 16;
+            if (x2 < 0) x2 += 16;
+            int z2 = z / 16;
+            if (z2 < 0) z2 += 16;
+
+            SebastiansChunk.SetBlock(x2, y, z2, block);
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
@@ -75,6 +85,11 @@ namespace Obsidian.WorldData
             //        }
             //    }
             //}
+        }
+
+        public void CheckHomogeneity()
+        {
+            SebastiansChunk.CheckHomogeneity();
         }
     }
 }
