@@ -7,6 +7,7 @@ namespace Obsidian
     {
         private static bool initialized;
         private static Stack<short[]> cubesCache;
+        private const int cacheLimit = 125; // about 5MB
         
         private short shared = 0;
         private short[] blocks;
@@ -69,7 +70,7 @@ namespace Obsidian
             {
                 blocks[i] = 0;
             }
-            cubesCache.Push(blocks);
+            Cache();
             shared = value;
         }
 
@@ -126,7 +127,7 @@ namespace Obsidian
             {
                 blocks[i] = 0;
             }
-            cubesCache.Push(blocks);
+            Cache();
             shared = id;
         }
 
@@ -160,6 +161,16 @@ namespace Obsidian
         private short[] GetBlocksArray()
         {
             return cubesCache.TryPop(out var array) ? array : new short[totalBlocks];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Cache()
+        {
+            if (cacheLimit > cubesCache.Count)
+            {
+                cubesCache.Push(blocks);
+            }
+            blocks = null;
         }
     }
 }
