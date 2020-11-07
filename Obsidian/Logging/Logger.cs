@@ -75,8 +75,8 @@ namespace Obsidian.Logging
 
                 #region Message coloring & line break handling
                 var message = formatter(state, exception);
-                var msgLst = message.Contains("§") ? message.Split("§") : new string[] { $"r{message}" };
-                if (message[0] != '§' && msgLst.Length > 1) msgLst[0] = $"r{msgLst[0]}";
+                var msgLst = message.Contains("§") ? message.Split("§") : new string[] { $"f{message}" };
+                if (msgLst.Length > 1 && msgLst[0].Length > 0 && msgLst[0][0] != '§') msgLst[0] = $"f{msgLst[0]}";
                 foreach (var msg in msgLst)
                 {
                     if (!string.IsNullOrEmpty(msg) && msg.Length > 1)
