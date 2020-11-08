@@ -44,8 +44,6 @@ namespace Obsidian.WorldData
 
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
-
-            this.Init();
         }
 
         public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
@@ -63,7 +61,7 @@ namespace Obsidian.WorldData
 
             if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist || forcereload)
             {
-                // This is a teleport!!!1 Send full new chunk data.
+                // This is a teleport!!! Send full new chunk data.
                 await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
                 return;
             }
@@ -192,7 +190,7 @@ namespace Obsidian.WorldData
         {
             // TODO add behavior that ensures new chunks are loaded when they do not exist
 
-            if(this.Generator.GetType() == typeof(Obsidian.WorldData.Generators.SuperflatGenerator))
+            if(this.Generator.GetType() == typeof(Generators.SuperflatGenerator))
             {
                 return this.Generator.GenerateChunk(chunkX, chunkZ);
             }
@@ -412,14 +410,9 @@ namespace Obsidian.WorldData
             return chunks.ToList();
         }
 
-        internal void Init()
-        {
-
-        }
-
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating world..");
+            this.Server.Logger.LogInformation("Generating world...");
             for (int x = -1; x <= 1; x++)
             {
                 for (int z = -1; z <= 1; z++)

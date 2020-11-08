@@ -24,14 +24,14 @@ namespace Obsidian.Util.Registry
     {
         internal static ILogger Logger { get; set; }
 
-        public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
-        public static Block[] Blocks = new Block[763];
-        public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
+        public static readonly Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
+        public static readonly Block[] Blocks = new Block[763];
+        public static readonly Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
 
-        public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
+        public static readonly Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
 
-        public static MatchTarget[] StateToMatch = new MatchTarget[17112];
-        public static short[] NumericToBase = new short[763];
+        public static readonly MatchTarget[] StateToMatch = new MatchTarget[17112];
+        public static readonly short[] NumericToBase = new short[763];
 
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
@@ -74,8 +74,6 @@ namespace Obsidian.Util.Registry
 
                         var baseId = (short)states.States.Min(state => state.Id);
                         NumericToBase[(int)material] = baseId;
-
-                        Logger.LogDebug($"Registered block: {material} with id: {id}");
 
                         switch (material)
                         {
@@ -661,7 +659,7 @@ namespace Obsidian.Util.Registry
                     }
                 }
 
-                Logger.LogDebug($"Successfully registered {registered} blocks..");
+                Logger.LogDebug($"Successfully registered {registered} blocks...");
             }
             else
             {
@@ -696,15 +694,12 @@ namespace Obsidian.Util.Registry
                     if (!Enum.TryParse(itemName.Replace("_", ""), true, out Materials material))
                         continue;
 
-                    Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
-
                     Items.Add(material, new Item(material) { Id = item.ProtocolId, UnlocalizedName = name });
                     registered++;
                 }
 
-                Logger.LogDebug($"Successfully registered {registered} items..");
+                Logger.LogDebug($"Successfully registered {registered} items...");
             }
-
         }
 
         public static async Task RegisterBiomesAsync()
@@ -735,13 +730,11 @@ namespace Obsidian.Util.Registry
                 if (!Enum.TryParse(itemName.Replace("_", ""), true, out Biomes biome))
                     continue;
 
-                Logger.LogDebug($"Registered biome: {biome} with id: {biomeDes.ProtocolId}");
-
                 Biomes.Add(biome, biomeDes.ProtocolId);
                 registered++;
             }
 
-            Logger.LogDebug($"Successfully registered {registered} biomes..");
+            Logger.LogDebug($"Successfully registered {registered} biomes...");
 
             var codecBiomes = new FileInfo("Assets/biome_dimension_codec.json");
 
@@ -769,7 +762,6 @@ namespace Obsidian.Util.Registry
 
                     DefaultBiomes.TryAdd(codec.Name, codec);
 
-                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
                 }
             }
@@ -804,7 +796,6 @@ namespace Obsidian.Util.Registry
 
                     DefaultDimensions.TryAdd(codec.Id, codec);
 
-                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
                 }
             }
@@ -917,7 +908,6 @@ namespace Obsidian.Util.Registry
                                     }
                                 });
                             }
-                            Logger.LogDebug($"Registered tag {baseTagName}:{tagName}");
                         }
                     }
                     registered++;
@@ -942,14 +932,13 @@ namespace Obsidian.Util.Registry
 
                         Tags[domainTag.BaseTagName][tagIndex].Entries.AddRange(tag.Entries);
 
-                        Logger.LogDebug($"Registering domain: {item} to {domainTag.BaseTagName}:{domainTag.TagName}");
                         registered++;
                     }
 
                 }
             }
 
-            Logger.LogDebug($"Registered { registered} tags");
+            Logger.LogDebug($"Registered {registered} tags");
         }
 
         public static Block GetBlock(Materials material) => Blocks[(int)material];
