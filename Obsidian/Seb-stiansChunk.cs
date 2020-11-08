@@ -36,7 +36,7 @@ namespace Obsidian
         public Block GetBlock(int x, int y, int z)
         {
             short value = GetBlockStateId(x, y, z);
-            return Registry.GetBlock(Registry.Ids[value]);
+            return Registry.Blocks[Registry.StateToMatch[value].numeric];
         }
 
         public SebastiansBlock GetLightBlock(int x, int y, int z)
@@ -47,8 +47,10 @@ namespace Obsidian
 
         public short GetBlockStateId(int x, int y, int z)
         {
-            if (x < 0) x = (x % 16) + 16;
-            if (z < 0) z = (z % 16) + 16;
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
             
             return cubes[ComputeIndex(x, y, z)][x, y, z];
         }
@@ -68,8 +70,10 @@ namespace Obsidian
 
         public void SetBlockStateId(int x, int y, int z, short id)
         {
-            if (x < 0) x = (x % 16) + 16;
-            if (z < 0) z = (z % 16) + 16;
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
 
             cubes[ComputeIndex(x, y, z)][x, y, z] = id;
         }

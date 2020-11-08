@@ -8,11 +8,11 @@ namespace Obsidian
     {
         private static short[] interactables;
         private static bool initialized;
-        
-        public Materials Material => (Materials)Registry.BaseToIdTable.Keys[baseId];
+
+        public Materials Material => (Materials)Registry.StateToMatch[baseId].numeric;
         public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
-        public int Id => Registry.BaseToIdTable.Keys[baseId];
+        public int Id => Registry.StateToMatch[baseId].numeric;
         internal short StateId => (short)(baseId + state);
 
         private readonly short baseId;
@@ -20,13 +20,13 @@ namespace Obsidian
 
         internal SebastiansBlock(short stateId)
         {
-            baseId = Registry.Ids[stateId];
+            baseId = Registry.StateToMatch[stateId].@base;
             state = (short)(stateId - baseId);
         }
 
         public SebastiansBlock(Materials material)
         {
-            baseId = Registry.BaseToIdTable.Values[(int)material];
+            baseId = Registry.NumericToBase[(int)material];
             state = 0;
         }
 

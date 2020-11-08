@@ -6,7 +6,6 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Util.Collection;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
@@ -26,13 +25,13 @@ namespace Obsidian.Util.Registry
         internal static ILogger Logger { get; set; }
 
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
-        public static Block[] Blocks = new Block[762];
+        public static Block[] Blocks = new Block[763];
         public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
 
-        public static short[] Ids = new short[17112];
-        public static MatchTable BaseToIdTable { get; } = new MatchTable(762);
+        public static MatchTarget[] StateToMatch = new MatchTarget[17112];
+        public static short[] NumericToBase = new short[763];
 
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
@@ -73,7 +72,8 @@ namespace Obsidian.Util.Registry
                         foreach (var state in states.States)
                             id = state.Default ? state.Id : states.States.First().Id;
 
-                        BaseToIdTable.Register((short)states.States.Min(state => state.Id), (short)material);
+                        var baseId = (short)states.States.Min(state => state.Id);
+                        NumericToBase[(int)material] = baseId;
 
                         Logger.LogDebug($"Registered block: {material} with id: {id}");
 
@@ -650,7 +650,7 @@ namespace Obsidian.Util.Registry
 
                         foreach (var state in states.States)
                         {
-                            Ids[state.Id] = (short)id;
+                            StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
                             
                             if (id == state.Id)
                                 continue;
@@ -979,4 +979,16 @@ namespace Obsidian.Util.Registry
         public string BaseTagName { get; set; }
     }
 
+
+    public struct MatchTarget
+    {
+        public short @base;
+        public short numeric;
+
+        public MatchTarget(short @base, short numeric)
+        {
+            this.@base = @base;
+            this.numeric = numeric;
+        }
+    }
 }
