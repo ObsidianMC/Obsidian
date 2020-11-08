@@ -88,5 +88,25 @@ namespace Obsidian.Plugins.Services
 
             return File.WriteAllTextAsync(path, value, cancellationToken);
         }
+
+        //public string GetWorkingDirectory() => Path.GetDirectoryName(plugin.Source);
+        //public string GetWorkingDirectory() => Path.Combine(Path.GetDirectoryName(plugin.Source), plugin.Plugin.Info.Name.Replace(" ", ""));
+        /*public string GetWorkingDirectory(bool skipDefaultPluginDir = false) => skipDefaultPluginDir switch
+        {
+            true => Path.GetDirectoryName(plugin.Source),
+            false => Path.Combine(Path.GetDirectoryName(plugin.Source), plugin.Plugin.Info.Name.Replace(" ", ""))
+        };*/
+        public string GetWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false)
+        {
+            var workingDir = createOwnDirectory switch
+            {
+                true => Path.Combine(Path.GetDirectoryName(plugin.Source), plugin.Plugin.Info.Name.Replace(" ", "")),
+                false => Path.GetDirectoryName(plugin.Source)
+            };
+
+            if (createOwnDirectory && !skipFolderAutoGeneration && !Directory.Exists(workingDir)) Directory.CreateDirectory(workingDir);
+
+            return workingDir;
+        }
     }
 }

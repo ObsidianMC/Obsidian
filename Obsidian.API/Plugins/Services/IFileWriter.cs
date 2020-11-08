@@ -136,5 +136,12 @@ namespace Obsidian.API.Plugins.Services
 
             Directory.Delete(path, recursive: true);
         }
+
+        /// <summary>
+        /// Returns with the plugin working directory.
+        /// </summary>
+        /// <param name="createOwnDirectory">If set to <b><c>false</c></b>, the automatically assigned directory for your plugin will be skipped.</param>
+        /// <param name="skipFolderAutoGeneration">If set to <b><c>true</c></b>, skips the auto generation method for default plugin dir. Also, <b><c>createOwnDirectory</c></b> needs to be <b><c>true</c></b> for this to work.</param>
+        public string GetWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false);
     }
 }

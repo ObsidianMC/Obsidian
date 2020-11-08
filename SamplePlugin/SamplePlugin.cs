@@ -16,6 +16,7 @@ namespace SamplePlugin
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
         [Inject] public ILogger Logger { get; set; }
+        [Inject] public IFileReader FileReader { get; set; }
 
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
@@ -26,7 +27,8 @@ namespace SamplePlugin
         // One of server messages, called when an event occurs
         public async Task OnLoad(IServer server)
         {
-            Logger.Log($"{Info.Name} loaded! Hello {server.DefaultWorld.Name}!");
+            Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            Logger.Log($"Hello! I live at §a{FileReader.GetWorkingDirectory()}§f!");
             server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }

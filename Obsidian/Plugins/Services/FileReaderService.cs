@@ -72,5 +72,18 @@ namespace Obsidian.Plugins.Services
 
             return File.ReadAllTextAsync(path, cancellationToken);
         }
+
+        public string GetWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false)
+        {
+            var workingDir = createOwnDirectory switch
+            {
+                true => Path.Combine(Path.GetDirectoryName(plugin.Source), plugin.Plugin.Info.Name.Replace(" ", "")),
+                false => Path.GetDirectoryName(plugin.Source)
+            };
+
+            if (createOwnDirectory && !skipFolderAutoGeneration && !Directory.Exists(workingDir)) Directory.CreateDirectory(workingDir);
+
+            return workingDir;
+        }
     }
 }
