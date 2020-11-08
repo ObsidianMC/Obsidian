@@ -88,14 +88,14 @@ namespace Obsidian.Logging
 
                         for (int i = 0; i < lines.Length; i++)
                         {
-                            if (i > 0) Console.WriteLine("");
+                            if (i > 0) Console.WriteLine();
                             if (i > 0) { prefix.RenderColoredConsoleMessage(); }
                             $"§{(i > 0 ? $"{colorStr}":"")}{lines[i]}".RenderColoredConsoleMessage();
                         }
                     }
                 }
                 Console.ResetColor();
-                Console.WriteLine("");
+                Console.WriteLine();
                 #endregion
 
                 if (exception != null)
