@@ -382,5 +382,5 @@ namespace Obsidian.Plugins
     }
 }
 
-// thank you Roxxel && artemD3V for the invasion <3
+// thank you Roxxel && DorrianD3V for the invasion <3
 // thank you Jonpro03 for your awesome contributions
