@@ -45,8 +45,8 @@ namespace Obsidian.API
 
         public Task TeleportAsync(Position position);
         public Task TeleportAsync(IPlayer to);
-        public Task SendMessageAsync(IChatMessage message, sbyte position = 0, Guid? sender = null);
-        public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
+        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(IChatMessage reason);

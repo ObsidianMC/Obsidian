@@ -37,12 +37,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian
 {
-    public struct QueueChat
-    {
-        public IChatMessage Message;
-        public sbyte Position;
-    }
-
     public class Server : IServer
     {
         private readonly ConcurrentQueue<QueueChat> chatMessages;
@@ -150,15 +144,11 @@ namespace Obsidian
         }
 
         
-        public void RegisterCommandClass<T>() where T : BaseCommandClass
-        {
+        public void RegisterCommandClass<T>() where T : BaseCommandClass => 
             this.Commands.RegisterCommandClass<T>();
-        }
 
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser
-        {
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser => 
             this.Commands.AddArgumentParser(parser);
-        }
 
         /// <summary>
         /// Checks if a player is online.
@@ -176,18 +166,18 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(string message, sbyte position = 0) => BroadcastAsync(IChatMessage.Simple(message), position);
-        
-        /// <summary>
-        /// Sends a message to all players on the server.
-        /// </summary>
-        public Task BroadcastAsync(IChatMessage message, sbyte position = 0)
+        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat)
         {
-            if (message as ChatMessage is null)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            this.chatMessages.Enqueue(new QueueChat() { Message = message, Position = position });
+            this.chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
             this.Logger.LogInformation(message.Text);
+
+            return Task.CompletedTask;
+        }
+
+        public Task BroadcastAsync(string message, MessageType type = MessageType.Chat)
+        {
+            this.chatMessages.Enqueue(new QueueChat() { Message = IChatMessage.Simple(message), Type = type });
+            this.Logger.LogInformation(message);
 
             return Task.CompletedTask;
         }
@@ -298,14 +288,14 @@ namespace Obsidian
             }
         }
 
-        internal async Task ParseMessageAsync(string message, Client source, sbyte position = 0)
+        internal async Task ParseMessageAsync(string message, Client source, MessageType type = MessageType.Chat)
         {
             if (!message.StartsWith('/'))
             {
                 var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
 
                 if(!chat.Cancel)
-                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
+                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", type);
 
                 return;
             }
@@ -566,7 +556,7 @@ namespace Obsidian
                     }
 
                     if (this.chatMessages.TryPeek(out QueueChat msg))
-                        await player.SendMessageAsync(msg.Message, msg.Position);
+                        await player.SendMessageAsync(msg.Message, msg.Type);
                 }
 
                 this.chatMessages.TryDequeue(out var _);
@@ -659,5 +649,11 @@ namespace Obsidian
         private  Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
+    }
+
+    public struct QueueChat
+    {
+        public IChatMessage Message;
+        public MessageType Type;
     }
 }

@@ -185,7 +185,7 @@ namespace Obsidian.Commands
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
-        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, 2);
+        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
         #region leave
@@ -337,7 +337,7 @@ namespace Obsidian.Commands
         [CommandInfo("Shows obsidian popup", "/obsidian")]
         public async Task ObsidianAsync(ObsidianContext Context)
         {
-            await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+            await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
         #endregion
 
