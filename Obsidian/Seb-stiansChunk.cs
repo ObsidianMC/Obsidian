@@ -36,7 +36,7 @@ namespace Obsidian
         public Block GetBlock(int x, int y, int z)
         {
             short value = GetBlockId(x, y, z);
-            return Registry.GetBlock(value);
+            return Registry.GetBlock(Registry.Ids[value]);
         }
 
         public short GetBlockId(int x, int y, int z)

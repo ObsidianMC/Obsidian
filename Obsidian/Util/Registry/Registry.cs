@@ -6,6 +6,7 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.Collection;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
@@ -29,6 +30,9 @@ namespace Obsidian.Util.Registry
         public static Dictionary<Biomes, int> Biomes = new Dictionary<Biomes, int>();
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
+
+        public static short[] Ids = new short[17112];
+        public static MatchTable BaseToIdTable { get; } = new MatchTable(762);
 
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
@@ -68,6 +72,8 @@ namespace Obsidian.Util.Registry
                         int id = 0;
                         foreach (var state in states.States)
                             id = state.Default ? state.Id : states.States.First().Id;
+
+                        BaseToIdTable.Register((short)states.States.Min(state => state.Id), (short)material);
 
                         Logger.LogDebug($"Registered block: {material} with id: {id}");
 
@@ -644,6 +650,8 @@ namespace Obsidian.Util.Registry
 
                         foreach (var state in states.States)
                         {
+                            Ids[state.Id] = (short)id;
+                            
                             if (id == state.Id)
                                 continue;
 
@@ -657,7 +665,7 @@ namespace Obsidian.Util.Registry
             }
             else
             {
-                throw new InvalidOperationException("Failed to find blocks.json for registering block data.");
+                throw new FileNotFoundException("Failed to find blocks.json for registering block data.");
             }
         }
 
