@@ -239,15 +239,15 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
 
-        public Task SendMessageAsync(IChatMessage message, Guid? sender = null)
+        public Task SendMessageAsync(IChatMessage message, sbyte position = 0, Guid? sender = null)
         {
             var chatMessage = message as ChatMessage;
             if (chatMessage is null)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-            return SendMessageAsync(chatMessage, sender);
+            return SendMessageAsync(chatMessage, position, sender);
         }
 
-        public Task SendMessageAsync(ChatMessage message, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, 0, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, position, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 

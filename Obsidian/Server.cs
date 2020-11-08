@@ -39,7 +39,7 @@ namespace Obsidian
 {
     public struct QueueChat
     {
-        public string Message;
+        public IChatMessage Message;
         public sbyte Position;
     }
 
@@ -176,10 +176,18 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(string message, sbyte position = 0)
+        public Task BroadcastAsync(string message, sbyte position = 0) => BroadcastAsync(IChatMessage.Simple(message), position);
+        
+        /// <summary>
+        /// Sends a message to all players on the server.
+        /// </summary>
+        public Task BroadcastAsync(IChatMessage message, sbyte position = 0)
         {
+            if (message as ChatMessage is null)
+                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+
             this.chatMessages.Enqueue(new QueueChat() { Message = message, Position = position });
-            this.Logger.LogInformation(message);
+            this.Logger.LogInformation(message.Text);
 
             return Task.CompletedTask;
         }
