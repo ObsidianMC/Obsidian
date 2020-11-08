@@ -135,8 +135,7 @@ namespace Obsidian.Util.Extensions
                     if (colorStr.IsRealChatColor())
                     {
                         if (colorStr == 'r') Console.ResetColor();
-                        else if (!consoleColor.HasValue) ; // Do nothing bc it is probably setting it bold or italic or strikethrough or underline or obfuscated
-                        else Console.ForegroundColor = consoleColor.Value;
+                        else if (consoleColor.HasValue) Console.ForegroundColor = consoleColor.Value;
                     }
                     Console.Write(colorStr.IsRealChatColor() ? msg.Substring(1) : msg);
                 }
