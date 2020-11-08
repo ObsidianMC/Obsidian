@@ -1,7 +1,7 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
-using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
@@ -215,6 +215,15 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(Position pos)
         {
             var tid = Globals.Random.Next(0, 999);
+
+            await client.Server.Events.InvokePlayerTeleportedAsync(
+                new PlayerTeleportEventArgs
+                (
+                    this,
+                    this.Location,
+                    pos
+                ));
+
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
@@ -222,6 +231,7 @@ namespace Obsidian.Entities
                 TeleportId = tid
             });
             this.TeleportId = tid;
+
         }
 
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
