@@ -15,6 +15,7 @@ namespace Obsidian.Events
         private readonly AsyncEvent<InventoryClickEventArgs> clickEvent;
         private readonly AsyncEvent<BlockInteractEventArgs> blockInteract;
         private readonly AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage;
+        private readonly AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest;
         private readonly AsyncEvent serverTick;
 
         public MinecraftEventHandler()
@@ -29,6 +30,7 @@ namespace Obsidian.Events
             this.clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
             this.blockInteract = new AsyncEvent<BlockInteractEventArgs>(HandleException, "Block Interact");
             this.incomingChatMessage = new AsyncEvent<IncomingChatMessageEventArgs>(HandleException, "IncomingChatMessage");
+            this.serverStatusRequest = new AsyncEvent<ServerStatusRequestEventArgs>(HandleException, "ServerStatusRequest");
         }
 
         /// <summary>
@@ -83,6 +85,12 @@ namespace Obsidian.Events
             remove { this.incomingChatMessage.Unregister(value); }
         }
 
+        public event AsyncEventHandler<ServerStatusRequestEventArgs> ServerStatusRequest
+        {
+            add { this.serverStatusRequest.Register(value); }
+            remove { this.serverStatusRequest.Unregister(value); }
+        }
+
         private void HandleException(string eventname, Exception ex) { }
 
         internal async Task<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs args)
@@ -124,5 +132,11 @@ namespace Obsidian.Events
         internal Task InvokeServerTickAsync() =>
             this.serverTick.InvokeAsync();
 
+        internal async Task InvokeServerServerStatusRequest(ServerStatusRequestEventArgs eventargs)
+        {
+            await this.serverStatusRequest.InvokeAsync(eventargs);
+
+            return eventargs;
+        }
     }
 }
