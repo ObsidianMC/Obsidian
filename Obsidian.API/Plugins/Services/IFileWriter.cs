@@ -142,6 +142,6 @@ namespace Obsidian.API.Plugins.Services
         /// </summary>
         /// <param name="createOwnDirectory">If set to <b><c>false</c></b>, the automatically assigned directory for your plugin will be skipped.</param>
         /// <param name="skipFolderAutoGeneration">If set to <b><c>true</c></b>, skips the auto generation method for default plugin dir. Also, <b><c>createOwnDirectory</c></b> needs to be <b><c>true</c></b> for this to work.</param>
-        public string GetWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false);
+        public string CreateWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false);
     }
 }

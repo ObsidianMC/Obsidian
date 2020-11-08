@@ -28,7 +28,7 @@ namespace SamplePlugin
         public async Task OnLoad(IServer server)
         {
             Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
-            Logger.Log($"Hello! I live at §a{FileReader.GetWorkingDirectory()}§f!");
+            Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
             server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }
