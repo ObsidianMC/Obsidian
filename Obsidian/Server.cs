@@ -75,6 +75,7 @@ namespace Obsidian
 
         public CommandHandler Commands { get; }
         public Config Config { get; }
+        public IConfig Configuration => Config;
 
         public ILogger Logger { get; }
 
