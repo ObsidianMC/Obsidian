@@ -14,6 +14,7 @@ namespace Obsidian.Events
         private readonly AsyncEvent<PlayerLeaveEventArgs> playerLeave;
         private readonly AsyncEvent<InventoryClickEventArgs> clickEvent;
         private readonly AsyncEvent<BlockInteractEventArgs> blockInteract;
+        private readonly AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage;
         private readonly AsyncEvent serverTick;
 
         public MinecraftEventHandler()
@@ -27,6 +28,7 @@ namespace Obsidian.Events
             this.serverTick = new AsyncEvent(HandleException, "ServerTick");
             this.clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
             this.blockInteract = new AsyncEvent<BlockInteractEventArgs>(HandleException, "Block Interact");
+            this.incomingChatMessage = new AsyncEvent<IncomingChatMessageEventArgs>(HandleException, "IncomingChatMessage");
         }
 
         /// <summary>
@@ -75,6 +77,12 @@ namespace Obsidian.Events
             remove { this.blockInteract.Unregister(value); }
         }
 
+        public event AsyncEventHandler<IncomingChatMessageEventArgs> IncomingChatMessage
+        {
+            add { this.incomingChatMessage.Register(value); }
+            remove { this.incomingChatMessage.Unregister(value); }
+        }
+
         private void HandleException(string eventname, Exception ex) { }
 
         internal async Task<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs args)
@@ -98,6 +106,13 @@ namespace Obsidian.Events
             return eventArgs;
         }
 
+        internal async Task<IncomingChatMessageEventArgs> InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs)
+        {
+            await this.incomingChatMessage.InvokeAsync(eventArgs);
+
+            return eventArgs;
+        }
+
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
             this.packetReceived.InvokeAsync(eventArgs);
         internal Task InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
@@ -108,5 +123,6 @@ namespace Obsidian.Events
 
         internal Task InvokeServerTickAsync() =>
             this.serverTick.InvokeAsync();
+
     }
 }
