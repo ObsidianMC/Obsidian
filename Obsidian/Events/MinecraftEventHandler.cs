@@ -106,6 +106,13 @@ namespace Obsidian.Events
             return eventArgs;
         }
 
+        internal async Task<IncomingChatMessageEventArgs> InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs)
+        {
+            await this.incomingChatMessage.InvokeAsync(eventArgs);
+
+            return eventArgs;
+        }
+
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
             this.packetReceived.InvokeAsync(eventArgs);
         internal Task InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
@@ -117,7 +124,5 @@ namespace Obsidian.Events
         internal Task InvokeServerTickAsync() =>
             this.serverTick.InvokeAsync();
 
-        internal Task InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs) =>
-            this.incomingChatMessage.InvokeAsync(eventArgs);
     }
 }
