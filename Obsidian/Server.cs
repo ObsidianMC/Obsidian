@@ -293,6 +293,7 @@ namespace Obsidian
             if (!message.StartsWith('/'))
             {
                 await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
+                await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
                 return;
             }
 
