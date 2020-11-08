@@ -3,7 +3,6 @@ using Obsidian.API.Plugins.Services;
 using Obsidian.API.Plugins.Services.IO;
 using Obsidian.Plugins.ServiceProviders;
 using System;
-using System.Globalization;
 using System.IO;
 using System.Security;
 using System.Threading;
