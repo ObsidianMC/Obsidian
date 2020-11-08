@@ -16,6 +16,7 @@ namespace Obsidian.API
         public IEnumerable<IPlayer> Players { get; }
         public IOperatorList Operators { get; }
         public IWorld DefaultWorld { get; }
+        public IConfig Configuration { get; }
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, sbyte position = 0);
