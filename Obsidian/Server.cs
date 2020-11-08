@@ -102,7 +102,7 @@ namespace Obsidian
 
             ServerImplementationRegistry.RegisterServerImplementations();
 
-            this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
+            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
