@@ -14,7 +14,7 @@ namespace Obsidian.WorldData.Generators
             int countX = 0;
             int countZ = 0;
 
-            foreach (var block in Registry.Blocks.Values)
+            foreach (var block in Registry.Blocks)
             {
                 if (block.IsAir || block is BlockBed)
                     continue;

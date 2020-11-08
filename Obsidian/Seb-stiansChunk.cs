@@ -35,11 +35,17 @@ namespace Obsidian
 
         public Block GetBlock(int x, int y, int z)
         {
-            short value = GetBlockId(x, y, z);
+            short value = GetBlockStateId(x, y, z);
             return Registry.GetBlock(Registry.Ids[value]);
         }
 
-        public short GetBlockId(int x, int y, int z)
+        public SebastiansBlock GetLightBlock(int x, int y, int z)
+        {
+            short value = GetBlockStateId(x, y, z);
+            return new SebastiansBlock(value);
+        }
+
+        public short GetBlockStateId(int x, int y, int z)
         {
             if (x < 0) x = (x % 16) + 16;
             if (z < 0) z = (z % 16) + 16;
@@ -52,10 +58,15 @@ namespace Obsidian
         public void SetBlock(int x, int y, int z, Block block)
         {
             var value = (short)block.Id;
-            SetBlockId(x, y, z, value);
+            SetBlockStateId(x, y, z, value);
         }
 
-        public void SetBlockId(int x, int y, int z, short id)
+        public void SetLightBlock(int x, int y, int z, SebastiansBlock block)
+        {
+            SetBlockStateId(x, y, z, block.StateId);
+        }
+
+        public void SetBlockStateId(int x, int y, int z, short id)
         {
             if (x < 0) x = (x % 16) + 16;
             if (z < 0) z = (z % 16) + 16;
@@ -71,7 +82,7 @@ namespace Obsidian
                 {
                     for (int y = cubesVertical * SebastiansCube.height - 1; y >= 0; y--)
                     {
-                        if (Block.IsIdAir(GetBlockId(x, y, z)))
+                        if (Block.IsIdAir(GetBlockStateId(x, y, z)))
                             continue;
 
                         target.Set(x, z, value: y);
