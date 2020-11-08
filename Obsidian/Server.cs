@@ -225,6 +225,7 @@ namespace Obsidian
 
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
+            await Registry.RegisterBiomesAsync();
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
 

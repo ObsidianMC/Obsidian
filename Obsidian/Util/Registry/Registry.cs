@@ -750,6 +750,39 @@ namespace Obsidian.Util.Registry
             Logger.LogDebug($"Successfully registered {registered} items..");
         }
 
+        public static async Task RegisterBiomesAsync()
+        {
+            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.biome_dimension_codec.json")).First();
+
+            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+
+            using var cread = new StreamReader(cfs, new UTF8Encoding(false));
+
+            var json = await cread.ReadToEndAsync();
+
+            var type = JObject.Parse(json);
+
+            using var cenumerator = type.GetEnumerator();
+
+            var registered = 0;
+            while (cenumerator.MoveNext())
+            {
+                var (name, token) = cenumerator.Current;
+
+                foreach (var obj in token)
+                {
+                    var val = obj.ToString();
+                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
+
+                    DefaultBiomes.TryAdd(codec.Name, codec);
+
+                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+                    registered++;
+                }
+            }
+            Logger.LogDebug($"Successfully registered {registered} codec biomes");
+        }
+
         public static async Task RegisterDimensionsAsync()
         {
             var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.default_dimensions.json")).First();
@@ -780,7 +813,7 @@ namespace Obsidian.Util.Registry
                     registered++;
                 }
             }
-            Logger.LogDebug($"Successfully registered {registered} codec biomes");
+            Logger.LogDebug($"Successfully registered {registered} codec dimensions");
         }
 
         public static async Task RegisterTagsAsync()
