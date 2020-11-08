@@ -1,55 +1,57 @@
 ﻿using Newtonsoft.Json;
+using Obsidian.API;
+using System;
 
 namespace Obsidian.Util
 {
-    public class Config
+    public class Config : IConfig
     {
         [JsonProperty("motd")]
-        public string Motd = "§dObsidian §rv§c0.1§a-DEV\n§r§lRunning on .NET Core 3.1 <3";
+        public string Motd { get; set; } = "§dObsidian §rv§c0.1§a-DEV\n§r§lRunning on .NET Core 3.1 <3";
 
         [JsonProperty("port")]
-        public int Port = 25565;
+        public int Port { get; set; } = 25565;
 
         [JsonProperty("generator")]
-        public string Generator = "overworld";
+        public string Generator { get; set; } = "overworld";
 
         [JsonProperty("seed")]
-        public string Seed = "Obsidian691337";
+        public string Seed { get; set; } = "Obsidian691337";
 
         [JsonProperty("joinMessage")]
-        public string JoinMessage = "§e{0} joined the game";
+        public string JoinMessage { get; set; } = "§e{0} joined the game";
 
         [JsonProperty("leaveMessage")]
-        public string LeaveMessage = "§e{0} left the game";
+        public string LeaveMessage { get; set; } = "§e{0} left the game";
 
         [JsonProperty("onlineMode")]
-        public bool OnlineMode = false;
+        public bool OnlineMode { get; set; } = false;
 
         [JsonProperty("maxPlayers")]
-        public int MaxPlayers = 1000000;
+        public int MaxPlayers { get; set; } = 1000000;
 
         [JsonProperty("operatorRequests")]
-        public bool AllowOperatorRequests;
+        public bool AllowOperatorRequests { get; set; }
 
         /// <summary>
         /// If true, each login/client gets a random username where multiple connections from the same host will be allowed.
         /// </summary>
         [JsonProperty("multiplayerDebugMode")]
-        public bool MulitplayerDebugMode;
+        public bool MulitplayerDebugMode { get; set; }
 
         [JsonProperty("header")]
-        public string Header = "§dObsidian > All other servers";
+        public string Header { get; set; } = "§dObsidian > All other servers";
 
         [JsonProperty("footer")]
-        public string Footer = "§5tiddies §l§d( §c. §d)( §c. §d)";
+        public string Footer { get; set; } = "§5tiddies §l§d( §c. §d)( §c. §d)";
 
         [JsonProperty("baah", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? Baah;
+        public bool? Baah { get; set; }
 
         [JsonProperty("maxMissedKeepAlives")]
-        public int MaxMissedKeepAlives = 15;
+        public int MaxMissedKeepAlives { get; set; } = 15;
 
         [JsonProperty("downloadplugins")]
-        public string[] DownloadPlugins = new string[] { };
+        public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
     }
 }
