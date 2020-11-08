@@ -132,7 +132,7 @@ namespace Obsidian.Events
         internal Task InvokeServerTickAsync() =>
             this.serverTick.InvokeAsync();
 
-        internal async Task InvokeServerServerStatusRequest(ServerStatusRequestEventArgs eventargs)
+        internal async Task<ServerStatusRequestEventArgs> InvokeServerServerStatusRequest(ServerStatusRequestEventArgs eventargs)
         {
             await this.serverStatusRequest.InvokeAsync(eventargs);
 
