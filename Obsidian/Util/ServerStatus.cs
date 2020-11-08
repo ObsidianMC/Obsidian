@@ -40,7 +40,7 @@ namespace Obsidian.Util
 
             this.Version = new ServerVersion();
             this.Players = new ServerPlayers(server);
-            this.Description = new ServerDescription(server);
+            this.Description = (IServerDescription)new ServerDescription(server);
             var favicon_file = "favicon.png";
             if (File.Exists(favicon_file))
             {
@@ -126,10 +126,10 @@ namespace Obsidian.Util
         }
     }
 
-    public class ServerDescription
+    public class ServerDescription : IServerDescription
     {
         [JsonProperty("text")]
-        public string Text;
+        public string Text { get; set; }
 
         public ServerDescription(Server server) => this.Text = server.Config.Motd.Replace('&', '§');
     }
