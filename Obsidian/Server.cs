@@ -39,7 +39,7 @@ namespace Obsidian
 {
     public struct QueueChat
     {
-        public string Message;
+        public IChatMessage Message;
         public sbyte Position;
     }
 
@@ -75,6 +75,7 @@ namespace Obsidian
 
         public CommandHandler Commands { get; }
         public Config Config { get; }
+        public IConfig Configuration => Config;
 
         public ILogger Logger { get; }
 
@@ -149,6 +150,7 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
+        
         public void RegisterCommandClass<T>() where T : BaseCommandClass
         {
             this.Commands.RegisterCommandClass<T>();
@@ -175,10 +177,18 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(string message, sbyte position = 0)
+        public Task BroadcastAsync(string message, sbyte position = 0) => BroadcastAsync(IChatMessage.Simple(message), position);
+        
+        /// <summary>
+        /// Sends a message to all players on the server.
+        /// </summary>
+        public Task BroadcastAsync(IChatMessage message, sbyte position = 0)
         {
+            if (message as ChatMessage is null)
+                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+
             this.chatMessages.Enqueue(new QueueChat() { Message = message, Position = position });
-            this.Logger.LogInformation(message);
+            this.Logger.LogInformation(message.Text);
 
             return Task.CompletedTask;
         }
@@ -293,7 +303,11 @@ namespace Obsidian
         {
             if (!message.StartsWith('/'))
             {
-                await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
+                var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
+
+                if(!chat.Cancel)
+                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
+
                 return;
             }
 
@@ -643,10 +657,7 @@ namespace Obsidian
             await this.SendSpawnPlayerAsync(joined);
         }
 
-        private async Task OnServerTick()
-        {
-            await Task.CompletedTask;
-        }
+        private  Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
     }

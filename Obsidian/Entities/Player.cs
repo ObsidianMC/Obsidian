@@ -1,7 +1,7 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
-using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
@@ -215,6 +215,15 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(Position pos)
         {
             var tid = Globals.Random.Next(0, 999);
+
+            await client.Server.Events.InvokePlayerTeleportedAsync(
+                new PlayerTeleportEventArgs
+                (
+                    this,
+                    this.Location,
+                    pos
+                ));
+
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
@@ -222,6 +231,7 @@ namespace Obsidian.Entities
                 TeleportId = tid
             });
             this.TeleportId = tid;
+
         }
 
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
@@ -239,15 +249,15 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
 
-        public Task SendMessageAsync(IChatMessage message, Guid? sender = null)
+        public Task SendMessageAsync(IChatMessage message, sbyte position = 0, Guid? sender = null)
         {
             var chatMessage = message as ChatMessage;
             if (chatMessage is null)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-            return SendMessageAsync(chatMessage, sender);
+            return SendMessageAsync(chatMessage, position, sender);
         }
 
-        public Task SendMessageAsync(ChatMessage message, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, 0, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, position, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 

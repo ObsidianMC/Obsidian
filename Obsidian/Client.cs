@@ -156,6 +156,9 @@ namespace Obsidian
                         {
                             case 0x00:
                                 var status = new ServerStatus(Server);
+
+                                await this.Server.Events.InvokeServerServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
+
                                 await this.SendPacketAsync(new RequestResponse(status));
                                 break;
 
