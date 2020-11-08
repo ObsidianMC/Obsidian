@@ -24,6 +24,11 @@ namespace Obsidian.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(IFileWriter.securityExceptionMessage);
 
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             File.AppendAllText(path, value);
         }
 
@@ -31,6 +36,11 @@ namespace Obsidian.Plugins.Services
         {
             if (!IsUsable)
                 throw new SecurityException(IFileWriter.securityExceptionMessage);
+
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
 
             return File.AppendAllTextAsync(path, value, cancellationToken);
         }
@@ -138,5 +148,6 @@ namespace Obsidian.Plugins.Services
 
             return workingDirectory;
         }
+        public string GetWorkingDirectory() => workingDirectory ?? CreateWorkingDirectory();
     }
 }

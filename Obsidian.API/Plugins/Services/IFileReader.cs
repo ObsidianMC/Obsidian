@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Plugins.Services.IO;
+using System;
 using System.IO;
 using System.Security;
 using System.Threading;
@@ -62,6 +63,11 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Directory.GetFiles(path);
         }
 
@@ -74,15 +80,12 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Directory.GetDirectories(path);
         }
-
-        /// <summary>
-        /// Creates a directory, that is used by default for relative paths.
-        /// </summary>
-        /// <param name="createOwnDirectory">If set to <b><c>false</c></b>, the automatically assigned directory for your plugin will be skipped.</param>
-        /// <param name="skipFolderAutoGeneration">If set to <b><c>true</c></b>, skips the auto generation method for default plugin dir. Also, <b><c>createOwnDirectory</c></b> needs to be <b><c>true</c></b> for this to work.</param>
-        /// <returns>Path to the created directory.</returns>
-        public string CreateWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false);
     }
 }

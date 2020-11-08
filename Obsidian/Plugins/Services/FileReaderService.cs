@@ -122,5 +122,6 @@ namespace Obsidian.Plugins.Services
 
             return workingDirectory;
         }
+        public string GetWorkingDirectory() => workingDirectory ?? CreateWorkingDirectory();
     }
 }
