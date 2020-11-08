@@ -13,7 +13,6 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        //public Dictionary<short, Block> Blocks { get; private set; } = new Dictionary<short, Block>();
         private SebastiansChunk SebastiansChunk { get; } = new SebastiansChunk();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
@@ -44,6 +43,13 @@ namespace Obsidian.WorldData
             return SebastiansChunk.GetBlock(x, y, z);
         }
 
+        public SebastiansBlock GetLightBlock(Position position) => GetLightBlock((int)position.X, (int)position.Y, (int)position.Z);
+
+        public SebastiansBlock GetLightBlock(int x, int y, int z)
+        {
+            return SebastiansChunk.GetLightBlock(X, y, z);
+        }
+
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
@@ -53,28 +59,17 @@ namespace Obsidian.WorldData
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
 
+        public void SetBlock(Position position, SebastiansBlock block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
+
+        public void SetBlock(int x, int y, int z, SebastiansBlock block)
+        {
+            SebastiansChunk.SetBlock(x, y, z, block);
+            Sections[y >> 4].SetBlock(x, y & 15, z, block);
+        }
+
         public void CalculateHeightmap()
         {
             SebastiansChunk.CalculateHeightmap(target: Heightmaps[HeightmapType.MotionBlocking]);
-            
-            //for (int x = 0; x < 16; x++)
-            //{
-            //    for (int z = 0; z < 16; z++)
-            //    {
-            //        var key = (short)((x << 8) | (z << 4) | 255);
-            //        for (int y = 255; y >= 0; y--, key--)
-            //        {
-            //            if (this.Blocks.TryGetValue(key, out var block))
-            //            {
-            //                if (block.IsAir)
-            //                    continue;
-
-            //                this.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
-            //                break;
-            //            }
-            //        }
-            //    }
-            //}
         }
 
         public void CheckHomogeneity()

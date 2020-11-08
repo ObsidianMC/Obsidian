@@ -208,6 +208,8 @@ namespace Obsidian.WorldData
 
         public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X.ToChunkCoord(), (int)worldLocation.Z.ToChunkCoord());
 
+        public Block GetBlock(Position location) => this.GetBlock((int)location.X, (int)location.Y, (int)location.Z);
+
         public Block GetBlock(int x, int y, int z)
         {
             var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
@@ -215,7 +217,16 @@ namespace Obsidian.WorldData
             return chunk.GetBlock(x, y, z);
         }
 
-        public Block GetBlock(Position location) => this.GetBlock((int)location.X, (int)location.Y, (int)location.Z);
+        public SebastiansBlock GetLightBlock(Position location) => GetLightBlock((int)location.X, (int)location.Y, (int)location.Z);
+
+        public SebastiansBlock GetLightBlock(int x, int y, int z)
+        {
+            var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
+
+            return chunk.GetLightBlock(x, y, z);
+        }
+
+        public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
@@ -226,7 +237,16 @@ namespace Obsidian.WorldData
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
         }
 
-        public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
+        public void SetBlock(Position location, SebastiansBlock block) => SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
+
+        public void SetBlock(int x, int y, int z, SebastiansBlock block)
+        {
+            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+
+            long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
+
+            this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
+        }
 
         public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10)
         {

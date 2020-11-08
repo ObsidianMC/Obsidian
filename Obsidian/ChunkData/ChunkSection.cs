@@ -2,7 +2,6 @@
 using Obsidian.Blocks;
 using Obsidian.Util.Collection;
 using Obsidian.Util.Registry;
-using System;
 
 namespace Obsidian.ChunkData
 {
@@ -37,6 +36,7 @@ namespace Obsidian.ChunkData
 
         public void SetBlock(Position pos, BlockState blockState) => this.SetBlock((int)pos.X, (int)pos.Y, (int)pos.Z, blockState);
         public void SetBlock(int x, int y, int z, BlockState blockState) => this.Set(x, y, z, blockState);
+        public void SetBlock(int x, int y, int z, SebastiansBlock block) => this.Set(x, y, z, block);
 
         private void FillWithAir()
         {

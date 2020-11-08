@@ -63,7 +63,7 @@ namespace Obsidian
             SetBlockStateId(x, y, z, value);
         }
 
-        public void SetLightBlock(int x, int y, int z, SebastiansBlock block)
+        public void SetBlock(int x, int y, int z, SebastiansBlock block)
         {
             SetBlockStateId(x, y, z, block.StateId);
         }
