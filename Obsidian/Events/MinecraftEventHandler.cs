@@ -17,7 +17,7 @@ namespace Obsidian.Events
         private readonly AsyncEvent<IncomingChatMessageEventArgs> incomingChatMessage;
         private readonly AsyncEvent<ServerStatusRequestEventArgs> serverStatusRequest;
         private readonly AsyncEvent serverTick;
-
+        private readonly AsyncEvent<PlayerTeleportEventArgs> playerTeleported;
         public MinecraftEventHandler()
         {
             // Events that don't need additional arguments
@@ -30,6 +30,7 @@ namespace Obsidian.Events
             this.clickEvent = new AsyncEvent<InventoryClickEventArgs>(HandleException, "InventoryClick");
             this.blockInteract = new AsyncEvent<BlockInteractEventArgs>(HandleException, "Block Interact");
             this.incomingChatMessage = new AsyncEvent<IncomingChatMessageEventArgs>(HandleException, "IncomingChatMessage");
+            this.playerTeleported = new AsyncEvent<PlayerTeleportEventArgs>(HandleException, "PlayerTeleported");
             this.serverStatusRequest = new AsyncEvent<ServerStatusRequestEventArgs>(HandleException, "ServerStatusRequest");
         }
 
@@ -41,6 +42,11 @@ namespace Obsidian.Events
         {
             add { this.packetReceived.Register(value); }
             remove { this.packetReceived.Unregister(value); }
+        }
+        public event AsyncEventHandler<PlayerTeleportEventArgs> PlayerTeleported
+        {
+            add { this.playerTeleported.Register(value); }
+            remove { this.playerTeleported.Unregister(value); }
         }
 
         public event AsyncEventHandler<QueuePacketEventArgs> QueuePacket
@@ -120,6 +126,11 @@ namespace Obsidian.Events
 
             return eventArgs;
         }
+        internal async Task<PlayerTeleportEventArgs> InvokePlayerTeleportedAsync(PlayerTeleportEventArgs eventArgs)
+        {
+            await this.playerTeleported.InvokeAsync(eventArgs);
+            return eventArgs;
+        }
 
         internal Task InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
             this.packetReceived.InvokeAsync(eventArgs);
@@ -128,6 +139,7 @@ namespace Obsidian.Events
 
         internal Task InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs) =>
             this.playerLeave.InvokeAsync(eventArgs);
+
 
         internal Task InvokeServerTickAsync() =>
             this.serverTick.InvokeAsync();
