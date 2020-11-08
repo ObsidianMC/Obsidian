@@ -74,7 +74,7 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
-            File.Create(path);
+            File.Create(path).Close();
         }
 
         /// <summary>

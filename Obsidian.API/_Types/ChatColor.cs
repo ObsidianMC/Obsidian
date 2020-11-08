@@ -46,7 +46,7 @@ namespace Obsidian.API
         #region FromCode
         public static ChatColor FromCode(string code)
         {
-            var code_ = code.Replace("&", "").Replace("§", "").ToString().ToLower().ToCharArray().First();
+            var code_ = Char.ToLower(code.Replace("&", "").Replace("§", "")[0]);
             return FromCode(code_);
         }
 
