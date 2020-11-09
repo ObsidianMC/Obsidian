@@ -260,7 +260,7 @@ namespace Obsidian.Entities
         public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
             client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
-        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 

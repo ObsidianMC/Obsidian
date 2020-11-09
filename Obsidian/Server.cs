@@ -552,7 +552,7 @@ namespace Obsidian
                     if (this.Config.Baah.HasValue)
                     {
                         var soundPosition = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
-                        await player.SendSoundAsync(461, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                        await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
                     if (this.chatMessages.TryPeek(out QueueChat msg))
@@ -649,11 +649,11 @@ namespace Obsidian
         private  Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
-    }
 
-    public struct QueueChat
-    {
-        public IChatMessage Message;
-        public MessageType Type;
+        struct QueueChat
+        {
+            public IChatMessage Message;
+            public MessageType Type;
+        }
     }
 }
