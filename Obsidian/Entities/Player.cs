@@ -322,7 +322,7 @@ namespace Obsidian.Entities
                 await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
             return result;
         }
-        public Task<bool> HavePermission(string permission)
+        public Task<bool> HasPermission(string permission)
         {
             bool result = PlayerPermissions.Contains(permission);
             return Task.FromResult(result);

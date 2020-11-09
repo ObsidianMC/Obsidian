@@ -53,7 +53,7 @@ namespace Obsidian.API
         public Task KickAsync(string reason);
         public Task<bool> GrantPermission(string permission);
         public Task<bool> RevokePermission(string permission);
-        public Task<bool> HavePermission(string permission);
+        public Task<bool> HasPermission(string permission);
         public Task SetGamemodeAsync(Gamemode gamemode);
     }
 }
