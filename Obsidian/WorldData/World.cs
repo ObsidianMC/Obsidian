@@ -54,7 +54,7 @@ namespace Obsidian.WorldData
         {
             // run this on move packet.
 
-            int dist = c.ClientSettings?.ViewDistance ?? 8;
+            int dist = c.ClientSettings?.ViewDistance ?? 16;
 
             (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
 

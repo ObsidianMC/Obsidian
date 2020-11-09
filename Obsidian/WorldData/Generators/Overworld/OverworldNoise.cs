@@ -46,22 +46,84 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             };
 
-            BiomeNoise = new Billow
+            BiomeNoise = new Turbulence()
             {
-                Seed = generatorSettings.Seed + 101,
                 Frequency = 43.25,
-                Lacunarity = generatorSettings.ContinentLacunarity,
-                OctaveCount = 1,
-                Quality = NoiseQuality.Fast,
+                Power = 0.01,
+                Roughness = 6,
+                Seed = generatorSettings.Seed + 100,
+                Source0 = new Add()
+                {
+                    Source0 = new Clamp()
+                    {
+                        UpperBound = 2,
+                        LowerBound = -0.1,
+                        Source0 = new Billow()
+                        {
+                            Seed = generatorSettings.Seed + 101,
+                            Frequency = 43.25,
+                            Lacunarity = generatorSettings.ContinentLacunarity,
+                            OctaveCount = 1,
+                            Quality = NoiseQuality.Fast,
+                        }
+                    },
+                    Source1 = new Clamp()
+                    {
+                        UpperBound = 0.1,
+                        LowerBound = -2,
+                        Source0 = new Invert()
+                        {
+                            Source0 = new Billow()
+                            {
+                                Seed = generatorSettings.Seed + 102,
+                                Frequency = 43.25,
+                                Lacunarity = generatorSettings.ContinentLacunarity,
+                                OctaveCount = 1,
+                                Quality = NoiseQuality.Fast,
+                            }
+                        }
+                    }
+                }
             };
 
-            BiomeHumidity = new Billow
+            BiomeHumidity = new Turbulence()
             {
-                Seed = generatorSettings.Seed + 101,
-                Frequency = 24.25,
-                Lacunarity = generatorSettings.ContinentLacunarity,
-                OctaveCount = 1,
-                Quality = NoiseQuality.Fast,
+                Frequency = 47.25,
+                Power = 0.01,
+                Roughness = 6,
+                Seed = generatorSettings.Seed + 103,
+                Source0 = new Add()
+                {
+                    Source0 = new Clamp()
+                    {
+                        UpperBound = 2,
+                        LowerBound = -0.1,
+                        Source0 = new Billow()
+                        {
+                            Seed = generatorSettings.Seed + 104,
+                            Frequency = 47.25,
+                            Lacunarity = generatorSettings.ContinentLacunarity,
+                            OctaveCount = 1,
+                            Quality = NoiseQuality.Fast,
+                        }
+                    },
+                    Source1 = new Clamp()
+                    {
+                        UpperBound = 0.1,
+                        LowerBound = -2,
+                        Source0 = new Invert()
+                        {
+                            Source0 = new Billow()
+                            {
+                                Seed = generatorSettings.Seed + 105,
+                                Frequency = 47.25,
+                                Lacunarity = generatorSettings.ContinentLacunarity,
+                                OctaveCount = 1,
+                                Quality = NoiseQuality.Fast,
+                            }
+                        }
+                    }
+                }
             };
 
         }
@@ -70,7 +132,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         {
 
             //return generatorModule.GetValue(x, 5, z);
-            return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch + 30;
+            return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch;
             //return generator.CreateScaledPlainsTerrain(generator.CreatePlainsTerrain()).GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch + 27;
         }
 
@@ -98,36 +160,36 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public bool isRiver(float x, float z)
         {
-            return generator.RiversPos.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) < 0.2;
+            return generator.RiversPos.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) < 0.5;
         }
 
         public bool isMountain(float x, float z)
         {
-            return generator.ContinentsWithMountains.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) > 0.2;
+            return generator.ContinentsWithMountains.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) > 0.5;
         }
 
         public bool isHills(float x, float z)
         {
             var value = generator.ContinentsWithHills.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value > 0;
+            return value > -0.05;
         }
 
         public bool isBadlands(float x, float z)
         {
             var value = generator.ContinentsWithBadlands.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value > 0;
+            return value > 0.5;
         }
 
         public bool isPlains(float x, float z)
         {
             var value = generator.ContinentsWithPlains.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value > -0.5;
+            return value > -0.15;
         }
 
         public bool isOcean(float x, float z)
         {
             var value = generator.BaseContinents.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value < 0;
+            return value < 0 && !isPlains(x,z);
         }
 
         public bool isDeepOcean(float x, float z)
@@ -138,12 +200,12 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public double GetBiomeTemp(int x, int y, int z)
         {
-            return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch/100, 0, z * generatorSettings.TerrainHorizStretch/100);
+            return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch/10, 0, z * generatorSettings.TerrainHorizStretch/10);
         }
 
         public double GetBiomeHumidity(int x, int y, int z)
         {
-            return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
+            return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch/10, 0, z * generatorSettings.TerrainHorizStretch/10);
         }
 
         /// <summary>

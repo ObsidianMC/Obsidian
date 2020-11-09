@@ -34,7 +34,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 for (int bz = 0; bz < 16; bz++)
                 {
                     double terrainY = terrainHeightmap[bx, bz];
-                    for (int by = skipAbove; by >= 0; by--)
+                    for (int by = 255; by >= 0; by--)
                     {
                         // Air
                         if (by > terrainY && by > 60)
