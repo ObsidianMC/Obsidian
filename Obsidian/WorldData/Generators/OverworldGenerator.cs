@@ -3,7 +3,6 @@ using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
 using System;
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -40,7 +39,6 @@ namespace Obsidian.WorldData.Generators
                     // Determine Biome
                     if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                     {
-                        //if (cx == 6 && cz == -3) { Debugger.Break(); }
                         var b = ChunkBiome.GetBiome(worldX, worldZ, noiseGen);
                         for (int y = 0; y < 256; y+=4)
                         {

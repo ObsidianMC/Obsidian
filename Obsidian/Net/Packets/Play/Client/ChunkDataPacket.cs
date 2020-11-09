@@ -65,8 +65,6 @@ namespace Obsidian.Net.Packets.Play.Client
             writer.EndCompound();
             writer.Finish();
 
-            //if (Chunk.X == 6 && Chunk.Z == -3) { System.Diagnostics.Debugger.Break(); }
-
             if (fullChunk)
                 await this.Chunk.BiomeContainer.WriteToAsync(stream);
 
