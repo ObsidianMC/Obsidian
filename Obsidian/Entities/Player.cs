@@ -304,5 +304,28 @@ namespace Obsidian.Entities
             await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
+
+
+        public async Task<bool> GrantPermission(string permission)
+        {
+            permission = permission.Trim();
+            bool result = PlayerPermissions.Add(permission);
+            if (result)
+                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
+            return result;
+        }
+        public async Task<bool> RevokePermission(string permission)
+        {
+            permission = permission.Trim();
+            bool result = PlayerPermissions.TryRemove(permission);
+            if (result)
+                await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
+            return result;
+        }
+        public Task<bool> HavePermission(string permission)
+        {
+            bool result = PlayerPermissions.Contains(permission);
+            return Task.FromResult(result);
+        }
     }
 }
