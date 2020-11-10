@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <Authors>Craftplacer</Authors>
     <Description>Converts Minecraft vanilla server files to JSON/Obsidian ones</Description>
     <RepositoryUrl>https://github.com/NaamloosDT/Obsidian</RepositoryUrl>
