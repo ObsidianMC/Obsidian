@@ -9,19 +9,31 @@ namespace Obsidian
         private static short[] interactables;
         private static bool initialized;
 
+        public string Name => Material.ToString();
         public Materials Material => (Materials)Registry.StateToMatch[baseId].numeric;
         public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public int Id => Registry.StateToMatch[baseId].numeric;
-        internal short StateId => (short)(baseId + state);
+        public short StateId => (short)(baseId + state);
+        public short BaseId => baseId;
 
         private readonly short baseId;
         private readonly short state;
 
-        internal SebastiansBlock(short stateId)
+        public SebastiansBlock(int stateId) : this((short)stateId)
+        {
+        }
+
+        public SebastiansBlock(short stateId)
         {
             baseId = Registry.StateToMatch[stateId].@base;
             state = (short)(stateId - baseId);
+        }
+
+        public SebastiansBlock(short baseId, short state)
+        {
+            this.baseId = baseId;
+            this.state = state;
         }
 
         public SebastiansBlock(Materials material)

@@ -1,16 +1,14 @@
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using Obsidian._Blocks;
 using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
-using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -355,6 +353,57 @@ namespace Obsidian.Commands
             });
         }
         #endregion
+
+        [Command("surround")]
+        [CommandInfo("Should surround you with doors")]
+        public async Task Surround(ObsidianContext context)
+        {
+            var server = context.Server as Server;
+            var doorBottom = new OakDoor(Half.Bottom, Direction.North, open: false, Hinge.Left, powered: false);
+            var doorTop = new OakDoor(Half.Top, Direction.North, open: false, Hinge.Left, powered: false);
+
+            var pos = context.Player.Location;
+            pos = new Position((int)pos.X, (int)pos.X, (int)pos.Z);
+
+            server.World.SetBlock(pos + new Position(1, 0, 0), doorBottom);
+            server.World.SetBlock(pos + new Position(1, 1, 0), doorTop);
+
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(1, 0, 0), doorBottom.StateId));
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(1, 1, 0), doorTop.StateId));
+
+            ///
+
+            doorBottom.Face = Direction.West;
+
+            server.World.SetBlock(pos + new Position(0, 0, 1), doorBottom);
+            server.World.SetBlock(pos + new Position(0, 1, 1), doorTop);
+
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(0, 0, 1), doorBottom.StateId));
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(0, 1, 1), doorTop.StateId));
+
+            ///
+
+            doorBottom.Face = Direction.South;
+
+            server.World.SetBlock(pos + new Position(0, 0, -1), doorBottom);
+            server.World.SetBlock(pos + new Position(0, 1, -1), doorTop);
+
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(0, 0, -1), doorBottom.StateId));
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(0, 1, -1), doorTop.StateId));
+
+            ///
+
+            doorBottom.Face = Direction.East;
+
+            server.World.SetBlock(pos + new Position(-1, 0, 0), doorBottom);
+            server.World.SetBlock(pos + new Position(-1, 1, 0), doorTop);
+
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(-1, 0, 0), doorBottom.StateId));
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(-1, 1, 0), doorTop.StateId));
+
+
+            await server.BroadcastPacketAsync(new Net.Packets.Play.Client.BlockChange(pos + new Position(0, 3, 0), 1427));
+        }
 
 #if DEBUG
         #region breakpoint

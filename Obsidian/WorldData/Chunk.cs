@@ -47,7 +47,7 @@ namespace Obsidian.WorldData
 
         public SebastiansBlock GetLightBlock(int x, int y, int z)
         {
-            return SebastiansChunk.GetLightBlock(X, y, z);
+            return SebastiansChunk.GetLightBlock(x, y, z);
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);

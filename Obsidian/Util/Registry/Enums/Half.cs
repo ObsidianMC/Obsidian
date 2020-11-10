@@ -3,11 +3,11 @@
     public enum Half
     {
         //for beds and doors
-        Upper,
-        Lower,
+        Upper = 0,
+        Lower = 1,
 
         //for stairs and trap doors
-        Top,
-        Bottom
+        Top = 0,
+        Bottom = 1
     }
 }
