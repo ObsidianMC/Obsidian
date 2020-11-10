@@ -8,6 +8,7 @@ using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -214,6 +215,10 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Position pos)
         {
+            var last = LastLocation.ToChunkCoord();
+            var toChunk = pos.ToChunkCoord();
+            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
+
             var tid = Globals.Random.Next(0, 999);
 
             await client.Server.Events.InvokePlayerTeleportedAsync(
@@ -237,6 +242,9 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
+            var last = LastLocation.ToChunkCoord();
+            var toChunk = to.Location.ToChunkCoord();
+            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
             var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -247,21 +255,24 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), type, sender ?? Guid.Empty));
 
-        public Task SendMessageAsync(IChatMessage message, sbyte position = 0, Guid? sender = null)
+        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            var chatMessage = message as ChatMessage;
-            if (chatMessage is null)
+            if (!(message is ChatMessage chatMessage))
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-            return SendMessageAsync(chatMessage, position, sender);
+
+            return this.SendMessageAsync(chatMessage, type, sender);
         }
 
-        public Task SendMessageAsync(ChatMessage message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, position, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
+            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
-        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+            client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+            client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 

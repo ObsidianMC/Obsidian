@@ -25,7 +25,6 @@ using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,7 +51,6 @@ namespace Obsidian
         private bool disposed;
         private bool compressionEnabled;
         private bool encryptionEnabled;
-
 
         private const int compressionThreshold = 256;
 
@@ -81,6 +79,8 @@ namespace Obsidian
 
         public ILogger Logger => this.Server.Logger;
 
+        public List<(int, int)> LoadedChunks { get; private set; }
+
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
             this.tcp = tcp;
@@ -88,6 +88,7 @@ namespace Obsidian
             this.id = playerId;
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
+            this.LoadedChunks = new List<(int cx, int cz)>();
 
             Stream parentStream = this.tcp.GetStream();
 #if DEBUG
@@ -580,13 +581,33 @@ namespace Obsidian
 
         internal async Task LoadChunksAsync()
         {
-            await this.Player.World.UpdateChunksForClientAsync(this, true);
+            int dist = ClientSettings?.ViewDistance ?? 8;
+
+            (int oldChunkX, int oldChunkZ) = Player.LastLocation.ToChunkCoord();
+            (int newChunkX, int newChunkZ) = Player.Location.ToChunkCoord();
+
+            await this.Player.World.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, this, false);
         }
 
         internal async Task SendChunkAsync(Chunk chunk)
         {
             if(chunk != null)
-                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+            {
+                if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
+                {
+                    await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+                    this.LoadedChunks.Add((chunk.X, chunk.Z));
+                }
+            }
+        }
+        
+        public async Task UnloadChunkAsync(int x, int z)
+        {
+            if (this.LoadedChunks.Contains((x, z)))
+            {
+                await this.QueuePacketAsync(new UnloadChunk(x, z));
+                this.LoadedChunks.Remove((x, z));
+            }
         }
 
         private async Task SendServerBrand()
@@ -606,8 +627,6 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             this.Logger.LogDebug("Sent player list decoration");
         }
-
-        public Task UnloadChunkAsync(int x, int z) => this.QueuePacketAsync(new UnloadChunk(x, z));
 
         #endregion Packet Sending Methods
 
