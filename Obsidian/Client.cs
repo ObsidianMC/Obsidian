@@ -25,7 +25,6 @@ using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
-using SharpNoise.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -597,8 +596,17 @@ namespace Obsidian
                 if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
                 {
                     await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-                    this.LoadedChunks.Append((chunk.X, chunk.Z));
+                    this.LoadedChunks.Add((chunk.X, chunk.Z));
                 }
+            }
+        }
+        
+        public async Task UnloadChunkAsync(int x, int z)
+        {
+            if (this.LoadedChunks.Contains((x, z)))
+            {
+                await this.QueuePacketAsync(new UnloadChunk(x, z));
+                this.LoadedChunks.Remove((x, z));
             }
         }
 
@@ -618,15 +626,6 @@ namespace Obsidian
 
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             this.Logger.LogDebug("Sent player list decoration");
-        }
-
-        public async Task UnloadChunkAsync(int x, int z)
-        {
-            if (this.LoadedChunks.Contains((x, z)))
-            {
-                await this.QueuePacketAsync(new UnloadChunk(x, z));
-                this.LoadedChunks.Remove((x, z));
-            }
         }
 
         #endregion Packet Sending Methods
