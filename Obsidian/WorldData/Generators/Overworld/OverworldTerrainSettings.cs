@@ -180,9 +180,9 @@ namespace Obsidian.WorldData.Generators.Overworld
             SeaLevel = 8 / 64.0;
             ShelfLevel = -4 / 64.0;
 
-            MountainsAmount = 0.55;
-            HillsAmount = 0.41;
-            BadlandsAmount = 0.25;
+            MountainsAmount = 0.25;
+            HillsAmount = 0.15;
+            BadlandsAmount = 0.65;
 
             MountainGlaciation = 1.075; 
             MountainsTwist = 2.1337;
@@ -199,7 +199,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             CaveVertStretch = 0.035;
             CaveHorizStretch = 0.022;
 
-            TerrainHorizStretch = 0.00008; // 0.0008; // 
+            TerrainHorizStretch = 0.0008; // 0.0008; // 
             TerrainVertStretch = 0.60; // 0.4; //
         }
     }

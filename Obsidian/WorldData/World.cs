@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
@@ -44,8 +45,6 @@ namespace Obsidian.WorldData
 
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
-
-            this.Init();
         }
 
         public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
@@ -259,9 +258,10 @@ namespace Obsidian.WorldData
 
         #region world loading/saving
         //TODO
-        public void Load()
+        public bool Load()
         {
             var DataPath = Path.Combine(Name, "level.dat");
+            if (!File.Exists(DataPath)) { return false; }
 
             var DataFile = new NbtFile();
             DataFile.LoadFromFile(DataPath);
@@ -288,7 +288,15 @@ namespace Obsidian.WorldData
                 LevelName = levelcompound["LevelName"].StringValue
             };
 
+            if (!Server.WorldGenerators.TryGetValue(this.Data.GeneratorName, out WorldGenerator value))
+            {
+                Server.Logger.LogWarning($"Unknown generator type {this.Data.GeneratorName}");
+                return false;
+            }
+
+            this.Generator = value;
             this.Loaded = true;
+            return true;
         }
 
         public void Save()
@@ -389,19 +397,44 @@ namespace Obsidian.WorldData
             return chunks.ToList();
         }
 
-        internal void Init()
+        internal void Init(WorldGenerator gen)
         {
-
+            // todo: see if world saved to disk
+            // if so - load things like spawn location
+            // if not, generate world
+            this.Generator = gen;
+            GenerateWorld();
         }
 
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -1; x <= 1; x++)
+            for (int x = -2; x <= 2; x++)
             {
-                for (int z = -1; z <= 1; z++)
+                for (int z = -2; z <= 2; z++)
                 {
-                    this.GenerateRegion(x, z);
+                    var region = this.GenerateRegion(x, z);
+                    // Search for a suitable spawn location
+                    if (Data.SpawnX == Data.SpawnY && Data.SpawnY == Data.SpawnZ && Data.SpawnZ == 0)
+                    {
+                        foreach (var c in region.LoadedChunks)
+                        {
+                            for (int bx = 15; x >=0; bx--)
+                            {
+                                for (int bz = 15; bz >=0; bz--)
+                                {
+                                    var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bz, bz);
+                                    var blockType = c.GetBlock(bx, by, bz).Type;
+                                    if (by > 61 && (blockType == Materials.GrassBlock || blockType == Materials.Sand)) 
+                                    {
+                                        Data.SpawnX = bx;
+                                        Data.SpawnY = by;
+                                        Data.SpawnZ = bz;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

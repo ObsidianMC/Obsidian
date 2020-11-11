@@ -81,7 +81,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
 
-        public World World { get; }
+        public World World { get; private set; }
         public IWorld DefaultWorld => World;
 
         public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
@@ -135,8 +135,6 @@ namespace Obsidian
             this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"));
 
             this.Operators = new OperatorList(this);
-
-            this.World = new World("world", this);
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
@@ -242,15 +240,17 @@ namespace Obsidian
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-            if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
-                this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
-
-            this.World.Generator = value ?? new SuperflatGenerator();
-
-            this.Logger.LogInformation($"World generator set to {this.World.Generator.Id} ({this.World.Generator})");
-
-            this.World.GenerateWorld();
-
+            this.World = new World("world", this);
+            if (!this.World.Load())
+            {
+                if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
+                    this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+                var gen = value ?? new SuperflatGenerator();
+                this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
+                this.World.Init(gen);
+                // TODO: save world
+            }
+            
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
 
