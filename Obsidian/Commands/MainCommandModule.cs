@@ -269,7 +269,7 @@ namespace Obsidian.Commands
         #region op
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task GiveOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -286,7 +286,7 @@ namespace Obsidian.Commands
         #region deop
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task UnclaimOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -344,7 +344,7 @@ namespace Obsidian.Commands
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -360,7 +360,7 @@ namespace Obsidian.Commands
         #region breakpoint
         [Command("breakpoint")]
         [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task BreakpointAsync(ObsidianContext Context)
         {
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");

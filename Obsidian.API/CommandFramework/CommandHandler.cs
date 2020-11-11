@@ -78,26 +78,20 @@ namespace Obsidian.CommandFramework
 
             foreach(var st in subtypes)
             {
+                var group = st.GetCustomAttribute<CommandGroupAttribute>();
                 // Get command name from first constructor argument for command attribute.
-                var name = (string)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments[0].Value;
+                var name = group.GroupName;
                 // Get aliases
-                var baliases = (ReadOnlyCollection<System.Reflection.CustomAttributeTypedArgument>)st.CustomAttributes.First(x => x.AttributeType == typeof(CommandGroupAttribute)).ConstructorArguments[1].Value;
-                var aliases = baliases.Select(x => (string)x.Value);
+                var aliases = group.Aliases;
 
-                var checks = st.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType))
-                    .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
+                var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var desc = "";
                 var usage = "";
 
-                if (st.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
-                {
-                    var args = st.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments;
-                    desc = (string)args[0].Value;
-                    if (args.Count >= 2) usage = (string)args[1].Value;
-                }
+                var info = st.GetCustomAttribute<CommandInfoAttribute>();
 
-                var cmd = new Command(name, aliases.ToArray(), desc, usage, parent, checks, this);
+                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this);
 
                 registerSubgroups(st, cmd);
                 registerSubcommands(st, cmd);
@@ -121,30 +115,21 @@ namespace Obsidian.CommandFramework
             foreach(var m in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
             {
                 // Get command name from first constructor argument for command attribute.
-                var name = (string)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments[0].Value;
+                var cmd = m.GetCustomAttribute<CommandAttribute>();
+                var name = cmd.CommandName;
                 // Get aliases
-                var baliases = (ReadOnlyCollection<System.Reflection.CustomAttributeTypedArgument>)m.CustomAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments[1].Value;
-                var aliases = baliases.Select(x => (string)x.Value);
-                var checks = m.CustomAttributes.Where(x => typeof(BaseExecutionCheckAttribute).IsAssignableFrom(x.AttributeType))
-                    .Select(x => (BaseExecutionCheckAttribute)Activator.CreateInstance(x.AttributeType)).ToArray();
+                var aliases = cmd.Aliases;
+                var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
-                var desc = "";
-                var usage = "";
+                var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-                if (m.CustomAttributes.Any(x => x.AttributeType == typeof(CommandInfoAttribute)))
-                {
-                    var args = m.CustomAttributes.First(x => x.AttributeType == typeof(CommandInfoAttribute)).ConstructorArguments;
-                    desc = (string)args[0].Value;
-                    if(args.Count >= 2) usage = (string)args[1].Value;
-                }
-
-                var cmd = new Command(name, aliases.ToArray(), desc, usage, parent, checks, this);
-                cmd.Overloads.Add(m);
+                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this);
+                command.Overloads.Add(m);
 
                 // Add overloads.
-                cmd.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
+                command.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
 
-                this._commands.Add(cmd);
+                this._commands.Add(command);
             }
         }
 
