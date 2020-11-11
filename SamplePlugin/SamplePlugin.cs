@@ -2,6 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
+using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
@@ -70,16 +71,6 @@ namespace SamplePlugin
         public async Task MyCommandAsync(ObsidianContext ctx)
         {
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
-        }
-        [Command("grantpermission")]
-        public async Task GrantPermission(ObsidianContext ctx, string permission)
-        {
-            await ctx.Player.GrantPermission(permission);
-        }
-        [Command("revokepermission")]
-        public async Task RevokePermission(ObsidianContext ctx, string permission)
-        {
-            await ctx.Player.RevokePermission(permission);
         }
     }
     public class MyWrapper : PluginWrapper

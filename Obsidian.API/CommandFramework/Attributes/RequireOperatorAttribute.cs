@@ -1,7 +1,5 @@
-﻿using Obsidian.API;
+﻿using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Entities;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -16,18 +14,15 @@ namespace Obsidian.Commands
 
         }
 
-        public override async Task<bool> RunChecksAsync(BaseCommandContext ctx)
+        public override async Task<bool> RunChecksAsync(ObsidianContext ctx)
         {
-            if (ctx is ObsidianContext c)
-            {
-                if(this.op && c.Player.IsOperator)
-                    return true;
+            if (this.op && ctx.Player.IsOperator)
+                return true;
 
-                if (this.permission != "")
-                    return await c.Player.HasPermission(permission);
-            }
+            if (this.permission != "")
+                return await ctx.Player.HasPermission(permission.ToLower());
 
-            throw new Exception($"This context ({ctx.ToString()}) is unsupported");
+            return false;
         }
     }
 }

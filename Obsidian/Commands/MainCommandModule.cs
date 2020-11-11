@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
+using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
@@ -185,6 +186,7 @@ namespace Obsidian.Commands
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
+        [RequirePermission("obsidian.announce", true)]
         public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
@@ -344,7 +346,7 @@ namespace Obsidian.Commands
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequirePermission(op: true)]
+        [RequirePermission("obsidian.stop", op: true)]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -353,6 +355,51 @@ namespace Obsidian.Commands
             {
                 server.StopServer();
             });
+        }
+        #endregion
+
+        #region permissions
+        [CommandGroup("permission")]
+        [RequirePermission("obsidian.permissions", true)]
+        public class Permission
+        {
+            [GroupCommand]
+            public async Task CheckPermission(ObsidianContext ctx, string permission)
+            {
+                if (await ctx.Player.HasPermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"You have {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"You don't have {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
+
+            [Command("grant")]
+            public async Task GrantPermission(ObsidianContext ctx, string permission)
+            {
+                if(await ctx.Player.GrantPermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"Sucessfully granted {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"Failed granting {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
+            [Command("revoke")]
+            public async Task RevokePermission(ObsidianContext ctx, string permission)
+            {
+                if (await ctx.Player.RevokePermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"Sucessfully revoked {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"Failed revoking {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
         }
         #endregion
 

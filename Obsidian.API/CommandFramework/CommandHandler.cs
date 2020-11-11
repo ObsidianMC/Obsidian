@@ -15,7 +15,6 @@ namespace Obsidian.CommandFramework
 {
     public class CommandHandler
     {
-        internal Type _contextType;
         internal List<Command> _commands;
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;
@@ -56,11 +55,6 @@ namespace Obsidian.CommandFramework
         public void AddArgumentParser(BaseArgumentParser parser)
         {
             this._argumentParsers.Add(parser);
-        }
-
-        public void RegisterContextType<T>() where T : BaseCommandContext
-        {
-            this._contextType = typeof(T);
         }
 
         public void RegisterCommandClass<T>() where T : BaseCommandClass
@@ -133,17 +127,12 @@ namespace Obsidian.CommandFramework
             }
         }
 
-        public async Task ProcessCommand(BaseCommandContext ctx)
+        public async Task ProcessCommand(ObsidianContext ctx)
         {
             ctx.Commands = this;
 
-            if (!this._contextType.IsAssignableFrom(ctx.GetType()))
-            {
-                throw new InvalidCommandContextTypeException("Your context does not match the registered context type.");
-            }
-
             // split the command message into command and args.
-            if (_commandParser.IsCommandQualified(ctx._message, out string qualified))
+            if (_commandParser.IsCommandQualified(ctx.Message, out string qualified))
             {
                 // if string is "command-qualified" we'll try to execute it.
                 var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
@@ -154,7 +143,7 @@ namespace Obsidian.CommandFramework
             await Task.Yield();
         }
 
-        private async Task executeCommand(string[] command, BaseCommandContext ctx)
+        private async Task executeCommand(string[] command, ObsidianContext ctx)
         {
             Command cmd = null;
             var args = command;

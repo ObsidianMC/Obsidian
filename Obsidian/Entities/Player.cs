@@ -233,7 +233,7 @@ namespace Obsidian.Entities
             if (!File.Exists(file))
                 File.Create(file).Close();
 
-            File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions));
+            File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
         public async Task TeleportAsync(Position pos)
@@ -340,7 +340,7 @@ namespace Obsidian.Entities
         public async Task<bool> GrantPermission(string permission)
         {
             // trim and split permission string
-            permission = permission.Trim();
+            permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
             // Set root node and whether we created a new permission (still false)
@@ -375,7 +375,7 @@ namespace Obsidian.Entities
         public async Task<bool> RevokePermission(string permission)
         {
             // trim and split permission string
-            permission = permission.Trim();
+            permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
             // Set root node and whether we created a new permission (still false)
@@ -409,7 +409,7 @@ namespace Obsidian.Entities
         public Task<bool> HasPermission(string permission)
         {
             // trim and split permission string
-            permission = permission.Trim();
+            permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
             // Set root node and whether we created a new permission (still false)
