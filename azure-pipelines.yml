@@ -41,11 +41,11 @@ steps:
     minorVersion: '0'
     patchVersion: '0'
 
-# PREVIOUS COMMAND SEEMS TO PUSH
-#- task: DotNetCoreCLI@2
-#  displayName: 'Push NuGet packages to feed'
-#  inputs:
-#    command: 'push'
-#    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-#    nuGetFeedType: 'internal'
-#    publishVstsFeed: 'a98a2150-6b20-4ea2-aa86-771dc5468436/3c3a54df-2e6d-495c-ac75-1a7dbea7e928'
+- task: DotNetCoreCLI@2
+  displayName: 'Push NuGet packages to feed'
+  continueOnError: true
+  inputs:
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'a98a2150-6b20-4ea2-aa86-771dc5468436/3c3a54df-2e6d-495c-ac75-1a7dbea7e928'
