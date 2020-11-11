@@ -7,7 +7,7 @@ namespace Obsidian.Commands
     public class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {
         private string[] permissions;
-        private bool op = true;
+        private bool op;
 
         public RequirePermissionAttribute(bool op = false, params string[] permissions)
         {
