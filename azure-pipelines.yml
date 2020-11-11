@@ -6,6 +6,9 @@ trigger:
 pool:
   vmImage: 'windows-latest'
 
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET 5 SDK'
@@ -30,22 +33,24 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: 'Create NuGet packages'
+  condition: eq(variables.isMain, true)
   inputs:
     command: 'pack'
     packagesToPack: '**/Obsidian.API.csproj'
     configuration: 'Release'
     nobuild: true
-    includesymbols: true
+    includesymbols: false
     versioningScheme: 'byPrereleaseNumber'
     majorVersion: '1'
     minorVersion: '0'
     patchVersion: '0'
 
-# PREVIOUS COMMAND SEEMS TO PUSH
-#- task: DotNetCoreCLI@2
-#  displayName: 'Push NuGet packages to feed'
-#  inputs:
-#    command: 'push'
-#    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-#    nuGetFeedType: 'internal'
-#    publishVstsFeed: 'a98a2150-6b20-4ea2-aa86-771dc5468436/3c3a54df-2e6d-495c-ac75-1a7dbea7e928'
+- task: DotNetCoreCLI@2
+  displayName: 'Push NuGet packages to feed'
+  condition: eq(variables.isMain, true)
+  continueOnError: true
+  inputs:
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'a98a2150-6b20-4ea2-aa86-771dc5468436/3c3a54df-2e6d-495c-ac75-1a7dbea7e928'
