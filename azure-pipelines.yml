@@ -25,11 +25,6 @@ steps:
 - task: NuGetToolInstaller@1
   displayName: 'Install NuGet tool'
 
-- task: NuGetCommand@2
-  displayName: 'Download NuGet packages'
-  inputs:
-    restoreSolution: '$(solution)'
-
 - task: MSBuild@1
   displayName: 'Build'
   inputs:
