@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
@@ -10,7 +9,6 @@ using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -400,9 +398,6 @@ namespace Obsidian.WorldData
 
         internal void Init(WorldGenerator gen)
         {
-            // todo: see if world saved to disk
-            // if so - load things like spawn location
-            // if not, generate world
             this.Generator = gen;
             GenerateWorld();
             SetWorldSpawn();
@@ -415,7 +410,7 @@ namespace Obsidian.WorldData
             {
                 for (int z = -1; z <= 1; z++)
                 {
-                    GenerateRegion(x, z);
+                    this.GenerateRegion(x, z);
                 }
             }
         }
@@ -445,7 +440,6 @@ namespace Obsidian.WorldData
                     }
                 }
             }
-            
         }
 
         internal bool TryAddEntity(Entity entity)
