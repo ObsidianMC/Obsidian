@@ -444,7 +444,7 @@ namespace Obsidian.Entities
 
             return Task.FromResult(result);
         }
-        public async Task<bool> HasAnyPermission(string[] permissions)
+        public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
