@@ -33,6 +33,7 @@ steps:
   displayName: 'Build Obsidian'
   inputs:
     command: 'build'
+    projects: '**/*.csproj'
 
 - task: DotNetCoreCLI@2
   displayName: 'Create NuGet packages'
