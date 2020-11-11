@@ -7,7 +7,7 @@ namespace Obsidian.Util
     public class Config : IConfig
     {
         [JsonProperty("motd")]
-        public string Motd { get; set; } = "§dObsidian §rv§c0.1§a-DEV\n§r§lRunning on .NET Core 3.1 <3";
+        public string Motd { get; set; } = "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET Framework §l§c5 §r§l<3";
 
         [JsonProperty("port")]
         public int Port { get; set; } = 25565;

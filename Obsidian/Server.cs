@@ -127,7 +127,6 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
             Logger.LogDebug("Registering command context type...");
-            this.Commands.RegisterContextType<ObsidianContext>();
             Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
