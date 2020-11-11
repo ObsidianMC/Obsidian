@@ -23,7 +23,15 @@ steps:
     includePreviewVersions: true # Required for preview versions
 
 - task: NuGetToolInstaller@1
-  displayName: 'Install NuGet tool'
+  inputs:
+    versionSpec: 
+    checkLatest: true
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'restore'
+    restoreSolution: '$(solution)'
+    feedsToUse: 'select'
 
 - task: MSBuild@1
   displayName: 'Build'
@@ -32,3 +40,17 @@ steps:
     msbuildVersion: 'latest'
     platform: '$(buildPlatform)'
     restoreNugetPackages: true # Optional
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'pack'
+    packagesToPack: '**/Obsidian.API.csproj'
+    versioningScheme: 'byBuildNumber'
+    includeSymbols: true
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'a98a2150-6b20-4ea2-aa86-771dc5468436/3c3a54df-2e6d-495c-ac75-1a7dbea7e928'
