@@ -17,7 +17,7 @@ namespace Obsidian.CommandFramework.ArgumentParsers
 
             this.MinecraftType = minecraftType;
         }
-        public abstract bool TryParseArgument(string input, BaseCommandContext ctx, out T result);
+        public abstract bool TryParseArgument(string input, ObsidianContext ctx, out T result);
 
         public string GetParserIdentifier()
         {

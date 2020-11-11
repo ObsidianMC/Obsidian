@@ -2,13 +2,14 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Util;
 using Obsidian.Util.Converters;
 using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+
+using Half = Obsidian.Util.Registry.Enums.Half;
 
 namespace Obsidian
 {

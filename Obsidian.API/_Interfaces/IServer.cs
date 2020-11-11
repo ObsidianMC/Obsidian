@@ -19,8 +19,8 @@ namespace Obsidian.API
         public IConfig Configuration { get; }
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
-        public Task BroadcastAsync(string message, sbyte position = 0);
-        public Task BroadcastAsync(IChatMessage message, sbyte position = 0);
+        public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
+        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer GetPlayer(string username);
         public IPlayer GetPlayer(Guid uuid);
         public void RegisterCommandClass<T>() where T : BaseCommandClass;
