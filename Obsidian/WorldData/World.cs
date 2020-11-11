@@ -10,6 +10,7 @@ using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -404,39 +405,47 @@ namespace Obsidian.WorldData
             // if not, generate world
             this.Generator = gen;
             GenerateWorld();
+            SetWorldSpawn();
         }
 
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -2; x <= 2; x++)
+            for (int x = -1; x <= 1; x++)
             {
-                for (int z = -2; z <= 2; z++)
+                for (int z = -1; z <= 1; z++)
                 {
-                    var region = this.GenerateRegion(x, z);
-                    // Search for a suitable spawn location
-                    if (Data.SpawnX == Data.SpawnY && Data.SpawnY == Data.SpawnZ && Data.SpawnZ == 0)
+                    GenerateRegion(x, z);
+                }
+            }
+        }
+
+        internal void SetWorldSpawn()
+        {
+            if (Data.SpawnY != 0) { return; }
+            foreach (var r in Regions.Values)
+            {
+                foreach (var c in r.LoadedChunks)
+                {
+                    for (int bx = 0; bx < 16; bx++)
                     {
-                        foreach (var c in region.LoadedChunks)
+                        for (int bz = 0; bz < 16; bz++)
                         {
-                            for (int bx = 15; x >=0; bx--)
+                            var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bx, bz);
+                            Block block = c.GetBlock(bx, by, bz);
+                            if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand))
                             {
-                                for (int bz = 15; bz >=0; bz--)
-                                {
-                                    var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bz, bz);
-                                    var block = c.GetBlock(bx, by, bz);
-                                    if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand)) 
-                                    {
-                                        Data.SpawnX = bx;
-                                        Data.SpawnY = by;
-                                        Data.SpawnZ = bz;
-                                    }
-                                }
+                                Data.SpawnX = bx;
+                                Data.SpawnY = by;
+                                Data.SpawnZ = bz;
+                                this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
+                                return;
                             }
                         }
                     }
                 }
             }
+            
         }
 
         internal bool TryAddEntity(Entity entity)
