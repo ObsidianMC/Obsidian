@@ -39,7 +39,6 @@ steps:
   inputs:
     command: 'pack'
     packagesToPack: '**/Obsidian.API.csproj'
-    nobuild: true
     includesymbols: true
     versioningScheme: 'byPrereleaseNumber'
     majorVersion: '1'
