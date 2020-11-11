@@ -431,7 +431,7 @@ namespace Obsidian.WorldData
                             if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand))
                             {
                                 Data.SpawnX = bx;
-                                Data.SpawnY = by;
+                                Data.SpawnY = by+1;
                                 Data.SpawnZ = bz;
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
                                 return;
