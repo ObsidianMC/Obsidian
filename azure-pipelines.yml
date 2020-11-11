@@ -6,6 +6,9 @@ trigger:
 pool:
   vmImage: 'windows-latest'
 
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET 5 SDK'
@@ -30,6 +33,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: 'Create NuGet packages'
+  condition: eq(variables.isMain, true)
   inputs:
     command: 'pack'
     packagesToPack: '**/Obsidian.API.csproj'
@@ -43,6 +47,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: 'Push NuGet packages to feed'
+  condition: eq(variables.isMain, true)
   continueOnError: true
   inputs:
     command: 'push'
