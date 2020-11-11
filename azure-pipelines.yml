@@ -15,30 +15,35 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- task: UseDotNet@2
-  displayName: 'Install .NET 5 SDK'
-  inputs:
-    version: 5.0.x
-    performMultiLevelLookup: true
-    includePreviewVersions: true # Required for preview versions
+#- task: UseDotNet@2
+#  displayName: 'Install .NET 5 SDK'
+#  inputs:
+#    version: 5.0.x
+#    performMultiLevelLookup: true
+#    includePreviewVersions: true # Required for preview versions
 
 - task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
   inputs:
     command: 'restore'
     feedsToUse: 'select'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Build Obsidian'
   inputs:
     command: 'build'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Create NuGet packages'
   inputs:
     command: 'pack'
-    packagesToPack: '**/Obsidian.API.csproj'
+    packagesToPack: '**/*.csproj'
+    nobuild: true
     includesymbols: true
     versioningScheme: 'byBuildNumber'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Push NuGet packages to feed'
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
