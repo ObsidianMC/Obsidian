@@ -27,13 +27,9 @@ steps:
     command: 'restore'
     feedsToUse: 'select'
 
-- task: MSBuild@1
-  displayName: 'Build'
+- task: DotNetCoreCLI@2
   inputs:
-    solution: '$(solution)'
-    msbuildVersion: 'latest'
-    platform: '$(buildPlatform)'
-    restoreNugetPackages: true # Optional
+    command: 'build'
 
 - task: DotNetCoreCLI@2
   inputs:
