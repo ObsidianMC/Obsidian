@@ -26,7 +26,7 @@ steps:
   inputs:
     command: 'build'
     projects: '**/*.csproj'
-    arguments: '/p:Platform=AnyCpu /c:Release'
+    arguments: '--configuration Release'
 
 - task: DotNetCoreCLI@2
   displayName: 'Create NuGet packages'
