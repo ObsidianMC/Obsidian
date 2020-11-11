@@ -1,7 +1,4 @@
-# ASP.NET Core (.NET Framework)
-# Build and test ASP.NET Core projects targeting the full .NET Framework.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+# Building and publishing Obsidian / Obsidian.API
 
 trigger:
 - master
@@ -10,35 +7,48 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET 5 SDK'
   inputs:
-    version: 5.0.x
+    packageType: 'sdk'
+    version: '5.0.x'
+    includePreviewVersions: true
     performMultiLevelLookup: true
-    includePreviewVersions: true # Required for preview versions
 
 - task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
   inputs:
     command: 'restore'
     feedsToUse: 'select'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Build Obsidian'
   inputs:
     command: 'build'
+    projects: '**/*.csproj'
+    arguments: '--configuration Release'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Create NuGet packages'
+  condition: eq(variables.isMain, true)
   inputs:
     command: 'pack'
     packagesToPack: '**/Obsidian.API.csproj'
-    includesymbols: true
-    versioningScheme: 'byBuildNumber'
+    configuration: 'Release'
+    nobuild: true
+    includesymbols: false
+    versioningScheme: 'byPrereleaseNumber'
+    majorVersion: '1'
+    minorVersion: '0'
+    patchVersion: '0'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Push NuGet packages to feed'
+  condition: eq(variables.isMain, true)
+  continueOnError: true
   inputs:
     command: 'push'
     packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
