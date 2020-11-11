@@ -34,7 +34,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 for (int bz = 0; bz < 16; bz++)
                 {
                     double terrainY = terrainHeightmap[bx, bz];
-                    for (int by = 255; by >= 0; by--)
+                    for (int by = 0; by < 256; by++)
                     {
                         // Air
                         if (by > terrainY && by > 60)
@@ -143,8 +143,8 @@ namespace Obsidian.WorldData.Generators.Overworld
             {
                 for (int bz = 0; bz < 16; bz++)
                 {
-                    int tY = (int)rhm[bx, bz];
-                    int brY = Math.Min((int)bhm[bx, bz], 70);
+                    int tY = Math.Min((int)rhm[bx, bz],64);
+                    int brY = (int)bhm[bx, bz];
                     for (int by = brY; by < tY; by++)
                     {
                         bool caveAir = noiseGen.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
