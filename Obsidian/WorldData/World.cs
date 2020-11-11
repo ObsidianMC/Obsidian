@@ -424,8 +424,8 @@ namespace Obsidian.WorldData
                                 for (int bz = 15; bz >=0; bz--)
                                 {
                                     var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bz, bz);
-                                    var blockType = c.GetBlock(bx, by, bz).Type;
-                                    if (by > 61 && (blockType == Materials.GrassBlock || blockType == Materials.Sand)) 
+                                    var block = c.GetBlock(bx, by, bz);
+                                    if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand)) 
                                     {
                                         Data.SpawnX = bx;
                                         Data.SpawnY = by;
