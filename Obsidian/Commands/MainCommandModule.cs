@@ -186,7 +186,7 @@ namespace Obsidian.Commands
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
-        [RequirePermission("obsidian.announce", true)]
+        [RequirePermission(true, "obsidian.announce")]
         public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
@@ -346,7 +346,7 @@ namespace Obsidian.Commands
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequirePermission("obsidian.stop", op: true)]
+        [RequirePermission(true, "obsidian.stop")]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -358,9 +358,10 @@ namespace Obsidian.Commands
         }
         #endregion
 
+
         #region permissions
         [CommandGroup("permission")]
-        [RequirePermission("obsidian.permissions", true)]
+        [RequirePermission(true, "obsidian.permissions")]
         public class Permission
         {
             [GroupCommand]

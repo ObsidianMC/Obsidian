@@ -6,12 +6,13 @@ namespace Obsidian.Commands
 {
     public class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {
-        string permission = "";
-        bool op = true;
+        private string[] permissions;
+        private bool op = true;
 
-        public RequirePermissionAttribute(string permission = "", bool op = true)
+        public RequirePermissionAttribute(bool op = false, params string[] permissions)
         {
-
+            this.permissions = permissions;
+            this.op = op;
         }
 
         public override async Task<bool> RunChecksAsync(ObsidianContext ctx)
@@ -19,8 +20,8 @@ namespace Obsidian.Commands
             if (this.op && ctx.Player.IsOperator)
                 return true;
 
-            if (this.permission != "")
-                return await ctx.Player.HasPermission(permission.ToLower());
+            if (this.permissions != null)
+                return await ctx.Player.HasAnyPermission(permissions);
 
             return false;
         }
