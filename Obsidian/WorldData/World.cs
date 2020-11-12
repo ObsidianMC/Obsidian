@@ -59,8 +59,7 @@ namespace Obsidian.WorldData
 
             (int newChunkX, int newChunkZ) = c.Player.Location.ToChunkCoord();
 
-
-            if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist || forcereload)
+            if (Math.Abs(newChunkZ - oldChunkZ) > 1 || Math.Abs(newChunkX - oldChunkX) > 1 || forcereload)
             {
                 // This is a teleport!!!1 Send full new chunk data.
                 await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
@@ -137,6 +136,8 @@ namespace Obsidian.WorldData
 
             // load new chunks
             var chunksToGen = new List<Position>();
+
+            // TODO parallel? spiral?
 
             for (int cx = (x - dist); cx < (x + dist); cx++)
             {
