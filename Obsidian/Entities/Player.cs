@@ -1,15 +1,20 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
-using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
@@ -78,8 +83,7 @@ namespace Obsidian.Entities
         // Not sure whether these should be saved to the NBT file.
         // These could be saved under nbt tags prefixed with "obsidian_"
         // As minecraft might just ignore them.
-        public ConcurrentHashSet<string> PlayerPermissions { get; } = new ConcurrentHashSet<string>();
-        public ICollection<string> Permissions => PlayerPermissions;
+        public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
         internal Player(Guid uuid, string username, Client client)
         {
@@ -204,17 +208,50 @@ namespace Obsidian.Entities
 
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
-        public void LoadPerms(List<string> permissions)
+        public void LoadPerms()
         {
-            foreach (var perm in permissions)
-            {
-                PlayerPermissions.Add(perm);
-            }
+            // Load a JSON file that contains all permissions
+            var server = (Server)this.Server;
+            var dir = Path.Combine($"Server-{server.Id}", "permissions");
+            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
+            var file = Path.Combine(dir, $"{user}.json");
+
+            if (File.Exists(file))
+                this.PlayerPermissions = JsonConvert.DeserializeObject<Permission>(File.ReadAllText(file));
+        }
+
+        public void SavePerms()
+        {
+            // Save permissions to JSON file
+            var server = (Server)this.Server;
+            var dir = Path.Combine($"Server-{server.Id}", "permissions");
+            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
+            var file = Path.Combine(dir, $"{user}.json");
+
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+            if (!File.Exists(file))
+                File.Create(file).Close();
+
+            File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
         public async Task TeleportAsync(Position pos)
         {
+            var last = LastLocation.ToChunkCoord();
+            var toChunk = pos.ToChunkCoord();
+            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
+
             var tid = Globals.Random.Next(0, 999);
+
+            await client.Server.Events.InvokePlayerTeleportedAsync(
+                new PlayerTeleportEventArgs
+                (
+                    this,
+                    this.Location,
+                    pos
+                ));
+
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
@@ -222,11 +259,15 @@ namespace Obsidian.Entities
                 TeleportId = tid
             });
             this.TeleportId = tid;
+
         }
 
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
+            var last = LastLocation.ToChunkCoord();
+            var toChunk = to.Location.ToChunkCoord();
+            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
             var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
@@ -237,21 +278,24 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), position, sender ?? Guid.Empty));
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), type, sender ?? Guid.Empty));
 
-        public Task SendMessageAsync(IChatMessage message, Guid? sender = null)
+        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            var chatMessage = message as ChatMessage;
-            if (chatMessage is null)
+            if (!(message is ChatMessage chatMessage))
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-            return SendMessageAsync(chatMessage, sender);
+
+            return this.SendMessageAsync(chatMessage, type, sender);
         }
 
-        public Task SendMessageAsync(ChatMessage message, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, 0, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
+            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
-        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+            client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+            client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
 
@@ -290,6 +334,110 @@ namespace Obsidian.Entities
         {
             await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
+        }
+
+
+        public async Task<bool> GrantPermission(string permission)
+        {
+            // trim and split permission string
+            permission = permission.ToLower().Trim();
+            string[] split = permission.Split('.');
+
+            // Set root node and whether we created a new permission (still false)
+            var parent = this.PlayerPermissions;
+            var result = false;
+
+            foreach(var i in split)
+            {
+                // no such child, this permission is new!
+                if(!parent.Children.Any(x => x.Name == i))
+                {
+                    // create the new child, add it to its parent and set parent to the next value to continue the loop
+                    var child = new Permission(i);
+                    parent.Children.Add(child);
+                    parent = child;
+                    // yes, new permission!
+                    result = true;
+                    continue;
+                }
+
+                // child already exists, set parent to existing child to continue loop
+                parent = parent.Children.First(x => x.Name == i);
+            }
+
+            this.SavePerms();
+
+            if (result)
+                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
+            return result;
+        }
+
+        public async Task<bool> RevokePermission(string permission)
+        {
+            // trim and split permission string
+            permission = permission.ToLower().Trim();
+            string[] split = permission.Split('.');
+
+            // Set root node and whether we created a new permission (still false)
+            var parent = this.PlayerPermissions;
+            var childToRemove = this.PlayerPermissions;
+            var result = true;
+
+            foreach(var i in split)
+            {
+                if(parent.Children.Any(x => x.Name == i))
+                {
+                    // child exists, set its parent node and mark it to be removed
+                    parent = childToRemove;
+                    childToRemove = parent.Children.First(x => x.Name == i);
+                    continue;
+                }
+                // no such child node, result false and break
+                result = false;
+                break;
+            }
+
+            if (result)
+            {
+                parent.Children.Remove(childToRemove);
+                this.SavePerms();
+                await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
+            }
+            return result;
+        }
+
+        public Task<bool> HasPermission(string permission)
+        {
+            // trim and split permission string
+            permission = permission.ToLower().Trim();
+            string[] split = permission.Split('.');
+
+            // Set root node and whether we created a new permission (still false)
+            var result = false;
+            var parent = this.PlayerPermissions;
+
+            foreach(var i in split)
+            {
+                if(parent.Children.Any(x => x.Name == "*"))
+                {
+                    // WILDCARD! all child permissions are granted here.
+                    result = true;
+                    break;
+                }
+                if(parent.Children.Any(x => x.Name == i))
+                {
+                    parent = parent.Children.First(x => x.Name == i);
+                    result = true;
+                }
+                else
+                {
+                    // no such child. break loop and stop searching.
+                    result = false;
+                    break;
+                }
+            }
+
+            return Task.FromResult(result);
         }
     }
 }

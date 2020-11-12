@@ -29,57 +29,80 @@ namespace Obsidian.WorldData.Generators
 
             var terrainHeights = new double[256];
 
-            for (int bx=0; bx<16; bx++)
+            for (int bx = 0; bx < 16; bx++)
             {
-                for (int bz=0; bz<16; bz++)
+                for (int bz = 0; bz < 16; bz++)
                 {
-                    for (int by=0; by<256; by++)
+                    for (int by = 0; by < 256; by++)
                         chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.Air));
 
 
-                    terrainHeights[(bx*16)+bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
-                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
-                    bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
-                    
+                    terrainHeights[(bx * 16) + bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
+                    /*                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
+                                        bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
+                    */
                     if (noiseGen.isRiver(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.LightBlueStainedGlass));
 
                     if (noiseGen.isMountain(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 25, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
+                        chunk.SetBlock(bx, 25, bz, Registry.GetBlock(Materials.BlackStainedGlass));
 
                     if (noiseGen.isHills(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 24, bz, Registry.GetBlock(Materials.RedStainedGlass));
-                    
+
                     if (noiseGen.isBadlands(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 23, bz, Registry.GetBlock(Materials.BlackStainedGlass));
-                    
+                        chunk.SetBlock(bx, 23, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
+
                     if (noiseGen.isPlains(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 22, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
-                    else
+
+                    if (noiseGen.isOcean(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
 
+                    if (noiseGen.isDeepOcean(bx + (cx * 16), bz + (cz * 16)))
+                        chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
+                }
+            }
+/*
                     var biometemp = noiseGen.GetBiomeTemp(bx + (cx * 16), 0, bz + (cz * 16));
                     var biomeHumidity = noiseGen.GetBiomeHumidity(bx + (cx * 16), 255, bz + (cz * 16));
-                    if (biometemp > 0)
+                    if (biometemp > 0.75)
                     {
-                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.RedStainedGlass));
+                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.RedStainedGlass));
+                    }
+                    else if (biometemp > 0.33)
+                    {
+                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.YellowStainedGlass));
+                    }
+                    else if (biometemp > -0.15)
+                    {
+                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.GreenStainedGlass));
+                    }
+                    else if (biometemp > -0.5)
+                    {
+                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.CyanStainedGlass));
                     }
                     else
-                    {
-                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.GreenStainedGlass));
-                    }
-                    if (biomeHumidity > 0)
                     {
                         chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.BlueStainedGlass));
                     }
+
+                    if (biomeHumidity > 0.33)
+                    {
+                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
+                    }
+                    else if (biomeHumidity > -0.33)
+                    {
+                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
+                    }
                     else
                     {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.YellowStainedGlass));
+                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.GrayStainedGlass));
                     }
                 }
             }
 
-/*            for (int bx = 0; bx < 16; bx++)
+            for (int bx = 0; bx < 16; bx++)
             {
                 for (int bz = 0; bz < 16; bz++)
                 {

@@ -34,7 +34,7 @@ namespace Obsidian.Util
             {
                 using var sw = fi.CreateText();
 
-                await sw.WriteAsync(JsonConvert.SerializeObject(this.ops));
+                await sw.WriteAsync(JsonConvert.SerializeObject(this.ops, Formatting.Indented));
             }
         }
 
@@ -103,7 +103,7 @@ namespace Obsidian.Util
 
         private void UpdateList()
         {
-            File.WriteAllText(Path, JsonConvert.SerializeObject(ops));
+            File.WriteAllText(Path, JsonConvert.SerializeObject(ops, Formatting.Indented));
         }
 
         private class Operator

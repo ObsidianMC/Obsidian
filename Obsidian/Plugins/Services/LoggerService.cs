@@ -5,7 +5,7 @@ namespace Obsidian.Plugins.Services
 {
     public class LoggerService : Logging.Logger, API.Plugins.Services.ILogger
     {
-        public LoggerService(PluginContainer plugin) : base(plugin.Info.Name, LogLevel.Debug)
+        public LoggerService(PluginContainer plugin) : base(plugin.Info.Name, Globals.Config.LogLevel)
         {
         }
 

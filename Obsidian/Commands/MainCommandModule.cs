@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
+using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
@@ -185,7 +186,8 @@ namespace Obsidian.Commands
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
-        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, 2);
+        [RequirePermission("obsidian.announce", true)]
+        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
         #region leave
@@ -269,7 +271,7 @@ namespace Obsidian.Commands
         #region op
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task GiveOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -286,7 +288,7 @@ namespace Obsidian.Commands
         #region deop
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task UnclaimOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -337,14 +339,14 @@ namespace Obsidian.Commands
         [CommandInfo("Shows obsidian popup", "/obsidian")]
         public async Task ObsidianAsync(ObsidianContext Context)
         {
-            await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", 2);
+            await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
         #endregion
 
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequireOperator]
+        [RequirePermission("obsidian.stop", op: true)]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -356,11 +358,56 @@ namespace Obsidian.Commands
         }
         #endregion
 
+        #region permissions
+        [CommandGroup("permission")]
+        [RequirePermission("obsidian.permissions", true)]
+        public class Permission
+        {
+            [GroupCommand]
+            public async Task CheckPermission(ObsidianContext ctx, string permission)
+            {
+                if (await ctx.Player.HasPermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"You have {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"You don't have {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
+
+            [Command("grant")]
+            public async Task GrantPermission(ObsidianContext ctx, string permission)
+            {
+                if(await ctx.Player.GrantPermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"Sucessfully granted {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"Failed granting {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
+            [Command("revoke")]
+            public async Task RevokePermission(ObsidianContext ctx, string permission)
+            {
+                if (await ctx.Player.RevokePermission(permission))
+                {
+                    await ctx.Player.SendMessageAsync($"Sucessfully revoked {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
+                }
+                else
+                {
+                    await ctx.Player.SendMessageAsync($"Failed revoking {ChatColor.Red}{permission}{ChatColor.Reset}.");
+                }
+            }
+        }
+        #endregion
+
 #if DEBUG
         #region breakpoint
         [Command("breakpoint")]
         [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
-        [RequireOperator]
+        [RequirePermission(op: true)]
         public async Task BreakpointAsync(ObsidianContext Context)
         {
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
