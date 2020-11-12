@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Plugins.Services.IO;
+using System;
 using System.IO;
 using System.Security;
 using System.Threading;
@@ -62,6 +63,11 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Directory.GetFiles(path);
         }
 
@@ -73,6 +79,11 @@ namespace Obsidian.API.Plugins.Services
         {
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
+
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
 
             return Directory.GetDirectories(path);
         }
