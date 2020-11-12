@@ -3,6 +3,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.Collection;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -67,21 +68,37 @@ namespace Obsidian.WorldData
                 var chunkPath = Path.Join(chunksFolder, $"{c.X}_{c.Z}.cnk");
                 var chunkFile = new NbtFile();
 
-                var sectionsCompound = new List<NbtCompound>();
+                var sectionsCompound = new NbtList("Sections", NbtTagType.Compound);
                 foreach(var section in c.Sections)
                 {
-                    if (section.YBase is null) { continue; }
- 
+                    if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
+
+                    var palatte = new NbtList("Palette", NbtTagType.Compound);
+
+                    if(section.Palette is LinearBlockStatePalette linear)
+                    {
+                        foreach (var block in linear.BlockStateArray)
+                        {
+                            if (block is null)
+                                continue;
+
+                            palatte.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
+                            {
+                                new NbtString("Name", block.UnlocalizedName)
+                            });
+                        }
+                    }
+
                     var sec = new NbtCompound()
                     {
                         new NbtByte("Y", (byte)section.YBase),
-                        new NbtList("Palette", new List<NbtTag>()),
+                        palatte,
                         new NbtLongArray("BlockStates", section.BlockStorage.Storage)
                     };
                     sectionsCompound.Add(sec);
                 }
 
-                var blocksCompound = new List<NbtCompound>();
+                var blocksCompound = new NbtList("Blocks", NbtTagType.Compound);
                 foreach (var block in c.Blocks)
                 {
                     var b = new NbtCompound()
@@ -107,8 +124,8 @@ namespace Obsidian.WorldData
                         new NbtLongArray("OCEAN_FLOOR", c.Heightmaps[HeightmapType.OceanFloor].data.Storage),
                         new NbtLongArray("WORLD_SURFACE", c.Heightmaps[HeightmapType.WorldSurface].data.Storage),
                     },
-                    //new NbtList("Sections", sectionsCompound), // Do we even use sections?
-                    new NbtList("Blocks", blocksCompound)
+                    sectionsCompound, // Do we even use sections?
+                    blocksCompound
                 };
 
                 chunkFile.RootTag = chunkCompound;

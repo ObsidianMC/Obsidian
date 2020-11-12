@@ -37,7 +37,7 @@ namespace Obsidian.WorldData
         private void Init()
         {
             for (int i = 0; i < 16; i++)
-                this.Sections[i] = new ChunkSection();
+                this.Sections[i] = new ChunkSection(4, i);
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
@@ -57,8 +57,6 @@ namespace Obsidian.WorldData
             this.Blocks[value] = block;
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
-
-           
         }
 
         public void CalculateHeightmap()
