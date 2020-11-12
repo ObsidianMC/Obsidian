@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
@@ -259,7 +260,8 @@ namespace Obsidian.WorldData
         //TODO
         public bool Load()
         {
-            var DataPath = Path.Combine(Name, "level.dat");
+            var worldDir = Path.Join(Server.ServerFolderPath, Name);
+            var DataPath = Path.Combine(worldDir, "level.dat");
             if (!File.Exists(DataPath)) { return false; }
 
             var DataFile = new NbtFile();
@@ -300,7 +302,31 @@ namespace Obsidian.WorldData
 
         public void Save()
         {
+            var worldFile = Path.Join(Server.ServerFolderPath, Name, "level.dat");
+            var dataFile = new NbtFile();
+            var levelCompound = new NbtCompound("Data")
+            {
+                new NbtByte("hardcore", 1),
+                new NbtByte("MapFeatures", 1),
+                new NbtByte("raining", 0),
+                new NbtByte("thundering", 0),
+                new NbtInt("GameType", (int)Gamemode.Creative),
+                new NbtInt("generatorVersion", 1),
+                new NbtInt("rainTime", 0),
+                new NbtInt("SpawnX", Data.SpawnX),
+                new NbtInt("SpawnY", Data.SpawnY),
+                new NbtInt("SpawnZ", Data.SpawnZ),
+                new NbtInt("thunderTime", 0),
+                new NbtInt("version", 19133),
+                new NbtLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()),
+                new NbtLong("RandomSeed", 1),
+                new NbtLong("Time", 0),
+                new NbtString("generatorName", Generator.Id),
+                new NbtString("LevelName", Name)
+            };
 
+            dataFile.RootTag = levelCompound;
+            dataFile.SaveToFile(worldFile, NbtCompression.ZLib);
         }
 
         public void LoadPlayer(Guid uuid)
@@ -398,6 +424,8 @@ namespace Obsidian.WorldData
 
         internal void Init(WorldGenerator gen)
         {
+            // Make world directory
+            Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
             GenerateWorld();
             SetWorldSpawn();
