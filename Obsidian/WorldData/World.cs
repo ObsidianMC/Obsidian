@@ -326,12 +326,17 @@ namespace Obsidian.WorldData
             };
 
             dataFile.RootTag = levelCompound;
-            dataFile.SaveToFile(worldFile, NbtCompression.ZLib);
+            dataFile.SaveToFile(worldFile, NbtCompression.GZip);
+
+            foreach (var reg in this.Regions.Values)
+            {
+                reg.FlushChunks(Path.Join(Server.ServerFolderPath, Name));
+            }
         }
 
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(Name, "players", $"{uuid}.dat");
+            var playerfile = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
