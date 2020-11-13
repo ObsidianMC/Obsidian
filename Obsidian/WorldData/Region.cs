@@ -90,10 +90,18 @@ namespace Obsidian.WorldData
                 var states = (secCompound["BlockStates"] as NbtLongArray).Value;
                 var palettes = secCompound["Palette"] as NbtList;
 
+                chunk.Sections[secY].BlockStorage.Storage = states;
+
+                var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY].Palette;
+                var index = 0;
                 foreach (var pallete in palettes)
                 {
-                    ((LinearBlockStatePalette)chunk.Sections[secY].Palette).BlockStateArray.Append(Registry.GetBlock(pallete["Name"].StringValue));
+
+                    chunkSecPalette.BlockStateArray.SetValue(Registry.GetBlock(pallete["Name"].StringValue), index);
+                    index++;
                 }
+                // chunkSecPalette.BlockStateCount = palettes.Count; // doesn't work ???? ¯\_(ツ)_/¯
+                chunkSecPalette.BlockStateCount = chunkSecPalette.BlockStateArray.Where(a => a is not null).Count();
             }
 
             chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtIntArray).Value.ToList();
