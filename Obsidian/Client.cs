@@ -582,7 +582,7 @@ namespace Obsidian
             }
 
             await this.packetQueue.SendAsync(packet);
-            this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
+            //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
         }
 
         internal async Task LoadChunksAsync()

@@ -25,7 +25,7 @@ namespace Obsidian.ChunkData
 
             for (int id = 0; id < BlockStateCount; id++)
             {
-                if (this.BlockStateArray[id] == blockState)
+                if (this.BlockStateArray[id].Id == blockState.Id)
                     return id;
             }
 

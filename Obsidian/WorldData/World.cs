@@ -134,9 +134,6 @@ namespace Obsidian.WorldData
                 }
             }
 
-            // load new chunks
-            var chunksToGen = new List<Position>();
-
             // TODO parallel? spiral?
 
             for (int cx = (x - dist); cx < (x + dist); cx++)
@@ -144,23 +141,7 @@ namespace Obsidian.WorldData
                 for (int cz = z - dist; cz < z + dist; cz++)
                 {
                     var chk = GetChunk(cx, cz);
-                    if (chk is null)
-                    {
-                        chunksToGen.Add(new Position(cx, 0, cz));
-                    }
-                    else
-                    {
-                        await c.SendChunkAsync(chk);
-                    }
-                }
-            }
-
-            if (chunksToGen.Count != 0)
-            {
-                var chunks = GenerateChunks(chunksToGen);
-                foreach (var chunk in chunks)
-                {
-                    await c.SendChunkAsync(chunk);
+                    await c.SendChunkAsync(chk);
                 }
             }
 
@@ -202,19 +183,7 @@ namespace Obsidian.WorldData
 
         public Chunk GetChunk(int chunkX, int chunkZ)
         {
-            if(this.Generator.GetType() == typeof(Obsidian.WorldData.Generators.SuperflatGenerator))
-            {
-                return this.Generator.GenerateChunk(chunkX, chunkZ);
-            }
-
-            var region = this.GetRegion(chunkX, chunkZ);
-
-            if (region == null)
-            {
-                region = GenerateRegionForChunk(chunkX, chunkZ);
-            }
-
-            if (chunkX == 0 && chunkZ == 0) { System.Diagnostics.Debugger.Break(); }
+            var region = this.GetRegion(chunkX, chunkZ) ?? GenerateRegionForChunk(chunkX, chunkZ);
 
             var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
@@ -304,10 +273,22 @@ namespace Obsidian.WorldData
                 return false;
             }
 
-            var r = new Region(0, 0, worldDir);
-            var c = r.LoadChunk(0, 0);
-            r.LoadedChunks[0, 0] = c;
-            Regions.TryAdd(Helpers.IntsToLong(0, 0), r);
+            Server.Logger.LogInformation($"Loading spawn chunks into memory...");
+            for (var rx = -2; rx < 2; rx++)
+            {
+                for (var rz = -2; rz < 2; rz++)
+                {
+                    var r = new Region(rx, rz, worldDir);
+                    for (var cx = 0; cx < Region.CUBIC_REGION_SIZE; cx++)
+                    {
+                        for (var cz=0; cz < Region.CUBIC_REGION_SIZE; cz++)
+                        {
+                            r.LoadChunk((rx << Region.CUBIC_REGION_SIZE_SHIFT) + cx, (rz << Region.CUBIC_REGION_SIZE_SHIFT) + cz);
+                        }
+                    }
+                    Regions.TryAdd(Helpers.IntsToLong(rx, rz), r);
+                }
+            }
 
             this.Generator = value;
             this.Loaded = true;
@@ -397,7 +378,7 @@ namespace Obsidian.WorldData
 
         public Region GenerateRegion(int regionX, int regionZ)
         {
-            this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
+            this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             long value = Helpers.IntsToLong(regionX, regionZ);
 
             if (this.Regions.ContainsKey(value))
@@ -414,23 +395,24 @@ namespace Obsidian.WorldData
                 {
                     int cx = (regionX << Region.CUBIC_REGION_SIZE_SHIFT) + x;
                     int cz = (regionZ << Region.CUBIC_REGION_SIZE_SHIFT) + z;
-                    chunksToGen.Add(new Position(cx, 0, cz));
+                    if (region.LoadChunk(cx, cz) is null)
+                        chunksToGen.Add(new Position(cx, 0, cz));
                 }
             }
-            var chunks = GenerateChunks(chunksToGen);
+            var newChunks = GenerateChunks(chunksToGen);
 
-            foreach (Chunk chunk in chunks)
+            foreach (Chunk chunk in newChunks)
             {
                 var index = (Helpers.Modulo(chunk.X, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunk.Z, Region.CUBIC_REGION_SIZE));
                 region.LoadedChunks[index.Item1, index.Item2] = chunk;
+                region.FlushChunk(chunk);
             }
 
             this.Regions.TryAdd(value, region);
-
             return region;
         }
 
-        public List<Chunk> GenerateChunks(List<Position> chunkLocs)
+        public List<Chunk> GenerateChunks(List<Position> chunkLocs, Region region = null)
         {
             ConcurrentBag<Chunk> chunks = new ConcurrentBag<Chunk>();
             Parallel.ForEach(chunkLocs, (loc) =>
@@ -453,9 +435,9 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -1; x <= 1; x++)
+            for (int x = -4; x <= 4; x++)
             {
-                for (int z = -1; z <= 1; z++)
+                for (int z = -4; z <= 4; z++)
                 {
                     this.GenerateRegion(x, z);
                 }

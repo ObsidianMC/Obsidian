@@ -10,6 +10,7 @@ using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -94,14 +95,25 @@ namespace Obsidian.WorldData
 
                 var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY].Palette;
                 var index = 0;
-                foreach (var pallete in palettes)
+                List<string> paletteStrings = new List<string>();
+                foreach  (var palette in palettes)
                 {
+                    paletteStrings.Add(palette["Name"].StringValue);
+                }
+                paletteStrings = paletteStrings.Distinct().ToList();
 
-                    chunkSecPalette.BlockStateArray.SetValue(Registry.GetBlock(pallete["Name"].StringValue), index);
+                foreach (var pallete in paletteStrings)
+                {
+                    var block = Registry.GetBlock(pallete);
+                    if (block is null) 
+                    { 
+                        Debugger.Break();
+                        continue;
+                    }
+                    chunkSecPalette.BlockStateArray.SetValue(block, index);
                     index++;
                 }
-                // chunkSecPalette.BlockStateCount = palettes.Count; // doesn't work ???? ¯\_(ツ)_/¯
-                chunkSecPalette.BlockStateCount = chunkSecPalette.BlockStateArray.Where(a => a is not null).Count();
+                chunkSecPalette.BlockStateCount = paletteStrings.Count;
             }
 
             chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtIntArray).Value.ToList();
@@ -113,6 +125,7 @@ namespace Obsidian.WorldData
                 chunk.Heightmaps[heightmapType].data.Storage = values;
             }
 
+            LoadedChunks[relativeX, relativeZ] = chunk;
             return chunk;
         }
 
