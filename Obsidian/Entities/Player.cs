@@ -238,9 +238,9 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(Position pos)
         {
-            var last = LastLocation.ToChunkCoord();
-            var toChunk = pos.ToChunkCoord();
-            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
+            this.LastLocation = this.Location;
+            this.Location = pos;
+            await this.client.Server.World.ResendBaseChunksAsync(this.client);
 
             var tid = Globals.Random.Next(0, 999);
 
@@ -265,9 +265,9 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
-            var last = LastLocation.ToChunkCoord();
-            var toChunk = to.Location.ToChunkCoord();
-            await this.client.Server.World.ResendBaseChunksAsync(this.client.ClientSettings?.ViewDistance ?? 4, last.x, last.z, toChunk.x, toChunk.z, this.client);
+            LastLocation = this.Location;
+            this.Location = to.Location;
+            await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {

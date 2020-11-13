@@ -107,7 +107,6 @@ namespace Obsidian.WorldData
                     var block = Registry.GetBlock(pallete);
                     if (block is null) 
                     { 
-                        Debugger.Break();
                         continue;
                     }
                     chunkSecPalette.BlockStateArray.SetValue(block, index);

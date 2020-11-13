@@ -49,105 +49,54 @@ namespace Obsidian.WorldData
 
         public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
 
-        public async Task UpdateChunksForClientAsync(Client c, bool forcereload = false)
+        public async Task UpdateClientChunksAsync(Client c, bool forcereload = false)
         {
-            // run this on move packet.
+            if (forcereload)
+            {
+                foreach (var chunkLoc in c.LoadedChunks)
+                {
+                    await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                }
+                c.LoadedChunks = new List<(int, int)>();
+            }
+
+            List<(int, int)> clientNeededChunks = new List<(int, int)>();
+            List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
+            
+            (int playerChunkX, int playerChunkZ) = c.Player.Location.ToChunkCoord();
+            (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastLocation.ToChunkCoord();
 
             int dist = c.ClientSettings?.ViewDistance ?? 8;
+            for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
+                for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
+                    clientNeededChunks.Add((x, z));
 
-            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
-
-            (int newChunkX, int newChunkZ) = c.Player.Location.ToChunkCoord();
-
-            if (Math.Abs(newChunkZ - oldChunkZ) > 1 || Math.Abs(newChunkX - oldChunkX) > 1 || forcereload)
+            clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+            clientNeededChunks = clientNeededChunks.Except(c.LoadedChunks).ToList();
+            clientNeededChunks.Sort((chunk1, chunk2) =>
             {
-                // This is a teleport!!!1 Send full new chunk data.
-                await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
-                return;
-            }
+                return Math.Abs(playerChunkX - chunk1.Item1) +
+                Math.Abs(playerChunkZ - chunk1.Item2) <
+                Math.Abs(playerChunkX - chunk2.Item1) +
+                Math.Abs(playerChunkZ - chunk2.Item2) ? -1 : 1;
+            });
 
-            // x chunk is old + 1
-            if (newChunkX > oldChunkX)
+            clientNeededChunks.ForEach(async chunkLoc => await c.SendChunkAsync(this.GetChunk(chunkLoc.Item1, chunkLoc.Item2)));
+            c.LoadedChunks.AddRange(clientNeededChunks);
+            
+            clientUnneededChunks.ForEach(async chunkLoc => {
+                await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                c.LoadedChunks.Remove(chunkLoc);
+                });
+
+            if (!(playerChunkX == lastPlayerChunkX && playerChunkZ == lastPlayerChunkZ))
             {
-                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
-                {
-                    await c.UnloadChunkAsync((newChunkX - dist), i);
-
-                    await c.SendChunkAsync(this.GetChunk((newChunkX + dist), i));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border x +1");
-            }
-
-            // x chunk is old - 1
-            if (newChunkX < oldChunkX)
-            {
-                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
-                {
-                    await c.UnloadChunkAsync((newChunkX + dist), i);
-
-                    await c.SendChunkAsync(this.GetChunk((newChunkX - dist), i));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border x -1");
-            }
-
-            // z chunk is old + 1
-            if (newChunkZ > oldChunkZ)
-            {
-                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
-                {
-                    await c.UnloadChunkAsync(i, (newChunkZ - dist));
-
-                    await c.SendChunkAsync(this.GetChunk(i, (newChunkZ + dist)));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border z +1");
-            }
-
-            // z chunk is old -1
-            if (newChunkZ < oldChunkZ)
-            {
-                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
-                {
-                    await c.UnloadChunkAsync(i, (newChunkZ + dist));
-
-                    await c.SendChunkAsync(this.GetChunk(i, (newChunkZ - dist)));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border z -1");
+                await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
-
-        public async Task ResendBaseChunksAsync(int distance, int oldx, int oldz, int x, int z, Client c, bool unload=true)
+        public async Task ResendBaseChunksAsync(Client c)
         {
-            var dist = distance + 3; // for genarator gaps
-            // unload old chunks
-            if(unload)
-            {
-                for (int cx = oldx - dist; cx < oldx + dist; cx++)
-                {
-                    for (int cz = oldz - dist; cz < oldz + dist; cz++)
-                    {
-                        await c.UnloadChunkAsync(cx, cz);
-                    }
-                }
-            }
-
-            // TODO parallel? spiral?
-
-            for (int cx = (x - dist); cx < (x + dist); cx++)
-            {
-                for (int cz = z - dist; cz < z + dist; cz++)
-                {
-                    var chk = GetChunk(cx, cz);
-                    await c.SendChunkAsync(chk);
-                }
-            }
-
-            await c.SendPacketAsync(new UpdateViewPosition(x, z));
-
-            c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+            await UpdateClientChunksAsync(c, true);
         }
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
