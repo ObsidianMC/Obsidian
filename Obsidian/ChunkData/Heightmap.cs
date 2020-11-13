@@ -13,7 +13,7 @@ namespace Obsidian.ChunkData
         public const string MOTION_BLOCKING = "MOTION_BLOCKING";
         public HeightmapType HeightmapType { get; set; }
 
-        internal readonly DataArray data = new DataArray(9, 256);
+        internal DataArray data = new DataArray(9, 256);
 
         private Chunk chunk;
 

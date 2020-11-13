@@ -214,8 +214,16 @@ namespace Obsidian.WorldData
                 region = GenerateRegionForChunk(chunkX, chunkZ);
             }
 
-            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE)];
-            if (chunk is null) { System.Diagnostics.Debugger.Break(); }
+            if (chunkX == 0 && chunkZ == 0) { System.Diagnostics.Debugger.Break(); }
+
+            var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
+            var chunk = region.LoadedChunks[index.Item1, index.Item2];
+            if (chunk is null) 
+            {
+                chunk = Generator.GenerateChunk(chunkX, chunkZ);                
+                region.LoadedChunks[index.Item1, index.Item2] = chunk;
+                region.FlushChunk(chunk);
+            }
             return chunk;
         }
 
@@ -296,6 +304,11 @@ namespace Obsidian.WorldData
                 return false;
             }
 
+            var r = new Region(0, 0, worldDir);
+            var c = r.LoadChunk(0, 0);
+            r.LoadedChunks[0, 0] = c;
+            Regions.TryAdd(Helpers.IntsToLong(0, 0), r);
+
             this.Generator = value;
             this.Loaded = true;
             return true;
@@ -331,7 +344,7 @@ namespace Obsidian.WorldData
 
             foreach (var reg in this.Regions.Values)
             {
-                reg.FlushChunks(Path.Join(Server.ServerFolderPath, Name));
+                reg.FlushChunks();
             }
         }
 
@@ -390,7 +403,7 @@ namespace Obsidian.WorldData
             if (this.Regions.ContainsKey(value))
                 return this.Regions[value];
 
-            var region = new Region(regionX, regionZ);
+            var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 

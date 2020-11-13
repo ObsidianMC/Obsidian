@@ -1,8 +1,12 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
+using Obsidian.Util;
 using Obsidian.Util.Collection;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,14 +27,19 @@ namespace Obsidian.WorldData
         public int X { get; }
         public int Z { get; }
 
+        public string RegionFolder { get; }
+
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
 
         public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(CUBIC_REGION_SIZE, CUBIC_REGION_SIZE);
 
-        internal Region(int x, int z)
+        internal Region(int x, int z, string worldRegionsPath)
         {
             this.X = x;
             this.Z = z;
+            RegionFolder = Path.Join(worldRegionsPath, $"{X}.{Z}");
+            // Sanity check folders are created
+            Directory.CreateDirectory(Path.Join(RegionFolder, "chunks"));
         }
 
         internal async Task BeginTickAsync(CancellationToken cts)
@@ -46,62 +55,98 @@ namespace Obsidian.WorldData
 
         internal void Cancel() => this.cancel = true;
 
-        public Chunk LoadChunk(int relativeX, int relativeZ)
+        public Chunk LoadChunk(int x, int z)
         {
+            var relativeX = Helpers.Modulo(x, CUBIC_REGION_SIZE);
+            var relativeZ = Helpers.Modulo(z, CUBIC_REGION_SIZE);
             // See if chunk is already loaded
             if (LoadedChunks[relativeX, relativeZ] is Chunk c) { return c; }
-            var chunk = new Chunk(
-                relativeX << CUBIC_REGION_SIZE_SHIFT,
-                relativeZ << CUBIC_REGION_SIZE_SHIFT
-                );
+            // See if chunk is on disk
+            var chunkFile = Path.Join(RegionFolder, "chunks", $"{x}_{z}.cnk");
+            if (!File.Exists(chunkFile)) { return null; }
 
-            return null;
+            var chunkNbt = new NbtFile();
+            chunkNbt.LoadFromFile(chunkFile);
+            var chunkCompound = chunkNbt.RootTag;
+            var chunk = new Chunk(x, z);
+
+            foreach (var bc in chunkCompound["Blocks"] as NbtList)
+            {
+                var index = bc["index"].ShortValue;
+                var bx = bc["X"].DoubleValue;
+                var by = bc["Y"].DoubleValue;
+                var bz = bc["Z"].DoubleValue;
+                var id = bc["id"].IntValue;
+                var mat = bc["material"].StringValue;
+
+                Block block = Registry.GetBlock((Materials) Enum.Parse(typeof(Materials), mat));
+                block.Location = new Position(bx, by, bz);
+                chunk.Blocks.Add(index, block);
+            }
+
+            foreach (var secCompound in chunkCompound["Sections"] as NbtList)
+            {
+                var secY = (int) secCompound["Y"].ByteValue;
+                var states = (secCompound["BlockStates"] as NbtLongArray).Value;
+                var palettes = secCompound["Palette"] as NbtList;
+
+                foreach (var pallete in palettes)
+                {
+                    ((LinearBlockStatePalette)chunk.Sections[secY].Palette).BlockStateArray.Append(Registry.GetBlock(pallete["Name"].StringValue));
+                }
+            }
+
+            chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtIntArray).Value.ToList();
+
+            foreach (var heightmap in chunkCompound["Heightmaps"] as NbtCompound)
+            {
+                var heightmapType = (HeightmapType) Enum.Parse(typeof(HeightmapType), heightmap.Name.Replace("_", ""), true);
+                var values = ((NbtLongArray)heightmap).Value;
+                chunk.Heightmaps[heightmapType].data.Storage = values;
+            }
+
+            return chunk;
         }
 
-        public void FlushChunks(string worldPath)
+        public void FlushChunk(Chunk c)
         {
-            // Sanity check chunks folder exists
-            var chunksFolder = Path.Join(worldPath, "regions", $"{X}.{Z}", "chunks");
-            Directory.CreateDirectory(chunksFolder);
-            foreach (var c in LoadedChunks)
+            var chunkPath = Path.Join(RegionFolder, "chunks", $"{c.X}_{c.Z}.cnk");
+            var chunkFile = new NbtFile();
+
+            var sectionsCompound = new NbtList("Sections", NbtTagType.Compound);
+            foreach (var section in c.Sections)
             {
-                var chunkPath = Path.Join(chunksFolder, $"{c.X}_{c.Z}.cnk");
-                var chunkFile = new NbtFile();
+                if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
 
-                var sectionsCompound = new NbtList("Sections", NbtTagType.Compound);
-                foreach(var section in c.Sections)
+                var palatte = new NbtList("Palette", NbtTagType.Compound);
+
+                if (section.Palette is LinearBlockStatePalette linear)
                 {
-                    if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
-
-                    var palatte = new NbtList("Palette", NbtTagType.Compound);
-
-                    if(section.Palette is LinearBlockStatePalette linear)
+                    foreach (var block in linear.BlockStateArray)
                     {
-                        foreach (var block in linear.BlockStateArray)
-                        {
-                            if (block is null)
-                                continue;
+                        if (block is null)
+                            continue;
 
-                            palatte.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
+                        palatte.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
                             {
                                 new NbtString("Name", block.UnlocalizedName)
                             });
-                        }
                     }
+                }
 
-                    var sec = new NbtCompound()
+                var sec = new NbtCompound()
                     {
                         new NbtByte("Y", (byte)section.YBase),
                         palatte,
                         new NbtLongArray("BlockStates", section.BlockStorage.Storage)
                     };
-                    sectionsCompound.Add(sec);
-                }
+                sectionsCompound.Add(sec);
+            }
 
-                var blocksCompound = new NbtList("Blocks", NbtTagType.Compound);
-                foreach (var block in c.Blocks)
-                {
-                    var b = new NbtCompound()
+            var blocksCompound = new NbtList("Blocks", NbtTagType.Compound);
+            foreach (var block in c.Blocks)
+            {
+                var b = new NbtCompound()
                     {
                         new NbtShort("index", block.Key),
                         new NbtDouble("X", block.Value.Location.X),
@@ -110,10 +155,10 @@ namespace Obsidian.WorldData
                         new NbtInt("id", block.Value.Id),
                         new NbtString("material", block.Value.Type.ToString()),
                     };
-                    blocksCompound.Add(b);
-                }
+                blocksCompound.Add(b);
+            }
 
-                var chunkCompound = new NbtCompound("Data")
+            var chunkCompound = new NbtCompound("Data")
                 {
                     new NbtInt("xPos", c.X),
                     new NbtInt("zPos", c.Z),
@@ -128,8 +173,15 @@ namespace Obsidian.WorldData
                     blocksCompound
                 };
 
-                chunkFile.RootTag = chunkCompound;
-                chunkFile.SaveToFile(chunkPath, NbtCompression.GZip);
+            chunkFile.RootTag = chunkCompound;
+            chunkFile.SaveToFile(chunkPath, NbtCompression.GZip);
+        }
+
+        public void FlushChunks()
+        {
+            foreach (var c in LoadedChunks)
+            {
+                FlushChunk(c);
             }
         }
     }

@@ -15,7 +15,7 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        public Dictionary<short, Block> Blocks { get; private set; } = new Dictionary<short, Block>();
+        public Dictionary<short, Block> Blocks { get; internal set; } = new Dictionary<short, Block>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();

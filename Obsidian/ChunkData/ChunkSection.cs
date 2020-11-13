@@ -17,7 +17,7 @@ namespace Obsidian.ChunkData
         public override byte BitsPerBlock { get; }
         public override DataArray BlockStorage { get; }
 
-        public override IBlockStatePalette Palette { get; }
+        public override IBlockStatePalette Palette { get; internal set; }
 
         public ChunkSection(byte bitsPerBlock = 4, int? yBase = null)
         {
