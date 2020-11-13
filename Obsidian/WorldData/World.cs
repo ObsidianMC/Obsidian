@@ -274,9 +274,9 @@ namespace Obsidian.WorldData
             }
 
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            for (var rx = -2; rx < 2; rx++)
+            for (var rx = -1; rx < 1; rx++)
             {
-                for (var rz = -2; rz < 2; rz++)
+                for (var rz = -1; rz < 1; rz++)
                 {
                     var r = new Region(rx, rz, worldDir);
                     for (var cx = 0; cx < Region.CUBIC_REGION_SIZE; cx++)
@@ -286,7 +286,8 @@ namespace Obsidian.WorldData
                             r.LoadChunk((rx << Region.CUBIC_REGION_SIZE_SHIFT) + cx, (rz << Region.CUBIC_REGION_SIZE_SHIFT) + cz);
                         }
                     }
-                    Regions.TryAdd(Helpers.IntsToLong(rx, rz), r);
+                    if (Regions.TryAdd(Helpers.IntsToLong(rx, rz), r))
+                        Server.Logger.LogInformation($"Loaded region {rx},{rz} into memory...");
                 }
             }
 
@@ -434,10 +435,10 @@ namespace Obsidian.WorldData
 
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -4; x <= 4; x++)
+            this.Server.Logger.LogInformation("Generating world...");
+            for (int x = -2; x < 2; x++)
             {
-                for (int z = -4; z <= 4; z++)
+                for (int z = -2; z < 2; z++)
                 {
                     this.GenerateRegion(x, z);
                 }
