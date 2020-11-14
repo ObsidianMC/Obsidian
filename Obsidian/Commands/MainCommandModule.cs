@@ -1,17 +1,13 @@
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
-using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Commands
@@ -43,14 +39,14 @@ namespace Obsidian.Commands
                         success = false;
                     }
                 }
-                if(success)
+                if (success)
                     availablecommands.Add(cmd);
             }
 
             int commandcount = availablecommands.Count();
 
             var remainder = commandcount % CommandsPerPage;
-            int pagecount = (commandcount- remainder) / CommandsPerPage; // all commands / page commands - remainder
+            int pagecount = (commandcount - remainder) / CommandsPerPage; // all commands / page commands - remainder
             if (remainder > 0)
                 pagecount++; // if remainder, extra page
 
@@ -186,7 +182,7 @@ namespace Obsidian.Commands
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
-        [RequirePermission(true, "obsidian.announce")]
+        [RequirePermission(op: true, permissions: "obsidian.announce")]
         public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
@@ -346,7 +342,7 @@ namespace Obsidian.Commands
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequirePermission(true, "obsidian.stop")]
+        [RequirePermission(op: true, permissions: "obsidian.stop")]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -361,7 +357,7 @@ namespace Obsidian.Commands
 
         #region permissions
         [CommandGroup("permission")]
-        [RequirePermission(true, "obsidian.permissions")]
+        [RequirePermission(op: true, permissions: "obsidian.permissions")]
         public class Permission
         {
             [GroupCommand]
@@ -380,7 +376,7 @@ namespace Obsidian.Commands
             [Command("grant")]
             public async Task GrantPermission(ObsidianContext ctx, string permission)
             {
-                if(await ctx.Player.GrantPermission(permission))
+                if (await ctx.Player.GrantPermission(permission))
                 {
                     await ctx.Player.SendMessageAsync($"Sucessfully granted {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
                 }

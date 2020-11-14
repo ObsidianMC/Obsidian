@@ -5,7 +5,6 @@ using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Boss;
 using Obsidian.Chat;
-using Obsidian.Concurrency;
 using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Client;
@@ -414,8 +413,8 @@ namespace Obsidian.Entities
             // trim and split permission string
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
-            
-            
+
+
             // Set root node and whether we created a new permission (still false)
             var result = false;
             var parent = this.PlayerPermissions;
@@ -451,6 +450,15 @@ namespace Obsidian.Entities
                 if (await HasPermission(perm)) return true;
             }
             return false;
+        }
+
+        public async Task<bool> HasAllPermissions(IEnumerable<string> permissions)
+        {
+            foreach (var perm in permissions)
+            {
+                if (!await HasPermission(perm)) return false;
+            }
+            return true;
         }
     }
 }
