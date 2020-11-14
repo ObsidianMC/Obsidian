@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Entities;
 
 namespace Obsidian.Events.EventArgs
@@ -14,7 +13,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// The block that was broken
         /// </summary>
-        public Block Block { get; }
+        public SebastiansBlock Block { get; }
 
         public bool Cancel { get; set; }
 

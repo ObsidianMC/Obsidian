@@ -1,5 +1,6 @@
 ﻿using Obsidian.Util.Registry.Enums;
 using System;
+using Half = Obsidian.Util.Registry.Enums.Half;
 
 namespace Obsidian._Blocks
 {

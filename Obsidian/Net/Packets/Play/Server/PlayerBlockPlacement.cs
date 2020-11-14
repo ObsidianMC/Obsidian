@@ -59,7 +59,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
             var interactedBlock = server.World.GetBlock(location);
 
-            if (interactedBlock.CanInteract() && !player.Sneaking)
+            if (interactedBlock.IsInteractable && !player.Sneaking)
             {
                 var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Location));
 
@@ -106,7 +106,6 @@ namespace Obsidian.Net.Packets.Play.Server
                     break;
             }
 
-            block.Location = location;
             server.World.SetBlock(location, block);
 
             await server.BroadcastBlockPlacementAsync(player, block, location);

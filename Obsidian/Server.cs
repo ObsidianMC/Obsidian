@@ -278,7 +278,7 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
+        internal async Task BroadcastBlockPlacementAsync(Player player, SebastiansBlock block, Position location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
@@ -473,13 +473,13 @@ namespace Obsidian
 
                         await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(digging.Location, null);
+                        this.World.SetBlock(digging.Location, SebastiansBlock.Air);
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = Registry.GetItem(block.Type).Id,
+                            Id = Registry.GetItem(block.Material).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
@@ -584,7 +584,6 @@ namespace Obsidian
         private async Task RegisterDefaultAsync()
         {
             await this.RegisterAsync(new SuperflatGenerator());
-            await this.RegisterAsync(new TestBlocksGenerator());
             await this.RegisterAsync(new OverworldGenerator(Config.Seed));
             await this.RegisterAsync(new OverworldDebugGenerator(Config.Seed));
         }

@@ -1,5 +1,4 @@
-﻿using Obsidian.Blocks;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Util.Collection;
 using System.Threading.Tasks;
 
@@ -13,27 +12,18 @@ namespace Obsidian.ChunkData
 
         public abstract IBlockStatePalette Palette { get; internal set; }
 
-        protected void Set(int x, int y, int z, BlockState blockState)
+        protected void Set(int x, int y, int z, SebastiansBlock blockState)
         {
             var blockIndex = this.GetIndex(x, y, z);
 
-            int paletteIndex = this.Palette.GetIdFromState((Block)blockState);
+            int paletteIndex = this.Palette.GetIdFromState(blockState);
 
             this.BlockStorage[blockIndex] = paletteIndex;
         }
 
-        protected void Set(int x, int y, int z, SebastiansBlock block)
-        {
-            var blockIndex = this.GetIndex(x, y, z);
+        protected void Set(double x, double y, double z, SebastiansBlock blockState) => this.Set((int)x, (int)y, (int)z, blockState);
 
-            int paletteIndex = block.Id;
-
-            this.BlockStorage[blockIndex] = paletteIndex;
-        }
-
-        protected void Set(double x, double y, double z, BlockState blockState) => this.Set((int)x, (int)y, (int)z, blockState);
-
-        protected BlockState Get(int x, int y, int z)
+        protected SebastiansBlock Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 
@@ -53,7 +43,7 @@ namespace Obsidian.ChunkData
                     {
                         var block = this.Get(x, y, z);
 
-                        if (block != null && !block.IsAir)
+                        if (!block.IsAir)
                             validBlockCount++;
                     }
                 }

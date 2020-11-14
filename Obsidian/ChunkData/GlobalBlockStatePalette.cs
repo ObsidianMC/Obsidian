@@ -1,7 +1,5 @@
-﻿using Obsidian.Blocks;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Util.Registry;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.ChunkData
@@ -10,9 +8,9 @@ namespace Obsidian.ChunkData
     {
         public bool IsFull { get { return false; } }
 
-        public int GetIdFromState(Block blockState) => Registry.Blocks.ToList().IndexOf(blockState);
+        public int GetIdFromState(SebastiansBlock block) => block.Id;
 
-        public Block GetStateFromIndex(int index) => Registry.Blocks.ToList()[index];
+        public SebastiansBlock GetStateFromIndex(int index) => Registry.GetBlock(index);
 
         public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 

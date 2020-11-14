@@ -106,9 +106,8 @@ namespace Obsidian.WorldData
                 var id = bc["id"].IntValue;
                 var mat = bc["material"].StringValue;
 
-                Block block = Registry.GetBlock((Materials)Enum.Parse(typeof(Materials), mat));
-                block.Location = new Position(bx, by, bz);
-                chunk.Blocks.Add(index, block);
+                SebastiansBlock block = Registry.GetBlock((Materials)Enum.Parse(typeof(Materials), mat));
+                chunk.SetBlock((int)bx, (int)by, (int)bz, block);
             }
 
             foreach (var secCompound in chunkCompound["Sections"] as NbtList)
@@ -123,9 +122,7 @@ namespace Obsidian.WorldData
                 var index = 0;
                 foreach (var palette in palettes)
                 {
-                    var block = Registry.GetBlock(palette["Name"].StringValue);
-                    if (block is null) { continue; }
-                    block.Id = palette["Id"].IntValue;
+                    var block = new SebastiansBlock(Registry.NumericToBase[palette["Id"].IntValue]);
                     chunkSecPalette.BlockStateArray.SetValue(block, index);
                     index++;
                 }
@@ -179,7 +176,7 @@ namespace Obsidian.WorldData
                 {
                     foreach (var block in linear.BlockStateArray)
                     {
-                        if (block is null)
+                        if (block.Id == 0)
                             continue;
 
                         palatte.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
@@ -200,18 +197,25 @@ namespace Obsidian.WorldData
             }
 
             var blocksCompound = new NbtList("Blocks", NbtTagType.Compound);
-            foreach (var block in c.Blocks)
+            for (int x = c.X * 16; x < c.X * 16 + 16; x++)
             {
-                var b = new NbtCompound()
+                for (int z = c.Z * 16; z < c.Z * 16 + 16; z++)
+                {
+                    for (int y = 0; y < 256; y++)
                     {
-                        new NbtShort("index", block.Key),
-                        new NbtDouble("X", block.Value.Location.X),
-                        new NbtDouble("Y", block.Value.Location.Y),
-                        new NbtDouble("Z", block.Value.Location.Z),
-                        new NbtInt("id", block.Value.Id),
-                        new NbtString("material", block.Value.Type.ToString()),
-                    };
-                blocksCompound.Add(b);
+                        var block = c.GetBlock(x, y, z);
+                        var b = new NbtCompound()
+                        {
+                            new NbtShort("index", 0),
+                            new NbtDouble("X", x),
+                            new NbtDouble("Y", y),
+                            new NbtDouble("Z", z),
+                            new NbtInt("id", block.Id),
+                            new NbtString("material", block.Name),
+                        };
+                        blocksCompound.Add(b);
+                    }
+                }
             }
 
             var chunkCompound = new NbtCompound()

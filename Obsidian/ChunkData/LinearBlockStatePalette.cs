@@ -8,21 +8,18 @@ namespace Obsidian.ChunkData
 {
     public class LinearBlockStatePalette : IBlockStatePalette
     {
-        public Block[] BlockStateArray { get; set; }
+        public SebastiansBlock[] BlockStateArray { get; set; }
         public int BlockStateCount { get; set; }
 
         public bool IsFull => this.BlockStateArray.Length == this.BlockStateCount;
 
         public LinearBlockStatePalette(byte bitCount)
         {
-            this.BlockStateArray = new Block[1 << bitCount];
+            this.BlockStateArray = new SebastiansBlock[1 << bitCount];
         }
 
-        public int GetIdFromState(Block blockState)
+        public int GetIdFromState(SebastiansBlock blockState)
         {
-            if (blockState is null)
-                throw new ArgumentNullException(nameof(blockState));
-
             for (int id = 0; id < BlockStateCount; id++)
             {
                 if (this.BlockStateArray[id].Id == blockState.Id)
@@ -39,10 +36,10 @@ namespace Obsidian.ChunkData
             return newId;
         }
 
-        public Block GetStateFromIndex(int index)
+        public SebastiansBlock GetStateFromIndex(int index)
         {
             if (index > this.BlockStateCount - 1 || index < 0)
-               return null;
+               throw new IndexOutOfRangeException();
 
             return this.BlockStateArray[index];
         }
@@ -63,7 +60,7 @@ namespace Obsidian.ChunkData
             {
                 int stateId = await stream.ReadVarIntAsync();
 
-                Block blockState = Registry.GetBlock(stateId);
+                SebastiansBlock blockState = Registry.GetBlock(stateId);
 
                 this.BlockStateArray[i] = blockState;
                 this.BlockStateCount++;

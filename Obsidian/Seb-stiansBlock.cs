@@ -6,13 +6,17 @@ namespace Obsidian
 {
     public readonly struct SebastiansBlock
     {
+        public static SebastiansBlock Air => new SebastiansBlock(0);
+        
         private static short[] interactables;
         private static bool initialized;
 
+        public string UnlocalizedName => Registry.Blocks[Id];
         public string Name => Material.ToString();
         public Materials Material => (Materials)Registry.StateToMatch[baseId].numeric;
         public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
+        public bool IsFluid => StateId > 33 && StateId < 66;
         public int Id => Registry.StateToMatch[baseId].numeric;
         public short StateId => (short)(baseId + state);
         public short BaseId => baseId;

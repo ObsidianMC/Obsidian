@@ -31,15 +31,7 @@ namespace Obsidian
             }
         }
 
-        public Block GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
-
-        public Block GetBlock(int x, int y, int z)
-        {
-            short value = GetBlockStateId(x, y, z);
-            return Registry.Blocks[Registry.StateToMatch[value].numeric];
-        }
-
-        public SebastiansBlock GetLightBlock(int x, int y, int z)
+        public SebastiansBlock GetBlock(int x, int y, int z)
         {
             short value = GetBlockStateId(x, y, z);
             return new SebastiansBlock(value);
@@ -53,14 +45,6 @@ namespace Obsidian
             if (z < 0) z += 16;
             
             return cubes[ComputeIndex(x, y, z)][x, y, z];
-        }
-
-        public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
-
-        public void SetBlock(int x, int y, int z, Block block)
-        {
-            var value = (short)block.Id;
-            SetBlockStateId(x, y, z, value);
         }
 
         public void SetBlock(int x, int y, int z, SebastiansBlock block)
@@ -86,7 +70,8 @@ namespace Obsidian
                 {
                     for (int y = cubesVertical * SebastiansCube.height - 1; y >= 0; y--)
                     {
-                        if (Block.IsIdAir(GetBlockStateId(x, y, z)))
+                        var block = new SebastiansBlock(GetBlockStateId(x, y, z));
+                        if (block.IsAir)
                             continue;
 
                         target.Set(x, z, value: y);
