@@ -15,7 +15,7 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        public Dictionary<short, Block> Blocks { get; private set; } = new Dictionary<short, Block>();
+        public Dictionary<short, Block> Blocks { get; internal set; } = new Dictionary<short, Block>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
@@ -37,7 +37,7 @@ namespace Obsidian.WorldData
         private void Init()
         {
             for (int i = 0; i < 16; i++)
-                this.Sections[i] = new ChunkSection();
+                this.Sections[i] = new ChunkSection(4, i);
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
@@ -57,8 +57,6 @@ namespace Obsidian.WorldData
             this.Blocks[value] = block;
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
-
-           
         }
 
         public void CalculateHeightmap()

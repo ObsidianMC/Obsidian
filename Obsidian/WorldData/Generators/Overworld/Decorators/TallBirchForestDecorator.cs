@@ -60,7 +60,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("birch_log", 80, Materials.BirchLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:birch_log", 80, Materials.BirchLog));
                 }
             }
 

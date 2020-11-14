@@ -79,7 +79,7 @@ namespace Obsidian
 
         public ILogger Logger => this.Server.Logger;
 
-        public List<(int, int)> LoadedChunks { get; private set; }
+        public List<(int, int)> LoadedChunks { get; internal set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -582,17 +582,12 @@ namespace Obsidian
             }
 
             await this.packetQueue.SendAsync(packet);
-            this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
+            //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
         }
 
         internal async Task LoadChunksAsync()
         {
-            int dist = ClientSettings?.ViewDistance ?? 8;
-
-            (int oldChunkX, int oldChunkZ) = Player.LastLocation.ToChunkCoord();
-            (int newChunkX, int newChunkZ) = Player.Location.ToChunkCoord();
-
-            await this.Player.World.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, this, false);
+            await this.Player.World.ResendBaseChunksAsync(this);
         }
 
         internal async Task SendChunkAsync(Chunk chunk)
@@ -602,7 +597,6 @@ namespace Obsidian
                 if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
                 {
                     await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-                    this.LoadedChunks.Add((chunk.X, chunk.Z));
                 }
             }
         }
@@ -612,7 +606,6 @@ namespace Obsidian
             if (this.LoadedChunks.Contains((x, z)))
             {
                 await this.QueuePacketAsync(new UnloadChunk(x, z));
-                this.LoadedChunks.Remove((x, z));
             }
         }
 

@@ -35,7 +35,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public async Task HandleAsync(Obsidian.Server server, Player player)
         {
             await player.UpdateAsync(server, this.Position, this.OnGround);
-            await player.World.UpdateChunksForClientAsync(player.client);
+            await player.World.UpdateClientChunksAsync(player.client);
         }
     }
 }

@@ -173,7 +173,7 @@ namespace Obsidian.Commands
             var c = player.client;
             var world = server.World;
 
-            await world.UpdateChunksForClientAsync(c, true);
+            await world.UpdateClientChunksAsync(c, true);
         }
         #endregion
 

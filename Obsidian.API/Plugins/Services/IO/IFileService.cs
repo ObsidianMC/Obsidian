@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Security;
 using Obsidian.API.Plugins.Services.Common;
 
@@ -18,6 +19,11 @@ namespace Obsidian.API.Plugins.Services.IO
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return File.Exists(path);
         }
 
@@ -30,6 +36,11 @@ namespace Obsidian.API.Plugins.Services.IO
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Directory.Exists(path);
         }
 
@@ -38,6 +49,15 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string CombinePath(params string[] paths)
         {
+            var workingDirectory = GetWorkingDirectory();
+            for (int i = 0; i < paths.Length; i++)
+            {
+                var path = paths[i];
+                if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+                if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                    paths[i] = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+            }
+
             return Path.Combine(paths);
         }
 
@@ -46,6 +66,11 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string GetExtension(string path)
         {
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Path.GetExtension(path);
         }
 
@@ -54,6 +79,11 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string GetFileName(string path)
         {
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Path.GetFileName(path);
         }
 
@@ -62,6 +92,11 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string GetFileNameWithoutExtension(string path)
         {
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Path.GetFileNameWithoutExtension(path);
         }
 
@@ -70,7 +105,26 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string GetFullPath(string path)
         {
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             return Path.GetFullPath(path);
         }
+
+        /// <summary>
+        /// Creates a directory, that is used by default for relative paths.
+        /// </summary>
+        /// <param name="createOwnDirectory">If set to <b><c>false</c></b>, the automatically assigned directory for your plugin will be skipped.</param>
+        /// <param name="skipFolderAutoGeneration">If set to <b><c>true</c></b>, skips the auto generation method for default plugin dir. Also, <b><c>createOwnDirectory</c></b> needs to be <b><c>true</c></b> for this to work.</param>
+        /// <returns>Path to the created directory.</returns>
+        public string CreateWorkingDirectory(bool createOwnDirectory = true, bool skipFolderAutoGeneration = false);
+
+        /// <summary>
+        /// Returns with the working directory.
+        /// </summary>
+        /// <returns>Path to the created directory.</returns>
+        public string GetWorkingDirectory();
     }
 }
