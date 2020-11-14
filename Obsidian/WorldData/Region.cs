@@ -73,8 +73,8 @@ namespace Obsidian.WorldData
         public void Flush()
         {
             var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-            var regionFile = new NbtFile();
             var regionCompound = GetNbt();
+            var regionFile = new NbtFile();
             regionFile.RootTag = regionCompound;
             regionFile.SaveToFile(regionPath, NbtCompression.GZip);
         }
