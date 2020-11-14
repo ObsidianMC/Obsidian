@@ -37,12 +37,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian
 {
-    public struct QueueChat
-    {
-        public IChatMessage Message;
-        public sbyte Position;
-    }
-
     public class Server : IServer
     {
         private readonly ConcurrentQueue<QueueChat> chatMessages;
@@ -87,7 +81,7 @@ namespace Obsidian
         public string Version { get; }
         public int Port { get; }
 
-        public World World { get; }
+        public World World { get; private set; }
         public IWorld DefaultWorld => World;
 
         public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
@@ -103,7 +97,7 @@ namespace Obsidian
             SebastiansCube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
-            this.LoggerProvider = new LoggerProvider(LogLevel.Debug);
+            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
@@ -134,7 +128,6 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
             Logger.LogDebug("Registering command context type...");
-            this.Commands.RegisterContextType<ObsidianContext>();
             Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
@@ -143,23 +136,17 @@ namespace Obsidian
 
             this.Operators = new OperatorList(this);
 
-            this.World = new World("world", this);
-
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
             this.Events.ServerTick += this.OnServerTick;
         }
 
         
-        public void RegisterCommandClass<T>() where T : BaseCommandClass
-        {
+        public void RegisterCommandClass<T>() where T : BaseCommandClass => 
             this.Commands.RegisterCommandClass<T>();
-        }
 
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser
-        {
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser => 
             this.Commands.AddArgumentParser(parser);
-        }
 
         /// <summary>
         /// Checks if a player is online.
@@ -177,18 +164,18 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(string message, sbyte position = 0) => BroadcastAsync(IChatMessage.Simple(message), position);
-        
-        /// <summary>
-        /// Sends a message to all players on the server.
-        /// </summary>
-        public Task BroadcastAsync(IChatMessage message, sbyte position = 0)
+        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat)
         {
-            if (message as ChatMessage is null)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            this.chatMessages.Enqueue(new QueueChat() { Message = message, Position = position });
+            this.chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
             this.Logger.LogInformation(message.Text);
+
+            return Task.CompletedTask;
+        }
+
+        public Task BroadcastAsync(string message, MessageType type = MessageType.Chat)
+        {
+            this.chatMessages.Enqueue(new QueueChat() { Message = IChatMessage.Simple(message), Type = type });
+            this.Logger.LogInformation(message);
 
             return Task.CompletedTask;
         }
@@ -253,15 +240,17 @@ namespace Obsidian
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-            if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
-                this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
-
-            this.World.Generator = value ?? new SuperflatGenerator();
-
-            this.Logger.LogInformation($"World generator set to {this.World.Generator.Id} ({this.World.Generator})");
-
-            this.World.GenerateWorld();
-
+            this.World = new World("world1", this);
+            if (!this.World.Load())
+            {
+                if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
+                    this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+                var gen = value ?? new SuperflatGenerator();
+                this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
+                this.World.Init(gen);
+                this.World.Save();
+            }
+            
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
 
@@ -299,14 +288,14 @@ namespace Obsidian
             }
         }
 
-        internal async Task ParseMessageAsync(string message, Client source, sbyte position = 0)
+        internal async Task ParseMessageAsync(string message, Client source, MessageType type = MessageType.Chat)
         {
             if (!message.StartsWith('/'))
             {
                 var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
 
                 if(!chat.Cancel)
-                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", position);
+                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", type);
 
                 return;
             }
@@ -563,11 +552,11 @@ namespace Obsidian
                     if (this.Config.Baah.HasValue)
                     {
                         var soundPosition = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
-                        await player.SendSoundAsync(461, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                        await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
                     if (this.chatMessages.TryPeek(out QueueChat msg))
-                        await player.SendMessageAsync(msg.Message, msg.Position);
+                        await player.SendMessageAsync(msg.Message, msg.Type);
                 }
 
                 this.chatMessages.TryDequeue(out var _);
@@ -660,5 +649,11 @@ namespace Obsidian
         private  Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
+
+        struct QueueChat
+        {
+            public IChatMessage Message;
+            public MessageType Type;
+        }
     }
 }

@@ -2,6 +2,8 @@
 using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
 using Obsidian.API;
+using Obsidian.Util.Registry;
+using System;
 using System.Collections.Generic;
 
 namespace Obsidian.WorldData
@@ -13,7 +15,7 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        private SebastiansChunk SebastiansChunk { get; } = new SebastiansChunk();
+        public Dictionary<short, Block> Blocks { get; internal set; } = new Dictionary<short, Block>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
@@ -22,59 +24,61 @@ namespace Obsidian.WorldData
 
         public Chunk(int x, int z)
         {
-            X = x;
-            Z = z;
+            this.X = x;
+            this.Z = z;
 
-            Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
+            this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
+            this.Heightmaps.Add(HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this));
+            this.Heightmaps.Add(HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this));
 
-            Init();
+            this.Init();
         }
 
         private void Init()
         {
             for (int i = 0; i < 16; i++)
-                this.Sections[i] = new ChunkSection();
+                this.Sections[i] = new ChunkSection(4, i);
         }
 
         public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
-            return SebastiansChunk.GetBlock(x, y, z);
-        }
-
-        public SebastiansBlock GetLightBlock(Position position) => GetLightBlock((int)position.X, (int)position.Y, (int)position.Z);
-
-        public SebastiansBlock GetLightBlock(int x, int y, int z)
-        {
-            return SebastiansChunk.GetLightBlock(x, y, z);
+            var value = (short)((x << 8) | (z << 4) | y);
+            return this.Blocks.GetValueOrDefault(value) ?? this.Sections[y >> 4].GetBlock(x, y, z) ?? Registry.GetBlock(Materials.Air);
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
-            SebastiansChunk.SetBlock(x, y, z, block);
+            var value = (short)((x << 8) | (z << 4) | y);
+
+            this.Blocks[value] = block;
 
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
 
-        public void SetBlock(Position position, SebastiansBlock block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
-
-        public void SetBlock(int x, int y, int z, SebastiansBlock block)
-        {
-            SebastiansChunk.SetBlock(x, y, z, block);
-            Sections[y >> 4].SetBlock(x, y & 15, z, block);
-        }
-
         public void CalculateHeightmap()
         {
-            SebastiansChunk.CalculateHeightmap(target: Heightmaps[HeightmapType.MotionBlocking]);
-        }
+            for (int x = 0; x < 16; x++)
+            {
+                for (int z = 0; z < 16; z++)
+                {
+                    var key = (short)((x << 8) | (z << 4) | 255);
+                    for (int y = 255; y >= 0; y--, key--)
+                    {
+                        if (this.Blocks.TryGetValue(key, out var block))
+                        {
+                            if (block.IsAir)
+                                continue;
 
-        public void CheckHomogeneity()
-        {
-            SebastiansChunk.CheckHomogeneity();
+                            this.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 }

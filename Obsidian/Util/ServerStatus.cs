@@ -128,9 +128,12 @@ namespace Obsidian.Util
 
     public class ServerDescription : IServerDescription
     {
-        [JsonProperty("text")]
-        public string Text { get; set; }
+        [JsonIgnore]
+        public string Text { get { return text; } set { text = value.Replace('&', '§'); } }
 
-        public ServerDescription(Server server) => this.Text = server.Config.Motd.Replace('&', '§');
+        [JsonProperty("text")]
+        private string text;
+
+        public ServerDescription(Server server) => this.Text = server.Config.Motd;
     }
 }

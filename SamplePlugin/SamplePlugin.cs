@@ -2,6 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
+using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using System;
@@ -9,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
+
+
     [Plugin(Name = "Sample Plugin", Version = "1.0",
             Authors = "Obsidian Team", Description = "My sample plugin.",
             ProjectUrl = "https://github.com/Naamloos/Obsidian")]
@@ -16,6 +19,7 @@ namespace SamplePlugin
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
         [Inject] public ILogger Logger { get; set; }
+        [Inject] public IFileReader FileReader { get; set; }
 
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
@@ -26,7 +30,8 @@ namespace SamplePlugin
         // One of server messages, called when an event occurs
         public async Task OnLoad(IServer server)
         {
-            Logger.Log($"{Info.Name} loaded! Hello {server.DefaultWorld.Name}!");
+            Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
             server.RegisterCommandClass<MyCommands>();
             await Task.CompletedTask;
         }
@@ -39,25 +44,37 @@ namespace SamplePlugin
             await Task.CompletedTask;
         }
 
+        public async Task OnPermissionRevoked(PermissionRevokedEventArgs args)
+        {
+            Logger.Log($"Permission {args.Permission} revoked from player {args.Player.Username}");
+            await Task.CompletedTask;
+
+        }
+        public async Task OnPermissionGranted(PermissionGrantedEventArgs args)
+        {
+            Logger.Log($"Permission {args.Permission} granted to player {args.Player.Username}");
+            await Task.CompletedTask;
+
+        }
+
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
         {
             var player = playerJoinEvent.Player;
-            var server = playerJoinEvent.Server;
 
             await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
 
-        public class MyCommands : BaseCommandClass
+        
+    }
+    public class MyCommands : BaseCommandClass
+    {
+        [Command("mycommand")]
+        [CommandInfo("woop dee doo this command is from a plugin")]
+        public async Task MyCommandAsync(ObsidianContext ctx)
         {
-            [Command("mycommand")]
-            [CommandInfo("woop dee doo this command is from a plugin")]
-            public async Task MyCommandAsync(ObsidianContext ctx)
-            {
-                await ctx.Player.SendMessageAsync("Hello from plugin command!");
-            }
+            await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }
-
     public class MyWrapper : PluginWrapper
     {
         public Action Step { get; set; }

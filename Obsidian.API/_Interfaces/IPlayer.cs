@@ -41,17 +41,17 @@ namespace Obsidian.API
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
-        public ICollection<string> Permissions { get; }
-
         public Task TeleportAsync(Position position);
         public Task TeleportAsync(IPlayer to);
-        public Task SendMessageAsync(IChatMessage message, sbyte position = 0, Guid? sender = null);
-        public Task SendMessageAsync(string message, sbyte position = 0, Guid? sender = null);
-        public Task SendSoundAsync(int soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
-
+        public Task<bool> GrantPermission(string permission);
+        public Task<bool> RevokePermission(string permission);
+        public Task<bool> HasPermission(string permission);
         public Task SetGamemodeAsync(Gamemode gamemode);
     }
 }

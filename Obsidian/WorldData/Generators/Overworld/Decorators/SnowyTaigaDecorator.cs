@@ -6,9 +6,9 @@ using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class WoodedMountainsDecorator : BaseDecorator
+    public class SnowyTaigaDecorator : BaseDecorator
     {
-        public WoodedMountainsDecorator(Biomes biome) : base(biome)
+        public SnowyTaigaDecorator(Biomes biome) : base(biome)
         {
         }
 
@@ -16,32 +16,31 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
             int worldX = (chunk.X << 4) + (int) pos.X;
             int worldZ = (chunk.Z << 4) + (int) pos.Z;
+            
+            var sand = Registry.GetBlock(Materials.SnowBlock);
+            var sandstone = Registry.GetBlock(Materials.PackedIce);
+            var deadbush = Registry.GetBlock(Materials.Snow);
+            var cactus = Registry.GetBlock(Materials.FrostedIce);
 
-            // Flowers
-            var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
-            if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
+            for (int y = 0; y>-4; y--)
+                chunk.SetBlock(pos + (0, y, 0), sand);
+            for (int y = -4; y > -7; y--)
+                chunk.SetBlock(pos + (0, y, 0), sandstone);
 
-            var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
-            if (poppyNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Dirt));
+            var bushNoise = noise.Decoration(worldX * 0.1, 0, worldZ * 0.1);
+            if (bushNoise > 0 && bushNoise < 0.05) // 5% chance for bush
+                chunk.SetBlock(pos + (0, 1, 0), deadbush);
 
-            var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
-            if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.CobblestoneSlab));
-
-            var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
-            if (cornFlowerNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.OxeyeDaisy));
-
-            var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
-            if (azureNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Water));
+            var cactusNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
+            if (cactusNoise > 0 && cactusNoise < 0.01) // 1% chance for cactus
+            { 
+                chunk.SetBlock(pos + (0, 1, 0), cactus);
+            }
 
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.DarkOakLeaves);
+            var oakLeaves = Registry.GetBlock(Materials.OakLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)
@@ -57,7 +56,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                             // Skip the top edges.
                             if (y == treeHeight + 1)
                             {
-                                if (x != pos.X-2 && x != pos.X+2 && z != pos.Z-2 && z != pos.Z+2)
+                                if (x != pos.X - 2 && x != pos.X + 2 && z != pos.Z - 2 && z != pos.Z + 2)
                                     chunk.SetBlock(loc, oakLeaves);
                             }
                             else
@@ -69,7 +68,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:dark_oak_log", 74, Materials.DarkOakLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:oak_log", 74, Materials.OakLog));
                 }
             }
 
@@ -80,7 +79,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 var neighborTree1 = TreeHeight(noise.Decoration((worldX - 1) * 0.1, 13, worldZ * 0.1));
                 var neighborTree2 = TreeHeight(noise.Decoration((worldX - 2) * 0.1, 13, worldZ * 0.1));
                 var rowsToDraw = neighborTree1 > 0 ? 2 : neighborTree2 > 0 ? 1 : 0;
-                var treeY = Math.Max(neighborTree1, neighborTree2) + (int) noise.Terrain(worldX - 1, worldZ);
+                var treeY = Math.Max(neighborTree1, neighborTree2) + (int)noise.Terrain(worldX - 1, worldZ);
 
                 for (int x = 0; x < rowsToDraw; x++)
                 {
@@ -193,9 +192,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             #endregion
         }
 
-        private static int TreeHeight(double value)  
+        private static int TreeHeight(double value)
         {
-            return value > 0.06 && value < 0.10 ? (int) (value * 100) + 3 : 0;
+            return value > 0.04 && value <= 0.05 ? (int)(value * 100) : 0;
         }
     }
 }

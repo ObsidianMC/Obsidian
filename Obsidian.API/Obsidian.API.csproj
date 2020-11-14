@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-	<LangVersion>8.0</LangVersion>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
     <AssemblyName>Obsidian.API</AssemblyName>
     <RootNamespace>Obsidian.API</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -13,7 +13,7 @@
     <Description>The plugin API for Obsidian, a Minecraft server.</Description>
     <PackageProjectUrl>https://github.com/Naamloos/Obsidian</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Naamloos/Obsidian</RepositoryUrl>
-    <PackageTags>minecraft, obsidian, api, plugin, plugins</PackageTags>
+    <PackageTags>minecraft obsidian api plugin plugins</PackageTags>
     <PackageIconUrl>https://i.imgur.com/jU1lkP4.png</PackageIconUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>

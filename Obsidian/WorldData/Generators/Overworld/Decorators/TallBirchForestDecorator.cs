@@ -6,42 +6,33 @@ using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class WoodedMountainsDecorator : BaseDecorator
+    public class TallBirchForestDecorator : BaseDecorator
     {
-        public WoodedMountainsDecorator(Biomes biome) : base(biome)
+        public TallBirchForestDecorator(Biomes biome) : base(biome)
         {
         }
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
             int worldX = (chunk.X << 4) + (int) pos.X;
-            int worldZ = (chunk.Z << 4) + (int) pos.Z;
+            int worldZ = (chunk.Z << 4) + (int) pos.Z; 
 
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
 
-            var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
+            var poppyNoise = noise.Decoration(worldX * 0.06, 9, worldZ * 0.06); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Dirt));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
 
-            var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
+            var dandyNoise = noise.Decoration(worldX * 0.06, 10, worldZ * 0.06); // 0.03 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.CobblestoneSlab));
-
-            var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
-            if (cornFlowerNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.OxeyeDaisy));
-
-            var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
-            if (azureNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Water));
-
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.DarkOakLeaves);
+            var oakLeaves = Registry.GetBlock(Materials.BirchLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)
@@ -69,7 +60,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:dark_oak_log", 74, Materials.DarkOakLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:birch_log", 80, Materials.BirchLog));
                 }
             }
 
@@ -195,7 +186,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         private static int TreeHeight(double value)  
         {
-            return value > 0.06 && value < 0.10 ? (int) (value * 100) + 3 : 0;
+            return value > 0.04 && value < 0.07 ? (int) (value * 100) + 5 : 0;
         }
     }
 }

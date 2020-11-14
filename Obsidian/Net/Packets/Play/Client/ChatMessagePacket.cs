@@ -1,4 +1,5 @@
-﻿using Obsidian.Chat;
+﻿using Obsidian.API;
+using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -26,10 +27,10 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public ChatMessagePacket() { }
 
-        public ChatMessagePacket(ChatMessage message, sbyte position, Guid sender)
+        public ChatMessagePacket(ChatMessage message, MessageType type, Guid sender)
         {
             this.Message = message;
-            this.Position = position;
+            this.Position = (sbyte)type;
             //this.Sender = sender;
         }
 
