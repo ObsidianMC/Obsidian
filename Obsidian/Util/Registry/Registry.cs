@@ -131,7 +131,7 @@ namespace Obsidian.Util.Registry
                     var baseId = (short)states.States.Min(state => state.Id);
                     NumericToBase[(int)material] = baseId;
 
-                    Blocks[(int)material] = name;
+                    Blocks[(int)material] = "minecraft:" + name;
 
                     foreach (var state in states.States)
                     {
