@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Plugins.Services.IO;
+﻿using System;
 using System.IO;
 using System.Security;
 using System.Threading;
@@ -74,6 +75,11 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             File.Create(path).Close();
         }
 
@@ -85,6 +91,15 @@ namespace Obsidian.API.Plugins.Services
         {
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
+
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(sourceFileName)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(sourceFileName))
+                sourceFileName = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), sourceFileName);
+
+            if (!Path.GetDirectoryName(Path.GetFullPath(destinationFileName)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(destinationFileName))
+                destinationFileName = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), destinationFileName);
 
             File.Copy(sourceFileName, destinationFileName, overwrite: true);
         }
@@ -98,6 +113,15 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(sourceFileName)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(sourceFileName))
+                sourceFileName = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), sourceFileName);
+
+            if (!Path.GetDirectoryName(Path.GetFullPath(destinationFileName)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(destinationFileName))
+                destinationFileName = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), destinationFileName);
+            
             File.Move(sourceFileName, destinationFileName);
         }
 
@@ -109,6 +133,11 @@ namespace Obsidian.API.Plugins.Services
         {
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
+
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
 
             File.Delete(path);
         }
@@ -122,6 +151,11 @@ namespace Obsidian.API.Plugins.Services
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
 
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+
             Directory.CreateDirectory(path);
         }
 
@@ -133,6 +167,11 @@ namespace Obsidian.API.Plugins.Services
         {
             if (!IsUsable)
                 throw new SecurityException(securityExceptionMessage);
+
+            var workingDirectory = GetWorkingDirectory();
+            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            if (workingDirectory != null && !Path.IsPathFullyQualified(path))
+                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
 
             Directory.Delete(path, recursive: true);
         }

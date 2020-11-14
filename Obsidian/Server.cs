@@ -239,7 +239,7 @@ namespace Obsidian
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-            this.World = new World("world", this);
+            this.World = new World("world1", this);
             if (!this.World.Load())
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
@@ -247,7 +247,7 @@ namespace Obsidian
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
                 this.World.Init(gen);
-                // TODO: save world
+                this.World.Save();
             }
 
             if (!this.Config.OnlineMode)

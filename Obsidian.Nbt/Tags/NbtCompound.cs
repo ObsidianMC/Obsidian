@@ -337,7 +337,6 @@ namespace Obsidian.Nbt.Tags
                 {
                     // ReSharper disable AssignNullToNotNullAttribute
                     // newTag.Name is never null
-                    Console.WriteLine(newTag.Name);
                     this.tags.Add(newTag.Name, newTag);
                     // ReSharper restore AssignNullToNotNullAttribute
                 }

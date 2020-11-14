@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
@@ -48,76 +49,52 @@ namespace Obsidian.WorldData
 
         public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
 
-        public async Task UpdateChunksForClientAsync(Client c, bool forcereload = false)
+        public async Task UpdateClientChunksAsync(Client c, bool forcereload = false)
         {
-            // run this on move packet.
+            if (forcereload)
+            {
+                foreach (var chunkLoc in c.LoadedChunks)
+                {
+                    await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                }
+                c.LoadedChunks = new List<(int, int)>();
+            }
+
+            List<(int, int)> clientNeededChunks = new List<(int, int)>();
+            List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
+            
+            (int playerChunkX, int playerChunkZ) = c.Player.Location.ToChunkCoord();
+            (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastLocation.ToChunkCoord();
 
             int dist = c.ClientSettings?.ViewDistance ?? 8;
+            for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
+                for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
+                    clientNeededChunks.Add((x, z));
 
-            (int oldChunkX, int oldChunkZ) = c.Player.LastLocation.ToChunkCoord();
-
-            (int newChunkX, int newChunkZ) = c.Player.Location.ToChunkCoord();
-
-
-            if (Math.Abs(newChunkZ - oldChunkZ) > dist || Math.Abs(newChunkX - oldChunkX) > dist || forcereload)
+            clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+            clientNeededChunks = clientNeededChunks.Except(c.LoadedChunks).ToList();
+            clientNeededChunks.Sort((chunk1, chunk2) =>
             {
-                // This is a teleport!!!1 Send full new chunk data.
-                await this.ResendBaseChunksAsync(dist, oldChunkX, oldChunkZ, newChunkX, newChunkZ, c);
-                return;
-            }
+                return Math.Abs(playerChunkX - chunk1.Item1) +
+                Math.Abs(playerChunkZ - chunk1.Item2) <
+                Math.Abs(playerChunkX - chunk2.Item1) +
+                Math.Abs(playerChunkZ - chunk2.Item2) ? -1 : 1;
+            });
 
-            // x chunk is old + 1
-            if (newChunkX > oldChunkX)
+            clientNeededChunks.ForEach(async chunkLoc => await c.SendChunkAsync(this.GetChunk(chunkLoc.Item1, chunkLoc.Item2)));
+            c.LoadedChunks.AddRange(clientNeededChunks);
+            
+            clientUnneededChunks.ForEach(async chunkLoc => {
+                await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                c.LoadedChunks.Remove(chunkLoc);
+                });
+
+            if (!(playerChunkX == lastPlayerChunkX && playerChunkZ == lastPlayerChunkZ))
             {
-                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
-                {
-                    await c.UnloadChunkAsync((newChunkX - dist), i);
-
-                    await c.SendChunkAsync(this.GetChunk((newChunkX + dist), i));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border x +1");
-            }
-
-            // x chunk is old - 1
-            if (newChunkX < oldChunkX)
-            {
-                for (int i = (newChunkZ - dist); i < (newChunkZ + dist); i++)
-                {
-                    await c.UnloadChunkAsync((newChunkX + dist), i);
-
-                    await c.SendChunkAsync(this.GetChunk((newChunkX - dist), i));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border x -1");
-            }
-
-            // z chunk is old + 1
-            if (newChunkZ > oldChunkZ)
-            {
-                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
-                {
-                    await c.UnloadChunkAsync(i, (newChunkZ - dist));
-
-                    await c.SendChunkAsync(this.GetChunk(i, (newChunkZ + dist)));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border z +1");
-            }
-
-            // z chunk is old -1
-            if (newChunkZ < oldChunkZ)
-            {
-                for (int i = (newChunkX - dist); i < (newChunkX + dist); i++)
-                {
-                    await c.UnloadChunkAsync(i, (newChunkZ + dist));
-
-                    await c.SendChunkAsync(this.GetChunk(i, (newChunkZ - dist)));
-                    await c.SendPacketAsync(new UpdateViewPosition(newChunkX, newChunkZ));
-                }
-                c.Logger.LogDebug("Crossed chunk border z -1");
+                await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
+
 
         public async Task ResendBaseChunksAsync(int distance, int oldx, int oldz, int x, int z, Client c, bool unload = true)
         {
@@ -165,6 +142,10 @@ namespace Obsidian.WorldData
             await c.SendPacketAsync(new UpdateViewPosition(x, z));
 
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+
+        public async Task ResendBaseChunksAsync(Client c)
+        {
+            await UpdateClientChunksAsync(c, true);
         }
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
@@ -204,16 +185,15 @@ namespace Obsidian.WorldData
             {
                 return this.Generator.GenerateChunk(chunkX, chunkZ);
             }
+            var region = this.GetRegion(chunkX, chunkZ) ?? LoadRegion(chunkX, chunkZ);
 
-            var region = this.GetRegion(chunkX, chunkZ);
-
-            if (region == null)
+            var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
+            var chunk = region.LoadedChunks[index.Item1, index.Item2];
+            if (chunk is null) 
             {
-                region = GenerateRegionForChunk(chunkX, chunkZ);
+                chunk = Generator.GenerateChunk(chunkX, chunkZ);                
+                region.LoadedChunks[index.Item1, index.Item2] = chunk;
             }
-
-            var chunk = region.LoadedChunks[Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE)];
-            if (chunk is null) { System.Diagnostics.Debugger.Break(); }
             return chunk;
         }
 
@@ -259,7 +239,8 @@ namespace Obsidian.WorldData
         //TODO
         public bool Load()
         {
-            var DataPath = Path.Combine(Name, "level.dat");
+            var worldDir = Path.Join(Server.ServerFolderPath, Name);
+            var DataPath = Path.Combine(worldDir, "level.dat");
             if (!File.Exists(DataPath)) { return false; }
 
             var DataFile = new NbtFile();
@@ -293,6 +274,15 @@ namespace Obsidian.WorldData
                 return false;
             }
 
+            Server.Logger.LogInformation($"Loading spawn chunks into memory...");
+            for (var rx = -1; rx < 1; rx++)
+            {
+                for (var rz = -1; rz < 1; rz++)
+                {
+                    GenerateRegion(rx, rz);
+                }
+            }
+
             this.Generator = value;
             this.Loaded = true;
             return true;
@@ -300,12 +290,36 @@ namespace Obsidian.WorldData
 
         public void Save()
         {
+            var worldFile = Path.Join(Server.ServerFolderPath, Name, "level.dat");
+            var dataFile = new NbtFile();
+            var levelCompound = new NbtCompound("Data")
+            {
+                new NbtByte("hardcore", 1),
+                new NbtByte("MapFeatures", 1),
+                new NbtByte("raining", 0),
+                new NbtByte("thundering", 0),
+                new NbtInt("GameType", (int)Gamemode.Creative),
+                new NbtInt("generatorVersion", 1),
+                new NbtInt("rainTime", 0),
+                new NbtInt("SpawnX", Data.SpawnX),
+                new NbtInt("SpawnY", Data.SpawnY),
+                new NbtInt("SpawnZ", Data.SpawnZ),
+                new NbtInt("thunderTime", 0),
+                new NbtInt("version", 19133),
+                new NbtLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()),
+                new NbtLong("RandomSeed", 1),
+                new NbtLong("Time", 0),
+                new NbtString("generatorName", Generator.Id),
+                new NbtString("LevelName", Name)
+            };
 
+            dataFile.RootTag = levelCompound;
+            dataFile.SaveToFile(worldFile, NbtCompression.GZip);
         }
 
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(Name, "players", $"{uuid}.dat");
+            var playerfile = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
 
             var PFile = new NbtFile();
             PFile.LoadFromFile(playerfile);
@@ -344,7 +358,7 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public Region GenerateRegionForChunk(int chunkX, int chunkZ)
+        public Region LoadRegion(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, regionZ = chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT;
             return GenerateRegion(regionX, regionZ);
@@ -352,40 +366,21 @@ namespace Obsidian.WorldData
 
         public Region GenerateRegion(int regionX, int regionZ)
         {
-            this.Server.Logger.LogInformation($"Generating region {regionX}, {regionZ}");
+            this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             long value = Helpers.IntsToLong(regionX, regionZ);
 
             if (this.Regions.ContainsKey(value))
                 return this.Regions[value];
 
-            var region = new Region(regionX, regionZ);
+            var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
-            List<Position> chunksToGen = new List<Position>();
-            for (int x = 0; x < Region.CUBIC_REGION_SIZE; x++)
-            {
-                for (int z = 0; z < Region.CUBIC_REGION_SIZE; z++)
-                {
-                    int cx = (regionX << Region.CUBIC_REGION_SIZE_SHIFT) + x;
-                    int cz = (regionZ << Region.CUBIC_REGION_SIZE_SHIFT) + z;
-                    chunksToGen.Add(new Position(cx, 0, cz));
-                }
-            }
-            var chunks = GenerateChunks(chunksToGen);
-
-            foreach (Chunk chunk in chunks)
-            {
-                var index = (Helpers.Modulo(chunk.X, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunk.Z, Region.CUBIC_REGION_SIZE));
-                region.LoadedChunks[index.Item1, index.Item2] = chunk;
-            }
-
             this.Regions.TryAdd(value, region);
-
             return region;
         }
 
-        public List<Chunk> GenerateChunks(List<Position> chunkLocs)
+        public List<Chunk> GenerateChunks(List<Position> chunkLocs, Region region = null)
         {
             ConcurrentBag<Chunk> chunks = new ConcurrentBag<Chunk>();
             Parallel.ForEach(chunkLocs, (loc) =>
@@ -398,19 +393,22 @@ namespace Obsidian.WorldData
 
         internal void Init(WorldGenerator gen)
         {
+            // Make world directory
+            Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
             GenerateWorld();
             SetWorldSpawn();
+            foreach (var r in this.Regions.Values) {  r.Flush(); }
         }
 
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating world..");
-            for (int x = -1; x <= 1; x++)
+            this.Server.Logger.LogInformation("Generating world...");
+            for (int x = -Region.CUBIC_REGION_SIZE; x < Region.CUBIC_REGION_SIZE; x++)
             {
-                for (int z = -1; z <= 1; z++)
+                for (int z = -Region.CUBIC_REGION_SIZE; z < Region.CUBIC_REGION_SIZE; z++)
                 {
-                    this.GenerateRegion(x, z);
+                    GetChunk(x, z);
                 }
             }
         }
@@ -432,6 +430,7 @@ namespace Obsidian.WorldData
                             {
                                 Data.SpawnX = bx;
                                 Data.SpawnY = by + 1;
+                                Data.SpawnY = by+2;
                                 Data.SpawnZ = bz;
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
                                 return;

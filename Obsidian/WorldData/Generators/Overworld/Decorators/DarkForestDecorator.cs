@@ -56,7 +56,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("dark_oak_log", 89, Materials.DarkOakLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:dark_oak_log", 89, Materials.DarkOakLog));
                 }
             }
 
