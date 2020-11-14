@@ -338,26 +338,6 @@ namespace Obsidian.WorldData
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
-            List<Position> chunksToGen = new List<Position>();
-            for (int x = 0; x < Region.CUBIC_REGION_SIZE; x++)
-            {
-                for (int z = 0; z < Region.CUBIC_REGION_SIZE; z++)
-                {
-                    int cx = (regionX << Region.CUBIC_REGION_SIZE_SHIFT) + x;
-                    int cz = (regionZ << Region.CUBIC_REGION_SIZE_SHIFT) + z;
-                    if (region.LoadChunk(cx, cz) is null)
-                        chunksToGen.Add(new Position(cx, 0, cz));
-                }
-            }
-            var newChunks = GenerateChunks(chunksToGen);
-
-            foreach (Chunk chunk in newChunks)
-            {
-                var index = (Helpers.Modulo(chunk.X, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunk.Z, Region.CUBIC_REGION_SIZE));
-                region.LoadedChunks[index.Item1, index.Item2] = chunk;
-                region.FlushChunk(chunk);
-            }
-
             this.Regions.TryAdd(value, region);
             return region;
         }
@@ -385,11 +365,11 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation("Generating world...");
-            for (int x = -2; x < 2; x++)
+            for (int x = -Region.CUBIC_REGION_SIZE; x < Region.CUBIC_REGION_SIZE; x++)
             {
-                for (int z = -2; z < 2; z++)
+                for (int z = -Region.CUBIC_REGION_SIZE; z < Region.CUBIC_REGION_SIZE; z++)
                 {
-                    this.GenerateRegion(x, z);
+                    GetChunk(x, z);
                 }
             }
         }
@@ -410,7 +390,7 @@ namespace Obsidian.WorldData
                             if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand))
                             {
                                 Data.SpawnX = bx;
-                                Data.SpawnY = by+1;
+                                Data.SpawnY = by+2;
                                 Data.SpawnZ = bz;
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
                                 return;

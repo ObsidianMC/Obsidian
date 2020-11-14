@@ -95,24 +95,16 @@ namespace Obsidian.WorldData
 
                 var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY].Palette;
                 var index = 0;
-                List<string> paletteStrings = new List<string>();
                 foreach  (var palette in palettes)
                 {
-                    paletteStrings.Add(palette["Name"].StringValue);
-                }
-                paletteStrings = paletteStrings.Distinct().ToList();
-
-                foreach (var pallete in paletteStrings)
-                {
-                    var block = Registry.GetBlock(pallete);
-                    if (block is null) 
-                    { 
-                        continue;
-                    }
+                    var block = Registry.GetBlock(palette["Name"].StringValue);
+                    if (block is null) { continue; }
+                    block.Id = palette["Id"].IntValue;
                     chunkSecPalette.BlockStateArray.SetValue(block, index);
                     index++;
                 }
-                chunkSecPalette.BlockStateCount = paletteStrings.Count;
+
+                chunkSecPalette.BlockStateCount = index;
             }
 
             chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtIntArray).Value.ToList();
@@ -149,7 +141,8 @@ namespace Obsidian.WorldData
 
                         palatte.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
                             {
-                                new NbtString("Name", block.UnlocalizedName)
+                                new NbtString("Name", block.UnlocalizedName),
+                                new NbtInt("Id", block.Id)
                             });
                     }
                 }
