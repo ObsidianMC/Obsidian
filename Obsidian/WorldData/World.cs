@@ -221,17 +221,6 @@ namespace Obsidian.WorldData
                 return false;
             }
 
-            Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            for (var rx = -1; rx < 1; rx++)
-            {
-                for (var rz = -1; rz < 1; rz++)
-                {
-                    var r = new Region(rx, rz, worldDir);
-                    if (Regions.TryAdd(Helpers.IntsToLong(rx, rz), r))
-                        Server.Logger.LogInformation($"Loaded region {rx},{rz} into memory...");
-                }
-            }
-
             this.Generator = value;
             this.Loaded = true;
             return true;

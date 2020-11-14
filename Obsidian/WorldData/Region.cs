@@ -39,6 +39,7 @@ namespace Obsidian.WorldData
             this.X = x;
             this.Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
+            Directory.CreateDirectory(RegionFolder);
             var regionFile = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
             if (!File.Exists(regionFile)) { return; }
 
