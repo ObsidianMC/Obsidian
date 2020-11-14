@@ -142,7 +142,7 @@ namespace Obsidian.WorldData
             await c.SendPacketAsync(new UpdateViewPosition(x, z));
 
             c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
-
+        }
         public async Task ResendBaseChunksAsync(Client c)
         {
             await UpdateClientChunksAsync(c, true);
