@@ -140,11 +140,11 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-        
-        public void RegisterCommandClass<T>() where T : BaseCommandClass => 
+
+        public void RegisterCommandClass<T>() where T : BaseCommandClass =>
             this.Commands.RegisterCommandClass<T>();
 
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser => 
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Obsidian
                 this.World.Init(gen);
                 // TODO: save world
             }
-            
+
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
 
@@ -293,7 +293,7 @@ namespace Obsidian
             {
                 var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
 
-                if(!chat.Cancel)
+                if (!chat.Cancel)
                     await this.BroadcastAsync($"<{source.Player.Username}> {message}", type);
 
                 return;
@@ -645,7 +645,7 @@ namespace Obsidian
             await this.SendSpawnPlayerAsync(joined);
         }
 
-        private  Task OnServerTick() => Task.CompletedTask;
+        private Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
 

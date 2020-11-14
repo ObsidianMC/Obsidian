@@ -1,10 +1,8 @@
 ﻿using Obsidian.API;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Parsers
 {

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Obsidian.Net;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.Util.Mojang
 {

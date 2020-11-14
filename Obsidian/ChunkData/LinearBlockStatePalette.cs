@@ -38,7 +38,7 @@ namespace Obsidian.ChunkData
         public Block GetStateFromIndex(int index)
         {
             if (index > this.BlockStateCount - 1 || index < 0)
-               return null;
+                return null;
 
             return this.BlockStateArray[index];
         }
@@ -55,7 +55,7 @@ namespace Obsidian.ChunkData
         {
             var length = await stream.ReadVarIntAsync();
 
-            for(int i = 0; i < length; i++)
+            for (int i = 0; i < length; i++)
             {
                 int stateId = await stream.ReadVarIntAsync();
 

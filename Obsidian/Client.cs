@@ -16,7 +16,6 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Net.Packets.Status;
-using Obsidian.PlayerData;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer;
 using Obsidian.Util;
@@ -597,7 +596,7 @@ namespace Obsidian
 
         internal async Task SendChunkAsync(Chunk chunk)
         {
-            if(chunk != null)
+            if (chunk != null)
             {
                 if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
                 {
@@ -606,7 +605,7 @@ namespace Obsidian
                 }
             }
         }
-        
+
         public async Task UnloadChunkAsync(int x, int z)
         {
             if (this.LoadedChunks.Contains((x, z)))

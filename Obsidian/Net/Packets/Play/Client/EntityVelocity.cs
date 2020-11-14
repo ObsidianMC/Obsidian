@@ -1,12 +1,12 @@
-﻿using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class EntityVelocity :  IPacket
+    public class EntityVelocity : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int EntityId { get; set; }

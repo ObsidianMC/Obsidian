@@ -29,7 +29,7 @@ namespace Obsidian.Events.EventArgs
 
         public bool Cancel { get; set; }
 
-        internal InventoryClickEventArgs(Player player, Inventory inventory) : base(player) 
+        internal InventoryClickEventArgs(Player player, Inventory inventory) : base(player)
         {
             this.Inventory = inventory;
         }

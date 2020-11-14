@@ -1,8 +1,6 @@
-﻿using ICSharpCode.SharpZipLib;
-using SharpNoise;
+﻿using SharpNoise;
 using SharpNoise.Modules;
 using System;
-using System.Collections.Generic;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
@@ -196,7 +194,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         public bool isOcean(float x, float z)
         {
             var value = generator.BaseContinents.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value < 0 && !isPlains(x,z);
+            return value < 0 && !isPlains(x, z);
         }
 
         public bool isDeepOcean(float x, float z)
@@ -207,12 +205,12 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public double GetBiomeTemp(int x, int y, int z)
         {
-            return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch/6, 0, z * generatorSettings.TerrainHorizStretch/6);
+            return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch / 6, 0, z * generatorSettings.TerrainHorizStretch / 6);
         }
 
         public double GetBiomeHumidity(int x, int y, int z)
         {
-            return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch/6, 0, z * generatorSettings.TerrainHorizStretch/6);
+            return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch / 6, 0, z * generatorSettings.TerrainHorizStretch / 6);
         }
 
         /// <summary>
@@ -222,6 +220,6 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// <param name="y"></param>
         /// <param name="z"></param>
         /// <returns></returns>
-        public double Decoration(double x, double y, double z) => coalNoise.GetValue(x, y+5, z);
+        public double Decoration(double x, double y, double z) => coalNoise.GetValue(x, y + 5, z);
     }
 }

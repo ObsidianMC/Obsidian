@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Plugins;
-using System.Linq;
 using System.Reflection;
 
 namespace Obsidian.Plugins
@@ -67,7 +66,7 @@ namespace Obsidian.Plugins
         private static bool MatchKey(AssemblyName assemblyName, byte[] key)
         {
             var assemblyKey = assemblyName.GetPublicKeyToken();
-            
+
             if (assemblyKey.Length != key.Length) return false;
             for (int i = 0; i < key.Length; i++)
             {

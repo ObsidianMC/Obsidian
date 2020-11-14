@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,7 +8,7 @@ namespace Obsidian.ChunkData
     {
         public List<int> Biomes { get; set; } = new List<int>(1024);
 
-        public BiomeContainer() 
+        public BiomeContainer()
         {
             for (int x = 0; x < 1024; x++)
                 Biomes.Add(0);

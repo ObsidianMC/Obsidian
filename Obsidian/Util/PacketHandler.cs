@@ -1,20 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Serializer;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
-using SharpCompress.Compressors.Deflate;
-using System;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -39,7 +28,7 @@ namespace Obsidian
             return new Packet(packetId, packetData);
         }*/
 
-       
+
 
         public static void RegisterHandlers()
         {

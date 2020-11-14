@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.PlayerData;
 
 namespace Obsidian.Net.Packets.Play.Client.GameState
 {

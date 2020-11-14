@@ -3,13 +3,12 @@ using Obsidian.Net;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests
 {
-    
+
     public class Encryption
     {
         const int testDataLength = 1024;

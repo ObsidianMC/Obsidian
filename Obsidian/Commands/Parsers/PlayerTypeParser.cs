@@ -1,11 +1,9 @@
 ﻿using Obsidian.API;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Parsers
 {
@@ -19,7 +17,7 @@ namespace Obsidian.Commands.Parsers
 
             Player player = null;
 
-            if(Guid.TryParse(input, out Guid guid))
+            if (Guid.TryParse(input, out Guid guid))
             {
                 // is valid GUID, try find with guid
                 server.OnlinePlayers.TryGetValue(guid, out player);

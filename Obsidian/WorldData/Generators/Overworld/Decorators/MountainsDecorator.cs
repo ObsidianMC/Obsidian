@@ -1,6 +1,6 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.API;
 using Obsidian.Util.Registry;
 using System;
 
@@ -14,8 +14,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-            int worldX = (chunk.X << 4) + (int) pos.X;
-            int worldZ = (chunk.Z << 4) + (int) pos.Z;
+            int worldX = (chunk.X << 4) + (int)pos.X;
+            int worldZ = (chunk.Z << 4) + (int)pos.Z;
 
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
@@ -57,7 +57,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                             // Skip the top edges.
                             if (y == treeHeight + 1)
                             {
-                                if (x != pos.X-2 && x != pos.X+2 && z != pos.Z-2 && z != pos.Z+2)
+                                if (x != pos.X - 2 && x != pos.X + 2 && z != pos.Z - 2 && z != pos.Z + 2)
                                     chunk.SetBlock(loc, oakLeaves);
                             }
                             else
@@ -80,7 +80,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 var neighborTree1 = TreeHeight(noise.Decoration((worldX - 1) * 0.1, 13, worldZ * 0.1));
                 var neighborTree2 = TreeHeight(noise.Decoration((worldX - 2) * 0.1, 13, worldZ * 0.1));
                 var rowsToDraw = neighborTree1 > 0 ? 2 : neighborTree2 > 0 ? 1 : 0;
-                var treeY = Math.Max(neighborTree1, neighborTree2) + (int) noise.Terrain(worldX - 1, worldZ);
+                var treeY = Math.Max(neighborTree1, neighborTree2) + (int)noise.Terrain(worldX - 1, worldZ);
 
                 for (int x = 0; x < rowsToDraw; x++)
                 {
@@ -193,9 +193,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             #endregion
         }
 
-        private static int TreeHeight(double value)  
+        private static int TreeHeight(double value)
         {
-            return value > 0.06 && value < 0.10 ? (int) (value * 100) + 3 : 0;
+            return value > 0.06 && value < 0.10 ? (int)(value * 100) + 3 : 0;
         }
     }
 }

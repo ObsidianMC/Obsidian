@@ -1,8 +1,8 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.API;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;

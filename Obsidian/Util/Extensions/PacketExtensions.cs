@@ -1,16 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Items;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.API;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
-using Obsidian.Net;
 
 namespace Obsidian.Util.Extensions
 {
@@ -97,7 +96,7 @@ namespace Obsidian.Util.Extensions
                         else if (type == typeof(byte[]))
                             return DataType.ByteArray;
                         else if (type == typeof(ItemStack))
-                            return DataType.Slot; 
+                            return DataType.Slot;
 
                         return DataType.Auto;
                     }

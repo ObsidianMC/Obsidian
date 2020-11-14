@@ -26,7 +26,8 @@ namespace Obsidian.Util.Converters
             {
                 val = val.TrimEnd('B');
                 return val == "1";
-            }else if (val.EndsWith('L'))
+            }
+            else if (val.EndsWith('L'))
             {
                 val = val.TrimEnd('L');
                 return long.Parse(val);
@@ -37,7 +38,7 @@ namespace Obsidian.Util.Converters
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            
+
         }
     }
 }

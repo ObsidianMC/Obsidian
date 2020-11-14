@@ -1,9 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Util.Extensions;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -33,7 +29,7 @@ namespace Obsidian.Commands
 
             foreach (var childNode in this.Children.Select(x => x.Index).Distinct())
             {
-                 await dataStream.WriteVarIntAsync(childNode);
+                await dataStream.WriteVarIntAsync(childNode);
             }
 
             //if (this.Type.HasFlag(CommandNodeType.HasRedirect))
