@@ -132,7 +132,7 @@ namespace Obsidian.WorldData
 
         public Chunk GetChunk(int chunkX, int chunkZ)
         {
-            var region = this.GetRegion(chunkX, chunkZ) ?? GenerateRegionForChunk(chunkX, chunkZ);
+            var region = this.GetRegion(chunkX, chunkZ) ?? LoadRegion(chunkX, chunkZ);
 
             var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
@@ -140,7 +140,6 @@ namespace Obsidian.WorldData
             {
                 chunk = Generator.GenerateChunk(chunkX, chunkZ);                
                 region.LoadedChunks[index.Item1, index.Item2] = chunk;
-                region.FlushChunk(chunk);
             }
             return chunk;
         }
@@ -228,13 +227,6 @@ namespace Obsidian.WorldData
                 for (var rz = -1; rz < 1; rz++)
                 {
                     var r = new Region(rx, rz, worldDir);
-                    for (var cx = 0; cx < Region.CUBIC_REGION_SIZE; cx++)
-                    {
-                        for (var cz=0; cz < Region.CUBIC_REGION_SIZE; cz++)
-                        {
-                            r.LoadChunk((rx << Region.CUBIC_REGION_SIZE_SHIFT) + cx, (rz << Region.CUBIC_REGION_SIZE_SHIFT) + cz);
-                        }
-                    }
                     if (Regions.TryAdd(Helpers.IntsToLong(rx, rz), r))
                         Server.Logger.LogInformation($"Loaded region {rx},{rz} into memory...");
                 }
@@ -272,11 +264,6 @@ namespace Obsidian.WorldData
 
             dataFile.RootTag = levelCompound;
             dataFile.SaveToFile(worldFile, NbtCompression.GZip);
-
-            foreach (var reg in this.Regions.Values)
-            {
-                reg.FlushChunks();
-            }
         }
 
         public void LoadPlayer(Guid uuid)
@@ -320,7 +307,7 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public Region GenerateRegionForChunk(int chunkX, int chunkZ)
+        public Region LoadRegion(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, regionZ = chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT;
             return GenerateRegion(regionX, regionZ);
@@ -360,6 +347,7 @@ namespace Obsidian.WorldData
             this.Generator = gen;
             GenerateWorld();
             SetWorldSpawn();
+            foreach (var r in this.Regions.Values) {  r.Flush(); }
         }
 
         internal void GenerateWorld()
