@@ -10,7 +10,7 @@ namespace Obsidian.Commands
         private PermissionCheckType checkType;
         private bool op;
 
-        public RequirePermissionAttribute(PermissionCheckType checkType = PermissionCheckType.All, bool op = false, params string[] permissions)
+        public RequirePermissionAttribute(PermissionCheckType checkType = PermissionCheckType.All, bool op = true, params string[] permissions)
         {
             this.permissions = permissions;
             this.checkType = checkType;
