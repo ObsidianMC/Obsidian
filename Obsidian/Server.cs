@@ -256,7 +256,7 @@ namespace Obsidian
 
             _ = Task.Run(this.ServerLoop);
 
-            this.Logger.LogDebug($"Listening for new clients...");
+            this.Logger.LogInformation($"Listening for new clients...");
 
             this.tcpListener.Start();
 
