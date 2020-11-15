@@ -22,7 +22,7 @@ namespace Obsidian.Commands
             if (this.op && ctx.Player.IsOperator)
                 return true;
 
-            if (this.permissions != null)
+            if (this.permissions.Length > 0)
                 return checkType == PermissionCheckType.All ? await ctx.Player.HasAllPermissions(permissions) : await ctx.Player.HasAnyPermission(permissions);
 
             return false;
