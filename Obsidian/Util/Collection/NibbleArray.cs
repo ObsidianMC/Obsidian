@@ -1,5 +1,4 @@
-﻿using Obsidian;
-using Obsidian.Nbt.Tags;
+﻿using Obsidian.Nbt.Tags;
 using System;
 using System.Collections.ObjectModel;
 

@@ -94,6 +94,55 @@ namespace Obsidian.WorldData
                 await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
+
+
+        public async Task ResendBaseChunksAsync(int distance, int oldx, int oldz, int x, int z, Client c, bool unload = true)
+        {
+            var dist = distance + 3; // for genarator gaps
+            // unload old chunks
+            if (unload)
+            {
+                for (int cx = oldx - dist; cx < oldx + dist; cx++)
+                {
+                    for (int cz = oldz - dist; cz < oldz + dist; cz++)
+                    {
+                        await c.UnloadChunkAsync(cx, cz);
+                    }
+                }
+            }
+
+            // load new chunks
+            var chunksToGen = new List<Position>();
+
+            for (int cx = (x - dist); cx < (x + dist); cx++)
+            {
+                for (int cz = z - dist; cz < z + dist; cz++)
+                {
+                    var chk = GetChunk(cx, cz);
+                    if (chk is null)
+                    {
+                        chunksToGen.Add(new Position(cx, 0, cz));
+                    }
+                    else
+                    {
+                        await c.SendChunkAsync(chk);
+                    }
+                }
+            }
+
+            if (chunksToGen.Count != 0)
+            {
+                var chunks = GenerateChunks(chunksToGen);
+                foreach (var chunk in chunks)
+                {
+                    await c.SendChunkAsync(chunk);
+                }
+            }
+
+            await c.SendPacketAsync(new UpdateViewPosition(x, z));
+
+            c.Logger.LogDebug($"loaded base chunks for {c.Player.Username} {x - dist} until {x + dist}");
+        }
         public async Task ResendBaseChunksAsync(Client c)
         {
             await UpdateClientChunksAsync(c, true);
@@ -132,6 +181,10 @@ namespace Obsidian.WorldData
 
         public Chunk GetChunk(int chunkX, int chunkZ)
         {
+            if (this.Generator.GetType() == typeof(Obsidian.WorldData.Generators.SuperflatGenerator))
+            {
+                return this.Generator.GenerateChunk(chunkX, chunkZ);
+            }
             var region = this.GetRegion(chunkX, chunkZ) ?? LoadRegion(chunkX, chunkZ);
 
             var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
@@ -376,6 +429,7 @@ namespace Obsidian.WorldData
                             if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand))
                             {
                                 Data.SpawnX = bx;
+                                Data.SpawnY = by + 1;
                                 Data.SpawnY = by+2;
                                 Data.SpawnZ = bz;
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");

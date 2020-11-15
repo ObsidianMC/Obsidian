@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
-using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
@@ -11,7 +10,6 @@ using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using Obsidian.Util.Registry.Enums;
-using Obsidian.WorldData.Generators;
 using System;
 using System.Collections.Generic;
 using System.IO;

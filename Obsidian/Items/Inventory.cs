@@ -1,9 +1,7 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Obsidian.Items
 {

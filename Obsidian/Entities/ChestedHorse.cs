@@ -37,7 +37,7 @@ namespace Obsidian.Entities
     {
         CreamyLlama,
 
-        WhiteLlama, 
+        WhiteLlama,
 
         BrownLlama,
 

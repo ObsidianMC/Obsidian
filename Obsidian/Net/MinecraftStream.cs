@@ -361,7 +361,7 @@ namespace Obsidian.Net
                                 await this.WriteStringAsync(tag.Name);
                                 await this.WriteVarIntAsync(tag.Count);
 
-                                foreach (var entry in tag.Entries)                                
+                                foreach (var entry in tag.Entries)
                                     await this.WriteVarIntAsync(entry);
                             }
                         }

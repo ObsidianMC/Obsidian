@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
@@ -34,7 +33,7 @@ namespace Obsidian.Util.Registry.Codecs.Biomes
             var elements = new NbtCompound("element")
             {
                 new NbtString("precipitation", this.Precipitation),
-                
+
                 new NbtFloat("depth", this.Depth),
                 new NbtFloat("temperature", this.Temperature),
                 new NbtFloat("scale", this.Scale),

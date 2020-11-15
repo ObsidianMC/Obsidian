@@ -20,7 +20,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public int Id => 0x1B;
 
-        public PlayerDigging()  { }
+        public PlayerDigging() { }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

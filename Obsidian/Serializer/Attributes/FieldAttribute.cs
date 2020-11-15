@@ -24,5 +24,5 @@ namespace Obsidian.Serializer.Attributes
             this.Order = order;
             this.Absolute = absolute;
         }
-    }    
+    }
 }

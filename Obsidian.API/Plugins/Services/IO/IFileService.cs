@@ -1,7 +1,7 @@
+﻿using Obsidian.API.Plugins.Services.Common;
 ﻿using System;
 using System.IO;
 using System.Security;
-using Obsidian.API.Plugins.Services.Common;
 
 namespace Obsidian.API.Plugins.Services.IO
 {

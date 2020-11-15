@@ -1,5 +1,4 @@
 ﻿using Obsidian.Net;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info

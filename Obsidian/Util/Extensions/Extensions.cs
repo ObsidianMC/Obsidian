@@ -1,7 +1,7 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.API;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -148,7 +148,7 @@ namespace Obsidian.Util.Extensions
             true => new Regex("^([a-f]|r|o|m|n|k|l|[0-9])$"),
             false => new Regex("^([§|&])([a-f]|r|o|m|n|k|l|[0-9])$")
         }).IsMatch($"{suspectedColor.ToLower()}");
-    
+
         public static bool IsRealChatColor(this char suspectedColor) => suspectedColor.ToString().ToLower().IsRealChatColor(true);
         #endregion
     }

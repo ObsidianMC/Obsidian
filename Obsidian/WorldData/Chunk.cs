@@ -1,9 +1,8 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
-using Obsidian.API;
 using Obsidian.Util.Registry;
-using System;
 using System.Collections.Generic;
 
 namespace Obsidian.WorldData

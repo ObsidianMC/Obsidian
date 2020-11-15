@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Util.Collection
+﻿namespace Obsidian.Util.Collection
 {
     public sealed class DataArray
     {

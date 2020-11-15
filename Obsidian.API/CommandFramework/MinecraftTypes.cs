@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Obsidian.CommandFramework
 {
     public class MinecraftTypes
     {
         // TODO maybe make a Dictionary mapping an enum to a string?
-        private static string[] mcTypes = 
-        { 
+        private static string[] mcTypes =
+        {
             "brigadier:bool",
             "brigadier:double",
             "brigadier:float",

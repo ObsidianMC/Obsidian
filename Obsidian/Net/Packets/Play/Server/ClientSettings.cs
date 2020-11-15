@@ -26,7 +26,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public int Id => 0x05;
 
-        public ClientSettings()  { }
+        public ClientSettings() { }
 
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
