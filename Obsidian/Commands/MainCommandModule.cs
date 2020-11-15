@@ -267,7 +267,7 @@ namespace Obsidian.Commands
         #region op
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
-        [RequirePermission(op: true)]
+        [RequirePermission]
         public async Task GiveOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -284,7 +284,7 @@ namespace Obsidian.Commands
         #region deop
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
-        [RequirePermission(op: true)]
+        [RequirePermission]
         public async Task UnclaimOpAsync(ObsidianContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
@@ -342,7 +342,7 @@ namespace Obsidian.Commands
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
-        [RequirePermission(op: true, permissions: "obsidian.stop")]
+        [RequirePermission(permissions: "obsidian.stop")]
         public async Task StopAsync(ObsidianContext Context)
         {
             var server = (Server)Context.Server;
@@ -357,7 +357,7 @@ namespace Obsidian.Commands
 
         #region permissions
         [CommandGroup("permission")]
-        [RequirePermission(op: true, permissions: "obsidian.permissions")]
+        [RequirePermission(permissions: "obsidian.permissions")]
         public class Permission
         {
             [GroupCommand]
