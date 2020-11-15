@@ -72,6 +72,7 @@ namespace Obsidian.WorldData
 
         public void Flush()
         {
+            return;
             var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
             var regionCompound = GetNbt();
             var regionFile = new NbtFile();
