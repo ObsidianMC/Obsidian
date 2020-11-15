@@ -221,11 +221,11 @@ namespace Obsidian
                 return;
             }
 
-            await Registry.RegisterBlocksAsync();
-            await Registry.RegisterItemsAsync();
-            await Registry.RegisterBiomesAsync();
-            await Registry.RegisterDimensionsAsync();
-            await Registry.RegisterTagsAsync();
+            await Task.WhenAll(Registry.RegisterBlocksAsync(),
+                               Registry.RegisterItemsAsync(),
+                               Registry.RegisterBiomesAsync(),
+                               Registry.RegisterDimensionsAsync(),
+                               Registry.RegisterTagsAsync());
 
             PacketHandler.RegisterHandlers();
 
