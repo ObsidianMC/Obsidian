@@ -91,7 +91,7 @@ namespace Obsidian
         /// </summary>
         /// <param name="version">Version the server is running. <i>(independent of minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
-        {
+        {   
             this.Config = config;
 
             SebastiansCube.Initialize();
@@ -212,6 +212,7 @@ namespace Obsidian
             this.StartTime = DateTimeOffset.Now;
 
             this.Logger.LogInformation($"Launching Obsidian Server v{Version} with ID {Id}");
+            var stopwatch = Stopwatch.StartNew();
 
             // Check if MPDM and OM are enabled, if so, we can't handle connections
             if (this.Config.MulitplayerDebugMode && this.Config.OnlineMode)
@@ -257,6 +258,9 @@ namespace Obsidian
             _ = Task.Run(this.ServerLoop);
 
             this.Logger.LogInformation($"Listening for new clients...");
+
+            stopwatch.Stop();
+            Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
 
             this.tcpListener.Start();
 
