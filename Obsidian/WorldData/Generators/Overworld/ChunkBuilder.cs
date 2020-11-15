@@ -2,7 +2,6 @@
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using System;
-using System.Reflection.PortableExecutable;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
@@ -18,7 +17,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             var dirt = Registry.GetBlock(Materials.Dirt);
             var sand = Registry.GetBlock(Materials.Sand);
             var clay = Registry.GetBlock(Materials.Clay);
-            var grassBlock = Registry.GetBlock(Materials.GrassBlock);
+            var grassBlock = Registry.GetBlock(9);
             var snowBlock = Registry.GetBlock(Materials.SnowBlock);
 
             int highestY = 0;
