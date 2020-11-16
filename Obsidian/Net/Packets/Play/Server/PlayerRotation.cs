@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class PlayerRotation : IPacket
+    public partial class PlayerRotation : IPacket
     {
         [Field(0)]
         public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }

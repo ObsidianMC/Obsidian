@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Client
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol#Declare_Commands
     /// </summary>
-    public class DeclareCommands : IPacket
+    public partial class DeclareCommands : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int NodeCount => this.Nodes.Count;

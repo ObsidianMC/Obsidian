@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class TagsPacket : IPacket
+    public partial class TagsPacket : IPacket
     {
         [Field(0, Type = DataType.Array)]
         public List<Tag> Blocks { get; set; }

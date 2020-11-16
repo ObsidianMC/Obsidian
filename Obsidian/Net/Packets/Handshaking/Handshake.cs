@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
-    public class Handshake : IPacket
+    public partial class Handshake : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public ProtocolVersion Version;

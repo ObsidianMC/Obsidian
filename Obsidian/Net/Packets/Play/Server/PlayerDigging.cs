@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class PlayerDigging : IPacket
+    public partial class PlayerDigging : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public DiggingStatus Status { get; private set; }

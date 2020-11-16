@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class UnloadChunk : IPacket
+    public partial class UnloadChunk : IPacket
     {
         [Field(0, true)]
         public int X { get; private set; }

@@ -206,7 +206,6 @@ namespace Obsidian.Util.Registry
 
                     DefaultBiomes.TryAdd(codec.Name, codec);
 
-                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
                 }
             }
@@ -375,7 +374,6 @@ namespace Obsidian.Util.Registry
 
                         Tags[domainTag.BaseTagName][tagIndex].Entries.AddRange(tag.Entries);
 
-                        Logger.LogDebug($"Registering domain: {item} to {domainTag.BaseTagName}:{domainTag.TagName}");
                         registered++;
                     }
 

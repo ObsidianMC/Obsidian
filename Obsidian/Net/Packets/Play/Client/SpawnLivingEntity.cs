@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SpawnLivingEntity : IPacket
+    public partial class SpawnLivingEntity : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int EntityId { get; set; }

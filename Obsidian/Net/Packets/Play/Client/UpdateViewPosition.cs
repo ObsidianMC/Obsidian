@@ -1,8 +1,6 @@
-﻿using Obsidian.Commands;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -10,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Client
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol#Update_View_Position
     /// </summary>
-    public class UpdateViewPosition : IPacket
+    public partial class UpdateViewPosition : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int ChunkX;

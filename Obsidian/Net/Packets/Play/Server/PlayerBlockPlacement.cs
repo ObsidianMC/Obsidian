@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.API;
 using System.Threading.Tasks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -9,7 +8,7 @@ using Obsidian.Util.Registry;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class PlayerBlockPlacement : IPacket
+    public partial class PlayerBlockPlacement : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off

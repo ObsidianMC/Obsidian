@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public abstract class ChangeGameState<T> : IPacket
+    public abstract partial class ChangeGameState<T> : IPacket
     {
         [Field(0, Type = DataType.UnsignedByte)]
 

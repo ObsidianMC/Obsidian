@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class ServerHeldItemChange : IPacket
+    public partial class ServerHeldItemChange : IPacket
     {
         [Field(0)]
         public short Slot { get; set; }

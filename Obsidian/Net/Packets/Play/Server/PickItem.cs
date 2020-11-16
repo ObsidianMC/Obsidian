@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class PickItem : IPacket
+    public partial class PickItem : IPacket
     {
         [Field(0)]
         public int SlotToUse { get; set; }

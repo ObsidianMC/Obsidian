@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Server
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
     /// </summary>
-    public class ClickWindow : IPacket
+    public partial class ClickWindow : IPacket
     {
         /// <summary>
         /// The ID of the window which was clicked. 0 for player inventory.

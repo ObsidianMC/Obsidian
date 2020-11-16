@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class CloseWindow : IPacket
+    public partial class CloseWindow : IPacket
     {
         [Field(0)]
         public byte WindowId { get; set; }

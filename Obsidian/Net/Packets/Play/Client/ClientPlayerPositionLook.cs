@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Client
         NONE = 0x00
     }
 
-    public class ClientPlayerPositionLook : IPacket
+    public partial class ClientPlayerPositionLook : IPacket
     {
         [Field(0, true)]
         public Position Position { get; set; }

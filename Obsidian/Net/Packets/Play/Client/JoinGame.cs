@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.PlayerData;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry.Codecs;
@@ -17,7 +16,8 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
-    public class JoinGame : IPacket
+
+    public partial class JoinGame : IPacket
     {
         [Field(0, Type = DataType.Int)]
         public int EntityId { get; set; }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class ClientSettings : IPacket
+    public partial class ClientSettings : IPacket
     {
         [Field(0)]
         public string Locale { get; private set; }

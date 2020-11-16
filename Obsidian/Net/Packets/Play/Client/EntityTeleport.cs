@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class EntityTeleport : IPacket
+    public partial class EntityTeleport : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int EntityId { get; set; }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class PlayerInfo : IPacket
+    public partial class PlayerInfo : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int Action { get; }

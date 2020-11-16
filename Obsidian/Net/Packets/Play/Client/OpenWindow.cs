@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class OpenWindow : IPacket
+    public partial class OpenWindow : IPacket
     {
         [Field(0)]
         public int WindowId { get; set; }
@@ -28,7 +28,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 
-    //Do not mess up the order this is how its supposed to be ordered
+    // Do not mess up the order this is how its supposed to be ordered
     public enum WindowType : int
     {
         Generic9x1,

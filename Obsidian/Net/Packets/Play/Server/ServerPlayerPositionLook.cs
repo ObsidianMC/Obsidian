@@ -5,7 +5,7 @@ using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class ServerPlayerPositionLook : IPacket
+    public partial class ServerPlayerPositionLook : IPacket
     {
         [Field(0, true)]
         public Position Position { get; set; }

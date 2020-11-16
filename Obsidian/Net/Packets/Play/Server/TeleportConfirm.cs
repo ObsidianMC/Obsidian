@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class TeleportConfirm : IPacket
+    public partial class TeleportConfirm : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public int TeleportId { get; set; }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class IncomingChatMessage : IPacket
+    public partial class IncomingChatMessage : IPacket
     {
         [Field(0)]
         public string Message { get; private set; }

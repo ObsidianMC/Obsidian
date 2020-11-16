@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SoundEffect : IPacket
+    public partial class SoundEffect : IPacket
     {
         [Field(0, Type = DataType.VarInt)]
         public Sounds SoundId { get; set; }

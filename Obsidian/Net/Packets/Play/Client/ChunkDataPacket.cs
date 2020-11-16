@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ChunkDataPacket : IPacket
+    public partial class ChunkDataPacket : IPacket
     {
         public Chunk Chunk { get; set; }
 

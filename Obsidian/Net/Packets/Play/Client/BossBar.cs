@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class BossBar : IPacket
+    public partial class BossBar : IPacket
     {
         [Field(0)]
         public Guid UUID { get; private set; }

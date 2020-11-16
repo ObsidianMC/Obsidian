@@ -93,10 +93,10 @@ namespace Obsidian
         public Server(Config config, string version, int serverId)
         {   
             this.Config = config;
-
+            
             SebastiansCube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
-
+            
             this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class Animation : IPacket
+    public partial class Animation : IPacket
     {
         [Field(0, Type = Serializer.Enums.DataType.VarInt)]
         public Hand Hand { get; set; }

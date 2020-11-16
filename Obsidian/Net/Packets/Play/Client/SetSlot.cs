@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SetSlot : IPacket
+    public partial class SetSlot : IPacket
     {
         /// <summary>
         /// 0 for player inventory. -1 For the currently dragged item

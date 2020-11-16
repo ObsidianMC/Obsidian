@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class NameItem : IPacket
+    public partial class NameItem : IPacket
     {
         [Field(0)]
         public string ItemName { get; set; }

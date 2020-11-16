@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class WindowConfirmation : IPacket
+    public partial class WindowConfirmation : IPacket
     {
         [Field(0)]
         public sbyte WindowId { get; set; }

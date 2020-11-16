@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ServerDifficulty : IPacket
+    public partial class ServerDifficulty : IPacket
     {
         [Field(0, Type = DataType.UnsignedByte)]
         public Difficulty Difficulty { get; }

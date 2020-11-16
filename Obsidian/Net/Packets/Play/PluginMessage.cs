@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class PluginMessage : IPacket
+    public partial class PluginMessage : IPacket
     {
         [Field(0)]
         public string Channel { get; private set; }

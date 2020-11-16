@@ -5,7 +5,7 @@ using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class SpawnPosition : IPacket
+    public partial class SpawnPosition : IPacket
     {
         [Field(0)]
         public Position Location { get; private set; }

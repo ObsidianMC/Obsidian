@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public class EncryptionResponse : IPacket
+    public partial class EncryptionResponse : IPacket
     {
         [Field(0, true)]
         public byte[] SharedSecret { get; private set; }

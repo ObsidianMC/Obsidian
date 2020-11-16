@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class CreativeInventoryAction : IPacket
+    public partial class CreativeInventoryAction : IPacket
     {
         [Field(0)]
         public short ClickedSlot { get; set; }

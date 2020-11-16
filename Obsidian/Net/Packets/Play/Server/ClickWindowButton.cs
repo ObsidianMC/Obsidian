@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
-    public class ClickWindowButton : IPacket
+    public partial class ClickWindowButton : IPacket
     {
         [Field(0)]
         public sbyte WindowId { get; set; }

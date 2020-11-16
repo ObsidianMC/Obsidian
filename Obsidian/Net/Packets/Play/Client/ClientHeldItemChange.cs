@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class ClientHeldItemChange : IPacket
+    public partial class ClientHeldItemChange : IPacket
     {
         [Field(0)]
         public byte Slot { get; }
