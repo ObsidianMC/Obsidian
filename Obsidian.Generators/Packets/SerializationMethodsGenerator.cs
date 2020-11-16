@@ -42,7 +42,10 @@ namespace Obsidian.Generators.Packets
                 else if (member is PropertyDeclarationSyntax property)
                 {
                     ISymbol symbol = model.GetDeclaredSymbol(member);
-                    memberSymbols.Add((property.Type, symbol));
+                    if (symbol.GetAttributes().Any(attribute => attribute.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default)))
+                    {
+                        memberSymbols.Add((property.Type, symbol));
+                    }
                 }
             }
 
@@ -63,10 +66,26 @@ namespace {@namespace}
     public partial class {classSymbol.Name}
     {{
 ");
-            source.Append($"public const int memberCount = {members.Count};");
+            source.Append("public void Serialize(MinecraftStream stream) {");
+            CreateSerializationMethod(source, members);
+            source.Append("}");
+
+            source.Append($"public static {classSymbol.Name} Deserialize(byte[] data) {{");
+            CreateDeserializationMethod(source, members);
+            source.Append("}");
 
             source.Append("} }");
             return source.ToString();
+        }
+
+        private void CreateSerializationMethod(StringBuilder builder, List<(TypeSyntax type, ISymbol symbol)> members)
+        {
+
+        }
+
+        private void CreateDeserializationMethod(StringBuilder builder, List<(TypeSyntax type, ISymbol symbol)> members)
+        {
+            builder.Append("return null;");
         }
     }
 }

@@ -103,7 +103,7 @@ namespace Obsidian
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
             Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
-
+            
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverId;
