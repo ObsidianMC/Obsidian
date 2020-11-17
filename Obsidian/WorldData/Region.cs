@@ -41,11 +41,8 @@ namespace Obsidian.WorldData
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
             var regionFile = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-            if (!File.Exists(regionFile)) { return; }
-
-            var regionNbt = new NbtFile();
-            regionNbt.LoadFromFile(regionFile);
-            Load(regionNbt.RootTag);
+            if (File.Exists(regionFile))
+                Load(regionFile);
         }
 
         internal async Task BeginTickAsync(CancellationToken cts)
@@ -59,7 +56,7 @@ namespace Obsidian.WorldData
                     await entity.TickAsync();
                 flushTime++;
 
-                if (flushTime > 50 * 10) // Save every 10 seconds
+                if (flushTime > 50 * 30) // Save every 30 seconds
                 {
                     Flush();
                     flushTime = 0;
@@ -73,14 +70,35 @@ namespace Obsidian.WorldData
         public void Flush()
         {
             var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
+            if (File.Exists(regionPath))
+                File.Copy(regionPath, regionPath + ".bak");
+            
             var regionCompound = GetNbt();
             var regionFile = new NbtFile();
             regionFile.RootTag = regionCompound;
             regionFile.SaveToFile(regionPath, NbtCompression.GZip);
+            
+            File.Delete(regionPath + ".bak");
+            regionCompound = null;
+            regionFile = null;
+            GC.Collect();
         }
 
-        public void Load(NbtCompound regionCompound)
+        public void Load(string regionFile)
         {
+            var regionNbt = new NbtFile();
+            try
+            {
+                regionNbt.LoadFromFile(regionFile);
+            }
+            catch (Exception)
+            {
+                File.Delete(regionFile);
+                File.Move(regionFile + ".bak", regionFile);
+                regionNbt.LoadFromFile(regionFile);
+            }
+
+            NbtCompound regionCompound = regionNbt.RootTag;
             var chunksNbt = regionCompound["Chunks"] as NbtList;
             foreach (var chunkNbt in chunksNbt)
             {
@@ -88,6 +106,9 @@ namespace Obsidian.WorldData
                 var index = (Helpers.Modulo(chunk.X, CUBIC_REGION_SIZE), Helpers.Modulo(chunk.Z, CUBIC_REGION_SIZE));
                 LoadedChunks[index.Item1, index.Item2] = chunk;
             }
+            regionNbt = null;
+            regionCompound = null;
+            GC.Collect();
         }
         #region FileStuff
         public Chunk GetChunkFromNbt(NbtCompound chunkCompound)

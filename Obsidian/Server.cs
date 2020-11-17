@@ -574,6 +574,7 @@ namespace Obsidian
                     itersPerSecond = 0;
                     stopWatch.Restart();
                 }
+                Task.Run(() => World.GenerateChunks());
             }
         }
 
