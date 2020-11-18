@@ -49,9 +49,9 @@ namespace Obsidian._Blocks
         {
             state = powered ? 1 : 0;
             state |= open ? 2 : 0;
-            state |= (int)hinge << 2;
-            state |= (int)half << 3;
-            state |= (int)face << 4;
+            state |= (int)hinge << hingeShift;
+            state |= (int)half << halfShift;
+            state |= (int)face << faceShift;
         }
 
         public static implicit operator SebastiansBlock(OakDoor oakDoor)
