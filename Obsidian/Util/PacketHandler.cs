@@ -3,6 +3,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -94,7 +95,8 @@ namespace Obsidian
             }
             catch(Exception e)
             {
-                Logger.LogError(e.Message + "\n" + e.StackTrace);
+                if (Globals.Config.VerboseLogging)
+                    Logger.LogError(e.Message + "\n" + e.StackTrace);
             }
 
         }

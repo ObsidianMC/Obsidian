@@ -67,7 +67,7 @@ namespace Obsidian.Serializer
             catch
             {
                 throw;
-			}
+            }
             finally
             {
                 stream.Lock.Release();

@@ -106,7 +106,8 @@ namespace Obsidian
                 }
                 catch(Exception e)
                 {
-                    Logger.LogError(e.Message + "\n" + e.StackTrace);
+                    if (Globals.Config.VerboseLogging)
+                        Logger.LogError(e.Message + "\n" + e.StackTrace);
                 }
             },
             blockOptions);
