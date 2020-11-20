@@ -51,7 +51,7 @@ namespace Obsidian.WorldData
             this.Server = server;
         }
 
-        public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
+        public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
         public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
         {
