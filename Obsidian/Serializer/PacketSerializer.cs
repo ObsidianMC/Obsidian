@@ -21,9 +21,8 @@ namespace Obsidian.Serializer
 
         public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
         {
-
-			try
-			{
+            try
+            {
                 if (packet == null)
                     throw new ArgumentNullException(nameof(packet));
 
@@ -65,12 +64,12 @@ namespace Obsidian.Serializer
 
                 await dataStream.CopyToAsync(stream);
             }
-			catch
-			{
+            catch
+            {
                 throw;
 			}
-			finally
-			{
+            finally
+            {
                 stream.Lock.Release();
             }
         }

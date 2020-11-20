@@ -87,15 +87,15 @@ namespace Obsidian
             if (!Packets.ContainsKey(packet.id))
                 return;
 
-			try
+            try
             {
                 await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
                 await Packets[packet.id].HandleAsync(client.Server, client.Player);
             }
-			catch(Exception e)
-			{
+            catch(Exception e)
+            {
                 Logger.LogError(e.Message + "\n" + e.StackTrace);
-			}
+            }
 
         }
 

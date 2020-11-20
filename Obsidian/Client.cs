@@ -99,15 +99,15 @@ namespace Obsidian
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(async packet =>
             {
-				try
-				{
+                try
+                {
                     if (tcp.Connected)
                         await SendPacketAsync(packet);
                 }
                 catch(Exception e)
-				{
+                {
                     Logger.LogError(e.Message + "\n" + e.StackTrace);
-				}
+                }
             },
             blockOptions);
 
