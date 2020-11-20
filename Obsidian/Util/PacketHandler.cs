@@ -3,6 +3,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Server;
+using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
@@ -86,8 +87,16 @@ namespace Obsidian
             if (!Packets.ContainsKey(packet.id))
                 return;
 
-            await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
-            await Packets[packet.id].HandleAsync(client.Server, client.Player);
+			try
+            {
+                await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
+                await Packets[packet.id].HandleAsync(client.Server, client.Player);
+            }
+			catch(Exception e)
+			{
+                Logger.LogError(e.Message + "\n" + e.StackTrace);
+			}
+
         }
 
     }
