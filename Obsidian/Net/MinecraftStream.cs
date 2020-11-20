@@ -255,7 +255,14 @@ namespace Obsidian.Net
                     }
                 case DataType.Float:
                     {
-                        await this.WriteFloatAsync((float)value);
+						if (value is Enum)
+						{
+							Enum _enum = (Enum)value;
+                            value = Convert.ChangeType(value, _enum.GetTypeCode());
+							await this.WriteFloatAsync(Convert.ToSingle(value));
+						}
+						else
+							await this.WriteFloatAsync((float)value);
                         break;
                     }
                 case DataType.Double:
