@@ -891,6 +891,4 @@ namespace Obsidian.Net
 
         #endregion Reading
     }
-
-
 }
