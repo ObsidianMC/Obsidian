@@ -89,13 +89,14 @@ namespace Obsidian
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
             this.LoadedChunks = new List<(int cx, int cz)>();
+            Handshake.Deserialize(Array.Empty<byte>());
 
             Stream parentStream = this.tcp.GetStream();
 #if DEBUG
             //parentStream = this.DebugStream = new PacketDebugStream(parentStream);
 #endif
             this.minecraftStream = new MinecraftStream(parentStream);
-
+            
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(async packet =>

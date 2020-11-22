@@ -7,9 +7,9 @@ namespace Obsidian.Generators
 {
     public class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : SyntaxNode
     {
-        private GeneratorExecutionContext context;
+        public GeneratorExecutionContext Context { get; set; }
         private Predicate<T> predicate;
-        
+
         public ExecutionSyntaxProvider() : this(t => true)
         {
         }
@@ -21,13 +21,13 @@ namespace Obsidian.Generators
 
         public IEnumerable<T> GetSyntaxNodes()
         {
-            foreach (var syntaxNode in context.Compilation.SyntaxTrees)
+            foreach (var syntaxNode in Context.Compilation.SyntaxTrees)
             {
-                context.CancellationToken.ThrowIfCancellationRequested();
+                Context.CancellationToken.ThrowIfCancellationRequested();
 
                 foreach (var subnode in syntaxNode.GetRoot().DescendantNodesAndSelf().OfType<T>())
                 {
-                    if (predicate(subnode))
+                    if (HandleNode(subnode))
                         yield return subnode;
                 }
             }
@@ -35,13 +35,18 @@ namespace Obsidian.Generators
 
         public ISyntaxProvider<T> WithContext(GeneratorExecutionContext context)
         {
-            this.context = context;
+            this.Context = context;
             return this;
         }
 
         public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
         {
             return;
+        }
+
+        protected virtual bool HandleNode(T node)
+        {
+            return predicate(node);
         }
     }
 }
