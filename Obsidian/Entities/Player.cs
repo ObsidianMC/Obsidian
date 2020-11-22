@@ -117,7 +117,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt
+                        ItemMeta = item.ItemMeta
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -156,7 +156,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt
+                        ItemMeta = item.ItemMeta
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -191,7 +191,7 @@ namespace Obsidian.Entities
                     var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
                     {
                         Present = true,
-                        Nbt = item.Nbt
+                        ItemMeta = item.ItemMeta
                     });
 
                     await this.client.SendPacketAsync(new SetSlot

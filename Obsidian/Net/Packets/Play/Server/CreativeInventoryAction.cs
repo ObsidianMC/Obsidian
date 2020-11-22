@@ -30,7 +30,7 @@ namespace Obsidian.Net.Packets.Play.Server
         {
             player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.ClickedItem.Id, this.ClickedItem.Count)
             {
-                Nbt = this.ClickedItem.Nbt,
+                ItemMeta = this.ClickedItem.ItemMeta,
                 Present = this.ClickedItem.Present
             });
 
@@ -46,7 +46,7 @@ namespace Obsidian.Net.Packets.Play.Server
                         Present = heldItem.Present,
                         Count = (sbyte)heldItem.Count,
                         Id = heldItem.Id,
-                        Nbt = heldItem.Nbt
+                        ItemMeta = heldItem.ItemMeta
                     }
                 }, player);
             }

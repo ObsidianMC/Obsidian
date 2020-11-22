@@ -5,9 +5,11 @@ namespace Obsidian.Items
 {
     public class ItemStack : Item
     {
-        public bool Present { get; set; }
+        internal bool Present { get; set; }
 
-        public int Count { get; set; }
+        public int Count { get; internal set; }
+
+        public ItemMeta? ItemMeta { get; set; }
 
         public ItemStack() : base(Materials.Air) { }
 

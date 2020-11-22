@@ -11,7 +11,7 @@ namespace Obsidian.Entities
 
         public sbyte Count { get; set; }
 
-        public ItemNbt Nbt { get; set; }
+        public ItemMeta ItemMeta { get; set; }
 
         public bool CanPickup { get; set; }
 
@@ -26,7 +26,7 @@ namespace Obsidian.Entities
                 Present = true,
                 Id = this.Id,
                 Count = this.Count,
-                Nbt = this.Nbt
+                ItemMeta = this.ItemMeta
             });
         }
 

@@ -116,16 +116,17 @@ namespace Obsidian.Tests
         {
             await using var stream = new MinecraftStream();
 
+            var itemMeta = new ItemMetaBuilder()
+                .WithName("test")
+                .WithDurability(1)
+                .Build();
+
             var dataSlot = new ItemStack
             {
                 Count = 0,
                 Id = 25,
                 Present = true,
-                Nbt = new ItemNbt
-                {
-                    Slot = 1,
-                    Damage = 1
-                }
+                ItemMeta = itemMeta
             };
 
             await stream.WriteSlotAsync(dataSlot);
@@ -138,8 +139,8 @@ namespace Obsidian.Tests
             Assert.Equal(0, slot.Count);
             Assert.Equal(25, slot.Id);
 
-            Assert.Equal(1, slot.Nbt.Slot);
-            Assert.Equal(1, slot.Nbt.Damage);
+            Assert.Equal("test", slot.ItemMeta.Value.Name);
+            Assert.Equal(1, slot.ItemMeta.Value.Durability);
         }
     }
 }

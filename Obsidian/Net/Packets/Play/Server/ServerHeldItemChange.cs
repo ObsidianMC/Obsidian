@@ -37,7 +37,7 @@ namespace Obsidian.Net.Packets.Play.Server
                     Present = heldItem.Present,
                     Count = (sbyte)heldItem.Count,
                     Id = heldItem.Id,
-                    Nbt = heldItem.Nbt
+                    ItemMeta = heldItem.ItemMeta
                 }
             }, player);
         }

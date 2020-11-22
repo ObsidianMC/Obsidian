@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,6 +12,8 @@ namespace Obsidian.Items
 
         internal int ActionsNumber { get; set; }
 
+        public Guid? Owner { get; set; }
+
         public InventoryType Type { get; set; }
 
         public string Title { get; set; }
@@ -20,6 +23,17 @@ namespace Obsidian.Items
         public ConcurrentDictionary<int, ItemStack> Items { get; private set; } = new ConcurrentDictionary<int, ItemStack>();
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
+
+        private short[] items { get; }
+
+        private ItemMeta[] metaStore { get; set; }
+
+        public Inventory(Guid? owner = null)
+        {
+            this.Owner = owner;
+            this.items = new short[this.Size - 1];
+            this.metaStore = new ItemMeta[this.Size - 1];
+        }
 
         public void AddItems(params ItemStack[] items)
         {
@@ -108,6 +122,27 @@ namespace Obsidian.Items
             this.Items[slot].Count -= amount;
 
             return true;
+        }
+
+        public IReadOnlyList<ItemStack> GetItems()
+        {
+            var list = new List<ItemStack>();
+            for (int i = 0; i < this.Size - 1; i++)
+            {
+                var id = this.items[i];
+
+                var itemMeta = this.metaStore[i];
+                var item = Registry.GetItem(id);
+
+                list.Add(new ItemStack(id, itemMeta.Count)
+                {
+                    Present = true,
+                    UnlocalizedName = item.UnlocalizedName,
+                    ItemMeta = itemMeta
+                });
+            }
+
+            return list;
         }
     }
 

@@ -125,7 +125,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                     //creative copy
                                     player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.Count)
                                     {
-                                        Nbt = this.Item.Nbt
+                                        ItemMeta = this.Item.ItemMeta
                                     });
                                 }
                                 else
@@ -136,7 +136,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                     //survival painting
                                     player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.Count)
                                     {
-                                        Nbt = this.Item.Nbt
+                                        ItemMeta = this.Item.ItemMeta
                                     });
                                 }
                             }
