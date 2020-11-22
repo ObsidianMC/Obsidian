@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,8 +10,13 @@ namespace Obsidian.Generators.Packets
     [Generator]
     public class SerializationMethodsGenerator : ISourceGenerator
     {
-        private static readonly DiagnosticDescriptor noSerializationMethod = new DiagnosticDescriptor("DBG001", "This data type doesn't have serialization method associated with it.", "This data type doesn't have serialization method associated with it.", "SerializationMethodGeneration", DiagnosticSeverity.Warning, true);
-        
+        private static readonly DiagnosticDescriptor noSerializationMethod = new DiagnosticDescriptor("DBG001", "This data type doesn't have serialization method associated with it", "This data type doesn't have serialization method associated with it", "SerializationMethodGeneration", DiagnosticSeverity.Warning, true);
+
+        private const string fieldAttributeFull = "Obsidian.Serializer.Attributes.FieldAttribute";
+        private const string fieldAttribute = "Field";
+        private const string readMethodAttribute = "ReadMethod";
+        private const string writeMethodAttribute = "WriteMethod";
+
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxProvider());
@@ -25,47 +29,42 @@ namespace Obsidian.Generators.Packets
 
             Compilation compilation = context.Compilation;
 
-            INamedTypeSymbol attributeSymbol = compilation.GetTypeByMetadataName("Obsidian.Serializer.Attributes.FieldAttribute");
-
-            var memberSymbols = new List<(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member)>();
+            // Get all packet fields
+            var memberSymbols = new List<PacketField>();
             foreach (MemberDeclarationSyntax member in syntaxProvider.WithContext(context).GetSyntaxNodes())
             {
+                AttributeSyntax attribute = member.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == fieldAttribute);
+                if (attribute is null)
+                    continue;
+
                 SemanticModel model = compilation.GetSemanticModel(member.SyntaxTree);
                 if (member is FieldDeclarationSyntax field)
                 {
                     foreach (VariableDeclaratorSyntax variable in field.Declaration.Variables)
                     {
                         ISymbol symbol = model.GetDeclaredSymbol(variable);
-                        if (symbol.GetAttributes().Any(attribute => attribute.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default)))
-                        {
-                            memberSymbols.Add((field.Declaration.Type, symbol, field));
-                        }
+                        memberSymbols.Add(new PacketField(field.Declaration.Type, symbol, field, attribute));
                     }
                 }
                 else if (member is PropertyDeclarationSyntax property)
                 {
                     ISymbol symbol = model.GetDeclaredSymbol(member);
-                    if (symbol.GetAttributes().Any(attribute => attribute.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default)))
-                    {
-                        memberSymbols.Add((property.Type, symbol, property));
-                    }
+                    memberSymbols.Add(new PacketField(property.Type, symbol, property, attribute));
                 }
             }
 
-            foreach (var group in memberSymbols.GroupBy(member => member.symbol.ContainingType))
+            // Generate partial classes
+            foreach (var group in memberSymbols.GroupBy(member => member.Symbol.ContainingType))
             {
-                string classSource = ProcessClass(group.Key, group.ToList(), attributeSymbol, context, syntaxProvider);
+                string classSource = ProcessClass(group.Key, group.ToList(), syntaxProvider);
                 context.AddSource($"{group.Key.Name}_Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
             }    
         }
 
-        /// <summary>
-        /// <see cref=""/>
-        /// </summary>
-        /// <param name="classSymbol"></param>
-        /// <returns></returns>
-        private string ProcessClass(INamedTypeSymbol classSymbol, List<(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member)> members, ISymbol attributeSymbol, GeneratorExecutionContext context, SyntaxProvider syntaxProvider)
+        private string ProcessClass(INamedTypeSymbol classSymbol, List<PacketField> members, SyntaxProvider syntaxProvider)
         {
+            members.Sort((a, b) => a.Index.CompareTo(b.Index));
+            
             string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
 
             var source = new StringBuilder($@"using Obsidian.Net;
@@ -77,24 +76,23 @@ namespace {@namespace}
 ");
             string classOffset = "\t\t";
 
+            // Serialize(MinecraftStream stream)
             source.AppendXML("summary", $"Serializes data from this packet into <see cref=\"MinecraftStream\"/>.\n<b>AUTOGENERATED</b>");
             source.AppendXML("param", @"name=""stream""", "Target stream that this packet's data is written to.", true);
             source.Append($"{classOffset}public void Serialize(MinecraftStream stream)\n{classOffset}{{\n");
-            CreateSerializationMethod(source, members);
+            CreateSerializationMethod(source, members, syntaxProvider);
             source.Append($"{classOffset}}}\n\n");
 
+            // Deserialize(byte[] data)
             source.AppendXML("summary", $"Deserializes byte data into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
             source.AppendXML("param", @"name=""data""", "Data used to populate the packet.", true);
             source.AppendXML("returns", "Deserialized packet.", true);
             source.Append($"{classOffset}public static {classSymbol.Name} Deserialize(byte[] data)\n{classOffset}{{\n");
             source.AppendCode("using var stream = new MinecraftStream(data);");
             source.AppendCode("return Deserialize(stream);");
-            foreach (var keyValuePair in syntaxProvider.WriteMethods)
-            {
-                source.AppendComment($"{keyValuePair.Key}: {keyValuePair.Value}");
-            }
             source.Append($"{classOffset}}}\n\n");
 
+            // Deserialize(MinecraftStream stream)
             source.AppendXML("summary", $"Deserializes data from <see cref=\"MinecraftStream\"/> into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
             source.AppendXML("param", @"name=""stream""", "Stream that is read from to populate the packet.", true);
             source.AppendXML("returns", "Deserialized packet.", true);
@@ -108,91 +106,114 @@ namespace {@namespace}
             return source.ToString();
         }
 
-        private void CreateSerializationMethod(StringBuilder builder, List<(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member)> members)
+        private void CreateSerializationMethod(StringBuilder builder, List<PacketField> members, SyntaxProvider syntaxProvider)
         {
-
+            foreach (var member in members)
+            {
+                builder.AppendCode($"stream.{GetMethod(member, syntaxProvider, syntaxProvider.WriteMethods)}({member.Symbol.Name}); // {member.Index}");
+            }
         }
 
-        private void CreateDeserializationMethod(StringBuilder builder, INamedTypeSymbol classSymbol, List<(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member)> members, SyntaxProvider syntaxProvider)
+        private void CreateDeserializationMethod(StringBuilder builder, INamedTypeSymbol classSymbol, List<PacketField> members, SyntaxProvider syntaxProvider)
         {
             builder.AppendCode($"var packet = new {classSymbol}();");
             foreach (var member in members)
             {
-                builder.AppendCode($"packet.{member.symbol.Name} = stream.{GetReadMethod(member, syntaxProvider)}();");
+                builder.AppendCode($"packet.{member.Symbol.Name} = stream.{GetMethod(member, syntaxProvider, syntaxProvider.ReadMethods)}();");
             }
             builder.AppendCode("return packet;");
         }
 
-        private string GetReadMethod((TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member) member, SyntaxProvider syntaxProvider)
+        private string GetMethod(PacketField member, SyntaxProvider syntaxProvider, Dictionary<string, string> methodCollection)
         {
             string dataType, methodName;
-            var attribute = member.member.AttributeLists.SelectMany(attributeList => attributeList.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == "Field");
+
+            // Try to get specified Type from FieldAttribute
+            var attribute = member.Declaration.AttributeLists.SelectMany(attributeList => attributeList.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == fieldAttribute);
             var argument = attribute?.ArgumentList.DescendantNodes().FirstOrDefault(node => node is IdentifierNameSyntax identifier && identifier.Identifier.Text == "Type");
             var typeAccess = argument?.Parent.Parent.DescendantNodes().FirstOrDefault(node => node is MemberAccessExpressionSyntax) as MemberAccessExpressionSyntax;
             if (typeAccess is not null)
             {
                 dataType = typeAccess.GetText().ToString().Split('.').Last();
-                if (syntaxProvider.ReadMethods.TryGetValue(dataType, out methodName))
+                if (methodCollection.TryGetValue(dataType, out methodName))
                 {
                     return methodName;
                 }
                 else
                 {
-                    syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, argument.GetLocation(), member.symbol.Name));
+                    syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, argument.GetLocation(), member.Symbol.Name));
                     return string.Empty;
                 }
             }
 
-            var typeName = member.type.GetText().ToString();
-            if (syntaxProvider.ReadMethods.TryGetValue(typeName, out methodName))
+            // Use data type
+            var typeName = member.Type.GetText().ToString();
+            if (methodCollection.TryGetValue(typeName, out methodName))
             {
                 return methodName;
             }
             else
             {
-                syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, member.type.GetLocation(), member.symbol.Name));
+                syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, member.Type.GetLocation(), member.Symbol.Name));
                 return string.Empty;
             }
         }
 
-        private string GetWriteMethod((TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax member) member, SyntaxProvider syntaxProvider)
+        private class SyntaxProvider : ExecutionSyntaxProvider<MemberDeclarationSyntax>
         {
-            return string.Empty;
-        }
-    }
+            public Dictionary<string, string> WriteMethods { get; } = new Dictionary<string, string>();
+            public Dictionary<string, string> ReadMethods { get; } = new Dictionary<string, string>();
 
-    internal class SyntaxProvider : ExecutionSyntaxProvider<MemberDeclarationSyntax>
-    {
-        public Dictionary<string, string> WriteMethods { get; } = new Dictionary<string, string>();
-        public Dictionary<string, string> ReadMethods { get; } = new Dictionary<string, string>();
-
-        public SyntaxProvider() : base(member => (member is FieldDeclarationSyntax || member is PropertyDeclarationSyntax) && member.AttributeLists.Count > 0)
-        {
-        }
-        
-        protected override bool HandleNode(MemberDeclarationSyntax node)
-        {
-            if (node is MethodDeclarationSyntax methodDeclaration)
+            public SyntaxProvider()
             {
-                var attributes = methodDeclaration.AttributeLists.SelectMany(list => list.Attributes);
-                var attribute = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == "ReadMethod" || attribute.Name.ToString() == "WriteMethod");
-                if (attribute is not null)
+            }
+
+            /// <summary>
+            /// Decides whether a certain syntax node should be returned by <see cref="ExecutionSyntaxProvider{T}.GetSyntaxNodes"/>.
+            /// </summary>
+            protected override bool HandleNode(MemberDeclarationSyntax node)
+            {
+                // Handle all Read and Write methods
+                if (node is MethodDeclarationSyntax methodDeclaration)
                 {
-                    string dataType = attribute.ArgumentList.Arguments.First().GetText().ToString().Split('.').Last();
-                    string methodName = methodDeclaration.Identifier.Text;
-                    if (attribute.Name.ToString() == "ReadMethod")
+                    var attributes = methodDeclaration.AttributeLists.SelectMany(list => list.Attributes);
+                    var attribute = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == readMethodAttribute || attribute.Name.ToString() == writeMethodAttribute);
+                    if (attribute is not null)
                     {
-                        ReadMethods[dataType] = methodName;
-                        ReadMethods[methodDeclaration.ReturnType.GetText().ToString()] = methodName;
-                    }
-                    else
-                    {
-                        WriteMethods[dataType] = methodName;
-                        WriteMethods[methodDeclaration.ParameterList.Parameters.First().Type.GetText().ToString()] = methodName;
+                        string dataType = attribute.ArgumentList.Arguments.First().GetText().ToString().Split('.').Last();
+                        string methodName = methodDeclaration.Identifier.Text;
+                        if (attribute.Name.ToString() == readMethodAttribute)
+                        {
+                            ReadMethods[dataType] = methodName;
+                            ReadMethods[methodDeclaration.ReturnType.GetText().ToString()] = methodName;
+                        }
+                        else
+                        {
+                            WriteMethods[dataType] = methodName;
+                            WriteMethods[methodDeclaration.ParameterList.Parameters.First().Type.GetText().ToString()] = methodName;
+                        }
                     }
                 }
+
+                // Handle all fields and properties that may be packet fields
+                return (node is FieldDeclarationSyntax || node is PropertyDeclarationSyntax) && node.AttributeLists.Count > 0;
             }
-            return base.HandleNode(node);
+        }
+
+        private struct PacketField
+        {
+            public int Index { get; set; }
+            public TypeSyntax Type { get; set; }
+            public ISymbol Symbol { get; set; }
+            public MemberDeclarationSyntax Declaration { get; set; }
+
+            public PacketField(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax declaration, AttributeSyntax fieldAttribute)
+            {
+                Type = type;
+                Symbol = symbol;
+                Declaration = declaration;
+                Index = int.Parse(fieldAttribute.ArgumentList.Arguments.First().GetText().ToString());
+            }
         }
     }
 

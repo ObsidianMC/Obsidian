@@ -1,23 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.Generators
 {
-    public class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : SyntaxNode
+    public abstract class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : SyntaxNode
     {
         public GeneratorExecutionContext Context { get; set; }
-        private Predicate<T> predicate;
-
-        public ExecutionSyntaxProvider() : this(t => true)
-        {
-        }
-
-        public ExecutionSyntaxProvider(Predicate<T> predicate)
-        {
-            this.predicate = predicate;
-        }
 
         public IEnumerable<T> GetSyntaxNodes()
         {
@@ -44,9 +33,6 @@ namespace Obsidian.Generators
             return;
         }
 
-        protected virtual bool HandleNode(T node)
-        {
-            return predicate(node);
-        }
+        protected abstract bool HandleNode(T node);
     }
 }
