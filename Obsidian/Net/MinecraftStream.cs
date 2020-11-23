@@ -477,17 +477,11 @@ namespace Obsidian.Net
                 await this.WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
-                if (!slot.ItemMeta.HasValue)
-                {
-                    writer.EndCompound();
-                    writer.Finish();
-                    return;
-                }
 
-                var itemMeta = slot.ItemMeta.Value;
+                var itemMeta = slot.ItemMeta;
 
                 //TODO write enchants
-                writer.WriteShort("id", (short)slot.Id);
+                writer.WriteShort("id", slot.Id);
                 writer.WriteInt("Damage", itemMeta.Durability);
                 writer.WriteByte("Count", (byte)slot.Count);
 
@@ -506,14 +500,17 @@ namespace Obsidian.Net
 
             if (present)
             {
-                slot.Id = await this.ReadVarIntAsync();
-                slot.Count = await this.ReadByteAsync();
+                slot.Id = (short)await this.ReadVarIntAsync();
+                var count = await this.ReadByteAsync();
 
                 var reader = new NbtReader(this);
 
                 while (reader.ReadToFollowing())
                 {
-                    var itemMetaBuilder = new ItemMetaBuilder();
+                    var itemMetaBuilder = new ItemMetaBuilder
+                    {
+                        Count = count
+                    };
 
                     if (reader.IsCompound)
                     {
@@ -614,7 +611,7 @@ namespace Obsidian.Net
 
             if (present)
             {
-                slot.Id = this.ReadVarInt();
+                slot.Id = (short)this.ReadVarInt();
                 slot.Count = this.ReadSignedByte();
 
                 var reader = new NbtReader(this);

@@ -741,7 +741,7 @@ namespace Obsidian.Util.Registry
 
                 Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
 
-                Items.Add(material, new Item(name, material) { Id = item.ProtocolId });
+                Items.Add(material, new Item(name, material) { Id = (short)item.ProtocolId });
                 registered++;
             }
 

@@ -7,7 +7,7 @@ namespace Obsidian.Entities
 {
     public class ItemEntity : Entity
     {
-        public int Id { get; set; }
+        public short Id { get; set; }
 
         public sbyte Count { get; set; }
 
@@ -21,12 +21,10 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Id, this.ItemMeta)
             {
                 Present = true,
-                Id = this.Id,
                 Count = this.Count,
-                ItemMeta = this.ItemMeta
             });
         }
 

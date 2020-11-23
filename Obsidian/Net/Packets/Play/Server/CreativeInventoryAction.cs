@@ -28,9 +28,8 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task HandleAsync(Obsidian.Server server, Player player)
         {
-            player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.ClickedItem.Id, this.ClickedItem.Count)
+            player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.ClickedItem.Id, this.ClickedItem.ItemMeta)
             {
-                ItemMeta = this.ClickedItem.ItemMeta,
                 Present = this.ClickedItem.Present
             });
 

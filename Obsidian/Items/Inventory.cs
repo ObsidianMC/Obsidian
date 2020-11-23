@@ -12,6 +12,8 @@ namespace Obsidian.Items
 
         internal int ActionsNumber { get; set; }
 
+        internal bool OwnedByPlayer { get; set; }
+
         public Guid? Owner { get; set; }
 
         public InventoryType Type { get; set; }
@@ -19,8 +21,6 @@ namespace Obsidian.Items
         public string Title { get; set; }
 
         public int Size { get; set; } = 9 * 5;
-
-        public ConcurrentDictionary<int, ItemStack> Items { get; private set; } = new ConcurrentDictionary<int, ItemStack>();
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
 
@@ -31,8 +31,8 @@ namespace Obsidian.Items
         public Inventory(Guid? owner = null)
         {
             this.Owner = owner;
-            this.items = new short[this.Size - 1];
-            this.metaStore = new ItemMeta[this.Size - 1];
+            this.items = new short[this.Size];
+            this.metaStore = new ItemMeta[this.Size];
         }
 
         public void AddItems(params ItemStack[] items)
@@ -48,52 +48,81 @@ namespace Obsidian.Items
 
         public int AddItem(ItemStack item)
         {
-            for (int i = 36; i < 45; i++)
+            if (this.OwnedByPlayer)
             {
-                if (this.Items.TryGetValue(i, out var invItem))
+                for (int i = 36; i < 45; i++)
                 {
-                    if (invItem.Count >= 64)
-                        continue;
+                    var invItem = this.items[i];
+                    var itemMeta = this.metaStore[i];
 
-                    invItem.Count += item.Count;
+                    if (invItem > 0 && invItem == item.Id)//TODO match item meta
+                    {
+                        if (itemMeta.Count >= 64)
+                            continue;
+
+                        itemMeta.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.items[i] = item.Id;
 
                     return i;
                 }
 
-                if (this.TryAddItem(i, item))
+                for (int i = 9; i < 36; i++)
+                {
+                    var invItem = this.items[i];
+                    var itemMeta = this.metaStore[i];
+
+                    if (invItem > 0)
+                    {
+                        if (itemMeta.Count >= 64)
+                            continue;
+
+                        itemMeta.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.items[i] = item.Id;
+
                     return i;
+                }
             }
-
-            for (int i = 9; i < 36; i++)
+            else
             {
-                if (this.Items.TryGetValue(i, out var invItem))
+                for (int i = 0; i < this.Size; i++)
                 {
-                    if (invItem.Count >= 64)
-                        continue;
+                    var invItem = this.items[i];
+                    var itemMeta = this.metaStore[i];
 
-                    invItem.Count += item.Count;
+                    if (invItem == item.Id && invItem > 0)//TODO match item meta
+                    {
+                        if (itemMeta.Count >= 64)
+                            continue;
+
+                        itemMeta.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.items[i] = item.Id;
 
                     return i;
                 }
-
-                if (this.TryAddItem(i, item))
-                    return i;
             }
 
             return 9;
         }
-
-        private bool TryAddItem(int index, ItemStack item) => this.Items.TryAdd(index, item);
 
         public void SetItem(int slot, ItemStack item)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            if (this.Items.ContainsKey(slot))
-                this.Items[slot] = item;
-            else
-                this.Items.TryAdd(slot, item);
+            this.items[slot] = item.Id;
+            this.metaStore[slot] = item.ItemMeta;
         }
 
         public ItemStack GetItem(int slot)
@@ -101,25 +130,27 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException(nameof(slot));
 
-            //Assume there's nothing there so we give back air
-            if (!this.Items.ContainsKey(slot))
-                return new ItemStack(0, 0);
-
-            return this.Items.GetValueOrDefault(slot);
+            return new ItemStack(this.items[slot], this.metaStore[slot]);
         }
 
-        public bool RemoveItem(int slot, int amount = 1)
+        public bool RemoveItem(int slot, short amount = 1)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            if (!this.Items.ContainsKey(slot))
+            var item = this.items[slot];
+
+            if (item <= 0)
                 return false;
 
-            if (amount >= 64 || this.Items[slot].Count - amount <= 0)
-                return this.Items.TryRemove(slot, out var _);
-
-            this.Items[slot].Count -= amount;
+            var itemMeta = this.metaStore[slot];
+            if (amount >= 64 || itemMeta.Count - amount <= 0)
+            {
+                this.items[slot] = 0;
+                this.metaStore[slot] = default;
+            }
+            else
+                itemMeta.Count -= amount;
 
             return true;
         }
@@ -134,11 +165,10 @@ namespace Obsidian.Items
                 var itemMeta = this.metaStore[i];
                 var item = Registry.GetItem(id);
 
-                list.Add(new ItemStack(id, itemMeta.Count)
+                list.Add(new ItemStack(id, itemMeta)
                 {
                     Present = true,
-                    UnlocalizedName = item.UnlocalizedName,
-                    ItemMeta = itemMeta
+                    UnlocalizedName = item.UnlocalizedName
                 });
             }
 

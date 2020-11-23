@@ -114,10 +114,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
                     {
-                        Present = true,
-                        ItemMeta = item.ItemMeta
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -153,10 +152,9 @@ namespace Obsidian.Entities
                         CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
                     {
-                        Present = true,
-                        ItemMeta = item.ItemMeta
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -188,10 +186,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
                     {
-                        Present = true,
-                        ItemMeta = item.ItemMeta
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot

@@ -79,7 +79,7 @@ namespace Obsidian.Net.Packets.Play.Server
                             }
                             else
                             {
-                                player.Inventory.RemoveItem(this.ClickedSlot, this.Item.Count / 2);
+                                player.Inventory.RemoveItem(this.ClickedSlot, (short)(this.Item.Count / 2));
                             }
                             break;
                         }
@@ -123,10 +123,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                         break;
 
                                     //creative copy
-                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.Count)
-                                    {
-                                        ItemMeta = this.Item.ItemMeta
-                                    });
+                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.ItemMeta));
                                 }
                                 else
                                 {
@@ -134,10 +131,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                         break;
 
                                     //survival painting
-                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.Count)
-                                    {
-                                        ItemMeta = this.Item.ItemMeta
-                                    });
+                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.ItemMeta));
                                 }
                             }
                             else

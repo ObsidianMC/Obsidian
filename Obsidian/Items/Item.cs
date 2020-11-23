@@ -8,7 +8,7 @@ namespace Obsidian.Items
 
         public Materials Type { get; }
 
-        public int Id { get; set; }
+        public short Id { get; set; }
 
         public Item(Materials type) => this.Type = type;
 
