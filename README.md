@@ -39,8 +39,8 @@ Find out about plugin development [here](https://github.com/ObsidianServer/Obsid
 
 ## Contributors
 Big thanks to everyone that contributed!
-<a href="https://github.com/naamloos/obsidian/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=naamloos/obsidian" />
+<a href="https://github.com/obsidianserver/obsidian/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=obsidianserver/obsidian" />
 </a>
 
-Made with [contributors-img](https://contributors-img.web.app).
+Made with [contributors-img](https://contributors-img.web.app)
