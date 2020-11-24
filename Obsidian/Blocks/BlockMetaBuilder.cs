@@ -89,6 +89,5 @@ namespace Obsidian.Blocks
 
             return meta;
         }
-
     }
 }
