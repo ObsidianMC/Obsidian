@@ -1,4 +1,5 @@
-﻿using Obsidian.Util.Extensions;
+﻿using Obsidian.Chat;
+using Obsidian.Util.Extensions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -9,10 +10,7 @@ namespace Obsidian.Items
         internal byte Slot { get; set; }
 
         internal int CustomModelData { get; set; }
-        public string Name { get; internal set; }
-
-        public string Description { get; internal set; }
-
+        public ChatMessage Name { get; internal set; }
 
         public int Durability { get; internal set; }
 
@@ -23,9 +21,14 @@ namespace Obsidian.Items
 
         public IReadOnlyList<string> CanDestroy { get; }
 
+        public IReadOnlyList<ChatMessage> Lore { get; }
+
         private readonly Dictionary<EnchantmentType, Enchantment> enchantments = new Dictionary<EnchantmentType, Enchantment>();
         private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = new Dictionary<EnchantmentType, Enchantment>();
+
         private readonly List<string> canDestroy = new List<string>();
+
+        private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
         public ItemMetaBuilder()
         {
@@ -33,6 +36,8 @@ namespace Obsidian.Items
             this.StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.storedEnchantments);
 
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
+
+            this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
         }
 
         internal ItemMetaBuilder WithSlot(byte slot)
@@ -45,6 +50,13 @@ namespace Obsidian.Items
         internal ItemMetaBuilder WithCustomModelData(int modelData)
         {
             this.CustomModelData = modelData;
+
+            return this;
+        }
+
+        public ItemMetaBuilder CouldDestroy(string id)
+        {
+            this.canDestroy.Add(id);
 
             return this;
         }
@@ -63,9 +75,9 @@ namespace Obsidian.Items
             return this;
         }
 
-        public ItemMetaBuilder WithDescription(string description)
+        public ItemMetaBuilder AddLore(ChatMessage lore)
         {
-            this.Description = description;
+            this.lore.Add(lore);
 
             return this;
         }
@@ -106,7 +118,7 @@ namespace Obsidian.Items
                 Slot = this.Slot,
                 CustomModelData = this.CustomModelData,
                 Name = this.Name,
-                Lore = this.Description,
+                Lore = this.Lore,
                 Durability = this.Durability,
                 Unbreakable = this.Unbreakable,
 
