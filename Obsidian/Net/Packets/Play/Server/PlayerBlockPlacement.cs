@@ -1,9 +1,15 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Items;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
@@ -58,8 +64,11 @@ namespace Obsidian.Net.Packets.Play.Server
 
             var interactedBlock = server.World.GetBlock(location);
 
+            Console.WriteLine($"Interacted {Location}:{interactedBlock}");
+
             if (interactedBlock.CanInteract() && !player.Sneaking)
             {
+               
                 var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Location));
 
                 if (arg.Cancel)
@@ -67,7 +76,77 @@ namespace Obsidian.Net.Packets.Play.Server
 
                 //TODO open chests/Crafting inventory ^ ^
 
-                //Logger.LogDebug($"Block Interact: {interactedBlock} - {location}");
+                var maxId = Math.Max((byte)1, ++Inventory.LastId);
+                if (maxId == byte.MaxValue)
+                    maxId = 1;
+
+                if (server.World.GetBlockMeta(location) is BlockMeta meta)
+                {
+                    Console.WriteLine("Its always block meta");
+
+                    if (meta.InventoryId != Guid.Empty)
+                        return;
+
+                    if (server.CachedWindows.TryGetValue(meta.InventoryId, out var inventory))
+                    {
+                        Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {JsonConvert.SerializeObject(inventory.Items, Formatting.Indented)}");
+
+                        await player.OpenInventoryAsync(inventory);
+                        await player.client.QueuePacketAsync(new BlockAction
+                        {
+                            Location = location,
+                            ActionId = 1,
+                            ActionParam = 1,
+                            BlockType = interactedBlock.Id
+                        });
+                        await player.SendSoundAsync(Sounds.BlockChestOpen, location.SoundPosition, SoundCategory.Blocks);
+
+                        player.OpenedInventory = inventory;
+                    }
+
+                    return;
+                }
+
+                if (interactedBlock.Type == Materials.Chest)
+                {
+                    Console.WriteLine("Interacted with chest");
+                    var inventory = new Inventory(null)
+                    {
+                        Title = "Chest",
+                        Type = InventoryType.Generic,
+                        Id = maxId,
+                        Size = 9 * 3
+                    };
+
+                    await player.OpenInventoryAsync(inventory);
+                    await player.client.QueuePacketAsync(new BlockAction
+                    {
+                        Location = location,
+                        ActionId = 1,
+                        ActionParam = 1,
+                        BlockType = interactedBlock.Id
+                    });
+                    await player.SendSoundAsync(Sounds.BlockChestOpen, location.SoundPosition, SoundCategory.Blocks);
+
+                    var invUuid = Guid.NewGuid();
+
+                    var blockMeta = new BlockMetaBuilder().WithInventoryId(invUuid).Build();
+
+                    server.World.SetBlockMeta(location, blockMeta);
+
+                    server.CachedWindows.TryAdd(invUuid, inventory);
+
+                    player.OpenedInventory = inventory;
+                }
+                else if (interactedBlock.Type == Materials.CraftingTable)
+                {
+                    await player.OpenInventoryAsync(new Inventory(null)
+                    {
+                        Title = "Crafting Table",
+                        Type = InventoryType.Crafting,
+                        Id = maxId
+                    });
+                }
 
                 return;
             }

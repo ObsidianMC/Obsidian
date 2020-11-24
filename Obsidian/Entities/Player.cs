@@ -33,6 +33,8 @@ namespace Obsidian.Entities
         public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
 
+        public ItemStack LastClickedItem { get; internal set; }
+
         public Guid Uuid { get; set; }
 
         public PlayerBitMask PlayerBitMask { get; set; }

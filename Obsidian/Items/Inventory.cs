@@ -6,6 +6,8 @@ namespace Obsidian.Items
 {
     public class Inventory
     {
+        internal static byte LastId { get; set; }
+
         internal byte Id { get; set; }
 
         internal int ActionsNumber { get; set; }

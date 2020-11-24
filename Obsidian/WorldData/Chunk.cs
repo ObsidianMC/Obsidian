@@ -49,7 +49,7 @@ namespace Obsidian.WorldData
             x = Helpers.Modulo(x, 16);
             z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
-            return this.Sections[y >> 4].GetBlock(x, y, z) ?? this.Blocks.GetValueOrDefault(value) ?? Registry.GetBlock(Materials.Air);
+            return this.Sections[y >> 4].GetBlock(x, y & 15, z) ?? this.Blocks.GetValueOrDefault(value) ?? Registry.GetBlock(Materials.Air);
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
@@ -65,6 +65,8 @@ namespace Obsidian.WorldData
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
 
             return this.BlockMetaStore.GetValueOrDefault(value);
@@ -74,6 +76,8 @@ namespace Obsidian.WorldData
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
 
             this.BlockMetaStore[value] = meta;
