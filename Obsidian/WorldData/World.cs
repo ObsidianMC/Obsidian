@@ -28,6 +28,8 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<long, Region> Regions { get; private set; } = new ConcurrentDictionary<long, Region>();
 
+        public ConcurrentDictionary<long, BlockMeta> BlockMetadataStore { get; private set; } = new ConcurrentDictionary<long, BlockMeta>();
+
         public ConcurrentQueue<(int, int)> ChunksToGen { get; private set; } = new ConcurrentQueue<(int, int)>();
 
         public ConcurrentQueue<(int, int)> RegionsToLoad { get; private set; } = new ConcurrentQueue<(int, int)>();
@@ -36,7 +38,7 @@ namespace Obsidian.WorldData
         public bool Loaded { get; private set; }
 
         public long Time => Data.Time;
-        public Gamemode GameType => (Gamemode)Data.GameType;
+        public Gamemode GameType => Data.GameType;
 
         internal World(string name, Server server)
         {
@@ -106,10 +108,7 @@ namespace Obsidian.WorldData
                 await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
-        public async Task ResendBaseChunksAsync(Client c)
-        {
-            await UpdateClientChunksAsync(c, true);
-        }
+        public Task ResendBaseChunksAsync(Client c) => UpdateClientChunksAsync(c, true);
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
         {

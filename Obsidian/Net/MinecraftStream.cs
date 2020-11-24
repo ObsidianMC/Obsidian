@@ -483,10 +483,25 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.BeginCompound("tags");
+                    writer.BeginCompound("tag");
+
+                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
 
                     if (itemMeta.Durability > 0)
                         writer.WriteInt("Damage", itemMeta.Durability);
+
+                    if (itemMeta.CustomModelData > 0)
+                        writer.WriteInt("CustomModelData", itemMeta.CustomModelData);
+
+                    if (itemMeta.CanDestroy != null)
+                    {
+                        writer.BeginList("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
+
+                        foreach (var block in itemMeta.CanDestroy)
+                            writer.WriteString(block);
+
+                        writer.EndList();
+                    }
 
                     if (itemMeta.Name != null)
                     {
