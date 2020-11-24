@@ -106,7 +106,7 @@ namespace Obsidian.Items
                 Slot = this.Slot,
                 CustomModelData = this.CustomModelData,
                 Name = this.Name,
-                Description = this.Description,
+                Lore = this.Description,
                 Durability = this.Durability,
                 Unbreakable = this.Unbreakable,
 

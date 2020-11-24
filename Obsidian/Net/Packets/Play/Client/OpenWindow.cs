@@ -1,7 +1,9 @@
 ﻿using Obsidian.Chat;
 using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -20,6 +22,18 @@ namespace Obsidian.Net.Packets.Play.Client
         public int Id => 0x2D;
 
         public OpenWindow() { }
+
+        public OpenWindow(Inventory inventory)
+        {
+            this.Title = inventory.Title;
+
+            if (Enum.TryParse<WindowType>($"generic9x{inventory.Size / 9}", true, out var type))
+                this.Type = type;
+            else if (Enum.TryParse(inventory.Type.ToString(), true, out type))
+                this.Type = type;
+
+            this.WindowId = inventory.Id;
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

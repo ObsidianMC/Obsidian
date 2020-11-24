@@ -1,14 +1,12 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Util.Registry;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Obsidian.Items
 {
     public class Inventory
     {
-        internal int Id { get; set; }
+        internal byte Id { get; set; }
 
         internal int ActionsNumber { get; set; }
 
@@ -43,6 +41,7 @@ namespace Obsidian.Items
             }
         }
 
+        //TODO match item meta
         public int AddItem(ItemStack item)
         {
             if (this.OwnedByPlayer)
@@ -54,7 +53,7 @@ namespace Obsidian.Items
                     if (invItem == null)
                         continue;
 
-                    if (invItem.Id == item.Id)//TODO match item meta
+                    if (invItem.Id == item.Id)
                     {
                         if (invItem.Count >= 64)
                             continue;
@@ -97,7 +96,7 @@ namespace Obsidian.Items
                     if (invItem == null)
                         continue;
 
-                    if (invItem.Id == item.Id)//TODO match item meta
+                    if (invItem.Id == item.Id)
                     {
                         if (invItem.Count >= 64)
                             continue;

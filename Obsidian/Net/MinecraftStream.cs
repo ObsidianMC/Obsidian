@@ -481,8 +481,49 @@ namespace Obsidian.Net
                 var itemMeta = slot.ItemMeta;
 
                 //TODO write enchants
-                writer.WriteShort("id", slot.Id);
-                writer.WriteInt("Damage", itemMeta.Durability);
+                if (itemMeta.HasTags())
+                {
+                    writer.BeginCompound("tags");
+
+                    if (itemMeta.Durability > 0)
+                        writer.WriteInt("Damage", itemMeta.Durability);
+
+                    if (itemMeta.Name != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<string> { itemMeta.Name.ToString(false) }));
+
+                        if (itemMeta.Lore != null)
+                        {
+                            writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                            foreach (var lore in itemMeta.Lore)
+                                writer.WriteString(JsonConvert.SerializeObject(new List<string> { lore.ToString(false) }));
+
+                            writer.EndList();
+                        }
+
+                        writer.EndCompound();
+                    }
+                    else if (itemMeta.Lore != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                        foreach (var lore in itemMeta.Lore)
+                            writer.WriteString(JsonConvert.SerializeObject(new List<string> { lore.ToString(false) }));
+
+                        writer.EndList();
+
+                        writer.EndCompound();
+                    }
+
+                    writer.EndCompound();
+                }
+
+                writer.WriteString("id", slot.UnlocalizedName);
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
@@ -492,7 +533,7 @@ namespace Obsidian.Net
 
         public async Task<ItemStack> ReadSlotAsync()
         {
-            var slot = new ItemStack(); 
+            var slot = new ItemStack();
 
             var present = await this.ReadBooleanAsync();
 

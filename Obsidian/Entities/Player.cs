@@ -30,7 +30,7 @@ namespace Obsidian.Entities
         /// <summary>
         /// The players inventory
         /// </summary>
-        public Inventory Inventory { get; private set; } = new Inventory();
+        public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
 
         public Guid Uuid { get; set; }
@@ -90,6 +90,10 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
+            this.Inventory = new Inventory(uuid)
+            {
+                OwnedByPlayer = true
+            };
 
             LoadPerms();
         }
@@ -235,6 +239,21 @@ namespace Obsidian.Entities
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
+        public async Task OpenInventoryAsync(Inventory inventory)
+        {
+            await this.client.QueuePacketAsync(new OpenWindow(inventory));
+
+            if (inventory.Items.Length > 0)
+            {
+                await this.client.QueuePacketAsync(new WindowItems
+                {
+                    WindowId = inventory.Id,
+                    Count = (short)inventory.Items.Length,
+                    Items = inventory.Items.ToList()
+                });
+            }
+        }
+
         public async Task TeleportAsync(Position pos)
         {
             this.LastLocation = this.Location;
@@ -281,7 +300,7 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            if (!(message is ChatMessage chatMessage))
+            if (message is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
 
             return this.SendMessageAsync(chatMessage, type, sender);

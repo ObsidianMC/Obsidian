@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Obsidian.Chat;
+using System.Collections.Generic;
 
 namespace Obsidian.Items
 {
@@ -8,9 +9,9 @@ namespace Obsidian.Items
 
         internal int CustomModelData { get; set; }
 
-        public string Name { get; internal set; }
+        public ChatMessage Name { get; internal set; }
 
-        public string Description { get; internal set; }
+        public List<ChatMessage> Lore { get; internal set; } 
 
         public int RepairAmount { get; internal set; }
 
@@ -22,5 +23,7 @@ namespace Obsidian.Items
         public IReadOnlyDictionary<EnchantmentType, Enchantment> StoredEnchantments { get; internal set; }
 
         public IReadOnlyList<string> CanDestroy { get; internal set; }
+
+        public bool HasTags() => this.Name != null || this.Lore.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
     }
 }
