@@ -189,6 +189,7 @@ namespace Obsidian.WorldData
             long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
+            this.Regions[value].IsDirty = true;
         }
 
         public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);

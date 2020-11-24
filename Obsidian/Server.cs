@@ -472,13 +472,17 @@ namespace Obsidian
 
                         await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(digging.Location, null);
+                        this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
+
+                        var itemId = Registry.GetItem(block.Type)?.Id;
+
+                        if (itemId is null) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = Registry.GetItem(block.Type).Id,
+                            Id = (int) itemId,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
