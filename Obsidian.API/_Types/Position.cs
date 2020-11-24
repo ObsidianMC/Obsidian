@@ -41,6 +41,7 @@ namespace Obsidian.API
         /// </summary>
         public double Distance => DistanceTo(this, Zero);
 
+        public SoundPosition SoundPosition => new SoundPosition(this.X, this.Y, this.Z);
         public bool Equals(Position other) => other.X.Equals(X) && other.Y.Equals(Y) && other.Z.Equals(Z);
 
         /// <summary>
