@@ -104,6 +104,10 @@ namespace Obsidian.WorldData
                 File.Move(regionFile + ".bak", regionFile);
                 regionNbt.LoadFromFile(regionFile);
             }
+            finally
+            {
+                File.Delete(regionFile + ".bak");
+            }
 
             NbtCompound regionCompound = regionNbt.RootTag;
             var chunksNbt = regionCompound["Chunks"] as NbtList;
