@@ -2,23 +2,21 @@
 
 namespace Obsidian.Items
 {
-    public sealed class ItemMeta
+    public struct ItemMeta
     {
-        internal byte Slot { get; set; } = 0;
+        internal byte Slot { get; set; }
 
-        internal int CustomModelData { get; set; } = 0;
-
-        internal short Count { get; set; } = 0;
+        internal int CustomModelData { get; set; }
 
         public string Name { get; internal set; }
 
         public string Description { get; internal set; }
 
-        public int RepairAmount { get; internal set; } = 0;
+        public int RepairAmount { get; internal set; }
 
-        public int Durability { get; internal set; } = 0;
+        public int Durability { get; internal set; }
 
-        public bool Unbreakable { get; internal set; } = false;
+        public bool Unbreakable { get; internal set; } 
 
         public IReadOnlyDictionary<EnchantmentType, Enchantment> Enchantments { get; internal set; }
         public IReadOnlyDictionary<EnchantmentType, Enchantment> StoredEnchantments { get; internal set; }

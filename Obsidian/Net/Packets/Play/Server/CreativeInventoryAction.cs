@@ -28,14 +28,12 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task HandleAsync(Obsidian.Server server, Player player)
         {
-            player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.ClickedItem.Id, this.ClickedItem.ItemMeta)
-            {
-                Present = this.ClickedItem.Present
-            });
+            player.Inventory.SetItem(this.ClickedSlot, this.ClickedItem);
 
             if (this.ClickedSlot >= 36 && this.ClickedSlot <= 44)
             {
                 var heldItem = player.GetHeldItem();
+
                 await server.BroadcastPacketAsync(new EntityEquipment
                 {
                     EntityId = player.EntityId,

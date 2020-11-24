@@ -21,10 +21,9 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Id, this.ItemMeta)
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Id, this.Count, this.ItemMeta)
             {
-                Present = true,
-                Count = this.Count,
+                Present = true
             });
         }
 

@@ -114,7 +114,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -152,7 +152,8 @@ namespace Obsidian.Entities
                         CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
+
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -186,7 +187,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });

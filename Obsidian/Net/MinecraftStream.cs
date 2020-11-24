@@ -486,31 +486,26 @@ namespace Obsidian.Net
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
-
                 writer.Finish();
             }
         }
 
         public async Task<ItemStack> ReadSlotAsync()
         {
-            var slot = new ItemStack();
+            var slot = new ItemStack(); 
 
             var present = await this.ReadBooleanAsync();
-            slot.Present = present;
 
             if (present)
             {
                 slot.Id = (short)await this.ReadVarIntAsync();
-                var count = await this.ReadByteAsync();
+                slot.Count = await this.ReadByteAsync();
 
                 var reader = new NbtReader(this);
 
                 while (reader.ReadToFollowing())
                 {
-                    var itemMetaBuilder = new ItemMetaBuilder
-                    {
-                        Count = count
-                    };
+                    var itemMetaBuilder = new ItemMetaBuilder();
 
                     if (reader.IsCompound)
                     {

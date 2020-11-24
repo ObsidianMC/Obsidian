@@ -24,15 +24,12 @@ namespace Obsidian.Items
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
 
-        private short[] items { get; }
-
-        private ItemMeta[] metaStore { get; set; }
+        public ItemStack[] Items { get; }
 
         public Inventory(Guid? owner = null)
         {
             this.Owner = owner;
-            this.items = new short[this.Size];
-            this.metaStore = new ItemMeta[this.Size];
+            this.Items = new ItemStack[this.Size];
         }
 
         public void AddItems(params ItemStack[] items)
@@ -52,40 +49,41 @@ namespace Obsidian.Items
             {
                 for (int i = 36; i < 45; i++)
                 {
-                    var invItem = this.items[i];
-                    var itemMeta = this.metaStore[i];
+                    var invItem = this.Items[i];
 
-                    if (invItem > 0 && invItem == item.Id)//TODO match item meta
+                    if (invItem == null)
+                        continue;
+
+                    if (invItem.Id == item.Id)//TODO match item meta
                     {
-                        if (itemMeta.Count >= 64)
+                        if (invItem.Count >= 64)
                             continue;
 
-                        itemMeta.Count += item.Count;
+                        invItem.Count += item.Count;
 
                         return i;
                     }
 
-                    this.items[i] = item.Id;
+                    this.Items[i] = item;
 
                     return i;
                 }
 
                 for (int i = 9; i < 36; i++)
                 {
-                    var invItem = this.items[i];
-                    var itemMeta = this.metaStore[i];
+                    var invItem = this.Items[i];
 
-                    if (invItem > 0)
+                    if (invItem != null)
                     {
-                        if (itemMeta.Count >= 64)
+                        if (invItem.Count >= 64)
                             continue;
 
-                        itemMeta.Count += item.Count;
+                        invItem.Count += item.Count;
 
                         return i;
                     }
 
-                    this.items[i] = item.Id;
+                    this.Items[i] = item;
 
                     return i;
                 }
@@ -94,20 +92,22 @@ namespace Obsidian.Items
             {
                 for (int i = 0; i < this.Size; i++)
                 {
-                    var invItem = this.items[i];
-                    var itemMeta = this.metaStore[i];
+                    var invItem = this.Items[i];
 
-                    if (invItem == item.Id && invItem > 0)//TODO match item meta
+                    if (invItem == null)
+                        continue;
+
+                    if (invItem.Id == item.Id)//TODO match item meta
                     {
-                        if (itemMeta.Count >= 64)
+                        if (invItem.Count >= 64)
                             continue;
 
-                        itemMeta.Count += item.Count;
+                        invItem.Count += item.Count;
 
                         return i;
                     }
 
-                    this.items[i] = item.Id;
+                    this.Items[i] = item;
 
                     return i;
                 }
@@ -121,8 +121,7 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            this.items[slot] = item.Id;
-            this.metaStore[slot] = item.ItemMeta;
+            this.Items[slot] = item;
         }
 
         public ItemStack GetItem(int slot)
@@ -130,7 +129,7 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException(nameof(slot));
 
-            return new ItemStack(this.items[slot], this.metaStore[slot]);
+            return this.Items[slot] ?? ItemStack.Air;
         }
 
         public bool RemoveItem(int slot, short amount = 1)
@@ -138,41 +137,17 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            var item = this.items[slot];
+            var item = this.Items[slot];
 
-            if (item <= 0)
+            if (item == null)
                 return false;
 
-            var itemMeta = this.metaStore[slot];
-            if (amount >= 64 || itemMeta.Count - amount <= 0)
-            {
-                this.items[slot] = 0;
-                this.metaStore[slot] = default;
-            }
+            if (amount >= 64 || item.Count - amount <= 0)
+                this.Items[slot] = null;
             else
-                itemMeta.Count -= amount;
+                item.Count -= amount;
 
             return true;
-        }
-
-        public IReadOnlyList<ItemStack> GetItems()
-        {
-            var list = new List<ItemStack>();
-            for (int i = 0; i < this.Size - 1; i++)
-            {
-                var id = this.items[i];
-
-                var itemMeta = this.metaStore[i];
-                var item = Registry.GetItem(id);
-
-                list.Add(new ItemStack(id, itemMeta)
-                {
-                    Present = true,
-                    UnlocalizedName = item.UnlocalizedName
-                });
-            }
-
-            return list;
         }
     }
 

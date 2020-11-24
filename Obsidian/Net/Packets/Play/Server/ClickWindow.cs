@@ -123,7 +123,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                         break;
 
                                     //creative copy
-                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.ItemMeta));
+                                    player.Inventory.SetItem(this.ClickedSlot, this.Item);
                                 }
                                 else
                                 {
@@ -131,7 +131,7 @@ namespace Obsidian.Net.Packets.Play.Server
                                         break;
 
                                     //survival painting
-                                    player.Inventory.SetItem(this.ClickedSlot, new ItemStack(this.Item.Id, this.Item.ItemMeta));
+                                    player.Inventory.SetItem(this.ClickedSlot, this.Item);
                                 }
                             }
                             else

@@ -9,9 +9,6 @@ namespace Obsidian.Items
         internal byte Slot { get; set; }
 
         internal int CustomModelData { get; set; }
-
-        internal short Count { get; set; }
-
         public string Name { get; internal set; }
 
         public string Description { get; internal set; }
@@ -48,13 +45,6 @@ namespace Obsidian.Items
         internal ItemMetaBuilder WithCustomModelData(int modelData)
         {
             this.CustomModelData = modelData;
-
-            return this;
-        }
-
-        internal ItemMetaBuilder WithCount(short count)
-        {
-            this.Count = count;
 
             return this;
         }
@@ -115,7 +105,6 @@ namespace Obsidian.Items
             {
                 Slot = this.Slot,
                 CustomModelData = this.CustomModelData,
-                Count = this.Count,
                 Name = this.Name,
                 Description = this.Description,
                 Durability = this.Durability,
