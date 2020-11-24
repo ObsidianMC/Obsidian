@@ -51,7 +51,7 @@ namespace Obsidian.WorldData
             this.Server = server;
         }
 
-        public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
+        public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
         public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
         {
@@ -186,6 +186,7 @@ namespace Obsidian.WorldData
             long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
+            this.Regions[value].IsDirty = true;
         }
 
         public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);

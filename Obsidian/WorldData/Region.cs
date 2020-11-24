@@ -28,6 +28,8 @@ namespace Obsidian.WorldData
         public int X { get; }
         public int Z { get; }
 
+        public bool IsDirty { get; set; } = true;
+
         public string RegionFolder { get; }
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
@@ -42,7 +44,10 @@ namespace Obsidian.WorldData
             Directory.CreateDirectory(RegionFolder);
             var regionFile = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
             if (File.Exists(regionFile))
+            {
                 Load(regionFile);
+                IsDirty = false;
+            }
         }
 
         internal async Task BeginTickAsync(CancellationToken cts)
@@ -69,6 +74,7 @@ namespace Obsidian.WorldData
 
         public void Flush()
         {
+            if (!IsDirty) { return; }
             var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
             if (File.Exists(regionPath))
                 File.Copy(regionPath, regionPath + ".bak");
@@ -82,6 +88,7 @@ namespace Obsidian.WorldData
             regionCompound = null;
             regionFile = null;
             GC.Collect();
+            IsDirty = false;
         }
 
         public void Load(string regionFile)
@@ -109,6 +116,7 @@ namespace Obsidian.WorldData
             regionNbt = null;
             regionCompound = null;
             GC.Collect();
+            IsDirty = false;
         }
         #region FileStuff
         public Chunk GetChunkFromNbt(NbtCompound chunkCompound)
