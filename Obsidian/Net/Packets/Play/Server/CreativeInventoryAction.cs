@@ -2,6 +2,7 @@
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Serializer.Attributes;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
@@ -28,9 +29,13 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task HandleAsync(Obsidian.Server server, Player player)
         {
-            player.Inventory.SetItem(this.ClickedSlot, this.ClickedItem);
+            var inventory = player.OpenedInventory ?? player.Inventory;
 
-            if (this.ClickedSlot >= 36 && this.ClickedSlot <= 44)
+            inventory.SetItem(this.ClickedSlot, this.ClickedItem);
+
+            player.LastClickedItem = this.ClickedItem;
+
+            if(player.CurrentSlot == this.ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 

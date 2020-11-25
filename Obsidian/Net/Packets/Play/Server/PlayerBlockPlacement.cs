@@ -10,6 +10,7 @@ using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
@@ -64,11 +65,8 @@ namespace Obsidian.Net.Packets.Play.Server
 
             var interactedBlock = server.World.GetBlock(location);
 
-            Console.WriteLine($"Interacted {Location}:{interactedBlock}");
-
             if (interactedBlock.CanInteract() && !player.Sneaking)
             {
-               
                 var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Location));
 
                 if (arg.Cancel)
@@ -80,16 +78,11 @@ namespace Obsidian.Net.Packets.Play.Server
                 if (maxId == byte.MaxValue)
                     maxId = 1;
 
-                if (server.World.GetBlockMeta(location) is BlockMeta meta)
+                if (server.World.GetBlockMeta(location) is BlockMeta meta && meta.InventoryId != Guid.Empty)
                 {
-                    Console.WriteLine("Its always block meta");
-
-                    if (meta.InventoryId != Guid.Empty)
-                        return;
-
                     if (server.CachedWindows.TryGetValue(meta.InventoryId, out var inventory))
                     {
-                        Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {JsonConvert.SerializeObject(inventory.Items, Formatting.Indented)}");
+                        Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
                         await player.OpenInventoryAsync(inventory);
                         await player.client.QueuePacketAsync(new BlockAction
@@ -109,13 +102,13 @@ namespace Obsidian.Net.Packets.Play.Server
 
                 if (interactedBlock.Type == Materials.Chest)
                 {
-                    Console.WriteLine("Interacted with chest");
                     var inventory = new Inventory(null)
                     {
                         Title = "Chest",
                         Type = InventoryType.Generic,
                         Id = maxId,
-                        Size = 9 * 3
+                        Size = 9 * 3,
+                        BlockPosition = location
                     };
 
                     await player.OpenInventoryAsync(inventory);

@@ -1,8 +1,12 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
@@ -60,7 +64,7 @@ namespace Obsidian.Net.Packets.Play.Server
             this.ClickedSlot = await stream.ReadShortAsync();
             this.Button = await stream.ReadByteAsync();
             this.ActionNumber = await stream.ReadShortAsync();
-            this.Mode = (InventoryOperationMode)await stream.ReadIntAsync();
+            this.Mode = (InventoryOperationMode)await stream.ReadVarIntAsync();
             this.Item = await stream.ReadSlotAsync();
         }
 
@@ -115,7 +119,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
         private async Task HandleMouseClick(Inventory inventory, Obsidian.Server server, Player player, int subBy)
         {
-            if (this.Item.Id > 0)
+            if (this.Item?.Id > 0)
             {
                 var evt = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, this.Item)
                 {
@@ -126,26 +130,30 @@ namespace Obsidian.Net.Packets.Play.Server
                     return;
 
                 player.LastClickedItem = this.Item;
+
+                Console.WriteLine($"Last clicked item: {player.LastClickedItem.Type}");
             }
 
             if (this.Button == 0)
             {
-                if (player.LastClickedItem.Id > 0 && this.Item.Id == 0)
+                if (player.LastClickedItem.Id > 0 && this.Item == null)
                 {
                     inventory.SetItem(this.ClickedSlot - subBy, player.LastClickedItem);
 
-                    player.LastClickedItem = default;
+                    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+
+                    player.LastClickedItem = null;
 
                     return;
                 }
 
                 player.LastClickedItem = inventory.GetItem(this.ClickedSlot - subBy);
 
-                inventory.SetItem(this.ClickedSlot - subBy, this.Item);
+                inventory.SetItem(this.ClickedSlot - subBy, null);
             }
             else
             {
-                if (this.Item.Id == 0)
+                if (this.Item == null)
                     return;
 
                 inventory.RemoveItem(this.ClickedSlot - subBy, (short)(this.Item.Count / 2));
