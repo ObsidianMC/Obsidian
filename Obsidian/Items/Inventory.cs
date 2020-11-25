@@ -1,6 +1,8 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Obsidian.Items
 {
@@ -13,6 +15,8 @@ namespace Obsidian.Items
         internal int ActionsNumber { get; set; }
 
         internal bool OwnedByPlayer { get; set; }
+
+        public Position BlockPosition { get; set; }
 
         public Guid? Owner { get; set; }
 
@@ -150,6 +154,8 @@ namespace Obsidian.Items
 
             return true;
         }
+
+        public bool HasItems() => this.Items.Any(x => x is not null);
     }
 
     public enum InventoryType

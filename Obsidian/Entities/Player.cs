@@ -245,7 +245,7 @@ namespace Obsidian.Entities
         {
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
-            if (inventory.Items.Length > 0)
+            if (inventory.HasItems())
             {
                 await this.client.QueuePacketAsync(new WindowItems
                 {

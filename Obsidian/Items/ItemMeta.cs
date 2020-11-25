@@ -24,6 +24,6 @@ namespace Obsidian.Items
 
         public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
-        public bool HasTags() => this.Name != null || this.Lore.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
+        public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
     }
 }
