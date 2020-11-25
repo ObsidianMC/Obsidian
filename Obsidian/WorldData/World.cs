@@ -28,6 +28,10 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<long, Region> Regions { get; private set; } = new ConcurrentDictionary<long, Region>();
 
+        public ConcurrentQueue<(int, int)> ChunksToGen { get; private set; } = new ConcurrentQueue<(int, int)>();
+
+        public ConcurrentQueue<(int, int)> RegionsToLoad { get; private set; } = new ConcurrentQueue<(int, int)>();
+
         public string Name { get; }
         public bool Loaded { get; private set; }
 
@@ -47,11 +51,11 @@ namespace Obsidian.WorldData
             this.Server = server;
         }
 
-        public int TotalLoadedEntities() => this.Regions.Select(x => x.Value).Sum(e => e.Entities.Count);
+        public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
-        public async Task UpdateClientChunksAsync(Client c, bool forcereload = false)
+        public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
         {
-            if (forcereload)
+            if (unloadAll)
             {
                 foreach (var chunkLoc in c.LoadedChunks)
                 {
@@ -62,7 +66,7 @@ namespace Obsidian.WorldData
 
             List<(int, int)> clientNeededChunks = new List<(int, int)>();
             List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
-            
+
             (int playerChunkX, int playerChunkZ) = c.Player.Location.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastLocation.ToChunkCoord();
 
@@ -81,13 +85,21 @@ namespace Obsidian.WorldData
                 Math.Abs(playerChunkZ - chunk2.Item2) ? -1 : 1;
             });
 
-            clientNeededChunks.ForEach(async chunkLoc => await c.SendChunkAsync(this.GetChunk(chunkLoc.Item1, chunkLoc.Item2)));
-            c.LoadedChunks.AddRange(clientNeededChunks);
-            
-            clientUnneededChunks.ForEach(async chunkLoc => {
+            clientNeededChunks.ForEach(async chunkLoc =>
+            {
+                var chunk = this.GetChunk(chunkLoc.Item1, chunkLoc.Item2);
+                if (chunk is not null)
+                {
+                    await c.SendChunkAsync(chunk);
+                    c.LoadedChunks.Add((chunk.X, chunk.Z));
+                }
+            });
+
+            clientUnneededChunks.ForEach(async chunkLoc =>
+            {
                 await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
                 c.LoadedChunks.Remove(chunkLoc);
-                });
+            });
 
             if (!(playerChunkX == lastPlayerChunkX && playerChunkZ == lastPlayerChunkZ))
             {
@@ -108,7 +120,7 @@ namespace Obsidian.WorldData
 
             var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
 
-            var region = this.GetRegion(chunkX, chunkZ);
+            var region = this.GetRegionForChunk(chunkX, chunkZ);
 
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
@@ -116,41 +128,56 @@ namespace Obsidian.WorldData
             return region.Entities.TryRemove(entity.EntityId, out _);
         }
 
-        public Region GetRegion(int chunkX, int chunkZ)
+        public Region GetRegionForChunk(int chunkX, int chunkZ)
         {
             long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
-
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
 
-        public Region GetRegion(Position location)
+        public Region GetRegionForChunk(Position location)
         {
-            var (chunkX, chunkZ) = location.ToChunkCoord();
-
-            return this.GetRegion(chunkX, chunkZ);
+            return this.GetRegionForChunk((int)location.X, (int)location.Z);
         }
 
+        /// <summary>
+        /// Gets a Chunk from a Region.
+        /// If the Chunk doesn't exist, it will be scheduled for generation.
+        /// </summary>
+        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
         public Chunk GetChunk(int chunkX, int chunkZ)
         {
-            var region = this.GetRegion(chunkX, chunkZ) ?? LoadRegion(chunkX, chunkZ);
+            var region = this.GetRegionForChunk(chunkX, chunkZ);
+
+            // region hasn't been loaded yet
+            if (region is null) 
+            {
+                var regionCoords = (chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
+                if (!RegionsToLoad.Contains(regionCoords))
+                    RegionsToLoad.Enqueue(regionCoords);
+                return null;
+            }
 
             var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
-            if (chunk is null) 
-            {
-                chunk = Generator.GenerateChunk(chunkX, chunkZ);                
-                region.LoadedChunks[index.Item1, index.Item2] = chunk;
-            }
+            
+            // chunk hasn't been generated yet
+            if (chunk is null && !ChunksToGen.Contains((chunkX, chunkZ))) { ChunksToGen.Enqueue((chunkX, chunkZ)); }
             return chunk;
         }
 
+        /// <summary>
+        /// Gets a Chunk from a Region.
+        /// If the Chunk doesn't exist, it will be scheduled for generation.
+        /// </summary>
+        /// <param name="worldLocation">World location of the chunk.</param>
+        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
         public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X.ToChunkCoord(), (int)worldLocation.Z.ToChunkCoord());
 
         public Block GetBlock(int x, int y, int z)
         {
             var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
 
-            return chunk.GetBlock(x, y, z);
+            return chunk?.GetBlock(x, y, z);
         }
 
         public Block GetBlock(Position location) => this.GetBlock((int)location.X, (int)location.Y, (int)location.Z);
@@ -162,6 +189,7 @@ namespace Obsidian.WorldData
             long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
+            this.Regions[value].IsDirty = true;
         }
 
         public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
@@ -170,7 +198,7 @@ namespace Obsidian.WorldData
         {
             var (chunkX, chunkZ) = location.ToChunkCoord();
 
-            var region = this.GetRegion(chunkX, chunkZ);
+            var region = this.GetRegionForChunk(chunkX, chunkZ);
 
             if (region is null)
                 return new List<Entity>();
@@ -222,13 +250,12 @@ namespace Obsidian.WorldData
             }
 
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            for (var rx = -1; rx < 1; rx++)
-            {
-                for (var rz = -1; rz < 1; rz++)
-                {
-                    GenerateRegion(rx, rz);
-                }
-            }
+            // spawn chunks are radius 12 from spawn. That's a lot for us... so let's do 4 instead.
+            var radius = 4;
+            (int X, int Z) spawnChunk = (this.Data.SpawnX.ToChunkCoord(), this.Data.SpawnZ.ToChunkCoord());
+            for (var cx = spawnChunk.X - radius; cx < spawnChunk.X + radius; cx++)
+                for (var cz = spawnChunk.Z - radius; cz < spawnChunk.Z + radius; cz++)
+                    GetChunk(cx, cz);
 
             this.Generator = value;
             this.Loaded = true;
@@ -305,37 +332,66 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public Region LoadRegion(int chunkX, int chunkZ)
+        public Region LoadRegionByChunk(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, regionZ = chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT;
-            return GenerateRegion(regionX, regionZ);
+            return LoadRegion(regionX, regionZ);
         }
 
-        public Region GenerateRegion(int regionX, int regionZ)
+        public Region LoadRegion(int regionX, int regionZ)
         {
-            this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             long value = Helpers.IntsToLong(regionX, regionZ);
-
+            this.Regions.TryAdd(value, null);
             if (this.Regions.ContainsKey(value))
-                return this.Regions[value];
+                if (this.Regions[value] is not null)
+                    return this.Regions[value];
 
+            this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
-            this.Regions.TryAdd(value, region);
+            this.Regions[value] = region;
             return region;
         }
 
-        public List<Chunk> GenerateChunks(List<Position> chunkLocs, Region region = null)
+        public void ManageChunks()
         {
-            ConcurrentBag<Chunk> chunks = new ConcurrentBag<Chunk>();
-            Parallel.ForEach(chunkLocs, (loc) =>
+            // Load regions. Load no more than 2 at a time b/c it's an expensive operation.
+            // Regions that are in the process of being loaded will appear in
+            // this.Regions, but will be null.
+            if (!RegionsToLoad.IsEmpty && Regions.Values.Count(r => r is null) < 2)
             {
-                var c = Generator.GenerateChunk((int)loc.X, (int)loc.Z);
-                chunks.Add(c);
+                if (RegionsToLoad.TryDequeue(out var job))
+                {
+                    if (!this.Regions.ContainsKey(Helpers.IntsToLong(job.Item1, job.Item2))) // Sanity check
+                        LoadRegion(job.Item1, job.Item2);
+                }
+            }
+
+            if (ChunksToGen.IsEmpty) { return; }
+
+            // Pull some jobs out of the queue
+            var jobs = new List<(int, int)>();
+            for (int a = 0; a < Environment.ProcessorCount; a++)
+            {
+                if (ChunksToGen.TryDequeue(out var job))
+                    jobs.Add(job);
+            }
+
+            Parallel.ForEach(jobs, (job) =>
+            {
+                Region region = GetRegionForChunk(job.Item1, job.Item2);
+                if (region is null)
+                {
+                    // Region isn't ready. Try again later
+                    ChunksToGen.Enqueue((job.Item1, job.Item2));
+                    return;
+                }
+                Chunk c = Generator.GenerateChunk(job.Item1, job.Item2);
+                var index = (Helpers.Modulo(c.X, Region.CUBIC_REGION_SIZE), Helpers.Modulo(c.Z, Region.CUBIC_REGION_SIZE));
+                region.LoadedChunks[index.Item1, index.Item2] = c;
             });
-            return chunks.ToList();
         }
 
         internal void Init(WorldGenerator gen)
@@ -344,8 +400,8 @@ namespace Obsidian.WorldData
             Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
             GenerateWorld();
+            foreach (var r in this.Regions.Values) { r.Flush(); }
             SetWorldSpawn();
-            foreach (var r in this.Regions.Values) {  r.Flush(); }
         }
 
         internal void GenerateWorld()
@@ -355,8 +411,17 @@ namespace Obsidian.WorldData
             {
                 for (int z = -Region.CUBIC_REGION_SIZE; z < Region.CUBIC_REGION_SIZE; z++)
                 {
-                    GetChunk(x, z);
+                    if (!ChunksToGen.Contains((x,z)))
+                        ChunksToGen.Enqueue((x, z));
+                    var regionCoords = (x >> Region.CUBIC_REGION_SIZE_SHIFT, z >> Region.CUBIC_REGION_SIZE_SHIFT);
+                    if (!RegionsToLoad.Contains(regionCoords))
+                        RegionsToLoad.Enqueue(regionCoords);
                 }
+            }
+            while (!ChunksToGen.IsEmpty)
+            {
+                ManageChunks();
+                Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
             }
         }
 
@@ -376,7 +441,7 @@ namespace Obsidian.WorldData
                             if (by > 58 && (block.Type == Materials.GrassBlock || block.Type == Materials.Sand))
                             {
                                 Data.SpawnX = bx;
-                                Data.SpawnY = by+2;
+                                Data.SpawnY = by + 2;
                                 Data.SpawnZ = bz;
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
                                 return;
@@ -391,7 +456,7 @@ namespace Obsidian.WorldData
         {
             var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
 
-            var region = this.GetRegion(chunkX, chunkZ);
+            var region = this.GetRegionForChunk(chunkX, chunkZ);
 
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");

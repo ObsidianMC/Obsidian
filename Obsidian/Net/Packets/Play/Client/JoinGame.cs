@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.PlayerData;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry.Codecs;

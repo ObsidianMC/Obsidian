@@ -21,48 +21,57 @@ namespace Obsidian.Serializer
 
         public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
         {
-            if (packet == null)
-                throw new ArgumentNullException(nameof(packet));
-
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
-            await stream.Lock.WaitAsync();
-
-            await using var dataStream = new MinecraftStream();
-
-            if (packet is ChunkDataPacket chunkData)
+            try
             {
-                await chunkData.WriteAsync(dataStream);
-            }
-            else
-            {
-                var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
+                if (packet == null)
+                    throw new ArgumentNullException(nameof(packet));
 
-                foreach (var (key, value) in valueDict)
+                if (stream == null)
+                    throw new ArgumentNullException(nameof(stream));
+
+                await stream.Lock.WaitAsync();
+
+                await using var dataStream = new MinecraftStream();
+
+                if (packet is ChunkDataPacket chunkData)
                 {
-                    //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
-
-                    var dataType = key.Type;
-
-                    if (dataType == DataType.Auto)
-                        dataType = value.GetType().ToDataType();
-
-                    await dataStream.WriteAsync(dataType, key, value);
+                    await chunkData.WriteAsync(dataStream);
                 }
+                else
+                {
+                    var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
+
+                    foreach (var (key, value) in valueDict)
+                    {
+                        //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
+
+                        var dataType = key.Type;
+
+                        if (dataType == DataType.Auto)
+                            dataType = value.GetType().ToDataType();
+
+                        await dataStream.WriteAsync(dataType, key, value);
+                    }
+                }
+
+                var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
+
+                await stream.WriteVarIntAsync(packetLength);
+                await stream.WriteVarIntAsync(packet.Id);
+
+                dataStream.Position = 0;
+                // await dataStream.DumpAsync(packet: packet);
+
+                await dataStream.CopyToAsync(stream);
             }
-
-            var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
-
-            await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(packet.Id);
-
-            dataStream.Position = 0;
-            // await dataStream.DumpAsync(packet: packet);
-
-            await dataStream.CopyToAsync(stream);
-
-            stream.Lock.Release();
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                stream.Lock.Release();
+            }
         }
 
         public static async Task<T> DeserializeAsync<T>(byte[] data) where T : IPacket

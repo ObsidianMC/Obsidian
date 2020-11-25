@@ -1,9 +1,7 @@
 ﻿using Obsidian.Blocks;
-using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using System;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -63,54 +61,54 @@ namespace Obsidian.WorldData.Generators
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
                 }
             }
-/*
-                    var biometemp = noiseGen.GetBiomeTemp(bx + (cx * 16), 0, bz + (cz * 16));
-                    var biomeHumidity = noiseGen.GetBiomeHumidity(bx + (cx * 16), 255, bz + (cz * 16));
-                    if (biometemp > 0.75)
-                    {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.RedStainedGlass));
-                    }
-                    else if (biometemp > 0.33)
-                    {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.YellowStainedGlass));
-                    }
-                    else if (biometemp > -0.15)
-                    {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.GreenStainedGlass));
-                    }
-                    else if (biometemp > -0.5)
-                    {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.CyanStainedGlass));
-                    }
-                    else
-                    {
-                        chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.BlueStainedGlass));
-                    }
+            /*
+                                var biometemp = noiseGen.GetBiomeTemp(bx + (cx * 16), 0, bz + (cz * 16));
+                                var biomeHumidity = noiseGen.GetBiomeHumidity(bx + (cx * 16), 255, bz + (cz * 16));
+                                if (biometemp > 0.75)
+                                {
+                                    chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.RedStainedGlass));
+                                }
+                                else if (biometemp > 0.33)
+                                {
+                                    chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.YellowStainedGlass));
+                                }
+                                else if (biometemp > -0.15)
+                                {
+                                    chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.GreenStainedGlass));
+                                }
+                                else if (biometemp > -0.5)
+                                {
+                                    chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.CyanStainedGlass));
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(bx, 31, bz, Registry.GetBlock(Materials.BlueStainedGlass));
+                                }
 
-                    if (biomeHumidity > 0.33)
-                    {
-                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
-                    }
-                    else if (biomeHumidity > -0.33)
-                    {
-                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
-                    }
-                    else
-                    {
-                        chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.GrayStainedGlass));
-                    }
-                }
-            }
+                                if (biomeHumidity > 0.33)
+                                {
+                                    chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
+                                }
+                                else if (biomeHumidity > -0.33)
+                                {
+                                    chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
+                                }
+                                else
+                                {
+                                    chunk.SetBlock(bx, 30, bz, Registry.GetBlock(Materials.GrayStainedGlass));
+                                }
+                            }
+                        }
 
-            for (int bx = 0; bx < 16; bx++)
-            {
-                for (int bz = 0; bz < 16; bz++)
-                {
-                    chunk.SetBlock(bx, (int)terrainHeightmap[bx,bz], bz, Registry.GetBlock(Materials.GreenStainedGlass));
-                    chunk.SetBlock(bx, (int)rockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.BrownStainedGlass));
-                    chunk.SetBlock(bx, (int)bedrockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.Bedrock));
-                }
-            }*/
+                        for (int bx = 0; bx < 16; bx++)
+                        {
+                            for (int bz = 0; bz < 16; bz++)
+                            {
+                                chunk.SetBlock(bx, (int)terrainHeightmap[bx,bz], bz, Registry.GetBlock(Materials.GreenStainedGlass));
+                                chunk.SetBlock(bx, (int)rockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.BrownStainedGlass));
+                                chunk.SetBlock(bx, (int)bedrockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.Bedrock));
+                            }
+                        }*/
 
             //ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
 
@@ -119,7 +117,7 @@ namespace Obsidian.WorldData.Generators
             return chunk;
         }
 
-        
+
 
         private void GenerateCoal(Chunk chunk, double[,] rockHeighmap)
         {
@@ -134,7 +132,7 @@ namespace Obsidian.WorldData.Generators
                     for (int by = 24; by < rockY; by++)
                     {
                         bool isCoal = noiseGen.Coal(worldX, by, worldZ);
-                        if(isCoal)
+                        if (isCoal)
                         {
                             chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CoalOre));
                         }

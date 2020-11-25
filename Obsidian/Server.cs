@@ -140,11 +140,11 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-        
-        public void RegisterCommandClass<T>() where T : BaseCommandClass => 
+
+        public void RegisterCommandClass<T>() where T : BaseCommandClass =>
             this.Commands.RegisterCommandClass<T>();
 
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser => 
+        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
 
         /// <summary>
@@ -249,7 +249,7 @@ namespace Obsidian
                 this.World.Init(gen);
                 this.World.Save();
             }
-            
+
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
 
@@ -293,7 +293,7 @@ namespace Obsidian
             {
                 var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
 
-                if(!chat.Cancel)
+                if (!chat.Cancel)
                     await this.BroadcastAsync($"<{source.Player.Username}> {message}", type);
 
                 return;
@@ -472,13 +472,17 @@ namespace Obsidian
 
                         await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(digging.Location, null);
+                        this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
+
+                        var itemId = Registry.GetItem(block.Type)?.Id;
+
+                        if (itemId is null) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = Registry.GetItem(block.Type).Id,
+                            Id = (int) itemId,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
@@ -574,6 +578,7 @@ namespace Obsidian
                     itersPerSecond = 0;
                     stopWatch.Restart();
                 }
+                Task.Run(() => World.ManageChunks());
             }
         }
 
@@ -645,7 +650,7 @@ namespace Obsidian
             await this.SendSpawnPlayerAsync(joined);
         }
 
-        private  Task OnServerTick() => Task.CompletedTask;
+        private Task OnServerTick() => Task.CompletedTask;
 
         #endregion Events
 

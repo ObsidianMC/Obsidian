@@ -1,9 +1,9 @@
-﻿using Obsidian.Serializer.Attributes;
-using System;
-using Obsidian.Serializer.Enums;
-using Obsidian.API;
-using System.Threading.Tasks;
+﻿using Obsidian.API;
 using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
+using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
@@ -41,7 +41,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public ClientPlayerPositionLook() { }
 
-        public ClientPlayerPositionLook(byte[] data)  { this.Data = data; }
+        public ClientPlayerPositionLook(byte[] data) { this.Data = data; }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -49,5 +49,5 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
-    
+
 }

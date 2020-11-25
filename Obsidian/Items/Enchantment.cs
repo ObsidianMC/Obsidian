@@ -7,7 +7,7 @@ namespace Obsidian.Items
         internal string Id { get; set; }
 
         public EnchantmentType Type => this.Id.ToEnchantType();
-        
+
         public int Level { get; set; }
     }
 

@@ -1,7 +1,7 @@
-﻿using Obsidian.Serializer.Attributes;
-using Obsidian.API;
-using System.Threading.Tasks;
+﻿using Obsidian.API;
 using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {

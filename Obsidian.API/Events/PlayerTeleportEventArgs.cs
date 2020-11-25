@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.API.Events
+﻿namespace Obsidian.API.Events
 {
     public class PlayerTeleportEventArgs : PlayerEventArgs
     {

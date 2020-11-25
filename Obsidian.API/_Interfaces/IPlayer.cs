@@ -52,6 +52,8 @@ namespace Obsidian.API
         public Task<bool> GrantPermission(string permission);
         public Task<bool> RevokePermission(string permission);
         public Task<bool> HasPermission(string permission);
+        public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
+        public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
     }
 }

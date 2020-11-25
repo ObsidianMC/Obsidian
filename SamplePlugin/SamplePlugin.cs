@@ -64,7 +64,7 @@ namespace SamplePlugin
             await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
 
-        
+
     }
     public class MyCommands : BaseCommandClass
     {

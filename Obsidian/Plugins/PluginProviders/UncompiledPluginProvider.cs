@@ -61,7 +61,7 @@ namespace Obsidian.Plugins.PluginProviders
                                                        CompilationOptions);
             using var memoryStream = new MemoryStream();
             EmitResult emitResult = compilation.Emit(memoryStream);
-            
+
             if (!emitResult.Success)
             {
                 if (logger != null)

@@ -82,7 +82,7 @@ namespace Obsidian.Logging
                     if (!string.IsNullOrEmpty(msg) && msg.Length > 1)
                     {
                         var colorStr = msg[0].ToString().ToLower()[0];
-                        
+
                         var color = ChatColor.FromCode(colorStr).ToConsoleColor();
                         string[] lines = msg.Contains("\n") ? msg.Split("\n").ToArray() : new string[] { msg };
 
@@ -90,7 +90,7 @@ namespace Obsidian.Logging
                         {
                             if (i > 0) Console.WriteLine();
                             if (i > 0) { prefix.RenderColoredConsoleMessage(); }
-                            $"§{(i > 0 ? $"{colorStr}":"")}{lines[i]}".RenderColoredConsoleMessage();
+                            $"§{(i > 0 ? $"{colorStr}" : "")}{lines[i]}".RenderColoredConsoleMessage();
                         }
                     }
                 }

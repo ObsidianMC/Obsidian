@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using Obsidian.Net;
+﻿using Obsidian.Net;
+using System.Threading.Tasks;
 
 namespace Obsidian.Commands
 {

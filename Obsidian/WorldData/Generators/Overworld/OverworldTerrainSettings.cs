@@ -184,7 +184,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             HillsAmount = 0.15;
             BadlandsAmount = 0.65;
 
-            MountainGlaciation = 1.075; 
+            MountainGlaciation = 1.075;
             MountainsTwist = 2.1337;
             HillsTwist = 1;
             BadlandsTwist = 3;

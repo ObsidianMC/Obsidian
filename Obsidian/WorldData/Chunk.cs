@@ -1,9 +1,9 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
-using Obsidian.API;
+using Obsidian.Util;
 using Obsidian.Util.Registry;
-using System;
 using System.Collections.Generic;
 
 namespace Obsidian.WorldData
@@ -44,18 +44,20 @@ namespace Obsidian.WorldData
 
         public Block GetBlock(int x, int y, int z)
         {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
-            return this.Blocks.GetValueOrDefault(value) ?? this.Sections[y >> 4].GetBlock(x, y, z) ?? Registry.GetBlock(Materials.Air);
+            return this.Sections[y >> 4].GetBlock(x, y & 15, z) ?? this.Blocks.GetValueOrDefault(value) ?? Registry.GetBlock(Materials.Air);
         }
 
         public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
-
             this.Blocks[value] = block;
-
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
 

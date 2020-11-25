@@ -1,20 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Serializer;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
-using SharpCompress.Compressors.Deflate;
+using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -39,7 +30,7 @@ namespace Obsidian
             return new Packet(packetId, packetData);
         }*/
 
-       
+
 
         public static void RegisterHandlers()
         {
@@ -97,8 +88,17 @@ namespace Obsidian
             if (!Packets.ContainsKey(packet.id))
                 return;
 
-            await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
-            await Packets[packet.id].HandleAsync(client.Server, client.Player);
+            try
+            {
+                await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
+                await Packets[packet.id].HandleAsync(client.Server, client.Player);
+            }
+            catch(Exception e)
+            {
+                if (Globals.Config.VerboseLogging)
+                    Logger.LogError(e.Message + "\n" + e.StackTrace);
+            }
+
         }
 
     }

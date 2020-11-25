@@ -105,7 +105,7 @@ namespace Obsidian.Net
 
                 return read;
             }
-            catch (Exception) 
+            catch (Exception)
             {
                 return 0;
             }//TODO better handling of this//TODO better handling of this

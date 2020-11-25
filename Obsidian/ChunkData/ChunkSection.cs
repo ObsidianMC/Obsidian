@@ -2,7 +2,6 @@
 using Obsidian.Blocks;
 using Obsidian.Util.Collection;
 using Obsidian.Util.Registry;
-using System;
 
 namespace Obsidian.ChunkData
 {

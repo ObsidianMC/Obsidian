@@ -1,11 +1,10 @@
 ﻿using Obsidian.API;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
-using Obsidian.API;
-using System.Threading.Tasks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Serializer.Attributes;
+using Obsidian.Serializer.Enums;
 using Obsidian.Util.Registry;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
