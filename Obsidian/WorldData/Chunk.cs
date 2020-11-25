@@ -49,6 +49,7 @@ namespace Obsidian.WorldData
             x = Helpers.Modulo(x, 16);
             z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
+
             return this.Sections[y >> 4].GetBlock(x, y & 15, z) ?? this.Blocks.GetValueOrDefault(value) ?? Registry.GetBlock(Materials.Air);
         }
 
@@ -59,6 +60,7 @@ namespace Obsidian.WorldData
             x = Helpers.Modulo(x, 16);
             z = Helpers.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
+
             this.Blocks[value] = block;
             this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }

@@ -13,6 +13,7 @@ using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
@@ -372,6 +373,11 @@ namespace Obsidian.Net
                                     await this.WriteVarIntAsync(entry);
                             }
                         }
+                        else if (value is List<ItemStack> items)
+                        {
+                            foreach (var item in items)
+                                await this.WriteSlotAsync(item);
+                        }
                         break;
                     }
                 case DataType.ByteArray:
@@ -477,6 +483,12 @@ namespace Obsidian.Net
 
         public async Task WriteSlotAsync(ItemStack slot)
         {
+            if (slot is null)
+                slot = new ItemStack(0, 0)
+                {
+                    Present = true
+                };
+
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
@@ -555,14 +567,14 @@ namespace Obsidian.Net
 
         public async Task<ItemStack> ReadSlotAsync()
         {
-            var slot = new ItemStack();
-
             var present = await this.ReadBooleanAsync();
 
             if (present)
             {
-                slot.Id = (short)await this.ReadVarIntAsync();
-                slot.Count = await this.ReadByteAsync();
+                var slot = new ItemStack((short)await this.ReadVarIntAsync(), await this.ReadByteAsync())
+                {
+                    Present = present
+                };
 
                 var reader = new NbtReader(this);
 
@@ -574,10 +586,10 @@ namespace Obsidian.Net
                     {
                         var root = (NbtCompound)reader.ReadAsTag();
 
-                        Globals.PacketLogger.LogDebug(root.ToString());
+                        //Globals.PacketLogger.LogDebug(root.ToString());
                         foreach (var tag in root)
                         {
-                            Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            //Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
                             if (tag.TagType == NbtTagType.Compound)
                             {
                                 Globals.PacketLogger.LogDebug("Other compound");
@@ -605,7 +617,7 @@ namespace Obsidian.Net
                                     {
                                         var enchantments = (NbtList)tag;
 
-                                        Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+                                        //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
                                         foreach (var enchantment in enchantments)
                                         {
@@ -622,14 +634,14 @@ namespace Obsidian.Net
                                 case "slot":
                                     {
                                         itemMetaBuilder.WithSlot(tag.ByteValue);
-                                        Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
+                                        //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
                                 case "damage":
                                     {
 
                                         itemMetaBuilder.WithDurability(tag.IntValue);
-                                        Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                         break;
                                     }
                                 default:
@@ -650,9 +662,10 @@ namespace Obsidian.Net
                     slot.ItemMeta = itemMetaBuilder.Build();
                 }
 
+                return slot;
             }
 
-            return slot;
+            return null;
         }
 
         #endregion Writing
