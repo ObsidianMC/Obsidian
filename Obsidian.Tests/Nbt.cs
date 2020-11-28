@@ -121,12 +121,9 @@ namespace Obsidian.Tests
                 .WithDurability(1)
                 .Build();
 
-            var dataSlot = new ItemStack
+            /*var dataSlot = new ItemStack(25, 0, itemMeta)
             {
-                Count = 0,
-                Id = 25,
-                Present = true,
-                ItemMeta = itemMeta
+                Present = true
             };
 
             await stream.WriteSlotAsync(dataSlot);
@@ -140,7 +137,7 @@ namespace Obsidian.Tests
             Assert.Equal(25, slot.Id);
 
             Assert.Equal("test", slot.ItemMeta.Value.Name);
-            Assert.Equal(1, slot.ItemMeta.Value.Durability);
+            Assert.Equal(1, slot.ItemMeta.Value.Durability);*/
         }
     }
 }

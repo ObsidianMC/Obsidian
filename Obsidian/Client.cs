@@ -14,6 +14,7 @@ using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Client.GameState;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
@@ -104,7 +105,7 @@ namespace Obsidian
                     if (tcp.Connected)
                         await SendPacketAsync(packet);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     if (Globals.Config.VerboseLogging)
                         Logger.LogError(e.Message + "\n" + e.StackTrace);
@@ -315,6 +316,13 @@ namespace Obsidian
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
+        private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
+        {
+            RecipesLength = Registry.Recipes.Values.Count,
+
+            Recipes = Registry.Recipes
+        });
+
         private async Task ConnectAsync()
         {
             await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
@@ -368,6 +376,8 @@ namespace Obsidian
 
             //    Entities = Registry.Tags["entity_types"]
             //});
+
+            await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();

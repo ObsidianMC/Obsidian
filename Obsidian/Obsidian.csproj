@@ -33,6 +33,7 @@
     <None Remove="Assets\default_dimensions.xaml" />
     <None Remove="Assets\entity_types.json" />
     <None Remove="Assets\fluids.json" />
+    <None Remove="Assets\recipes.json" />
     <None Remove="Assets\Tags\blocks\acacia_logs.json" />
     <None Remove="Assets\Tags\blocks\anvil.json" />
     <None Remove="Assets\Tags\blocks\bamboo_plantable_on.json" />
@@ -679,6 +680,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Update="Assets\items.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\recipes.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>

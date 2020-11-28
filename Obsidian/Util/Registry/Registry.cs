@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
@@ -29,11 +30,13 @@ namespace Obsidian.Util.Registry
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
 
+        public static Dictionary<string, object> Recipes = new Dictionary<string, object>();
+
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
         internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
 
-        private static Dictionary<string, List<string>> resources = new Dictionary<string, List<string>>();
+        private static readonly Dictionary<string, List<string>> resources = new Dictionary<string, List<string>>();
 
         private readonly static string mainDomain = "Obsidian.Assets";
 
@@ -44,59 +47,46 @@ namespace Obsidian.Util.Registry
             foreach (var resource in res)
             {
                 if (!resource.StartsWith("Obsidian.Assets.Tags."))
+                    continue;
+
+                var newName = resource.Replace("Obsidian.Assets.Tags.", "");
+
+                if (newName.StartsWith("blocks."))
                 {
-                    if (resources.ContainsKey("assets"))
-                        resources["assets"].Add(resource);
+                    newName = resource.Replace("blocks.", "");
+
+                    if (resources.ContainsKey("blocks"))
+                        resources["blocks"].Add(resource);
                     else
-                        resources["assets"] = new List<string>
-                        {
-                            resource
-                        };
+                        resources["blocks"] = new List<string> { resource };
                 }
-                else
+                else if (newName.StartsWith("items."))
                 {
-                    var newName = resource.Replace("Obsidian.Assets.Tags.", "");
-
-                    if (newName.StartsWith("blocks."))
-                    {
-                        newName = resource.Replace("blocks.", "");
-
-                        if (resources.ContainsKey("blocks"))
-                            resources["blocks"].Add(resource);
-                        else
-                            resources["blocks"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("items."))
-                    {
-                        if (resources.ContainsKey("items"))
-                            resources["items"].Add(resource);
-                        else
-                            resources["items"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("fluids."))
-                    {
-                        if (resources.ContainsKey("fluids"))
-                            resources["fluids"].Add(resource);
-                        else
-                            resources["fluids"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("entity_types."))
-                    {
-                        if (resources.ContainsKey("entity_types"))
-                            resources["entity_types"].Add(resource);
-                        else
-                            resources["entity_types"] = new List<string> { resource };
-                    }
+                    if (resources.ContainsKey("items"))
+                        resources["items"].Add(resource);
+                    else
+                        resources["items"] = new List<string> { resource };
+                }
+                else if (newName.StartsWith("fluids."))
+                {
+                    if (resources.ContainsKey("fluids"))
+                        resources["fluids"].Add(resource);
+                    else
+                        resources["fluids"] = new List<string> { resource };
+                }
+                else if (newName.StartsWith("entity_types."))
+                {
+                    if (resources.ContainsKey("entity_types"))
+                        resources["entity_types"].Add(resource);
+                    else
+                        resources["entity_types"] = new List<string> { resource };
                 }
             }
         }
 
         public static async Task RegisterBlocksAsync()
         {
-            var blocks = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.blocks.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(blocks);
-
+            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -715,9 +705,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterItemsAsync()
         {
-            var items = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.items.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(items);
+            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -750,9 +738,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterBiomesAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.biome_dimension_codec.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -783,9 +769,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterDimensionsAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.default_dimensions.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -818,7 +802,6 @@ namespace Obsidian.Util.Registry
         {
             var domains = new Dictionary<string, List<DomainTag>>();
             var registered = 0;
-
 
             foreach (var (baseTagName, tags) in resources)
             {
@@ -952,6 +935,75 @@ namespace Obsidian.Util.Registry
             }
 
             Logger.LogDebug($"Registered { registered} tags");
+        }
+
+        public static async Task RegisterRecipesAsync()
+        {
+            using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.recipes.json");
+
+            using var sw = new StreamReader(fs, new UTF8Encoding(false));
+
+            var json = await sw.ReadToEndAsync();
+
+            var jObject = JObject.Parse(json);
+
+            var enu = jObject.GetEnumerator();
+
+            var registered = 0;
+            while (enu.MoveNext())
+            {
+                var (name, element) = enu.Current;
+
+                var type = element.Value<string>("type");
+
+                type = type.Replace("minecraft:", "").ToCamelCase().ToLower();
+
+                if (Enum.TryParse<CraftingType>(type, true, out var result))
+                {
+                    switch (result)
+                    {
+                        case CraftingType.CraftingShaped:
+                            Recipes.Add(name, element.ToObject<ShapedRecipe>());
+                            break;
+                        case CraftingType.CraftingShapeless:
+                            Recipes.Add(name, element.ToObject<ShapelessRecipe>());
+                            break;
+                        case CraftingType.CraftingSpecialArmordye:
+                        case CraftingType.CraftingSpecialBookcloning:
+                        case CraftingType.CraftingSpecialMapcloning:
+                        case CraftingType.CraftingSpecialMapextending:
+                        case CraftingType.CraftingSpecialFireworkRocket:
+                        case CraftingType.CraftingSpecialFireworkStar:
+                        case CraftingType.CraftingSpecialFireworkStarFade:
+                        case CraftingType.CraftingSpecialTippedarrow:
+                        case CraftingType.CraftingSpecialBannerduplicate:
+                        case CraftingType.CraftingSpecialShielddecoration:
+                        case CraftingType.CraftingSpecialShulkerboxcoloring:
+                        case CraftingType.CraftingSpecialSuspiciousstew:
+                        case CraftingType.CraftingSpecialRepairitem:
+                            Recipes.Add(name, element.ToObject<DefaultRecipe>());
+                            break;
+                        case CraftingType.Smelting:
+                        case CraftingType.Blasting:
+                        case CraftingType.Smoking:
+                        case CraftingType.CampfireCooking:
+                            Recipes.Add(name, element.ToObject<SmeltingRecipe>());
+                            break;
+                        case CraftingType.Stonecutting:
+                            Recipes.Add(name, element.ToObject<CuttingRecipe>());
+                            break;
+                        case CraftingType.Smithing:
+                            Recipes.Add(name, element.ToObject<SmithingRecipe>());
+                            break;
+                        default:
+                            break;
+                    }
+
+                    registered++;
+                }
+            }
+
+            Logger.LogDebug($"Registered {registered} recipes");
         }
 
         public static Block GetBlock(Materials mat) => Blocks.GetValueOrDefault(mat);
