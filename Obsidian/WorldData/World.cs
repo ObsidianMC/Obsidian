@@ -319,7 +319,7 @@ namespace Obsidian.WorldData
                 FallDistance = playercompound["FallDistance"].FloatValue,
                 FoodExhastionLevel = playercompound["foodExhastionLevel"].FloatValue,
                 FoodSaturationLevel = playercompound["foodSaturationLevel"].FloatValue,
-                XpP = playercompound["XpP"].FloatValue
+                Score = playercompound["XpP"].IntValue
                 // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
             };
             this.Players.TryAdd(uuid, player);

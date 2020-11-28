@@ -54,7 +54,7 @@ namespace Obsidian.API
             new Position(Math.Clamp(X, min.X, max.X), Math.Clamp(Y, min.Y, max.Y), Math.Clamp(Z, min.Z, max.Z));
 
         public Position ChunkClamp() =>
-            this.Clamp(Position.Zero, new Position(15, 255, 15));
+            this.Clamp(Zero, new Position(15, 255, 15));
 
         /// <summary>
         ///     Calculates the distance between two Position objects.
