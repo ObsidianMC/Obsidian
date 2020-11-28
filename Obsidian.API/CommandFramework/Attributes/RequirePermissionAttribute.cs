@@ -2,7 +2,7 @@
 using Obsidian.CommandFramework.Attributes;
 using System.Threading.Tasks;
 
-namespace Obsidian.Commands
+namespace Obsidian.CommandFramework.Attributes
 {
     public class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {

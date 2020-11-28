@@ -33,10 +33,14 @@ namespace Obsidian.Net.Packets.Play.Client
 
     public class Tag
     {
+        public string Type { get; set; }
+
         public string Name { get; set; }
 
-        public int Count { get; set; }
+        public bool Replace { get; set; }
 
-        public List<int> Entries { get; set; }
+        public int Count => this.Entries.Count;
+
+        public List<int> Entries { get; set; } = new List<int>();
     }
 }

@@ -12,7 +12,7 @@ namespace Obsidian.API
         public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
-        public Hand MainHand { get; set; }
+        public MainHand MainHand { get; set; }
         public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool Sleeping { get; set; }
