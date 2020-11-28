@@ -33,69 +33,12 @@ namespace Obsidian.Util.Registry
 
         internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
 
-        private static Dictionary<string, List<string>> resources = new Dictionary<string, List<string>>();
-
         private readonly static string mainDomain = "Obsidian.Assets";
 
-        static Registry()
-        {
-            var res = Assembly.GetExecutingAssembly().GetManifestResourceNames();
-
-            foreach (var resource in res)
-            {
-                if (!resource.StartsWith("Obsidian.Assets.Tags."))
-                {
-                    if (resources.ContainsKey("assets"))
-                        resources["assets"].Add(resource);
-                    else
-                        resources["assets"] = new List<string>
-                        {
-                            resource
-                        };
-                }
-                else
-                {
-                    var newName = resource.Replace("Obsidian.Assets.Tags.", "");
-
-                    if (newName.StartsWith("blocks."))
-                    {
-                        newName = resource.Replace("blocks.", "");
-
-                        if (resources.ContainsKey("blocks"))
-                            resources["blocks"].Add(resource);
-                        else
-                            resources["blocks"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("items."))
-                    {
-                        if (resources.ContainsKey("items"))
-                            resources["items"].Add(resource);
-                        else
-                            resources["items"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("fluids."))
-                    {
-                        if (resources.ContainsKey("fluids"))
-                            resources["fluids"].Add(resource);
-                        else
-                            resources["fluids"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("entity_types."))
-                    {
-                        if (resources.ContainsKey("entity_types"))
-                            resources["entity_types"].Add(resource);
-                        else
-                            resources["entity_types"] = new List<string> { resource };
-                    }
-                }
-            }
-        }
 
         public static async Task RegisterBlocksAsync()
         {
-            var blocks = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.blocks.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(blocks);
+            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
 
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
@@ -715,9 +658,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterItemsAsync()
         {
-            var items = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.items.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(items);
+            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -750,9 +691,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterBiomesAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.biome_dimension_codec.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -783,9 +722,7 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterDimensionsAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.default_dimensions.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -816,142 +753,94 @@ namespace Obsidian.Util.Registry
 
         public static async Task RegisterTagsAsync()
         {
-            var domains = new Dictionary<string, List<DomainTag>>();
             var registered = 0;
 
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.tags.json");
 
-            foreach (var (baseTagName, tags) in resources)
+            using var reader = new StreamReader(stream, new UTF8Encoding(false));
+
+            var element = JObject.Parse(await reader.ReadToEndAsync());
+
+            using var enu = element.GetEnumerator();
+
+            static void addValues(string tagBase, Tag tag, List<string> values)
             {
-                if (baseTagName.EqualsIgnoreCase("assets"))
-                    continue;
-
-                foreach (var tag in tags)
+                foreach (var value in values)
                 {
-                    using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(tag);
-
-                    using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-                    var tagName = tag.Replace($"{mainDomain}.Tags.{baseTagName}.", "").Replace(".json", "");
-                    var json = await read.ReadToEndAsync();
-
-                    var type = JObject.Parse(json);
-
-                    using var enumerator = type.GetEnumerator();
-
-                    while (enumerator.MoveNext())
+                    switch (tagBase)
                     {
-                        var (name, token) = enumerator.Current;
+                        case "items":
+                            var item = GetItem(value);
 
-                        if (name.EqualsIgnoreCase("values"))
-                        {
-                            var list = token.ToObject<List<string>>();
+                            tag.Entries.Add(item.Id);
+                            break;
+                        case "blocks":
+                            var block = GetBlock(value);
 
-                            var ids = new List<int>();
-
-                            foreach (var item in list)
-                            {
-                                if (item.StartsWith("#"))
-                                {
-                                    var start = item.TrimStart('#');
-
-                                    if (domains.ContainsKey(start))
-                                        domains[start].Add(new DomainTag
-                                        {
-                                            TagName = tagName,
-                                            BaseTagName = baseTagName
-                                        });
-                                    else
-                                        domains.Add(start, new List<DomainTag>
-                                        {
-                                            new DomainTag
-                                            {
-                                                TagName = tagName,
-                                                BaseTagName = baseTagName
-                                            }
-                                        });
-
-                                    continue;
-                                }
-
-                                object obj = null;
-                                switch (baseTagName)
-                                {
-                                    case "blocks":
-                                        obj = GetBlock(item);
-                                        break;
-                                    case "items":
-                                        obj = GetItem(item);
-                                        break;
-                                    default:
-                                        if (Enum.TryParse<EntityType>(item.Replace("minecraft:", "").Replace("_", ""), true, out var entityType))
-                                            obj = (int)entityType;
-                                        else if (Enum.TryParse<Fluids>(item.Replace("minecraft:", "").Replace("_", ""), true, out var fluid))
-                                            obj = (int)fluid;
-                                        break;
-                                }
-
-                                if (obj is Block block)
-                                    ids.Add(block.Id);
-                                else if (obj is Item returnItem)
-                                    ids.Add(returnItem.Id);
-                                else if (obj is int value)
-                                    ids.Add(value);
-                            }
-
-                            if (Tags.ContainsKey(baseTagName))
-                            {
-                                Tags[baseTagName].Add(new Tag
-                                {
-                                    Name = tagName,
-                                    Entries = ids,
-                                    Count = ids.Count
-                                });
-                            }
-                            else
-                            {
-                                Tags.Add(baseTagName, new List<Tag>
-                                {
-                                    new Tag
-                                    {
-                                        Name = tagName,
-                                        Entries = ids,
-                                        Count = ids.Count
-                                    }
-                                });
-                            }
-                            Logger.LogDebug($"Registered tag {baseTagName}:{tagName}");
-                        }
+                            tag.Entries.Add(block.Id);
+                            break;
+                        case "entity_types":
+                            Enum.TryParse<EntityType>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var type);
+                            tag.Entries.Add((int)type);
+                            break;
+                        case "fluids":
+                            Enum.TryParse<Fluids>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var fluid);
+                            tag.Entries.Add((int)fluid);
+                            break;
+                        default:
+                            break;
                     }
-                    registered++;
                 }
             }
 
-            if (domains.Count > 0)
+            while (enu.MoveNext())
             {
-                foreach (var (t, domainTags) in domains)
+                var (name, token) = enu.Current;
+
+                var split = name.Split('/');
+
+                var tagBase = split[0];
+                var tagName = split[1];
+
+                if (Tags.ContainsKey(tagBase))
                 {
-                    var item = t.Replace("minecraft:", "");
-
-                    foreach (var domainTag in domainTags)
+                    var tag = new Tag
                     {
-                        var index = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(item));
+                        Type = tagBase,
+                        Name = tagName
+                    };
 
-                        var tag = Tags[domainTag.BaseTagName][index];
+                    var array = token.Value<JArray>("values");
+                    var values = array.ToObject<List<string>>();
 
-                        var tagIndex = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(domainTag.TagName));
+                    addValues(tagBase, tag, values);
 
-                        Tags[domainTag.BaseTagName][tagIndex].Count += tag.Count;
+                    Logger.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 
-                        Tags[domainTag.BaseTagName][tagIndex].Entries.AddRange(tag.Entries);
-
-                        Logger.LogDebug($"Registering domain: {item} to {domainTag.BaseTagName}:{domainTag.TagName}");
-                        registered++;
-                    }
-
+                    Tags[tagBase].Add(tag);
                 }
+                else
+                {
+                    var tag = new Tag
+                    {
+                        Type = tagBase,
+                        Name = tagName
+                    };
+
+                    var array = token.Value<JArray>("values");
+                    var values = array.ToObject<List<string>>();
+
+                    addValues(tagBase, tag, values);
+
+                    Logger.LogDebug($"Registered tag: {name} with {tag.Count} entries");
+
+                    Tags[tagBase] = new List<Tag> { tag };
+                }
+
+                registered++;
             }
 
-            Logger.LogDebug($"Registered { registered} tags");
+            Logger.LogDebug($"Registered {registered} tags");
         }
 
         public static Block GetBlock(Materials mat) => Blocks.GetValueOrDefault(mat);

@@ -104,7 +104,7 @@ namespace Obsidian
                     if (tcp.Connected)
                         await SendPacketAsync(packet);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     if (Globals.Config.VerboseLogging)
                         Logger.LogError(e.Message + "\n" + e.StackTrace);
@@ -358,16 +358,16 @@ namespace Obsidian
             await this.SendServerBrand();
 
             // TODO figure out why tags make air blocks a fluid
-            //await this.QueuePacketAsync(new TagsPacket
-            //{
-            //    Blocks = Registry.Tags["blocks"],
+            /*await this.QueuePacketAsync(new TagsPacket
+            {
+                Blocks = Registry.Tags["blocks"],
 
-            //    Items = Registry.Tags["items"],
+                Items = Registry.Tags["items"],
 
-            //    Fluid = Registry.Tags["fluids"],
+                Fluid = Registry.Tags["fluids"],
 
-            //    Entities = Registry.Tags["entity_types"]
-            //});
+                Entities = Registry.Tags["entity_types"]
+            });*/
 
             await this.SendDeclareCommandsAsync();
             await this.SendPlayerInfoAsync();
