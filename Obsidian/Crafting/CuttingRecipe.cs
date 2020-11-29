@@ -8,7 +8,7 @@
 
         public string Group { get; set; }
 
-        public RecipeItem Ingredient { get; set; }
+        public Ingedient Ingredient { get; set; }
 
         public string Result { get; set; }
 

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 
 namespace Obsidian.Crafting
 {
-    public class ShapedRecipe : IRecipe<RecipeItem>
+    public class ShapedRecipe : IRecipe<Ingedient>
     {
-        public string Id { get; set; }
         public string Type { get; set; }
 
         public string Group { get; set; }
@@ -13,7 +12,7 @@ namespace Obsidian.Crafting
 
         public Dictionary<char, JToken> Key { get; set; }
 
-        public RecipeItem Result { get; set; }
+        public Ingedient Result { get; set; }
       
     }
 }
