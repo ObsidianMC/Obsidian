@@ -1,12 +1,15 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.Crafting;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    public class DeclareRecipes :IPacket
+    public class DeclareRecipes : IPacket
     {
         [Field(0)]
         public int RecipesLength { get; set; }
@@ -20,6 +23,12 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+        public async Task WriteAsync(MinecraftStream stream)
+        {
+            await stream.WriteVarIntAsync(this.Recipes.Count);
+
+            foreach (var (name, recipe) in this.Recipes)
+                await stream.WriteRecipeAsync(name, recipe);
+        }
     }
 }

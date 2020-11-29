@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Nbt;
@@ -18,8 +20,10 @@ using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -457,6 +461,262 @@ namespace Obsidian.Net
                     }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type));
+            }
+        }
+
+        internal async Task WriteRecipeAsync(string name, object obj)
+        {
+            void addIngredient(List<ItemStack> ingredients, Ingedient ingredient)
+            {
+                if (ingredient.Item == null && ingredient.Tag != null)
+                {
+                    var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
+                    foreach (var id in tag.Entries)
+                    {
+                        var item = Registry.GetItem(id);
+
+                        ingredients.Add(new ItemStack(item.Id, (short)ingredient.Count));
+                    }
+                }
+                else
+                {
+                    var i = Registry.GetItem(ingredient.Item);
+
+                    ingredients.Add(new ItemStack(i.Id, (short)ingredient.Count));
+                }
+            };
+
+            if (obj is IRecipe<Ingedient> defaultRecipe)
+            {
+                await this.WriteStringAsync(defaultRecipe.Type);
+            }
+            else if (obj is IRecipe<string> stringRecipe)
+            {
+                await this.WriteStringAsync(stringRecipe.Type);
+            }
+            else
+                return;
+
+            await this.WriteStringAsync(name);
+
+            if (obj is ShapedRecipe shapedRecipe)
+            {
+                var patterns = shapedRecipe.Pattern;
+
+                int width = patterns[0].Length, height = patterns.Count;
+
+                await this.WriteVarIntAsync(width);
+                await this.WriteVarIntAsync(height);
+
+                await this.WriteStringAsync(shapedRecipe.Group ?? "");
+
+                var ingredients = new List<ItemStack>[width * height];
+
+                var y = 0;
+                foreach (var pattern in patterns)
+                {
+                    var x = 0;
+                    foreach (var c in pattern)
+                    {
+                        if (char.IsWhiteSpace(c))
+                            continue;
+
+                        var index = x + (y * width);
+
+                        var key = shapedRecipe.Key[c];
+
+                        if (key.Type == JTokenType.Array)
+                        {
+                            var listItem = key.ToObject<List<Ingedient>>();
+
+                            foreach (var ingredient in listItem)
+                            {
+                                if (ingredient.Item == null && ingredient.Tag != null)
+                                {
+                                    var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
+                                    foreach (var id in tag.Entries)
+                                    {
+                                        var item = Registry.GetItem(id);
+
+                                        var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
+
+                                        if (ingredients[index] != null)
+                                            ingredients[index].Add(itemStack);
+                                        else
+                                            ingredients[index] = new List<ItemStack> { itemStack };
+
+                                    }
+                                }
+                                else
+                                {
+                                    var item = Registry.GetItem(ingredient.Item);
+                                    var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
+
+                                    if (ingredients[index] != null)
+                                        ingredients[index].Add(itemStack);
+                                    else
+                                        ingredients[index] = new List<ItemStack> { itemStack };
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var ingredient = key.ToObject<Ingedient>();
+
+                            if (ingredient.Item == null && ingredient.Tag != null)
+                            {
+                                var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
+                                foreach (var id in tag.Entries)
+                                {
+                                    var item = Registry.GetItem(id);
+
+                                    var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
+
+                                    if (ingredients[index] != null)
+                                        ingredients[index].Add(itemStack);
+                                    else
+                                        ingredients[index] = new List<ItemStack> { itemStack };
+
+                                }
+                            }
+                            else
+                            {
+                                var item = Registry.GetItem(ingredient.Item);
+                                var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
+
+                                if (ingredients[index] != null)
+                                    ingredients[index].Add(itemStack);
+                                else
+                                    ingredients[index] = new List<ItemStack> { itemStack };
+                            }
+                        }
+
+                        x++;
+                    }
+                    y++;
+                }
+
+                foreach (var items in ingredients)
+                {
+                    if (items == null)
+                    {
+                        await this.WriteVarIntAsync(1);
+                        await this.WriteSlotAsync(ItemStack.Air);
+                        continue;
+                    }
+
+                    await this.WriteVarIntAsync(items.Count);
+
+                    foreach (var itemStack in items)
+                        await this.WriteSlotAsync(itemStack);
+                }
+                var r = Registry.GetItem(shapedRecipe.Result.Item);
+
+                await this.WriteSlotAsync(new ItemStack(r.Id, (short)shapedRecipe.Result.Count));
+            }
+            else if (obj is ShapelessRecipe shapelessRecipe)
+            {
+                var ingredients = new List<ItemStack>();
+
+                await this.WriteStringAsync(shapelessRecipe.Group ?? "");
+
+                foreach (var recipeItem in shapelessRecipe.Ingredients)
+                {
+                    if (recipeItem.Type == JTokenType.Array)
+                    {
+                        var ingreds = recipeItem.ToObject<List<Ingedient>>();
+
+                        foreach (var ing in ingreds)
+                            addIngredient(ingredients, ing);
+                    }
+                    else
+                    {
+                        var ing = recipeItem.ToObject<Ingedient>();
+
+                        addIngredient(ingredients, ing);
+                    }
+                }
+
+                await this.WriteVarIntAsync(ingredients.Count);
+                foreach (var item in ingredients)
+                {
+                    await this.WriteVarIntAsync(1);
+                    await this.WriteSlotAsync(item);
+                }
+
+                var r = Registry.GetItem(shapelessRecipe.Result.Item);
+
+                await this.WriteSlotAsync(new ItemStack(r.Id, (short)shapelessRecipe.Result.Count));
+            }
+            else if (obj is SmeltingRecipe smeltingRecipe)
+            {
+                await this.WriteStringAsync(smeltingRecipe.Group ?? "");
+
+                if (smeltingRecipe.Ingredient.Type == JTokenType.Array)
+                {
+                    var listItem = smeltingRecipe.Ingredient.ToObject<List<Ingedient>>();
+
+                    var ingredients = new List<ItemStack>();
+
+                    foreach (var ingred in listItem)
+                        addIngredient(ingredients, ingred);
+
+                    await this.WriteVarIntAsync(ingredients.Count);
+                    foreach (var item in ingredients) 
+                        await this.WriteSlotAsync(new ItemStack(item.Id, item.Count));
+                    
+                }
+                else
+                {
+                    var recipeItem = smeltingRecipe.Ingredient.ToObject<Ingedient>();
+                    var ingredients = new List<ItemStack>();
+
+                    addIngredient(ingredients, recipeItem);
+
+                    await this.WriteVarIntAsync(ingredients.Count);
+                    foreach (var item in ingredients)
+                        await this.WriteSlotAsync(new ItemStack(item.Id, item.Count));
+                    
+                }
+
+                var r = Registry.GetItem(smeltingRecipe.Result);
+
+                await this.WriteSlotAsync(new ItemStack(r.Id, 1));
+
+                await this.WriteFloatAsync(smeltingRecipe.Experience);
+                await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
+            }
+            else if (obj is CuttingRecipe cuttingRecipe)
+            {
+                await this.WriteStringAsync(cuttingRecipe.Group ?? "");
+
+                await this.WriteVarIntAsync(1);
+
+                var i = Registry.GetItem(cuttingRecipe.Ingredient.Item);
+
+                await this.WriteSlotAsync(new ItemStack(i.Id, (short)cuttingRecipe.Ingredient.Count));
+
+                var result = Registry.GetItem(cuttingRecipe.Result);
+
+                await this.WriteSlotAsync(new ItemStack(result.Id, (short)cuttingRecipe.Count));
+            }
+            else if (obj is SmithingRecipe smithingRecipe)
+            {
+                await this.WriteVarIntAsync(1);
+
+                var @base = Registry.GetItem(smithingRecipe.Base.Item);
+
+                await this.WriteSlotAsync(new ItemStack(@base.Id, (short)smithingRecipe.Base.Count));
+
+                await this.WriteVarIntAsync(1);
+
+                var addition = Registry.GetItem(smithingRecipe.Addition.Item);
+
+                await this.WriteSlotAsync(new ItemStack(addition.Id, (short)smithingRecipe.Addition.Count));
+
+                var result = Registry.GetItem(smithingRecipe.Result.Item);
+
+                await this.WriteSlotAsync(new ItemStack(result.Id, (short)smithingRecipe.Result.Count));
             }
         }
 

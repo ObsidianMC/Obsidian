@@ -857,14 +857,12 @@ namespace Obsidian.Util.Registry
 
             var enu = jObject.GetEnumerator();
 
-            var registered = 0;
             while (enu.MoveNext())
             {
                 var (name, element) = enu.Current;
 
-                var type = element.Value<string>("type");
+                var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
 
-                type = type.Replace("minecraft:", "").ToCamelCase().ToLower();
 
                 if (Enum.TryParse<CraftingType>(type, true, out var result))
                 {
@@ -889,7 +887,6 @@ namespace Obsidian.Util.Registry
                         case CraftingType.CraftingSpecialShulkerboxcoloring:
                         case CraftingType.CraftingSpecialSuspiciousstew:
                         case CraftingType.CraftingSpecialRepairitem:
-                            Recipes.Add(name, element.ToObject<DefaultRecipe>());
                             break;
                         case CraftingType.Smelting:
                         case CraftingType.Blasting:
@@ -906,12 +903,10 @@ namespace Obsidian.Util.Registry
                         default:
                             break;
                     }
-
-                    registered++;
                 }
             }
 
-            Logger.LogDebug($"Registered {registered} recipes");
+            Logger.LogDebug($"Registered {Recipes.Count} recipes");
         }
 
         public static Block GetBlock(Materials mat) => Blocks.GetValueOrDefault(mat);

@@ -37,6 +37,10 @@ namespace Obsidian.Serializer
                 {
                     await chunkData.WriteAsync(dataStream);
                 }
+                else if (packet is DeclareRecipes recipes)
+                {
+                    await recipes.WriteAsync(dataStream);
+                }
                 else
                 {
                     var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
