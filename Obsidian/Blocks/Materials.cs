@@ -511,6 +511,7 @@
         BoneBlock,
         StructureVoid,
         Observer,
+
         ShulkerBox,
         WhiteShulkerBox,
         OrangeShulkerBox,
@@ -528,6 +529,7 @@
         GreenShulkerBox,
         RedShulkerBox,
         BlackShulkerBox,
+
         WhiteGlazedTerracotta,
         OrangeGlazedTerracotta,
         MagentaGlazedTerracotta,
