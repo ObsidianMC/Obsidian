@@ -76,6 +76,7 @@ namespace Obsidian.Net.Packets.Play.Server
             {
                 _ when this.ClickedSlot > inventory.Size - 1 && (this.ClickedSlot >= 27 && this.ClickedSlot <= 62) => 18,
                 _ when this.ClickedSlot > inventory.Size - 1 && (this.ClickedSlot >= 54 && this.ClickedSlot <= 89) => 45,
+                _ when this.ClickedSlot > inventory.Size - 1 && (this.ClickedSlot >= 10 && this.ClickedSlot <= 45) => 1,
                 _ when this.ClickedSlot <= inventory.Size - 1 => 0,
                 _ => 0,
             };
@@ -140,9 +141,9 @@ namespace Obsidian.Net.Packets.Play.Server
                 {
                     inventory.SetItem(this.ClickedSlot - subBy, player.LastClickedItem);
 
-                    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+                    //Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                    player.LastClickedItem = null;
+                    player.LastClickedItem = this.Item;
 
                     return;
                 }
@@ -153,10 +154,20 @@ namespace Obsidian.Net.Packets.Play.Server
             }
             else
             {
-                if (this.Item == null)
-                    return;
+                if (player.LastClickedItem.Id > 0 && this.Item == null)
+                {
+                    inventory.SetItem(this.ClickedSlot - subBy, player.LastClickedItem);
 
-                inventory.RemoveItem(this.ClickedSlot - subBy, (short)(this.Item.Count / 2));
+                    //Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+
+                    player.LastClickedItem = this.Item;
+
+                    return;
+                }
+
+                player.LastClickedItem = inventory.GetItem(this.ClickedSlot - subBy);
+
+                inventory.SetItem(this.ClickedSlot - subBy, null);
             }
         }
 

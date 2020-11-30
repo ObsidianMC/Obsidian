@@ -377,9 +377,18 @@ namespace Obsidian
                 Entities = Registry.Tags["entity_types"]
             });*/
 
+            //TODO: Finish recipes
             await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();
+
+            /*await this.QueuePacketAsync(new UnlockRecipes
+            {
+                Action = UnlockRecipeAction.Init,
+                FirstRecipeIds = Registry.Recipes.Keys.ToList(),
+                SecondRecipeIds = Registry.Recipes.Keys.ToList()
+            });*/
+
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 

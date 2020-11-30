@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Client
 {
     public class OpenWindow : IPacket
     {
-        [Field(0)]
+        [Field(0, Type = DataType.VarInt)]
         public int WindowId { get; set; }
 
         [Field(1, Type = DataType.VarInt)]
@@ -27,9 +27,9 @@ namespace Obsidian.Net.Packets.Play.Client
         {
             this.Title = inventory.Title;
 
-            if (Enum.TryParse<WindowType>($"generic9x{inventory.Size / 9}", true, out var type))
+            if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
                 this.Type = type;
-            else if (Enum.TryParse(inventory.Type.ToString(), true, out type))
+            else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
                 this.Type = type;
 
             this.WindowId = inventory.Id;
@@ -40,6 +40,8 @@ namespace Obsidian.Net.Packets.Play.Client
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+
+        public override string ToString() => $"{this.WindowId}:{this.Type}";
     }
 
     //Do not mess up the order this is how its supposed to be ordered

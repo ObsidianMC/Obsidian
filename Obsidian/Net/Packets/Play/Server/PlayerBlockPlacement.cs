@@ -102,7 +102,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
                 if (interactedBlock.Type == Materials.Chest)
                 {
-                    var inventory = new Inventory(null)
+                    var inventory = new Inventory(player.Uuid)
                     {
                         Title = "Chest",
                         Type = InventoryType.Generic,
@@ -131,14 +131,29 @@ namespace Obsidian.Net.Packets.Play.Server
 
                     player.OpenedInventory = inventory;
                 }
+                else if(interactedBlock.Type == Materials.EnderChest)
+                {
+                    var enderChest = new Inventory(player.Uuid)
+                    {
+                        Title = "Ender Chest",
+                        Type = InventoryType.
+                        Size = 9 * 3,
+                    };
+                }
                 else if (interactedBlock.Type == Materials.CraftingTable)
                 {
-                    await player.OpenInventoryAsync(new Inventory(null)
+                    var crafting = new Inventory
                     {
                         Title = "Crafting Table",
                         Type = InventoryType.Crafting,
-                        Id = maxId
-                    });
+                        Id = maxId,
+                        Size = 2 * 5,
+                        BlockPosition = location
+                    };
+
+                    player.OpenedInventory = crafting;
+
+                    await player.OpenInventoryAsync(crafting);
                 }
 
                 return;

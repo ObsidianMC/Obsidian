@@ -32,6 +32,8 @@
         SoundPosition,
         Angle,
         UUID,
+
+        // TODO: Refactor so that types marked with this writes out its size within serialization instead of having a property for it
         Array,
         Velocity,
         ByteArray,

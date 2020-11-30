@@ -1,10 +1,7 @@
-﻿using Obsidian.Crafting;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
