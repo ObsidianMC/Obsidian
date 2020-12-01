@@ -19,6 +19,7 @@ namespace Obsidian.Items
         {
             this.Id = itemId;
             this.Count = count;
+            if (count > 0) { Present = true; }
 
             if (itemMeta != null)
                 this.ItemMeta = itemMeta.Value;
