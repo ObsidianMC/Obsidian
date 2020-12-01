@@ -143,7 +143,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
             if (this.Button == 0)
             {
-                if (player.LastClickedItem.Id > 0 && this.Item == null)
+                if (player.LastClickedItem?.Id > 0 && this.Item == null)
                 {
                     if (add)
                         inventory.SetItem(this.ClickedSlot + value, player.LastClickedItem);

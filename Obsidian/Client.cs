@@ -382,12 +382,12 @@ namespace Obsidian
 
             await this.SendDeclareCommandsAsync();
 
-            /*await this.QueuePacketAsync(new UnlockRecipes
+            await this.QueuePacketAsync(new UnlockRecipes
             {
                 Action = UnlockRecipeAction.Init,
                 FirstRecipeIds = Registry.Recipes.Keys.ToList(),
                 SecondRecipeIds = Registry.Recipes.Keys.ToList()
-            });*/
+            });
 
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
