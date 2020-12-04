@@ -7,11 +7,15 @@ namespace Obsidian.Net.Packets.Login
     public partial class SetCompression : IPacket
     {
         [Field(0)]
-        public int Threshold { get; }
+        public int Threshold { get; private set; }
 
         public bool Enabled => Threshold < 0;
 
         public int Id => 0x03;
+
+        private SetCompression()
+        {
+        }
 
         public SetCompression(int threshold)
         {

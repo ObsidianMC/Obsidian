@@ -91,7 +91,7 @@ namespace Obsidian.WorldData
 
             if (!(playerChunkX == lastPlayerChunkX && playerChunkZ == lastPlayerChunkZ))
             {
-                await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
+                c.SendPacket(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
         public async Task ResendBaseChunksAsync(Client c)
@@ -146,18 +146,18 @@ namespace Obsidian.WorldData
 
         public Chunk GetChunk(Position worldLocation) => this.GetChunk((int)worldLocation.X.ToChunkCoord(), (int)worldLocation.Z.ToChunkCoord());
 
-        public SebastiansBlock GetBlock(Position location) => GetBlock((int)location.X, (int)location.Y, (int)location.Z);
+        public Block GetBlock(Position location) => GetBlock((int)location.X, (int)location.Y, (int)location.Z);
 
-        public SebastiansBlock GetBlock(int x, int y, int z)
+        public Block GetBlock(int x, int y, int z)
         {
             var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
 
             return chunk.GetBlock(x, y, z);
         }
 
-        public void SetBlock(Position location, SebastiansBlock block) => SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
+        public void SetBlock(Position location, Block block) => SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
 
-        public void SetBlock(int x, int y, int z, SebastiansBlock block)
+        public void SetBlock(int x, int y, int z, Block block)
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
@@ -372,7 +372,7 @@ namespace Obsidian.WorldData
                         for (int bz = 0; bz < 16; bz++)
                         {
                             var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bx, bz);
-                            SebastiansBlock block = c.GetBlock(bx, by, bz);
+                            Block block = c.GetBlock(bx, by, bz);
                             if (by > 58 && (block.Material == Materials.GrassBlock || block.Material == Materials.Sand))
                             {
                                 Data.SpawnX = bx;

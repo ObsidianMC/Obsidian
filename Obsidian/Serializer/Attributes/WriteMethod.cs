@@ -1,16 +1,9 @@
-﻿using Obsidian.Serializer.Enums;
-using System;
+﻿using System;
 
 namespace Obsidian.Serializer.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class WriteMethod : Attribute, IStreamMethod
+    public class WriteMethod : Attribute
     {
-        public DataType Type { get; set; }
-
-        public WriteMethod(DataType type)
-        {
-            Type = type;
-        }
     }
 }

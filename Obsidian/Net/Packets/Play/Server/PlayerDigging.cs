@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System;
 using System.Threading.Tasks;
 
@@ -9,13 +8,13 @@ namespace Obsidian.Net.Packets.Play.Server
 {
     public partial class PlayerDigging : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), ActualType(typeof(int)), VarLength]
         public DiggingStatus Status { get; private set; }
 
         [Field(1)]
         public Position Location { get; private set; }
 
-        [Field(2, Type = DataType.Byte)]
+        [Field(2), ActualType(typeof(sbyte))]
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
 
         public int Id => 0x1B;
@@ -33,11 +32,12 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task HandleAsync(Obsidian.Server server, Player player)
         {
-            await server.BroadcastPlayerDigAsync(new PlayerDiggingStore
+            server.BroadcastPlayerDig(new PlayerDiggingStore
             {
                 Player = player.Uuid,
                 Packet = this
             });
+            await Task.CompletedTask;
         }
     }
 

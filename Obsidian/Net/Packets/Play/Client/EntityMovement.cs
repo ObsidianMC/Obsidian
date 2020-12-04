@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class EntityMovement : IPacket
     {
-        [Field(0, Type = Serializer.Enums.DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
         public int Id => 0x2A;

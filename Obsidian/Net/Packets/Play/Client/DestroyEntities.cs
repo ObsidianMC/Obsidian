@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,10 +7,10 @@ namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class DestroyEntities : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int Count { get; set; }
 
-        [Field(1, Type = DataType.Array)]
+        [Field(1), VarLength]
         public List<int> EntityIds { get; set; } = new List<int>();
 
         public int Id => 0x36;

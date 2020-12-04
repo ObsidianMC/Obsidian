@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Play.Server
 {
     public partial class ServerPlayerPositionLook : IPacket
     {
-        [Field(0, true)]
+        [Field(0), Absolute]
         public Position Position { get; set; }
 
         [Field(1)]

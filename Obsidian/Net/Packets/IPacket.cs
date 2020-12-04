@@ -12,5 +12,7 @@ namespace Obsidian.Net.Packets
         Task ReadAsync(MinecraftStream stream);
 
         Task HandleAsync(Server server, Player player);
+
+        public void Serialize(MinecraftStream stream);
     }
 }

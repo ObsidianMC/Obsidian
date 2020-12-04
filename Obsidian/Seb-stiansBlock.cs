@@ -4,12 +4,11 @@ using System;
 
 namespace Obsidian
 {
-    public readonly struct SebastiansBlock
+    public readonly struct Block
     {
-        public static SebastiansBlock Air => new SebastiansBlock(0);
+        public static Block Air => new Block(0);
         
-        private static short[] interactables;
-        private static bool initialized;
+        private static short[] interactables = new short[] { 2034, 3356, 3373, 5137, 5255, 6614, 6618, 6622, 6626, 14815, 14825, 14837 };
 
         public string UnlocalizedName => Registry.Blocks[Id];
         public string Name => Material.ToString();
@@ -24,23 +23,23 @@ namespace Obsidian
         private readonly short baseId;
         private readonly short state;
 
-        public SebastiansBlock(int stateId) : this((short)stateId)
+        public Block(int stateId) : this((short)stateId)
         {
         }
 
-        public SebastiansBlock(short stateId)
+        public Block(short stateId)
         {
             baseId = Registry.StateToMatch[stateId].@base;
             state = (short)(stateId - baseId);
         }
 
-        public SebastiansBlock(short baseId, short state)
+        public Block(short baseId, short state)
         {
             this.baseId = baseId;
             this.state = state;
         }
 
-        public SebastiansBlock(Materials material)
+        public Block(Materials material)
         {
             baseId = Registry.NumericToBase[(int)material];
             state = 0;
@@ -49,15 +48,6 @@ namespace Obsidian
         public override string ToString()
         {
             return Material.ToString();
-        }
-
-        public static void Initialize()
-        {
-            if (initialized)
-                return;
-            initialized = true;
-
-            interactables = new short[] { 2034, 3356, 3373, 5137, 5255, 6614, 6618, 6622, 6626, 14815, 14825, 14837 };
         }
     }
 }

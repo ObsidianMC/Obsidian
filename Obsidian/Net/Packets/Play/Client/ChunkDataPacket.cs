@@ -82,5 +82,10 @@ namespace Obsidian.Net.Packets.Play.Client
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+
+        public void Serialize(MinecraftStream stream)
+        {
+            _ = WriteAsync(stream);
+        }
     }
 }

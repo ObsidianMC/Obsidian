@@ -45,7 +45,6 @@ namespace Obsidian.Plugins.Services
             getEncodingMethods = new Dictionary<Encoding, MethodInfo>
             {
                 { Encoding.UTF8, typeof(Encoding).GetMethod($"get_{nameof(Encoding.UTF8)}", staticPropertyFlags) },
-                { Encoding.UTF7, typeof(Encoding).GetMethod($"get_{nameof(Encoding.UTF7)}", staticPropertyFlags) },
                 { Encoding.UTF32, typeof(Encoding).GetMethod($"get_{nameof(Encoding.UTF32)}", staticPropertyFlags) },
                 { Encoding.Unicode, typeof(Encoding).GetMethod($"get_{nameof(Encoding.Unicode)}", staticPropertyFlags) },
                 { Encoding.ASCII, typeof(Encoding).GetMethod($"get_{nameof(Encoding.ASCII)}", staticPropertyFlags) },

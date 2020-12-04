@@ -12,7 +12,7 @@ namespace Obsidian.ChunkData
 
         public abstract IBlockStatePalette Palette { get; internal set; }
 
-        protected void Set(int x, int y, int z, SebastiansBlock blockState)
+        protected void Set(int x, int y, int z, Block blockState)
         {
             var blockIndex = this.GetIndex(x, y, z);
 
@@ -21,9 +21,9 @@ namespace Obsidian.ChunkData
             this.BlockStorage[blockIndex] = paletteIndex;
         }
 
-        protected void Set(double x, double y, double z, SebastiansBlock blockState) => this.Set((int)x, (int)y, (int)z, blockState);
+        protected void Set(double x, double y, double z, Block blockState) => this.Set((int)x, (int)y, (int)z, blockState);
 
-        protected SebastiansBlock Get(int x, int y, int z)
+        protected Block Get(int x, int y, int z)
         {
             int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 

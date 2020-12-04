@@ -6,6 +6,8 @@ namespace Obsidian.Boss
     {
         public abstract int Action { get; }
 
+        public abstract byte[] ToArray();
+
         public abstract Task<byte[]> ToArrayAsync();
     }
 }

@@ -8,16 +8,20 @@ namespace Obsidian.Net.Packets.Login
     public partial class Disconnect : IPacket
     {
         [Field(0)]
-        private readonly ChatMessage reason;
+        private ChatMessage Reason { get; set; }
 
         public int Id { get; }
 
         public byte[] Data { get; set; }
 
+        private Disconnect()
+        {
+        }
+
         public Disconnect(ChatMessage reason, ClientState state)
         {
             this.Id = state == ClientState.Play ? 0x19 : 0x00;
-            this.reason = reason;
+            this.Reason = reason;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

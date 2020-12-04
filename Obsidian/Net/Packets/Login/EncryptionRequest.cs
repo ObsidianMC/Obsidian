@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
@@ -10,19 +9,23 @@ namespace Obsidian.Net.Packets.Login
         [Field(0)]
         public string ServerId { get; private set; } = string.Empty;
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int KeyLength { get; private set; }
 
         [Field(2)]
         public byte[] PublicKey { get; private set; }
 
-        [Field(3, Type = DataType.VarInt)]
+        [Field(3), VarLength]
         public int TokenLength = 4;
 
         [Field(4)]
         public byte[] VerifyToken { get; private set; }
 
         public int Id => 0x01;
+
+        private EncryptionRequest()
+        {
+        }
 
         public EncryptionRequest(byte[] publicKey, byte[] verifyToken) 
         {

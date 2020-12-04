@@ -106,7 +106,7 @@ namespace Obsidian.Entities
                     if (!item.CanPickup)
                         continue;
 
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -119,7 +119,7 @@ namespace Obsidian.Entities
                         Nbt = item.Nbt
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 
@@ -146,7 +146,7 @@ namespace Obsidian.Entities
                     if (!item.CanPickup)
                         continue;
 
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -158,7 +158,7 @@ namespace Obsidian.Entities
                         Nbt = item.Nbt
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 
@@ -180,7 +180,7 @@ namespace Obsidian.Entities
             {
                 if (entity is ItemEntity item)
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -193,7 +193,7 @@ namespace Obsidian.Entities
                         Nbt = item.Nbt
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 

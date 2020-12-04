@@ -1,7 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,11 +8,10 @@ namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class PlayerInfo : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int Action { get; }
 
-
-        [Field(1, Type = DataType.Array)]
+        [Field(1)]
         public List<PlayerInfoAction> Actions { get; }
 
         public int Id => 0x32;

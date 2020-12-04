@@ -282,7 +282,7 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, SebastiansBlock block, Position location)
+        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
@@ -344,10 +344,10 @@ namespace Obsidian
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal async Task BroadcastPacketWithoutQueueAsync(IPacket packet, params int[] excluded)
+        internal void BroadcastPacketWithoutQueue(IPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
-                await player.client.SendPacketAsync(packet);
+                player.client.SendPacket(packet);
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
@@ -368,7 +368,7 @@ namespace Obsidian
             return world.TryAddEntity(entity);
         }
 
-        internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store)
+        internal void BroadcastPlayerDig(PlayerDiggingStore store)
         {
             var digging = store.Packet;
 
@@ -412,7 +412,7 @@ namespace Obsidian
                             (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
                             (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
 
-                        await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
+                        this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
                             Uuid = Guid.NewGuid(),
@@ -423,13 +423,13 @@ namespace Obsidian
                             Data = 1,
                             Velocity = vel
                         });
-                        await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
+                        this.BroadcastPacketWithoutQueue(new EntityMetadata
                         {
                             EntityId = item.EntityId,
                             Entity = item
                         });
 
-                        await player.client.SendPacketAsync(new SetSlot
+                        player.client.SendPacket(new SetSlot
                         {
                             Slot = player.CurrentSlot,
 
@@ -442,7 +442,7 @@ namespace Obsidian
                         break;
                     }
                 case DiggingStatus.StartedDigging:
-                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
+                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
                         Location = digging.Location,
                         Block = block.Id,
@@ -451,7 +451,7 @@ namespace Obsidian
                     });
                     break;
                 case DiggingStatus.CancelledDigging:
-                    await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
+                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
                         Location = digging.Location,
                         Block = block.Id,
@@ -461,23 +461,23 @@ namespace Obsidian
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
-                        await this.BroadcastPacketWithoutQueueAsync(new AcknowledgePlayerDigging
+                        this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Location = digging.Location,
                             Block = block.Id,
                             Status = digging.Status,
                             Successful = true
                         });
-                        await this.BroadcastPacketWithoutQueueAsync(new BlockBreakAnimation
+                        this.BroadcastPacketWithoutQueue(new BlockBreakAnimation
                         {
                             EntityId = player,
                             Location = digging.Location,
                             DestroyStage = -1
                         });
 
-                        await this.BroadcastPacketWithoutQueueAsync(new BlockChange(digging.Location, 0));
+                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Location, 0));
 
-                        this.World.SetBlock(digging.Location, SebastiansBlock.Air);
+                        this.World.SetBlock(digging.Location, Block.Air);
 
                         var item = new ItemEntity
                         {
@@ -493,7 +493,7 @@ namespace Obsidian
 
                         this.TryAddEntity(player.World, item);
 
-                        await this.BroadcastPacketWithoutQueueAsync(new SpawnEntity
+                        this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
                             Uuid = Guid.NewGuid(),
@@ -505,7 +505,7 @@ namespace Obsidian
                             Velocity = new Velocity((short)(digging.Location.X * (8000 / 20)), (short)(digging.Location.Y * (8000 / 20)), (short)(digging.Location.Z * (8000 / 20)))
                         });
 
-                        await this.BroadcastPacketWithoutQueueAsync(new EntityMetadata
+                        this.BroadcastPacketWithoutQueue(new EntityMetadata
                         {
                             EntityId = item.EntityId,
                             Entity = item
@@ -546,7 +546,7 @@ namespace Obsidian
                     var keepaliveid = DateTime.Now.Millisecond;
 
                     foreach (var client in this.clients.Where(x => x.State == ClientState.Play))
-                        _ = Task.Run(async () => await client.ProcessKeepAliveAsync(keepaliveid));
+                        client.ProcessKeepAlive(keepaliveid);
 
                     keepAliveTicks = 0;
                 }

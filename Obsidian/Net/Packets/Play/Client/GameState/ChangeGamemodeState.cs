@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.PlayerData;
 
 namespace Obsidian.Net.Packets.Play.Client.GameState
 {
@@ -9,5 +8,4 @@ namespace Obsidian.Net.Packets.Play.Client.GameState
 
         public ChangeGamemodeState(Gamemode newMode) => this.Value = newMode;
     }
-
 }

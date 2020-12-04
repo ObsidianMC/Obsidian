@@ -12,7 +12,9 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public int Id => 0x42;
 
-        public byte[] Data { get; }
+        private SpawnPosition()
+        {
+        }
 
         public SpawnPosition(Position location) => this.Location = location;
 

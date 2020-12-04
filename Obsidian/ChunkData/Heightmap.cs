@@ -15,7 +15,7 @@ namespace Obsidian.ChunkData
 
         private Chunk chunk;
 
-        public Predicate<SebastiansBlock> Predicate;
+        public Predicate<Block> Predicate;
 
         public Heightmap(HeightmapType type, Chunk chunk)
         {
@@ -26,7 +26,7 @@ namespace Obsidian.ChunkData
                 this.Predicate = (block) => !block.IsAir || !block.IsFluid;
         }
 
-        public bool Update(int x, int y, int z, SebastiansBlock blockState)
+        public bool Update(int x, int y, int z, Block blockState)
         {
             int height = this.GetHeight(x, z);
 

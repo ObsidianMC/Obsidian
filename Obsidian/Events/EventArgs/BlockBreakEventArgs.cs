@@ -13,7 +13,7 @@ namespace Obsidian.Events.EventArgs
         /// <summary>
         /// The block that was broken
         /// </summary>
-        public SebastiansBlock Block { get; }
+        public Block Block { get; }
 
         public bool Cancel { get; set; }
 

@@ -54,12 +54,12 @@ namespace Obsidian._Blocks
             state |= (int)face << faceShift;
         }
 
-        public static implicit operator SebastiansBlock(OakDoor oakDoor)
+        public static implicit operator Block(OakDoor oakDoor)
         {
-            return new SebastiansBlock(oakDoor.StateId);
+            return new Block(oakDoor.StateId);
         }
 
-        public static explicit operator OakDoor(SebastiansBlock block)
+        public static explicit operator OakDoor(Block block)
         {
             if (block.BaseId != baseId)
                 throw new InvalidCastException($"Cannot cast {block.Name} to {nameof(OakDoor)}");

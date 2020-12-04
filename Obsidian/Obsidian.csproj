@@ -24,10 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Serializer\Enums\FieldType.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Assets\biome_dimension_codec.json" />
     <None Remove="Assets\default_dimensions.json" />
     <None Remove="Assets\default_dimensions.xaml" />
@@ -181,7 +177,6 @@
     <None Remove="Assets\Tags\items\wooden_trapdoors.json" />
     <None Remove="Assets\Tags\items\wool.json" />
     <None Remove="Serializer\Attributes\NewFile1.txt" />
-    <None Remove="Serializer\Enums\NewFile1.txt" />
   </ItemGroup>
 
   <ItemGroup>

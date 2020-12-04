@@ -1,19 +1,18 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class CollectItem : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int CollectedEntityId { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int CollectorEntityId { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), VarLength]
         public int PickupItemCount { get; set; }
 
         public int Id => 0x55;

@@ -56,7 +56,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new SebastiansBlock(89));
+                    chunk.SetBlock(pos + (0, y, 0), new Block(89));
                 }
             }
 

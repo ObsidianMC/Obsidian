@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using Obsidian.API;
 using System;
 using System.Threading.Tasks;
@@ -9,16 +8,16 @@ namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class SpawnLivingEntity : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
         [Field(1)]
         public Guid Uuid { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), ActualType(typeof(int)), VarLength]
         public EntityType Type { get; set; }
 
-        [Field(3, true)]
+        [Field(3), Absolute]
         public Position Position { get; set; }
 
         [Field(4)]

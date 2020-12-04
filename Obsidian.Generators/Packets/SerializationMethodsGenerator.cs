@@ -10,12 +10,13 @@ namespace Obsidian.Generators.Packets
     [Generator]
     public class SerializationMethodsGenerator : ISourceGenerator
     {
-        private static readonly DiagnosticDescriptor noSerializationMethod = new DiagnosticDescriptor("DBG001", "This data type doesn't have serialization method associated with it", "This data type doesn't have serialization method associated with it", "SerializationMethodGeneration", DiagnosticSeverity.Warning, true);
-
-        private const string fieldAttributeFull = "Obsidian.Serializer.Attributes.FieldAttribute";
         private const string fieldAttribute = "Field";
         private const string readMethodAttribute = "ReadMethod";
         private const string writeMethodAttribute = "WriteMethod";
+        private const string absoluteAttribute = "Absolute";
+        private const string actualTypeAttribute = "ActualType";
+        private const string fixedLengthAttribute = "FixedLength";
+        private const string varLengthAttribute = "VarLength";
 
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -30,9 +31,10 @@ namespace Obsidian.Generators.Packets
             Compilation compilation = context.Compilation;
 
             // Get all packet fields
-            var memberSymbols = new List<PacketField>();
+            var fieldSymbols = new List<Field>();
             foreach (MemberDeclarationSyntax member in syntaxProvider.WithContext(context).GetSyntaxNodes())
             {
+                // Get FieldAttribute
                 AttributeSyntax attribute = member.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == fieldAttribute);
                 if (attribute is null)
                     continue;
@@ -43,120 +45,218 @@ namespace Obsidian.Generators.Packets
                     foreach (VariableDeclaratorSyntax variable in field.Declaration.Variables)
                     {
                         ISymbol symbol = model.GetDeclaredSymbol(variable);
-                        memberSymbols.Add(new PacketField(field.Declaration.Type, symbol, field, attribute));
+                        fieldSymbols.Add(new Field(field.Declaration.Type, symbol, field, attribute));
                     }
                 }
                 else if (member is PropertyDeclarationSyntax property)
                 {
                     ISymbol symbol = model.GetDeclaredSymbol(member);
-                    memberSymbols.Add(new PacketField(property.Type, symbol, property, attribute));
+                    fieldSymbols.Add(new Field(property.Type, symbol, property, attribute));
                 }
             }
 
             // Generate partial classes
-            foreach (var group in memberSymbols.GroupBy(member => member.Symbol.ContainingType))
+            foreach (var group in fieldSymbols.GroupBy(field => field.Symbol.ContainingType))
             {
-                string classSource = ProcessClass(group.Key, group.ToList(), syntaxProvider);
-                context.AddSource($"{group.Key.Name}_Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
+                var @class = group.Key;
+                var fields = group.ToList();
+
+                if (@class.IsStatic || @class.DeclaredAccessibility != Accessibility.Public)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ContainingTypeNotViable, @class.Locations.First(), @class.Name));
+                    continue;
+                }
+
+                string classSource = ProcessClass(@class, fields, syntaxProvider);
+                context.AddSource($"{@class.Name}_Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
+                System.Diagnostics.Debug.WriteLine(@class.Name);
             }    
         }
 
-        private string ProcessClass(INamedTypeSymbol classSymbol, List<PacketField> members, SyntaxProvider syntaxProvider)
+        private string ProcessClass(INamedTypeSymbol classSymbol, List<Field> fields, SyntaxProvider syntaxProvider)
         {
-            members.Sort((a, b) => a.Index.CompareTo(b.Index));
+            fields.Sort((a, b) => a.Index.CompareTo(b.Index));
             
             string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
+            string className = classSymbol.IsGenericType ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>" : classSymbol.Name;
 
+            var bodySource = new StringBuilder();
             var source = new StringBuilder($@"using Obsidian.Net;
 
 namespace {@namespace}
 {{
-    public partial class {classSymbol.Name}
-    {{
+    public ");
+
+            if (classSymbol.IsAbstract)
+            {
+                source.Append("abstract ");
+            }
+
+            source.Append("partial ");
+
+            source.Append(classSymbol.IsValueType ? "struct " : "class ");
+
+            source.Append(className);
+
+            source.Append(@"
+    {
 ");
+
             string classOffset = "\t\t";
 
             // Serialize(MinecraftStream stream)
-            source.AppendXML("summary", $"Serializes data from this packet into <see cref=\"MinecraftStream\"/>.\n<b>AUTOGENERATED</b>");
-            source.AppendXML("param", @"name=""stream""", "Target stream that this packet's data is written to.", true);
-            source.Append($"{classOffset}public void Serialize(MinecraftStream stream)\n{classOffset}{{\n");
-            CreateSerializationMethod(source, members, syntaxProvider);
-            source.Append($"{classOffset}}}\n\n");
+            if (CreateSerializationMethod(bodySource, fields, syntaxProvider))
+            {
+                source.AppendXML("summary", $"Serializes data from this packet into <see cref=\"MinecraftStream\"/>.\n<b>AUTOGENERATED</b>");
+                source.AppendXML("param", @"name=""stream""", "Target stream that this packet's data is written to.", true);
+                source.Append($"{classOffset}public void Serialize(MinecraftStream stream)\n{classOffset}{{\n");
+                source.Append(bodySource.ToString());
+                source.Append($"{classOffset}}}\n\n");
+            }
+            bodySource.Clear();
 
-            // Deserialize(byte[] data)
-            source.AppendXML("summary", $"Deserializes byte data into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
-            source.AppendXML("param", @"name=""data""", "Data used to populate the packet.", true);
-            source.AppendXML("returns", "Deserialized packet.", true);
-            source.Append($"{classOffset}public static {classSymbol.Name} Deserialize(byte[] data)\n{classOffset}{{\n");
-            source.AppendCode("using var stream = new MinecraftStream(data);");
-            source.AppendCode("return Deserialize(stream);");
-            source.Append($"{classOffset}}}\n\n");
+            if (!classSymbol.IsAbstract && CreateDeserializationMethod(bodySource, className, fields, syntaxProvider))
+            {
+                // Deserialize(byte[] data)
+                source.AppendXML("summary", $"Deserializes byte data into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
+                source.AppendXML("param", @"name=""data""", "Data used to populate the packet.", true);
+                source.AppendXML("returns", "Deserialized packet.", true);
+                source.Append($"{classOffset}public static {className} Deserialize(byte[] data)\n{classOffset}{{\n");
+                source.AppendCode("using var stream = new MinecraftStream(data);");
+                source.AppendCode("return Deserialize(stream);");
+                source.Append($"{classOffset}}}\n\n");
 
-            // Deserialize(MinecraftStream stream)
-            source.AppendXML("summary", $"Deserializes data from <see cref=\"MinecraftStream\"/> into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
-            source.AppendXML("param", @"name=""stream""", "Stream that is read from to populate the packet.", true);
-            source.AppendXML("returns", "Deserialized packet.", true);
-            source.Append($"{classOffset}public static {classSymbol.Name} Deserialize(MinecraftStream stream)\n{classOffset}{{\n");
-            CreateDeserializationMethod(source, classSymbol, members, syntaxProvider);
-            source.Append($"{classOffset}}}");
+                // Deserialize(MinecraftStream stream)
+                source.AppendXML("summary", $"Deserializes data from <see cref=\"MinecraftStream\"/> into <see cref=\"{classSymbol.Name}\"/> packet.\n<b>AUTOGENERATED</b>");
+                source.AppendXML("param", @"name=""stream""", "Stream that is read from to populate the packet.", true);
+                source.AppendXML("returns", "Deserialized packet.", true);
+                source.Append($"{classOffset}public static {className} Deserialize(MinecraftStream stream)\n{classOffset}{{\n");
+                source.Append(bodySource.ToString());
+                source.Append($"{classOffset}}}");
+            }
+            bodySource.Clear();
+
+            source.Append("public static int F12toInspect = 0;");
 
             source.Append(@"
     }
 }");
+            source.AppendLine();
+            foreach (var method in syntaxProvider.ReadMethods)
+            {
+                source.AppendComment($"{method.Key}: {method.Value}");
+            }
+            source.AppendLine();
+            foreach (var method in syntaxProvider.WriteMethods)
+            {
+                source.AppendComment($"{method.Key}: {method.Value}");
+            }
+
             return source.ToString();
         }
 
-        private void CreateSerializationMethod(StringBuilder builder, List<PacketField> members, SyntaxProvider syntaxProvider)
+        private bool CreateSerializationMethod(StringBuilder builder, List<Field> fields, SyntaxProvider syntaxProvider)
         {
-            foreach (var member in members)
+            foreach (var field in fields)
             {
-                builder.AppendCode($"stream.{GetMethod(member, syntaxProvider, syntaxProvider.WriteMethods)}({member.Symbol.Name}); // {member.Index}");
-            }
-        }
-
-        private void CreateDeserializationMethod(StringBuilder builder, INamedTypeSymbol classSymbol, List<PacketField> members, SyntaxProvider syntaxProvider)
-        {
-            builder.AppendCode($"var packet = new {classSymbol}();");
-            foreach (var member in members)
-            {
-                builder.AppendCode($"packet.{member.Symbol.Name} = stream.{GetMethod(member, syntaxProvider, syntaxProvider.ReadMethods)}();");
-            }
-            builder.AppendCode("return packet;");
-        }
-
-        private string GetMethod(PacketField member, SyntaxProvider syntaxProvider, Dictionary<string, string> methodCollection)
-        {
-            string dataType, methodName;
-
-            // Try to get specified Type from FieldAttribute
-            var attribute = member.Declaration.AttributeLists.SelectMany(attributeList => attributeList.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == fieldAttribute);
-            var argument = attribute?.ArgumentList.DescendantNodes().FirstOrDefault(node => node is IdentifierNameSyntax identifier && identifier.Identifier.Text == "Type");
-            var typeAccess = argument?.Parent.Parent.DescendantNodes().FirstOrDefault(node => node is MemberAccessExpressionSyntax) as MemberAccessExpressionSyntax;
-            if (typeAccess is not null)
-            {
-                dataType = typeAccess.GetText().ToString().Split('.').Last();
-                if (methodCollection.TryGetValue(dataType, out methodName))
+                bool isArray = false;
+                string elementType = field.TypeName, elementName = field.Name;
+                if (field.TypeName.EndsWith("[]") || field.TypeName.StartsWith("List<"))
                 {
-                    return methodName;
+                    isArray = true;
+                    elementName += "[i]";
+                    string lengthProperty;
+                    if (field.TypeName.EndsWith("[]"))
+                    {
+                        lengthProperty = "Length";
+                        elementType = field.TypeName.Substring(0, field.TypeName.Length - 2);
+                    }
+                    else
+                    {
+                        lengthProperty = "Count";
+                        elementType = field.TypeName.Substring(5, field.TypeName.Length - 6);
+                    }
+
+                    if (field.IsVarLength)
+                        elementType += "_Var";
+                    if (field.IsAbsolute)
+                        elementType += "_Abs";
+
+                    if (field.FixedLength >= 0)
+                        builder.AppendCode($"stream.WriteVarInt({field.Name}.{lengthProperty});");
+
+                    builder.AppendCode($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
+                    builder.AppendCode("{");
+                    builder.Append('\t');
+                }
+
+                if (TryGetMethod(field, elementType, syntaxProvider, syntaxProvider.WriteMethods, DiagnosticDescriptors.NoSerializationMethod, out string methodName))
+                {
+                    builder.AppendCode($"stream.{methodName}({elementName});");
                 }
                 else
                 {
-                    syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, argument.GetLocation(), member.Symbol.Name));
-                    return string.Empty;
+                    // creating serialization method failed
+                    syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with it", field.Declaration));
+                    return false;
+                }
+
+                if (isArray)
+                {
+                    // end for loop
+                    builder.AppendCode("}");
                 }
             }
+            return true;
+        }
 
-            // Use data type
-            var typeName = member.Type.GetText().ToString();
-            if (methodCollection.TryGetValue(typeName, out methodName))
+        private bool CreateDeserializationMethod(StringBuilder builder, string className, List<Field> fields, SyntaxProvider syntaxProvider)
+        {
+            builder.AppendCode($"var packet = new {className}();");
+            foreach (var field in fields)
             {
-                return methodName;
+                
             }
-            else
-            {
-                syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noSerializationMethod, member.Type.GetLocation(), member.Symbol.Name));
-                return string.Empty;
-            }
+            builder.AppendCode("return packet;");
+            return true;
+        }
+
+        //private static readonly string[] variableArrayTypes = { "List<PlayerInfoAction>", "List<Tag>" }; // arrays that write their length first
+        //private bool TrySerializeArray(StringBuilder builder, Field member, string methodName)
+        //{
+        //    string dataType = member.TypeName;
+        //    string arrayLength = dataType.EndsWith("[]") ? "Length" : "Count";
+
+        //    builder.AppendCode("stream.Lock.Wait();");
+        //    if (variableArrayTypes.Contains(dataType))
+        //    {
+        //        builder.AppendCode($"stream.WriteVarInt({member.Name}.{arrayLength});");
+        //    }
+        //    builder.AppendCode($"for (int i = 0; i < {member.Name}.{arrayLength}; i++)");
+        //    builder.AppendCode("{");
+        //    builder.AppendCode($"\tstream.{methodName}({member.Name}[i]);");
+        //    builder.AppendCode("}");
+        //    builder.AppendCode("stream.Lock.Release();");
+        //    return true;
+        //}
+
+        //private bool TryDeserializeArray(StringBuilder builder, Field member, string methodName)
+        //{
+        //    return false;
+        //}
+
+        private bool TryGetMethod(Field field, string typeName, SyntaxProvider syntaxProvider, Dictionary<string, string> methodCollection, DiagnosticDescriptor noMethodDiagnostic, out string methodName)
+        {
+            //if (methodCollection.TryGetValue(typeName, out methodName))
+            //{
+            //    return true;
+            //}
+            //else
+            //{
+            //    syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noMethodDiagnostic, field.Declaration.GetLocation(), field.Name));
+            //    return false;
+            //}
+            return methodCollection.TryGetValue(typeName, out methodName);
         }
 
         private class SyntaxProvider : ExecutionSyntaxProvider<MemberDeclarationSyntax>
@@ -180,17 +280,19 @@ namespace {@namespace}
                     var attribute = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == readMethodAttribute || attribute.Name.ToString() == writeMethodAttribute);
                     if (attribute is not null)
                     {
-                        string dataType = attribute.ArgumentList.Arguments.First().GetText().ToString().Split('.').Last();
                         string methodName = methodDeclaration.Identifier.Text;
+                        string modifiers = string.Empty;
+                        if (attributes.Any(attribute => attribute.Name.ToString() == varLengthAttribute))
+                            modifiers += "_Var";
+                        if (attributes.Any(attribute => attribute.Name.ToString() == absoluteAttribute))
+                            modifiers += "_Abs";
                         if (attribute.Name.ToString() == readMethodAttribute)
                         {
-                            ReadMethods[dataType] = methodName;
-                            ReadMethods[methodDeclaration.ReturnType.GetText().ToString()] = methodName;
+                            ReadMethods[methodDeclaration.ReturnType.GetText().ToString().Split('.').Last().TrimEnd() + modifiers] = methodName;
                         }
                         else
                         {
-                            WriteMethods[dataType] = methodName;
-                            WriteMethods[methodDeclaration.ParameterList.Parameters.First().Type.GetText().ToString()] = methodName;
+                            WriteMethods[methodDeclaration.ParameterList.Parameters.First().Type.GetText().ToString().Split('.').Last().TrimEnd() + modifiers] = methodName;
                         }
                     }
                 }
@@ -200,19 +302,62 @@ namespace {@namespace}
             }
         }
 
-        private struct PacketField
+        private struct Field
         {
-            public int Index { get; set; }
-            public TypeSyntax Type { get; set; }
-            public ISymbol Symbol { get; set; }
-            public MemberDeclarationSyntax Declaration { get; set; }
+            public string Name { get; }
+            public string TypeName { get; }
+            public int Index { get; }
+            public bool IsArray { get; }
+            public bool IsAbsolute { get; }
+            public bool IsVarLength { get; }
+            public int FixedLength { get; }
+            public ISymbol Symbol { get; }
+            public MemberDeclarationSyntax Declaration { get; }
 
-            public PacketField(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax declaration, AttributeSyntax fieldAttribute)
+            public Field(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax declaration, AttributeSyntax fieldAttribute)
             {
-                Type = type;
+                TypeName = type.GetText().ToString().Split('.').Last().TrimEnd();
+                IsArray = TypeName.EndsWith("[]") || TypeName.StartsWith("List<");
+                Name = symbol.Name;
                 Symbol = symbol;
                 Declaration = declaration;
                 Index = int.Parse(fieldAttribute.ArgumentList.Arguments.First().GetText().ToString());
+
+                IsAbsolute = false;
+                IsVarLength = false;
+                FixedLength = -1;
+
+                var attributes = declaration.AttributeLists.SelectMany(list => list.Attributes);
+                foreach (var attribute in attributes)
+                {
+                    switch (attribute.Name.GetText().ToString())
+                    {
+                        case absoluteAttribute:
+                            IsAbsolute = true;
+                            break;
+
+                        case varLengthAttribute:
+                            IsVarLength = true;
+                            break;
+
+                        case fixedLengthAttribute:
+                            FixedLength = int.Parse(attribute.ArgumentList.Arguments.First().GetText().ToString());
+                            break;
+
+                        case actualTypeAttribute:
+                            var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
+                            TypeName = @typeof.Type.GetText().ToString().Split('.').Last();
+                            break;
+                    }
+                }
+
+                if (!IsArray)
+                {
+                    if (IsVarLength)
+                        TypeName += "_Var";
+                    if (IsAbsolute)
+                        TypeName += "_Abs";
+                }
             }
         }
     }

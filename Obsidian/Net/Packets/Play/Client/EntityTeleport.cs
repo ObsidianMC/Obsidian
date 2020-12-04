@@ -1,17 +1,16 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class EntityTeleport : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1, true)]
+        [Field(1), Absolute]
         public Position Position { get; set; }
 
         [Field(2)]

@@ -37,16 +37,16 @@ namespace Obsidian.WorldData
                 this.Sections[i] = new ChunkSection(4, i);
         }
 
-        public SebastiansBlock GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
+        public Block GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
 
-        public SebastiansBlock GetBlock(int x, int y, int z)
+        public Block GetBlock(int x, int y, int z)
         {
             return SebastiansChunk.GetBlock(x, y, z);
         }
 
-        public void SetBlock(Position position, SebastiansBlock block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
+        public void SetBlock(Position position, Block block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
-        public void SetBlock(int x, int y, int z, SebastiansBlock block)
+        public void SetBlock(int x, int y, int z, Block block)
         {
             SebastiansChunk.SetBlock(x, y, z, block);
             Sections[y >> 4].SetBlock(x, y & 15, z, block);

@@ -1,19 +1,18 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Server
 {
     public partial class EntityAction : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), ActualType(typeof(int)), VarLength]
         public EAction Action { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), VarLength]
         public int JumpBoost { get; set; }
 
         public int Id => 0x1C;

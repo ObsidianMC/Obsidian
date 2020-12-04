@@ -1,6 +1,9 @@
 ﻿using Obsidian.API;
+using Obsidian.Boss;
+using Obsidian.Chat;
+using Obsidian.Commands;
+using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,7 +12,7 @@ namespace Obsidian.Net
 {
     public partial class MinecraftStream
     {
-        [WriteMethod(DataType.Byte)]
+        [WriteMethod]
         public void WriteByte(sbyte value)
         {
             BaseStream.WriteByte((byte)value);
@@ -24,7 +27,7 @@ namespace Obsidian.Net
             await this.WriteUnsignedByteAsync((byte)value);
         }
 
-        [WriteMethod(DataType.UnsignedByte)]
+        [WriteMethod]
         public void WriteUnsignedByte(byte value)
         {
             BaseStream.WriteByte(value);
@@ -39,7 +42,7 @@ namespace Obsidian.Net
             await this.WriteAsync(new[] { value });
         }
 
-        [WriteMethod(DataType.Boolean)]
+        [WriteMethod]
         public void WriteBoolean(bool value)
         {
             BaseStream.WriteByte(value ? 0x01 : 0x00);
@@ -54,7 +57,7 @@ namespace Obsidian.Net
             await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
         }
 
-        [WriteMethod(DataType.UnsignedShort)]
+        [WriteMethod]
         public void WriteUnsignedShort(ushort value)
         {
             Span<byte> span = stackalloc byte[2];
@@ -80,7 +83,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.Short)]
+        [WriteMethod]
         public void WriteShort(short value)
         {
             Span<byte> span = stackalloc byte[2];
@@ -106,7 +109,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.Int)]
+        [WriteMethod]
         public void WriteInt(int value)
         {
             Span<byte> span = stackalloc byte[4];
@@ -132,7 +135,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.Long)]
+        [WriteMethod]
         public void WriteLong(long value)
         {
             Span<byte> span = stackalloc byte[8];
@@ -158,7 +161,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.Float)]
+        [WriteMethod]
         public void WriteFloat(float value)
         {
             Span<byte> span = stackalloc byte[4];
@@ -184,7 +187,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.Double)]
+        [WriteMethod]
         public void WriteDouble(double value)
         {
             Span<byte> span = stackalloc byte[8];
@@ -210,7 +213,7 @@ namespace Obsidian.Net
             await this.WriteAsync(write);
         }
 
-        [WriteMethod(DataType.String)]
+        [WriteMethod]
         public void WriteString(string value)
         {
             var bytes = Encoding.UTF8.GetBytes(value);
@@ -233,7 +236,7 @@ namespace Obsidian.Net
             await this.WriteAsync(bytes);
         }
 
-        [WriteMethod(DataType.VarInt)]
+        [WriteMethod, VarLength]
         public void WriteVarInt(int value)
         {
             var unsigned = (uint)value;
@@ -293,7 +296,7 @@ namespace Obsidian.Net
                 await this.WriteLongAsync((long)value);
         }
 
-        [WriteMethod(DataType.VarLong)]
+        [WriteMethod, VarLength]
         public void WriteVarLong(long value)
         {
             var unsigned = (ulong)value;
@@ -336,7 +339,7 @@ namespace Obsidian.Net
             while (unsigned != 0);
         }
 
-        [WriteMethod(DataType.Angle)]
+        [WriteMethod]
         public void WriteAngle(Angle angle)
         {
             BaseStream.WriteByte(angle.Value);
@@ -346,6 +349,67 @@ namespace Obsidian.Net
         {
             await this.WriteByteAsync((sbyte)angle.Value);
             // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
+        }
+
+        [WriteMethod]
+        public void WriteChat(ChatMessage chatMessage)
+        {
+            WriteString(chatMessage.ToString());
+        }
+
+        [WriteMethod]
+        public void WriteByteArray(byte[] values)
+        {
+            BaseStream.Write(values);
+        }
+
+        [WriteMethod]
+        public void WriteUuid(Guid value)
+        {
+            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
+            Write(uuid.ToByteArray(false, true));
+        }
+
+        [WriteMethod]
+        public void WritePosition(Position value)
+        {
+            var val = (long)((int)value.X & 0x3FFFFFF) << 38;
+            val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
+            val |= (long)((int)value.Y & 0xFFF);
+
+            WriteLong(val);
+        }
+
+        [WriteMethod, Absolute]
+        public void WriteAbsolutePosition(Position value)
+        {
+            WriteDouble(value.X);
+            WriteDouble(value.Y);
+            WriteDouble(value.Z);
+        }
+
+        [WriteMethod]
+        public void WriteBossBarAction(BossBarAction value)
+        {
+            WriteVarInt(value.Action);
+            Write(value.ToArray());
+        }
+
+        [WriteMethod]
+        public void WriteTag(Tag value)
+        {
+            WriteString(value.Name);
+            WriteVarInt(value.Count);
+            for (int i = 0; i < value.Entries.Count; i++)
+            {
+                WriteVarInt(value.Entries[i]);
+            }
+        }
+
+        [WriteMethod]
+        public void WriteCommandNode(CommandNode value)
+        {
+            value.CopyTo(this);
         }
     }
 }

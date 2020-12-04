@@ -1,6 +1,7 @@
-﻿using Obsidian.API;
+﻿using Newtonsoft.Json;
+using Obsidian.API;
+using Obsidian.Chat;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System;
 using System.IO;
 using System.Text;
@@ -11,12 +12,12 @@ namespace Obsidian.Net
     public partial class MinecraftStream
     {
 
-        [ReadMethod(DataType.Byte)]
+        [ReadMethod]
         public sbyte ReadSignedByte() => (sbyte)this.ReadUnsignedByte();
 
         public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
 
-        [ReadMethod(DataType.UnsignedByte)]
+        [ReadMethod]
         public byte ReadUnsignedByte()
         {
             Span<byte> buffer = stackalloc byte[1];
@@ -31,7 +32,7 @@ namespace Obsidian.Net
             return buffer[0];
         }
 
-        [ReadMethod(DataType.Boolean)]
+        [ReadMethod]
         public bool ReadBoolean()
         {
             var value = (int)this.ReadUnsignedByte();
@@ -66,7 +67,7 @@ namespace Obsidian.Net
             }
         }
 
-        [ReadMethod(DataType.UnsignedShort)]
+        [ReadMethod]
         public ushort ReadUnsignedShort()
         {
             Span<byte> buffer = stackalloc byte[2];
@@ -89,7 +90,7 @@ namespace Obsidian.Net
             return BitConverter.ToUInt16(buffer);
         }
 
-        [ReadMethod(DataType.Short)]
+        [ReadMethod]
         public short ReadShort()
         {
             Span<byte> buffer = stackalloc byte[2];
@@ -112,7 +113,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt16(buffer);
         }
 
-        [ReadMethod(DataType.Int)]
+        [ReadMethod]
         public int ReadInt()
         {
             Span<byte> buffer = stackalloc byte[4];
@@ -135,7 +136,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt32(buffer);
         }
 
-        [ReadMethod(DataType.Long)]
+        [ReadMethod]
         public long ReadLong()
         {
             Span<byte> buffer = stackalloc byte[8];
@@ -158,6 +159,7 @@ namespace Obsidian.Net
             return BitConverter.ToInt64(buffer);
         }
 
+        [ReadMethod]
         public ulong ReadUnsignedLong()
         {
             Span<byte> buffer = stackalloc byte[8];
@@ -180,7 +182,7 @@ namespace Obsidian.Net
             return BitConverter.ToUInt64(buffer);
         }
 
-        [ReadMethod(DataType.Float)]
+        [ReadMethod]
         public float ReadFloat()
         {
             Span<byte> buffer = stackalloc byte[4];
@@ -203,7 +205,7 @@ namespace Obsidian.Net
             return BitConverter.ToSingle(buffer);
         }
 
-        [ReadMethod(DataType.Double)]
+        [ReadMethod]
         public double ReadDouble()
         {
             Span<byte> buffer = stackalloc byte[8];
@@ -226,7 +228,7 @@ namespace Obsidian.Net
             return BitConverter.ToDouble(buffer);
         }
 
-        [ReadMethod(DataType.String)]
+        [ReadMethod]
         public string ReadString(int maxLength = 32767)
         {
             var length = ReadVarInt();
@@ -263,7 +265,7 @@ namespace Obsidian.Net
             return value;
         }
 
-        [ReadMethod(DataType.VarInt)]
+        [ReadMethod, VarLength]
         public int ReadVarInt()
         {
             int numRead = 0;
@@ -306,13 +308,16 @@ namespace Obsidian.Net
             return result;
         }
 
-        [ReadMethod(DataType.ByteArray)]
-        public byte[] ReadUInt8Array()
+        [ReadMethod]
+        public byte[] ReadUInt8Array(int length = 0)
         {
-            var length = this.ReadVarInt();
+            if (length == 0)
+                length = ReadVarInt();
+
             var result = new byte[length];
             if (length == 0)
                 return result;
+
             int n = length;
             while (true)
             {
@@ -331,13 +336,13 @@ namespace Obsidian.Net
             var result = new byte[length];
             if (length == 0)
                 return result;
+
             int n = length;
             while (true)
             {
                 n -= await this.ReadAsync(result, length - n, n);
                 if (n == 0)
                     break;
-                await Task.Delay(1);
             }
             return result;
         }
@@ -350,7 +355,7 @@ namespace Obsidian.Net
             return (byte)value;
         }
 
-        [ReadMethod(DataType.VarLong)]
+        [ReadMethod, VarLength]
         public long ReadVarLong()
         {
             int numRead = 0;
@@ -393,7 +398,7 @@ namespace Obsidian.Net
             return result;
         }
 
-        [ReadMethod(DataType.Position)]
+        [ReadMethod]
         public Position ReadPosition()
         {
             ulong value = this.ReadUnsignedLong();
@@ -421,7 +426,7 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod(DataType.AbsolutePosition)]
+        [ReadMethod, Absolute]
         public Position ReadAbsolutePosition()
         {
             return new Position
@@ -442,12 +447,32 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod(DataType.SoundPosition)]
+        [ReadMethod]
         public SoundPosition ReadSoundPosition() => new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
 
-        [ReadMethod(DataType.Angle)]
+        [ReadMethod]
         public Angle ReadAngle() => new Angle(this.ReadUnsignedByte());
 
         public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
+
+        [ReadMethod]
+        public ChatMessage ReadChat()
+        {
+            string value = ReadString();
+            return JsonConvert.DeserializeObject<ChatMessage>(value);
+        }
+
+        [ReadMethod]
+        public byte[] ReadByteArray()
+        {
+            var length = ReadVarInt();
+            return ReadUInt8Array(length);
+        }
+
+        [ReadMethod]
+        public Guid ReadGuid()
+        {
+            return Guid.Parse(ReadString());
+        }
     }
 }

@@ -2,8 +2,6 @@
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Serializer.Dynamic;
-using Obsidian.Serializer.Enums;
 using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
@@ -15,136 +13,136 @@ namespace Obsidian.Serializer
 {
     public static class PacketSerializer
     {
-        internal delegate IPacket DeserializeDelegate(MinecraftStream minecraftStream);
+        //internal delegate IPacket DeserializeDelegate(MinecraftStream minecraftStream);
 
-        private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
+        //private static Dictionary<Type, DeserializeDelegate> deserializationMethodsCache = new Dictionary<Type, DeserializeDelegate>();
 
-        public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
-        {
-            if (packet == null)
-                throw new ArgumentNullException(nameof(packet));
+        //public static async Task SerializeAsync(IPacket packet, MinecraftStream stream)
+        //{
+        //    if (packet == null)
+        //        throw new ArgumentNullException(nameof(packet));
 
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+        //    if (stream == null)
+        //        throw new ArgumentNullException(nameof(stream));
 
-            await stream.Lock.WaitAsync();
+        //    await stream.Lock.WaitAsync();
 
-            await using var dataStream = new MinecraftStream();
+        //    await using var dataStream = new MinecraftStream();
 
-            if (packet is ChunkDataPacket chunkData)
-            {
-                await chunkData.WriteAsync(dataStream);
-            }
-            else
-            {
-                var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
+        //    if (packet is ChunkDataPacket chunkData)
+        //    {
+        //        await chunkData.WriteAsync(dataStream);
+        //    }
+        //    else
+        //    {
+        //        var valueDict = packet.GetAllObjects().OrderBy(x => x.Key.Order);
 
-                foreach (var (key, value) in valueDict)
-                {
-                    //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
+        //        foreach (var (key, value) in valueDict)
+        //        {
+        //            //await Globals.PacketLogger.LogDebugAsync($"Writing value @ {dataStream.Position}: {value} ({value.GetType()})");
 
-                    var dataType = key.Type;
+        //            var dataType = key.Type;
 
-                    if (dataType == DataType.Auto)
-                        dataType = value.GetType().ToDataType();
+        //            if (dataType == DataType.Auto)
+        //                dataType = value.GetType().ToDataType();
 
-                    await dataStream.WriteAsync(dataType, key, value);
-                }
-            }
+        //            await dataStream.WriteAsync(dataType, key, value);
+        //        }
+        //    }
 
-            var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
+        //    var packetLength = packet.Id.GetVarIntLength() + (int)dataStream.Length;
 
-            await stream.WriteVarIntAsync(packetLength);
-            await stream.WriteVarIntAsync(packet.Id);
+        //    await stream.WriteVarIntAsync(packetLength);
+        //    await stream.WriteVarIntAsync(packet.Id);
 
-            dataStream.Position = 0;
-            // await dataStream.DumpAsync(packet: packet);
+        //    dataStream.Position = 0;
+        //    // await dataStream.DumpAsync(packet: packet);
 
-            await dataStream.CopyToAsync(stream);
+        //    await dataStream.CopyToAsync(stream);
 
-            stream.Lock.Release();
-        }
+        //    stream.Lock.Release();
+        //}
 
-        public static async Task<T> DeserializeAsync<T>(byte[] data) where T : IPacket
-        {
-            await using var stream = new MinecraftStream(data);
-            var packet = (T)Activator.CreateInstance(typeof(T));//TODO make sure all packets have default constructors
+        //public static async Task<T> DeserializeAsync<T>(byte[] data) where T : IPacket
+        //{
+        //    await using var stream = new MinecraftStream(data);
+        //    var packet = (T)Activator.CreateInstance(typeof(T));//TODO make sure all packets have default constructors
 
-            if (packet == null)
-                throw new NullReferenceException(nameof(packet));
+        //    if (packet == null)
+        //        throw new NullReferenceException(nameof(packet));
 
-            //Globals.PacketLogger.LogDebug($"Deserializing {packet}");
+        //    //Globals.PacketLogger.LogDebug($"Deserializing {packet}");
 
-            var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
-            var members = packet.GetType().GetMembers(PacketExtensions.Flags);
+        //    var valueDict = packet.GetAllMemberNames().OrderBy(x => x.Key.Order);
+        //    var members = packet.GetType().GetMembers(PacketExtensions.Flags);
 
-            int readableBytes = 0;
-            foreach (var (key, value) in valueDict)
-            {
-                var member = members.FirstOrDefault(x => x.Name.EqualsIgnoreCase(value));
+        //    int readableBytes = 0;
+        //    foreach (var (key, value) in valueDict)
+        //    {
+        //        var member = members.FirstOrDefault(x => x.Name.EqualsIgnoreCase(value));
 
-                if (member is FieldInfo field)
-                {
-                    var dataType = key.Type;
+        //        if (member is FieldInfo field)
+        //        {
+        //            var dataType = key.Type;
 
-                    if (dataType == DataType.Auto)
-                        dataType = field.FieldType.ToDataType();
+        //            if (dataType == DataType.Auto)
+        //                dataType = field.FieldType.ToDataType();
 
-                    var val = await stream.ReadAsync(field.FieldType, dataType, key);
+        //            var val = await stream.ReadAsync(field.FieldType, dataType, key);
 
-                    //Globals.PacketLogger.LogDebug($"Setting val {val}");
+        //            //Globals.PacketLogger.LogDebug($"Setting val {val}");
 
-                    field.SetValue(packet, val);
-                }
-                else if (member is PropertyInfo property)
-                {
-                    var dataType = key.Type;
+        //            field.SetValue(packet, val);
+        //        }
+        //        else if (member is PropertyInfo property)
+        //        {
+        //            var dataType = key.Type;
 
-                    if (dataType == DataType.Auto)
-                        dataType = property.PropertyType.ToDataType();
+        //            if (dataType == DataType.Auto)
+        //                dataType = property.PropertyType.ToDataType();
 
-                    var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
+        //            var val = await stream.ReadAsync(property.PropertyType, dataType, key, readableBytes);
 
-                    //Globals.PacketLogger.LogDebug($"Setting val {val}");
+        //            //Globals.PacketLogger.LogDebug($"Setting val {val}");
 
-                    if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
-                        val = (BlockFace)val;
+        //            if (property.PropertyType.IsEnum && property.PropertyType == typeof(BlockFace))
+        //                val = (BlockFace)val;
 
-                    property.SetValue(packet, val);
-                }
+        //            property.SetValue(packet, val);
+        //        }
 
-                readableBytes = data.Length - (int)stream.Position;
-            }
+        //        readableBytes = data.Length - (int)stream.Position;
+        //    }
 
-            return packet;
-        }
+        //    return packet;
+        //}
 
-        public static async Task<T> FastDeserializeAsync<T>(byte[] data) where T : IPacket
-        {
-            await using var stream = new MinecraftStream(data);
+        //public static async Task<T> FastDeserializeAsync<T>(byte[] data) where T : IPacket
+        //{
+        //    await using var stream = new MinecraftStream(data);
 
-            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
-                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+        //    if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+        //        deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
 
-            return (T)deserializeMethod(stream);
-        }
+        //    return (T)deserializeMethod(stream);
+        //}
 
-        public static T FastDeserialize<T>(byte[] data) where T : IPacket
-        {
-            using var stream = new MinecraftStream(data);
+        //public static T FastDeserialize<T>(byte[] data) where T : IPacket
+        //{
+        //    using var stream = new MinecraftStream(data);
 
-            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
-                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+        //    if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+        //        deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
 
-            return (T)deserializeMethod(stream);
-        }
+        //    return (T)deserializeMethod(stream);
+        //}
 
-        public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : IPacket
-        {
-            if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
-                deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
+        //public static T FastDeserialize<T>(MinecraftStream minecraftStream) where T : IPacket
+        //{
+        //    if (!deserializationMethodsCache.TryGetValue(typeof(T), out var deserializeMethod))
+        //        deserializationMethodsCache.Add(typeof(T), deserializeMethod = SerializationMethodBuilder.BuildDeserializationMethod<T>());
 
-            return (T)deserializeMethod(minecraftStream);
-        }
+        //    return (T)deserializeMethod(minecraftStream);
+        //}
     }
 }

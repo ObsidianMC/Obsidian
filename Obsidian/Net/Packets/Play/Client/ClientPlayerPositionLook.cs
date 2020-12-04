@@ -1,6 +1,5 @@
 ﻿using Obsidian.Serializer.Attributes;
 using System;
-using Obsidian.Serializer.Enums;
 using Obsidian.API;
 using System.Threading.Tasks;
 using Obsidian.Entities;
@@ -20,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
     public partial class ClientPlayerPositionLook : IPacket
     {
-        [Field(0, true)]
+        [Field(0), Absolute]
         public Position Position { get; set; }
 
         [Field(1)]
@@ -29,10 +28,10 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(2)]
         public float Pitch { get; set; }
 
-        [Field(3, Type = DataType.Byte)]
+        [Field(3), ActualType(typeof(sbyte))]
         public PositionFlags Flags { get; set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [Field(4, Type = DataType.VarInt)]
+        [Field(4), VarLength]
         public int TeleportId { get; set; }
 
         public int Id => 0x34;

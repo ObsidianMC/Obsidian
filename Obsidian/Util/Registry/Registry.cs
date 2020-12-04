@@ -321,7 +321,7 @@ namespace Obsidian.Util.Registry
                                         break;
                                 }
 
-                                if (obj is SebastiansBlock block)
+                                if (obj is Block block)
                                     ids.Add(block.Id);
                                 else if (obj is Item returnItem)
                                     ids.Add(returnItem.Id);
@@ -381,12 +381,12 @@ namespace Obsidian.Util.Registry
             }
         }
 
-        public static SebastiansBlock GetBlock(Materials material) => new SebastiansBlock(material);
+        public static Block GetBlock(Materials material) => new Block(material);
 
-        public static SebastiansBlock GetBlock(int id) => new SebastiansBlock(id);
+        public static Block GetBlock(int id) => new Block(id);
 
-        public static SebastiansBlock GetBlock(string unlocalizedName) =>
-            new SebastiansBlock(NumericToBase[Array.IndexOf(Blocks, unlocalizedName)]);
+        public static Block GetBlock(string unlocalizedName) =>
+            new Block(NumericToBase[Array.IndexOf(Blocks, unlocalizedName)]);
 
         public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
         public static Item GetItem(Materials mat) => Items.GetValueOrDefault(mat);

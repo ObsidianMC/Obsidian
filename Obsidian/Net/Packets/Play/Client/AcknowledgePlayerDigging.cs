@@ -2,7 +2,6 @@
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -12,10 +11,10 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(0)]
         public Position Location { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int Block { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), ActualType(typeof(int)), VarLength]
         public DiggingStatus Status { get; set; }
 
         [Field(3)]

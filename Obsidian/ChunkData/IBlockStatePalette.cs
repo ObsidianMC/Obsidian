@@ -6,8 +6,8 @@ namespace Obsidian.ChunkData
     public interface IBlockStatePalette
     {
         bool IsFull { get; }
-        int GetIdFromState(SebastiansBlock blockState);
-        SebastiansBlock GetStateFromIndex(int index);
+        int GetIdFromState(Block blockState);
+        Block GetStateFromIndex(int index);
         Task WriteToAsync(MinecraftStream stream);
 
         Task ReadFromAsync(MinecraftStream stream);

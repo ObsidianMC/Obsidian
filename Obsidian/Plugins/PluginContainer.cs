@@ -71,7 +71,7 @@ namespace Obsidian.Plugins
         #endregion
 
         #region Dependencies
-        public void RegisterDependencies(PluginManager manager, ILogger? logger = null)
+        public void RegisterDependencies(PluginManager manager, ILogger logger = null)
         {
             // FieldInfo[] and PropertyInfo[] can't be merged into MemberInfo[], since it includes methods etc. and MemberInfo doesn't have SetValue method
 
@@ -138,7 +138,7 @@ namespace Obsidian.Plugins
             }
         }
 
-        private object CreateInjection(Type targetType, PluginBase plugin, ILogger? logger = null)
+        private object CreateInjection(Type targetType, PluginBase plugin, ILogger logger = null)
         {
             if (targetType == typeof(PluginBase))
             {

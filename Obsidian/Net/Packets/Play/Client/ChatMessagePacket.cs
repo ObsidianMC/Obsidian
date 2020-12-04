@@ -2,7 +2,6 @@
 using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1)]
         public sbyte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-        [Field(2, Type = DataType.Array)]
+        [Field(2), VarLength]
         public List<long> Sender { get; private set; } = new List<long>
         {
             0, 0

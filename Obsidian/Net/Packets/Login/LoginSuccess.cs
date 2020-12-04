@@ -15,6 +15,10 @@ namespace Obsidian.Net.Packets.Login
 
         public int Id => 0x02;
 
+        private LoginSuccess()
+        {
+        }
+
         public LoginSuccess(Guid uuid, string username)
         {
             this.Username = username;

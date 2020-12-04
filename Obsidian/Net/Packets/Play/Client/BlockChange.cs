@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -11,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(0)]
         public Position Location { get; private set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int BlockId { get; private set; }
 
         public int Id => 0x0B;

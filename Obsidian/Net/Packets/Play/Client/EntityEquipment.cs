@@ -1,17 +1,16 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class EntityEquipment : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), ActualType(typeof(int)), VarLength]
         public ESlot Slot { get; set; }
 
         [Field(2)]

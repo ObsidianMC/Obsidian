@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -10,11 +9,15 @@ namespace Obsidian.Net.Packets.Play.Client
     /// </summary>
     public partial class UpdateViewPosition : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int ChunkX;
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int ChunkZ;
+
+        private UpdateViewPosition()
+        {
+        }
 
         public UpdateViewPosition(int chunkx, int chunkz)
         {

@@ -1,30 +1,33 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
-    internal partial class NamedSoundEffect : IPacket
+    public partial class NamedSoundEffect : IPacket
     {
         [Field(0)]
-        public string Name { get; }
+        public string Name { get; private set; }
 
-        [Field(1, Type = DataType.VarInt)]
-        public SoundCategory Category { get; }
+        [Field(1), ActualType(typeof(int)), VarLength]
+        public SoundCategory Category { get; private set; }
 
         [Field(2)]
-        public SoundPosition Location { get; }
+        public SoundPosition Location { get; private set; }
 
         [Field(3)]
-        public float Volume { get; }
+        public float Volume { get; private set; }
 
         [Field(4)]
-        public float Pitch { get; }
+        public float Pitch { get; private set; }
 
         public int Id => 0x18;
+
+        private NamedSoundEffect()
+        {
+        }
 
         public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume)
         {

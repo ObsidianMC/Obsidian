@@ -1,16 +1,15 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
 {
     public partial class EntityAnimation :  IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1, Type = DataType.UnsignedByte)]
+        [Field(1), ActualType(typeof(byte))]
         public EAnimation Animation { get; set; }
 
         public int Id => 0x05;

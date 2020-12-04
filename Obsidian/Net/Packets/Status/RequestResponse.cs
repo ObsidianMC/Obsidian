@@ -13,6 +13,10 @@ namespace Obsidian.Net.Packets.Status
 
         public int Id => 0x00;
 
+        public RequestResponse()
+        {
+        }
+
         public RequestResponse(string json) => this.Json = json;
 
         public RequestResponse(ServerStatus status) => this.Json = JsonConvert.SerializeObject(status);
@@ -21,6 +25,6 @@ namespace Obsidian.Net.Packets.Status
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

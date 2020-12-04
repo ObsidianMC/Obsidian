@@ -55,7 +55,32 @@ namespace Obsidian.Commands
             dataStream.Position = 0;
             await dataStream.CopyToAsync(stream);
         }
-        public void AddChild(CommandNode child) => this.Children.Add(child);
 
+        public void CopyTo(MinecraftStream stream)
+        {
+            using var dataStream = new MinecraftStream();
+            dataStream.WriteByte((sbyte)Type);
+            dataStream.WriteVarInt(Children.Count);
+            
+            foreach (var child in Children.Select(c => c.Index).Distinct())
+            {
+                dataStream.WriteVarInt(child);
+            }
+
+            if (Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal))
+            {
+                dataStream.WriteString(Name);
+            }
+
+            if (Type.HasFlag(CommandNodeType.Argument))
+            {
+                Parser.Write(stream);
+            }
+
+            dataStream.Position = 0;
+            dataStream.CopyTo(stream);
+        }
+
+        public void AddChild(CommandNode child) => this.Children.Add(child);
     }
 }

@@ -1,14 +1,13 @@
 using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
     public partial class Handshake : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), ActualType(typeof(int)), VarLength]
         public ProtocolVersion Version;
 
         [Field(1)]
@@ -17,7 +16,7 @@ namespace Obsidian.Net.Packets.Handshaking
         [Field(2)]
         public ushort ServerPort;
 
-        [Field(3, Type = DataType.VarInt)]
+        [Field(3), ActualType(typeof(int)), VarLength]
         public ClientState NextState;
 
         public int Id => 0x00;

@@ -7,9 +7,13 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class ClientHeldItemChange : IPacket
     {
         [Field(0)]
-        public byte Slot { get; }
+        public byte Slot { get; private set; }
 
         public int Id => 0x3F;
+
+        private ClientHeldItemChange()
+        {
+        }
 
         public ClientHeldItemChange(byte slot)
         {

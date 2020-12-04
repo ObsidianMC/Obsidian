@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -10,13 +9,13 @@ namespace Obsidian.Net.Packets.Play.Server
 {
     public partial class PlayerBlockPlacement : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
 
         [Field(1)]
         public Position Location { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }
 
         [Field(3)]

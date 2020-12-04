@@ -6,10 +6,10 @@ namespace Obsidian.Net.Packets.Login
 {
     public partial class EncryptionResponse : IPacket
     {
-        [Field(0, true)]
+        [Field(0)]
         public byte[] SharedSecret { get; private set; }
 
-        [Field(1, true)]
+        [Field(1)]
         public byte[] VerifyToken { get; set; }
 
         public int Id => 0x01;

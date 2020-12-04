@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play
 {
     public partial class Animation : IPacket
     {
-        [Field(0, Type = Serializer.Enums.DataType.VarInt)]
+        [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; }
 
         public int Id => 0x2C;

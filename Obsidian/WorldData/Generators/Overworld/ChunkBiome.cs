@@ -37,6 +37,8 @@ namespace Obsidian.WorldData.Generators.Overworld
             else if (humidity > -0.33) { h = Humidity.neutral; }
             else { h = Humidity.wet; }
 
+#pragma warning disable CS8524 // The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+
             Biomes b = Biomes.Nether;
             // River
             if (noiseGen.isRiver(worldX, worldZ))
@@ -210,7 +212,13 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
 
-            else { b = Biomes.Plains; }
+            else
+            {
+                b = Biomes.Plains;
+            }
+
+#pragma warning restore CS8524 // The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+
             return b;
         }
     }

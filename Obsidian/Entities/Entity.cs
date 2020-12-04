@@ -64,7 +64,7 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-                await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
+                server.BroadcastPacketWithoutQueue(new EntityPosition
                 {
                     EntityId = this.EntityId,
 
@@ -77,6 +77,7 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, onGround);
             }
+            await Task.CompletedTask;
         }
 
         internal virtual async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
@@ -85,7 +86,7 @@ namespace Obsidian.Entities
 
             if (isNewRotation)
             {
-                await server.BroadcastPacketWithoutQueueAsync(new EntityRotation
+                server.BroadcastPacketWithoutQueue(new EntityRotation
                 {
                     EntityId = this.EntityId,
                     OnGround = onGround,
@@ -96,6 +97,7 @@ namespace Obsidian.Entities
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
             }
+            await Task.CompletedTask;
         }
 
         internal virtual async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
@@ -116,7 +118,7 @@ namespace Obsidian.Entities
             {
                 if (isNewRotation)
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new EntityPositionAndRotation
+                    server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
                     {
                         EntityId = this.EntityId,
 
@@ -135,7 +137,7 @@ namespace Obsidian.Entities
                 }
                 else
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
+                    server.BroadcastPacketWithoutQueue(new EntityPosition
                     {
                         EntityId = this.EntityId,
 
@@ -149,6 +151,7 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
             }
+            await Task.CompletedTask;
         }
 
         internal void CopyPosition(bool withLook = false)

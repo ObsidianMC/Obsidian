@@ -72,12 +72,11 @@ namespace Obsidian.WorldData
 
         public void Flush()
         {
-            return;
-            var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-            var regionCompound = GetNbt();
-            var regionFile = new NbtFile();
-            regionFile.RootTag = regionCompound;
-            regionFile.SaveToFile(regionPath, NbtCompression.GZip);
+            //var regionPath = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
+            //var regionCompound = GetNbt();
+            //var regionFile = new NbtFile();
+            //regionFile.RootTag = regionCompound;
+            //regionFile.SaveToFile(regionPath, NbtCompression.GZip);
         }
 
         public void Load(NbtCompound regionCompound)
@@ -107,7 +106,7 @@ namespace Obsidian.WorldData
                 var id = bc["id"].IntValue;
                 var mat = bc["material"].StringValue;
 
-                SebastiansBlock block = Registry.GetBlock((Materials)Enum.Parse(typeof(Materials), mat));
+                Block block = Registry.GetBlock((Materials)Enum.Parse(typeof(Materials), mat));
                 chunk.SetBlock((int)bx, (int)by, (int)bz, block);
             }
 
@@ -123,7 +122,7 @@ namespace Obsidian.WorldData
                 var index = 0;
                 foreach (var palette in palettes)
                 {
-                    var block = new SebastiansBlock(Registry.NumericToBase[palette["Id"].IntValue]);
+                    var block = new Block(Registry.NumericToBase[palette["Id"].IntValue]);
                     chunkSecPalette.BlockStateArray.SetValue(block, index);
                     index++;
                 }
