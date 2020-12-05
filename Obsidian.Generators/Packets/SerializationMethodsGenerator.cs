@@ -93,6 +93,7 @@ namespace Obsidian.Generators.Packets
 
             var bodySource = new StringBuilder();
             source.Append($@"using Obsidian.Net;
+using Obsidian.Util.Extensions;
 
 namespace {@namespace}
 {{
@@ -157,7 +158,7 @@ namespace {@namespace}
 
         private bool CreateSerializationMethod(StringBuilder builder, List<Field> fields, SyntaxProvider syntaxProvider)
         {
-            builder.AppendCode("stream.Lock.Wait();");
+            builder.AppendCode("using var packetStream = new MinecraftStream();");
             foreach (var field in fields)
             {
                 string elementType = field.TypeName, elementName = field.Name;
@@ -182,7 +183,7 @@ namespace {@namespace}
                         elementType += "_Abs";
 
                     if (field.FixedLength >= 0)
-                        builder.AppendCode($"stream.WriteVarInt({field.Name}.{lengthProperty});");
+                        builder.AppendCode($"packetStream.WriteVarInt({field.Name}.{lengthProperty});");
 
                     builder.AppendCode($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
                     builder.AppendCode("{");
@@ -203,7 +204,7 @@ namespace {@namespace}
 
                 if (TryGetMethod(elementType, syntaxProvider.WriteMethods, out string methodName))
                 {
-                    builder.AppendCode($"stream.{methodName}({elementName});");
+                    builder.AppendCode($"packetStream.{methodName}({elementName});");
                 }
                 else
                 {
@@ -218,6 +219,10 @@ namespace {@namespace}
                     builder.AppendCode("}");
                 }
             }
+            builder.AppendCode("stream.Lock.Wait();");
+            builder.AppendCode("stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);");
+            builder.AppendCode("stream.WriteVarInt(Id);");
+            builder.AppendCode("packetStream.CopyTo(stream);");
             builder.AppendCode("stream.Lock.Release();");
             return true;
         }
@@ -290,30 +295,6 @@ namespace {@namespace}
             builder.AppendCode("return packet;");
             return true;
         }
-
-        //private static readonly string[] variableArrayTypes = { "List<PlayerInfoAction>", "List<Tag>" }; // arrays that write their length first
-        //private bool TrySerializeArray(StringBuilder builder, Field member, string methodName)
-        //{
-        //    string dataType = member.TypeName;
-        //    string arrayLength = dataType.EndsWith("[]") ? "Length" : "Count";
-
-        //    builder.AppendCode("stream.Lock.Wait();");
-        //    if (variableArrayTypes.Contains(dataType))
-        //    {
-        //        builder.AppendCode($"stream.WriteVarInt({member.Name}.{arrayLength});");
-        //    }
-        //    builder.AppendCode($"for (int i = 0; i < {member.Name}.{arrayLength}; i++)");
-        //    builder.AppendCode("{");
-        //    builder.AppendCode($"\tstream.{methodName}({member.Name}[i]);");
-        //    builder.AppendCode("}");
-        //    builder.AppendCode("stream.Lock.Release();");
-        //    return true;
-        //}
-
-        //private bool TryDeserializeArray(StringBuilder builder, Field member, string methodName)
-        //{
-        //    return false;
-        //}
 
         private bool TryGetMethod(string typeName, Dictionary<string, string> methodCollection, out string methodName)
         {
