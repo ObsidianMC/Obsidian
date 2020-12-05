@@ -30,6 +30,20 @@ namespace Obsidian.Entities
             });
         }
 
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteEntityMetadataType(7, EntityMetadataType.Slot);
+            stream.WriteItemStack(new ItemStack
+            {
+                Present = true,
+                Id = this.Id,
+                Count = this.Count,
+                Nbt = this.Nbt
+            });
+        }
+
         public override async Task TickAsync()
         {
             await base.TickAsync();

@@ -80,8 +80,19 @@ namespace Obsidian.Generators.Packets
             string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
             string className = classSymbol.IsGenericType ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>" : classSymbol.Name;
 
+            var source = new StringBuilder();
+
+            foreach (SyntaxReference declaration in classSymbol.DeclaringSyntaxReferences)
+            {
+                SyntaxNode root = declaration.GetSyntax().GetRoot();
+                foreach (SyntaxNode usingDirective in root.DescendantNodes().Where(node => node is UsingDirectiveSyntax))
+                {
+                    source.Append(usingDirective.GetText().ToString());
+                }
+            }
+
             var bodySource = new StringBuilder();
-            var source = new StringBuilder($@"using Obsidian.Net;
+            source.Append($@"using Obsidian.Net;
 
 namespace {@namespace}
 {{
@@ -136,34 +147,22 @@ namespace {@namespace}
             }
             bodySource.Clear();
 
-            source.Append("public static int F12toInspect = 0;");
-
             source.Append(@"
     }
-}");
-            source.AppendLine();
-            foreach (var method in syntaxProvider.ReadMethods)
-            {
-                source.AppendComment($"{method.Key}: {method.Value}");
-            }
-            source.AppendLine();
-            foreach (var method in syntaxProvider.WriteMethods)
-            {
-                source.AppendComment($"{method.Key}: {method.Value}");
-            }
+}
+");
 
             return source.ToString();
         }
 
         private bool CreateSerializationMethod(StringBuilder builder, List<Field> fields, SyntaxProvider syntaxProvider)
         {
+            builder.AppendCode("stream.Lock.Wait();");
             foreach (var field in fields)
             {
-                bool isArray = false;
                 string elementType = field.TypeName, elementName = field.Name;
-                if (field.TypeName.EndsWith("[]") || field.TypeName.StartsWith("List<"))
+                if (field.IsArray)
                 {
-                    isArray = true;
                     elementName += "[i]";
                     string lengthProperty;
                     if (field.TypeName.EndsWith("[]"))
@@ -190,7 +189,19 @@ namespace {@namespace}
                     builder.Append('\t');
                 }
 
-                if (TryGetMethod(field, elementType, syntaxProvider, syntaxProvider.WriteMethods, DiagnosticDescriptors.NoSerializationMethod, out string methodName))
+                if (field.OriginalType is not null)
+                {
+                    if (field.IsGeneric)
+                    {
+                        elementName = $"({field.OriginalType})(object){elementName}";
+                    }
+                    else
+                    {
+                        elementName = $"({field.OriginalType}){elementName}";
+                    }
+                }
+
+                if (TryGetMethod(elementType, syntaxProvider.WriteMethods, out string methodName))
                 {
                     builder.AppendCode($"stream.{methodName}({elementName});");
                 }
@@ -201,12 +212,13 @@ namespace {@namespace}
                     return false;
                 }
 
-                if (isArray)
+                if (field.IsArray)
                 {
                     // end for loop
                     builder.AppendCode("}");
                 }
             }
+            builder.AppendCode("stream.Lock.Release();");
             return true;
         }
 
@@ -215,7 +227,65 @@ namespace {@namespace}
             builder.AppendCode($"var packet = new {className}();");
             foreach (var field in fields)
             {
-                
+                string elementType = field.TypeName, elementName = field.Name;
+                if (field.IsArray)
+                {
+                    elementName += "[i]";
+                    string lengthProperty;
+                    if (field.TypeName.EndsWith("[]"))
+                    {
+                        lengthProperty = "Length";
+                        elementType = field.TypeName.Substring(0, field.TypeName.Length - 2);
+                    }
+                    else
+                    {
+                        lengthProperty = "Count";
+                        elementType = field.TypeName.Substring(5, field.TypeName.Length - 6);
+                    }
+
+                    if (field.IsVarLength)
+                        elementType += "_Var";
+                    if (field.IsAbsolute)
+                        elementType += "_Abs";
+
+                    string countValue = field.FixedLength >= 0 ? field.FixedLength.ToString() : "stream.ReadVarInt()";
+                    builder.AppendCode(field.TypeName.EndsWith("[]") ? $"packet.{field.Name} = new {elementType}[{countValue}];" : $"packet.{field.Name} = new {field.TypeName}({countValue});");
+
+                    builder.AppendCode($"for (int i = 0; i < packet.{field.Name}.{lengthProperty}; i++)");
+                    builder.AppendCode("{");
+                    builder.Append('\t');
+                }
+
+                if (TryGetMethod(elementType, syntaxProvider.ReadMethods, out string methodName))
+                {
+                    methodName = "stream." + methodName;
+                    
+                    if (field.OriginalType is not null)
+                    {
+                        if (field.IsGeneric)
+                        {
+                            methodName = $"({field.ActualType})(object){methodName}";
+                        }
+                        else
+                        {
+                            methodName = $"({field.ActualType}){methodName}";
+                        }
+                    }
+
+                    builder.AppendCode($"packet.{elementName} = {methodName}();");
+                }
+                else
+                {
+                    // creating serialization method failed
+                    syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration));
+                    return false;
+                }
+
+                if (field.IsArray)
+                {
+                    // end for loop
+                    builder.AppendCode("}");
+                }
             }
             builder.AppendCode("return packet;");
             return true;
@@ -245,17 +315,8 @@ namespace {@namespace}
         //    return false;
         //}
 
-        private bool TryGetMethod(Field field, string typeName, SyntaxProvider syntaxProvider, Dictionary<string, string> methodCollection, DiagnosticDescriptor noMethodDiagnostic, out string methodName)
+        private bool TryGetMethod(string typeName, Dictionary<string, string> methodCollection, out string methodName)
         {
-            //if (methodCollection.TryGetValue(typeName, out methodName))
-            //{
-            //    return true;
-            //}
-            //else
-            //{
-            //    syntaxProvider.Context.ReportDiagnostic(Diagnostic.Create(noMethodDiagnostic, field.Declaration.GetLocation(), field.Name));
-            //    return false;
-            //}
             return methodCollection.TryGetValue(typeName, out methodName);
         }
 
@@ -306,9 +367,12 @@ namespace {@namespace}
         {
             public string Name { get; }
             public string TypeName { get; }
+            public string OriginalType { get; }
+            public string ActualType { get; }
             public int Index { get; }
             public bool IsArray { get; }
             public bool IsAbsolute { get; }
+            public bool IsGeneric { get; }
             public bool IsVarLength { get; }
             public int FixedLength { get; }
             public ISymbol Symbol { get; }
@@ -316,17 +380,20 @@ namespace {@namespace}
 
             public Field(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax declaration, AttributeSyntax fieldAttribute)
             {
-                TypeName = type.GetText().ToString().Split('.').Last().TrimEnd();
+                string typeName = type.GetText().ToString().Split('.').Last().TrimEnd();
+                TypeName = typeName;
+                ActualType = typeName;
                 IsArray = TypeName.EndsWith("[]") || TypeName.StartsWith("List<");
                 Name = symbol.Name;
                 Symbol = symbol;
                 Declaration = declaration;
                 Index = int.Parse(fieldAttribute.ArgumentList.Arguments.First().GetText().ToString());
 
+                OriginalType = null;
                 IsAbsolute = false;
                 IsVarLength = false;
                 FixedLength = -1;
-
+                IsGeneric = symbol.ContainingType.TypeParameters.Any(genericParameter => genericParameter.Name == typeName);
                 var attributes = declaration.AttributeLists.SelectMany(list => list.Attributes);
                 foreach (var attribute in attributes)
                 {
@@ -347,6 +414,7 @@ namespace {@namespace}
                         case actualTypeAttribute:
                             var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
                             TypeName = @typeof.Type.GetText().ToString().Split('.').Last();
+                            OriginalType = TypeName;
                             break;
                     }
                 }
@@ -398,6 +466,15 @@ namespace {@namespace}
         public static StringBuilder AppendComment(this StringBuilder stringBuilder, string comment)
         {
             return stringBuilder.AppendLine($"\t\t\t// {comment}");
+        }
+
+        public static SyntaxNode GetRoot(this SyntaxNode syntaxNode)
+        {
+            while (syntaxNode.Parent is not null)
+            {
+                syntaxNode = syntaxNode.Parent;
+            }
+            return syntaxNode;
         }
     }
 }

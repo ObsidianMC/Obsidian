@@ -38,7 +38,7 @@ namespace Obsidian.Net.Packets.Play.Server
         /// <summary>
         /// Inventory operation mode
         /// </summary>
-        [Field(4)]
+        [Field(4), ActualType(typeof(int)), VarLength]
         public InventoryOperationMode Mode { get; set; }
 
         /// <summary>

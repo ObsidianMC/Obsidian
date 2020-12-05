@@ -9,5 +9,7 @@ namespace Obsidian.PlayerData.Info
         public Guid Uuid { get; set; }
 
         public virtual async Task WriteAsync(MinecraftStream stream) => await stream.WriteUuidAsync(this.Uuid);
+
+        public virtual void Write(MinecraftStream stream) => stream.WriteUuid(Uuid);
     }
 }

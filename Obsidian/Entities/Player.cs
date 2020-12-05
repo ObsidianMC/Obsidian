@@ -328,6 +328,35 @@ namespace Obsidian.Entities
                 await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.RightShoulder);
         }
 
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteEntityMetadataType(14, EntityMetadataType.Float);
+            stream.WriteFloat(AdditionalHearts);
+
+            stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
+            stream.WriteVarInt((int)XpP);
+
+            stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
+            stream.WriteByte((byte)PlayerBitMask);
+
+            stream.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+            stream.WriteByte((byte)MainHand);
+
+            if (LeftShoulder is not null)
+            {
+                stream.WriteEntityMetadataType(18, EntityMetadataType.Nbt);
+                stream.WriteVarInt(LeftShoulder);
+            }
+
+            if (RightShoulder is not null)
+            {
+                stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+                stream.WriteVarInt(RightShoulder);
+            }
+        }
+
         public override string ToString() => this.Username;
 
         public async Task SetGamemodeAsync(Gamemode gamemode)

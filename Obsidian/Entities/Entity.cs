@@ -216,6 +216,32 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
         }
 
+        public virtual void Write(MinecraftStream stream)
+        {
+            stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
+            stream.WriteUnsignedByte((byte)EntityBitMask);
+
+            stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
+            stream.WriteVarInt(Air);
+
+            stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
+            stream.WriteBoolean(CustomName is not null);
+            if (CustomName is not null)
+                stream.WriteChat(CustomName);
+
+            stream.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
+            stream.WriteBoolean(CustomNameVisible);
+
+            stream.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
+            stream.WriteBoolean(Silent);
+
+            stream.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
+            stream.WriteBoolean(NoGravity);
+
+            stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
+            stream.WriteVarInt((int)Pose);
+        }
+
         public virtual Task TickAsync() => Task.CompletedTask;
 
         public bool Equals([AllowNull] Entity other)

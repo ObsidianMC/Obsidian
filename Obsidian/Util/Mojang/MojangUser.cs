@@ -46,5 +46,17 @@ namespace Obsidian.Util.Mojang
 
             return stream.ToArray();
         }
+
+        public byte[] ToArray()
+        {
+            using var stream = new MinecraftStream();
+            stream.WriteString(Name);
+            stream.WriteString(Value);
+            stream.WriteBoolean(Signature is not null);
+            if (Signature is not null)
+                stream.WriteString(Signature);
+
+            return stream.ToArray();
+        }
     }
 }

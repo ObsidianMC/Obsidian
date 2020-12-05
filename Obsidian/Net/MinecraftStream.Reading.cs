@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
+using Obsidian.Items;
+using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Serializer.Attributes;
 using System;
 using System.IO;
@@ -473,6 +476,82 @@ namespace Obsidian.Net
         public Guid ReadGuid()
         {
             return Guid.Parse(ReadString());
+        }
+
+        [ReadMethod]
+        public ItemStack ReadItemStack()
+        {
+            var item = new ItemStack();
+
+            item.Present = ReadBoolean();
+            if (item.Present)
+            {
+                item.Id = ReadVarInt();
+                item.Count = ReadByte();
+
+                var reader = new NbtReader(this);
+                while (reader.ReadToFollowing())
+                {
+                    item.Nbt = new ItemNbt();
+
+                    if (reader.IsCompound)
+                    {
+                        var root = (NbtCompound)reader.ReadAsTag();
+
+                        foreach (NbtTag tag in root)
+                        {
+                            switch (tag.Name.ToUpperInvariant())
+                            {
+                                case "ENCHANTMENTS":
+                                    var enchantments = (NbtList)tag;
+                                    foreach (NbtTag enchantment in enchantments)
+                                    {
+                                        if (enchantment is NbtCompound compound)
+                                        {
+                                            item.Nbt.Enchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+                                    break;
+
+                                case "STOREDENCHANTMENTS":
+                                    enchantments = (NbtList)tag;
+                                    foreach (NbtTag enchantment in enchantments)
+                                    {
+                                        if (enchantment is NbtCompound compound)
+                                        {
+                                            item.Nbt.StoredEnchantments.Add(new Enchantment
+                                            {
+                                                Id = compound.Get<NbtString>("id").Value,
+                                                Level = compound.Get<NbtShort>("lvl").Value
+                                            });
+                                        }
+                                    }
+                                    break;
+
+                                case "SLOT":
+                                    item.Nbt.Slot = tag.ByteValue;
+                                    break;
+
+                                case "DAMAGE":
+                                    item.Nbt.Damage = tag.IntValue;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return item;
+        }
+
+        [ReadMethod]
+        public Velocity ReadVelocity()
+        {
+            return new Velocity(ReadShort(), ReadShort(), ReadShort());
         }
     }
 }

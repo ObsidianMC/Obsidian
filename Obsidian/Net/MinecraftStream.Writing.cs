@@ -2,8 +2,14 @@
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
+using Obsidian.Entities;
+using Obsidian.Items;
+using Obsidian.Nbt;
+using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
+using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Text;
 using System.Threading.Tasks;
@@ -410,6 +416,117 @@ namespace Obsidian.Net
         public void WriteCommandNode(CommandNode value)
         {
             value.CopyTo(this);
+        }
+
+        [WriteMethod]
+        public void WriteItemStack(ItemStack value)
+        {
+            WriteBoolean(value.Present);
+            if (value.Present)
+            {
+                WriteVarInt(value.Id);
+                WriteByte((sbyte)value.Count);
+
+                var writer = new NbtWriter(this, string.Empty);
+                if (value.Nbt is null)
+                {
+                    writer.EndCompound();
+                    writer.Finish();
+                    return;
+                }
+
+                writer.WriteShort("id", (short)value.Id);
+                writer.WriteInt("Damage", value.Nbt.Damage);
+                writer.WriteByte("Count", (byte)value.Count);
+
+                writer.EndCompound();
+                writer.Finish();
+            }
+        }
+
+        [WriteMethod]
+        public void WriteEntity(Entity value)
+        {
+            value.Write(this);
+            WriteUnsignedByte(0xff);
+        }
+
+        public void WriteEntityMetadataType(byte index, EntityMetadataType entityMetadataType)
+        {
+            WriteUnsignedByte(index);
+            WriteVarInt((int)entityMetadataType);
+        }
+
+        [WriteMethod]
+        public void WriteVelocity(Velocity value)
+        {
+            WriteShort(value.X);
+            WriteShort(value.Y);
+            WriteShort(value.Z);
+        }
+
+        [WriteMethod]
+        public void WriteMixedCodec(MixedCodec value)
+        {
+            var dimensions = new NbtCompound(value.Dimensions.Name)
+            {
+                new NbtString("type", value.Dimensions.Name)
+            };
+
+            var list = new NbtList("value", NbtTagType.Compound);
+
+            foreach (var (_, codec) in value.Dimensions)
+            {
+                codec.Write(list);
+            }
+
+            dimensions.Add(list);
+
+            #region biomes
+            var biomeCompound = new NbtCompound(value.Biomes.Name)
+            {
+                new NbtString("type", value.Biomes.Name)
+            };
+
+            var biomes = new NbtList("value", NbtTagType.Compound);
+
+            foreach (var (_, biome) in value.Biomes)
+            {
+                biome.Write(biomes);
+            }
+
+            biomeCompound.Add(biomes);
+            #endregion
+
+            var compound = new NbtCompound(string.Empty)
+            {
+                dimensions,
+                biomeCompound
+            };
+            var nbt = new NbtFile(compound);
+
+            nbt.SaveToStream(this, NbtCompression.None);
+        }
+
+        [WriteMethod]
+        public void WriteDimensionCodec(DimensionCodec value)
+        {
+            var nbt = new NbtFile(value.ToNbt());
+            nbt.SaveToStream(this, NbtCompression.None);
+        }
+
+        [WriteMethod]
+        public void WriteSoundPosition(SoundPosition value)
+        {
+            WriteInt(value.X);
+            WriteInt(value.Y);
+            WriteInt(value.Z);
+        }
+
+        [WriteMethod]
+        public void WritePlayerInfoAction(PlayerInfoAction value)
+        {
+            value.Write(this);
         }
     }
 }

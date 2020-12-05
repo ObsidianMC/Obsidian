@@ -1,5 +1,4 @@
 ﻿using Obsidian.Net;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.PlayerData.Info
@@ -13,6 +12,13 @@ namespace Obsidian.PlayerData.Info
             await base.WriteAsync(stream);
 
             await stream.WriteVarIntAsync(this.Ping);
+        }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteVarInt(Ping);
         }
     }
 }
