@@ -367,7 +367,10 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             await this.LoadChunksAsync();
+            stopwatch.Stop();
+            Console.WriteLine($"Loaded chunks in: {stopwatch.Elapsed}");
 
             //TODO: check for last position
             var spawnPosition = new Position(

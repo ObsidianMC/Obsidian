@@ -83,16 +83,51 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
 
-        public void Serialize(MinecraftStream stream)
+        public void Serialize(MinecraftStream minecraftStream)
         {
+            using var stream = new MinecraftStream();
             using var dataStream = new MinecraftStream();
-            dataStream.WriteVarInt(Id);
-            WriteAsync(dataStream).GetAwaiter().GetResult();
 
-            stream.Lock.Wait();
+            stream.WriteInt(Chunk.X);
+            stream.WriteInt(Chunk.Z);
+
+            stream.WriteBoolean(true); // full chunk
+
+            int chunkSectionY = 0, mask = 0;
+            foreach (var section in Chunk.Sections)
+            {
+                if ((changedSectionFilter & 1 << chunkSectionY) != 0)
+                {
+                    mask |= 1 << chunkSectionY;
+                    section.WriteTo(dataStream);
+                }
+
+                chunkSectionY++;
+            }
+
+            stream.WriteVarInt(mask);
+
+            Chunk.CalculateHeightmap();
+            var writer = new NbtWriter(stream, string.Empty);
+            foreach (var (type, heightmap) in Chunk.Heightmaps)
+                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
+            writer.EndCompound();
+            writer.Finish();
+
+            Chunk.BiomeContainer.WriteTo(stream);
+
+            dataStream.Position = 0;
             stream.WriteVarInt((int)dataStream.Length);
             dataStream.CopyTo(stream);
-            stream.Lock.Release();
+
+            stream.WriteVarInt(0);
+
+            minecraftStream.Lock.Wait();
+            minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
+            minecraftStream.WriteVarInt(Id);
+            stream.Position = 0;
+            stream.CopyTo(minecraftStream);
+            minecraftStream.Lock.Release();
         }
     }
 }

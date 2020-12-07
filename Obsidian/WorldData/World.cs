@@ -81,6 +81,7 @@ namespace Obsidian.WorldData
                 Math.Abs(playerChunkZ - chunk2.Item2) ? -1 : 1;
             });
 
+            Console.WriteLine($"Number of chunks: {clientNeededChunks.Count}");
             clientNeededChunks.ForEach(async chunkLoc => await c.SendChunkAsync(this.GetChunk(chunkLoc.Item1, chunkLoc.Item2)));
             c.LoadedChunks.AddRange(clientNeededChunks);
             
