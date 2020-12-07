@@ -1,6 +1,6 @@
-﻿namespace Obsidian.Crafting
+﻿namespace Obsidian.Items
 {
-    public class Ingedient
+    internal class RecipeItem
     {
         public string Item { get; set; }
 

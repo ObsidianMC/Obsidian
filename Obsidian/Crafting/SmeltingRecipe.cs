@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Obsidian.Util.Converters;
 
 namespace Obsidian.Crafting
 {
@@ -8,7 +9,8 @@ namespace Obsidian.Crafting
 
         public string Group { get; set; }
 
-        public JToken Ingredient { get; set; }
+        [JsonConverter(typeof(IngredientConverter))]
+        public Ingredient Ingredient { get; set; }
 
         public string Result { get; set; }
 

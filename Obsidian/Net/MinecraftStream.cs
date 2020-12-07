@@ -15,7 +15,6 @@ using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
@@ -23,7 +22,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -466,27 +464,7 @@ namespace Obsidian.Net
 
         internal async Task WriteRecipeAsync(string name, object obj)
         {
-            void addIngredient(List<ItemStack> ingredients, Ingedient ingredient)
-            {
-                if (ingredient.Item == null && ingredient.Tag != null)
-                {
-                    var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
-                    foreach (var id in tag.Entries)
-                    {
-                        var item = Registry.GetItem(id);
-
-                        ingredients.Add(new ItemStack(item.Id, (short)ingredient.Count));
-                    }
-                }
-                else
-                {
-                    var i = Registry.GetItem(ingredient.Item);
-
-                    ingredients.Add(new ItemStack(i.Id, (short)ingredient.Count));
-                }
-            };
-
-            if (obj is IRecipe<Ingedient> defaultRecipe)
+            if (obj is IRecipe<Ingredient> defaultRecipe)
             {
                 await this.WriteStringAsync(defaultRecipe.Type);
             }
@@ -525,70 +503,12 @@ namespace Obsidian.Net
 
                         var key = shapedRecipe.Key[c];
 
-                        if (key.Type == JTokenType.Array)
+                        foreach (var item in key)
                         {
-                            var listItem = key.ToObject<List<Ingedient>>();
-
-                            foreach (var ingredient in listItem)
-                            {
-                                if (ingredient.Item == null && ingredient.Tag != null)
-                                {
-                                    var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
-                                    foreach (var id in tag.Entries)
-                                    {
-                                        var item = Registry.GetItem(id);
-
-                                        var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
-
-                                        if (ingredients[index] != null)
-                                            ingredients[index].Add(itemStack);
-                                        else
-                                            ingredients[index] = new List<ItemStack> { itemStack };
-
-                                    }
-                                }
-                                else
-                                {
-                                    var item = Registry.GetItem(ingredient.Item);
-                                    var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
-
-                                    if (ingredients[index] != null)
-                                        ingredients[index].Add(itemStack);
-                                    else
-                                        ingredients[index] = new List<ItemStack> { itemStack };
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var ingredient = key.ToObject<Ingedient>();
-
-                            if (ingredient.Item == null && ingredient.Tag != null)
-                            {
-                                var tag = Registry.Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(ingredient.Tag.Replace("minecraft:", "")));
-                                foreach (var id in tag.Entries)
-                                {
-                                    var item = Registry.GetItem(id);
-
-                                    var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
-
-                                    if (ingredients[index] != null)
-                                        ingredients[index].Add(itemStack);
-                                    else
-                                        ingredients[index] = new List<ItemStack> { itemStack };
-
-                                }
-                            }
+                            if (ingredients[index] is null)
+                                ingredients[index] = new List<ItemStack> { item };
                             else
-                            {
-                                var item = Registry.GetItem(ingredient.Item);
-                                var itemStack = new ItemStack(item.Id, (short)ingredient.Count);
-
-                                if (ingredients[index] != null)
-                                    ingredients[index].Add(itemStack);
-                                else
-                                    ingredients[index] = new List<ItemStack> { itemStack };
-                            }
+                                ingredients[index].Add(item);
                         }
 
                         x++;
@@ -610,74 +530,35 @@ namespace Obsidian.Net
                     foreach (var itemStack in items)
                         await this.WriteSlotAsync(itemStack);
                 }
-                var r = Registry.GetItem(shapedRecipe.Result.Item);
 
-                await this.WriteSlotAsync(new ItemStack(r.Id, (short)shapedRecipe.Result.Count));
+                await this.WriteSlotAsync(shapedRecipe.Result.First());
             }
             else if (obj is ShapelessRecipe shapelessRecipe)
             {
-                var ingredients = new List<ItemStack>();
+                var ingredients = shapelessRecipe.Ingredients;
 
                 await this.WriteStringAsync(shapelessRecipe.Group ?? "");
 
-                foreach (var recipeItem in shapelessRecipe.Ingredients)
-                {
-                    if (recipeItem.Type == JTokenType.Array)
-                    {
-                        var ingreds = recipeItem.ToObject<List<Ingedient>>();
-
-                        foreach (var ing in ingreds)
-                            addIngredient(ingredients, ing);
-                    }
-                    else
-                    {
-                        var ing = recipeItem.ToObject<Ingedient>();
-
-                        addIngredient(ingredients, ing);
-                    }
-                }
-
                 await this.WriteVarIntAsync(ingredients.Count);
-                foreach (var item in ingredients)
+                foreach (var ingredient in ingredients)
                 {
-                    await this.WriteVarIntAsync(1);
-                    await this.WriteSlotAsync(item);
+                    await this.WriteVarIntAsync(ingredient.Count);
+                    foreach (var item in ingredient)
+                        await this.WriteSlotAsync(item);
                 }
 
-                var r = Registry.GetItem(shapelessRecipe.Result.Item);
+                var result = shapelessRecipe.Result.First();
 
-                await this.WriteSlotAsync(new ItemStack(r.Id, (short)shapelessRecipe.Result.Count));
+                await this.WriteSlotAsync(result);
             }
             else if (obj is SmeltingRecipe smeltingRecipe)
             {
                 await this.WriteStringAsync(smeltingRecipe.Group ?? "");
 
-                if (smeltingRecipe.Ingredient.Type == JTokenType.Array)
-                {
-                    var listItem = smeltingRecipe.Ingredient.ToObject<List<Ingedient>>();
 
-                    var ingredients = new List<ItemStack>();
-
-                    foreach (var ingred in listItem)
-                        addIngredient(ingredients, ingred);
-
-                    await this.WriteVarIntAsync(ingredients.Count);
-                    foreach (var item in ingredients) 
-                        await this.WriteSlotAsync(new ItemStack(item.Id, item.Count));
-                    
-                }
-                else
-                {
-                    var recipeItem = smeltingRecipe.Ingredient.ToObject<Ingedient>();
-                    var ingredients = new List<ItemStack>();
-
-                    addIngredient(ingredients, recipeItem);
-
-                    await this.WriteVarIntAsync(ingredients.Count);
-                    foreach (var item in ingredients)
-                        await this.WriteSlotAsync(new ItemStack(item.Id, item.Count));
-                    
-                }
+                await this.WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
+                foreach (var i in smeltingRecipe.Ingredient)
+                    await this.WriteSlotAsync(i);
 
                 var r = Registry.GetItem(smeltingRecipe.Result);
 
@@ -690,11 +571,9 @@ namespace Obsidian.Net
             {
                 await this.WriteStringAsync(cuttingRecipe.Group ?? "");
 
-                await this.WriteVarIntAsync(1);
-
-                var i = Registry.GetItem(cuttingRecipe.Ingredient.Item);
-
-                await this.WriteSlotAsync(new ItemStack(i.Id, (short)cuttingRecipe.Ingredient.Count));
+                await this.WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
+                foreach (var item in cuttingRecipe.Ingredient)
+                    await this.WriteSlotAsync(item);
 
                 var result = Registry.GetItem(cuttingRecipe.Result);
 
@@ -702,21 +581,15 @@ namespace Obsidian.Net
             }
             else if (obj is SmithingRecipe smithingRecipe)
             {
-                await this.WriteVarIntAsync(1);
+                await this.WriteVarIntAsync(smithingRecipe.Base.Count);
+                foreach (var item in smithingRecipe.Base)
+                    await this.WriteSlotAsync(item);
 
-                var @base = Registry.GetItem(smithingRecipe.Base.Item);
+                await this.WriteVarIntAsync(smithingRecipe.Addition.Count);
+                foreach (var item in smithingRecipe.Addition)
+                    await this.WriteSlotAsync(item);
 
-                await this.WriteSlotAsync(new ItemStack(@base.Id, (short)smithingRecipe.Base.Count));
-
-                await this.WriteVarIntAsync(1);
-
-                var addition = Registry.GetItem(smithingRecipe.Addition.Item);
-
-                await this.WriteSlotAsync(new ItemStack(addition.Id, (short)smithingRecipe.Addition.Count));
-
-                var result = Registry.GetItem(smithingRecipe.Result.Item);
-
-                await this.WriteSlotAsync(new ItemStack(result.Id, (short)smithingRecipe.Result.Count));
+                await this.WriteSlotAsync(smithingRecipe.Result.First());
             }
         }
 

@@ -6,7 +6,9 @@ using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
@@ -19,7 +21,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Obsidian.Util.Registry
+namespace Obsidian
 {
     public class Registry
     {
@@ -38,6 +40,14 @@ namespace Obsidian.Util.Registry
 
         private readonly static string mainDomain = "Obsidian.Assets";
 
+        private readonly static JsonSerializer recipeSerializer = new JsonSerializer();
+
+        static Registry()
+        {
+            recipeSerializer.Converters.Add(new IngredientConverter());
+            recipeSerializer.Converters.Add(new IngredientsConverter());
+            recipeSerializer.Converters.Add(new CraftingKeyConverter());
+        }
 
         public static async Task RegisterBlocksAsync()
         {
@@ -869,10 +879,10 @@ namespace Obsidian.Util.Registry
                     switch (result)
                     {
                         case CraftingType.CraftingShaped:
-                            Recipes.Add(name, element.ToObject<ShapedRecipe>());
+                            Recipes.Add(name, element.ToObject<ShapedRecipe>(recipeSerializer));
                             break;
                         case CraftingType.CraftingShapeless:
-                            Recipes.Add(name, element.ToObject<ShapelessRecipe>());
+                            Recipes.Add(name, element.ToObject<ShapelessRecipe>(recipeSerializer));
                             break;
                         case CraftingType.CraftingSpecialArmordye:
                         case CraftingType.CraftingSpecialBookcloning:
@@ -892,13 +902,13 @@ namespace Obsidian.Util.Registry
                         case CraftingType.Blasting:
                         case CraftingType.Smoking:
                         case CraftingType.CampfireCooking:
-                            Recipes.Add(name, element.ToObject<SmeltingRecipe>());
+                            Recipes.Add(name, element.ToObject<SmeltingRecipe>(recipeSerializer));
                             break;
                         case CraftingType.Stonecutting:
-                            Recipes.Add(name, element.ToObject<CuttingRecipe>());
+                            Recipes.Add(name, element.ToObject<CuttingRecipe>(recipeSerializer));
                             break;
                         case CraftingType.Smithing:
-                            Recipes.Add(name, element.ToObject<SmithingRecipe>());
+                            Recipes.Add(name, element.ToObject<SmithingRecipe>(recipeSerializer));
                             break;
                         default:
                             break;

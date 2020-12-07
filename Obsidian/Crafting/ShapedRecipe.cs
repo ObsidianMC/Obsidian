@@ -1,18 +1,16 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Obsidian.Crafting
 {
-    public class ShapedRecipe : IRecipe<Ingedient>
+    public sealed class ShapedRecipe : IRecipe<Ingredient>
     {
         public string Type { get; set; }
 
         public string Group { get; set; }
-        public List<string> Pattern { get; set; }
+        public IReadOnlyList<string> Pattern { get; set; }
 
-        public Dictionary<char, JToken> Key { get; set; }
+        public IReadOnlyDictionary<char, Ingredient> Key { get; set; }
 
-        public Ingedient Result { get; set; }
-      
+        public Ingredient Result { get; set; }
     }
 }
