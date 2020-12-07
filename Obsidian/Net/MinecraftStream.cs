@@ -258,9 +258,8 @@ namespace Obsidian.Net
                     }
                 case DataType.Float:
                     {
-                        if (value is Enum)
+                        if (value is Enum _enum)
                         {
-                            Enum _enum = (Enum)value;
                             value = Convert.ChangeType(value, _enum.GetTypeCode());
                             await this.WriteFloatAsync(Convert.ToSingle(value));
                         }
@@ -635,8 +634,6 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.BeginCompound("tag");
-
                     writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
 
                     if (itemMeta.Durability > 0)
@@ -659,14 +656,16 @@ namespace Obsidian.Net
                     {
                         writer.BeginCompound("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<string> { itemMeta.Name.ToString(false) }));
+                        Console.WriteLine($"Writing Name: {JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }, Formatting.Indented)}");
+
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }));
 
                         if (itemMeta.Lore != null)
                         {
                             writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<string> { lore.ToString(false) }));
+                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
 
                             writer.EndList();
                         }
@@ -680,14 +679,12 @@ namespace Obsidian.Net
                         writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<string> { lore.ToString(false) }));
+                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
 
                         writer.EndList();
 
                         writer.EndCompound();
                     }
-
-                    writer.EndCompound();
                 }
 
                 writer.WriteString("id", slot.UnlocalizedName);
