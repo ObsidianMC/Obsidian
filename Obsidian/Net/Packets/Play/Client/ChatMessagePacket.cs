@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(1)]
         public sbyte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
-        [Field(2), VarLength]
+        [Field(2), FixedLength(2)]
         public List<long> Sender { get; private set; } = new List<long>
         {
             0, 0

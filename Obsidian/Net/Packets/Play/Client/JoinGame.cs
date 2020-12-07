@@ -30,9 +30,6 @@ namespace Obsidian.Net.Packets.Play.Client
         [Field(3)]
         public sbyte PreviousGamemode { get; set; } = 0;
 
-        [Field(4), VarLength]
-        public int WorldCount { get; set; }
-
         [Field(5)]
         public List<string> WorldNames { get; set; }
 

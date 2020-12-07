@@ -19,7 +19,9 @@ namespace Obsidian.PlayerData.Info
         {
             base.Write(stream);
 
-            stream.WriteString(DisplayName);
+            stream.WriteBoolean(HasDisplayName);
+            if (HasDisplayName)
+                stream.WriteString(DisplayName);
         }
     }
 }

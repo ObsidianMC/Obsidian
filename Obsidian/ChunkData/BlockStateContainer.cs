@@ -57,5 +57,36 @@ namespace Obsidian.ChunkData
             await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
             await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
         }
+
+        public void WriteTo(MinecraftStream stream)
+        {
+            short validBlockCount = 0;
+            for (int x = 0; x < 16; x++)
+            {
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int z = 0; z < 16; z++)
+                    {
+                        var block = this.Get(x, y, z);
+
+                        if (!block.IsAir)
+                            validBlockCount++;
+                    }
+                }
+            }
+
+            stream.WriteShort(validBlockCount);
+            stream.WriteUnsignedByte(BitsPerBlock);
+
+            Palette.WriteToAsync(stream);
+
+            stream.WriteVarInt(BlockStorage.Storage.Length);
+
+            long[] storage = BlockStorage.Storage;
+            for (int i = 0; i < storage.Length; i++)
+            {
+                stream.WriteLong(storage[i]);
+            }
+        }
     }
 }

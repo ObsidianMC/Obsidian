@@ -10,8 +10,6 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
-
-
     [Plugin(Name = "Sample Plugin", Version = "1.0",
             Authors = "Obsidian Team", Description = "My sample plugin.",
             ProjectUrl = "https://github.com/Naamloos/Obsidian")]
@@ -36,14 +34,6 @@ namespace SamplePlugin
             await Task.CompletedTask;
         }
 
-        public async Task OnServerTick()
-        {
-            SampleRemotePlugin.Step();
-            if (SampleRemotePlugin.StepCount % 1000 == 0)
-                Logger.Log($"Reached {SampleRemotePlugin.StepCount} ticks!");
-            await Task.CompletedTask;
-        }
-
         public async Task OnPermissionRevoked(PermissionRevokedEventArgs args)
         {
             Logger.Log($"Permission {args.Permission} revoked from player {args.Player.Username}");
@@ -63,9 +53,8 @@ namespace SamplePlugin
 
             await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
-
-        
     }
+
     public class MyCommands : BaseCommandClass
     {
         [Command("mycommand")]
@@ -75,6 +64,7 @@ namespace SamplePlugin
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }
+
     public class MyWrapper : PluginWrapper
     {
         public Action Step { get; set; }

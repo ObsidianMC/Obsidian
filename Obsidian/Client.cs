@@ -100,7 +100,7 @@ namespace Obsidian
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(packet =>
             {
-                if (tcp.Connected)
+                if (tcp.Connected && packet is not DeclareCommands)
                     SendPacket(packet);
             },
             blockOptions);
@@ -326,7 +326,6 @@ namespace Obsidian
 
                 Gamemode = Gamemode.Creative,
 
-                WorldCount = 1,
                 WorldNames = new List<string> { "minecraft:world" },
 
                 Codecs = new MixedCodec
@@ -566,9 +565,13 @@ namespace Obsidian
                 else
                 {
                     packet.Serialize(minecraftStream);
+                    ;
                 }
             }
-            catch (Exception) { } // when packets are interrupted, threads may hang..
+            catch (Exception)
+            {
+                ;
+            } // when packets are interrupted, threads may hang..
         }
 
         internal async Task QueuePacketAsync(IPacket packet)

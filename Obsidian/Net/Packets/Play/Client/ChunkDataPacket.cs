@@ -85,7 +85,14 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public void Serialize(MinecraftStream stream)
         {
-            _ = WriteAsync(stream);
+            using var dataStream = new MinecraftStream();
+            dataStream.WriteVarInt(Id);
+            WriteAsync(dataStream).GetAwaiter().GetResult();
+
+            stream.Lock.Wait();
+            stream.WriteVarInt((int)dataStream.Length);
+            dataStream.CopyTo(stream);
+            stream.Lock.Release();
         }
     }
 }

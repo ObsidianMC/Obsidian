@@ -38,19 +38,7 @@ namespace Obsidian.Net
         [ReadMethod]
         public bool ReadBoolean()
         {
-            var value = (int)this.ReadUnsignedByte();
-            if (value == 0x00)
-            {
-                return false;
-            }
-            else if (value == 0x01)
-            {
-                return true;
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException($"Byte: {value} returned by stream is out of range (0x00 or 0x01)", nameof(BaseStream));
-            }
+            return ReadUnsignedByte() == 0x01;
         }
 
         public async Task<bool> ReadBooleanAsync()

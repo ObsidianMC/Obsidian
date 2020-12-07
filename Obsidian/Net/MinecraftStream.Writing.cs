@@ -222,6 +222,8 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteString(string value)
         {
+            System.Diagnostics.Debug.Assert(value.Length <= short.MaxValue);
+            
             var bytes = Encoding.UTF8.GetBytes(value);
             WriteVarInt(bytes.Length);
             Write(bytes);

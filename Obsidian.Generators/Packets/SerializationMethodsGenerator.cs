@@ -182,7 +182,7 @@ namespace {@namespace}
                     if (field.IsAbsolute)
                         elementType += "_Abs";
 
-                    if (field.FixedLength >= 0)
+                    if (field.FixedLength < 0)
                         builder.AppendCode($"packetStream.WriteVarInt({field.Name}.{lengthProperty});");
 
                     builder.AppendCode($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
@@ -222,6 +222,7 @@ namespace {@namespace}
             builder.AppendCode("stream.Lock.Wait();");
             builder.AppendCode("stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);");
             builder.AppendCode("stream.WriteVarInt(Id);");
+            builder.AppendCode("packetStream.Position = 0;");
             builder.AppendCode("packetStream.CopyTo(stream);");
             builder.AppendCode("stream.Lock.Release();");
             return true;
