@@ -400,8 +400,8 @@ namespace Obsidian
             var spawnPosition = new Position(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
-                Server.World.Data.SpawnZ
-                );
+                Server.World.Data.SpawnZ);
+
             await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
