@@ -931,6 +931,10 @@ namespace Obsidian
         public static Item GetItem(string unlocalizedName) =>
             Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
+        public static ItemStack GetSingleItem(Materials mat, ItemMeta? meta = null) => new ItemStack(GetItem(mat).Id, 1, meta);
+
+        public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Id, 1, meta);
+
         class BaseRegistryJson
         {
             [JsonProperty("protocol_id")]

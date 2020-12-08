@@ -45,6 +45,12 @@ namespace Obsidian.Util.Converters
 
                 return ingredient;
             }
+            else if (token.Type == JTokenType.String)
+            {
+                var recipeItem = token.ToObject<string>();
+
+                return new Ingredient { GetSingleItem(recipeItem) }; ;
+            }
             else
             {
                 var recipeItem = token.ToObject<RecipeItem>();
