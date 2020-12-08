@@ -2,19 +2,21 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
+using Obsidian.Crafting.Builders;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Client.GameState;
 using Obsidian.Net.Packets.Play.Server;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
@@ -23,7 +25,6 @@ using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
-using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -377,7 +378,23 @@ namespace Obsidian
                 Entities = Registry.Tags["entity_types"]
             });*/
 
-            //TODO: Finish recipes
+            var itemMeta = new ItemMetaBuilder()
+                .WithName("A super cool sword!!!")
+                .AddLore("Its really cool")
+                .AddLore("With lots of words")
+                .Build();
+
+            var item = Registry.GetSingleItem(Materials.DiamondSword, itemMeta);
+
+            var shapedRecipe = new ShapedRecipeBuilder()
+                .WithPattern("#", "#", "I")
+                .WithKey('#', Registry.GetSingleItem(Materials.Diamond))
+                .WithKey('I', Registry.GetSingleItem(Materials.Stick))
+                .SetResult(item)
+                .Build();
+
+            Registry.Recipes.Add("super_sword", shapedRecipe);
+
             await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();
