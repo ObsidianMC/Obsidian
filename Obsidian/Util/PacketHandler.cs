@@ -2,7 +2,7 @@
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;

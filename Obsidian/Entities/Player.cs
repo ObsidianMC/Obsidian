@@ -7,7 +7,7 @@ using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
 using System;
 using System.Collections.Generic;
@@ -352,7 +352,7 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
+            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
 

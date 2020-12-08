@@ -5,7 +5,7 @@ using Obsidian.Blocks;
 using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;

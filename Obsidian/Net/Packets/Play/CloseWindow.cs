@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Attributes;
 using System.Threading.Tasks;
 

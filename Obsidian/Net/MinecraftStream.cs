@@ -10,7 +10,7 @@ using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
