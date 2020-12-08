@@ -1,8 +1,10 @@
-﻿namespace Obsidian.Crafting
+﻿using System;
+
+namespace Obsidian.Crafting
 {
-    public class CuttingRecipe : IRecipe<string>
+    public class CuttingRecipe : IRecipe
     {
-        public string Id { get; set; }
+        public string Name { get; set; }
 
         public string Type { get; set; }
 
@@ -10,7 +12,7 @@
 
         public Ingredient Ingredient { get; set; }
 
-        public string Result { get; set; }
+        public Ingredient Result { get; set; }
 
         public int Count { get; set; }
     }

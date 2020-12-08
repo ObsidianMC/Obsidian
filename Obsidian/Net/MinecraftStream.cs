@@ -463,14 +463,8 @@ namespace Obsidian.Net
 
         internal async Task WriteRecipeAsync(string name, object obj)
         {
-            if (obj is IRecipe<Ingredient> defaultRecipe)
-            {
+            if (obj is IRecipe defaultRecipe)
                 await this.WriteStringAsync(defaultRecipe.Type);
-            }
-            else if (obj is IRecipe<string> stringRecipe)
-            {
-                await this.WriteStringAsync(stringRecipe.Type);
-            }
             else
                 return;
 
@@ -559,9 +553,7 @@ namespace Obsidian.Net
                 foreach (var i in smeltingRecipe.Ingredient)
                     await this.WriteSlotAsync(i);
 
-                var r = Registry.GetItem(smeltingRecipe.Result);
-
-                await this.WriteSlotAsync(new ItemStack(r.Id, 1));
+                await this.WriteSlotAsync(smeltingRecipe.Result.First());
 
                 await this.WriteFloatAsync(smeltingRecipe.Experience);
                 await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
@@ -574,9 +566,12 @@ namespace Obsidian.Net
                 foreach (var item in cuttingRecipe.Ingredient)
                     await this.WriteSlotAsync(item);
 
-                var result = Registry.GetItem(cuttingRecipe.Result);
 
-                await this.WriteSlotAsync(new ItemStack(result.Id, (short)cuttingRecipe.Count));
+                var result = cuttingRecipe.Result.First();
+
+                result.Count = (short)cuttingRecipe.Count;
+
+                await this.WriteSlotAsync(result);
             }
             else if (obj is SmithingRecipe smithingRecipe)
             {

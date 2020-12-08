@@ -2,8 +2,10 @@
 
 namespace Obsidian.Crafting
 {
-    public class ShapelessRecipe : IRecipe<Ingredient>
+    public sealed class ShapelessRecipe : IRecipe
     {
+        public string Name { get; set; }
+
         public string Type { get; set; }
 
         public string Group { get; set; }

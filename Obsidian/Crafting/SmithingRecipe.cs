@@ -1,7 +1,9 @@
 ﻿namespace Obsidian.Crafting
 {
-    public class SmithingRecipe : IRecipe<Ingredient>
+    public class SmithingRecipe : IRecipe
     {
+        public string Name { get; set; }
+
         public string Type { get; set; }
 
         public string Group { get; set; }

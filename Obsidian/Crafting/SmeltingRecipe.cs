@@ -1,18 +1,16 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Util.Converters;
-
-namespace Obsidian.Crafting
+﻿namespace Obsidian.Crafting
 {
-    public class SmeltingRecipe : IRecipe<string>
+    public class SmeltingRecipe : IRecipe
     {
+        public string Name { get; set; }
+
         public string Type { get; set; }
 
         public string Group { get; set; }
 
-        [JsonConverter(typeof(IngredientConverter))]
         public Ingredient Ingredient { get; set; }
 
-        public string Result { get; set; }
+        public Ingredient Result { get; set; }
 
         public float Experience { get; set; }
 
