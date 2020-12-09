@@ -3,13 +3,13 @@ using System;
 
 namespace Obsidian.Crafting.Builders
 {
-    public abstract class RecipeBuilder<T> where T : IRecipe
+    public abstract class RecipeBuilder<T> where T : Recipe
     {
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
-        public string Group { get; internal set; } = "";
+        public string Group { get; set; }
 
-        public ItemStack Result { get; internal set; }
+        public ItemStack Result { get; set; }
 
         public RecipeBuilder<T> WithName(string name)
         {

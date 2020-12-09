@@ -5,9 +5,9 @@ namespace Obsidian.Crafting.Builders
 {
     public class SmithingRecipeBuilder : RecipeBuilder<SmithingRecipe>
     {
-        public Ingredient Base { get; internal set; } = new Ingredient();
+        public Ingredient Base { get; private set; } = new Ingredient();
 
-        public Ingredient Addition { get; internal set; } = new Ingredient();
+        public Ingredient Addition { get; private set; } = new Ingredient();
 
         public SmithingRecipeBuilder AddBaseIngredients(params ItemStack[] items)
         {

@@ -5,9 +5,9 @@ namespace Obsidian.Crafting.Builders
 {
     public class CuttingRecipeBuilder : RecipeBuilder<CuttingRecipe>
     {
-        public Ingredient Ingredient { get; internal set; } = new Ingredient();
+        public Ingredient Ingredient { get; private set; } = new Ingredient();
 
-        public int Count { get; internal set; }
+        public int Count { get; private set; }
 
         public CuttingRecipeBuilder AddIngredients(params ItemStack[] items)
         {

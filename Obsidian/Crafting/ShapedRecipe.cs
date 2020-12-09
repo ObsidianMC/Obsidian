@@ -2,18 +2,11 @@
 
 namespace Obsidian.Crafting
 {
-    public sealed class ShapedRecipe : IRecipe
+    public sealed class ShapedRecipe : Recipe
     {
-        public string Name { get; set; }
 
-        public string Type { get; set; }
+        public IReadOnlyList<string> Pattern { get; internal set; }
 
-        public string Group { get; set; }
-
-        public IReadOnlyList<string> Pattern { get; set; }
-
-        public IReadOnlyDictionary<char, Ingredient> Key { get; set; }
-
-        public Ingredient Result { get; set; }
+        public IReadOnlyDictionary<char, Ingredient> Key { get; internal set; }
     }
 }

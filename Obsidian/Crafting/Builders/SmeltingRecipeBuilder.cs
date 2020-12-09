@@ -5,13 +5,13 @@ namespace Obsidian.Crafting.Builders
 {
     public class SmeltingRecipeBuilder : RecipeBuilder<SmeltingRecipe>
     {
-        public SmeltingType Type { get; internal set; }
+        public SmeltingType Type { get; private set; }
 
-        public Ingredient Ingredient { get; internal set; } = new Ingredient();
+        public Ingredient Ingredient { get; private set; } = new Ingredient();
 
-        public float Experience { get; internal set; }
+        public float Experience { get; private set; }
 
-        public int CookingTime { get; internal set; }
+        public int CookingTime { get; private set; }
 
         public SmeltingRecipeBuilder WithType(SmeltingType type)
         {

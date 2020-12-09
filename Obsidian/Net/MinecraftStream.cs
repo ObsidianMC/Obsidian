@@ -463,7 +463,7 @@ namespace Obsidian.Net
 
         internal async Task WriteRecipeAsync(string name, object obj)
         {
-            if (obj is IRecipe defaultRecipe)
+            if (obj is Recipe defaultRecipe)
                 await this.WriteStringAsync(defaultRecipe.Type);
             else
                 return;
