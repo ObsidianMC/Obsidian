@@ -709,15 +709,8 @@ namespace Obsidian.Net
                     {
                         var root = (NbtCompound)reader.ReadAsTag();
 
-                        //Globals.PacketLogger.LogDebug(root.ToString());
                         foreach (var tag in root)
                         {
-                            //Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
-                            if (tag.TagType == NbtTagType.Compound)
-                            {
-                                Globals.PacketLogger.LogDebug("Other compound");
-                            }
-
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":

@@ -18,33 +18,41 @@ namespace Obsidian.Util.Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
-        public static (int value, bool add) GetDifference(this short clickedSlot, int size)
+        public static bool IsAir(this ItemStack item) => item.Type == Materials.Air;
+
+        /// <summary>
+        /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
+        /// </summary>
+        /// <returns>The local slot value for a player inventory</returns>
+        public static int GetDifference(this short clickedSlot, int inventorySize)
         {
+            inventorySize -= 1;
+
             int sub = clickedSlot switch
             {
-                _ when clickedSlot > size - 1 && (clickedSlot >= 54 && clickedSlot <= 89) => 45,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 27 && clickedSlot <= 62) => 18,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 17 && clickedSlot <= 52) => 9,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 14 && clickedSlot <= 49) => 5,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 11 && clickedSlot <= 46) => 2,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 10 && clickedSlot <= 45) => 1,
-                _ when clickedSlot <= size - 1 => 0,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 54 && clickedSlot <= 89) => 45,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 27 && clickedSlot <= 62) => 18,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 17 && clickedSlot <= 52) => 9,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 14 && clickedSlot <= 49) => 5,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 11 && clickedSlot <= 46) => 2,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 10 && clickedSlot <= 45) => 1,
+                _ when clickedSlot <= inventorySize => 0,
                 _ => 0,
             };
 
             int add = clickedSlot switch
             {
-                _ when clickedSlot > size - 1 && (clickedSlot >= 8 && clickedSlot <= 43) => 1,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 5 && clickedSlot <= 40) => 4,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 4 && clickedSlot <= 39) => 3,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 3 && clickedSlot <= 38) => 6,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 2 && clickedSlot <= 37) => 7,
-                _ when clickedSlot > size - 1 && (clickedSlot >= 1 && clickedSlot <= 36) => 8,
-                _ when clickedSlot <= size - 1 => 0,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 8 && clickedSlot <= 43) => 1,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 5 && clickedSlot <= 40) => 4,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 4 && clickedSlot <= 39) => 3,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 3 && clickedSlot <= 38) => 6,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 2 && clickedSlot <= 37) => 7,
+                _ when clickedSlot > inventorySize && (clickedSlot >= 1 && clickedSlot <= 36) => 8,
+                _ when clickedSlot <= inventorySize => 0,
                 _ => 0
             };
 
-            return (add > 0 ? add : sub, add > 0);
+            return add > 0 ? clickedSlot + add : clickedSlot - sub;
         }
 
         public static bool NotFluid(this BlockState state) => !(state is BlockFluid);
