@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.Chat;
 using Obsidian.Entities;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,7 @@ namespace Obsidian.Items
 
         public InventoryType Type { get; set; }
 
-        public string Title { get; set; }
+        public ChatMessage Title { get; set; }
 
         public int Size { get; set; } = 9 * 5;
 

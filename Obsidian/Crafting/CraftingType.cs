@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.Crafting
 {
     public enum CraftingType
     {

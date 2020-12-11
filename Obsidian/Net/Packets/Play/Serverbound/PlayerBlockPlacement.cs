@@ -184,7 +184,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     var furnace = new Inventory
                     {
-                        Title = "",
                         Type = actualType,
                         Id = maxId,
                         Size = 3,
@@ -199,7 +198,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var enchantmentTable = new Inventory
                     {
-                        Title = "",
                         Type = InventoryType.Enchantment,
                         Id = maxId,
                         Size = 2,
@@ -214,7 +212,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var anvil = new Inventory
                     {
-                        Title = "",
                         Type = InventoryType.Anvil,
                         Id = maxId,
                         Size = 3,
@@ -244,7 +241,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var box = new Inventory
                     {
-                        Title = "",
                         Type = InventoryType.Loom,
                         Id = maxId,
                         Size = 4,
@@ -274,7 +270,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var box = new Inventory(player.Uuid)
                     {
-                        Title = "",
                         Type = InventoryType.CartographyTable,
                         Id = maxId,
                         Size = 3,
@@ -289,7 +284,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var box = new Inventory
                     {
-                        Title = "",
                         Type = InventoryType.Stonecutter,
                         Id = maxId,
                         Size = 2,
@@ -304,7 +298,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var box = new Inventory
                     {
-                        Title = "",
                         Type = InventoryType.Grindstone,
                         Id = maxId,
                         Size = 3,

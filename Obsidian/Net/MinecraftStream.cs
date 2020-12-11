@@ -651,8 +651,6 @@ namespace Obsidian.Net
                     {
                         writer.BeginCompound("display");
 
-                        Console.WriteLine($"Writing Name: {JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }, Formatting.Indented)}");
-
                         writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }));
 
                         if (itemMeta.Lore != null)
@@ -778,10 +776,6 @@ namespace Obsidian.Net
                         //slot.ItemNbt.Id = compound.Get<NbtShort>("id").Value;
                         //slot.ItemNbt.Damage = compound.Get<NbtShort>("Damage").Value;
                         //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
-                    }
-                    else
-                    {
-                        Globals.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
                     }
 
                     slot.ItemMeta = itemMetaBuilder.Build();
