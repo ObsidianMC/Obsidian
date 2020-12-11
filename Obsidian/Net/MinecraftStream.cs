@@ -596,18 +596,6 @@ namespace Obsidian.Net
             await this.WriteLongAsync(val);
         }
 
-        public Task WriteNbtAsync(NbtTag tag)
-        {
-            var writer = new NbtWriter(new MemoryStream(), "Item");
-
-            writer.WriteTag(tag);
-
-            writer.EndCompound();
-            writer.Finish();
-
-            return Task.CompletedTask;
-        }
-
         public async Task WriteSlotAsync(ItemStack slot)
         {
             if (slot is null)
@@ -758,6 +746,26 @@ namespace Obsidian.Net
 
                                         itemMetaBuilder.WithDurability(tag.IntValue);
                                         //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        break;
+                                    }
+                                case "display":
+                                    {
+                                        var display = (NbtCompound)tag;
+
+                                        foreach (var displayTag in display)
+                                        {
+                                            if (displayTag.Name.EqualsIgnoreCase("name"))
+                                            {
+                                                itemMetaBuilder.WithName(displayTag.StringValue);
+                                            }
+                                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                                            {
+                                                var loreTag = (NbtList)displayTag;
+
+                                                foreach (var lore in loreTag)
+                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.StringValue));
+                                            }
+                                        }
                                         break;
                                     }
                                 default:
