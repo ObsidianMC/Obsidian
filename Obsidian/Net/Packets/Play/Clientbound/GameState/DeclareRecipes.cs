@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.Crafting;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int RecipesLength { get; set; }
 
         [Field(1, Type = DataType.Array)]
-        public Dictionary<string, object> Recipes { get; set; }
+        public Dictionary<string, IRecipe> Recipes { get; set; }
 
         public int Id => 0x5A;
 

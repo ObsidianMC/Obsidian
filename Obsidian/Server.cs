@@ -10,6 +10,7 @@ using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Items;

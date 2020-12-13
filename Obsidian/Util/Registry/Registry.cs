@@ -32,7 +32,7 @@ namespace Obsidian
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
 
-        public static Dictionary<string, object> Recipes = new Dictionary<string, object>();
+        public static Dictionary<string, IRecipe> Recipes = new Dictionary<string, IRecipe>();
 
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
@@ -872,7 +872,6 @@ namespace Obsidian
                 var (name, element) = enu.Current;
 
                 var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
-
 
                 if (Enum.TryParse<CraftingType>(type, true, out var result))
                 {

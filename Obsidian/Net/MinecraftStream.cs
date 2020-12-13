@@ -461,16 +461,13 @@ namespace Obsidian.Net
             }
         }
 
-        internal async Task WriteRecipeAsync(string name, object obj)
+        internal async Task WriteRecipeAsync(string name, IRecipe recipe)
         {
-            if (obj is Recipe defaultRecipe)
-                await this.WriteStringAsync(defaultRecipe.Type);
-            else
-                return;
+            await this.WriteStringAsync(recipe.Type);
 
             await this.WriteStringAsync(name);
 
-            if (obj is ShapedRecipe shapedRecipe)
+            if (recipe is ShapedRecipe shapedRecipe)
             {
                 var patterns = shapedRecipe.Pattern;
 
@@ -526,7 +523,7 @@ namespace Obsidian.Net
 
                 await this.WriteSlotAsync(shapedRecipe.Result.First());
             }
-            else if (obj is ShapelessRecipe shapelessRecipe)
+            else if (recipe is ShapelessRecipe shapelessRecipe)
             {
                 var ingredients = shapelessRecipe.Ingredients;
 
@@ -544,7 +541,7 @@ namespace Obsidian.Net
 
                 await this.WriteSlotAsync(result);
             }
-            else if (obj is SmeltingRecipe smeltingRecipe)
+            else if (recipe is SmeltingRecipe smeltingRecipe)
             {
                 await this.WriteStringAsync(smeltingRecipe.Group ?? "");
 
@@ -558,7 +555,7 @@ namespace Obsidian.Net
                 await this.WriteFloatAsync(smeltingRecipe.Experience);
                 await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
             }
-            else if (obj is CuttingRecipe cuttingRecipe)
+            else if (recipe is CuttingRecipe cuttingRecipe)
             {
                 await this.WriteStringAsync(cuttingRecipe.Group ?? "");
 
@@ -573,7 +570,7 @@ namespace Obsidian.Net
 
                 await this.WriteSlotAsync(result);
             }
-            else if (obj is SmithingRecipe smithingRecipe)
+            else if (recipe is SmithingRecipe smithingRecipe)
             {
                 await this.WriteVarIntAsync(smithingRecipe.Base.Count);
                 foreach (var item in smithingRecipe.Base)

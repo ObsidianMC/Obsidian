@@ -377,24 +377,6 @@ namespace Obsidian
 
                 Entities = Registry.Tags["entity_types"]
             });*/
-
-            var itemMeta = new ItemMetaBuilder()
-                .WithName("A super cool sword!!!")
-                .AddLore("Its really cool")
-                .AddLore("With lots of words")
-                .Build();
-
-            var item = Registry.GetSingleItem(Materials.DiamondSword, itemMeta);
-
-            var shapedRecipe = new ShapedRecipeBuilder()
-                .WithPattern("#", "#", "I")
-                .WithKey('#', Registry.GetSingleItem(Materials.Diamond))
-                .WithKey('I', Registry.GetSingleItem(Materials.Stick))
-                .SetResult(item)
-                .Build();
-
-            Registry.Recipes.Add("super_sword", shapedRecipe);
-
             await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();

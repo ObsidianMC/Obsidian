@@ -3,7 +3,6 @@ using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Util.Extensions;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -32,7 +31,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             var inventory = player.OpenedInventory ?? player.Inventory;
 
-            var (value, add) = this.ClickedSlot.GetDifference(inventory.Size);
+            var value = this.ClickedSlot.GetDifference(inventory.Size);
 
             if (value > 0)
                 inventory = player.Inventory;
@@ -40,10 +39,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (this.ClickedSlot > inventory.Size - 1 && this.ClickedSlot >= 9 && this.ClickedSlot <= 44)
                 inventory = player.Inventory;
 
-            if (!add)
-                inventory.SetItem(this.ClickedSlot - value, this.ClickedItem);
-            else
-                inventory.SetItem(this.ClickedSlot + value, this.ClickedItem);
+            inventory.SetItem(this.ClickedSlot, this.ClickedItem);
 
             player.LastClickedItem = this.ClickedItem;
 

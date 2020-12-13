@@ -1,9 +1,10 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
+using System;
 
 namespace Obsidian.Items
 {
-    public class ItemStack : Item
+    public class ItemStack : Item, IEquatable<ItemStack>
     {
         public readonly static ItemStack Air = new ItemStack(0, 0, default);
 
@@ -25,14 +26,32 @@ namespace Obsidian.Items
                 this.ItemMeta = itemMeta.Value;
         }
 
-        public static ItemStack operator -(ItemStack item, short value)
+        public static ItemStack operator -(ItemStack item, int value)
         {
             if (item.Count <= 0)
                 return new ItemStack(0, 0, default);
 
-            item.Count -= value;
+            item.Count -= (short)value;
 
             return item;
+        }
+
+        public static ItemStack operator +(ItemStack item, int value)
+        {
+            if (item.Count >= 64)
+                return item;
+
+            item.Count += (short)value;
+
+            return item;
+        }
+
+        public bool Equals(ItemStack other)
+        {
+            if (other == null)
+                throw new NullReferenceException();
+
+            return this.Type == other.Type && (this.ItemMeta.Name == other.ItemMeta.Name && this.ItemMeta.Lore == other.ItemMeta.Lore);
         }
     }
 }

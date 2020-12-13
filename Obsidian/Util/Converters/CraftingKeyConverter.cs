@@ -6,18 +6,17 @@ using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using static Obsidian.Registry;
 
 namespace Obsidian.Util.Converters
 {
-    public class CraftingKeyConverter : JsonConverter
+    public class CraftingKeyConverter : JsonConverter<IReadOnlyDictionary<char, Ingredient>>
     {
         public CraftingKeyConverter() { }
 
-        public override bool CanConvert(Type objectType) => objectType is IReadOnlyDictionary<char, List<Ingredient>>;
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override IReadOnlyDictionary<char, Ingredient> ReadJson(JsonReader reader, Type objectType, [AllowNull] IReadOnlyDictionary<char, Ingredient> existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             var token = serializer.Deserialize<JToken>(reader);
 
@@ -33,7 +32,7 @@ namespace Obsidian.Util.Converters
 
                     var ingredient = new Ingredient();
 
-                    foreach(var recipeItem in items)
+                    foreach (var recipeItem in items)
                     {
                         if (recipeItem.Item == null && recipeItem.Tag != null)
                         {
@@ -85,7 +84,7 @@ namespace Obsidian.Util.Converters
             return new ReadOnlyDictionary<char, Ingredient>(readDict);
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, IReadOnlyDictionary<char, Ingredient> value, JsonSerializer serializer)
         {
             throw new NotImplementedException();
         }
