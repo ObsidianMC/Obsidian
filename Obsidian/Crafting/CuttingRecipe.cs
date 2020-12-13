@@ -1,9 +1,17 @@
 ﻿namespace Obsidian.Crafting
 {
-    public sealed class CuttingRecipe : Recipe
+    public sealed class CuttingRecipe : IRecipe
     {
-        public Ingredient Ingredient { get; internal set; }
+        public string Name { get; set; }
 
-        public int Count { get; internal set; }
+        public string Type { get; set; }
+
+        public string Group { get; set; }
+
+        public Ingredient Result { get; set; }
+
+        public Ingredient Ingredient { get; set; }
+
+        public int Count { get; set; }
     }
 }

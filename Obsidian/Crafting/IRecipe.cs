@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Crafting
 {
-    public sealed class SmithingRecipe : IRecipe
+    public interface IRecipe
     {
         public string Name { get; set; }
 
@@ -9,9 +9,5 @@
         public string Group { get; set; }
 
         public Ingredient Result { get; set; }
-
-        public Ingredient Base { get; set; }
-
-        public Ingredient Addition { get; set; }
     }
 }

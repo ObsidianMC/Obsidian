@@ -2,8 +2,16 @@
 
 namespace Obsidian.Crafting
 {
-    public sealed class ShapelessRecipe : Recipe
+    public sealed class ShapelessRecipe : IRecipe
     {
-        public IReadOnlyList<Ingredient> Ingredients { get; internal set; }
+        public string Name { get; set; }
+
+        public string Type { get; set; }
+
+        public string Group { get; set; }
+
+        public Ingredient Result { get; set; }
+
+        public IReadOnlyList<Ingredient> Ingredients { get; set; }
     }
 }

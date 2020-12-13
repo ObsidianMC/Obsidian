@@ -3,8 +3,12 @@ using System;
 
 namespace Obsidian.Crafting.Builders
 {
-    public class SmithingRecipeBuilder : RecipeBuilder<SmithingRecipe>
+    public class SmithingRecipeBuilder : IRecipeBuilder<SmithingRecipeBuilder>
     {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public ItemStack Result { get; set; }
+
         public Ingredient Base { get; private set; } = new Ingredient();
 
         public Ingredient Addition { get; private set; } = new Ingredient();
@@ -26,7 +30,31 @@ namespace Obsidian.Crafting.Builders
             return this;
         }
 
-        public override SmithingRecipe Build()
+        public SmithingRecipeBuilder WithName(string name)
+        {
+            this.Name = name;
+
+            return this;
+        }
+
+        public SmithingRecipeBuilder SetResult(ItemStack result)
+        {
+            if (this.Result != null)
+                throw new InvalidOperationException("Result is already set.");
+
+            this.Result = result;
+
+            return this;
+        }
+
+        public SmithingRecipeBuilder InGroup(string group)
+        {
+            this.Group = group;
+
+            return this;
+        }
+
+        public IRecipe Build()
         {
             if (this.Base.Count <= 0)
                 throw new InvalidOperationException("Base ingredients must have atleast 1 item.");

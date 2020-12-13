@@ -3,11 +3,15 @@ using System;
 
 namespace Obsidian.Crafting.Builders
 {
-    public class CuttingRecipeBuilder : RecipeBuilder<CuttingRecipe>
+    public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
     {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public ItemStack Result { get; set; }
+
         public Ingredient Ingredient { get; private set; } = new Ingredient();
 
-        public int Count { get; private set; }
+        public int Count { get; set; }
 
         public CuttingRecipeBuilder AddIngredients(params ItemStack[] items)
         {
@@ -24,7 +28,31 @@ namespace Obsidian.Crafting.Builders
             return this;
         }
 
-        public override CuttingRecipe Build()
+        public CuttingRecipeBuilder WithName(string name)
+        {
+            this.Name = name;
+
+            return this;
+        }
+
+        public CuttingRecipeBuilder SetResult(ItemStack result)
+        {
+            if (this.Result != null)
+                throw new InvalidOperationException("Result is already set.");
+
+            this.Result = result;
+
+            return this;
+        }
+
+        public CuttingRecipeBuilder InGroup(string group)
+        {
+            this.Group = group;
+
+            return this;
+        }
+
+        public IRecipe Build()
         {
             if (this.Ingredient.Count <= 0)
                 throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");

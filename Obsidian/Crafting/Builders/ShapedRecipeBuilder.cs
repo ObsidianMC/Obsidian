@@ -5,8 +5,11 @@ using System.Collections.ObjectModel;
 
 namespace Obsidian.Crafting.Builders
 {
-    public class ShapedRecipeBuilder : RecipeBuilder<ShapedRecipe>
+    public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
     {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public ItemStack Result { get; set; }
 
         public IReadOnlyList<string> Pattern { get; }
 
@@ -33,7 +36,6 @@ namespace Obsidian.Crafting.Builders
             return this;
         }
 
-
         public ShapedRecipeBuilder WithKey(char key, params ItemStack[] matches)
         {
             var ingredient = new Ingredient();
@@ -46,7 +48,7 @@ namespace Obsidian.Crafting.Builders
             return this;
         }
 
-        public override ShapedRecipe Build()
+        public IRecipe Build()
         {
             if (this.pattern.Count <= 0)
                 throw new InvalidOperationException("Patterns cannot be empty");
@@ -63,6 +65,30 @@ namespace Obsidian.Crafting.Builders
                 Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
                 Key = new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
             };
+        }
+
+        public ShapedRecipeBuilder WithName(string name)
+        {
+            this.Name = name;
+
+            return this;
+        }
+
+        public ShapedRecipeBuilder SetResult(ItemStack result)
+        {
+            if (this.Result != null)
+                throw new InvalidOperationException("Result is already set.");
+
+            this.Result = result;
+
+            return this;
+        }
+
+        public ShapedRecipeBuilder InGroup(string group)
+        {
+            this.Group = group;
+
+            return this;
         }
     }
 }

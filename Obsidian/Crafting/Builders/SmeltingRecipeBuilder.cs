@@ -3,8 +3,12 @@ using System;
 
 namespace Obsidian.Crafting.Builders
 {
-    public class SmeltingRecipeBuilder : RecipeBuilder<SmeltingRecipe>
+    public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
     {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public ItemStack Result { get; set; }
+
         public SmeltingType Type { get; private set; }
 
         public Ingredient Ingredient { get; private set; } = new Ingredient();
@@ -44,7 +48,31 @@ namespace Obsidian.Crafting.Builders
             return this;
         }
 
-        public override SmeltingRecipe Build()
+        public SmeltingRecipeBuilder WithName(string name)
+        {
+            this.Name = name;
+
+            return this;
+        }
+
+        public SmeltingRecipeBuilder SetResult(ItemStack result)
+        {
+            if (this.Result != null)
+                throw new InvalidOperationException("Result is already set.");
+
+            this.Result = result;
+
+            return this;
+        }
+
+        public SmeltingRecipeBuilder InGroup(string group)
+        {
+            this.Group = group;
+
+            return this;
+        }
+
+        public IRecipe Build()
         {
             var type = "";
 
