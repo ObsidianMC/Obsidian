@@ -10,18 +10,18 @@ using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -57,7 +57,7 @@ namespace Obsidian
 
         public IOperatorList Operators { get; }
 
-        internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
+        internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new ConcurrentDictionary<Guid, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
@@ -225,6 +225,7 @@ namespace Obsidian
             await Registry.RegisterBiomesAsync();
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
+            await Registry.RegisterRecipesAsync();
 
             PacketHandler.RegisterHandlers();
 
@@ -482,7 +483,7 @@ namespace Obsidian
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = (int) itemId,
+                            Id = itemId.Value,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,

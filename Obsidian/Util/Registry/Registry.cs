@@ -2,10 +2,13 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.Blocks;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
@@ -18,7 +21,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Obsidian.Util.Registry
+namespace Obsidian
 {
     public class Registry
     {
@@ -29,17 +32,26 @@ namespace Obsidian.Util.Registry
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
 
+        public static Dictionary<string, IRecipe> Recipes = new Dictionary<string, IRecipe>();
+
         internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
 
         internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
 
         private readonly static string mainDomain = "Obsidian.Assets";
 
+        private readonly static JsonSerializer recipeSerializer = new JsonSerializer();
+
+        static Registry()
+        {
+            recipeSerializer.Converters.Add(new IngredientConverter());
+            recipeSerializer.Converters.Add(new IngredientsConverter());
+            recipeSerializer.Converters.Add(new CraftingKeyConverter());
+        }
 
         public static async Task RegisterBlocksAsync()
         {
             var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
-
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -682,7 +694,7 @@ namespace Obsidian.Util.Registry
 
                 Logger.LogDebug($"Registered item: {material} with id: {item.ProtocolId}");
 
-                Items.Add(material, new Item(material) { Id = item.ProtocolId, UnlocalizedName = name });
+                Items.Add(material, new Item(name, material) { Id = (short)item.ProtocolId });
                 registered++;
             }
 
@@ -843,6 +855,69 @@ namespace Obsidian.Util.Registry
             Logger.LogDebug($"Registered {registered} tags");
         }
 
+        public static async Task RegisterRecipesAsync()
+        {
+            using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.recipes.json");
+
+            using var sw = new StreamReader(fs, new UTF8Encoding(false));
+
+            var json = await sw.ReadToEndAsync();
+
+            var jObject = JObject.Parse(json);
+
+            var enu = jObject.GetEnumerator();
+
+            while (enu.MoveNext())
+            {
+                var (name, element) = enu.Current;
+
+                var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
+
+                if (Enum.TryParse<CraftingType>(type, true, out var result))
+                {
+                    switch (result)
+                    {
+                        case CraftingType.CraftingShaped:
+                            Recipes.Add(name, element.ToObject<ShapedRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.CraftingShapeless:
+                            Recipes.Add(name, element.ToObject<ShapelessRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.CraftingSpecialArmordye:
+                        case CraftingType.CraftingSpecialBookcloning:
+                        case CraftingType.CraftingSpecialMapcloning:
+                        case CraftingType.CraftingSpecialMapextending:
+                        case CraftingType.CraftingSpecialFireworkRocket:
+                        case CraftingType.CraftingSpecialFireworkStar:
+                        case CraftingType.CraftingSpecialFireworkStarFade:
+                        case CraftingType.CraftingSpecialTippedarrow:
+                        case CraftingType.CraftingSpecialBannerduplicate:
+                        case CraftingType.CraftingSpecialShielddecoration:
+                        case CraftingType.CraftingSpecialShulkerboxcoloring:
+                        case CraftingType.CraftingSpecialSuspiciousstew:
+                        case CraftingType.CraftingSpecialRepairitem:
+                            break;
+                        case CraftingType.Smelting:
+                        case CraftingType.Blasting:
+                        case CraftingType.Smoking:
+                        case CraftingType.CampfireCooking:
+                            Recipes.Add(name, element.ToObject<SmeltingRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.Stonecutting:
+                            Recipes.Add(name, element.ToObject<CuttingRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.Smithing:
+                            Recipes.Add(name, element.ToObject<SmithingRecipe>(recipeSerializer));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            Logger.LogDebug($"Registered {Recipes.Count} recipes");
+        }
+
         public static Block GetBlock(Materials mat) => Blocks.GetValueOrDefault(mat);
 
         public static Block GetBlock(int id) => Blocks.Values.SingleOrDefault(x => x.Id == id);
@@ -854,6 +929,10 @@ namespace Obsidian.Util.Registry
         public static Item GetItem(Materials mat) => Items.GetValueOrDefault(mat);
         public static Item GetItem(string unlocalizedName) =>
             Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+
+        public static ItemStack GetSingleItem(Materials mat, ItemMeta? meta = null) => new ItemStack(GetItem(mat).Id, 1, meta);
+
+        public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Id, 1, meta);
 
         class BaseRegistryJson
         {

@@ -4,7 +4,7 @@ using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using System;
@@ -36,7 +36,7 @@ namespace Obsidian.WorldData
         public bool Loaded { get; private set; }
 
         public long Time => Data.Time;
-        public Gamemode GameType => (Gamemode)Data.GameType;
+        public Gamemode GameType => Data.GameType;
 
         internal World(string name, Server server)
         {
@@ -106,10 +106,7 @@ namespace Obsidian.WorldData
                 await c.SendPacketAsync(new UpdateViewPosition(playerChunkX, playerChunkZ));
             }
         }
-        public async Task ResendBaseChunksAsync(Client c)
-        {
-            await UpdateClientChunksAsync(c, true);
-        }
+        public Task ResendBaseChunksAsync(Client c) => UpdateClientChunksAsync(c, true);
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
         {
@@ -149,7 +146,7 @@ namespace Obsidian.WorldData
             var region = this.GetRegionForChunk(chunkX, chunkZ);
 
             // region hasn't been loaded yet
-            if (region is null) 
+            if (region is null)
             {
                 var regionCoords = (chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
                 if (!RegionsToLoad.Contains(regionCoords))
@@ -159,7 +156,7 @@ namespace Obsidian.WorldData
 
             var index = (Helpers.Modulo(chunkX, Region.CUBIC_REGION_SIZE), Helpers.Modulo(chunkZ, Region.CUBIC_REGION_SIZE));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
-            
+
             // chunk hasn't been generated yet
             if (chunk is null && !ChunksToGen.Contains((chunkX, chunkZ))) { ChunksToGen.Enqueue((chunkX, chunkZ)); }
             return chunk;
@@ -193,6 +190,28 @@ namespace Obsidian.WorldData
         }
 
         public void SetBlock(Position location, Block block) => this.SetBlock((int)location.X, (int)location.Y, (int)location.Z, block);
+
+        public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
+        {
+            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+
+            long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
+
+            this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlockMeta(x, y, z, meta);
+        }
+
+        public void SetBlockMeta(Position location, BlockMeta meta) => this.SetBlockMeta((int)location.X, (int)location.Y, (int)location.Z, meta);
+
+        public BlockMeta GetBlockMeta(int x, int y, int z)
+        {
+            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+
+            long value = Helpers.IntsToLong(chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT);
+
+            return this.Regions[value].LoadedChunks[chunkX, chunkZ].GetBlockMeta(x, y, z);
+        }
+
+        public BlockMeta GetBlockMeta(Position location) => this.GetBlockMeta((int)location.X, (int)location.Y, (int)location.Z);
 
         public IEnumerable<Entity> GetEntitiesNear(Position location, double distance = 10)
         {
@@ -411,7 +430,7 @@ namespace Obsidian.WorldData
             {
                 for (int z = -Region.CUBIC_REGION_SIZE; z < Region.CUBIC_REGION_SIZE; z++)
                 {
-                    if (!ChunksToGen.Contains((x,z)))
+                    if (!ChunksToGen.Contains((x, z)))
                         ChunksToGen.Enqueue((x, z));
                     var regionCoords = (x >> Region.CUBIC_REGION_SIZE_SHIFT, z >> Region.CUBIC_REGION_SIZE_SHIFT);
                     if (!RegionsToLoad.Contains(regionCoords))

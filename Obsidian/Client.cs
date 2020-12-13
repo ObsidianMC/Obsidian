@@ -2,19 +2,22 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
+using Obsidian.Crafting.Builders;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
+using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer;
@@ -22,7 +25,6 @@ using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
-using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -315,6 +317,13 @@ namespace Obsidian
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
+        private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
+        {
+            RecipesLength = Registry.Recipes.Values.Count,
+
+            Recipes = Registry.Recipes
+        });
+
         private async Task ConnectAsync()
         {
             await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
@@ -368,8 +377,17 @@ namespace Obsidian
 
                 Entities = Registry.Tags["entity_types"]
             });*/
+            await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();
+
+            await this.QueuePacketAsync(new UnlockRecipes
+            {
+                Action = UnlockRecipeAction.Init,
+                FirstRecipeIds = Registry.Recipes.Keys.ToList(),
+                SecondRecipeIds = Registry.Recipes.Keys.ToList()
+            });
+
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
@@ -381,8 +399,8 @@ namespace Obsidian
             var spawnPosition = new Position(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
-                Server.World.Data.SpawnZ
-                );
+                Server.World.Data.SpawnZ);
+
             await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 

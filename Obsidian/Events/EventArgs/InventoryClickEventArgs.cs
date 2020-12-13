@@ -12,15 +12,9 @@ namespace Obsidian.Events.EventArgs
         public Inventory Inventory { get; }
 
         /// <summary>
-        /// Gets the inventory type
-        /// </summary>
-        public InventoryType Type => this.Inventory.Type;
-
-
-        /// <summary>
         /// Gets the current item that was clicked
         /// </summary>
-        public ItemStack Item { get; set; }
+        public ItemStack Item { get; }
 
         /// <summary>
         /// Gets the slot that was clicked
@@ -29,9 +23,10 @@ namespace Obsidian.Events.EventArgs
 
         public bool Cancel { get; set; }
 
-        internal InventoryClickEventArgs(Player player, Inventory inventory) : base(player)
+        internal InventoryClickEventArgs(Player player, Inventory inventory, ItemStack item) : base(player)
         {
             this.Inventory = inventory;
+            this.Item = item;
         }
 
     }

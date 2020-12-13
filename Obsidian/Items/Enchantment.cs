@@ -11,23 +11,20 @@ namespace Obsidian.Items
         public int Level { get; set; }
     }
 
-    public enum EnchantmentType
+    public enum EnchantmentType : int
     {
-        #region Armor
         Protection,
         FireProtection,
         FeatherFalling,
         BlastProtection,
         ProjectileProtection,
         Respiration,
-        AquaInfinity,
+        AquaAffinity,
         Thorns,
         DepthStrider,
         FrostWalker,
         BindingCurse,
-        #endregion Armor
-
-        #region Weapons
+        SoulSpeed,
         Sharpness,
         Smite,
         BaneOfArthropods,
@@ -35,43 +32,24 @@ namespace Obsidian.Items
         FireAspect,
         Looting,
         Sweeping,
-        #endregion Weapons
-
-        #region Tools
         Efficiency,
         SilkTouch,
         Unbreaking,
         Fortune,
-        #endregion Tools
-
-        #region Bow
         Power,
         Punch,
         Flame,
         Infinity,
-        #endregion Bow
-
-        #region Fishing Rod
         LuckOfTheSea,
         Lure,
-        #endregion Fishing Rod
-
-        #region Trident
         Loyalty,
         Impaling,
         Riptide,
         Channeling,
-        #endregion Trident
-
-        #region Crossbow
         Multishot,
         QuickCharge,
         Piercing,
-        #endregion Crossbow
-
-        #region All
         Mending,
         VanishingCurse,
-        #endregion All
     }
 }

@@ -1,29 +1,57 @@
 ﻿using Obsidian.Blocks;
 using Obsidian.Util.Registry;
+using System;
 
 namespace Obsidian.Items
 {
-    public class ItemStack : Item
+    public class ItemStack : Item, IEquatable<ItemStack>
     {
-        public bool Present { get; set; }
+        public readonly static ItemStack Air = new ItemStack(0, 0, default);
 
-        public int Count { get; set; }
+        internal bool Present { get; set; }
 
-        public ItemStack() : base(Materials.Air) { }
+        public short Count { get; internal set; }
 
-        public ItemStack(int itemId, int itemCount) : base(Registry.GetItem(itemId).Type)
+        public ItemMeta ItemMeta { get; internal set; }
+
+        public ItemStack() : base("minecraft:air", Materials.Air) { }
+
+        public ItemStack(short itemId, short count, ItemMeta? itemMeta = null) : base(Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
         {
             this.Id = itemId;
-            this.Count = itemCount;
+            this.Count = count;
+            if (count > 0) { Present = true; }
+
+            if (itemMeta != null)
+                this.ItemMeta = itemMeta.Value;
         }
 
         public static ItemStack operator -(ItemStack item, int value)
         {
             if (item.Count <= 0)
-                return new ItemStack(0, 0);
+                return new ItemStack(0, 0, default);
 
-            item.Count -= value;
+            item.Count -= (short)value;
+
             return item;
+        }
+
+        public static ItemStack operator +(ItemStack item, int value)
+        {
+            if (item.Count >= 64)
+                return item;
+
+            item.Count += (short)value;
+
+            return item;
+        }
+
+        public bool Equals(ItemStack other)
+        {
+            if (other == null)
+                throw new NullReferenceException();
+
+            return this.Type == other.Type && (this.ItemMeta.Name == other.ItemMeta.Name && this.ItemMeta.Lore == other.ItemMeta.Lore);
         }
     }
 }

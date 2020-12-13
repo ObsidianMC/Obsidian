@@ -7,11 +7,11 @@ namespace Obsidian.Entities
 {
     public class ItemEntity : Entity
     {
-        public int Id { get; set; }
+        public short Id { get; set; }
 
         public sbyte Count { get; set; }
 
-        public ItemNbt Nbt { get; set; }
+        public ItemMeta ItemMeta { get; set; }
 
         public bool CanPickup { get; set; }
 
@@ -21,12 +21,9 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Id, this.Count, this.ItemMeta)
             {
-                Present = true,
-                Id = this.Id,
-                Count = this.Count,
-                Nbt = this.Nbt
+                Present = true
             });
         }
 

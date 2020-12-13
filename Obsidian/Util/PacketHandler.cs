@@ -2,7 +2,7 @@
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Util;
 using System;
 using System.Collections.Concurrent;
@@ -58,13 +58,13 @@ namespace Obsidian
             //Packets.TryAdd(0x16, VehicleMove);
             //Packets.TryAdd(0x17, SteerBoat);
             Packets.TryAdd(0x18, new PickItem());
-            //Packets.TryAdd(0x19, CraftRecipeRequest);
+            Packets.TryAdd(0x19, new CraftRecipeRequest());
             //Packets.TryAdd(0x1A, PlayerAbilities);
             Packets.TryAdd(0x1B, new PlayerDigging());
             Packets.TryAdd(0x1C, new EntityAction());
             //Packets.TryAdd(0x1D, SteerVehicle);
-            //Packets.TryAdd(0x1E, SetDisplayRecipe);
-            //Packets.TryAdd(0x1F, SetRecipeBookSState);
+            Packets.TryAdd(0x1E, new SetDisplayedRecipe());
+            //Packets.TryAdd(0x1F, SetRecipeBookState);
             Packets.TryAdd(0x20, new NameItem());
             //Packets.TryAdd(0x21, ResourcePackStatus);
             //Packets.TryAdd(0x22, AdvancementTab);

@@ -1,14 +1,16 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
+using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -17,6 +19,7 @@ using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading;
@@ -255,9 +258,8 @@ namespace Obsidian.Net
                     }
                 case DataType.Float:
                     {
-                        if (value is Enum)
+                        if (value is Enum _enum)
                         {
-                            Enum _enum = (Enum)value;
                             value = Convert.ChangeType(value, _enum.GetTypeCode());
                             await this.WriteFloatAsync(Convert.ToSingle(value));
                         }
@@ -372,6 +374,11 @@ namespace Obsidian.Net
                                     await this.WriteVarIntAsync(entry);
                             }
                         }
+                        else if (value is List<ItemStack> items)
+                        {
+                            foreach (var item in items)
+                                await this.WriteSlotAsync(item);
+                        }
                         break;
                     }
                 case DataType.ByteArray:
@@ -454,6 +461,129 @@ namespace Obsidian.Net
             }
         }
 
+        internal async Task WriteRecipeAsync(string name, IRecipe recipe)
+        {
+            await this.WriteStringAsync(recipe.Type);
+
+            await this.WriteStringAsync(name);
+
+            if (recipe is ShapedRecipe shapedRecipe)
+            {
+                var patterns = shapedRecipe.Pattern;
+
+                int width = patterns[0].Length, height = patterns.Count;
+
+                await this.WriteVarIntAsync(width);
+                await this.WriteVarIntAsync(height);
+
+                await this.WriteStringAsync(shapedRecipe.Group ?? "");
+
+                var ingredients = new List<ItemStack>[width * height];
+
+                var y = 0;
+                foreach (var pattern in patterns)
+                {
+                    var x = 0;
+                    foreach (var c in pattern)
+                    {
+                        if (char.IsWhiteSpace(c))
+                            continue;
+
+                        var index = x + (y * width);
+
+                        var key = shapedRecipe.Key[c];
+
+                        foreach (var item in key)
+                        {
+                            if (ingredients[index] is null)
+                                ingredients[index] = new List<ItemStack> { item };
+                            else
+                                ingredients[index].Add(item);
+                        }
+
+                        x++;
+                    }
+                    y++;
+                }
+
+                foreach (var items in ingredients)
+                {
+                    if (items == null)
+                    {
+                        await this.WriteVarIntAsync(1);
+                        await this.WriteSlotAsync(ItemStack.Air);
+                        continue;
+                    }
+
+                    await this.WriteVarIntAsync(items.Count);
+
+                    foreach (var itemStack in items)
+                        await this.WriteSlotAsync(itemStack);
+                }
+
+                await this.WriteSlotAsync(shapedRecipe.Result.First());
+            }
+            else if (recipe is ShapelessRecipe shapelessRecipe)
+            {
+                var ingredients = shapelessRecipe.Ingredients;
+
+                await this.WriteStringAsync(shapelessRecipe.Group ?? "");
+
+                await this.WriteVarIntAsync(ingredients.Count);
+                foreach (var ingredient in ingredients)
+                {
+                    await this.WriteVarIntAsync(ingredient.Count);
+                    foreach (var item in ingredient)
+                        await this.WriteSlotAsync(item);
+                }
+
+                var result = shapelessRecipe.Result.First();
+
+                await this.WriteSlotAsync(result);
+            }
+            else if (recipe is SmeltingRecipe smeltingRecipe)
+            {
+                await this.WriteStringAsync(smeltingRecipe.Group ?? "");
+
+
+                await this.WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
+                foreach (var i in smeltingRecipe.Ingredient)
+                    await this.WriteSlotAsync(i);
+
+                await this.WriteSlotAsync(smeltingRecipe.Result.First());
+
+                await this.WriteFloatAsync(smeltingRecipe.Experience);
+                await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
+            }
+            else if (recipe is CuttingRecipe cuttingRecipe)
+            {
+                await this.WriteStringAsync(cuttingRecipe.Group ?? "");
+
+                await this.WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
+                foreach (var item in cuttingRecipe.Ingredient)
+                    await this.WriteSlotAsync(item);
+
+
+                var result = cuttingRecipe.Result.First();
+
+                result.Count = (short)cuttingRecipe.Count;
+
+                await this.WriteSlotAsync(result);
+            }
+            else if (recipe is SmithingRecipe smithingRecipe)
+            {
+                await this.WriteVarIntAsync(smithingRecipe.Base.Count);
+                foreach (var item in smithingRecipe.Base)
+                    await this.WriteSlotAsync(item);
+
+                await this.WriteVarIntAsync(smithingRecipe.Addition.Count);
+                foreach (var item in smithingRecipe.Addition)
+                    await this.WriteSlotAsync(item);
+
+                await this.WriteSlotAsync(smithingRecipe.Result.First());
+            }
+        }
+
         public async Task WritePositionAsync(Position value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
@@ -463,20 +593,14 @@ namespace Obsidian.Net
             await this.WriteLongAsync(val);
         }
 
-        public Task WriteNbtAsync(NbtTag tag)
-        {
-            var writer = new NbtWriter(new MemoryStream(), "Item");
-
-            writer.WriteTag(tag);
-
-            writer.EndCompound();
-            writer.Finish();
-
-            return Task.CompletedTask;
-        }
-
         public async Task WriteSlotAsync(ItemStack slot)
         {
+            if (slot is null)
+                slot = new ItemStack(0, 0)
+                {
+                    Present = true
+                };
+
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
@@ -484,55 +608,94 @@ namespace Obsidian.Net
                 await this.WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
-                if (slot.Nbt == null)
-                {
-                    writer.EndCompound();
-                    writer.Finish();
-                    return;
-                }
+
+                var itemMeta = slot.ItemMeta;
 
                 //TODO write enchants
-                writer.WriteShort("id", (short)slot.Id);
-                writer.WriteInt("Damage", slot.Nbt.Damage);
+                if (itemMeta.HasTags())
+                {
+                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
+
+                    if (itemMeta.Durability > 0)
+                        writer.WriteInt("Damage", itemMeta.Durability);
+
+                    if (itemMeta.CustomModelData > 0)
+                        writer.WriteInt("CustomModelData", itemMeta.CustomModelData);
+
+                    if (itemMeta.CanDestroy != null)
+                    {
+                        writer.BeginList("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
+
+                        foreach (var block in itemMeta.CanDestroy)
+                            writer.WriteString(block);
+
+                        writer.EndList();
+                    }
+
+                    if (itemMeta.Name != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }));
+
+                        if (itemMeta.Lore != null)
+                        {
+                            writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                            foreach (var lore in itemMeta.Lore)
+                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
+
+                            writer.EndList();
+                        }
+
+                        writer.EndCompound();
+                    }
+                    else if (itemMeta.Lore != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                        foreach (var lore in itemMeta.Lore)
+                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
+
+                        writer.EndList();
+
+                        writer.EndCompound();
+                    }
+                }
+
+                writer.WriteString("id", slot.UnlocalizedName);
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
-
                 writer.Finish();
             }
         }
 
         public async Task<ItemStack> ReadSlotAsync()
         {
-            var slot = new ItemStack();
-
             var present = await this.ReadBooleanAsync();
-            slot.Present = present;
 
             if (present)
             {
-                slot.Id = await this.ReadVarIntAsync();
-                slot.Count = await this.ReadByteAsync();
+                var slot = new ItemStack((short)await this.ReadVarIntAsync(), await this.ReadByteAsync())
+                {
+                    Present = present
+                };
 
                 var reader = new NbtReader(this);
 
                 while (reader.ReadToFollowing())
                 {
-                    slot.Nbt = new ItemNbt();
+                    var itemMetaBuilder = new ItemMetaBuilder();
 
                     if (reader.IsCompound)
                     {
                         var root = (NbtCompound)reader.ReadAsTag();
 
-                        Globals.PacketLogger.LogDebug(root.ToString());
                         foreach (var tag in root)
                         {
-                            Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
-                            if (tag.TagType == NbtTagType.Compound)
-                            {
-                                Globals.PacketLogger.LogDebug("Other compound");
-                            }
-
                             switch (tag.Name.ToLower())
                             {
                                 case "enchantments":
@@ -543,11 +706,9 @@ namespace Obsidian.Net
                                         {
                                             if (enchant is NbtCompound compound)
                                             {
-                                                slot.Nbt.Enchantments.Add(new Enchantment
-                                                {
-                                                    Id = compound.Get<NbtString>("id").Value,
-                                                    Level = compound.Get<NbtShort>("lvl").Value
-                                                });
+                                                var id = compound.Get<NbtString>("id").Value;
+
+                                                itemMetaBuilder.AddEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
                                             }
                                         }
 
@@ -557,33 +718,51 @@ namespace Obsidian.Net
                                     {
                                         var enchantments = (NbtList)tag;
 
-                                        Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+                                        //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
                                         foreach (var enchantment in enchantments)
                                         {
                                             if (enchantment is NbtCompound compound)
                                             {
 
-                                                slot.Nbt.StoredEnchantments.Add(new Enchantment
-                                                {
-                                                    Id = compound.Get<NbtString>("id").Value,
-                                                    Level = compound.Get<NbtShort>("lvl").Value
-                                                });
+                                                var id = compound.Get<NbtString>("id").Value;
+
+                                                itemMetaBuilder.AddStoredEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
                                             }
                                         }
                                         break;
                                     }
                                 case "slot":
                                     {
-                                        slot.Nbt.Slot = tag.ByteValue;
-                                        Console.WriteLine($"Setting slot: {slot.Nbt.Slot}");
+                                        itemMetaBuilder.WithSlot(tag.ByteValue);
+                                        //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
                                 case "damage":
                                     {
 
-                                        slot.Nbt.Damage = tag.IntValue;
-                                        Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        itemMetaBuilder.WithDurability(tag.IntValue);
+                                        //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        break;
+                                    }
+                                case "display":
+                                    {
+                                        var display = (NbtCompound)tag;
+
+                                        foreach (var displayTag in display)
+                                        {
+                                            if (displayTag.Name.EqualsIgnoreCase("name"))
+                                            {
+                                                itemMetaBuilder.WithName(displayTag.StringValue);
+                                            }
+                                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                                            {
+                                                var loreTag = (NbtList)displayTag;
+
+                                                foreach (var lore in loreTag)
+                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.StringValue));
+                                            }
+                                        }
                                         break;
                                     }
                                 default:
@@ -596,18 +775,14 @@ namespace Obsidian.Net
                         //slot.ItemNbt.Damage = compound.Get<NbtShort>("Damage").Value;
                         //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
                     }
-                    else
-                    {
-                        Globals.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
-                    }
 
-
-
+                    slot.ItemMeta = itemMetaBuilder.Build();
                 }
 
+                return slot;
             }
 
-            return slot;
+            return null;
         }
 
         #endregion Writing
@@ -624,14 +799,14 @@ namespace Obsidian.Net
 
             if (present)
             {
-                slot.Id = this.ReadVarInt();
+                slot.Id = (short)this.ReadVarInt();
                 slot.Count = this.ReadSignedByte();
 
                 var reader = new NbtReader(this);
 
                 while (reader.ReadToFollowing())
                 {
-                    slot.Nbt = new ItemNbt();
+                    var itemMetaBuilder = new ItemMetaBuilder();
 
                     if (reader.IsCompound)
                     {
@@ -649,11 +824,9 @@ namespace Obsidian.Net
                                         {
                                             if (enchant is NbtCompound compound)
                                             {
-                                                slot.Nbt.Enchantments.Add(new Enchantment
-                                                {
-                                                    Id = compound.Get<NbtString>("id").Value,
-                                                    Level = compound.Get<NbtShort>("lvl").Value
-                                                });
+                                                var id = compound.Get<NbtString>("id").Value;
+
+                                                itemMetaBuilder.AddEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
                                             }
                                         }
 
@@ -663,36 +836,39 @@ namespace Obsidian.Net
                                     {
                                         var enchantments = (NbtList)tag;
 
-                                        Console.WriteLine($"List Type: {enchantments.ListType}");
+                                        Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
                                         foreach (var enchantment in enchantments)
                                         {
                                             if (enchantment is NbtCompound compound)
                                             {
-                                                slot.Nbt.StoredEnchantments.Add(new Enchantment
-                                                {
-                                                    Id = compound.Get<NbtString>("id").Value,
-                                                    Level = compound.Get<NbtShort>("lvl").Value
-                                                });
+
+                                                var id = compound.Get<NbtString>("id").Value;
+
+                                                itemMetaBuilder.AddStoredEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
                                             }
                                         }
                                         break;
                                     }
                                 case "slot":
                                     {
-                                        slot.Nbt.Slot = tag.ByteValue;
+                                        itemMetaBuilder.WithSlot(tag.ByteValue);
+                                        Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
                                 case "damage":
                                     {
 
-                                        slot.Nbt.Damage = tag.IntValue;
+                                        itemMetaBuilder.WithDurability(tag.IntValue);
+                                        Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                         break;
                                     }
                                 default:
                                     break;
                             }
                         }
+
+                        slot.ItemMeta = itemMetaBuilder.Build();
                         //slot.ItemNbt.Slot = compound.Get<NbtByte>("Slot").Value;
                         //slot.ItemNbt.Count = compound.Get<NbtByte>("Count").Value;
                         //slot.ItemNbt.Id = compound.Get<NbtShort>("id").Value;
@@ -703,9 +879,6 @@ namespace Obsidian.Net
                     {
                         Console.WriteLine($"Other Name: {reader.TagName}");
                     }
-
-
-
                 }
 
             }

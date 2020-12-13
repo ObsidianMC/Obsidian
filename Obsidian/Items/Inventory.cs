@@ -1,25 +1,41 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Chat;
+using Obsidian.Entities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Obsidian.Items
 {
     public class Inventory
     {
-        internal int Id { get; set; }
+        internal static byte LastId { get; set; }
+
+        internal byte Id { get; set; }
 
         internal int ActionsNumber { get; set; }
 
+        internal bool OwnedByPlayer { get; set; }
+
+        public Position BlockPosition { get; set; }
+
+        public Guid? Owner { get; set; }
+
         public InventoryType Type { get; set; }
 
-        public string Title { get; set; }
+        public ChatMessage Title { get; set; }
 
-        public int Size { get; set; } = 9 * 5;
-
-        public ConcurrentDictionary<int, ItemStack> Items { get; private set; } = new ConcurrentDictionary<int, ItemStack>();
+        public int Size { get; }
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
+
+        public ItemStack[] Items { get; }
+
+        public Inventory(int size)
+        {
+            this.Size = size;
+            this.Items = new ItemStack[this.Size];
+        }
 
         public void AddItems(params ItemStack[] items)
         {
@@ -32,54 +48,86 @@ namespace Obsidian.Items
             }
         }
 
+        //TODO match item meta
         public int AddItem(ItemStack item)
         {
-            for (int i = 36; i < 45; i++)
+            if (this.OwnedByPlayer)
             {
-                if (this.Items.TryGetValue(i, out var invItem))
+                for (int i = 36; i < 45; i++)
                 {
-                    if (invItem.Count >= 64)
+                    var invItem = this.Items[i];
+
+                    if (invItem == null)
                         continue;
 
-                    invItem.Count += item.Count;
+                    if (invItem.Id == item.Id)
+                    {
+                        if (invItem.Count >= 64)
+                            continue;
+
+                        invItem.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.Items[i] = item;
 
                     return i;
                 }
 
-                if (this.TryAddItem(i, item))
+                for (int i = 9; i < 36; i++)
+                {
+                    var invItem = this.Items[i];
+
+                    if (invItem != null)
+                    {
+                        if (invItem.Count >= 64)
+                            continue;
+
+                        invItem.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.Items[i] = item;
+
                     return i;
+                }
             }
-
-            for (int i = 9; i < 36; i++)
+            else
             {
-                if (this.Items.TryGetValue(i, out var invItem))
+                for (int i = 0; i < this.Size; i++)
                 {
-                    if (invItem.Count >= 64)
+                    var invItem = this.Items[i];
+
+                    if (invItem == null)
                         continue;
 
-                    invItem.Count += item.Count;
+                    if (invItem.Id == item.Id)
+                    {
+                        if (invItem.Count >= 64)
+                            continue;
+
+                        invItem.Count += item.Count;
+
+                        return i;
+                    }
+
+                    this.Items[i] = item;
 
                     return i;
                 }
-
-                if (this.TryAddItem(i, item))
-                    return i;
             }
 
             return 9;
         }
-
-        private bool TryAddItem(int index, ItemStack item) => this.Items.TryAdd(index, item);
 
         public void SetItem(int slot, ItemStack item)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            if (this.Items.ContainsKey(slot))
-                this.Items[slot] = item;
-            else
-                this.Items.TryAdd(slot, item);
+            this.Items[slot] = item;
         }
 
         public ItemStack GetItem(int slot)
@@ -87,28 +135,28 @@ namespace Obsidian.Items
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException(nameof(slot));
 
-            //Assume there's nothing there so we give back air
-            if (!this.Items.ContainsKey(slot))
-                return new ItemStack(0, 0);
-
-            return this.Items.GetValueOrDefault(slot);
+            return this.Items[slot] ?? ItemStack.Air;
         }
 
-        public bool RemoveItem(int slot, int amount = 1)
+        public bool RemoveItem(int slot, short amount = 1)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            if (!this.Items.ContainsKey(slot))
+            var item = this.Items[slot];
+
+            if (item == null)
                 return false;
 
-            if (amount >= 64 || this.Items[slot].Count - amount <= 0)
-                return this.Items.TryRemove(slot, out var _);
-
-            this.Items[slot].Count -= amount;
+            if (amount >= 64 || item.Count - amount <= 0)
+                this.Items[slot] = null;
+            else
+                item.Count -= amount;
 
             return true;
         }
+
+        public bool HasItems() => this.Items.Any(x => x is not null);
     }
 
     public enum InventoryType

@@ -3,11 +3,12 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
 using System;
 using System.Collections.Generic;
@@ -29,8 +30,12 @@ namespace Obsidian.Entities
         /// <summary>
         /// The players inventory
         /// </summary>
-        public Inventory Inventory { get; private set; } = new Inventory();
+        public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
+
+        public ItemStack LastClickedItem { get; internal set; }
+
+        public Block LastClickedBlock { get; internal set; }
 
         public Guid Uuid { get; set; }
 
@@ -90,6 +95,11 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
+            this.Inventory = new Inventory(9 * 5 + 1)
+            {
+                Owner = uuid,
+                OwnedByPlayer = true
+            };
 
             LoadPerms();
         }
@@ -114,10 +124,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -153,10 +162,10 @@ namespace Obsidian.Entities
                         CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -188,10 +197,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -235,6 +243,21 @@ namespace Obsidian.Entities
                 File.Create(file).Close();
 
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
+        }
+
+        public async Task OpenInventoryAsync(Inventory inventory)
+        {
+            await this.client.QueuePacketAsync(new OpenWindow(inventory));
+
+            if (inventory.HasItems())
+            {
+                await this.client.QueuePacketAsync(new WindowItems
+                {
+                    WindowId = inventory.Id,
+                    Count = (short)inventory.Items.Length,
+                    Items = inventory.Items.ToList()
+                });
+            }
         }
 
         public async Task TeleportAsync(Position pos)
@@ -283,7 +306,7 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            if (!(message is ChatMessage chatMessage))
+            if (message is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
 
             return this.SendMessageAsync(chatMessage, type, sender);
@@ -333,7 +356,7 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
+            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
 
