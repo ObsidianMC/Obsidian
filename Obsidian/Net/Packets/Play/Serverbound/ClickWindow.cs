@@ -1,4 +1,7 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Items;
@@ -70,14 +73,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async Task HandleAsync(Server server, Player player)
         {
-            var inventory = this.WindowId > 0 ? player.OpenedInventory : player.Inventory;
+            var inventory = player.OpenedInventory;
 
-            var value = this.ClickedSlot.GetDifference(inventory.Size);
+            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
 
-            if (value > 0)
-                inventory = player.Inventory;
-
-            if (this.ClickedSlot > inventory.Size - 1 && this.ClickedSlot >= 9 && this.ClickedSlot <= 44)
+            if (this.WindowId == 0 && player.LastClickedBlock.Type == Materials.EnderChest && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
                 inventory = player.Inventory;
 
             switch (this.Mode)
@@ -203,7 +203,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         private async Task HandleMouseClick(Inventory inventory, Server server, Player player, int value)
         {
-            if (this.Item?.Id > 0)
+            if (!this.Item.IsAir())
             {
                 var evt = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, this.Item)
                 {
@@ -215,41 +215,28 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 player.LastClickedItem = this.Item;
 
-                //Console.WriteLine($"Last clicked item: {player.LastClickedItem.Type}");
-            }
-
-            if (this.Button == 0)
-            {
-                if (player.LastClickedItem?.Id > 0 && this.Item == null)
-                {
-                    inventory.SetItem(value, player.LastClickedItem);
-
-                    //Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
-
-                    player.LastClickedItem = this.Item;
-
-                    return;
-                }
-
-                player.LastClickedItem = inventory.GetItem(value);
-
                 inventory.SetItem(value, null);
             }
             else
             {
-                if (player.LastClickedItem.Id > 0 && this.Item == null)
+                if (this.Button == 0)
                 {
                     inventory.SetItem(value, player.LastClickedItem);
 
-                    //Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+                    // if (!inventory.OwnedByPlayer)
+                    //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
                     player.LastClickedItem = this.Item;
-
-                    return;
                 }
+                else
+                {
+                    inventory.SetItem(value, player.LastClickedItem);
 
-                player.LastClickedItem = inventory.GetItem(value);
-                inventory.SetItem(value, null);
+                    // if (!inventory.OwnedByPlayer)
+                    //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+
+                    player.LastClickedItem = this.Item;
+                }
             }
         }
 

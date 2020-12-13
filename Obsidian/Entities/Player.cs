@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Items;
@@ -33,6 +34,8 @@ namespace Obsidian.Entities
         public Inventory OpenedInventory { get; set; }
 
         public ItemStack LastClickedItem { get; internal set; }
+
+        public Block LastClickedBlock { get; internal set; }
 
         public Guid Uuid { get; set; }
 
@@ -92,8 +95,9 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(uuid)
+            this.Inventory = new Inventory(9 * 5 + 1)
             {
+                Owner = uuid,
                 OwnedByPlayer = true
             };
 

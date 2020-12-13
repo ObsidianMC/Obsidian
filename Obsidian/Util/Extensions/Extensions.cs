@@ -18,13 +18,13 @@ namespace Obsidian.Util.Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
-        public static bool IsAir(this ItemStack item) => item.Type == Materials.Air;
+        public static bool IsAir(this ItemStack item) => item == null || item.Type == Materials.Air;
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
         /// </summary>
         /// <returns>The local slot value for a player inventory</returns>
-        public static int GetDifference(this short clickedSlot, int inventorySize)
+        public static (int slot, bool forPlayer) GetDifference(this short clickedSlot, int inventorySize)
         {
             inventorySize -= 1;
 
@@ -52,7 +52,7 @@ namespace Obsidian.Util.Extensions
                 _ => 0
             };
 
-            return add > 0 ? clickedSlot + add : clickedSlot - sub;
+            return (add > 0 ? clickedSlot + add : clickedSlot - sub, sub > 0 || add > 0);
         }
 
         public static bool NotFluid(this BlockState state) => !(state is BlockFluid);

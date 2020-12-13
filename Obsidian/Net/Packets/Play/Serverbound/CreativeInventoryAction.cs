@@ -27,19 +27,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.ClickedItem = await stream.ReadSlotAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             var inventory = player.OpenedInventory ?? player.Inventory;
 
-            var value = this.ClickedSlot.GetDifference(inventory.Size);
+            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
 
-            if (value > 0)
+            if (forPlayer)
                 inventory = player.Inventory;
 
-            if (this.ClickedSlot > inventory.Size - 1 && this.ClickedSlot >= 9 && this.ClickedSlot <= 44)
-                inventory = player.Inventory;
-
-            inventory.SetItem(this.ClickedSlot, this.ClickedItem);
+            inventory.SetItem(value, this.ClickedItem);
 
             player.LastClickedItem = this.ClickedItem;
 

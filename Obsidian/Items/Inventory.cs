@@ -25,15 +25,15 @@ namespace Obsidian.Items
 
         public ChatMessage Title { get; set; }
 
-        public int Size { get; set; } = 9 * 5;
+        public int Size { get; }
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
 
         public ItemStack[] Items { get; }
 
-        public Inventory(Guid? owner = null)
+        public Inventory(int size)
         {
-            this.Owner = owner;
+            this.Size = size;
             this.Items = new ItemStack[this.Size];
         }
 

@@ -55,7 +55,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.InsideBlock = await stream.ReadBooleanAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             var currentItem = player.GetHeldItem();
 
@@ -71,6 +71,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 if (arg.Cancel)
                     return;
+
+                player.LastClickedBlock = interactedBlock;
 
                 //TODO open chests/Crafting inventory ^ ^
 
@@ -104,12 +106,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 if (type == Materials.Chest)
                 {
-                    var inventory = new Inventory(player.Uuid)
+                    var inventory = new Inventory(9 * 3)
                     {
+                        Owner = player.Uuid,
                         Title = "Chest",
                         Type = InventoryType.Generic,
                         Id = maxId,
-                        Size = 9 * 3,
                         BlockPosition = location
                     };
 
@@ -135,11 +137,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.EnderChest)
                 {
-                    var enderChest = new Inventory(player.Uuid)
+                    var enderChest = new Inventory(9 * 3)
                     {
+                        Owner = player.Uuid,
                         Title = "Ender Chest",
                         Type = InventoryType.Generic,
-                        Size = 9 * 3,
+                        Id = maxId
                     };
 
                     var invUuid = Guid.NewGuid();
@@ -164,12 +167,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.CraftingTable)
                 {
-                    var crafting = new Inventory
+                    var crafting = new Inventory(2 * 5)
                     {
                         Title = "Crafting Table",
                         Type = InventoryType.Crafting,
                         Id = maxId,
-                        Size = 2 * 5,
                         BlockPosition = location
                     };
 
@@ -182,11 +184,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     InventoryType actualType = type == Materials.Furnace ? InventoryType.Furnace :
                         type == Materials.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
 
-                    var furnace = new Inventory
+                    var furnace = new Inventory(3)
                     {
                         Type = actualType,
                         Id = maxId,
-                        Size = 3,
                         BlockPosition = location
                     };
 
@@ -196,11 +197,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.EnchantingTable)
                 {
-                    var enchantmentTable = new Inventory
+                    var enchantmentTable = new Inventory(2)
                     {
                         Type = InventoryType.Enchantment,
                         Id = maxId,
-                        Size = 2,
                         BlockPosition = location
                     };
 
@@ -210,11 +210,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Anvil || type == Materials.SmithingTable)//TODO implement other anvil types
                 {
-                    var anvil = new Inventory
+                    var anvil = new Inventory(3)
                     {
                         Type = InventoryType.Anvil,
                         Id = maxId,
-                        Size = 3,
                         BlockPosition = location
                     };
 
@@ -224,12 +223,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type >= Materials.ShulkerBox && type <= Materials.BlackShulkerBox)
                 {
-                    var box = new Inventory(player.Uuid)//TODO shulker box functionality
+                    var box = new Inventory(9 * 3)//TODO shulker box functionality
                     {
+                        Owner = player.Uuid,
                         Title = "Shulker Box",
                         Type = InventoryType.ShulkerBox,
                         Id = maxId,
-                        Size = 9 * 3,
                         BlockPosition = location
                     };
 
@@ -239,11 +238,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Loom)
                 {
-                    var box = new Inventory
+                    var box = new Inventory(4)
                     {
                         Type = InventoryType.Loom,
                         Id = maxId,
-                        Size = 4,
                         BlockPosition = location
                     };
 
@@ -253,12 +251,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Barrel)
                 {
-                    var box = new Inventory(player.Uuid)
+                    var box = new Inventory(9 * 3)
                     {
+                        Owner = player.Uuid,
                         Title = "Barrel",
                         Type = InventoryType.Generic,
                         Id = maxId,
-                        Size = 9 * 3,
                         BlockPosition = location
                     };
 
@@ -268,11 +266,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.CartographyTable)
                 {
-                    var box = new Inventory(player.Uuid)
+                    var box = new Inventory(3)
                     {
                         Type = InventoryType.CartographyTable,
                         Id = maxId,
-                        Size = 3,
                         BlockPosition = location
                     };
 
@@ -282,11 +279,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Stonecutter)
                 {
-                    var box = new Inventory
+                    var box = new Inventory(2)
                     {
                         Type = InventoryType.Stonecutter,
                         Id = maxId,
-                        Size = 2,
                         BlockPosition = location
                     };
 
@@ -296,11 +292,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Grindstone)
                 {
-                    var box = new Inventory
+                    var box = new Inventory(3)
                     {
                         Type = InventoryType.Grindstone,
                         Id = maxId,
-                        Size = 3,
                         BlockPosition = location
                     };
 
