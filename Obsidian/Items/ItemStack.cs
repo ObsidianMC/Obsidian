@@ -1,11 +1,11 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
 using System;
 
 namespace Obsidian.Items
 {
-    public class ItemStack : Item, IEquatable<ItemStack>
+    public class ItemStack : IEquatable<ItemStack>
     {
-        public readonly static ItemStack Air = new ItemStack(0, 0);
+        public readonly static ItemStack Air = new ItemStack(Materials.Air, 0);
 
         internal bool Present { get; set; }
 
@@ -13,21 +13,22 @@ namespace Obsidian.Items
 
         public ItemMeta ItemMeta { get; internal set; }
 
-        public ItemStack() : base(0, "minecraft:air", Materials.Air) { }
+        public Materials Type { get; }
 
-        public ItemStack(short itemId, short count, ItemMeta? meta = null) : base(itemId, Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
+        public ItemStack(Materials type, short count = 1, ItemMeta? meta = null)
         {
+            this.Type = type;
             this.Count = count;
             if (count > 0) { Present = true; }
 
-            if(meta.HasValue)
+            if (meta.HasValue)
                 this.ItemMeta = meta.Value;
         }
 
         public static ItemStack operator -(ItemStack item, int value)
         {
             if (item.Count <= 0)
-                return new ItemStack(0, 0);
+                return ItemStack.Air;
 
             item.Count -= (short)value;
 
@@ -53,6 +54,6 @@ namespace Obsidian.Items
         public override bool Equals(object obj) => obj is ItemStack itemStack && Equals(itemStack);
 
         public override int GetHashCode() =>
-            (this.Present, this.Count, this.ItemMeta, this.Id, this.UnlocalizedName).GetHashCode();
+            (this.Present, this.Count, this.ItemMeta).GetHashCode();
     }
 }

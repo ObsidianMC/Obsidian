@@ -601,10 +601,12 @@ namespace Obsidian.Net
                     Present = true
                 };
 
+            var item = Registry.GetItem(slot.Type);
+
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
-                await this.WriteVarIntAsync(slot.Id);
+                await this.WriteVarIntAsync(item.Id);
                 await this.WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
@@ -665,7 +667,7 @@ namespace Obsidian.Net
                     }
                 }
 
-                writer.WriteString("id", slot.UnlocalizedName);
+                writer.WriteString("id", item.UnlocalizedName);
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
@@ -679,7 +681,9 @@ namespace Obsidian.Net
 
             if (present)
             {
-                var slot = new ItemStack((short)await this.ReadVarIntAsync(), await this.ReadByteAsync())
+                var item = Registry.GetItem((short)await this.ReadVarIntAsync());
+
+                var slot = new ItemStack(item.Type, await this.ReadByteAsync())
                 {
                     Present = present
                 };
@@ -792,15 +796,15 @@ namespace Obsidian.Net
         [ReadMethod(DataType.Slot)]
         public ItemStack ReadSlot()
         {
-            var slot = new ItemStack();
+            ItemStack slot = new ItemStack(Materials.Air, 0);
 
             var present = this.ReadBoolean();
-            slot.Present = present;
 
             if (present)
             {
-                slot.Id = (short)this.ReadVarInt();
-                slot.Count = this.ReadSignedByte();
+                var item = Registry.GetItem((short)this.ReadVarInt());
+
+                slot = new ItemStack(item.Type, this.ReadSignedByte());
 
                 var reader = new NbtReader(this);
 

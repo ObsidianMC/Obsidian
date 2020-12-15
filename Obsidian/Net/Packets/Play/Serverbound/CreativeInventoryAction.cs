@@ -48,7 +48,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     EntityId = player.EntityId,
                     Slot = ESlot.MainHand,
-                    Item = new ItemStack(heldItem.Id, heldItem.Count, heldItem.ItemMeta)
+                    Item = new ItemStack(heldItem.Type, heldItem.Count, heldItem.ItemMeta)
                     {
                         Present = heldItem.Present
                     }

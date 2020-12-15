@@ -31,7 +31,7 @@ namespace Obsidian.Net.Packets.Play
 
             var block = server.World.GetBlock(loc);
 
-            if (block.Type == Blocks.Materials.Chest)
+            if (block.Type == Materials.Chest)
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {
@@ -42,7 +42,7 @@ namespace Obsidian.Net.Packets.Play
                 });
                 await player.SendSoundAsync(Sounds.BlockChestClose, loc.SoundPosition);
             }
-            else if (block.Type == Blocks.Materials.EnderChest)
+            else if (block.Type == Materials.EnderChest)
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {

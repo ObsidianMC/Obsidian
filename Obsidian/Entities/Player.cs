@@ -124,7 +124,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -163,7 +163,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -197,7 +197,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });

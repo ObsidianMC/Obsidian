@@ -32,14 +32,14 @@ namespace Obsidian.Util.Converters
                         {
                             var item = GetItem(id);
 
-                            ingredient.Add(new ItemStack(item.Id, (short)recipeItem.Count));
+                            ingredient.Add(new ItemStack(item.Type, (short)recipeItem.Count));
                         }
                     }
                     else
                     {
                         var i = GetItem(recipeItem.Item);
 
-                        ingredient.Add(new ItemStack(i.Id, (short)recipeItem.Count));
+                        ingredient.Add(new ItemStack(i.Type, (short)recipeItem.Count));
                     }
                 }
 
@@ -64,14 +64,14 @@ namespace Obsidian.Util.Converters
                     {
                         var item = GetItem(id);
 
-                        ingredient.Add(new ItemStack(item.Id, (short)recipeItem.Count));
+                        ingredient.Add(new ItemStack(item.Type, (short)recipeItem.Count));
                     }
                 }
                 else
                 {
                     var i = GetItem(recipeItem.Item);
 
-                    ingredient.Add(new ItemStack(i.Id, (short)recipeItem.Count));
+                    ingredient.Add(new ItemStack(i.Type, (short)recipeItem.Count));
                 }
 
                 return ingredient;

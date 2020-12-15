@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Blocks
+﻿using Obsidian.API;
+
+namespace Obsidian.Blocks
 {
     public class BlockNetherWart : Block
     {

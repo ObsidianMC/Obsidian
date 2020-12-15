@@ -59,7 +59,7 @@ namespace Obsidian.Items
                     if (invItem == null)
                         continue;
 
-                    if (invItem.Id == item.Id)
+                    if (invItem.Type == item.Type)
                     {
                         if (invItem.Count >= 64)
                             continue;
@@ -102,7 +102,7 @@ namespace Obsidian.Items
                     if (invItem == null)
                         continue;
 
-                    if (invItem.Id == item.Id)
+                    if (invItem.Type == item.Type)
                     {
                         if (invItem.Count >= 64)
                             continue;

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
+    // TODO item entity has to have a MaterialType prop
     public class ItemEntity : Entity
     {
         public short Id { get; set; }
@@ -21,7 +22,7 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Id, this.Count, this.ItemMeta)
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(Registry.GetItem(this.Id).Type, this.Count, this.ItemMeta)
             {
                 Present = true
             });
