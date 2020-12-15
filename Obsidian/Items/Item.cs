@@ -4,14 +4,17 @@ namespace Obsidian.Items
 {
     public class Item
     {
-        public string UnlocalizedName { get; internal set; }
+        public string UnlocalizedName { get; }
 
         public Materials Type { get; }
 
-        public short Id { get; set; }
+        public short Id { get; internal set; }
 
-        public Item(Materials type) => this.Type = type;
-
-        public Item(string unlocalizedName, Materials type) : this(type) { this.UnlocalizedName = unlocalizedName; }
+        public Item(int id, string unlocalizedName, Materials type)
+        {
+            this.Id = (short)id;
+            this.UnlocalizedName = unlocalizedName;
+            this.Type = type;
+        }
     }
 }

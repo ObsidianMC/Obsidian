@@ -40,7 +40,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             player.LastClickedItem = this.ClickedItem;
 
-            if(player.CurrentSlot == this.ClickedSlot)
+            if (player.CurrentSlot == this.ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 
@@ -48,12 +48,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     EntityId = player.EntityId,
                     Slot = ESlot.MainHand,
-                    Item = new ItemStack
+                    Item = new ItemStack(heldItem.Id, heldItem.Count, heldItem.ItemMeta)
                     {
-                        Present = heldItem.Present,
-                        Count = (sbyte)heldItem.Count,
-                        Id = heldItem.Id,
-                        ItemMeta = heldItem.ItemMeta
+                        Present = heldItem.Present
                     }
                 }, player);
             }

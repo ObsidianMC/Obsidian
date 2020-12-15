@@ -579,7 +579,7 @@ namespace Obsidian
                     itersPerSecond = 0;
                     stopWatch.Restart();
                 }
-                Task.Run(() => World.ManageChunks());
+                _ = Task.Run(() => World.ManageChunks());
             }
         }
 

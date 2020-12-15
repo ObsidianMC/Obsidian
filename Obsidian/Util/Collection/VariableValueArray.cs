@@ -73,7 +73,7 @@ namespace Obsidian.Util.Collection
         private void CheckIndex(int index)
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index must not be negative");
+                throw new ArgumentOutOfRangeException(nameof(index), "index must not be negative");
 
             if (index >= this.Capacity)
                 throw new ArgumentOutOfRangeException($"index must not be greater then the capacity {this.Capacity}");

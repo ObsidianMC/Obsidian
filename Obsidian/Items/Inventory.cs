@@ -17,17 +17,17 @@ namespace Obsidian.Items
 
         internal bool OwnedByPlayer { get; set; }
 
+        public List<Player> Viewers { get; private set; } = new List<Player>();
+
         public Position BlockPosition { get; set; }
 
-        public Guid? Owner { get; set; }
+        public Guid Owner { get; set; }
 
         public InventoryType Type { get; set; }
 
         public ChatMessage Title { get; set; }
 
         public int Size { get; }
-
-        public List<Player> Viewers { get; private set; } = new List<Player>();
 
         public ItemStack[] Items { get; }
 

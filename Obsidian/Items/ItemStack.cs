@@ -13,13 +13,15 @@ namespace Obsidian.Items
 
         public ItemMeta ItemMeta { get; internal set; }
 
-        public ItemStack() : base("minecraft:air", Materials.Air) { }
+        public ItemStack() : base(0, "minecraft:air", Materials.Air) { }
 
-        public ItemStack(short itemId, short count) : base(Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
+        public ItemStack(short itemId, short count, ItemMeta? meta = null) : base(itemId, Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
         {
-            this.Id = itemId;
             this.Count = count;
             if (count > 0) { Present = true; }
+
+            if(meta.HasValue)
+                this.ItemMeta = meta.Value;
         }
 
         public static ItemStack operator -(ItemStack item, int value)
