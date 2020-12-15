@@ -48,7 +48,6 @@ namespace Obsidian.Items
             }
         }
 
-        //TODO match item meta
         public int AddItem(ItemStack item)
         {
             if (this.OwnedByPlayer)

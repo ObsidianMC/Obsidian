@@ -1,9 +1,10 @@
 ﻿using Obsidian.Chat;
+using System;
 using System.Collections.Generic;
 
 namespace Obsidian.Items
 {
-    public struct ItemMeta
+    public struct ItemMeta : IEquatable<ItemMeta>
     {
         internal byte Slot { get; set; }
 
@@ -25,5 +26,18 @@ namespace Obsidian.Items
         public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
         public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
+
+        public bool Equals(ItemMeta other) =>
+            (this.Slot, this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore) ==
+            (other.Slot, other.CustomModelData, other.Name, other.RepairAmount, other.Durability, other.Unbreakable, other.Enchantments, other.StoredEnchantments, other.CanDestroy, other.Lore);
+
+        public override bool Equals(object obj) => obj is ItemMeta meta && Equals(meta);
+
+        public static bool operator ==(ItemMeta left, ItemMeta right) => left.Equals(right);
+
+        public static bool operator !=(ItemMeta left, ItemMeta right) => !(left == right);
+
+        public override int GetHashCode() =>
+            (this.Slot, this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
     }
 }

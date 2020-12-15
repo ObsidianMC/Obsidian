@@ -1,12 +1,11 @@
 ﻿using Obsidian.Blocks;
-using Obsidian.Util.Registry;
 using System;
 
 namespace Obsidian.Items
 {
     public class ItemStack : Item, IEquatable<ItemStack>
     {
-        public readonly static ItemStack Air = new ItemStack(0, 0, default);
+        public readonly static ItemStack Air = new ItemStack(0, 0);
 
         internal bool Present { get; set; }
 
@@ -16,25 +15,26 @@ namespace Obsidian.Items
 
         public ItemStack() : base("minecraft:air", Materials.Air) { }
 
-        public ItemStack(short itemId, short count, ItemMeta? itemMeta = null) : base(Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
+        public ItemStack(short itemId, short count) : base(Registry.GetItem(itemId).UnlocalizedName, Registry.GetItem(itemId).Type)
         {
             this.Id = itemId;
             this.Count = count;
             if (count > 0) { Present = true; }
-
-            if (itemMeta != null)
-                this.ItemMeta = itemMeta.Value;
         }
 
         public static ItemStack operator -(ItemStack item, int value)
         {
             if (item.Count <= 0)
-                return new ItemStack(0, 0, default);
+                return new ItemStack(0, 0);
 
             item.Count -= (short)value;
 
             return item;
         }
+
+        public static bool operator ==(ItemStack left, ItemStack right) => left.Equals(right);
+
+        public static bool operator !=(ItemStack left, ItemStack right) => !(left == right);
 
         public static ItemStack operator +(ItemStack item, int value)
         {
@@ -46,12 +46,11 @@ namespace Obsidian.Items
             return item;
         }
 
-        public bool Equals(ItemStack other)
-        {
-            if (other == null)
-                throw new NullReferenceException();
+        public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other.Type, other.ItemMeta);
 
-            return this.Type == other.Type && (this.ItemMeta.Name == other.ItemMeta.Name && this.ItemMeta.Lore == other.ItemMeta.Lore);
-        }
+        public override bool Equals(object obj) => obj is ItemStack itemStack && Equals(itemStack);
+
+        public override int GetHashCode() =>
+            (this.Present, this.Count, this.ItemMeta, this.Id, this.UnlocalizedName).GetHashCode();
     }
 }
