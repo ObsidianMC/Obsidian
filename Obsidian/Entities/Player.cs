@@ -95,10 +95,10 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(9 * 5 + 1)
+            this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1)
             {
                 Owner = uuid,
-                OwnedByPlayer = true
+                IsPlayerInventory = true
             };
 
             LoadPerms();

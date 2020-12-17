@@ -15,7 +15,7 @@ namespace Obsidian.Items
 
         internal int ActionsNumber { get; set; }
 
-        internal bool OwnedByPlayer { get; set; }
+        internal bool IsPlayerInventory { get; set; }
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
 
@@ -23,18 +23,64 @@ namespace Obsidian.Items
 
         public Guid Owner { get; set; }
 
-        public InventoryType Type { get; set; }
-
         public ChatMessage Title { get; set; }
+
+        public InventoryType Type { get; }
 
         public int Size { get; }
 
         public ItemStack[] Items { get; }
 
-        public Inventory(int size)
+        public Inventory(InventoryType type, int size = 0)
         {
+            this.Type = type;
+
+            if (size <= 0)
+            {
+                switch (type)
+                {
+                    case InventoryType.Beacon:
+                    case InventoryType.Lectern:
+                        size = 1;
+                        break;
+                    case InventoryType.Grindstone:
+                    case InventoryType.CartographyTable:
+                    case InventoryType.Anvil:
+                    case InventoryType.BlastFurnace:
+                    case InventoryType.Smoker:
+                    case InventoryType.Furnace:
+                    case InventoryType.Merchant:
+                        size = 3;
+                        break;
+                    case InventoryType.BrewingStand:
+                    case InventoryType.Hopper:
+                        size = 5;
+                        break;
+                    case InventoryType.Crafting:
+                        size = 2 * 5;
+                        break;
+                    case InventoryType.Stonecutter:
+                    case InventoryType.Enchantment:
+                        size = 2;
+                        break;
+                    case InventoryType.Loom:
+                        size = 4;
+                        break;
+                    case InventoryType.Generic:
+                        size = 9 * 3;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (type == InventoryType.Generic && size % 9 != 0 && !this.IsPlayerInventory)
+                throw new InvalidOperationException("Size must be divisble by 9");
+            if (size > 9 * 6)
+                throw new InvalidOperationException($"Size must be <= {9 * 6}");
+
             this.Size = size;
-            this.Items = new ItemStack[this.Size];
+            this.Items = new ItemStack[size];
         }
 
         public void AddItems(params ItemStack[] items)
@@ -50,7 +96,7 @@ namespace Obsidian.Items
 
         public int AddItem(ItemStack item)
         {
-            if (this.OwnedByPlayer)
+            if (this.IsPlayerInventory)
             {
                 for (int i = 36; i < 45; i++)
                 {

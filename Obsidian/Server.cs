@@ -42,9 +42,11 @@ namespace Obsidian
         private readonly ConcurrentQueue<QueueChat> chatMessages;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
+        private readonly TcpListener tcpListener;
 
         internal readonly CancellationTokenSource cts;
-        private readonly TcpListener tcpListener;
+
+        internal static byte LastInventoryId;
 
         public const ProtocolVersion protocol = ProtocolVersion.v1_16_4;
         public ProtocolVersion Protocol => protocol;

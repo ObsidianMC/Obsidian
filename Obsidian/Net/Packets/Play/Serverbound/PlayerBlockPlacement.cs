@@ -8,7 +8,6 @@ using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
-using Obsidian.Util.Registry;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -76,9 +75,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 //TODO open chests/Crafting inventory ^ ^
 
-                var maxId = Math.Max((byte)1, ++Inventory.LastId);
-                if (maxId == byte.MaxValue)
-                    maxId = 1;
+                if (Server.LastInventoryId == byte.MaxValue)
+                    Server.LastInventoryId = 1;
+
+                var maxId = Math.Max((byte)1, ++Server.LastInventoryId);
 
                 if (server.World.GetBlockMeta(location) is BlockMeta meta && meta.InventoryId != Guid.Empty)
                 {
@@ -104,13 +104,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 var type = interactedBlock.Type;
 
-                if (type == Materials.Chest)
+                if (type == Materials.Chest)//TODO check if chest its next to another single chest
                 {
-                    var inventory = new Inventory(9 * 3)
+                    var inventory = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
                         Title = "Chest",
-                        Type = InventoryType.Generic,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -137,11 +136,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.EnderChest)
                 {
-                    var enderChest = new Inventory(9 * 3)
+                    var enderChest = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
                         Title = "Ender Chest",
-                        Type = InventoryType.Generic,
                         Id = maxId
                     };
 
@@ -167,10 +165,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.CraftingTable)
                 {
-                    var crafting = new Inventory(2 * 5)
+                    var crafting = new Inventory(InventoryType.Crafting)
                     {
                         Title = "Crafting Table",
-                        Type = InventoryType.Crafting,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -184,9 +181,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     InventoryType actualType = type == Materials.Furnace ? InventoryType.Furnace :
                         type == Materials.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
 
-                    var furnace = new Inventory(3)
+                    var furnace = new Inventory(actualType)
                     {
-                        Type = actualType,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -197,9 +193,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.EnchantingTable)
                 {
-                    var enchantmentTable = new Inventory(2)
+                    var enchantmentTable = new Inventory(InventoryType.Enchantment)
                     {
-                        Type = InventoryType.Enchantment,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -210,9 +205,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Anvil || type == Materials.SmithingTable)//TODO implement other anvil types
                 {
-                    var anvil = new Inventory(3)
+                    var anvil = new Inventory(InventoryType.Anvil)
                     {
-                        Type = InventoryType.Anvil,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -223,11 +217,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type >= Materials.ShulkerBox && type <= Materials.BlackShulkerBox)
                 {
-                    var box = new Inventory(9 * 3)//TODO shulker box functionality
+                    var box = new Inventory(InventoryType.ShulkerBox)//TODO shulker box functionality
                     {
                         Owner = player.Uuid,
                         Title = "Shulker Box",
-                        Type = InventoryType.ShulkerBox,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -238,9 +231,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Loom)
                 {
-                    var box = new Inventory(4)
+                    var box = new Inventory(InventoryType.Loom)
                     {
-                        Type = InventoryType.Loom,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -251,11 +243,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Barrel)
                 {
-                    var box = new Inventory(9 * 3)
+                    var box = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
                         Title = "Barrel",
-                        Type = InventoryType.Generic,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -266,9 +257,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.CartographyTable)
                 {
-                    var box = new Inventory(3)
+                    var box = new Inventory(InventoryType.CartographyTable)
                     {
-                        Type = InventoryType.CartographyTable,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -279,9 +269,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Stonecutter)
                 {
-                    var box = new Inventory(2)
+                    var box = new Inventory(InventoryType.Stonecutter)
                     {
-                        Type = InventoryType.Stonecutter,
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -292,9 +281,44 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type == Materials.Grindstone)
                 {
-                    var box = new Inventory(3)
+                    var box = new Inventory(InventoryType.Grindstone)
                     {
-                        Type = InventoryType.Grindstone,
+                        Id = maxId,
+                        BlockPosition = location
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.BrewingStand)
+                {
+                    var box = new Inventory(InventoryType.BrewingStand)
+                    {
+                        Id = maxId,
+                        BlockPosition = location
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Lectern)
+                {
+                    var box = new Inventory(InventoryType.Lectern)
+                    {
+                        Id = maxId,
+                        BlockPosition = location
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Hopper || type == Materials.HopperMinecart)
+                {
+                    var box = new Inventory(InventoryType.Hopper)
+                    {
                         Id = maxId,
                         BlockPosition = location
                     };
