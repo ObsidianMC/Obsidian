@@ -9,13 +9,9 @@ namespace Obsidian.Items
 {
     public class Inventory
     {
-        internal static byte LastId { get; set; }
-
         internal byte Id { get; set; }
 
         internal int ActionsNumber { get; set; }
-
-        internal bool IsPlayerInventory { get; set; }
 
         public List<Player> Viewers { get; private set; } = new List<Player>();
 
@@ -29,11 +25,14 @@ namespace Obsidian.Items
 
         public int Size { get; }
 
+        public bool IsPlayerInventory { get; }
+
         public ItemStack[] Items { get; }
 
-        public Inventory(InventoryType type, int size = 0)
+        public Inventory(InventoryType type, int size = 0, bool isPlayerInventory = false)
         {
             this.Type = type;
+            this.IsPlayerInventory = isPlayerInventory;
 
             if (size <= 0)
             {
@@ -74,7 +73,7 @@ namespace Obsidian.Items
                 }
             }
 
-            if (type == InventoryType.Generic && size % 9 != 0 && !this.IsPlayerInventory)
+            if (!this.IsPlayerInventory && type == InventoryType.Generic && size % 9 != 0)
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
