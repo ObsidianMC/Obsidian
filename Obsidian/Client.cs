@@ -45,7 +45,6 @@ namespace Obsidian
         private PacketCryptography packetCryptography;
 
         private MinecraftStream minecraftStream;
-        private PacketDebugStream debugStream;
 
         private Config config;
 
@@ -57,7 +56,6 @@ namespace Obsidian
 
         internal TcpClient tcp;
 
-        internal int clickActionNumber;
         internal int ping;
         internal int missedKeepalives;
         internal int id;
@@ -92,9 +90,6 @@ namespace Obsidian
             this.LoadedChunks = new List<(int cx, int cz)>();
 
             Stream parentStream = this.tcp.GetStream();
-#if DEBUG
-            //parentStream = this.DebugStream = new PacketDebugStream(parentStream);
-#endif
             this.minecraftStream = new MinecraftStream(parentStream);
 
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
@@ -273,7 +268,7 @@ namespace Obsidian
                                 }
 
                                 this.encryptionEnabled = true;
-                                this.minecraftStream = new AesStream(this.debugStream ?? (Stream)this.tcp.GetStream(), this.sharedKey);
+                                this.minecraftStream = new AesStream(this.tcp.GetStream(), this.sharedKey);
 
                                 //await this.SetCompression();
                                 await ConnectAsync();

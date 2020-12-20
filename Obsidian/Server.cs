@@ -477,15 +477,15 @@ namespace Obsidian
 
                         this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
 
-                        var itemId = Registry.GetItem(block.Type)?.Id;
+                        var itemId = Registry.GetItem(block.Type).Id;
 
-                        if (itemId is null) { break; }
+                        if (itemId == 0) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = itemId.Value,
+                            Id = itemId,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,

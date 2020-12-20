@@ -1,5 +1,4 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;
@@ -22,9 +21,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.RecipeId = await stream.ReadStringAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
-        {
-
-        }
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Obsidian.Items
 {
-    public class Item
+    public struct Item
     {
         public string UnlocalizedName { get; }
 

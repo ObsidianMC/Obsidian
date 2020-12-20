@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.TeleportId = await stream.ReadVarIntAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             if (this.TeleportId == player.TeleportId)
                 return;
