@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Obsidian.Crafting
+namespace Obsidian.API.Crafting
 {
     public sealed class ShapedRecipe : IRecipe
     {

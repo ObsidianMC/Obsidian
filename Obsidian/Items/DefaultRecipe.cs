@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Crafting
+﻿namespace Obsidian.API
 {
     public class DefaultRecipe
     {

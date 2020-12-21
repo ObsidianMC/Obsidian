@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Obsidian.Crafting;
+using Obsidian.API;
+using Obsidian.API.Crafting;
 using Obsidian.Items;
 using Obsidian.Util.Extensions;
 using System;

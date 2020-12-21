@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
-using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

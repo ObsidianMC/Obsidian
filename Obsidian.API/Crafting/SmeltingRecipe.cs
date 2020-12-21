@@ -1,6 +1,6 @@
-﻿namespace Obsidian.Crafting
+﻿namespace Obsidian.API.Crafting
 {
-    public sealed class CuttingRecipe : IRecipe
+    public sealed class SmeltingRecipe : IRecipe
     {
         public string Name { get; set; }
 
@@ -12,6 +12,8 @@
 
         public Ingredient Ingredient { get; set; }
 
-        public int Count { get; set; }
+        public float Experience { get; set; }
+
+        public int Cookingtime { get; set; }
     }
 }

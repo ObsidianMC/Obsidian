@@ -5,7 +5,7 @@ using Obsidian.API;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
-using Obsidian.Crafting;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Nbt;
@@ -24,6 +24,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Obsidian.API.Crafting;
 
 namespace Obsidian.Net
 {
@@ -278,6 +279,11 @@ namespace Obsidian.Net
                         // TODO: add casing options on Field attribute and support custom naming enums.
                         var val = value.GetType().IsEnum ? value.ToString().ToCamelCase() : value.ToString();
                         await this.WriteStringAsync(val, length);
+                        break;
+                    }
+                case DataType.Identifier:
+                    {
+                        await this.WriteStringAsync(value.ToString());
                         break;
                     }
                 case DataType.Chat:
@@ -638,14 +644,14 @@ namespace Obsidian.Net
                     {
                         writer.BeginCompound("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { itemMeta.Name }));
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
 
                         if (itemMeta.Lore != null)
                         {
                             writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
+                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
 
                             writer.EndList();
                         }
@@ -659,7 +665,7 @@ namespace Obsidian.Net
                         writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { lore }));
+                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
 
                         writer.EndList();
 

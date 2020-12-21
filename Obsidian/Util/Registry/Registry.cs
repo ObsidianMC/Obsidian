@@ -2,8 +2,8 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.API;
+using Obsidian.API.Crafting;
 using Obsidian.Blocks;
-using Obsidian.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;

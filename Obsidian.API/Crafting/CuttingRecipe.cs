@@ -1,6 +1,6 @@
-﻿namespace Obsidian.Crafting
+﻿namespace Obsidian.API.Crafting
 {
-    public interface IRecipe
+    public sealed class CuttingRecipe : IRecipe
     {
         public string Name { get; set; }
 
@@ -9,5 +9,9 @@
         public string Group { get; set; }
 
         public Ingredient Result { get; set; }
+
+        public Ingredient Ingredient { get; set; }
+
+        public int Count { get; set; }
     }
 }

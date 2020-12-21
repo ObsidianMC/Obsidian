@@ -1,8 +1,7 @@
-﻿using Obsidian.Chat;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace Obsidian.Items
+namespace Obsidian.API
 {
     public struct ItemMeta : IEquatable<ItemMeta>
     {
@@ -10,7 +9,7 @@ namespace Obsidian.Items
 
         internal int CustomModelData { get; set; }
 
-        public ChatMessage Name { get; internal set; }
+        public IChatMessage Name { get; internal set; }
 
         public int RepairAmount { get; internal set; }
 
@@ -23,7 +22,7 @@ namespace Obsidian.Items
 
         public IReadOnlyList<string> CanDestroy { get; internal set; }
 
-        public IReadOnlyList<ChatMessage> Lore { get; internal set; }
+        public IReadOnlyList<IChatMessage> Lore { get; internal set; }
 
         public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
 

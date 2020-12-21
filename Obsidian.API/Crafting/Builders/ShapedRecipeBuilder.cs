@@ -1,9 +1,8 @@
-﻿using Obsidian.Items;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders
 {
     public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
     {
@@ -59,7 +58,7 @@ namespace Obsidian.Crafting.Builders
             return new ShapedRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = Globals.ShapedCrafting,
+                Type = "minecraft:crafting_shaped",
                 Group = this.Group,
                 Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
                 Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),

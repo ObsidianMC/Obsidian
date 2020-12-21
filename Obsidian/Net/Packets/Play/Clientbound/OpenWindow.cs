@@ -1,6 +1,6 @@
-﻿using Obsidian.Chat;
+﻿using Obsidian.API;
+using Obsidian.Chat;
 using Obsidian.Entities;
-using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System;
@@ -25,7 +25,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public OpenWindow(Inventory inventory)
         {
-            this.Title = inventory.Title;
+            this.Title = (ChatMessage)inventory.Title;
 
             if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
                 this.Type = type;

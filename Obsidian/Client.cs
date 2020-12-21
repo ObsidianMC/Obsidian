@@ -1,16 +1,14 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Crafting.Builders;
 using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
-using Obsidian.Crafting.Builders;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
@@ -22,7 +20,6 @@ using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serializer;
 using Obsidian.Util;
-using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.WorldData;
@@ -372,6 +369,7 @@ namespace Obsidian
 
                 Entities = Registry.Tags["entity_types"]
             });*/
+
             await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();

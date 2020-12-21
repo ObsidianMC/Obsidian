@@ -1,7 +1,6 @@
-﻿using Obsidian.Items;
-using System;
+﻿using System;
 
-namespace Obsidian.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders
 {
     public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
     {
@@ -60,7 +59,7 @@ namespace Obsidian.Crafting.Builders
             return new CuttingRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Name must not be null"),
-                Type = Globals.Stonecutting,
+                Type = "minecraft:stonecutting",
                 Group = this.Group,
                 Ingredient = this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
                 Count = this.Count,

@@ -1,4 +1,4 @@
-﻿using Obsidian.Crafting;
+﻿using Obsidian.API.Crafting;
 using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x5A;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

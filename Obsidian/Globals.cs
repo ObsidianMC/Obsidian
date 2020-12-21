@@ -15,15 +15,6 @@ namespace Obsidian
 {
     public static class Globals
     {
-        public const string ShapedCrafting = "minecraft:crafting_shaped";
-        public const string ShapelessCrafting = "minecraft:crafting_shapeless";
-        public const string Smelting = "minecraft:smelting";
-        public const string Blasting = "minecraft:blasting";
-        public const string Smoking = "minecraft:smoking";
-        public const string CampfireCooking = "minecraft:campfire_cooking";
-        public const string Stonecutting = "minecraft:stonecutting";
-        public const string Smithing = "minecraft:smithing";
-
         public static HttpClient HttpClient { get; } = new HttpClient();
         public static Random Random { get; } = new Random();
         public static GlobalConfig Config { get; set; }

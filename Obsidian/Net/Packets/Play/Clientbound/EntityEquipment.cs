@@ -1,5 +1,5 @@
-﻿using Obsidian.Entities;
-using Obsidian.Items;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System.Threading.Tasks;

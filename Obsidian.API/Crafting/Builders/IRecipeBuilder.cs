@@ -1,6 +1,4 @@
-﻿using Obsidian.Items;
-
-namespace Obsidian.Crafting.Builders
+﻿namespace Obsidian.API.Crafting.Builders
 {
     public interface IRecipeBuilder<TBuilder>
     {

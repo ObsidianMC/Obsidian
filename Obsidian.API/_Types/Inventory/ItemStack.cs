@@ -1,7 +1,6 @@
-﻿using Obsidian.API;
-using System;
+﻿using System;
 
-namespace Obsidian.Items
+namespace Obsidian.API
 {
     public class ItemStack : IEquatable<ItemStack>
     {
@@ -28,14 +27,23 @@ namespace Obsidian.Items
         public static ItemStack operator -(ItemStack item, int value)
         {
             if (item.Count <= 0)
-                return ItemStack.Air;
+                return Air;
 
             item.Count -= (short)value;
 
             return item;
         }
 
-        public static bool operator ==(ItemStack left, ItemStack right) => left.Equals(right);
+        public static bool operator ==(ItemStack left, ItemStack right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+
+            if (left is null || right is null)
+                return false;
+
+            return left.Equals(right);
+        }
 
         public static bool operator !=(ItemStack left, ItemStack right) => !(left == right);
 
@@ -49,7 +57,7 @@ namespace Obsidian.Items
             return item;
         }
 
-        public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other.Type, other.ItemMeta);
+        public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
 
         public override bool Equals(object obj) => obj is ItemStack itemStack && Equals(itemStack);
 

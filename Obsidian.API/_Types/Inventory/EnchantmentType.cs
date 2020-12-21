@@ -1,16 +1,5 @@
-﻿using Obsidian.Util.Extensions;
-
-namespace Obsidian.Items
+﻿namespace Obsidian.API
 {
-    public class Enchantment
-    {
-        internal string Id { get; set; }
-
-        public EnchantmentType Type => this.Id.ToEnchantType();
-
-        public int Level { get; set; }
-    }
-
     public enum EnchantmentType : int
     {
         Protection,

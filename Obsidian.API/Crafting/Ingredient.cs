@@ -1,9 +1,8 @@
-﻿using Obsidian.Items;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Obsidian.Crafting
+namespace Obsidian.API.Crafting
 {
     public class Ingredient : IEnumerable<ItemStack>
     {

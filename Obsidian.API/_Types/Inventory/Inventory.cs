@@ -1,11 +1,8 @@
-﻿using Obsidian.API;
-using Obsidian.Chat;
-using Obsidian.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Obsidian.Items
+namespace Obsidian.API
 {
     public class Inventory
     {
@@ -13,13 +10,13 @@ namespace Obsidian.Items
 
         internal int ActionsNumber { get; set; }
 
-        public List<Player> Viewers { get; private set; } = new List<Player>();
+        public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 
         public Position BlockPosition { get; set; }
 
         public Guid Owner { get; set; }
 
-        public ChatMessage Title { get; set; }
+        public IChatMessage Title { get; set; }
 
         public InventoryType Type { get; }
 

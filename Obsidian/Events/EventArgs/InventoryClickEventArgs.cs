@@ -1,6 +1,6 @@
-﻿using Obsidian.API.Events;
+﻿using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
-using Obsidian.Items;
 
 namespace Obsidian.Events.EventArgs
 {

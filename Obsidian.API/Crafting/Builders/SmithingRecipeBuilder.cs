@@ -1,7 +1,7 @@
 ﻿using Obsidian.Items;
 using System;
 
-namespace Obsidian.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders
 {
     public class SmithingRecipeBuilder : IRecipeBuilder<SmithingRecipeBuilder>
     {
@@ -65,7 +65,7 @@ namespace Obsidian.Crafting.Builders
             return new SmithingRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = Globals.Smithing,
+                Type = "minecraft:smithing",
                 Group = this.Group,
                 Base = this.Base,
                 Addition = this.Addition,

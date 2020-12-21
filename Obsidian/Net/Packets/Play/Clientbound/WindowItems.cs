@@ -1,5 +1,5 @@
-﻿using Obsidian.Entities;
-using Obsidian.Items;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public WindowItems() { }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

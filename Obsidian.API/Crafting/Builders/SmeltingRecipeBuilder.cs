@@ -1,7 +1,7 @@
 ﻿using Obsidian.Items;
 using System;
 
-namespace Obsidian.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders
 {
     public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
     {
@@ -79,16 +79,16 @@ namespace Obsidian.Crafting.Builders
             switch (this.Type)
             {
                 case SmeltingType.Default:
-                    type = Globals.Smelting;
+                    type = "minecraft:smelting";
                     break;
                 case SmeltingType.Blasting:
-                    type = Globals.Blasting;
+                    type = "minecraft:blasting";
                     break;
                 case SmeltingType.Smoking:
-                    type = Globals.Smoking;
+                    type = "minecraft:smoking";
                     break;
                 case SmeltingType.CampfireCooking:
-                    type = Globals.CampfireCooking;
+                    type = "minecraft:campfire_cooking";
                     break;
                 default:
                     break;

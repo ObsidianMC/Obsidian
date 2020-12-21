@@ -7,15 +7,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public class CraftRecipeResponse : IPacket
     {
-        [Field(0, Type = DataType.Byte)]
-        public byte WindowId { get; }
+        [Field(0)]
+        public sbyte WindowId { get; }
 
         [Field(1, Type = DataType.Identifier)]
         public string RecipeId { get; }
 
         public int Id => 0x2F;
 
-        public CraftRecipeResponse(byte windowId, string recipeId)
+        public CraftRecipeResponse(sbyte windowId, string recipeId)
         {
             this.WindowId = windowId;
             this.RecipeId = recipeId;
@@ -25,6 +25,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

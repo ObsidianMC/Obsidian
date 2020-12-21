@@ -1,5 +1,5 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
-using Obsidian.Items;
+using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Net;

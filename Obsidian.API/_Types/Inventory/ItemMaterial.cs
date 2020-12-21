@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Items
+﻿namespace Obsidian.API
 {
     public enum ItemMaterial
     {

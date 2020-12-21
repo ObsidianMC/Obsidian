@@ -1,14 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Obsidian.API;
-using Obsidian.Blocks;
+﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Util.Extensions;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 

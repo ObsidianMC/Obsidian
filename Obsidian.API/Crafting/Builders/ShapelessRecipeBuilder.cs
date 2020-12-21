@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders
 {
     public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
     {
@@ -38,7 +38,7 @@ namespace Obsidian.Crafting.Builders
             return new ShapelessRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = Globals.ShapelessCrafting,
+                Type = "minecraft:crafting_shapeless",
                 Group = this.Group,
                 Ingredients = new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients)),
                 Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")

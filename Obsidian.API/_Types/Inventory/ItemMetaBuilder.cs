@@ -1,16 +1,14 @@
-﻿using Obsidian.Chat;
-using Obsidian.Util.Extensions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.Items
+namespace Obsidian.API
 {
     public class ItemMetaBuilder
     {
         internal byte Slot { get; set; }
 
         internal int CustomModelData { get; set; }
-        public ChatMessage Name { get; internal set; }
+        public IChatMessage Name { get; internal set; }
 
         public int Durability { get; internal set; }
 
@@ -21,14 +19,14 @@ namespace Obsidian.Items
 
         public IReadOnlyList<string> CanDestroy { get; }
 
-        public IReadOnlyList<ChatMessage> Lore { get; }
+        public IReadOnlyList<IChatMessage> Lore { get; }
 
         private readonly Dictionary<EnchantmentType, Enchantment> enchantments = new Dictionary<EnchantmentType, Enchantment>();
         private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = new Dictionary<EnchantmentType, Enchantment>();
 
         private readonly List<string> canDestroy = new List<string>();
 
-        private readonly List<ChatMessage> lore = new List<ChatMessage>();
+        private readonly List<IChatMessage> lore = new List<IChatMessage>();
 
         public ItemMetaBuilder()
         {
@@ -37,7 +35,7 @@ namespace Obsidian.Items
 
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
 
-            this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
+            this.Lore = new ReadOnlyCollection<IChatMessage>(this.lore);
         }
 
         internal ItemMetaBuilder WithSlot(byte slot)
@@ -70,12 +68,19 @@ namespace Obsidian.Items
 
         public ItemMetaBuilder WithName(string name)
         {
-            this.Name = name;
+            this.Name = IChatMessage.Simple(name);
 
             return this;
         }
 
-        public ItemMetaBuilder AddLore(ChatMessage lore)
+        public ItemMetaBuilder AddLore(string lore)
+        {
+            this.lore.Add(IChatMessage.Simple(lore));
+
+            return this;
+        }
+
+        public ItemMetaBuilder AddLore(IChatMessage lore)
         {
             this.lore.Add(lore);
 
@@ -93,7 +98,7 @@ namespace Obsidian.Items
         {
             this.enchantments.Add(type, new Enchantment
             {
-                Id = type.ToString().ToSnakeCase(),
+                Type = type,
                 Level = level
             });
 
@@ -104,7 +109,7 @@ namespace Obsidian.Items
         {
             this.storedEnchantments.Add(type, new Enchantment
             {
-                Id = type.ToString().ToSnakeCase(),
+                Type = type,
                 Level = level
             });
 

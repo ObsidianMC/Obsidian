@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-
-namespace Obsidian.Crafting
+﻿namespace Obsidian.API.Crafting
 {
-    public sealed class ShapelessRecipe : IRecipe
+    public interface IRecipe
     {
         public string Name { get; set; }
 
@@ -11,7 +9,5 @@ namespace Obsidian.Crafting
         public string Group { get; set; }
 
         public Ingredient Result { get; set; }
-
-        public IReadOnlyList<Ingredient> Ingredients { get; set; }
     }
 }

@@ -1,15 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Attributes;
 using Obsidian.Serializer.Enums;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -84,7 +80,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     if (server.CachedWindows.TryGetValue(meta.InventoryId, out var inventory))
                     {
-                        Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+                        // Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
                         await player.OpenInventoryAsync(inventory);
                         await player.client.QueuePacketAsync(new BlockAction
@@ -109,7 +105,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var inventory = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
-                        Title = "Chest",
+                        Title = IChatMessage.Simple("Chest"),
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -139,7 +135,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var enderChest = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
-                        Title = "Ender Chest",
+                        Title = IChatMessage.Simple("Ender Chest"),
                         Id = maxId
                     };
 
@@ -167,7 +163,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var crafting = new Inventory(InventoryType.Crafting)
                     {
-                        Title = "Crafting Table",
+                        Title = IChatMessage.Simple("Crafting Table"),
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -220,7 +216,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var box = new Inventory(InventoryType.ShulkerBox)//TODO shulker box functionality
                     {
                         Owner = player.Uuid,
-                        Title = "Shulker Box",
+                        Title = IChatMessage.Simple("Shulker Box"),
                         Id = maxId,
                         BlockPosition = location
                     };
@@ -246,7 +242,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var box = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
-                        Title = "Barrel",
+                        Title = IChatMessage.Simple("Barrel"),
                         Id = maxId,
                         BlockPosition = location
                     };
