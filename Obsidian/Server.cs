@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
@@ -10,10 +11,8 @@ using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
-using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -142,12 +141,18 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-
         public void RegisterCommandClass<T>() where T : BaseCommandClass =>
             this.Commands.RegisterCommandClass<T>();
 
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
+
+        //TODO make sure to re-send recipes
+        public void RegisterRecipes(params IRecipe[] recipes)
+        {
+            foreach (var recipe in recipes)
+                Registry.Recipes.Add(recipe.Name.ToSnakeCase(), recipe);
+        }
 
         /// <summary>
         /// Checks if a player is online.
@@ -654,6 +659,8 @@ namespace Obsidian
         }
 
         private Task OnServerTick() => Task.CompletedTask;
+
+        
 
         #endregion Events
 

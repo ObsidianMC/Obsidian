@@ -49,6 +49,7 @@ namespace Obsidian.API
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
+        public Task OpenInventoryAsync(Inventory inventory);
         public Task<bool> GrantPermission(string permission);
         public Task<bool> RevokePermission(string permission);
         public Task<bool> HasPermission(string permission);
