@@ -325,9 +325,9 @@ namespace Obsidian.Entities
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(IChatMessage reason)
         {
-            var chatMessage = reason as ChatMessage;
-            if (chatMessage is null)
+            if (reason is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+
             return KickAsync(chatMessage);
         }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);

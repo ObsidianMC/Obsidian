@@ -39,7 +39,9 @@ namespace Obsidian
         private byte[] randomToken;
         private byte[] sharedKey;
 
-        private PacketCryptography packetCryptography;
+        private readonly BufferBlock<IPacket> packetQueue;
+
+        private readonly PacketCryptography packetCryptography;
 
         private MinecraftStream minecraftStream;
 
@@ -67,8 +69,6 @@ namespace Obsidian
         public CancellationTokenSource Cancellation { get; private set; } = new CancellationTokenSource();
 
         public ClientState State { get; private set; } = ClientState.Handshaking;
-
-        private BufferBlock<IPacket> packetQueue;
 
         public Server Server { get; private set; }
         public Player Player { get; private set; }
@@ -326,7 +326,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and savve client dimensionns
+            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -472,7 +472,7 @@ namespace Obsidian
                 foreach (var overload in cmd.Overloads.Take(1))
                 {
                     var args = overload.GetParameters().Skip(1); // skipping obsidian context
-                    if (args.Count() < 1)
+                    if (!args.Any())
                         cmdnode.Type |= CommandNodeType.IsExecutabe;
 
                     var prev = cmdnode;
@@ -493,19 +493,12 @@ namespace Obsidian
 
                         var mctype = this.Server.Commands.FindMinecraftType(type);
 
-                        switch (mctype)
+                        argnode.Parser = mctype switch
                         {
-                            case "brigadier:string":
-                                argnode.Parser = new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                                break;
-                            case "obsidian:player":
-                                // this is a custom type used by obsidian meaning "only player entities".
-                                argnode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-                                break;
-                            default:
-                                argnode.Parser = new CommandParser(mctype);
-                                break;
-                        }
+                            "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                            "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
+                            _ => new CommandParser(mctype),
+                        };
                     }
                 }
             }

@@ -79,7 +79,7 @@ namespace Obsidian.Util.Extensions
             if (string.IsNullOrEmpty(value))
                 throw new NullReferenceException(nameof(value));
 
-            return char.ToUpper(value[0]) + value.Substring(1);
+            return char.ToUpper(value[0]) + value[1..];
         }
 
         public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids)
@@ -174,7 +174,7 @@ namespace Obsidian.Util.Extensions
                         if (colorStr == 'r') Console.ResetColor();
                         else if (consoleColor.HasValue) Console.ForegroundColor = consoleColor.Value;
                     }
-                    Console.Write(colorStr.IsRealChatColor() ? msg.Substring(1) : msg);
+                    Console.Write(colorStr.IsRealChatColor() ? msg[1..] : msg);
                 }
             }
             Console.ResetColor();

@@ -1,8 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Events;
-using Obsidian.Entities;
-
-namespace Obsidian.Events.EventArgs
+﻿namespace Obsidian.API.Events
 {
     public class InventoryClickEventArgs : PlayerEventArgs, ICancellable
     {
@@ -23,7 +19,7 @@ namespace Obsidian.Events.EventArgs
 
         public bool Cancel { get; set; }
 
-        internal InventoryClickEventArgs(Player player, Inventory inventory, ItemStack item) : base(player)
+        internal InventoryClickEventArgs(IPlayer player, Inventory inventory, ItemStack item) : base(player)
         {
             this.Inventory = inventory;
             this.Item = item;

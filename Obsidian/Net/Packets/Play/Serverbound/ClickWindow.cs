@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Serializer.Attributes;
