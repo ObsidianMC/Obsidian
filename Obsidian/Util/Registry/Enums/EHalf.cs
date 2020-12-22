@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Util.Registry.Enums
 {
-    public enum Half
+    public enum EHalf
     {
         //for beds and doors
         Upper = 0,

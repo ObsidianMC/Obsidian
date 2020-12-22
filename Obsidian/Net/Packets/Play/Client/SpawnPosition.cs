@@ -1,4 +1,4 @@
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.API;
 using System.Threading.Tasks;
 using Obsidian.Entities;
@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class SpawnPosition : IPacket
     {
         [Field(0)]
-        public Position Location { get; private set; }
+        public PositionF Location { get; private set; }
 
         public int Id => 0x42;
 
@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Client
         {
         }
 
-        public SpawnPosition(Position location) => this.Location = location;
+        public SpawnPosition(PositionF location) => this.Location = location;
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

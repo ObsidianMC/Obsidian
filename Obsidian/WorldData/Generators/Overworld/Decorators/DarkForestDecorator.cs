@@ -14,8 +14,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-            int worldX = (chunk.X << 4) + (int) pos.X;
-            int worldZ = (chunk.Z << 4) + (int) pos.Z;
+            int worldX = (chunk.X << 4) + pos.X;
+            int worldZ = (chunk.Z << 4) + pos.Z;
 
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
@@ -36,9 +36,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 //Leaves
                 for (int y = treeHeight + 1; y > treeHeight - 2; y--)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
-                        for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                        for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                         {
                             var loc = new Position(x, y + pos.Y, z).ChunkClamp();
                             // Skip the top edges.
@@ -71,7 +71,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 0; x < rowsToDraw; x++)
                 {
-                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                    for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
@@ -100,11 +100,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 15; x > 15 - rowsToDraw; x--)
                 {
-                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                    for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = new Position(x, y, z).ChunkClamp();
+                            var loc = new PositionF(x, y, z).ChunkClamp();
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {
@@ -129,7 +129,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 0; z < rowsToDraw; z++)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
@@ -158,7 +158,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 15; z > 15 - rowsToDraw; z--)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {

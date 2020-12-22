@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.IO;
 using System.Text;
@@ -409,6 +410,82 @@ namespace Obsidian.Net
 
             return new Position
             {
+                X = (int)x,
+
+                Y = (int)y,
+
+                Z = (int)z,
+            };
+        }
+
+        [ReadMethod, Absolute]
+        public Position ReadAbsolutePosition()
+        {
+            return new Position
+            {
+                X = (int)ReadDouble(),
+                Y = (int)ReadDouble(),
+                Z = (int)ReadDouble()
+            };
+        }
+
+        public async Task<Position> ReadAbsolutePositionAsync()
+        {
+            return new Position
+            {
+                X = (int)await ReadDoubleAsync(),
+                Y = (int)await ReadDoubleAsync(),
+                Z = (int)await ReadDoubleAsync()
+            };
+        }
+
+        public async Task<Position> ReadPositionAsync()
+        {
+            ulong value = await this.ReadUnsignedLongAsync();
+
+            long x = (long)(value >> 38);
+            long y = (long)(value & 0xFFF);
+            long z = (long)(value << 26 >> 38);
+
+            if (x >= Math.Pow(2, 25))
+                x -= (long)Math.Pow(2, 26);
+
+            if (y >= Math.Pow(2, 11))
+                y -= (long)Math.Pow(2, 12);
+
+            if (z >= Math.Pow(2, 25))
+                z -= (long)Math.Pow(2, 26);
+
+            return new Position
+            {
+                X = (int)x,
+
+                Y = (int)y,
+
+                Z = (int)z,
+            };
+        }
+
+        [ReadMethod]
+        public PositionF ReadPositionF()
+        {
+            ulong value = this.ReadUnsignedLong();
+
+            long x = (long)(value >> 38);
+            long y = (long)(value & 0xFFF);
+            long z = (long)(value << 26 >> 38);
+
+            if (x >= Math.Pow(2, 25))
+                x -= (long)Math.Pow(2, 26);
+
+            if (y >= Math.Pow(2, 11))
+                y -= (long)Math.Pow(2, 12);
+
+            if (z >= Math.Pow(2, 25))
+                z -= (long)Math.Pow(2, 26);
+
+            return new PositionF
+            {
                 X = x,
 
                 Y = y,
@@ -418,23 +495,50 @@ namespace Obsidian.Net
         }
 
         [ReadMethod, Absolute]
-        public Position ReadAbsolutePosition()
+        public PositionF ReadAbsolutePositionF()
         {
-            return new Position
+            return new PositionF
             {
-                X = this.ReadDouble(),
-                Y = this.ReadDouble(),
-                Z = this.ReadDouble()
+                X = (float)ReadDouble(),
+                Y = (float)ReadDouble(),
+                Z = (float)ReadDouble()
             };
         }
 
-        public async Task<Position> ReadAbsolutePositionAsync()
+        public async Task<PositionF> ReadAbsolutePositionFAsync()
         {
-            return new Position
+            return new PositionF
             {
-                X = await this.ReadDoubleAsync(),
-                Y = await this.ReadDoubleAsync(),
-                Z = await this.ReadDoubleAsync()
+                X = (float) await ReadDoubleAsync(),
+                Y = (float) await ReadDoubleAsync(),
+                Z = (float) await ReadDoubleAsync()
+            };
+        }
+
+        public async Task<PositionF> ReadPositionFAsync()
+        {
+            ulong value = await this.ReadUnsignedLongAsync();
+
+            long x = (long)(value >> 38);
+            long y = (long)(value & 0xFFF);
+            long z = (long)(value << 26 >> 38);
+
+            if (x >= Math.Pow(2, 25))
+                x -= (long)Math.Pow(2, 26);
+
+            if (y >= Math.Pow(2, 11))
+                y -= (long)Math.Pow(2, 12);
+
+            if (z >= Math.Pow(2, 25))
+                z -= (long)Math.Pow(2, 26);
+
+            return new PositionF
+            {
+                X = x,
+
+                Y = y,
+
+                Z = z,
             };
         }
 
@@ -534,6 +638,110 @@ namespace Obsidian.Net
             }
 
             return item;
+        }
+
+        public async Task<ItemStack> ReadSlotAsync()
+        {
+            var slot = new ItemStack();
+
+            var present = await this.ReadBooleanAsync();
+            slot.Present = present;
+
+            if (present)
+            {
+                slot.Id = await this.ReadVarIntAsync();
+                slot.Count = await this.ReadByteAsync();
+
+                var reader = new NbtReader(this);
+
+                while (reader.ReadToFollowing())
+                {
+                    slot.Nbt = new ItemNbt();
+
+                    if (reader.IsCompound)
+                    {
+                        var root = (NbtCompound)reader.ReadAsTag();
+
+                        Globals.PacketLogger.LogDebug(root.ToString());
+                        foreach (var tag in root)
+                        {
+                            Globals.PacketLogger.LogDebug($"Tag name: {tag.Name} | Type: {tag.TagType}");
+                            if (tag.TagType == NbtTagType.Compound)
+                            {
+                                Globals.PacketLogger.LogDebug("Other compound");
+                            }
+
+                            switch (tag.Name.ToLower())
+                            {
+                                case "enchantments":
+                                    {
+                                        var enchantments = (NbtList)tag;
+
+                                        foreach (var enchant in enchantments)
+                                        {
+                                            if (enchant is NbtCompound compound)
+                                            {
+                                                slot.Nbt.Enchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                case "storedenchantments":
+                                    {
+                                        var enchantments = (NbtList)tag;
+
+                                        Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
+
+                                        foreach (var enchantment in enchantments)
+                                        {
+                                            if (enchantment is NbtCompound compound)
+                                            {
+
+                                                slot.Nbt.StoredEnchantments.Add(new Enchantment
+                                                {
+                                                    Id = compound.Get<NbtString>("id").Value,
+                                                    Level = compound.Get<NbtShort>("lvl").Value
+                                                });
+                                            }
+                                        }
+                                        break;
+                                    }
+                                case "slot":
+                                    {
+                                        slot.Nbt.Slot = tag.ByteValue;
+                                        Console.WriteLine($"Setting slot: {slot.Nbt.Slot}");
+                                        break;
+                                    }
+                                case "damage":
+                                    {
+
+                                        slot.Nbt.Damage = tag.IntValue;
+                                        Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
+                                        break;
+                                    }
+                                default:
+                                    break;
+                            }
+                        }
+                        //slot.ItemNbt.Slot = compound.Get<NbtByte>("Slot").Value;
+                        //slot.ItemNbt.Count = compound.Get<NbtByte>("Count").Value;
+                        //slot.ItemNbt.Id = compound.Get<NbtShort>("id").Value;
+                        //slot.ItemNbt.Damage = compound.Get<NbtShort>("Damage").Value;
+                        //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
+                    }
+                    else
+                    {
+                        Globals.PacketLogger.LogDebug($"Other Name: {reader.TagName}");
+                    }
+                }
+            }
+
+            return slot;
         }
 
         [ReadMethod]

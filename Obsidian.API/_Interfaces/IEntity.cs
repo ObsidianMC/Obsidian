@@ -8,7 +8,7 @@ namespace Obsidian.API
     public interface IEntity
     {
         public IWorld WorldLocation { get; }
-        public Position Location { get; set; }
+        public PositionF Location { get; set; }
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
         public int EntityId { get; }

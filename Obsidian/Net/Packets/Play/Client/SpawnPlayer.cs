@@ -1,4 +1,4 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using Obsidian.API;
 using System;
 using Obsidian.Entities;
@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public Guid Uuid { get; set; }
 
         [Field(2), Absolute]
-        public Position Position { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(3)]
         public Angle Yaw { get; set; }

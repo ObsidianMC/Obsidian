@@ -21,7 +21,7 @@ namespace Obsidian.Util.Extensions
 
         public static int ToChunkCoord(this int value) => value >> 4;
 
-        public static (int x, int z) ToChunkCoord(this Position value) => ((int)value.X >> 4, (int)value.Z >> 4);
+        public static (int x, int z) ToChunkCoord(this PositionF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
@@ -87,6 +87,11 @@ namespace Obsidian.Util.Extensions
             } while (val != 0);
 
             return amount;
+        }
+
+        public static float NextSingle(this Random random)
+        {
+            return (float)random.NextDouble();
         }
 
         // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63

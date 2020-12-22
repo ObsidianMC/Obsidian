@@ -41,7 +41,7 @@ namespace Obsidian.API
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
-        public Task TeleportAsync(Position position);
+        public Task TeleportAsync(PositionF position);
         public Task TeleportAsync(IPlayer to);
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);

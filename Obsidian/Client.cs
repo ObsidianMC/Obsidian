@@ -367,13 +367,10 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             await this.LoadChunksAsync();
-            stopwatch.Stop();
-            Console.WriteLine($"Loaded chunks in: {stopwatch.Elapsed}");
 
             //TODO: check for last position
-            var spawnPosition = new Position(
+            var spawnPosition = new PositionF(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ
@@ -561,20 +558,23 @@ namespace Obsidian
         {
             try
             {
-                if (this.compressionEnabled)
+                if (!this.compressionEnabled)
                 {
-                    //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
+                    packet.Serialize(minecraftStream);
                 }
                 else
                 {
-                    packet.Serialize(minecraftStream);
-                    ;
+                    //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
                 }
             }
-            catch (Exception)
+            catch (SocketException socketException)
             {
-                ;
-            } // when packets are interrupted, threads may hang..
+
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Sending packet failed");
+            }
         }
 
         internal async Task QueuePacketAsync(IPacket packet)

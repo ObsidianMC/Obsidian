@@ -1,20 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Events.EventArgs;
-using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Serializer;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
-using SharpCompress.Compressors.Deflate;
-using System;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -22,9 +11,7 @@ namespace Obsidian
     public class PacketHandler
     {
         public static ILogger Logger => Globals.PacketLogger;
-
         public static ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
-
 
         /*public static async Task<IPacket> ReadCompressedPacketAsync(MinecraftStream stream)//TODO
         {
@@ -38,8 +25,6 @@ namespace Obsidian
 
             return new Packet(packetId, packetData);
         }*/
-
-       
 
         public static void RegisterHandlers()
         {
@@ -100,6 +85,5 @@ namespace Obsidian
             await Packets[packet.id].ReadAsync(new MinecraftStream(packet.data));
             await Packets[packet.id].HandleAsync(client.Server, client.Player);
         }
-
     }
 }

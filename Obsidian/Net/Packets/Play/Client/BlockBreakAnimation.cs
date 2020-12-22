@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public int EntityId { get; set; }
 
         [Field(1)]
-        public Position Location { get; set; }
+        public PositionF Location { get; set; }
 
         /// <summary>
         /// 0-9 to set it, any other value to remove it

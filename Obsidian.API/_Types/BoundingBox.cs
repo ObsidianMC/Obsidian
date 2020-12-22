@@ -13,10 +13,10 @@ namespace Obsidian.API
     public struct BoundingBox : IEquatable<BoundingBox>
     {
         public const int CornerCount = 8;
-        public Position Max;
-        public Position Min;
+        public PositionF Max;
+        public PositionF Min;
 
-        public BoundingBox(Position min, Position max)
+        public BoundingBox(PositionF min, PositionF max)
         {
             this.Min = min;
             this.Max = max;
@@ -61,26 +61,26 @@ namespace Obsidian.API
             return ContainmentType.Intersects;
         }
 
-        public bool Contains(Position vec)
+        public bool Contains(PositionF vec)
         {
             return Min.X <= vec.X && vec.X <= Max.X &&
                    Min.Y <= vec.Y && vec.Y <= Max.Y &&
                    Min.Z <= vec.Z && vec.Z <= Max.Z;
         }
 
-        public static BoundingBox CreateFromPoints(IEnumerable<Position> points)
+        public static BoundingBox CreateFromPoints(IEnumerable<PositionF> points)
         {
             if (points == null)
                 throw new ArgumentNullException();
 
             var empty = true;
-            var pos2 = new Position(float.MaxValue);
-            var pos1 = new Position(float.MinValue);
+            var pos2 = new PositionF(float.MaxValue);
+            var pos1 = new PositionF(float.MinValue);
 
             foreach (var Position in points)
             {
-                pos2 = Position.Min(pos2, Position);
-                pos1 = Position.Max(pos1, Position);
+                pos2 = PositionF.Min(pos2, Position);
+                pos1 = PositionF.Max(pos1, Position);
                 empty = false;
             }
 
@@ -90,20 +90,20 @@ namespace Obsidian.API
             return new BoundingBox(pos2, pos1);
         }
 
-        public BoundingBox OffsetBy(Position offset) => new BoundingBox(Min + offset, Max + offset);
+        public BoundingBox OffsetBy(PositionF offset) => new BoundingBox(Min + offset, Max + offset);
 
-        public Position[] GetCorners()
+        public PositionF[] GetCorners()
         {
             return new[]
             {
-                new Position(Min.X, Max.Y, Max.Z),
-                new Position(Max.X, Max.Y, Max.Z),
-                new Position(Max.X, Min.Y, Max.Z),
-                new Position(Min.X, Min.Y, Max.Z),
-                new Position(Min.X, Max.Y, Min.Z),
-                new Position(Max.X, Max.Y, Min.Z),
-                new Position(Max.X, Min.Y, Min.Z),
-                new Position(Min.X, Min.Y, Min.Z)
+                new PositionF(Min.X, Max.Y, Max.Z),
+                new PositionF(Max.X, Max.Y, Max.Z),
+                new PositionF(Max.X, Min.Y, Max.Z),
+                new PositionF(Min.X, Min.Y, Max.Z),
+                new PositionF(Min.X, Max.Y, Min.Z),
+                new PositionF(Max.X, Max.Y, Min.Z),
+                new PositionF(Max.X, Min.Y, Min.Z),
+                new PositionF(Min.X, Min.Y, Min.Z)
             };
         }
 
@@ -134,7 +134,7 @@ namespace Obsidian.API
             result = false;
         }
 
-        public static BoundingBox operator +(BoundingBox a, double b) => new BoundingBox(a.Min - b, a.Max + b);
+        public static BoundingBox operator +(BoundingBox a, float b) => new BoundingBox(a.Min - b, a.Max + b);
         public static bool operator ==(BoundingBox a, BoundingBox b) => a.Equals(b);
 
         public static bool operator !=(BoundingBox a, BoundingBox b) => !a.Equals(b);

@@ -93,7 +93,7 @@ namespace Obsidian.Entities
             this.EntityId = client.id;
         }
 
-        internal override async Task UpdateAsync(Server server, Position position, bool onGround)
+        internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
@@ -133,7 +133,7 @@ namespace Obsidian.Entities
             }
         }
 
-        internal override async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
@@ -236,7 +236,7 @@ namespace Obsidian.Entities
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
-        public async Task TeleportAsync(Position pos)
+        public async Task TeleportAsync(PositionF pos)
         {
             this.LastLocation = this.Location;
             this.Location = pos;

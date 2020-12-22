@@ -1,4 +1,4 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System;
 using Obsidian.API;
 using System.Threading.Tasks;
@@ -20,7 +20,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class ClientPlayerPositionLook : IPacket
     {
         [Field(0), Absolute]
-        public Position Position { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(1)]
         public float Yaw { get; set; }

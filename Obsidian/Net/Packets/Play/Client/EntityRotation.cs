@@ -1,4 +1,4 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using Obsidian.API;
 using Obsidian.Entities;
 using System.Threading.Tasks;

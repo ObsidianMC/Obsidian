@@ -2,6 +2,7 @@
 using Obsidian.Nbt.Tags;
 using Obsidian.API;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData
 {
@@ -12,9 +13,14 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        private SebastiansChunk SebastiansChunk { get; } = new SebastiansChunk();
+        private SebastiansCube[] cubes = new SebastiansCube[cubesTotal];
+        private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
+        private const int cubesHorizontal = 16 / SebastiansCube.width;
+        private const int cubesVertical = 256 / SebastiansCube.height;
+        private const int xMult = cubesTotal / cubesHorizontal;
+        private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
 
-        public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
+        public ChunkSection[] Sections { get; init; } = new ChunkSection[16];
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
@@ -35,31 +41,88 @@ namespace Obsidian.WorldData
         {
             for (int i = 0; i < 16; i++)
                 this.Sections[i] = new ChunkSection(4, i);
+
+            int index = 0;
+            for (int x = 0; x < cubesHorizontal; x++)
+            {
+                for (int z = 0; z < cubesHorizontal; z++)
+                {
+                    for (int y = 0; y < cubesVertical; y++, index++)
+                    {
+                        cubes[index] = new SebastiansCube(x * SebastiansCube.width, y * SebastiansCube.height, z * SebastiansCube.width);
+                    }
+                }
+            }
         }
 
-        public Block GetBlock(Position position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
+        public Block GetBlock(PositionF position) => GetBlock((int)position.X, (int)position.Y, (int)position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
-            return SebastiansChunk.GetBlock(x, y, z);
+            short value = GetBlockStateId(x, y, z);
+            return new Block(value);
         }
 
-        public void SetBlock(Position position, Block block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
+        public void SetBlock(PositionF position, Block block) => SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
-            SebastiansChunk.SetBlock(x, y, z, block);
+            SetBlockStateId(x, y, z, block.StateId);
             Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
 
         public void CalculateHeightmap()
         {
-            SebastiansChunk.CalculateHeightmap(target: Heightmaps[HeightmapType.MotionBlocking]);
+            Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
+            for (int x = 0; x < cubesHorizontal * SebastiansCube.width; x++)
+            {
+                for (int z = 0; z < cubesHorizontal * SebastiansCube.width; z++)
+                {
+                    for (int y = cubesVertical * SebastiansCube.height - 1; y >= 0; y--)
+                    {
+                        var block = new Block(GetBlockStateId(x, y, z));
+                        if (block.IsAir)
+                            continue;
+
+                        target.Set(x, z, value: y);
+                        break;
+                    }
+                }
+            }
+        }
+
+        public short GetBlockStateId(int x, int y, int z)
+        {
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
+
+            return cubes[ComputeIndex(x, y, z)][x, y, z];
+        }
+
+        public void SetBlockStateId(int x, int y, int z, short id)
+        {
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
+
+            cubes[ComputeIndex(x, y, z)][x, y, z] = id;
         }
 
         public void CheckHomogeneity()
         {
-            SebastiansChunk.CheckHomogeneity();
+            for (int i = 0; i < cubesTotal; i++)
+            {
+                cubes[i].CheckHomogeneity();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeIndex(int x, int y, int z)
+        {
+            return x / SebastiansCube.width * xMult + z / SebastiansCube.width * zMult + y / cubesVertical;
         }
     }
 }

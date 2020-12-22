@@ -176,7 +176,7 @@
     <None Remove="Assets\Tags\items\wooden_stairs.json" />
     <None Remove="Assets\Tags\items\wooden_trapdoors.json" />
     <None Remove="Assets\Tags\items\wool.json" />
-    <None Remove="Serializer\Attributes\NewFile1.txt" />
+    <None Remove="Serialization\Attributes\NewFile1.txt" />
   </ItemGroup>
 
   <ItemGroup>

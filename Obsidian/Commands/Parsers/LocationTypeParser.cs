@@ -1,28 +1,26 @@
 ﻿using Obsidian.API;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Parsers
 {
-    public class LocationTypeParser : BaseArgumentParser<Position>
+    public class LocationTypeParser : BaseArgumentParser<PositionF>
     {
         public LocationTypeParser() : base("minecraft:vec3") { }
-        public override bool TryParseArgument(string input, ObsidianContext context, out Position result)
+        public override bool TryParseArgument(string input, ObsidianContext context, out PositionF result)
         {
             result = default;
 
             var splitted = input.Split(' ');
-            var location = new Position();
+            var location = new PositionF();
 
             int count = 0;
             var ctx = context;
             foreach (var text in splitted)
             {
-                if (double.TryParse(text, out var doubleResult))
+                if (float.TryParse(text, out var doubleResult))
                 {
                     switch (count)
                     {

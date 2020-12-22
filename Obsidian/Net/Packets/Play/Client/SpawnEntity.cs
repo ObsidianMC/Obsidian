@@ -1,5 +1,5 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.API;
 using System;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public EntityType Type { get; set; }
 
         [Field(3), Absolute]
-        public Position Position { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(4)]
         public Angle Pitch { get; set; }

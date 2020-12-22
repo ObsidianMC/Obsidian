@@ -1,4 +1,4 @@
-﻿using Obsidian.Serializer.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using Obsidian.API;
 using System.Threading.Tasks;
 using Obsidian.Entities;
@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Server
     public partial class ServerPlayerPositionLook : IPacket
     {
         [Field(0), Absolute]
-        public Position Position { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(1)]
         public float Pitch { get; set; }
@@ -27,7 +27,7 @@ namespace Obsidian.Net.Packets.Play.Server
 
         public async Task ReadAsync(MinecraftStream stream)
         {
-            this.Position = await stream.ReadAbsolutePositionAsync();
+            this.Position = await stream.ReadAbsolutePositionFAsync();
             this.Pitch = await stream.ReadFloatAsync();
             this.Yaw = await stream.ReadFloatAsync();
             this.OnGround = await stream.ReadBooleanAsync();

@@ -27,10 +27,10 @@ namespace Obsidian.ChunkData
             this.FillWithAir();
         }
 
-        public Block GetBlock(Position pos) => this.GetBlock((int)pos.X, (int)pos.Y, (int)pos.Z);
+        public Block GetBlock(PositionF pos) => this.GetBlock((int)pos.X, (int)pos.Y, (int)pos.Z);
         public Block GetBlock(int x, int y, int z) => this.Get(x, y, z);
 
-        public void SetBlock(Position pos, Block block) => this.SetBlock((int)pos.X, (int)pos.Y, (int)pos.Z, block);
+        public void SetBlock(PositionF pos, Block block) => this.SetBlock((int)pos.X, (int)pos.Y, (int)pos.Z, block);
         public void SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
 
         private void FillWithAir()

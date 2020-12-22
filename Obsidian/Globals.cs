@@ -9,8 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
-using Half = Obsidian.Util.Registry.Enums.Half;
-
 namespace Obsidian
 {
     public static class Globals
@@ -32,7 +30,7 @@ namespace Obsidian
                 new DefaultEnumConverter<Axis>(),
                 new DefaultEnumConverter<Face>(),
                 new DefaultEnumConverter<BlockFace>(),
-                new DefaultEnumConverter<Half>(),
+                new DefaultEnumConverter<EHalf>(),
                 new DefaultEnumConverter<Hinge>(),
                 new DefaultEnumConverter<Instruments>(),
                 new DefaultEnumConverter<Part>(),

@@ -43,11 +43,11 @@ namespace Obsidian.ChunkData
             }
             else if (height - 1 == y)
             {
-                Position pos;
+                PositionF pos;
 
                 for (int i = y - 1; i >= 0; --i)
                 {
-                    pos = new Position(x, i, z);
+                    pos = new PositionF(x, i, z);
                     var otherBlock = this.chunk.GetBlock(pos);
 
                     if (this.Predicate(otherBlock))

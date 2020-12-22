@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public int EntityId { get; set; }
 
         [Field(1), Absolute]
-        public Position Position { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(2)]
         public Angle Yaw { get; set; }

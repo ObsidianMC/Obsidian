@@ -1,6 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.PlayerData.Info;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

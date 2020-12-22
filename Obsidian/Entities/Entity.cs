@@ -18,7 +18,7 @@ namespace Obsidian.Entities
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal Position LastLocation { get; set; } = new Position();
+        internal PositionF LastLocation { get; set; } = new PositionF();
 
         internal Angle LastPitch { get; set; }
 
@@ -26,7 +26,7 @@ namespace Obsidian.Entities
 
         internal int TeleportId { get; set; }
 
-        public Position Location { get; set; } = new Position();
+        public PositionF Location { get; set; } = new PositionF();
 
         public Angle Pitch { get; set; }
 
@@ -51,7 +51,7 @@ namespace Obsidian.Entities
         public Entity() { }
 
         #region Update methods
-        internal virtual async Task UpdateAsync(Server server, Position position, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastLocation * 32 * 64;
@@ -100,7 +100,7 @@ namespace Obsidian.Entities
             await Task.CompletedTask;
         }
 
-        internal virtual async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastLocation * 32 * 64;
@@ -168,14 +168,14 @@ namespace Obsidian.Entities
             this.LastPitch = this.Pitch;
         }
 
-        public void UpdatePosition(Position pos, bool onGround = true)
+        public void UpdatePosition(PositionF pos, bool onGround = true)
         {
             this.CopyPosition();
             this.Location = pos;
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(Position pos, Angle yaw, Angle pitch, bool onGround = true)
+        public void UpdatePosition(PositionF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
             this.Location = pos;
@@ -184,10 +184,10 @@ namespace Obsidian.Entities
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(double x, double y, double z, bool onGround = true)
+        public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location = new Position(x, y, z);
+            this.Location = new PositionF(x, y, z);
             this.OnGround = onGround;
         }
 

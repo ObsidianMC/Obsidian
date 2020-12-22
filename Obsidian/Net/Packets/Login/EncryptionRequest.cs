@@ -1,5 +1,5 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
@@ -9,16 +9,10 @@ namespace Obsidian.Net.Packets.Login
         [Field(0)]
         public string ServerId { get; private set; } = string.Empty;
 
-        [Field(1), VarLength]
-        public int KeyLength { get; private set; }
-
-        [Field(2)]
+        [Field(1)]
         public byte[] PublicKey { get; private set; }
 
-        [Field(3), VarLength]
-        public int TokenLength = 4;
-
-        [Field(4)]
+        [Field(2)]
         public byte[] VerifyToken { get; private set; }
 
         public int Id => 0x01;
@@ -30,8 +24,6 @@ namespace Obsidian.Net.Packets.Login
         public EncryptionRequest(byte[] publicKey, byte[] verifyToken) 
         {
             this.PublicKey = publicKey;
-            this.KeyLength = publicKey.Length;
-
             this.VerifyToken = verifyToken;
         }
 
@@ -40,24 +32,5 @@ namespace Obsidian.Net.Packets.Login
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        /*protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteStringAsync(this.ServerId);
-            await stream.WriteVarIntAsync(this.PublicKey.Length);
-            await stream.WriteAsync(this.PublicKey);
-            await stream.WriteVarIntAsync(this.TokenLength);
-            await stream.WriteAsync(this.VerifyToken);
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            this.ServerId = await stream.ReadStringAsync() ?? string.Empty;
-            this.KeyLength = await stream.ReadVarIntAsync();
-            this.PublicKey = await stream.ReadUInt8ArrayAsync(this.KeyLength);
-
-            this.TokenLength = await stream.ReadVarIntAsync();
-            this.VerifyToken = await stream.ReadUInt8ArrayAsync(this.TokenLength);
-        }*/
     }
 }

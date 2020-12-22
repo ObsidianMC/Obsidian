@@ -14,6 +14,6 @@
 
         public int AbsorbtionAmount { get; set; }
 
-        public Position BedBlockPosition { get; set; }
+        public PositionF BedBlockPosition { get; set; }
     }
 }

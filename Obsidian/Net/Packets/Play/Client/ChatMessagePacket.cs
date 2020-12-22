@@ -1,7 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

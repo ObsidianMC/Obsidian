@@ -1,6 +1,6 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,17 +11,14 @@ namespace Obsidian.Net.Packets.Play.Client
     /// </summary>
     public partial class DeclareCommands : IPacket
     {
-        [Field(0), VarLength]
-        public int NodeCount => this.Nodes.Count;
-
-        [Field(1)]
+        [Field(0)]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
         public int Id => 0x10;
 
         public byte[] Data { get; }
 
-        [Field(2), VarLength]
+        [Field(1), VarLength]
         public int RootIndex = 0;
 
         public DeclareCommands() { }

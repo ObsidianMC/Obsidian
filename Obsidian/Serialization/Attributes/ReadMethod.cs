@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace Obsidian.Serializer.Attributes
+namespace Obsidian.Serialization.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class WriteMethod : Attribute
+    public class ReadMethod : Attribute
     {
     }
 }

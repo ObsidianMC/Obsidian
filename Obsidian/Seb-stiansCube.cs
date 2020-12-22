@@ -7,8 +7,8 @@ namespace Obsidian
     {
         private static bool initialized;
         private static Stack<short[]> cubesCache;
-        private const int cacheLimit = 125; // about 5MB
-        
+        private const int cacheLimit = 250; // about 10MB
+
         private short shared = 0;
         private short[] blocks;
 
@@ -65,7 +65,7 @@ namespace Obsidian
                 shared = value;
                 return;
             }
-            
+
             for (int i = 0; i < totalBlocks; i++)
             {
                 blocks[i] = 0;
@@ -88,9 +88,9 @@ namespace Obsidian
                 }
             }
 
-            Order(ref x1, ref x2);
-            Order(ref y1, ref y2);
-            Order(ref z1, ref z2);
+            SortSwap(ref x1, ref x2);
+            SortSwap(ref y1, ref y2);
+            SortSwap(ref z1, ref z2);
 
             int topX = (x2 - offsetX) * xMult;
             int topY = (y2 - offsetY);
@@ -103,9 +103,10 @@ namespace Obsidian
             {
                 for (int z = bottomZ; z <= topZ; z += zMult)
                 {
+                    int xz = x + z;
                     for (int y = bottomY; y <= topY; y++)
                     {
-                        blocks[x + y + z] = value;
+                        blocks[xz + y] = value;
                     }
                 }
             }
@@ -136,18 +137,16 @@ namespace Obsidian
             if (initialized)
                 return;
             initialized = true;
-            
-            cubesCache = new Stack<short[]>();
+
+            cubesCache = new Stack<short[]>(capacity: cacheLimit);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Order(ref int a, ref int b)
+        private static void SortSwap(ref int a, ref int b)
         {
             if (b < a)
             {
-                int temp = b;
-                b = a;
-                a = temp;
+                (a, b) = (b, a);
             }
         }
 
@@ -166,7 +165,7 @@ namespace Obsidian
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Cache()
         {
-            if (cacheLimit > cubesCache.Count)
+            if (cubesCache.Count < cacheLimit)
             {
                 cubesCache.Push(blocks);
             }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.Serializer.Attributes
+namespace Obsidian.Serialization.Attributes
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public class ActualTypeAttribute : Attribute

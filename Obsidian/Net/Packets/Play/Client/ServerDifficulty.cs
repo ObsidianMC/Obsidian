@@ -1,5 +1,5 @@
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.WorldData;
 using System.Threading.Tasks;
 

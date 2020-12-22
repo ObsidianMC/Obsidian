@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Client
@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class BlockChange : IPacket
     {
         [Field(0)]
-        public Position Location { get; private set; }
+        public PositionF Location { get; private set; }
 
         [Field(1), VarLength]
         public int BlockId { get; private set; }
@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public BlockChange() { }
 
-        public BlockChange(Position loc, int block)
+        public BlockChange(PositionF loc, int block)
         {
             Location = loc;
             BlockId = block;

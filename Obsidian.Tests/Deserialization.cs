@@ -6,8 +6,8 @@ using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Client;
 using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Serializer;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization;
+using Obsidian.Serialization.Enums;
 using Obsidian.Util;
 using Obsidian.API;
 using System.Threading.Tasks;
@@ -149,12 +149,12 @@ namespace Obsidian.Tests
         public async Task PlayerDigging()
         {
             var status = int.MaxValue;
-            var location = new Position(1.0, 2.0, 3.0);
+            var location = new PositionF(1.0, 2.0, 3.0);
             var face = sbyte.MaxValue;
 
             using var stream = new MinecraftStream();
             await stream.WriteVarIntAsync(status);
-            await stream.WritePositionAsync(location);
+            await stream.WritePositionFAsync(location);
             await stream.WriteByteAsync(face);
             stream.Position = 0;
 
@@ -170,7 +170,7 @@ namespace Obsidian.Tests
         [Fact]
         public async Task PlayerBlockPlacement()
         {
-            var location = new Position(1.0, 2.0, 3.0);
+            var location = new PositionF(1.0, 2.0, 3.0);
             var face = BlockFace.Top;
             var hand = int.MaxValue;
             var cursorX = float.MaxValue;
@@ -178,7 +178,7 @@ namespace Obsidian.Tests
             var cursorZ = float.MaxValue;
 
             using var stream = new MinecraftStream();
-            await stream.WritePositionAsync(location);
+            await stream.WritePositionFAsync(location);
             await stream.WriteVarIntAsync(face);
             await stream.WriteIntAsync(hand);
             await stream.WriteFloatAsync(cursorX);
@@ -202,7 +202,7 @@ namespace Obsidian.Tests
         {
             var pitch = new Angle(byte.MaxValue - 1);
             var yaw = new Angle(byte.MaxValue);
-            var position = new Position(1.0, 2.0, 3.0);
+            var position = new PositionF(1.0, 2.0, 3.0);
             var flags = PositionFlags.X | PositionFlags.Y_ROT;
             var teleportId = int.MaxValue;
 
@@ -228,7 +228,7 @@ namespace Obsidian.Tests
         [Fact]
         public async Task PlayerPosition()
         {
-            var position = new Position(1.0, 2.0, 3.0);
+            var position = new PositionF(1.0, 2.0, 3.0);
             var onGround = true;
 
             using var stream = new MinecraftStream();

@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace Obsidian.Serializer.Attributes
+namespace Obsidian.Serialization.Attributes
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public class VarLengthAttribute : Attribute
+    public class AbsoluteAttribute : Attribute
     {
     }
 }

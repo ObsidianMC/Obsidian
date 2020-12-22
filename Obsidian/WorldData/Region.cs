@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Blocks;
+﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -9,11 +8,8 @@ using Obsidian.Util.Collection;
 using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,8 +17,8 @@ namespace Obsidian.WorldData
 {
     public class Region
     {
-        public const int CUBIC_REGION_SIZE_SHIFT = 3;
-        public const int CUBIC_REGION_SIZE = 1 << CUBIC_REGION_SIZE_SHIFT;
+        public const int cubiceRegionSizeShift = 3;
+        public const int cubicRegionSize = 1 << cubiceRegionSizeShift;
 
         private bool cancel = false;
         public int X { get; }
@@ -32,7 +28,7 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
 
-        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(CUBIC_REGION_SIZE, CUBIC_REGION_SIZE);
+        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
         internal Region(int x, int z, string worldRegionsPath)
         {
@@ -85,7 +81,7 @@ namespace Obsidian.WorldData
             foreach (var chunkNbt in chunksNbt)
             {
                 var chunk = GetChunkFromNbt((NbtCompound) chunkNbt);
-                var index = (Helpers.Modulo(chunk.X, CUBIC_REGION_SIZE), Helpers.Modulo(chunk.Z, CUBIC_REGION_SIZE));
+                var index = (Helpers.Modulo(chunk.X, cubicRegionSize), Helpers.Modulo(chunk.Z, cubicRegionSize));
                 LoadedChunks[index.Item1, index.Item2] = chunk;
             }
         }

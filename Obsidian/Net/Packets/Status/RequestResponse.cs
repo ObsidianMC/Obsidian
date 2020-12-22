@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.Util;
 using System.Threading.Tasks;
 

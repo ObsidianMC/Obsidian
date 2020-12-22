@@ -1,6 +1,6 @@
 ﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
