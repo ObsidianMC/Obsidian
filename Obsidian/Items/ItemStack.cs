@@ -1,4 +1,4 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
 using Obsidian.Util.Registry;
 
 namespace Obsidian.Items

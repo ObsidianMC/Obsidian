@@ -99,7 +99,7 @@ namespace Obsidian.Entities
 
             this.HeadY = position.Y + 1.62;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 1))
             {
                 if (entity is ItemEntity item)
                 {
@@ -139,7 +139,7 @@ namespace Obsidian.Entities
 
             this.HeadY = position.Y + 1.62;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, .8))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, .8))
             {
                 if (entity is ItemEntity item)
                 {
@@ -176,7 +176,7 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, yaw, pitch, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 2))
             {
                 if (entity is ItemEntity item)
                 {
@@ -238,8 +238,8 @@ namespace Obsidian.Entities
 
         public async Task TeleportAsync(PositionF pos)
         {
-            this.LastLocation = this.Location;
-            this.Location = pos;
+            this.LastPosition = this.Position;
+            this.Position = pos;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
 
             var tid = Globals.Random.Next(0, 999);
@@ -248,7 +248,7 @@ namespace Obsidian.Entities
                 new PlayerTeleportEventArgs
                 (
                     this,
-                    this.Location,
+                    this.Position,
                     pos
                 ));
 
@@ -265,13 +265,13 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
-            LastLocation = this.Location;
-            this.Location = to.Location;
+            LastPosition = this.Position;
+            this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
-                Position = to.Location,
+                Position = to.Position,
                 Flags = PositionFlags.NONE,
                 TeleportId = tid
             });

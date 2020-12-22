@@ -18,7 +18,7 @@ namespace Obsidian.Entities
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal PositionF LastLocation { get; set; } = new PositionF();
+        internal PositionF LastPosition { get; set; } = new PositionF();
 
         internal Angle LastPitch { get; set; }
 
@@ -26,7 +26,7 @@ namespace Obsidian.Entities
 
         internal int TeleportId { get; set; }
 
-        public PositionF Location { get; set; } = new PositionF();
+        public PositionF Position { get; set; } = new PositionF();
 
         public Angle Pitch { get; set; }
 
@@ -54,13 +54,13 @@ namespace Obsidian.Entities
         internal virtual async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             var newPos = position * 32 * 64;
-            var lastPos = this.LastLocation * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
 
             short newX = (short)(newPos.X - lastPos.X);
             short newY = (short)(newPos.Y - lastPos.Y);
             short newZ = (short)(newPos.Z - lastPos.Z);
 
-            var isNewLocation = position != this.LastLocation;
+            var isNewLocation = position != this.LastPosition;
 
             if (isNewLocation)
             {
@@ -103,13 +103,13 @@ namespace Obsidian.Entities
         internal virtual async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
         {
             var newPos = position * 32 * 64;
-            var lastPos = this.LastLocation * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
 
             short newX = (short)(newPos.X - lastPos.X);
             short newY = (short)(newPos.Y - lastPos.Y);
             short newZ = (short)(newPos.Z - lastPos.Z);
 
-            var isNewLocation = position != this.LastLocation;
+            var isNewLocation = position != this.LastPosition;
 
             var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
 
@@ -156,7 +156,7 @@ namespace Obsidian.Entities
 
         internal void CopyPosition(bool withLook = false)
         {
-            this.LastLocation = this.Location;
+            this.LastPosition = this.Position;
 
             if (withLook)
                 this.CopyLook();
@@ -171,14 +171,14 @@ namespace Obsidian.Entities
         public void UpdatePosition(PositionF pos, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location = pos;
+            this.Position = pos;
             this.OnGround = onGround;
         }
 
         public void UpdatePosition(PositionF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
-            this.Location = pos;
+            this.Position = pos;
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onGround;
@@ -187,7 +187,7 @@ namespace Obsidian.Entities
         public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location = new PositionF(x, y, z);
+            this.Position = new PositionF(x, y, z);
             this.OnGround = onGround;
         }
 

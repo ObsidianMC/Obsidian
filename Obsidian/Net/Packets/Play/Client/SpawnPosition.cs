@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class SpawnPosition : IPacket
     {
         [Field(0)]
-        public PositionF Location { get; private set; }
+        public PositionF Position { get; private set; }
 
         public int Id => 0x42;
 
@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Client
         {
         }
 
-        public SpawnPosition(PositionF location) => this.Location = location;
+        public SpawnPosition(PositionF location) => this.Position = location;
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

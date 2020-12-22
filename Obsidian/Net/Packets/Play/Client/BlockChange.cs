@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class BlockChange : IPacket
     {
         [Field(0)]
-        public PositionF Location { get; private set; }
+        public PositionF Position { get; private set; }
 
         [Field(1), VarLength]
         public int BlockId { get; private set; }
@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
         public BlockChange(PositionF loc, int block)
         {
-            Location = loc;
+            Position = loc;
             BlockId = block;
         }
 

@@ -380,11 +380,11 @@ namespace Obsidian
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            this.Player.Location = spawnPosition;
+            this.Player.Position = spawnPosition;
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
-                Position = this.Player.Location,
+                Position = this.Player.Position,
                 Yaw = 0,
                 Pitch = 0,
                 Flags = PositionFlags.NONE,

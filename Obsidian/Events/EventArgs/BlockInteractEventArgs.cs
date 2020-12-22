@@ -13,12 +13,12 @@ namespace Obsidian.Events.EventArgs
         /// </summary>
         public Block Block { get; }
 
-        public PositionF Location { get; }
+        public PositionF Position { get; }
 
         public BlockInteractEventArgs(Player who, Block block, PositionF location) : base(who)
         {
             this.Block = block;
-            this.Location = location;
+            this.Position = location;
         }
     }
 }

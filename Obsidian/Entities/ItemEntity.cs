@@ -51,7 +51,7 @@ namespace Obsidian.Entities
             if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
                 this.CanPickup = true;
 
-            foreach (var ent in this.World.GetEntitiesNear(this.Location, 1.5))
+            foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5))
             {
                 if (ent is ItemEntity item)
                 {

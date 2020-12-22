@@ -63,8 +63,8 @@ namespace Obsidian.WorldData
             List<(int, int)> clientNeededChunks = new List<(int, int)>();
             List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
             
-            (int playerChunkX, int playerChunkZ) = c.Player.Location.ToChunkCoord();
-            (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastLocation.ToChunkCoord();
+            (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
+            (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
             int dist = c.ClientSettings?.ViewDistance ?? 8;
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
@@ -106,7 +106,7 @@ namespace Obsidian.WorldData
 
             await this.Server.BroadcastPacketAsync(destroyed);
 
-            var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
+            var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
             var region = this.GetRegion(chunkX, chunkZ);
 
@@ -175,7 +175,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 return new List<Entity>();
 
-            return region.Entities.Select(x => x.Value).Where(x => PositionF.DistanceTo(location, x.Location) <= distance);
+            return region.Entities.Select(x => x.Value).Where(x => PositionF.DistanceTo(location, x.Position) <= distance);
         }
 
         public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
@@ -389,7 +389,7 @@ namespace Obsidian.WorldData
 
         internal bool TryAddEntity(Entity entity)
         {
-            var (chunkX, chunkZ) = entity.Location.ToChunkCoord();
+            var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
             var region = this.GetRegion(chunkX, chunkZ);
 

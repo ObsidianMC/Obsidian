@@ -372,7 +372,7 @@ namespace Obsidian
         {
             var digging = store.Packet;
 
-            var block = this.World.GetBlock(digging.Location);
+            var block = this.World.GetBlock(digging.Position);
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
@@ -385,7 +385,7 @@ namespace Obsidian
                         if (droppedItem is null || droppedItem.Type == Materials.Air)
                             return;
 
-                        var loc = new PositionF(player.Location.X, (float)player.HeadY - 0.3f, player.Location.Z);
+                        var loc = new PositionF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
                         var item = new ItemEntity
                         {
@@ -394,7 +394,7 @@ namespace Obsidian
                             Id = droppedItem.Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Location = loc
+                            Position = loc
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -417,7 +417,7 @@ namespace Obsidian
                             EntityId = item.EntityId,
                             Uuid = Guid.NewGuid(),
                             Type = EntityType.Item,
-                            Position = item.Location,
+                            Position = item.Position,
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
@@ -444,7 +444,7 @@ namespace Obsidian
                 case DiggingStatus.StartedDigging:
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Location = digging.Location,
+                        Position = digging.Position,
                         Block = block.Id,
                         Status = digging.Status,
                         Successful = true
@@ -453,7 +453,7 @@ namespace Obsidian
                 case DiggingStatus.CancelledDigging:
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Location = digging.Location,
+                        Position = digging.Position,
                         Block = block.Id,
                         Status = digging.Status,
                         Successful = true
@@ -463,7 +463,7 @@ namespace Obsidian
                     {
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
-                            Location = digging.Location,
+                            Position = digging.Position,
                             Block = block.Id,
                             Status = digging.Status,
                             Successful = true
@@ -471,13 +471,13 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new BlockBreakAnimation
                         {
                             EntityId = player,
-                            Location = digging.Location,
+                            Position = digging.Position,
                             DestroyStage = -1
                         });
 
-                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Location, 0));
+                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Location, Block.Air);
+                        this.World.SetBlock(digging.Position, Block.Air);
 
                         var item = new ItemEntity
                         {
@@ -486,7 +486,7 @@ namespace Obsidian
                             Id = Registry.GetItem(block.Material).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Location = digging.Location + new PositionF(
+                            Position = digging.Position + new PositionF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f)
@@ -499,11 +499,11 @@ namespace Obsidian
                             EntityId = item.EntityId,
                             Uuid = Guid.NewGuid(),
                             Type = EntityType.Item,
-                            Position = item.Location,
+                            Position = item.Position,
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = new Velocity((short)(digging.Location.X * (8000 / 20)), (short)(digging.Location.Y * (8000 / 20)), (short)(digging.Location.Z * (8000 / 20)))
+                            Velocity = new Velocity((short)(digging.Position.X * (8000 / 20)), (short)(digging.Position.Y * (8000 / 20)), (short)(digging.Position.Z * (8000 / 20)))
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
@@ -556,7 +556,7 @@ namespace Obsidian
                 {
                     if (this.Config.Baah.HasValue)
                     {
-                        var soundPosition = new SoundPosition(player.Location.X, player.Location.Y, player.Location.Z);
+                        var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
                     }
 
@@ -603,7 +603,7 @@ namespace Obsidian
                 {
                     EntityId = joinedPlayer.EntityId,
                     Uuid = joinedPlayer.Uuid,
-                    Position = joinedPlayer.Location,
+                    Position = joinedPlayer.Position,
                     Yaw = 0,
                     Pitch = 0
                 });
@@ -613,7 +613,7 @@ namespace Obsidian
                 {
                     EntityId = player.EntityId,
                     Uuid = player.Uuid,
-                    Position = player.Location,
+                    Position = player.Position,
                     Yaw = 0,
                     Pitch = 0
                 });

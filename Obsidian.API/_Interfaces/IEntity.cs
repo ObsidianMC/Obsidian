@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
     public interface IEntity
     {
         public IWorld WorldLocation { get; }
-        public PositionF Location { get; set; }
+        public PositionF Position { get; set; }
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
         public int EntityId { get; }

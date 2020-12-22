@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Client
         public SoundCategory Category { get; private set; }
 
         [Field(2)]
-        public SoundPosition Location { get; private set; }
+        public SoundPosition Position { get; private set; }
 
         [Field(3)]
         public float Volume { get; private set; }
@@ -38,7 +38,7 @@ namespace Obsidian.Net.Packets.Play.Client
 
             this.Name = name;
             this.Category = category;
-            this.Location = location;
+            this.Position = location;
             this.Volume = volume;
             this.Pitch = pitch;
         }

@@ -3,13 +3,6 @@ using System.Collections.Generic;
 
 namespace Obsidian.API
 {
-    public enum ContainmentType
-    {
-        Disjoint,
-        Contains,
-        Intersects
-    }
-
     public struct BoundingBox : IEquatable<BoundingBox>
     {
         public const int CornerCount = 8;

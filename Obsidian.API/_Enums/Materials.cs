@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Blocks
+﻿namespace Obsidian.API
 {
     public enum Materials
     {

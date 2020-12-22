@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public DiggingStatus Status { get; private set; }
 
         [Field(1)]
-        public Position Location { get; private set; }
+        public Position Position { get; private set; }
 
         [Field(2), ActualType(typeof(sbyte))]
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
@@ -26,7 +26,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Status = (DiggingStatus)await stream.ReadVarIntAsync();
-            this.Location = await stream.ReadPositionAsync();
+            this.Position = await stream.ReadPositionAsync();
             this.Face = (BlockFace)await stream.ReadByteAsync();
         }
 

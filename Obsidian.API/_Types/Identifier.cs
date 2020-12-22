@@ -11,7 +11,6 @@ namespace Obsidian.API
 
         internal Identifier()
         {
-
         }
 
         public static Identifier FromString(string id)

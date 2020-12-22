@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Client
     public partial class AcknowledgePlayerDigging : IPacket
     {
         [Field(0)]
-        public PositionF Location { get; set; }
+        public PositionF Position { get; set; }
 
         [Field(1), VarLength]
         public int Block { get; set; }

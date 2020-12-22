@@ -1,12 +1,10 @@
 using System;
 using System.Drawing;
-using System.Linq;
 
 namespace Obsidian.API
 {
     public struct ChatColor
     {
-
         #region Properties
         public Color Color { get; }
         public ConsoleColor? ConsoleColor { get; }
@@ -113,6 +111,5 @@ namespace Obsidian.API
         public static readonly ChatColor Italic = new ChatColor('o', "italic");
         public static readonly ChatColor Reset = new ChatColor('r', "reset");
         #endregion
-
     }
 }

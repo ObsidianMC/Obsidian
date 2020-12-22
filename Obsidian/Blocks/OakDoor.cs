@@ -2,7 +2,7 @@
 using Obsidian.Util.Registry.Enums;
 using System;
 
-namespace Obsidian._Blocks
+namespace Obsidian.Blocks
 {
     public struct OakDoor
     {

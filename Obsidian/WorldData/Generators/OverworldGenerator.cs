@@ -1,4 +1,4 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;

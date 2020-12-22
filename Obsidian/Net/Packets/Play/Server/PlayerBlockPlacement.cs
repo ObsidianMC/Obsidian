@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
 
         [Field(1)]
-        public Position Location { get; set; }
+        public Position Position { get; set; }
 
         [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }
@@ -39,7 +39,7 @@ namespace Obsidian.Net.Packets.Play.Server
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Hand = (Hand)await stream.ReadVarIntAsync();
-            this.Location = await stream.ReadPositionAsync();
+            this.Position = await stream.ReadPositionAsync();
             this.Face = (BlockFace)await stream.ReadVarIntAsync();
             this.CursorX = await stream.ReadFloatAsync();
             this.CursorY = await stream.ReadFloatAsync();
@@ -53,13 +53,13 @@ namespace Obsidian.Net.Packets.Play.Server
 
             var block = Registry.GetBlock(currentItem.Type);
 
-            var location = this.Location;
+            var location = this.Position;
 
             var interactedBlock = server.World.GetBlock(location);
 
             if (interactedBlock.IsInteractable && !player.Sneaking)
             {
-                var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Location));
+                var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Position));
 
                 if (arg.Cancel)
                     return;
