@@ -14,7 +14,9 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id { get; set; } = 0x17;
 
-        public PluginMessage() { }
+        public PluginMessage()
+        {
+        }
 
         public PluginMessage(string channel, byte[] data)
         {

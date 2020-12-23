@@ -2,10 +2,11 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.API;
-using Obsidian.Blocks;
+using Obsidian.API.Crafting;
 using Obsidian.Entities;
 using Obsidian.Items;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Util.Converters;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
@@ -26,6 +27,7 @@ namespace Obsidian.Util.Registry
         internal static ILogger Logger { get; set; }
 
         public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
+        public static Dictionary<string, IRecipe> Recipes = new Dictionary<string, IRecipe>();
         public static readonly string[] Blocks = new string[763];
 
         public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
@@ -37,69 +39,20 @@ namespace Obsidian.Util.Registry
 
         internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
 
-        private static Dictionary<string, List<string>> resources = new Dictionary<string, List<string>>();
+        private readonly static JsonSerializer recipeSerializer = new JsonSerializer();
 
         private readonly static string mainDomain = "Obsidian.Assets";
 
         static Registry()
         {
-            var res = Assembly.GetExecutingAssembly().GetManifestResourceNames();
-
-            foreach (var resource in res)
-            {
-                if (!resource.StartsWith("Obsidian.Assets.Tags."))
-                {
-                    if (resources.ContainsKey("assets"))
-                        resources["assets"].Add(resource);
-                    else
-                        resources["assets"] = new List<string>
-                        {
-                            resource
-                        };
-                }
-                else
-                {
-                    var newName = resource.Replace("Obsidian.Assets.Tags.", "");
-
-                    if (newName.StartsWith("blocks."))
-                    {
-                        newName = resource.Replace("blocks.", "");
-
-                        if (resources.ContainsKey("blocks"))
-                            resources["blocks"].Add(resource);
-                        else
-                            resources["blocks"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("items."))
-                    {
-                        if (resources.ContainsKey("items"))
-                            resources["items"].Add(resource);
-                        else
-                            resources["items"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("fluids."))
-                    {
-                        if (resources.ContainsKey("fluids"))
-                            resources["fluids"].Add(resource);
-                        else
-                            resources["fluids"] = new List<string> { resource };
-                    }
-                    else if (newName.StartsWith("entity_types."))
-                    {
-                        if (resources.ContainsKey("entity_types"))
-                            resources["entity_types"].Add(resource);
-                        else
-                            resources["entity_types"] = new List<string> { resource };
-                    }
-                }
-            }
+            recipeSerializer.Converters.Add(new IngredientConverter());
+            recipeSerializer.Converters.Add(new IngredientsConverter());
+            recipeSerializer.Converters.Add(new CraftingKeyConverter());
         }
 
         public static async Task RegisterBlocksAsync()
         {
-            var blocks = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.blocks.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(blocks);
+            using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -145,14 +98,12 @@ namespace Obsidian.Util.Registry
                 }
             }
 
-            Logger.LogDebug($"Successfully registered {registered} blocks..");
+            Logger?.LogDebug($"Successfully registered {registered} blocks..");
         }
 
         public static async Task RegisterItemsAsync()
         {
-            var items = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.items.json")).First();
-
-            var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(items);
+            using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
             using var read = new StreamReader(fs, new UTF8Encoding(false));
 
@@ -174,18 +125,16 @@ namespace Obsidian.Util.Registry
                 if (!Enum.TryParse(itemName.Replace("_", ""), true, out Materials material))
                     continue;
 
-                Items.Add(material, new Item(material) { Id = item.ProtocolId, UnlocalizedName = name });
+                Items.Add(material, new Item((short)item.ProtocolId, name, material));
                 registered++;
             }
 
-            Logger.LogDebug($"Successfully registered {registered} items..");
+            Logger?.LogDebug($"Successfully registered {registered} items..");
         }
 
         public static async Task RegisterBiomesAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.biome_dimension_codec.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -195,7 +144,7 @@ namespace Obsidian.Util.Registry
 
             using var cenumerator = type.GetEnumerator();
 
-            var registered = 0;
+            int registered = 0;
             while (cenumerator.MoveNext())
             {
                 var (name, token) = cenumerator.Current;
@@ -210,14 +159,12 @@ namespace Obsidian.Util.Registry
                     registered++;
                 }
             }
-            Logger.LogDebug($"Successfully registered {registered} codec biomes");
+            Logger?.LogDebug($"Successfully registered {registered} codec biomes");
         }
 
         public static async Task RegisterDimensionsAsync()
         {
-            var dimensions = resources["assets"].Where(x => x.EqualsIgnoreCase($"{mainDomain}.default_dimensions.json")).First();
-
-            using var cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream(dimensions);
+            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
             using var cread = new StreamReader(cfs, new UTF8Encoding(false));
 
@@ -227,7 +174,7 @@ namespace Obsidian.Util.Registry
 
             using var cenumerator = type.GetEnumerator();
 
-            var registered = 0;
+            int registered = 0;
             while (cenumerator.MoveNext())
             {
                 var (name, token) = cenumerator.Current;
@@ -239,147 +186,166 @@ namespace Obsidian.Util.Registry
 
                     DefaultDimensions.TryAdd(codec.Id, codec);
 
-                    Logger.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+                    Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
                 }
             }
-            Logger.LogDebug($"Successfully registered {registered} codec dimensions");
+            Logger?.LogDebug($"Successfully registered {registered} codec dimensions");
         }
 
         public static async Task RegisterTagsAsync()
         {
-            var domains = new Dictionary<string, List<DomainTag>>();
-            var registered = 0;
+            int registered = 0;
 
+            using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.tags.json");
 
-            foreach (var (baseTagName, tags) in resources)
+            using var reader = new StreamReader(stream, new UTF8Encoding(false));
+
+            var element = JObject.Parse(await reader.ReadToEndAsync());
+
+            using var enu = element.GetEnumerator();
+
+            static void addValues(string tagBase, Tag tag, List<string> values)
             {
-                if (baseTagName.EqualsIgnoreCase("assets"))
-                    continue;
-
-                foreach (var tag in tags)
+                foreach (var value in values)
                 {
-                    using var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream(tag);
-
-                    using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-                    var tagName = tag.Replace($"{mainDomain}.Tags.{baseTagName}.", "").Replace(".json", "");
-                    var json = await read.ReadToEndAsync();
-
-                    var type = JObject.Parse(json);
-
-                    using var enumerator = type.GetEnumerator();
-
-                    while (enumerator.MoveNext())
+                    switch (tagBase)
                     {
-                        var (name, token) = enumerator.Current;
+                        case "items":
+                            var item = GetItem(value);
 
-                        if (name.EqualsIgnoreCase("values"))
-                        {
-                            var list = token.ToObject<List<string>>();
+                            tag.Entries.Add(item.Id);
+                            break;
+                        case "blocks":
+                            var block = GetBlock(value);
 
-                            var ids = new List<int>();
-
-                            foreach (var item in list)
-                            {
-                                if (item.StartsWith("#"))
-                                {
-                                    var start = item.TrimStart('#');
-
-                                    if (domains.ContainsKey(start))
-                                        domains[start].Add(new DomainTag
-                                        {
-                                            TagName = tagName,
-                                            BaseTagName = baseTagName
-                                        });
-                                    else
-                                        domains.Add(start, new List<DomainTag>
-                                        {
-                                            new DomainTag
-                                            {
-                                                TagName = tagName,
-                                                BaseTagName = baseTagName
-                                            }
-                                        });
-
-                                    continue;
-                                }
-
-                                object obj = null;
-                                switch (baseTagName)
-                                {
-                                    case "blocks":
-                                        obj = GetBlock(item);
-                                        break;
-                                    case "items":
-                                        obj = GetItem(item);
-                                        break;
-                                    default:
-                                        if (Enum.TryParse<EntityType>(item.Replace("minecraft:", "").Replace("_", ""), true, out var entityType))
-                                            obj = (int)entityType;
-                                        else if (Enum.TryParse<Fluids>(item.Replace("minecraft:", "").Replace("_", ""), true, out var fluid))
-                                            obj = (int)fluid;
-                                        break;
-                                }
-
-                                if (obj is Block block)
-                                    ids.Add(block.Id);
-                                else if (obj is Item returnItem)
-                                    ids.Add(returnItem.Id);
-                                else if (obj is int value)
-                                    ids.Add(value);
-                            }
-
-                            if (Tags.ContainsKey(baseTagName))
-                            {
-                                Tags[baseTagName].Add(new Tag
-                                {
-                                    Name = tagName,
-                                    Entries = ids,
-                                    Count = ids.Count
-                                });
-                            }
-                            else
-                            {
-                                Tags.Add(baseTagName, new List<Tag>
-                                {
-                                    new Tag
-                                    {
-                                        Name = tagName,
-                                        Entries = ids,
-                                        Count = ids.Count
-                                    }
-                                });
-                            }
-                        }
+                            tag.Entries.Add(block.Id);
+                            break;
+                        case "entity_types":
+                            Enum.TryParse<EntityType>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var type);
+                            tag.Entries.Add((int)type);
+                            break;
+                        case "fluids":
+                            Enum.TryParse<Fluids>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var fluid);
+                            tag.Entries.Add((int)fluid);
+                            break;
+                        default:
+                            break;
                     }
-                    registered++;
                 }
             }
 
-            if (domains.Count > 0)
+            while (enu.MoveNext())
             {
-                foreach (var (t, domainTags) in domains)
+                var (name, token) = enu.Current;
+
+                var split = name.Split('/');
+
+                var tagBase = split[0];
+                var tagName = split[1];
+
+                if (Tags.ContainsKey(tagBase))
                 {
-                    var item = t.Replace("minecraft:", "");
-
-                    foreach (var domainTag in domainTags)
+                    var tag = new Tag
                     {
-                        var index = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(item));
+                        Type = tagBase,
+                        Name = tagName
+                    };
 
-                        var tag = Tags[domainTag.BaseTagName][index];
+                    var array = token.Value<JArray>("values");
+                    var values = array.ToObject<List<string>>();
 
-                        var tagIndex = Tags[domainTag.BaseTagName].FindIndex(x => x.Name.EqualsIgnoreCase(domainTag.TagName));
+                    addValues(tagBase, tag, values);
 
-                        Tags[domainTag.BaseTagName][tagIndex].Count += tag.Count;
+                    Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 
-                        Tags[domainTag.BaseTagName][tagIndex].Entries.AddRange(tag.Entries);
+                    Tags[tagBase].Add(tag);
+                }
+                else
+                {
+                    var tag = new Tag
+                    {
+                        Type = tagBase,
+                        Name = tagName
+                    };
 
-                        registered++;
+                    var array = token.Value<JArray>("values");
+                    var values = array.ToObject<List<string>>();
+
+                    addValues(tagBase, tag, values);
+
+                    Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
+
+                    Tags[tagBase] = new List<Tag> { tag };
+                }
+
+                registered++;
+            }
+
+            Logger?.LogDebug($"Registered {registered} tags");
+        }
+
+        public static async Task RegisterRecipesAsync()
+        {
+            using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.recipes.json");
+
+            using var sw = new StreamReader(fs, new UTF8Encoding(false));
+
+            var json = await sw.ReadToEndAsync();
+
+            var jObject = JObject.Parse(json);
+
+            var enu = jObject.GetEnumerator();
+
+            while (enu.MoveNext())
+            {
+                var (name, element) = enu.Current;
+
+                var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
+
+                if (Enum.TryParse<CraftingType>(type, true, out var result))
+                {
+                    switch (result)
+                    {
+                        case CraftingType.CraftingShaped:
+                            Recipes.Add(name, element.ToObject<ShapedRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.CraftingShapeless:
+                            Recipes.Add(name, element.ToObject<ShapelessRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.CraftingSpecialArmordye:
+                        case CraftingType.CraftingSpecialBookcloning:
+                        case CraftingType.CraftingSpecialMapcloning:
+                        case CraftingType.CraftingSpecialMapextending:
+                        case CraftingType.CraftingSpecialFireworkRocket:
+                        case CraftingType.CraftingSpecialFireworkStar:
+                        case CraftingType.CraftingSpecialFireworkStarFade:
+                        case CraftingType.CraftingSpecialTippedarrow:
+                        case CraftingType.CraftingSpecialBannerduplicate:
+                        case CraftingType.CraftingSpecialShielddecoration:
+                        case CraftingType.CraftingSpecialShulkerboxcoloring:
+                        case CraftingType.CraftingSpecialSuspiciousstew:
+                        case CraftingType.CraftingSpecialRepairitem:
+                            break;
+                        case CraftingType.Smelting:
+                        case CraftingType.Blasting:
+                        case CraftingType.Smoking:
+                        case CraftingType.CampfireCooking:
+                            Recipes.Add(name, element.ToObject<SmeltingRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.Stonecutting:
+                            Recipes.Add(name, element.ToObject<CuttingRecipe>(recipeSerializer));
+                            break;
+                        case CraftingType.Smithing:
+                            Recipes.Add(name, element.ToObject<SmithingRecipe>(recipeSerializer));
+                            break;
+                        default:
+                            break;
                     }
-
                 }
             }
+
+            Logger?.LogDebug($"Registered {Recipes.Count} recipes");
         }
 
         public static Block GetBlock(Materials material) => new Block(material);
@@ -394,12 +360,15 @@ namespace Obsidian.Util.Registry
         public static Item GetItem(string unlocalizedName) =>
             Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
-        class BaseRegistryJson
+        public static ItemStack GetSingleItem(Materials mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
+
+        public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Type, 1, meta);
+
+        private class BaseRegistryJson
         {
             [JsonProperty("protocol_id")]
             public int ProtocolId { get; set; }
         }
-
     }
 
     public class DomainTag

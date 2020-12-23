@@ -11,7 +11,9 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x0A;
 
-        public CloseWindow() { }
+        public CloseWindow()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -20,6 +22,6 @@ namespace Obsidian.Net.Packets.Play
             this.WindowId = await stream.ReadUnsignedByteAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

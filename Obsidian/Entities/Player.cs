@@ -5,14 +5,11 @@ using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Boss;
 using Obsidian.Chat;
-using Obsidian.Concurrency;
-using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
-using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,14 +28,19 @@ namespace Obsidian.Entities
         /// <summary>
         /// The players inventory
         /// </summary>
-        public Inventory Inventory { get; private set; } = new Inventory();
+        public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
+
+        public ItemStack LastClickedItem { get; internal set; }
+
+        public Block LastClickedBlock { get; internal set; }
 
         public Guid Uuid { get; set; }
 
         public PlayerBitMask PlayerBitMask { get; set; }
         public Gamemode Gamemode { get; set; }
-        public Hand MainHand { get; set; } = Hand.MainHand;
+
+        public Hand MainHand { get; set; } = Hand.Right;
 
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
@@ -91,13 +93,19 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
+            this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
+            {
+                Owner = uuid
+            };
+
+            LoadPerms();
         }
 
         internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
-            this.HeadY = position.Y + 1.62;
+            this.HeadY = position.Y + 1.62f;
 
             foreach (var entity in this.World.GetEntitiesNear(this.Position, 1))
             {
@@ -113,10 +121,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     this.client.SendPacket(new SetSlot
@@ -137,7 +144,7 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
-            this.HeadY = position.Y + 1.62;
+            this.HeadY = position.Y + 1.62f;
 
             foreach (var entity in this.World.GetEntitiesNear(this.Position, .8))
             {
@@ -152,10 +159,10 @@ namespace Obsidian.Entities
                         CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     this.client.SendPacket(new SetSlot
@@ -187,10 +194,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     this.client.SendPacket(new SetSlot
@@ -236,6 +242,21 @@ namespace Obsidian.Entities
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
+        public async Task OpenInventoryAsync(Inventory inventory)
+        {
+            await this.client.QueuePacketAsync(new OpenWindow(inventory));
+
+            if (inventory.HasItems())
+            {
+                await this.client.QueuePacketAsync(new WindowItems
+                {
+                    WindowId = inventory.Id,
+                    Count = (short)inventory.Items.Length,
+                    Items = inventory.Items.ToList()
+                });
+            }
+        }
+
         public async Task TeleportAsync(PositionF pos)
         {
             this.LastPosition = this.Position;
@@ -255,7 +276,7 @@ namespace Obsidian.Entities
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
-                Flags = PositionFlags.NONE,
+                Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
@@ -272,7 +293,7 @@ namespace Obsidian.Entities
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = to.Position,
-                Flags = PositionFlags.NONE,
+                Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
@@ -361,7 +382,7 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
+            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
 

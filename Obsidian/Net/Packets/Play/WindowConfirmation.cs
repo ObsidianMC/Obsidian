@@ -17,7 +17,9 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x11;
 
-        public WindowConfirmation() { }
+        public WindowConfirmation()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -28,6 +30,6 @@ namespace Obsidian.Net.Packets.Play
             this.Accepted = await stream.ReadBooleanAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

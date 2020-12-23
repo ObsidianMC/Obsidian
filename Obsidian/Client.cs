@@ -13,8 +13,8 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
@@ -387,7 +387,7 @@ namespace Obsidian
                 Position = this.Player.Position,
                 Yaw = 0,
                 Pitch = 0,
-                Flags = PositionFlags.NONE,
+                Flags = PositionFlags.None,
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");

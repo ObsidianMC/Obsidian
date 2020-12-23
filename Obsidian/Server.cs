@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Chat;
 using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.ArgumentParsers;
@@ -12,11 +11,10 @@ using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
@@ -102,7 +100,7 @@ namespace Obsidian
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-            Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
+            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
             
             this.Port = config.Port;
             this.Version = version;
@@ -391,7 +389,7 @@ namespace Obsidian
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = droppedItem.Id,
+                            Id = Registry.GetItem(droppedItem.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Position = loc
@@ -654,7 +652,7 @@ namespace Obsidian
 
         #endregion Events
 
-        struct QueueChat
+        private struct QueueChat
         {
             public IChatMessage Message;
             public MessageType Type;

@@ -1,16 +1,20 @@
-﻿using Obsidian.API;
+﻿using Newtonsoft.Json;
+using Obsidian.API;
+using Obsidian.API.Crafting;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
-using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Util.Registry;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
@@ -442,22 +446,72 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteItemStack(ItemStack value)
         {
+            value ??= new ItemStack(0, 0) { Present = true };
             WriteBoolean(value.Present);
             if (value.Present)
             {
-                WriteVarInt(value.Id);
+                var item = Registry.GetItem(value.Type);
+                
+                WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
 
-                var writer = new NbtWriter(this, string.Empty);
-                if (value.Nbt is null)
+                NbtWriter writer = new(this, string.Empty);
+                ItemMeta meta = value.ItemMeta;
+
+                if (meta.HasTags())
                 {
-                    writer.EndCompound();
-                    writer.Finish();
-                    return;
+                    writer.WriteByte("Unbreakable", meta.Unbreakable ? 1 : 0);
+
+                    if (meta.Durability > 0)
+                        writer.WriteInt("Damage", meta.Durability);
+
+                    if (meta.CustomModelData > 0)
+                        writer.WriteInt("CustomModelData", meta.CustomModelData);
+
+                    if (meta.CanDestroy is not null)
+                    {
+                        writer.BeginList("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
+
+                        foreach (var block in meta.CanDestroy)
+                            writer.WriteString(block);
+
+                        writer.EndList();
+                    }
+
+                    if (meta.Name is not null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)meta.Name }));
+
+                        if (meta.Lore is not null)
+                        {
+                            writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+
+                            foreach (var lore in meta.Lore)
+                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+
+                            writer.EndList();
+                        }
+
+                        writer.EndCompound();
+                    }
+                    else if (meta.Lore is not null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+
+                        foreach (var lore in meta.Lore)
+                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+
+                        writer.EndList();
+
+                        writer.EndCompound();
+                    }
                 }
 
-                writer.WriteShort("id", (short)value.Id);
-                writer.WriteInt("Damage", value.Nbt.Damage);
+                writer.WriteString("id", item.UnlocalizedName);
                 writer.WriteByte("Count", (byte)value.Count);
 
                 writer.EndCompound();
@@ -668,28 +722,206 @@ namespace Obsidian.Net
 
         public async Task WriteSlotAsync(ItemStack slot)
         {
+            if (slot is null)
+                slot = new ItemStack(0, 0)
+                {
+                    Present = true
+                };
+
+            var item = Registry.GetItem(slot.Type);
+
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
-                await this.WriteVarIntAsync(slot.Id);
+                await this.WriteVarIntAsync(item.Id);
                 await this.WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
-                if (slot.Nbt == null)
-                {
-                    writer.EndCompound();
-                    writer.Finish();
-                    return;
-                }
+
+                var itemMeta = slot.ItemMeta;
 
                 //TODO write enchants
-                writer.WriteShort("id", (short)slot.Id);
-                writer.WriteInt("Damage", slot.Nbt.Damage);
+                if (itemMeta.HasTags())
+                {
+                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
+
+                    if (itemMeta.Durability > 0)
+                        writer.WriteInt("Damage", itemMeta.Durability);
+
+                    if (itemMeta.CustomModelData > 0)
+                        writer.WriteInt("CustomModelData", itemMeta.CustomModelData);
+
+                    if (itemMeta.CanDestroy != null)
+                    {
+                        writer.BeginList("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
+
+                        foreach (var block in itemMeta.CanDestroy)
+                            writer.WriteString(block);
+
+                        writer.EndList();
+                    }
+
+                    if (itemMeta.Name != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
+
+                        if (itemMeta.Lore != null)
+                        {
+                            writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                            foreach (var lore in itemMeta.Lore)
+                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+
+                            writer.EndList();
+                        }
+
+                        writer.EndCompound();
+                    }
+                    else if (itemMeta.Lore != null)
+                    {
+                        writer.BeginCompound("display");
+
+                        writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+
+                        foreach (var lore in itemMeta.Lore)
+                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+
+                        writer.EndList();
+
+                        writer.EndCompound();
+                    }
+                }
+
+                writer.WriteString("id", item.UnlocalizedName);
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
-
                 writer.Finish();
+            }
+        }
+
+        internal async Task WriteRecipeAsync(string name, IRecipe recipe)
+        {
+            await this.WriteStringAsync(recipe.Type);
+
+            await this.WriteStringAsync(name);
+
+            if (recipe is ShapedRecipe shapedRecipe)
+            {
+                var patterns = shapedRecipe.Pattern;
+
+                int width = patterns[0].Length, height = patterns.Count;
+
+                await this.WriteVarIntAsync(width);
+                await this.WriteVarIntAsync(height);
+
+                await this.WriteStringAsync(shapedRecipe.Group ?? "");
+
+                var ingredients = new List<ItemStack>[width * height];
+
+                var y = 0;
+                foreach (var pattern in patterns)
+                {
+                    var x = 0;
+                    foreach (var c in pattern)
+                    {
+                        if (char.IsWhiteSpace(c))
+                            continue;
+
+                        var index = x + (y * width);
+
+                        var key = shapedRecipe.Key[c];
+
+                        foreach (var item in key)
+                        {
+                            if (ingredients[index] is null)
+                                ingredients[index] = new List<ItemStack> { item };
+                            else
+                                ingredients[index].Add(item);
+                        }
+
+                        x++;
+                    }
+                    y++;
+                }
+
+                foreach (var items in ingredients)
+                {
+                    if (items == null)
+                    {
+                        await this.WriteVarIntAsync(1);
+                        await this.WriteSlotAsync(ItemStack.Air);
+                        continue;
+                    }
+
+                    await this.WriteVarIntAsync(items.Count);
+
+                    foreach (var itemStack in items)
+                        await this.WriteSlotAsync(itemStack);
+                }
+
+                await this.WriteSlotAsync(shapedRecipe.Result.First());
+            }
+            else if (recipe is ShapelessRecipe shapelessRecipe)
+            {
+                var ingredients = shapelessRecipe.Ingredients;
+
+                await this.WriteStringAsync(shapelessRecipe.Group ?? "");
+
+                await this.WriteVarIntAsync(ingredients.Count);
+                foreach (var ingredient in ingredients)
+                {
+                    await this.WriteVarIntAsync(ingredient.Count);
+                    foreach (var item in ingredient)
+                        await this.WriteSlotAsync(item);
+                }
+
+                var result = shapelessRecipe.Result.First();
+
+                await this.WriteSlotAsync(result);
+            }
+            else if (recipe is SmeltingRecipe smeltingRecipe)
+            {
+                await this.WriteStringAsync(smeltingRecipe.Group ?? "");
+
+
+                await this.WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
+                foreach (var i in smeltingRecipe.Ingredient)
+                    await this.WriteSlotAsync(i);
+
+                await this.WriteSlotAsync(smeltingRecipe.Result.First());
+
+                await this.WriteFloatAsync(smeltingRecipe.Experience);
+                await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
+            }
+            else if (recipe is CuttingRecipe cuttingRecipe)
+            {
+                await this.WriteStringAsync(cuttingRecipe.Group ?? "");
+
+                await this.WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
+                foreach (var item in cuttingRecipe.Ingredient)
+                    await this.WriteSlotAsync(item);
+
+
+                var result = cuttingRecipe.Result.First();
+
+                result.Count = (short)cuttingRecipe.Count;
+
+                await this.WriteSlotAsync(result);
+            }
+            else if (recipe is SmithingRecipe smithingRecipe)
+            {
+                await this.WriteVarIntAsync(smithingRecipe.Base.Count);
+                foreach (var item in smithingRecipe.Base)
+                    await this.WriteSlotAsync(item);
+
+                await this.WriteVarIntAsync(smithingRecipe.Addition.Count);
+                foreach (var item in smithingRecipe.Addition)
+                    await this.WriteSlotAsync(item);
+
+                await this.WriteSlotAsync(smithingRecipe.Result.First());
             }
         }
     }

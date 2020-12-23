@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
@@ -13,8 +13,9 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x2C;
 
-        public Animation() { }
-
+        public Animation()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream)
         {
@@ -26,12 +27,12 @@ namespace Obsidian.Net.Packets.Play
             this.Hand = (Hand)await stream.ReadVarIntAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             //TODO broadcast entity animation to nearby players
             switch (this.Hand)
             {
-                case Hand.MainHand:
+                case Hand.Right:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,
