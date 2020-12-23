@@ -76,7 +76,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             await stream.WriteVarIntAsync(0);
 
             //foreach (var entity in blockEntities)
-             //   await stream.WriteNbtAsync(entity);
+            //   await stream.WriteNbtAsync(entity);
         }
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;

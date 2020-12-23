@@ -511,7 +511,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return mountainousTerrain;
         }
 
-        Module CreateHillyTerrain() 
+        Module CreateHillyTerrain()
         {
             // Generates the hilly terrain.
             //

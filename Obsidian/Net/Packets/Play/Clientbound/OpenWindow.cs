@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public partial class OpenWindow : IPacket
     {
-        [Field(0)]
+        [Field(0, Type = DataType.VarInt)]
         public int WindowId { get; set; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
@@ -41,6 +41,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+
+        public override string ToString() => $"{this.WindowId}:{this.Type}";
     }
 
     // Do not mess up the order this is how its supposed to be ordered

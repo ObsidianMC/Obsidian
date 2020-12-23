@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 
 namespace Obsidian.CommandFramework
@@ -16,7 +15,7 @@ namespace Obsidian.CommandFramework
         public bool IsCommandQualified(string input, out string qualifiedcommand)
         {
             qualifiedcommand = null;
-            if(input.StartsWith(_prefix))
+            if (input.StartsWith(_prefix))
             {
                 qualifiedcommand = input.Substring(_prefix.Length);
                 return true;
@@ -33,7 +32,7 @@ namespace Obsidian.CommandFramework
             bool inquote = false;
             bool escape = false;
 
-            for(int i = 0; i < input.Length; i++)
+            for (int i = 0; i < input.Length; i++)
             {
                 if (input[i] == ' ' && !inquote)
                 {
@@ -44,7 +43,7 @@ namespace Obsidian.CommandFramework
                 else if (escape)
                 {
                     // escape table
-                    switch(input[i])
+                    switch (input[i])
                     {
                         default: // any escaped char will be pushed back into the buffer.
                             buffer.Append(input[i]);
@@ -67,7 +66,7 @@ namespace Obsidian.CommandFramework
                     }
                     escape = false;
                 }
-                else if(input[i] == '\\')
+                else if (input[i] == '\\')
                 {
                     escape = true;
                 }
@@ -83,7 +82,7 @@ namespace Obsidian.CommandFramework
                 }
             }
 
-            if(buffer.Length > 0)
+            if (buffer.Length > 0)
             {
                 // clear remaining buffer
                 tokens.Add(buffer.ToString());

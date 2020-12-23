@@ -14,16 +14,16 @@ namespace Obsidian.Util.Debug
         {
             var builder = new StringBuilder();
             builder.AppendLine("====================");
-            
+
             builder.AppendLine("INFO ---------------");
             builder.AppendLine(description);
-            
+
             builder.AppendLine("DATA ---------------");
             builder.AppendLine(ToString(newBytes));
-            
+
             builder.AppendLine("STACK --------------");
             builder.AppendLine(GetStack());
-            
+
             builder.AppendLine("====================");
 
             Logger.LogDebug(builder.ToString());

@@ -1,7 +1,4 @@
 ﻿using Obsidian.ChunkData;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
@@ -85,7 +82,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                             Humidity.dry => Biomes.GravellyMountains
                         }; break;
                 }
-            } 
+            }
             // Badlands/Foothills
             else if (noiseGen.isBadlands(worldX, worldZ))
             {
@@ -192,7 +189,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             // Ocean
-            
+
             else if (noiseGen.isOcean(worldX, worldZ))
             {
                 switch (t)

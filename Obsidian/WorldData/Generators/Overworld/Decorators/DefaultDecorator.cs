@@ -1,5 +1,5 @@
-﻿using Obsidian.ChunkData;
-using Obsidian.API;
+﻿using Obsidian.API;
+using Obsidian.ChunkData;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {

@@ -22,7 +22,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.Message = await stream.ReadStringAsync();
         }
 
-        public Task HandleAsync(Server server, Player player) => 
+        public Task HandleAsync(Server server, Player player) =>
             server.ParseMessageAsync(this.Message, player.client);
     }
 }

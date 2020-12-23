@@ -1,7 +1,7 @@
-﻿using Obsidian.Serialization.Attributes;
-using Obsidian.API;
-using System;
+﻿using Obsidian.API;
 using Obsidian.Entities;
+using Obsidian.Serialization.Attributes;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound

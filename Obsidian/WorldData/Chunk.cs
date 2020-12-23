@@ -20,7 +20,9 @@ namespace Obsidian.WorldData
         private const int xMult = cubesTotal / cubesHorizontal;
         private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
 
-        public ChunkSection[] Sections { get; init; } = new ChunkSection[16];
+        public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
+
+        public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
         public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
@@ -70,6 +72,29 @@ namespace Obsidian.WorldData
             SetBlockStateId(x, y, z, block.StateId);
             Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
+
+
+        public BlockMeta GetBlockMeta(int x, int y, int z)
+        {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
+            var value = (short)((x << 8) | (z << 4) | y);
+
+            return this.BlockMetaStore.GetValueOrDefault(value);
+        }
+
+        public BlockMeta GetBlockMeta(Position position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
+
+        public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
+        {
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
+            var value = (short)((x << 8) | (z << 4) | y);
+
+            this.BlockMetaStore[value] = meta;
+        }
+
+        public void SetBlockMeta(Position position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
 
         public void CalculateHeightmap()
         {

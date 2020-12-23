@@ -2,7 +2,6 @@
 using System;
 using Obsidian.API;
 using System.Threading.Tasks;
-using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -42,7 +41,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
         }
 
-        public ClientPlayerPositionLook(byte[] data)  { this.Data = data; }
+        public ClientPlayerPositionLook(byte[] data) { this.Data = data; }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

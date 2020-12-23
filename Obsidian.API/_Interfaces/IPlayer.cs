@@ -12,7 +12,7 @@ namespace Obsidian.API
         public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
-        public Hand MainHand { get; set; }
+        public MainHand MainHand { get; set; }
         public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool Sleeping { get; set; }
@@ -49,9 +49,12 @@ namespace Obsidian.API
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
+        public Task OpenInventoryAsync(Inventory inventory);
         public Task<bool> GrantPermission(string permission);
         public Task<bool> RevokePermission(string permission);
         public Task<bool> HasPermission(string permission);
+        public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
+        public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
     }
 }

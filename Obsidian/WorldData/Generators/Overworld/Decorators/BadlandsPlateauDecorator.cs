@@ -1,6 +1,6 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.API;
 using Obsidian.Util.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
@@ -48,7 +48,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
             var cactusNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
             if (cactusNoise > 0 && cactusNoise < 0.005) // 0.5% chance for cactus
-            { 
+            {
                 chunk.SetBlock(pos + (0, 1, 0), cactus);
                 chunk.SetBlock(pos + (0, 2, 0), cactus);
                 chunk.SetBlock(pos + (0, 3, 0), cactus);

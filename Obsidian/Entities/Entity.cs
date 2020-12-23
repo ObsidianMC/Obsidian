@@ -35,7 +35,7 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
-        public EntityBitMask EntityBitMask { get; set; }
+        public EntityBitMask EntityBitMask { get; set; } = EntityBitMask.None;
 
         public Pose Pose { get; set; } = Pose.Standing;
 

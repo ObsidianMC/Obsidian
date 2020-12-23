@@ -24,6 +24,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Serializer\Enums\FieldType.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\biome_dimension_codec.json" />
+    <None Remove="Assets\default_dimensions.json" />
+    <None Remove="Assets\default_dimensions.xaml" />
+    <None Remove="Assets\entity_types.json" />
+    <None Remove="Assets\fluids.json" />
+    <None Remove="Assets\tags.json" />
+    <None Remove="Serializer\Attributes\NewFile1.txt" />
+    <None Remove="Serializer\Enums\NewFile1.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
     <PackageReference Include="DaanV2.UUID.Net" Version="1.0.4" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.9" />
@@ -43,6 +58,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Page Include="Assets\default_dimensions.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -52,6 +71,30 @@
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
     <ProjectReference Include="..\Obsidian.Generators\Obsidian.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Assets\biome_dimension_codec.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\blocks.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\default_dimensions.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\entity_types.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\fluids.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\items.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Assets\tags.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,7 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
@@ -27,6 +29,7 @@ namespace Obsidian.Net.Packets.Play
         public async ValueTask<PluginMessageStore> HandleAsync()
         {
             using var stream = new MinecraftStream(this.PluginData);
+
             var result = this.Channel switch
             {
                 "minecraft:brand" => new PluginMessageStore
@@ -37,13 +40,14 @@ namespace Obsidian.Net.Packets.Play
                 "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
                 {
                     Type = PluginMessageType.Register,
-                    Value = this.PluginData
+                    Value = Encoding.UTF8.GetString(this.PluginData)
                 },
                 "minecraft:unregister" => new PluginMessageStore
                 {
-                    Type = PluginMessageType.UnRegister
+                    Type = PluginMessageType.UnRegister,
+                    Value = Encoding.UTF8.GetString(this.PluginData)
                 },
-                _ => throw new System.NotImplementedException()
+                _ => null
             };
 
             return result;
@@ -54,12 +58,18 @@ namespace Obsidian.Net.Packets.Play
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Channel = await stream.ReadStringAsync();
-            this.PluginData = await stream.ReadUInt8ArrayAsync();
+
+            var length = stream.Length - stream.Position;
+
+            this.PluginData = await stream.ReadUInt8ArrayAsync((int)length);
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             var result = await this.HandleAsync();
+
+            if (result == null)
+                return;
 
             switch (result.Type)
             {
@@ -68,17 +78,22 @@ namespace Obsidian.Net.Packets.Play
                     break;
                 case PluginMessageType.Register:
                     {
-                        using var stream = new MinecraftStream(this.PluginData);
-                        var len = await stream.ReadVarIntAsync();
+                        var list = result.Value.ToString().Split("/");//Unsure if this is the only separator that's used
 
-                        //Idk how this would work so I'm assuming a length will be sent first
-                        for (int i = 0; i < len; i++)
-                            server.RegisteredChannels.Add(await stream.ReadStringAsync());
+                        if (list.Length > 0)
+                        {
+                            foreach (var item in list)
+                                server.RegisteredChannels.Add(item);
+                        }
+                        else
+                            server.RegisteredChannels.Add(result.Value.ToString());
 
                         break;
                     }
                 case PluginMessageType.UnRegister:
-                    server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
+                    //TODO unregister registered channels 
+
+                    //server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
                     break;
                 case PluginMessageType.Custom://This can be ignored for now
                 default:

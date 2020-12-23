@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityAnimation :  IPacket
+    public partial class EntityAnimation : IPacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }

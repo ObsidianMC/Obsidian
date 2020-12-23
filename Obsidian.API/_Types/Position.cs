@@ -59,6 +59,8 @@ namespace Obsidian.API
         /// </summary>
         public bool Equals(Position other) => X == other.X && Y == other.Y && Z == other.Z;
 
+        public SoundPosition SoundPosition => new SoundPosition(this.X, this.Y, this.Z);
+
         /// <summary>
         /// Returns <see cref="Position"/> clamped to the inclusive range of <paramref name="min"/> and <paramref name="max"/>.
         /// </summary>

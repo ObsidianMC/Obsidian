@@ -21,6 +21,7 @@ namespace Obsidian
         {
             NamingStrategy = new SnakeCaseNamingStrategy()
         };
+
         public static JsonSerializerSettings JsonSettings { get; } = new JsonSerializerSettings
         {
             ContractResolver = ContractResolver,

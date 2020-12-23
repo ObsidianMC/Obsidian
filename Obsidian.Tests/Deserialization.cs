@@ -4,12 +4,9 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Serialization;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Serialization.Enums;
-using Obsidian.Util;
-using Obsidian.API;
 using System.Threading.Tasks;
 using Xunit;
 

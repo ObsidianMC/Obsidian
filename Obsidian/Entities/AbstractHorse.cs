@@ -16,7 +16,8 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, this.HorseMask);
 
-            await stream.WriteEntityMetdata(17, EntityMetadataType.OptUuid, Owner, true);
+            if (this.Owner != default)
+                await stream.WriteEntityMetdata(17, EntityMetadataType.OptUuid, Owner, true);
         }
 
         public override void Write(MinecraftStream stream)

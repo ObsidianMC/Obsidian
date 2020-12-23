@@ -1,27 +1,25 @@
-using Obsidian.Serialization.Attributes;
 using Obsidian.API;
-using System.Threading.Tasks;
 using Obsidian.Entities;
+using Obsidian.Serializer.Attributes;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class SpawnPosition : IPacket
+    public class SpawnPosition : IPacket
     {
         [Field(0)]
-        public PositionF Position { get; private set; }
+        public Position Location { get; private set; }
 
         public int Id => 0x42;
 
-        private SpawnPosition()
-        {
-        }
+        public byte[] Data { get; }
 
-        public SpawnPosition(PositionF location) => this.Position = location;
+        public SpawnPosition(Position location) => this.Location = location;
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
     }
 }

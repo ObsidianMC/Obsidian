@@ -23,7 +23,7 @@ namespace Obsidian.Util.Debug
 
             _ = PacketDebug.AppendAsync("", MemoryStream.ToArray());
             MemoryStream = new MemoryStream();
-            
+
             BaseStream.Write(buffer, offset, count);
         }
 

@@ -4,11 +4,8 @@ using Obsidian.CommandFramework.Entities;
 using Obsidian.CommandFramework.Exceptions;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.CommandFramework
@@ -70,7 +67,7 @@ namespace Obsidian.CommandFramework
             // find all command groups under this command
             var subtypes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
 
-            foreach(var st in subtypes)
+            foreach (var st in subtypes)
             {
                 var group = st.GetCustomAttribute<CommandGroupAttribute>();
                 // Get command name from first constructor argument for command attribute.
@@ -99,14 +96,14 @@ namespace Obsidian.CommandFramework
             // loop through methods and find valid commands
             var methods = t.GetMethods();
 
-            if(parent != null)
+            if (parent != null)
             {
                 // Adding all methods with GroupCommand attribute
                 parent.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(GroupCommandAttribute))));
             }
 
             // Selecting all methods that have the CommandAttribute.
-            foreach(var m in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
+            foreach (var m in methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandAttribute))))
             {
                 // Get command name from first constructor argument for command attribute.
                 var cmd = m.GetCustomAttribute<CommandAttribute>();
@@ -149,7 +146,7 @@ namespace Obsidian.CommandFramework
             var args = command;
 
             // Search for correct Command class in this._commands.
-            while(_commands.Any(x => x.CheckCommand(args, cmd)))
+            while (_commands.Any(x => x.CheckCommand(args, cmd)))
             {
                 cmd = _commands.First(x => x.CheckCommand(args, cmd));
                 args = args.Skip(1).ToArray();

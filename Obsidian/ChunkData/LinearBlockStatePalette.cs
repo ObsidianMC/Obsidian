@@ -55,7 +55,7 @@ namespace Obsidian.ChunkData
         {
             var length = await stream.ReadVarIntAsync();
 
-            for(int i = 0; i < length; i++)
+            for (int i = 0; i < length; i++)
             {
                 int stateId = await stream.ReadVarIntAsync();
 

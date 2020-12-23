@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Login
         {
         }
 
-        public EncryptionRequest(byte[] publicKey, byte[] verifyToken) 
+        public EncryptionRequest(byte[] publicKey, byte[] verifyToken)
         {
             this.PublicKey = publicKey;
             this.VerifyToken = verifyToken;

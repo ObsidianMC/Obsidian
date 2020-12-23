@@ -1,9 +1,4 @@
-﻿using Obsidian.CommandFramework.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Obsidian.CommandFramework.ArgumentParsers
+﻿namespace Obsidian.CommandFramework.ArgumentParsers
 {
     public class SignedIntArgumentParser : BaseArgumentParser<int>
     {

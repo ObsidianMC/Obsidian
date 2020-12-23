@@ -85,5 +85,7 @@ namespace Obsidian.Chat
         public static ChatMessage Empty => Simple(string.Empty);
         public static implicit operator ChatMessage(string text) => Simple(text);
         public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, Globals.JsonSettings);
+
+        public string ToString(bool indented) => JsonConvert.SerializeObject(this, indented ? Formatting.Indented : Formatting.None, Globals.JsonSettings);
     }
 }

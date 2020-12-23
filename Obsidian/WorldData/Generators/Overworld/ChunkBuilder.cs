@@ -1,13 +1,12 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
-using Obsidian.Util.Registry;
 using System;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
     public static class ChunkBuilder
     {
-        public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] undergroundHeightmap, double[,] bedrockHeightmap, bool debug=false)
+        public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] undergroundHeightmap, double[,] bedrockHeightmap, bool debug = false)
         {
             var air = Registry.GetBlock(Materials.Air);
             var bedrock = Registry.GetBlock(Materials.Bedrock);
@@ -24,7 +23,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
             for (int x = 0; x < 16; x++)
                 for (int z = 0; z < 16; z++)
-                    highestY = Math.Max(highestY, (int) terrainHeightmap[x,z]);
+                    highestY = Math.Max(highestY, (int)terrainHeightmap[x, z]);
 
             var skipAbove = ((highestY >> 4) + 1) << 4;
 
@@ -135,21 +134,21 @@ namespace Obsidian.WorldData.Generators.Overworld
             }
         }
 
-        public static void CarveCaves(OverworldNoise noiseGen, Chunk chunk, double[,] rhm, double[,] bhm, bool debug=false)
+        public static void CarveCaves(OverworldNoise noiseGen, Chunk chunk, double[,] rhm, double[,] bhm, bool debug = false)
         {
             var b = Registry.GetBlock(Materials.CaveAir);
             for (int bx = 0; bx < 16; bx++)
             {
                 for (int bz = 0; bz < 16; bz++)
                 {
-                    int tY = Math.Min((int)rhm[bx, bz],64);
+                    int tY = Math.Min((int)rhm[bx, bz], 64);
                     int brY = (int)bhm[bx, bz];
                     for (int by = brY; by < tY; by++)
                     {
                         bool caveAir = noiseGen.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
                         if (caveAir)
                         {
-                            if(debug) { b = Registry.GetBlock(Materials.LightGrayStainedGlass); }
+                            if (debug) { b = Registry.GetBlock(Materials.LightGrayStainedGlass); }
                             chunk.SetBlock(bx, by, bz, b);
                         }
                     }

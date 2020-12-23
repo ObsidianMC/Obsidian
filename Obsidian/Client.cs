@@ -1,6 +1,7 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Crafting.Builders;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
@@ -18,10 +19,8 @@ using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
 using Obsidian.Util;
-using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
-using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -39,10 +38,11 @@ namespace Obsidian
         private byte[] randomToken;
         private byte[] sharedKey;
 
-        private PacketCryptography packetCryptography;
+        private readonly BufferBlock<IPacket> packetQueue;
+
+        private readonly PacketCryptography packetCryptography;
 
         private MinecraftStream minecraftStream;
-        private PacketDebugStream debugStream;
 
         private Config config;
 
@@ -54,7 +54,6 @@ namespace Obsidian
 
         internal TcpClient tcp;
 
-        internal int clickActionNumber;
         internal int ping;
         internal int missedKeepalives;
         internal int id;
@@ -69,8 +68,6 @@ namespace Obsidian
         public CancellationTokenSource Cancellation { get; private set; } = new CancellationTokenSource();
 
         public ClientState State { get; private set; } = ClientState.Handshaking;
-
-        private BufferBlock<IPacket> packetQueue;
 
         public Server Server { get; private set; }
         public Player Player { get; private set; }
@@ -91,9 +88,6 @@ namespace Obsidian
             this.clickActionNumber = 0;
             
             Stream parentStream = this.tcp.GetStream();
-#if DEBUG
-            //parentStream = this.DebugStream = new PacketDebugStream(parentStream);
-#endif
             this.minecraftStream = new MinecraftStream(parentStream);
             
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
@@ -264,7 +258,7 @@ namespace Obsidian
                                 }
 
                                 this.EncryptionEnabled = true;
-                                this.minecraftStream = new AesStream(this.debugStream ?? (Stream)this.tcp.GetStream(), this.sharedKey);
+                                this.minecraftStream = new AesStream(this.tcp.GetStream(), this.sharedKey);
 
                                 //await this.SetCompression();
                                 await ConnectAsync();
@@ -308,6 +302,13 @@ namespace Obsidian
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
+        private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
+        {
+            RecipesLength = Registry.Recipes.Values.Count,
+
+            Recipes = Registry.Recipes
+        });
+
         private async Task ConnectAsync()
         {
             await this.QueuePacketAsync(new LoginSuccess(this.Player.Uuid, this.Player.Username));
@@ -318,7 +319,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and savve client dimensionns
+            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -350,18 +351,28 @@ namespace Obsidian
             await this.SendServerBrand();
 
             // TODO figure out why tags make air blocks a fluid
-            //await this.QueuePacketAsync(new TagsPacket
-            //{
-            //    Blocks = Registry.Tags["blocks"],
+            /*await this.QueuePacketAsync(new TagsPacket
+            {
+                Blocks = Registry.Tags["blocks"],
 
-            //    Items = Registry.Tags["items"],
+                Items = Registry.Tags["items"],
 
-            //    Fluid = Registry.Tags["fluids"],
+                Fluid = Registry.Tags["fluids"],
 
-            //    Entities = Registry.Tags["entity_types"]
-            //});
+                Entities = Registry.Tags["entity_types"]
+            });*/
+
+            await this.DeclareRecipes();
 
             await this.SendDeclareCommandsAsync();
+
+            await this.QueuePacketAsync(new UnlockRecipes
+            {
+                Action = UnlockRecipeAction.Init,
+                FirstRecipeIds = Registry.Recipes.Keys.ToList(),
+                SecondRecipeIds = Registry.Recipes.Keys.ToList()
+            });
+
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
@@ -373,8 +384,8 @@ namespace Obsidian
             var spawnPosition = new PositionF(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
-                Server.World.Data.SpawnZ
-                );
+                Server.World.Data.SpawnZ);
+
             await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
             this.Logger.LogDebug("Sent Spawn Position packet.");
 
@@ -453,7 +464,7 @@ namespace Obsidian
                 foreach (var overload in cmd.Overloads.Take(1))
                 {
                     var args = overload.GetParameters().Skip(1); // skipping obsidian context
-                    if (args.Count() < 1)
+                    if (!args.Any())
                         cmdnode.Type |= CommandNodeType.IsExecutabe;
 
                     var prev = cmdnode;
@@ -474,19 +485,12 @@ namespace Obsidian
 
                         var mctype = this.Server.Commands.FindMinecraftType(type);
 
-                        switch (mctype)
+                        argnode.Parser = mctype switch
                         {
-                            case "brigadier:string":
-                                argnode.Parser = new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase);
-                                break;
-                            case "obsidian:player":
-                                // this is a custom type used by obsidian meaning "only player entities".
-                                argnode.Parser = new EntityCommandParser(EntityCommadBitMask.OnlyPlayers);
-                                break;
-                            default:
-                                argnode.Parser = new CommandParser(mctype);
-                                break;
-                        }
+                            "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                            "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
+                            _ => new CommandParser(mctype),
+                        };
                     }
                 }
             }
@@ -598,7 +602,7 @@ namespace Obsidian
 
         internal async Task SendChunkAsync(Chunk chunk)
         {
-            if(chunk != null)
+            if (chunk != null)
             {
                 if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
                 {
@@ -606,7 +610,7 @@ namespace Obsidian
                 }
             }
         }
-        
+
         public async Task UnloadChunkAsync(int x, int z)
         {
             if (this.LoadedChunks.Contains((x, z)))

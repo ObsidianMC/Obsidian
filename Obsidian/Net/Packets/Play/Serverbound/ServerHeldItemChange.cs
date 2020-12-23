@@ -38,7 +38,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     Present = heldItem.Present
                 }
-            }, player);
+            }, player); ;
         }
     }
 }

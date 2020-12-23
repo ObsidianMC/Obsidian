@@ -3,6 +3,7 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Net;
@@ -19,7 +20,7 @@ namespace Obsidian.Entities
     public class Player : Living, IPlayer
     {
         internal readonly Client client;
-        
+
         public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
 
@@ -69,7 +70,7 @@ namespace Obsidian.Entities
         public float FallDistance { get; set; }
         public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
-        public float XpP { get; set; } = 0; // idfk, xp points?
+        public int Score { get; set; } = 0; // idfk, xp points?
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
@@ -303,19 +304,19 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            if (!(message is ChatMessage chatMessage))
+            if (message is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
 
             return this.SendMessageAsync(chatMessage, type, sender);
         }
 
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
             client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
-        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
 
-        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) => 
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) =>
             client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
@@ -323,9 +324,9 @@ namespace Obsidian.Entities
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(IChatMessage reason)
         {
-            var chatMessage = reason as ChatMessage;
-            if (chatMessage is null)
+            if (reason is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+
             return KickAsync(chatMessage);
         }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
@@ -336,9 +337,9 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
 
-            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
+            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.Score);
 
-            await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (int)this.PlayerBitMask);
+            await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (byte)this.PlayerBitMask);
 
             await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.MainHand);
 
@@ -397,10 +398,10 @@ namespace Obsidian.Entities
             var parent = this.PlayerPermissions;
             var result = false;
 
-            foreach(var i in split)
+            foreach (var i in split)
             {
                 // no such child, this permission is new!
-                if(!parent.Children.Any(x => x.Name == i))
+                if (!parent.Children.Any(x => x.Name == i))
                 {
                     // create the new child, add it to its parent and set parent to the next value to continue the loop
                     var child = new Permission(i);
@@ -425,6 +426,7 @@ namespace Obsidian.Entities
         public async Task<bool> RevokePermission(string permission)
         {
             // trim and split permission string
+
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
@@ -433,9 +435,9 @@ namespace Obsidian.Entities
             var childToRemove = this.PlayerPermissions;
             var result = true;
 
-            foreach(var i in split)
+            foreach (var i in split)
             {
-                if(parent.Children.Any(x => x.Name == i))
+                if (parent.Children.Any(x => x.Name == i))
                 {
                     // child exists, set its parent node and mark it to be removed
                     parent = childToRemove;
@@ -462,19 +464,21 @@ namespace Obsidian.Entities
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
+
             // Set root node and whether we created a new permission (still false)
             var result = false;
             var parent = this.PlayerPermissions;
 
-            foreach(var i in split)
+
+            foreach (var i in split)
             {
-                if(parent.Children.Any(x => x.Name == "*"))
+                if (parent.Children.Any(x => x.Name == "*"))
                 {
                     // WILDCARD! all child permissions are granted here.
                     result = true;
                     break;
                 }
-                if(parent.Children.Any(x => x.Name == i))
+                if (parent.Children.Any(x => x.Name == i))
                 {
                     parent = parent.Children.First(x => x.Name == i);
                     result = true;
@@ -489,5 +493,24 @@ namespace Obsidian.Entities
 
             return Task.FromResult(result);
         }
+        public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
+        {
+            foreach (var perm in permissions)
+            {
+                if (await HasPermission(perm)) return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> HasAllPermissions(IEnumerable<string> permissions)
+        {
+            foreach (var perm in permissions)
+            {
+                if (!await HasPermission(perm)) return false;
+            }
+            return true;
+        }
     }
+
+    
 }

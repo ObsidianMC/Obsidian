@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace Obsidian
+namespace Obsidian.WorldData
 {
     public class SebastiansCube
     {

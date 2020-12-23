@@ -14,6 +14,7 @@ namespace Obsidian.ChunkData
 
         protected void Set(int x, int y, int z, Block blockState)
         {
+            y %= 16;
             var blockIndex = this.GetIndex(x, y, z);
 
             int paletteIndex = this.Palette.GetIdFromState(blockState);
@@ -25,6 +26,7 @@ namespace Obsidian.ChunkData
 
         protected Block Get(int x, int y, int z)
         {
+            y %= 16;
             int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
 
             return this.Palette.GetStateFromIndex(storageId);
