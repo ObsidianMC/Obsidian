@@ -1,12 +1,11 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class BlockAction : IPacket
+    public partial class BlockAction : IPacket
     {
         [Field(0)]
         public Position Location { get; set; }
@@ -17,11 +16,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public byte ActionParam { get; set; }
 
-        [Field(3, Type = DataType.VarInt)]
+        [Field(3), VarLength]
         public int BlockType { get; set; }
 
         public int Id => 0x0A;
-
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 

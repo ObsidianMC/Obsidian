@@ -1,14 +1,13 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class UnlockRecipes : IPacket
+    public partial class UnlockRecipes : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), ActualType(typeof(int)), VarLength]
         public UnlockRecipeAction Action { get; set; }
 
         [Field(1)]
@@ -35,21 +34,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(8)]
         public bool SmokerBookFilterActive { get; set; }
 
-        [Field(9, Type = DataType.VarInt)]
-        public int FirstSize => this.FirstRecipeIds.Count;
-
-        [Field(10, Type = DataType.Array)]
+        [Field(9)]
         public List<string> FirstRecipeIds { get; set; }
 
-        [Field(11, Type = DataType.VarInt)]
-        public int SecondSize => this.SecondRecipeIds.Count;
-
-        [Field(12, Type = DataType.Array)]
+        [Field(10)]
         public List<string> SecondRecipeIds { get; set; }
 
         public int Id => 0x35;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -1,18 +1,14 @@
 ﻿using Obsidian.API.Crafting;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class DeclareRecipes : IPacket
+    public partial class DeclareRecipes : IPacket
     {
         [Field(0)]
-        public int RecipesLength { get; set; }
-
-        [Field(1, Type = DataType.Array)]
         public Dictionary<string, IRecipe> Recipes { get; set; }
 
         public int Id => 0x5A;

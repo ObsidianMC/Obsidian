@@ -1,19 +1,22 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class CraftRecipeResponse : IPacket
+    public partial class CraftRecipeResponse : IPacket
     {
         [Field(0)]
-        public sbyte WindowId { get; }
+        public sbyte WindowId { get; private set; }
 
-        [Field(1, Type = DataType.Identifier)]
-        public string RecipeId { get; }
+        [Field(1)]
+        public string RecipeId { get; private set; }
 
         public int Id => 0x2F;
+
+        private CraftRecipeResponse()
+        {
+        }
 
         public CraftRecipeResponse(sbyte windowId, string recipeId)
         {

@@ -3,7 +3,6 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Net;
@@ -11,6 +10,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
 using Obsidian.Util.Registry;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -147,7 +147,7 @@ namespace Obsidian.Entities
 
             this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, .8))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 0.8f))
             {
                 if (entity is ItemEntity item)
                 {
@@ -358,7 +358,7 @@ namespace Obsidian.Entities
             stream.WriteFloat(AdditionalHearts);
 
             stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
-            stream.WriteVarInt((int)XpP);
+            stream.WriteVarInt(Score);
 
             stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
             stream.WriteByte((byte)PlayerBitMask);
@@ -386,7 +386,6 @@ namespace Obsidian.Entities
             await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
-
 
         public async Task<bool> GrantPermission(string permission)
         {
@@ -493,6 +492,7 @@ namespace Obsidian.Entities
 
             return Task.FromResult(result);
         }
+
         public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
@@ -511,6 +511,4 @@ namespace Obsidian.Entities
             return true;
         }
     }
-
-    
 }

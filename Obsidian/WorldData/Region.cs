@@ -18,8 +18,8 @@ namespace Obsidian.WorldData
 {
     public class Region
     {
-        public const int cubiceRegionSizeShift = 3;
-        public const int cubicRegionSize = 1 << cubiceRegionSizeShift;
+        public const int cubicRegionSizeShift = 3;
+        public const int cubicRegionSize = 1 << cubicRegionSizeShift;
 
         private bool cancel = false;
         public int X { get; }

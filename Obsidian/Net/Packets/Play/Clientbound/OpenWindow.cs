@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public partial class OpenWindow : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int WindowId { get; set; }
 
         [Field(1), ActualType(typeof(int)), VarLength]

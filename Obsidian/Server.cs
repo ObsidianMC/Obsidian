@@ -20,6 +20,7 @@ using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -486,7 +487,7 @@ namespace Obsidian
 
                         this.World.SetBlock(digging.Position, Block.Air);
 
-                        var itemId = Registry.GetItem(block.Type).Id;
+                        var itemId = Registry.GetItem(block.Material).Id;
 
                         if (itemId == 0) { break; }
 

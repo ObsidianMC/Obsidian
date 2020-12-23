@@ -21,6 +21,7 @@ using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
+using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -84,8 +85,6 @@ namespace Obsidian
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
             this.LoadedChunks = new List<(int cx, int cz)>();
-            this.debugStream = null;
-            this.clickActionNumber = 0;
             
             Stream parentStream = this.tcp.GetStream();
             this.minecraftStream = new MinecraftStream(parentStream);
@@ -304,8 +303,6 @@ namespace Obsidian
 
         private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
         {
-            RecipesLength = Registry.Recipes.Values.Count,
-
             Recipes = Registry.Recipes
         });
 

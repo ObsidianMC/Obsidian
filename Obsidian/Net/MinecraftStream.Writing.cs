@@ -28,7 +28,7 @@ namespace Obsidian.Net
         {
             BaseStream.WriteByte((byte)value);
         }
-        
+
         public async Task WriteByteAsync(sbyte value)
         {
 #if PACKETLOG
@@ -228,7 +228,7 @@ namespace Obsidian.Net
         public void WriteString(string value)
         {
             System.Diagnostics.Debug.Assert(value.Length <= short.MaxValue);
-            
+
             var bytes = Encoding.UTF8.GetBytes(value);
             WriteVarInt(bytes.Length);
             Write(bytes);
@@ -451,7 +451,7 @@ namespace Obsidian.Net
             if (value.Present)
             {
                 var item = Registry.GetItem(value.Type);
-                
+
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
 
@@ -922,6 +922,137 @@ namespace Obsidian.Net
                     await this.WriteSlotAsync(item);
 
                 await this.WriteSlotAsync(smithingRecipe.Result.First());
+            }
+        }
+
+        [WriteMethod]
+        public void WriteRecipes(Dictionary<string, IRecipe> recipes)
+        {
+            WriteVarInt(recipes.Count);
+            foreach (var (name, recipe) in recipes)
+                WriteRecipe(name, recipe);
+        }
+
+        public void WriteRecipe(string name, IRecipe recipe)
+        {
+            WriteString(recipe.Type);
+
+            WriteString(name);
+
+            if (recipe is ShapedRecipe shapedRecipe)
+            {
+                var patterns = shapedRecipe.Pattern;
+
+                int width = patterns[0].Length, height = patterns.Count;
+
+                WriteVarInt(width);
+                WriteVarInt(height);
+
+                WriteString(shapedRecipe.Group ?? string.Empty);
+
+                var ingredients = new List<ItemStack>[width * height];
+
+                var y = 0;
+                foreach (var pattern in patterns)
+                {
+                    var x = 0;
+                    foreach (var c in pattern)
+                    {
+                        if (char.IsWhiteSpace(c))
+                            continue;
+
+                        var index = x + (y * width);
+
+                        var key = shapedRecipe.Key[c];
+
+                        foreach (var item in key)
+                        {
+                            if (ingredients[index] is null)
+                                ingredients[index] = new List<ItemStack> { item };
+                            else
+                                ingredients[index].Add(item);
+                        }
+
+                        x++;
+                    }
+                    y++;
+                }
+
+                foreach (var items in ingredients)
+                {
+                    if (items == null)
+                    {
+                        WriteVarInt(1);
+                        WriteItemStack(ItemStack.Air);
+                        continue;
+                    }
+
+                    WriteVarInt(items.Count);
+
+                    foreach (var itemStack in items)
+                        WriteItemStack(itemStack);
+                }
+
+                WriteItemStack(shapedRecipe.Result.First());
+            }
+            else if (recipe is ShapelessRecipe shapelessRecipe)
+            {
+                var ingredients = shapelessRecipe.Ingredients;
+
+                WriteString(shapelessRecipe.Group ?? string.Empty);
+
+                WriteVarInt(ingredients.Count);
+                foreach (var ingredient in ingredients)
+                {
+                    WriteVarInt(ingredient.Count);
+                    foreach (var item in ingredient)
+                        WriteItemStack(item);
+                }
+
+                var result = shapelessRecipe.Result.First();
+
+                WriteItemStack(result);
+            }
+            else if (recipe is SmeltingRecipe smeltingRecipe)
+            {
+                WriteString(smeltingRecipe.Group ?? string.Empty);
+
+
+                WriteVarInt(smeltingRecipe.Ingredient.Count);
+                foreach (var i in smeltingRecipe.Ingredient)
+                    WriteItemStack(i);
+
+                WriteItemStack(smeltingRecipe.Result.First());
+
+                WriteFloat(smeltingRecipe.Experience);
+                WriteVarInt(smeltingRecipe.Cookingtime);
+            }
+            else if (recipe is CuttingRecipe cuttingRecipe)
+            {
+                WriteString(cuttingRecipe.Group ?? string.Empty);
+
+                WriteVarInt(cuttingRecipe.Ingredient.Count);
+                foreach (var item in cuttingRecipe.Ingredient)
+                    WriteItemStack(item);
+
+
+                var result = cuttingRecipe.Result.First();
+
+                result.Count = (short)cuttingRecipe.Count;
+
+                WriteItemStack(result);
+            }
+            else if (recipe is SmithingRecipe smithingRecipe)
+            {
+                WriteVarInt(smithingRecipe.Base.Count);
+                foreach (var item in smithingRecipe.Base)
+                    WriteItemStack(item);
+
+                WriteVarInt(smithingRecipe.Addition.Count);
+                foreach (var item in smithingRecipe.Addition)
+                    WriteItemStack(item);
+
+                WriteItemStack(smithingRecipe.Result.First());
             }
         }
     }

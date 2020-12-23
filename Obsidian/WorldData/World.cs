@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
@@ -126,7 +127,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegionForChunk(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> Region.cubiceRegionSizeShift, chunkZ >> Region.cubiceRegionSizeShift);
+            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -176,7 +177,7 @@ namespace Obsidian.WorldData
         {
             var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
 
-            return chunk?.GetBlock(x, y, z);
+            return chunk is null ? Block.Air : chunk.GetBlock(x, y, z);
         }
 
         public void SetBlock(Position location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
@@ -185,13 +186,11 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubiceRegionSizeShift, chunkZ >> Region.cubiceRegionSizeShift);
+            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
             this.Regions[value].IsDirty = true;
         }
-
-        public void SetBlock(Position location, Block block) => this.SetBlock(location.X, location.Y, location.Z, block);
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
@@ -355,7 +354,7 @@ namespace Obsidian.WorldData
 
         public Region LoadRegionByChunk(int chunkX, int chunkZ)
         {
-            int regionX = chunkX >> Region.CUBIC_REGION_SIZE_SHIFT, regionZ = chunkZ >> Region.CUBIC_REGION_SIZE_SHIFT;
+            int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
             return LoadRegion(regionX, regionZ);
         }
 
@@ -393,7 +392,7 @@ namespace Obsidian.WorldData
             if (ChunksToGen.IsEmpty) { return; }
 
             // Pull some jobs out of the queue
-            var jobs = new List<(int, int)>();
+            var jobs = new List<(int x, int z)>();
             for (int a = 0; a < Environment.ProcessorCount; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
@@ -402,16 +401,16 @@ namespace Obsidian.WorldData
 
             Parallel.ForEach(jobs, (job) =>
             {
-                Region region = GetRegionForChunk(job.Item1, job.Item2);
+                Region region = GetRegionForChunk(job.x, job.z);
                 if (region is null)
                 {
                     // Region isn't ready. Try again later
-                    ChunksToGen.Enqueue((job.Item1, job.Item2));
+                    ChunksToGen.Enqueue((job.x, job.z));
                     return;
                 }
-                Chunk c = Generator.GenerateChunk(job.Item1, job.Item2);
-                var index = (Helpers.Modulo(c.X, Region.CUBIC_REGION_SIZE), Helpers.Modulo(c.Z, Region.CUBIC_REGION_SIZE));
-                region.LoadedChunks[index.Item1, index.Item2] = c;
+                Chunk c = Generator.GenerateChunk(job.x, job.z);
+                var index = (x: Helpers.Modulo(c.X, Region.cubicRegionSize), z: Helpers.Modulo(c.Z, Region.cubicRegionSize));
+                region.LoadedChunks[index.x, index.z] = c;
             });
         }
 
@@ -434,7 +433,7 @@ namespace Obsidian.WorldData
                 {
                     if (!ChunksToGen.Contains((x, z)))
                         ChunksToGen.Enqueue((x, z));
-                    var regionCoords = (x >> Region.CUBIC_REGION_SIZE_SHIFT, z >> Region.CUBIC_REGION_SIZE_SHIFT);
+                    var regionCoords = (x >> Region.cubicRegionSizeShift, z >> Region.cubicRegionSizeShift);
                     if (!RegionsToLoad.Contains(regionCoords))
                         RegionsToLoad.Enqueue(regionCoords);
                 }

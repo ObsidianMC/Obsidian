@@ -29,6 +29,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -36,7 +36,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
 
-            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != Position.Zero);
+            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Position.Zero);
         }
 
         public override void Write(MinecraftStream stream)

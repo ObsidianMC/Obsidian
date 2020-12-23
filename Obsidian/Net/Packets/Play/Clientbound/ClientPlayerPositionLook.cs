@@ -2,6 +2,7 @@
 using System;
 using Obsidian.API;
 using System.Threading.Tasks;
+using Obsidian.Entities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {

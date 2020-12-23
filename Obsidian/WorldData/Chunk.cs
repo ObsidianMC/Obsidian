@@ -3,6 +3,8 @@ using Obsidian.Nbt.Tags;
 using Obsidian.API;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Obsidian.Blocks;
+using Obsidian.Util;
 
 namespace Obsidian.WorldData
 {
