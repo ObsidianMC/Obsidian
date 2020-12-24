@@ -4,102 +4,79 @@
     {
         Air,
         Stone,
-
         Granite,
         PolishedGranite,
-
         Diorite,
         PolishedDiorite,
-
         Andesite,
         PolishedAndesite,
-
         GrassBlock,
         Dirt,
         CoarseDirt,
         Podzol,
-
         Cobblestone,
-
         OakPlanks,
         SprucePlanks,
         BirchPlanks,
         JunglePlanks,
         AcaciaPlanks,
         DarkOakPlanks,
-
         OakSapling,
         SpruceSapling,
         BirchSapling,
         JungleSapling,
         AcaciaSapling,
         DarkOakSapling,
-
         Bedrock,
-
         Water,
         Lava,
-
         Sand,
         RedSand,
         Gravel,
-
         GoldOre,
         IronOre,
         CoalOre,
         NetherGoldOre,
-
         OakLog,
         SpruceLog,
         BirchLog,
         JungleLog,
         AcaciaLog,
         DarkOakLog,
-
         StrippedSpruceLog,
         StrippedBirchLog,
         StrippedJungleLog,
         StrippedAcaciaLog,
         StrippedDarkOakLog,
         StrippedOakLog,
-
         OakWood,
         SpruceWood,
         BirchWood,
         JungleWood,
         AcaciaWood,
         DarkOakWood,
-
         StrippedOakWood,
         StrippedSpruceWood,
         StrippedBirchWood,
         StrippedJungleWood,
         StrippedAcaciaWood,
         StrippedDarkOakWood,
-
         OakLeaves,
         SpruceLeaves,
         BirchLeaves,
         JungleLeaves,
         AcaciaLeaves,
         DarkOakLeaves,
-
         Sponge,
         WetSponge,
-
         Glass,
-
         LapisOre,
         LapisBlock,
-
         Dispenser,
-
         Sandstone,
         ChiseledSandstone,
         CutSandstone,
-
         NoteBlock,
-
         WhiteBed,
         OrangeBed,
         MagentaBed,
@@ -116,23 +93,17 @@
         GreenBed,
         RedBed,
         BlackBed,
-
         PoweredRail,
         DetectorRail,
-
         StickyPiston,
-
         Cobweb,
-
         Grass,
         Fern,
         DeadBush,
         Seagrass,
         TallSeagrass,
-
         Piston,
         PistonHead,
-
         WhiteWool,
         OrangeWool,
         MagentaWool,
@@ -149,9 +120,7 @@
         GreenWool,
         RedWool,
         BlackWool,
-
         MovingPiston,
-
         Dandelion,
         Poppy,
         BlueOrchid,
@@ -165,69 +134,45 @@
         Cornflower,
         WitherRose,
         LilyOfTheValley,
-
         BrownMushroom,
         RedMushroom,
-
         GoldBlock,
         IronBlock,
-
         Bricks,
-
         Tnt,
-
         Bookshelf,
-
         MossyCobblestone,
-
         Obsidian,
-
         Torch,
         WallTorch,
-
         Fire,
         SoulFire,
-
         Spawner,
-
         OakStairs,
-
         Chest,
-
         RedstoneWire,
-
         DiamondOre,
         DiamondBlock,
-
         CraftingTable,
-
         Wheat,
         Farmland,
-
         Furnace,
-
         OakSign,
         SpruceSign,
         BirchSign,
         AcaciaSign,
         JungleSign,
         DarkOakSign,
-
         OakDoor,
-
         Ladder,
-
         Rail,
-
         CobblestoneStairs,
-
         OakWallSign,
         SpruceWallSign,
         BirchWallSign,
         AcaciaWallSign,
         JungleWallSign,
         DarkOakWallSign,
-
         Lever,
         StonePressurePlate,
         IronDoor,
@@ -237,49 +182,32 @@
         JunglePressurePlate,
         AcaciaPressurePlate,
         DarkOakPressurePlate,
-
         RedstoneOre,
         RedstoneTorch,
         RedstoneWallTorch,
-
         StoneButton,
-
         Snow,
         Ice,
         SnowBlock,
-
         Cactus,
-
         Clay,
-
         SugarCane,
-
         Jukebox,
-
         OakFence,
-
         Pumpkin,
-
         Netherrack,
         SoulSand,
         SoulSoil,
         Basalt,
         PolishedBasalt,
-
         SoulTorch,
         SoulWallTorch,
-
         Glowstone,
-
         NetherPortal,
-
         CarvedPumpkin,
         JackOLantern,
-
         Cake,
-
         Repeater,
-
         WhiteStainedGlass,
         OrangeStainedGlass,
         MagentaStainedGlass,
@@ -296,104 +224,72 @@
         GreenStainedGlass,
         RedStainedGlass,
         BlackStainedGlass,
-
         OakTrapdoor,
         SpruceTrapdoor,
         BirchTrapdoor,
         JungleTrapdoor,
         AcaciaTrapdoor,
         DarkOakTrapdoor,
-
         StoneBricks,
         MossyStoneBricks,
         CrackedStoneBricks,
         ChiseledStoneBricks,
-
         InfestedStone,
         InfestedCobblestone,
         InfestedStoneBricks,
         InfestedMossyStoneBricks,
         InfestedCrackedStoneBricks,
         InfestedChiseledStoneBricks,
-
         BrownMushroomBlock,
         RedMushroomBlock,
         MushroomStem,
-
         IronBars,
         Chain,
-
         GlassPane,
-
         Melon,
         AttachedPumpkinStem,
         AttachedMelonStem,
         PumpkinStem,
         MelonStem,
-
         Vine,
-
         OakFenceGate,
-
         BrickStairs,
         StoneBrickStairs,
-
         Mycelium,
-
         LilyPad,
-
         NetherBricks,
         NetherBrickFence,
         NetherBrickStairs,
-
         NetherWart,
-
         EnchantingTable,
-
         BrewingStand,
         Cauldron,
-
         EndPortal,
         EndPortalFrame,
         EndStone,
-
         DragonEgg,
-
         RedstoneLamp,
-
         Cocoa,
-
         SandstoneStairs,
-
         EmeraldOre,
-
         EnderChest,
-
         TripwireHook,
         Tripwire,
-
         EmeraldBlock,
-
         SpruceStairs,
         BirchStairs,
         JungleStairs,
-
         CommandBlock,
-
         Beacon,
-
         CobblestoneWall,
         MossyCobblestoneWall,
-
         FlowerPot,
-
         PottedOakSapling,
         PottedSpruceSapling,
         PottedBirchSapling,
         PottedJungleSapling,
         PottedAcaciaSapling,
         PottedDarkOakSapling,
-
         PottedFern,
         PottedDandelion,
         PottedPoppy,
@@ -412,22 +308,18 @@
         PottedBrownMushroom,
         PottedDeadBush,
         PottedCactus,
-
         Carrots,
         Potatoes,
-
         OakButton,
         SpruceButton,
         BirchButton,
         JungleButton,
         AcaciaButton,
         DarkOakButton,
-
         SkeletonSkull,
         SkeletonWallSkull,
         WitherSkeletonSkull,
         WitherSkeletonWallSkull,
-
         ZombieHead,
         ZombieWallHead,
         PlayerHead,
@@ -436,33 +328,23 @@
         CreeperWallHead,
         DragonHead,
         DragonWallHead,
-
         Anvil,
         ChippedAnvil,
         DamagedAnvil,
-
         TrappedChest,
-
         LightWeightedPressurePlate,
         HeavyWeightedPressurePlate,
-
         Comparator,
         DaylightDetector,
         RedstoneBlock,
-
         NetherQuartzOre,
-
         Hopper,
-
         QuartzBlock,
         ChiseledQuartzBlock,
         QuartzPillar,
         QuartzStairs,
-
         ActivatorRail,
-
         Dropper,
-
         WhiteTerracotta,
         OrangeTerracotta,
         MagentaTerracotta,
@@ -479,7 +361,6 @@
         GreenTerracotta,
         RedTerracotta,
         BlackTerracotta,
-
         WhiteStainedGlassPane,
         OrangeStainedGlassPane,
         MagentaStainedGlassPane,
@@ -496,16 +377,11 @@
         GreenStainedGlassPane,
         RedStainedGlassPane,
         BlackStainedGlassPane,
-
         AcaciaStairs,
         DarkOakStairs,
-
         SlimeBlock,
-
         Barrier,
-
         IronTrapdoor,
-
         Prismarine,
         PrismarineBricks,
         DarkPrismarine,
@@ -515,11 +391,8 @@
         PrismarineSlab,
         PrismarineBrickSlab,
         DarkPrismarineSlab,
-
         SeaLantern,
-
         HayBlock,
-
         WhiteCarpet,
         OrangeCarpet,
         MagentaCarpet,
@@ -536,21 +409,15 @@
         GreenCarpet,
         RedCarpet,
         BlackCarpet,
-
         Terracotta,
-
         CoalBlock,
-
         PackedIce,
-
         Sunflower,
         Lilac,
         RoseBush,
         Peony,
-
         TallGrass,
         LargeFern,
-
         WhiteBanner,
         OrangeBanner,
         MagentaBanner,
@@ -567,7 +434,6 @@
         GreenBanner,
         RedBanner,
         BlackBanner,
-
         WhiteWallBanner,
         OrangeWallBanner,
         MagentaWallBanner,
@@ -584,12 +450,10 @@
         GreenWallBanner,
         RedWallBanner,
         BlackWallBanner,
-
         RedSandstone,
         ChiseledRedSandstone,
         CutRedSandstone,
         RedSandstoneStairs,
-
         OakSlab,
         SpruceSlab,
         BirchSlab,
@@ -609,62 +473,43 @@
         RedSandstoneSlab,
         CutRedSandstoneSlab,
         PurpurSlab,
-
         SmoothStone,
         SmoothSandstone,
         SmoothQuartz,
         SmoothRedSandstone,
-
         SpruceFenceGate,
         BirchFenceGate,
         JungleFenceGate,
         AcaciaFenceGate,
         DarkOakFenceGate,
-
         SpruceFence,
         BirchFence,
         JungleFence,
         AcaciaFence,
         DarkOakFence,
-
         SpruceDoor,
         BirchDoor,
         JungleDoor,
         AcaciaDoor,
         DarkOakDoor,
-
         EndRod,
-
         ChorusPlant,
         ChorusFlower,
-
         PurpurBlock,
         PurpurPillar,
         PurpurStairs,
-
         EndStoneBricks,
-
         Beetroots,
-
         GrassPath,
-
         EndGateway,
-
         RepeatingCommandBlock,
         ChainCommandBlock,
-
         FrostedIce,
-
         MagmaBlock,
-
         NetherWartBlock,
-
         RedNetherBricks,
-
         BoneBlock,
-
         StructureVoid,
-
         Observer,
 
         ShulkerBox,
@@ -701,7 +546,6 @@
         GreenGlazedTerracotta,
         RedGlazedTerracotta,
         BlackGlazedTerracotta,
-
         WhiteConcrete,
         OrangeConcrete,
         MagentaConcrete,
@@ -718,7 +562,6 @@
         GreenConcrete,
         RedConcrete,
         BlackConcrete,
-
         WhiteConcretePowder,
         OrangeConcretePowder,
         MagentaConcretePowder,
@@ -735,19 +578,15 @@
         GreenConcretePowder,
         RedConcretePowder,
         BlackConcretePowder,
-
         Kelp,
         KelpPlant,
         DriedKelpBlock,
-
         TurtleEgg,
-
         DeadTubeCoralBlock,
         DeadBrainCoralBlock,
         DeadBubbleCoralBlock,
         DeadFireCoralBlock,
         DeadHornCoralBlock,
-
         TubeCoralBlock,
         BrainCoralBlock,
         BubbleCoralBlock,
@@ -763,7 +602,6 @@
         BubbleCoral,
         FireCoral,
         HornCoral,
-
         DeadTubeCoralFan,
         DeadBrainCoralFan,
         DeadBubbleCoralFan,
@@ -784,22 +622,15 @@
         BubbleCoralWallFan,
         FireCoralWallFan,
         HornCoralWallFan,
-
         SeaPickle,
-
         BlueIce,
-
         Conduit,
-
         BambooSapling,
         Bamboo,
         PottedBamboo,
-
         VoidAir,
         CaveAir,
-
         BubbleColumn,
-
         PolishedGraniteStairs,
         SmoothRedSandstoneStairs,
         MossyStoneBrickStairs,
@@ -814,7 +645,6 @@
         RedNetherBrickStairs,
         PolishedAndesiteStairs,
         DioriteStairs,
-
         PolishedGraniteSlab,
         SmoothRedSandstoneSlab,
         MossyStoneBrickSlab,
@@ -828,7 +658,6 @@
         RedNetherBrickSlab,
         PolishedAndesiteSlab,
         DioriteSlab,
-
         BrickWall,
         PrismarineWall,
         RedSandstoneWall,
@@ -841,9 +670,7 @@
         SandstoneWall,
         EndStoneBrickWall,
         DioriteWall,
-
         Scaffolding,
-
         Loom,
         Barrel,
         Smoker,
@@ -854,107 +681,72 @@
         Lectern,
         SmithingTable,
         Stonecutter,
-
         Bell,
-
         Lantern,
         SoulLantern,
-
         Campfire,
         SoulCampfire,
-
         SweetBerryBush,
-
         WarpedStem,
         StrippedWarpedStem,
-
         WarpedHyphae,
         StrippedWarpedHyphae,
-
         WarpedNylium,
         WarpedFungus,
         WarpedWartBlock,
         WarpedRoots,
-
         NetherSprouts,
-
         CrimsonStem,
         StrippedCrimsonStem,
         CrimsonHyphae,
         StrippedCrimsonHyphae,
         CrimsonNylium,
         CrimsonFungus,
-
         Shroomlight,
-
         WeepingVines,
         WeepingVinesPlant,
-
         TwistingVines,
         TwistingVinesPlant,
-
         CrimsonRoots,
-
         CrimsonPlanks,
         WarpedPlanks,
-
         CrimsonSlab,
         WarpedSlab,
-
         CrimsonPressurePlate,
         WarpedPressurePlate,
-
         CrimsonFence,
         WarpedFence,
-
         CrimsonTrapdoor,
         WarpedTrapdoor,
-
         CrimsonFenceGate,
         WarpedFenceGate,
-
         CrimsonStairs,
         WarpedStairs,
-
         CrimsonButton,
         WarpedButton,
-
         CrimsonDoor,
         WarpedDoor,
-
         CrimsonSign,
         WarpedSign,
-
         CrimsonWallSign,
         WarpedWallSign,
-
         StructureBlock,
         Jigsaw,
         Composter,
-
         Target,
-
         BeeNest,
         Beehive,
-
         HoneyBlock,
         HoneycombBlock,
-
         NetheriteBlock,
-
         AncientDebris,
-
         CryingObsidian,
-
         RespawnAnchor,
-
         PottedCrimsonFungus,
         PottedWarpedFungus,
         PottedCrimsonRoots,
         PottedWarpedRoots,
-
         Lodestone,
-
         Blackstone,
         BlackstoneStairs,
         BlackstoneWall,
@@ -972,10 +764,322 @@
         PolishedBlackstonePressurePlate,
         PolishedBlackstoneButton,
         PolishedBlackstoneWall,
-
         ChiseledNetherBricks,
         CrackedNetherBricks,
-
         QuartzBricks,
+        TurtleHelmet,
+        Scute,
+        FlintAndSteel,
+        Apple,
+        Bow,
+        Arrow,
+        Coal,
+        Charcoal,
+        Diamond,
+        IronIngot,
+        GoldIngot,
+        NetheriteIngot,
+        NetheriteScrap,
+        WoodenSword,
+        WoodenShovel,
+        WoodenPickaxe,
+        WoodenAxe,
+        WoodenHoe,
+        StoneSword,
+        StoneShovel,
+        StonePickaxe,
+        StoneAxe,
+        StoneHoe,
+        GoldenSword,
+        GoldenShovel,
+        GoldenPickaxe,
+        GoldenAxe,
+        GoldenHoe,
+        IronSword,
+        IronShovel,
+        IronPickaxe,
+        IronAxe,
+        IronHoe,
+        DiamondSword,
+        DiamondShovel,
+        DiamondPickaxe,
+        DiamondAxe,
+        DiamondHoe,
+        NetheriteSword,
+        NetheriteShovel,
+        NetheritePickaxe,
+        NetheriteAxe,
+        NetheriteHoe,
+        Stick,
+        Bowl,
+        MushroomStew,
+        String,
+        Feather,
+        Gunpowder,
+        WheatSeeds,
+        Bread,
+        LeatherHelmet,
+        LeatherChestplate,
+        LeatherLeggings,
+        LeatherBoots,
+        ChainmailHelmet,
+        ChainmailChestplate,
+        ChainmailLeggings,
+        ChainmailBoots,
+        IronHelmet,
+        IronChestplate,
+        IronLeggings,
+        IronBoots,
+        DiamondHelmet,
+        DiamondChestplate,
+        DiamondLeggings,
+        DiamondBoots,
+        GoldenHelmet,
+        GoldenChestplate,
+        GoldenLeggings,
+        GoldenBoots,
+        NetheriteHelmet,
+        NetheriteChestplate,
+        NetheriteLeggings,
+        NetheriteBoots,
+        Flint,
+        Porkchop,
+        CookedPorkchop,
+        Painting,
+        GoldenApple,
+        EnchantedGoldenApple,
+        Bucket,
+        WaterBucket,
+        LavaBucket,
+        Minecart,
+        Saddle,
+        Redstone,
+        Snowball,
+        OakBoat,
+        Leather,
+        MilkBucket,
+        PufferfishBucket,
+        SalmonBucket,
+        CodBucket,
+        TropicalFishBucket,
+        Brick,
+        ClayBall,
+        Paper,
+        Book,
+        SlimeBall,
+        ChestMinecart,
+        FurnaceMinecart,
+        Egg,
+        Compass,
+        FishingRod,
+        Clock,
+        GlowstoneDust,
+        Cod,
+        Salmon,
+        TropicalFish,
+        Pufferfish,
+        CookedCod,
+        CookedSalmon,
+        InkSac,
+        CocoaBeans,
+        LapisLazuli,
+        WhiteDye,
+        OrangeDye,
+        MagentaDye,
+        LightBlueDye,
+        YellowDye,
+        LimeDye,
+        PinkDye,
+        GrayDye,
+        LightGrayDye,
+        CyanDye,
+        PurpleDye,
+        BlueDye,
+        BrownDye,
+        GreenDye,
+        RedDye,
+        BlackDye,
+        BoneMeal,
+        Bone,
+        Sugar,
+        Cookie,
+        FilledMap,
+        Shears,
+        MelonSlice,
+        DriedKelp,
+        PumpkinSeeds,
+        MelonSeeds,
+        Beef,
+        CookedBeef,
+        Chicken,
+        CookedChicken,
+        RottenFlesh,
+        EnderPearl,
+        BlazeRod,
+        GhastTear,
+        GoldNugget,
+        Potion,
+        GlassBottle,
+        SpiderEye,
+        FermentedSpiderEye,
+        BlazePowder,
+        MagmaCream,
+        EnderEye,
+        GlisteringMelonSlice,
+        BatSpawnEgg,
+        BeeSpawnEgg,
+        BlazeSpawnEgg,
+        CatSpawnEgg,
+        CaveSpiderSpawnEgg,
+        ChickenSpawnEgg,
+        CodSpawnEgg,
+        CowSpawnEgg,
+        CreeperSpawnEgg,
+        DolphinSpawnEgg,
+        DonkeySpawnEgg,
+        DrownedSpawnEgg,
+        ElderGuardianSpawnEgg,
+        EndermanSpawnEgg,
+        EndermiteSpawnEgg,
+        EvokerSpawnEgg,
+        FoxSpawnEgg,
+        GhastSpawnEgg,
+        GuardianSpawnEgg,
+        HoglinSpawnEgg,
+        HorseSpawnEgg,
+        HuskSpawnEgg,
+        LlamaSpawnEgg,
+        MagmaCubeSpawnEgg,
+        MooshroomSpawnEgg,
+        MuleSpawnEgg,
+        OcelotSpawnEgg,
+        PandaSpawnEgg,
+        ParrotSpawnEgg,
+        PhantomSpawnEgg,
+        PigSpawnEgg,
+        PiglinSpawnEgg,
+        PiglinBruteSpawnEgg,
+        PillagerSpawnEgg,
+        PolarBearSpawnEgg,
+        PufferfishSpawnEgg,
+        RabbitSpawnEgg,
+        RavagerSpawnEgg,
+        SalmonSpawnEgg,
+        SheepSpawnEgg,
+        ShulkerSpawnEgg,
+        SilverfishSpawnEgg,
+        SkeletonSpawnEgg,
+        SkeletonHorseSpawnEgg,
+        SlimeSpawnEgg,
+        SpiderSpawnEgg,
+        SquidSpawnEgg,
+        StraySpawnEgg,
+        StriderSpawnEgg,
+        TraderLlamaSpawnEgg,
+        TropicalFishSpawnEgg,
+        TurtleSpawnEgg,
+        VexSpawnEgg,
+        VillagerSpawnEgg,
+        VindicatorSpawnEgg,
+        WanderingTraderSpawnEgg,
+        WitchSpawnEgg,
+        WitherSkeletonSpawnEgg,
+        WolfSpawnEgg,
+        ZoglinSpawnEgg,
+        ZombieSpawnEgg,
+        ZombieHorseSpawnEgg,
+        ZombieVillagerSpawnEgg,
+        ZombifiedPiglinSpawnEgg,
+        ExperienceBottle,
+        FireCharge,
+        WritableBook,
+        WrittenBook,
+        Emerald,
+        ItemFrame,
+        Carrot,
+        Potato,
+        BakedPotato,
+        PoisonousPotato,
+        Map,
+        GoldenCarrot,
+        CarrotOnAStick,
+        WarpedFungusOnAStick,
+        NetherStar,
+        PumpkinPie,
+        FireworkRocket,
+        FireworkStar,
+        EnchantedBook,
+        NetherBrick,
+        Quartz,
+        TntMinecart,
+        HopperMinecart,
+        PrismarineShard,
+        PrismarineCrystals,
+        Rabbit,
+        CookedRabbit,
+        RabbitStew,
+        RabbitFoot,
+        RabbitHide,
+        ArmorStand,
+        IronHorseArmor,
+        GoldenHorseArmor,
+        DiamondHorseArmor,
+        LeatherHorseArmor,
+        Lead,
+        NameTag,
+        CommandBlockMinecart,
+        Mutton,
+        CookedMutton,
+        EndCrystal,
+        ChorusFruit,
+        PoppedChorusFruit,
+        Beetroot,
+        BeetrootSeeds,
+        BeetrootSoup,
+        DragonBreath,
+        SplashPotion,
+        SpectralArrow,
+        TippedArrow,
+        LingeringPotion,
+        Shield,
+        Elytra,
+        SpruceBoat,
+        BirchBoat,
+        JungleBoat,
+        AcaciaBoat,
+        DarkOakBoat,
+        TotemOfUndying,
+        ShulkerShell,
+        IronNugget,
+        KnowledgeBook,
+        DebugStick,
+        MusicDisc13,
+        MusicDiscCat,
+        MusicDiscBlocks,
+        MusicDiscChirp,
+        MusicDiscFar,
+        MusicDiscMall,
+        MusicDiscMellohi,
+        MusicDiscStal,
+        MusicDiscStrad,
+        MusicDiscWard,
+        MusicDisc11,
+        MusicDiscWait,
+        MusicDiscPigstep,
+        Trident,
+        PhantomMembrane,
+        NautilusShell,
+        HeartOfTheSea,
+        Crossbow,
+        SuspiciousStew,
+        FlowerBannerPattern,
+        CreeperBannerPattern,
+        SkullBannerPattern,
+        MojangBannerPattern,
+        GlobeBannerPattern,
+        PiglinBannerPattern,
+        SweetBerries,
+        Honeycomb,
+        HoneyBottle,
     }
 }

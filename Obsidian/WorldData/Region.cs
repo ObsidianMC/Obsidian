@@ -227,26 +227,26 @@ namespace Obsidian.WorldData
             }
 
             var blocksCompound = new NbtList("Blocks", NbtTagType.Compound);
-            for (int x = c.X * 16; x < c.X * 16 + 16; x++)
-            {
-                for (int z = c.Z * 16; z < c.Z * 16 + 16; z++)
-                {
-                    for (int y = 0; y < 256; y++)
-                    {
-                        var block = c.GetBlock(x, y, z);
-                        var b = new NbtCompound()
-                        {
-                            new NbtShort("index", 0),
-                            new NbtDouble("X", x),
-                            new NbtDouble("Y", y),
-                            new NbtDouble("Z", z),
-                            new NbtInt("id", block.Id),
-                            new NbtString("material", block.Name),
-                        };
-                        blocksCompound.Add(b);
-                    }
-                }
-            }
+            //for (int x = c.X * 16; x < c.X * 16 + 16; x++)
+            //{
+            //    for (int z = c.Z * 16; z < c.Z * 16 + 16; z++)
+            //    {
+            //        for (int y = 0; y < 256; y++)
+            //        {
+            //            var block = c.GetBlock(x, y, z);
+            //            var b = new NbtCompound()
+            //            {
+            //                new NbtShort("index", 0),
+            //                new NbtDouble("X", x),
+            //                new NbtDouble("Y", y),
+            //                new NbtDouble("Z", z),
+            //                new NbtInt("id", block.Id),
+            //                new NbtString("material", block.Name),
+            //            };
+            //            blocksCompound.Add(b);
+            //        }
+            //    }
+            //}
 
             var chunkCompound = new NbtCompound()
                 {

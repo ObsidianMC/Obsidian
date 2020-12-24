@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Util.Registry;
+using System;
+using Obsidian.Blocks;
+using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
@@ -55,9 +58,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             var block = Registry.GetBlock(currentItem.Type);
 
-            var location = this.Position;
+            var position = this.Position;
 
-            var interactedBlock = server.World.GetBlock(location);
+            var interactedBlock = server.World.GetBlock(position);
 
             if (interactedBlock.IsInteractable && !player.Sneaking)
             {
@@ -66,9 +69,262 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 if (arg.Cancel)
                     return;
 
+                player.LastClickedBlock = interactedBlock;
+
                 //TODO open chests/Crafting inventory ^ ^
 
-                //Logger.LogDebug($"Block Interact: {interactedBlock} - {location}");
+                if (Server.LastInventoryId == byte.MaxValue)
+                    Server.LastInventoryId = 1;
+
+                var maxId = Math.Max((byte)1, ++Server.LastInventoryId);
+
+                if (server.World.GetBlockMeta(position) is BlockMeta meta && meta.InventoryId != Guid.Empty)
+                {
+                    if (server.CachedWindows.TryGetValue(meta.InventoryId, out var inventory))
+                    {
+                        // Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+
+                        await player.OpenInventoryAsync(inventory);
+                        await player.client.QueuePacketAsync(new BlockAction
+                        {
+                            Location = position,
+                            ActionId = 1,
+                            ActionParam = 1,
+                            BlockType = interactedBlock.Id
+                        });
+                        await player.SendSoundAsync(Sounds.BlockChestOpen, position.SoundPosition, SoundCategory.Blocks);
+
+                        player.OpenedInventory = inventory;
+                    }
+
+                    return;
+                }
+
+                var type = interactedBlock.Material;
+
+                if (type == Materials.Chest) // TODO check if chest its next to another single chest
+                {
+                    var inventory = new Inventory(InventoryType.Generic)
+                    {
+                        Owner = player.Uuid,
+                        Title = IChatMessage.Simple("Chest"),
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    await player.OpenInventoryAsync(inventory);
+                    await player.client.QueuePacketAsync(new BlockAction
+                    {
+                        Location = position,
+                        ActionId = 1,
+                        ActionParam = 1,
+                        BlockType = interactedBlock.Id
+                    });
+                    await player.SendSoundAsync(Sounds.BlockChestOpen, position.SoundPosition, SoundCategory.Blocks);
+
+                    var invUuid = Guid.NewGuid();
+
+                    var blockMeta = new BlockMetaBuilder().WithInventoryId(invUuid).Build();
+
+                    server.World.SetBlockMeta(position, blockMeta);
+
+                    server.CachedWindows.TryAdd(invUuid, inventory);
+
+                    player.OpenedInventory = inventory;
+                }
+                else if (type == Materials.EnderChest)
+                {
+                    var enderChest = new Inventory(InventoryType.Generic)
+                    {
+                        Owner = player.Uuid,
+                        Title = IChatMessage.Simple("Ender Chest"),
+                        Id = maxId
+                    };
+
+                    var invUuid = Guid.NewGuid();
+
+                    var blockMeta = new BlockMetaBuilder().WithInventoryId(invUuid).Build();
+
+                    server.World.SetBlockMeta(position, blockMeta);
+
+                    server.CachedWindows.TryAdd(invUuid, enderChest);
+
+                    player.OpenedInventory = enderChest;
+
+                    await player.OpenInventoryAsync(enderChest);
+                    await player.client.QueuePacketAsync(new BlockAction
+                    {
+                        Location = position,
+                        ActionId = 1,
+                        ActionParam = 1,
+                        BlockType = interactedBlock.Id
+                    });
+                    await player.SendSoundAsync(Sounds.BlockEnderChestOpen, position.SoundPosition, SoundCategory.Blocks);
+                }
+                else if (type == Materials.CraftingTable)
+                {
+                    var crafting = new Inventory(InventoryType.Crafting)
+                    {
+                        Title = IChatMessage.Simple("Crafting Table"),
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = crafting;
+
+                    await player.OpenInventoryAsync(crafting);
+                }
+                else if (type == Materials.Furnace || type == Materials.BlastFurnace || type == Materials.Smoker)
+                {
+                    InventoryType actualType = type == Materials.Furnace ? InventoryType.Furnace :
+                        type == Materials.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
+
+                    var furnace = new Inventory(actualType)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = furnace;
+
+                    await player.OpenInventoryAsync(furnace);
+                }
+                else if (type == Materials.EnchantingTable)
+                {
+                    var enchantmentTable = new Inventory(InventoryType.Enchantment)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = enchantmentTable;
+
+                    await player.OpenInventoryAsync(enchantmentTable);
+                }
+                else if (type == Materials.Anvil || type == Materials.SmithingTable)//TODO implement other anvil types
+                {
+                    var anvil = new Inventory(InventoryType.Anvil)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = anvil;
+
+                    await player.OpenInventoryAsync(anvil);
+                }
+                else if (type >= Materials.ShulkerBox && type <= Materials.BlackShulkerBox)
+                {
+                    var box = new Inventory(InventoryType.ShulkerBox)//TODO shulker box functionality
+                    {
+                        Owner = player.Uuid,
+                        Title = IChatMessage.Simple("Shulker Box"),
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Loom)
+                {
+                    var box = new Inventory(InventoryType.Loom)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Barrel)
+                {
+                    var box = new Inventory(InventoryType.Generic)
+                    {
+                        Owner = player.Uuid,
+                        Title = IChatMessage.Simple("Barrel"),
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.CartographyTable)
+                {
+                    var box = new Inventory(InventoryType.CartographyTable)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Stonecutter)
+                {
+                    var box = new Inventory(InventoryType.Stonecutter)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Grindstone)
+                {
+                    var box = new Inventory(InventoryType.Grindstone)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.BrewingStand)
+                {
+                    var box = new Inventory(InventoryType.BrewingStand)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Lectern)
+                {
+                    var box = new Inventory(InventoryType.Lectern)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
+                else if (type == Materials.Hopper || type == Materials.HopperMinecart)
+                {
+                    var box = new Inventory(InventoryType.Hopper)
+                    {
+                        Id = maxId,
+                        BlockPosition = position
+                    };
+
+                    player.OpenedInventory = box;
+
+                    await player.OpenInventoryAsync(box);
+                }
 
                 return;
             }
@@ -79,36 +335,36 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             switch (this.Face) // TODO fix this for logs
             {
                 case BlockFace.Bottom:
-                    location.Y -= 1;
+                    position.Y -= 1;
                     break;
 
                 case BlockFace.Top:
-                    location.Y += 1;
+                    position.Y += 1;
                     break;
 
                 case BlockFace.North:
-                    location.Z -= 1;
+                    position.Z -= 1;
                     break;
 
                 case BlockFace.South:
-                    location.Z += 1;
+                    position.Z += 1;
                     break;
 
                 case BlockFace.West:
-                    location.X -= 1;
+                    position.X -= 1;
                     break;
 
                 case BlockFace.East:
-                    location.X += 1;
+                    position.X += 1;
                     break;
 
                 default:
                     break;
             }
 
-            server.World.SetBlock(location, block);
+            server.World.SetBlock(position, block);
 
-            await server.BroadcastBlockPlacementAsync(player, block, location);
+            await server.BroadcastBlockPlacementAsync(player, block, position);
         }
     }
 }
