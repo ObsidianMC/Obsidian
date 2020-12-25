@@ -457,6 +457,13 @@ namespace Obsidian
                         Status = digging.Status,
                         Successful = true
                     });
+
+                    if (player.Gamemode == Gamemode.Creative)
+                    {
+                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+
+                        this.World.SetBlock(digging.Position, Block.Air);
+                    }
                     break;
                 case DiggingStatus.CancelledDigging:
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
@@ -525,8 +532,6 @@ namespace Obsidian
                         });
                         break;
                     }
-                default:
-                    break;
             }
         }
 

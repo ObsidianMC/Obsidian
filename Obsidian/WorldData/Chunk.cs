@@ -72,6 +72,10 @@ namespace Obsidian.WorldData
         public void SetBlock(int x, int y, int z, Block block)
         {
             SetBlockStateId(x, y, z, block.StateId);
+
+            x = Helpers.Modulo(x, 16);
+            z = Helpers.Modulo(z, 16);
+
             Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
 

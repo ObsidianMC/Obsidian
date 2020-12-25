@@ -1,5 +1,4 @@
-﻿using Obsidian.Util.Registry;
-using Obsidian.Util.Registry.Enums;
+﻿using Obsidian.Util.Registry.Enums;
 using System;
 
 namespace Obsidian.Blocks
@@ -13,7 +12,7 @@ namespace Obsidian.Blocks
         public bool Powered { get => ((state >> poweredShift) & poweredBits) == 1; set => state = (state & poweredFilter) | ((value ? 1 : 0) << poweredShift); }
 
         public static readonly string UnlocalizedName = "Oak Door";
-        public static int NumericId => Registry.StateToMatch[baseId].numeric;
+        public static int Id => 161;
         public int StateId => baseId + state;
         public int State => state;
         public static int BaseId => baseId;

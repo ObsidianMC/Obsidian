@@ -364,6 +364,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             server.World.SetBlock(position, block);
 
+            player.client.SendPacket(new BlockChange(position, block.StateId));
+
             await server.BroadcastBlockPlacementAsync(player, block, position);
         }
     }
