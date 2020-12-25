@@ -19,19 +19,19 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
             var poppyNoise = noise.Decoration(worldX * 0.06, 9, worldZ * 0.06); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Poppy));
 
             var dandyNoise = noise.Decoration(worldX * 0.06, 10, worldZ * 0.06); // 0.03 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Dandelion));
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.BirchLeaves);
+            var oakLeaves = Registry.GetBlock(Material.BirchLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)

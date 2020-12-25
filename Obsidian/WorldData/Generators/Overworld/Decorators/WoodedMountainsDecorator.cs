@@ -19,28 +19,28 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
             var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Dirt));
+                chunk.SetBlock(pos, Registry.GetBlock(Material.Dirt));
 
             var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.CobblestoneSlab));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.CobblestoneSlab));
 
             var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
             if (cornFlowerNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.OxeyeDaisy));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.OxeyeDaisy));
 
             var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
             if (azureNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Water));
+                chunk.SetBlock(pos, Registry.GetBlock(Material.Water));
 
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.DarkOakLeaves);
+            var oakLeaves = Registry.GetBlock(Material.DarkOakLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)

@@ -112,7 +112,7 @@ namespace Obsidian.WorldData.Generators
                         bool isCoal = noiseGen.Coal(worldX, by, worldZ);
                         if (isCoal)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CoalOre));
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Material.CoalOre));
                         }
                     }
                 }

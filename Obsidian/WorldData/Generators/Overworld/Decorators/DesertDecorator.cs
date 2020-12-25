@@ -15,10 +15,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
             
-            var sand = Registry.GetBlock(Materials.Sand);
-            var sandstone = Registry.GetBlock(Materials.Sandstone);
-            var deadbush = Registry.GetBlock(Materials.DeadBush);
-            var cactus = Registry.GetBlock(Materials.Cactus);
+            var sand = Registry.GetBlock(Material.Sand);
+            var sandstone = Registry.GetBlock(Material.Sandstone);
+            var deadbush = Registry.GetBlock(Material.DeadBush);
+            var cactus = Registry.GetBlock(Material.Cactus);
 
             for (int y = 0; y > -4; y--)
                 chunk.SetBlock(pos + (0, y, 0), sand);

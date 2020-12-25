@@ -26,7 +26,7 @@ namespace Obsidian.Util.Registry
     {
         internal static ILogger Logger { get; set; }
 
-        public static Dictionary<Materials, Item> Items = new Dictionary<Materials, Item>();
+        public static Dictionary<Material, Item> Items = new Dictionary<Material, Item>();
         public static Dictionary<string, IRecipe> Recipes = new Dictionary<string, IRecipe>();
         public static readonly string[] Blocks = new string[763];
 
@@ -72,7 +72,7 @@ namespace Obsidian.Util.Registry
 
                     var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
 
-                    if (!Enum.TryParse(name.Replace("_", ""), true, out Materials material))
+                    if (!Enum.TryParse(name.Replace("_", ""), true, out Material material))
                         continue;
 
                     if (states.States.Length <= 0)
@@ -122,7 +122,7 @@ namespace Obsidian.Util.Registry
 
                 var item = JsonConvert.DeserializeObject<BaseRegistryJson>(token.ToString());
 
-                if (!Enum.TryParse(itemName.Replace("_", ""), true, out Materials material))
+                if (!Enum.TryParse(itemName.Replace("_", ""), true, out Material material))
                     continue;
 
                 Items.Add(material, new Item((short)item.ProtocolId, name, material));
@@ -348,7 +348,7 @@ namespace Obsidian.Util.Registry
             Logger?.LogDebug($"Registered {Recipes.Count} recipes");
         }
 
-        public static Block GetBlock(Materials material) => new Block(material);
+        public static Block GetBlock(Material material) => new Block(material);
 
         public static Block GetBlock(int id) => new Block(id);
 
@@ -356,11 +356,11 @@ namespace Obsidian.Util.Registry
             new Block(NumericToBase[Array.IndexOf(Blocks, unlocalizedName)]);
 
         public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
-        public static Item GetItem(Materials mat) => Items.GetValueOrDefault(mat);
+        public static Item GetItem(Material mat) => Items.GetValueOrDefault(mat);
         public static Item GetItem(string unlocalizedName) =>
             Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
-        public static ItemStack GetSingleItem(Materials mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
+        public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
 
         public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Type, 1, meta);
 

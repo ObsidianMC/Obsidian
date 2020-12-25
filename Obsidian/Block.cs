@@ -12,7 +12,7 @@ namespace Obsidian
 
         public string UnlocalizedName => Registry.Blocks[Id];
         public string Name => Material.ToString();
-        public Materials Material => (Materials)Registry.StateToMatch[baseId].numeric;
+        public Material Material => (Material)Registry.StateToMatch[baseId].numeric;
         public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public bool IsFluid => StateId > 33 && StateId < 66;
@@ -44,7 +44,7 @@ namespace Obsidian
             this.state = state;
         }
 
-        public Block(Materials material)
+        public Block(Material material)
         {
             baseId = Registry.NumericToBase[(int)material];
             state = 0;

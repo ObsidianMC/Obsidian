@@ -390,7 +390,7 @@ namespace Obsidian
                     {
                         var droppedItem = player.GetHeldItem();
 
-                        if (droppedItem is null || droppedItem.Type == Materials.Air)
+                        if (droppedItem is null || droppedItem.Type == Material.Air)
                             return;
 
                         var loc = new PositionF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);

@@ -32,7 +32,7 @@ namespace Obsidian.WorldData.Generators
                 for (int bz = 0; bz < 16; bz++)
                 {
                     for (int by = 0; by < 256; by++)
-                        chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.Air));
+                        chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Material.Air));
 
 
                     terrainHeights[(bx * 16) + bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
@@ -40,25 +40,25 @@ namespace Obsidian.WorldData.Generators
                                         bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
                     */
                     if (noiseGen.IsRiver(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.LightBlueStainedGlass));
+                        chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Material.LightBlueStainedGlass));
 
                     if (noiseGen.IsMountain(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 25, bz, Registry.GetBlock(Materials.BlackStainedGlass));
+                        chunk.SetBlock(bx, 25, bz, Registry.GetBlock(Material.BlackStainedGlass));
 
                     if (noiseGen.IsHills(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 24, bz, Registry.GetBlock(Materials.RedStainedGlass));
+                        chunk.SetBlock(bx, 24, bz, Registry.GetBlock(Material.RedStainedGlass));
 
                     if (noiseGen.IsBadlands(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 23, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
+                        chunk.SetBlock(bx, 23, bz, Registry.GetBlock(Material.LightGrayStainedGlass));
 
                     if (noiseGen.IsPlains(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 22, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
+                        chunk.SetBlock(bx, 22, bz, Registry.GetBlock(Material.WhiteStainedGlass));
 
                     if (noiseGen.IsOcean(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
+                        chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Material.BlueStainedGlass));
 
                     if (noiseGen.IsDeepOcean(bx + (cx * 16), bz + (cz * 16)))
-                        chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
+                        chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Material.BlueStainedGlass));
                 }
             }
             /*
@@ -134,7 +134,7 @@ namespace Obsidian.WorldData.Generators
                         bool isCoal = noiseGen.Coal(worldX, by, worldZ);
                         if (isCoal)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CoalOre));
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Material.CoalOre));
                         }
                     }
                 }

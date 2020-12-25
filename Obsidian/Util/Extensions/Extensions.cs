@@ -17,7 +17,7 @@ namespace Obsidian.Util.Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
-        public static bool IsAir(this ItemStack item) => item == null || item.Type == Materials.Air;
+        public static bool IsAir(this ItemStack item) => item == null || item.Type == Material.Air;
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value

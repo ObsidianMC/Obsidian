@@ -14,7 +14,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
             if (pos.Y == 61) // rivers at sea level
             {
-                chunk.SetBlock(new Position(pos.X, 61, pos.Z), Registry.GetBlock(Materials.FrostedIce)); // TODO: this is mega broken
+                chunk.SetBlock(new Position(pos.X, 61, pos.Z), Registry.GetBlock(Material.FrostedIce)); // TODO: this is mega broken
             }
         }
     }

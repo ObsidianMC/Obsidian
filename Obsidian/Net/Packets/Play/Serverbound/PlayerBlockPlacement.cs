@@ -102,7 +102,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 var type = interactedBlock.Material;
 
-                if (type == Materials.Chest) // TODO check if chest its next to another single chest
+                if (type == Material.Chest) // TODO check if chest its next to another single chest
                 {
                     var inventory = new Inventory(InventoryType.Generic)
                     {
@@ -132,7 +132,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     player.OpenedInventory = inventory;
                 }
-                else if (type == Materials.EnderChest)
+                else if (type == Material.EnderChest)
                 {
                     var enderChest = new Inventory(InventoryType.Generic)
                     {
@@ -161,7 +161,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     });
                     await player.SendSoundAsync(Sounds.BlockEnderChestOpen, position.SoundPosition, SoundCategory.Blocks);
                 }
-                else if (type == Materials.CraftingTable)
+                else if (type == Material.CraftingTable)
                 {
                     var crafting = new Inventory(InventoryType.Crafting)
                     {
@@ -174,10 +174,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(crafting);
                 }
-                else if (type == Materials.Furnace || type == Materials.BlastFurnace || type == Materials.Smoker)
+                else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
                 {
-                    InventoryType actualType = type == Materials.Furnace ? InventoryType.Furnace :
-                        type == Materials.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
+                    InventoryType actualType = type == Material.Furnace ? InventoryType.Furnace :
+                        type == Material.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
 
                     var furnace = new Inventory(actualType)
                     {
@@ -189,7 +189,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(furnace);
                 }
-                else if (type == Materials.EnchantingTable)
+                else if (type == Material.EnchantingTable)
                 {
                     var enchantmentTable = new Inventory(InventoryType.Enchantment)
                     {
@@ -201,7 +201,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(enchantmentTable);
                 }
-                else if (type == Materials.Anvil || type == Materials.SmithingTable)//TODO implement other anvil types
+                else if (type == Material.Anvil || type == Material.SmithingTable)//TODO implement other anvil types
                 {
                     var anvil = new Inventory(InventoryType.Anvil)
                     {
@@ -213,7 +213,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(anvil);
                 }
-                else if (type >= Materials.ShulkerBox && type <= Materials.BlackShulkerBox)
+                else if (type >= Material.ShulkerBox && type <= Material.BlackShulkerBox)
                 {
                     var box = new Inventory(InventoryType.ShulkerBox)//TODO shulker box functionality
                     {
@@ -227,7 +227,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Loom)
+                else if (type == Material.Loom)
                 {
                     var box = new Inventory(InventoryType.Loom)
                     {
@@ -239,11 +239,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Barrel)
+                else if (type == Material.Barrel)
                 {
                     var box = new Inventory(InventoryType.Generic)
                     {
-                        Owner = player.Uuid,
+                        //Owner = player.Uuid,
                         Title = IChatMessage.Simple("Barrel"),
                         Id = maxId,
                         BlockPosition = position
@@ -253,7 +253,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.CartographyTable)
+                else if (type == Material.CartographyTable)
                 {
                     var box = new Inventory(InventoryType.CartographyTable)
                     {
@@ -265,7 +265,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Stonecutter)
+                else if (type == Material.Stonecutter)
                 {
                     var box = new Inventory(InventoryType.Stonecutter)
                     {
@@ -277,7 +277,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Grindstone)
+                else if (type == Material.Grindstone)
                 {
                     var box = new Inventory(InventoryType.Grindstone)
                     {
@@ -289,7 +289,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.BrewingStand)
+                else if (type == Material.BrewingStand)
                 {
                     var box = new Inventory(InventoryType.BrewingStand)
                     {
@@ -301,7 +301,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Lectern)
+                else if (type == Material.Lectern)
                 {
                     var box = new Inventory(InventoryType.Lectern)
                     {
@@ -313,7 +313,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(box);
                 }
-                else if (type == Materials.Hopper || type == Materials.HopperMinecart)
+                else if (type == Material.Hopper || type == Material.HopperMinecart)
                 {
                     var box = new Inventory(InventoryType.Hopper)
                     {

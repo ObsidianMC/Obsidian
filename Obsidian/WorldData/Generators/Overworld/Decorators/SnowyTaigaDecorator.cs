@@ -16,10 +16,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
             
-            var sand = Registry.GetBlock(Materials.SnowBlock);
-            var sandstone = Registry.GetBlock(Materials.PackedIce);
-            var deadbush = Registry.GetBlock(Materials.Snow);
-            var cactus = Registry.GetBlock(Materials.FrostedIce);
+            var sand = Registry.GetBlock(Material.SnowBlock);
+            var sandstone = Registry.GetBlock(Material.PackedIce);
+            var deadbush = Registry.GetBlock(Material.Snow);
+            var cactus = Registry.GetBlock(Material.FrostedIce);
 
             for (int y = 0; y > -4; y--)
                 chunk.SetBlock(pos + (0, y, 0), sand);
@@ -39,7 +39,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.OakLeaves);
+            var oakLeaves = Registry.GetBlock(Material.OakLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)

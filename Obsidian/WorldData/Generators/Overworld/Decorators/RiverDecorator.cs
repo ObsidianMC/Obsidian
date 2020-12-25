@@ -14,7 +14,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
             if (pos.Y < 65)
-                chunk.SetBlock(pos, Registry.GetBlock(Materials.Gravel));
+                chunk.SetBlock(pos, Registry.GetBlock(Material.Gravel));
         }
     }
 }

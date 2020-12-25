@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API
 {
-    public enum Materials
+    public enum Material
     {
         Air,
         Stone,

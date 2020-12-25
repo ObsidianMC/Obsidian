@@ -19,55 +19,55 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
             if (noise.Decoration(worldX * 0.1, 6, worldZ * 0.1) > 0.8)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.SweetBerryBush));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.SweetBerryBush));
 
             if (noise.Decoration(worldX * 0.1, 7, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.TallGrass));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.TallGrass));
 
             var poppyNoise = noise.Decoration(worldX * 0.1, 9, worldZ * 0.1); // 0.1 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Poppy));
 
             var dandyNoise = noise.Decoration(worldX * 0.1, 10, worldZ * 0.1); // 0.1 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Dandelion));
 
             var cornFlowerNoise = noise.Decoration(worldX * 0.1, 11, worldZ * 0.1); // 0.1 makes more groupings
             if (cornFlowerNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Cornflower));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Cornflower));
 
             var azureNoise = noise.Decoration(worldX * 0.1, 12, worldZ * 0.1); // 0.1 makes more groupings
             if (azureNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.AzureBluet));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.AzureBluet));
 
             var peonies = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1); // 0.1 makes more groupings
             if (peonies > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Peony));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Peony));
 
             if (noise.Decoration(worldX * 0.1, 14, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.WhiteTulip));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.WhiteTulip));
             if (noise.Decoration(worldX * 0.1, 15, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.RedTulip));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.RedTulip));
             if (noise.Decoration(worldX * 0.1, 16, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.OrangeTulip));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.OrangeTulip));
             if (noise.Decoration(worldX * 0.1, 17, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Allium));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Allium));
             if (noise.Decoration(worldX * 0.1, 18, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.LilyOfTheValley));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.LilyOfTheValley));
             if (noise.Decoration(worldX * 0.1, 19, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.BlueOrchid));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.BlueOrchid));
             if (noise.Decoration(worldX * 0.1, 19, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Lilac));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Lilac));
             if (noise.Decoration(worldX * 0.1, 19, worldZ * 0.1) > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.RoseBush));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.RoseBush));
 
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.OakLeaves);
+            var oakLeaves = Registry.GetBlock(Material.OakLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)
