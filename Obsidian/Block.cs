@@ -8,12 +8,12 @@ namespace Obsidian
     {
         public static Block Air => new Block(0, 0);
 
-        private static readonly short[] interactables = new short[] { 2034, 3356, 3373, 5137, 5255, 6614, 6618, 6622, 6626, 14815, 14825, 14837 };
+        private static readonly short[] interactables = new short[] { 2034, 3356, 3373, 5137, 5255, 6614, 6618, 6622, 6626, 14795, 14815, 14825, 14837 };
 
         public string UnlocalizedName => Registry.Blocks[Id];
         public string Name => Material.ToString();
         public Material Material => (Material)Registry.StateToMatch[baseId].numeric;
-        public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
+        public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public bool IsFluid => StateId > 33 && StateId < 66;
         public int Id => Registry.StateToMatch[baseId].numeric;
