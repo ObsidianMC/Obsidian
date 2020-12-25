@@ -15,24 +15,22 @@ namespace Obsidian.ChunkData
         protected void Set(int x, int y, int z, Block blockState)
         {
             y %= 16;
-            var blockIndex = this.GetIndex(x, y, z);
+            var blockIndex = GetIndex(x, y, z);
 
             int paletteIndex = this.Palette.GetIdFromState(blockState);
 
             this.BlockStorage[blockIndex] = paletteIndex;
         }
 
-        protected void Set(double x, double y, double z, Block blockState) => this.Set((int)x, (int)y, (int)z, blockState);
-
         protected Block Get(int x, int y, int z)
         {
             y %= 16;
-            int storageId = this.BlockStorage[this.GetIndex(x, y, z)];
+            int storageId = this.BlockStorage[GetIndex(x, y, z)];
 
             return this.Palette.GetStateFromIndex(storageId);
         }
 
-        public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+        public static int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
         public async Task WriteToAsync(MinecraftStream stream)
         {

@@ -87,7 +87,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         await player.OpenInventoryAsync(inventory);
                         await player.client.QueuePacketAsync(new BlockAction
                         {
-                            Location = position,
+                            Position = position,
                             ActionId = 1,
                             ActionParam = 1,
                             BlockType = interactedBlock.Id
@@ -115,7 +115,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     await player.OpenInventoryAsync(inventory);
                     await player.client.QueuePacketAsync(new BlockAction
                     {
-                        Location = position,
+                        Position = position,
                         ActionId = 1,
                         ActionParam = 1,
                         BlockType = interactedBlock.Id
@@ -154,7 +154,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     await player.OpenInventoryAsync(enderChest);
                     await player.client.QueuePacketAsync(new BlockAction
                     {
-                        Location = position,
+                        Position = position,
                         ActionId = 1,
                         ActionParam = 1,
                         BlockType = interactedBlock.Id

@@ -37,7 +37,7 @@ namespace Obsidian.Net.Packets.Play
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {
-                    Location = loc,
+                    Position = loc,
                     ActionId = 1,
                     ActionParam = 0,
                     BlockType = block.Id
@@ -48,7 +48,7 @@ namespace Obsidian.Net.Packets.Play
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {
-                    Location = loc,
+                    Position = loc,
                     ActionId = 1,
                     ActionParam = 0,
                     BlockType = block.Id

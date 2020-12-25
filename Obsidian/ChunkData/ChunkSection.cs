@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.Util.Collection;
 
 namespace Obsidian.ChunkData
@@ -27,10 +26,10 @@ namespace Obsidian.ChunkData
             this.FillWithAir();
         }
 
-        public Block GetBlock(PositionF pos) => this.GetBlock((int)pos.X, (int)pos.Y, (int)pos.Z);
+        public Block GetBlock(Position position) => this.GetBlock(position.X, position.Y, position.Z);
         public Block GetBlock(int x, int y, int z) => this.Get(x, y, z);
 
-        public void SetBlock(PositionF pos, Block block) => this.SetBlock((int)pos.X, (int)pos.Y, (int)pos.Z, block);
+        public void SetBlock(Position position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
         public void SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
 
         private void FillWithAir()

@@ -54,8 +54,8 @@ namespace Obsidian.WorldData
             {
                 await Task.Delay(20);
 
-                foreach (var (_, entity) in this.Entities)
-                    await entity.TickAsync();
+                await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+
                 flushTime++;
 
                 if (flushTime > 50 * 30) // Save every 30 seconds
@@ -121,7 +121,7 @@ namespace Obsidian.WorldData
         }
 
         #region File saving/loading
-        public Chunk GetChunkFromNbt(NbtCompound chunkCompound)
+        public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
         {
             int x = chunkCompound["xPos"].IntValue;
             int z = chunkCompound["zPos"].IntValue;
@@ -177,10 +177,10 @@ namespace Obsidian.WorldData
             return regionCompound;
         }
 
-        public NbtCompound GetNbtFromChunk(Chunk c)
+        public static NbtCompound GetNbtFromChunk(Chunk chunk)
         {
             var sectionsCompound = new NbtList("Sections", NbtTagType.Compound);
-            foreach (var section in c.Sections)
+            foreach (var section in chunk.Sections)
             {
                 if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
 
@@ -212,14 +212,14 @@ namespace Obsidian.WorldData
 
             var chunkCompound = new NbtCompound()
                 {
-                    new NbtInt("xPos", c.X),
-                    new NbtInt("zPos", c.Z),
-                    new NbtIntArray("Biomes", c.BiomeContainer.Biomes.ToArray()),
+                    new NbtInt("xPos", chunk.X),
+                    new NbtInt("zPos", chunk.Z),
+                    new NbtIntArray("Biomes", chunk.BiomeContainer.Biomes.ToArray()),
                     new NbtCompound("Heightmaps")
                     {
-                        new NbtLongArray("MOTION_BLOCKING", c.Heightmaps[HeightmapType.MotionBlocking].data.Storage),
-                        new NbtLongArray("OCEAN_FLOOR", c.Heightmaps[HeightmapType.OceanFloor].data.Storage),
-                        new NbtLongArray("WORLD_SURFACE", c.Heightmaps[HeightmapType.WorldSurface].data.Storage),
+                        new NbtLongArray("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.Storage),
+                        new NbtLongArray("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
+                        new NbtLongArray("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
                     },
                     sectionsCompound
                 };

@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class BlockAction : IPacket
     {
         [Field(0)]
-        public Position Location { get; set; }
+        public Position Position { get; set; }
 
         [Field(1)]
         public byte ActionId { get; set; }
