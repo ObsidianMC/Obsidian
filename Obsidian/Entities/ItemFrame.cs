@@ -4,6 +4,6 @@
     {
         public object Item { get; private set; }
 
-        public int Rotation { get; private set; } = 0;
+        public int Rotation { get; private set; }
     }
 }

@@ -1,5 +1,6 @@
-﻿using Obsidian.Entities;
-using Obsidian.API;
+﻿using Obsidian.API;
+using Obsidian.Entities;
+using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -53,6 +54,11 @@ namespace Obsidian.Util.Extensions
             return (add > 0 ? clickedSlot + add : clickedSlot - sub, sub > 0 || add > 0);
         }
 
+        public static Item GetItem(this ItemStack itemStack)
+        {
+            return Registry.Registry.GetItem(itemStack.Type);
+        }
+
         public static int ToChunkCoord(this double value) => (int)value >> 4;
 
         public static int ToChunkCoord(this int value) => value >> 4;
@@ -76,7 +82,7 @@ namespace Obsidian.Util.Extensions
             if (string.IsNullOrEmpty(value))
                 throw new NullReferenceException(nameof(value));
 
-            return char.ToUpper(value[0]) + value.Substring(1);
+            return char.ToUpper(value[0]) + value[1..];
         }
 
         public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids)
@@ -176,7 +182,7 @@ namespace Obsidian.Util.Extensions
                         if (colorStr == 'r') Console.ResetColor();
                         else if (consoleColor.HasValue) Console.ForegroundColor = consoleColor.Value;
                     }
-                    Console.Write(colorStr.IsRealChatColor() ? msg.Substring(1) : msg);
+                    Console.Write(colorStr.IsRealChatColor() ? msg[1..] : msg);
                 }
             }
             Console.ResetColor();

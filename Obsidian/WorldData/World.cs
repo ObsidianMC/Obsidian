@@ -20,17 +20,17 @@ namespace Obsidian.WorldData
     {
         public Level Data { get; internal set; }
 
-        public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new ConcurrentDictionary<Guid, Player>();
+        public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
 
         public WorldGenerator Generator { get; internal set; }
 
         public Server Server { get; }
 
-        public ConcurrentDictionary<long, Region> Regions { get; private set; } = new ConcurrentDictionary<long, Region>();
+        public ConcurrentDictionary<long, Region> Regions { get; private set; } = new();
 
-        public ConcurrentQueue<(int, int)> ChunksToGen { get; private set; } = new ConcurrentQueue<(int, int)>();
+        public ConcurrentQueue<(int, int)> ChunksToGen { get; private set; } = new();
 
-        public ConcurrentQueue<(int, int)> RegionsToLoad { get; private set; } = new ConcurrentQueue<(int, int)>();
+        public ConcurrentQueue<(int, int)> RegionsToLoad { get; private set; } = new();
 
         public string Name { get; }
         public bool Loaded { get; private set; }
@@ -348,7 +348,7 @@ namespace Obsidian.WorldData
         public void UnloadPlayer(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
-            this.Players.TryRemove(uuid, out Player player);
+            this.Players.TryRemove(uuid, out _);
         }
         #endregion
 

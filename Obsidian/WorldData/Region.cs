@@ -1,12 +1,9 @@
-﻿using Obsidian.API;
-using Obsidian.Blocks;
-using Obsidian.ChunkData;
+﻿using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util;
 using Obsidian.Util.Collection;
-using Obsidian.Util.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -52,7 +49,7 @@ namespace Obsidian.WorldData
             double flushTime = 0;
             while (!cts.IsCancellationRequested || cancel)
             {
-                await Task.Delay(20);
+                await Task.Delay(20, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 

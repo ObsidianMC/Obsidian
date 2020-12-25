@@ -67,21 +67,13 @@ namespace Obsidian.WorldData.Generators.Overworld
                             }
                             else if (by <= terrainY)
                             {
-                                switch (chunk.BiomeContainer.Biomes[0])
+                                b = (chunk.BiomeContainer.Biomes[0]) switch
                                 {
-                                    case (int)Biomes.DeepOcean:
-                                        b = coarseDirt;
-                                        break;
-                                    case (int)Biomes.Ocean:
-                                        b = dirt;
-                                        break;
-                                    case (int)Biomes.River:
-                                        b = sand;
-                                        break;
-                                    default:
-                                        b = clay;
-                                        break;
-                                }
+                                    (int)Biomes.DeepOcean => coarseDirt,
+                                    (int)Biomes.Ocean => dirt,
+                                    (int)Biomes.River => sand,
+                                    _ => clay,
+                                };
                             }
                         }
 

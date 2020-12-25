@@ -8,11 +8,12 @@ namespace Obsidian.Commands.Parsers
 {
     public class LocationTypeParser : BaseArgumentParser<PositionF>
     {
-        public LocationTypeParser() : base("minecraft:vec3") { }
+        public LocationTypeParser() : base("minecraft:vec3")
+        {
+        }
+
         public override bool TryParseArgument(string input, ObsidianContext context, out PositionF result)
         {
-            result = default;
-
             var splitted = input.Split(' ');
             var location = new PositionF();
 
@@ -20,18 +21,18 @@ namespace Obsidian.Commands.Parsers
             var ctx = context;
             foreach (var text in splitted)
             {
-                if (float.TryParse(text, out var doubleResult))
+                if (float.TryParse(text, out var floatResult))
                 {
                     switch (count)
                     {
                         case 0:
-                            location.X = doubleResult;
+                            location.X = floatResult;
                             break;
                         case 1:
-                            location.Y = doubleResult;
+                            location.Y = floatResult;
                             break;
                         case 2:
-                            location.Z = doubleResult;
+                            location.Z = floatResult;
                             break;
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");

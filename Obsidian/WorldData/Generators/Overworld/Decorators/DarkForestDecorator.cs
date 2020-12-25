@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using System;
@@ -104,7 +103,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = new PositionF(x, y, z).ChunkClamp();
+                            var loc = new Position(x, y, z).ChunkClamp();
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {

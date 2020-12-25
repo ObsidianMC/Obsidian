@@ -5,10 +5,10 @@ namespace Obsidian.Plugins
 {
     internal static class AssemblySafetyManager
     {
-        private static byte[] systemKey; // shared between multiple assemblies
-        private static byte[] reflectionKey;
-        private static byte[] diagnosticsKey;
-        private static byte[] csharpKey;
+        private static readonly byte[] systemKey; // shared between multiple assemblies
+        private static readonly byte[] reflectionKey;
+        private static readonly byte[] diagnosticsKey;
+        private static readonly byte[] csharpKey;
 
         static AssemblySafetyManager()
         {

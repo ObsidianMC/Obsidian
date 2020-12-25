@@ -10,7 +10,7 @@ using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.PlayerData.Info;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry;
+using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
@@ -450,7 +450,7 @@ namespace Obsidian.Net
             WriteBoolean(value.Present);
             if (value.Present)
             {
-                var item = Registry.GetItem(value.Type);
+                var item = value.GetItem();
 
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
@@ -728,7 +728,7 @@ namespace Obsidian.Net
                     Present = true
                 };
 
-            var item = Registry.GetItem(slot.Type);
+            var item = slot.GetItem();
 
             await this.WriteBooleanAsync(slot.Present);
             if (slot.Present)

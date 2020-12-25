@@ -1,6 +1,6 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.API;
 using System;
 using System.Threading.Tasks;
 

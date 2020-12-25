@@ -1,10 +1,10 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API;
+using Obsidian.Blocks;
+using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
-using Obsidian.API;
+using Obsidian.Util;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Obsidian.Blocks;
-using Obsidian.Util;
 
 namespace Obsidian.WorldData
 {
@@ -15,7 +15,7 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        private SebastiansCube[] cubes = new SebastiansCube[cubesTotal];
+        private readonly SebastiansCube[] cubes = new SebastiansCube[cubesTotal];
         private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
         private const int cubesHorizontal = 16 / SebastiansCube.width;
         private const int cubesVertical = 256 / SebastiansCube.height;

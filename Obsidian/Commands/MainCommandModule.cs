@@ -15,7 +15,7 @@ namespace Obsidian.Commands
     public class MainCommandModule : BaseCommandClass
     {
         #region help
-        const int CommandsPerPage = 15;
+        private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
         public async Task HelpAsync(ObsidianContext Context) => await HelpAsync(Context, 1);
@@ -43,7 +43,7 @@ namespace Obsidian.Commands
                     availablecommands.Add(cmd);
             }
 
-            int commandcount = availablecommands.Count();
+            int commandcount = availablecommands.Count;
 
             var remainder = commandcount % CommandsPerPage;
             int pagecount = (commandcount - remainder) / CommandsPerPage; // all commands / page commands - remainder
@@ -353,7 +353,6 @@ namespace Obsidian.Commands
             });
         }
         #endregion
-
 
         #region permissions
         [CommandGroup("permission")]

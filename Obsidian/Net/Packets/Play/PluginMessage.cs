@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System;
 using System.Text;
 using System.Threading.Tasks;
 

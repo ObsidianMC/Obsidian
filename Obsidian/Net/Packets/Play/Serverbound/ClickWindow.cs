@@ -144,7 +144,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         break;
                     }
                 case InventoryOperationMode.MouseDrag:
-                    this.HandleDragClick(inventory, server, player, value);
+                    this.HandleDragClick(inventory, player, value);
                     break;
 
                 case InventoryOperationMode.DoubleClick:
@@ -236,7 +236,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private void HandleDragClick(Inventory inventory, Server server, Player player, int value)
+        private void HandleDragClick(Inventory inventory, Player player, int value)
         {
             if (this.ClickedSlot == -999)
             {
@@ -264,10 +264,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     inventory.SetItem(value, this.Item);
                 }
-            }
-            else
-            {
-                //It shouldn't get here
             }
         }
     }

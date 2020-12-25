@@ -102,7 +102,7 @@ namespace Obsidian.Net
         {
             try
             {
-                var read = await this.BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
+                var read = await BaseStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
 
                 return read;
             }
@@ -129,9 +129,9 @@ namespace Obsidian.Net
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (this.debugMemoryStream != null)
-                await this.debugMemoryStream.WriteAsync(buffer, offset, count, cancellationToken);
+                await debugMemoryStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
 
-            await this.BaseStream.WriteAsync(buffer, offset, count);
+            await BaseStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
         }
 
         public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)

@@ -6,19 +6,16 @@ using Obsidian.WorldData;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace Obsidian.Entities
 {
     public class Entity : IEquatable<Entity>, IEntity
     {
-        public readonly Timer TickTimer = new Timer();
-
         public World World { get; set; }
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal PositionF LastPosition { get; set; } = new PositionF();
+        internal PositionF LastPosition { get; set; }
 
         internal Angle LastPitch { get; set; }
 
@@ -26,7 +23,7 @@ namespace Obsidian.Entities
 
         internal int TeleportId { get; set; }
 
-        public PositionF Position { get; set; } = new PositionF();
+        public PositionF Position { get; set; }
 
         public Angle Pitch { get; set; }
 
@@ -48,7 +45,9 @@ namespace Obsidian.Entities
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
 
-        public Entity() { }
+        public Entity()
+        {
+        }
 
         #region Update methods
         internal virtual async Task UpdateAsync(Server server, PositionF position, bool onGround)
@@ -246,7 +245,7 @@ namespace Obsidian.Entities
 
         public bool Equals([AllowNull] Entity other)
         {
-            if (ReferenceEquals(other, null))
+            if (other is null)
                 return false;
 
             if (ReferenceEquals(this, other))
@@ -264,11 +263,9 @@ namespace Obsidian.Entities
             if (ReferenceEquals(a, b))
                 return true;
 
-            if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
-                return false;
-
             return a.Equals(b);
         }
+
         public static bool operator !=(Entity a, Entity b) => !(a == b);
 
         public override int GetHashCode() => this.EntityId.GetHashCode();

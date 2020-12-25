@@ -1,7 +1,6 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using Obsidian.API.Crafting.Builders;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
@@ -107,7 +106,7 @@ namespace Obsidian
             int length = await this.minecraftStream.ReadVarIntAsync();
             byte[] receivedData = new byte[length];
 
-            await this.minecraftStream.ReadAsync(receivedData, 0, length);
+            await minecraftStream.ReadAsync(receivedData.AsMemory(0, length));
 
             int packetId = 0;
             byte[] packetData = Array.Empty<byte>();
@@ -123,7 +122,7 @@ namespace Obsidian
                         arlen = length - packetId.GetVarIntLength();
 
                     packetData = new byte[arlen];
-                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
+                    await packetStream.ReadAsync(packetData.AsMemory(0, packetData.Length));
                 }
                 catch
                 {
@@ -404,8 +403,7 @@ namespace Obsidian
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
-        #region Packet Sending Methods
-
+        #region Packet sending
         internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
         internal void ProcessKeepAlive(long id)
@@ -568,9 +566,13 @@ namespace Obsidian
                     //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
                 }
             }
-            catch (SocketException socketException)
+            catch (SocketException)
             {
-
+                // Clients can disconnect at any point, causing exception to be raised
+                if (!tcp.Connected)
+                {
+                    Disconnect();
+                }
             }
             catch (Exception e)
             {
@@ -633,12 +635,11 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             this.Logger.LogDebug("Sent player list decoration");
         }
-
-        #endregion Packet Sending Methods
+        #endregion Packet sending
 
         internal void Disconnect() => this.Cancellation.Cancel();
 
-        #region Dispose methods
+        #region Disposing
         protected virtual void Dispose(bool disposing)
         {
             if (this.disposed)

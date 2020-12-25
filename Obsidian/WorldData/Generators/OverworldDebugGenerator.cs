@@ -39,25 +39,25 @@ namespace Obsidian.WorldData.Generators
                     /*                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
                                         bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
                     */
-                    if (noiseGen.isRiver(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsRiver(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Materials.LightBlueStainedGlass));
 
-                    if (noiseGen.isMountain(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsMountain(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 25, bz, Registry.GetBlock(Materials.BlackStainedGlass));
 
-                    if (noiseGen.isHills(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsHills(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 24, bz, Registry.GetBlock(Materials.RedStainedGlass));
 
-                    if (noiseGen.isBadlands(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsBadlands(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 23, bz, Registry.GetBlock(Materials.LightGrayStainedGlass));
 
-                    if (noiseGen.isPlains(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsPlains(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 22, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
 
-                    if (noiseGen.isOcean(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsOcean(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
 
-                    if (noiseGen.isDeepOcean(bx + (cx * 16), bz + (cz * 16)))
+                    if (noiseGen.IsDeepOcean(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Materials.BlueStainedGlass));
                 }
             }

@@ -399,7 +399,7 @@ namespace Obsidian
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = Registry.GetItem(droppedItem.Type).Id,
+                            Id = droppedItem.GetItem().Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Position = loc

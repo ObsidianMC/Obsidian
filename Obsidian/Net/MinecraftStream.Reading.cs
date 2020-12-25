@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Items;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Serialization.Attributes;

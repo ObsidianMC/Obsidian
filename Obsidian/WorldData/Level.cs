@@ -184,7 +184,7 @@ namespace Obsidian.WorldData
         /// <summary>
         /// The NBT version of the level
         /// </summary>
-        public int vversion { get; private set; } = 19133;
+        public int Vversion { get; private set; } = 19133;
 
         /// <summary>
         /// Information about the Minecraft version the world was saved in.

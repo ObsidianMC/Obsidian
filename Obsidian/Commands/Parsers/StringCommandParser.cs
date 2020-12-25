@@ -18,18 +18,17 @@ namespace Obsidian.Commands
 
             await stream.WriteVarIntAsync((int)this.Type);
         }
-
     }
 
     public enum StringType : int
     {
         /// <summary>
-        /// Reads a single word
+        /// Reads a single word.
         /// </summary>
         SingleWord = 0,
 
         /// <summary>
-        /// If it starts with a ", keeps reading until another " (allowing escaping with \). Otherwise behaves the same as SINGLE_WORD
+        /// If it starts with a ", keeps reading until another " (allowing escaping with \). Otherwise behaves the same as <see cref="SingleWord"/>.
         /// </summary>
         QuotablePhrase = 1,
 

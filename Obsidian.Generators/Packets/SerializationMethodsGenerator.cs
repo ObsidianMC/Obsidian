@@ -209,7 +209,9 @@ namespace {@namespace}
                 else
                 {
                     // creating serialization method failed
+#if DEBUG
                     syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with it", field.Declaration));
+#endif
                     return false;
                 }
 
@@ -283,7 +285,9 @@ namespace {@namespace}
                 else
                 {
                     // creating serialization method failed
+#if DEBUG
                     syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration));
+#endif
                     return false;
                 }
 

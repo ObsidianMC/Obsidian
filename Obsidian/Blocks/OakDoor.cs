@@ -13,10 +13,10 @@ namespace Obsidian.Blocks
         public bool Powered { get => ((state >> poweredShift) & poweredBits) == 1; set => state = (state & poweredFilter) | ((value ? 1 : 0) << poweredShift); }
 
         public static readonly string UnlocalizedName = "Oak Door";
-        public int NumericId => Registry.StateToMatch[baseId].numeric;
+        public static int NumericId => Registry.StateToMatch[baseId].numeric;
         public int StateId => baseId + state;
         public int State => state;
-        public int BaseId => baseId;
+        public static int BaseId => baseId;
 
         private int state;
 
@@ -58,7 +58,7 @@ namespace Obsidian.Blocks
 
         public static implicit operator Block(OakDoor oakDoor)
         {
-            return new Block(oakDoor.BaseId, oakDoor.state);
+            return new Block(BaseId, oakDoor.state);
         }
 
         public static explicit operator OakDoor(Block block)

@@ -4,6 +4,6 @@ namespace Obsidian.Entities
 {
     public class FallingBlock : Entity
     {
-        public PositionF SpawnPosition { get; private set; }
+        public Position SpawnPosition { get; private set; }
     }
 }

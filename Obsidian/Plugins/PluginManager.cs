@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Plugins
 {
-    public class PluginManager
+    public sealed class PluginManager
     {
         /// <summary>
         /// List of all loaded plugins.
@@ -28,16 +28,16 @@ namespace Obsidian.Plugins
         /// <summary>
         /// Utility class, responding to file changes inside watched directories.
         /// </summary>
-        public DirectoryWatcher DirectoryWatcher { get; } = new DirectoryWatcher();
+        public DirectoryWatcher DirectoryWatcher { get; } = new();
 
         public PluginPermissions DefaultPermissions { get; set; } = PluginPermissions.None;
 
-        private readonly List<PluginContainer> plugins = new List<PluginContainer>();
-        private readonly List<PluginContainer> stagedPlugins = new List<PluginContainer>();
+        private readonly List<PluginContainer> plugins = new();
+        private readonly List<PluginContainer> stagedPlugins = new();
         private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
         private readonly object eventSource;
         private readonly IServer server;
-        private readonly List<EventContainer> events = new List<EventContainer>();
+        private readonly List<EventContainer> events = new();
         private readonly ILogger logger;
 
         private const string loadEvent = "OnLoad";
