@@ -8,7 +8,7 @@ namespace Obsidian.Entities
     {
         public LivingBitMask LivingBitMask { get; set; }
 
-        public float Health { get; set; }
+        public float Health { get; set; } = 1.0f;
 
         public uint ActiveEffectColor { get; private set; }
 
@@ -36,7 +36,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
 
-            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != null);
+            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != Position.Zero);
         }
     }
 }

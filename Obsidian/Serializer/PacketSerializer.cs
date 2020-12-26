@@ -1,7 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serializer.Dynamic;
 using Obsidian.Serializer.Enums;
 using Obsidian.Util.Extensions;
@@ -36,6 +36,10 @@ namespace Obsidian.Serializer
                 if (packet is ChunkDataPacket chunkData)
                 {
                     await chunkData.WriteAsync(dataStream);
+                }
+                else if (packet is DeclareRecipes recipes)
+                {
+                    await recipes.WriteAsync(dataStream);
                 }
                 else
                 {

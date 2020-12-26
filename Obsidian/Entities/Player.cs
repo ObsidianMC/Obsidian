@@ -3,13 +3,13 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Items;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
-using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,14 +30,19 @@ namespace Obsidian.Entities
         /// <summary>
         /// The players inventory
         /// </summary>
-        public Inventory Inventory { get; private set; } = new Inventory();
+        public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
+
+        public ItemStack LastClickedItem { get; internal set; }
+
+        public Block LastClickedBlock { get; internal set; }
 
         public Guid Uuid { get; set; }
 
         public PlayerBitMask PlayerBitMask { get; set; }
         public Gamemode Gamemode { get; set; }
-        public Hand MainHand { get; set; } = Hand.MainHand;
+
+        public MainHand MainHand { get; set; } = MainHand.Right;
 
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
@@ -66,7 +71,7 @@ namespace Obsidian.Entities
         public float FallDistance { get; set; }
         public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
-        public float XpP { get; set; } = 0; // idfk, xp points?
+        public int Score { get; set; } = 0; // idfk, xp points?
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
@@ -90,6 +95,10 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
+            this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
+            {
+                Owner = uuid
+            };
 
             LoadPerms();
         }
@@ -114,10 +123,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -153,10 +161,10 @@ namespace Obsidian.Entities
                         CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -188,10 +196,9 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(item.Id, item.Count)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
                     {
-                        Present = true,
-                        Nbt = item.Nbt
+                        Present = true
                     });
 
                     await this.client.SendPacketAsync(new SetSlot
@@ -235,6 +242,21 @@ namespace Obsidian.Entities
                 File.Create(file).Close();
 
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
+        }
+
+        public async Task OpenInventoryAsync(Inventory inventory)
+        {
+            await this.client.QueuePacketAsync(new OpenWindow(inventory));
+
+            if (inventory.HasItems())
+            {
+                await this.client.QueuePacketAsync(new WindowItems
+                {
+                    WindowId = inventory.Id,
+                    Count = (short)inventory.Items.Length,
+                    Items = inventory.Items.ToList()
+                });
+            }
         }
 
         public async Task TeleportAsync(Position pos)
@@ -283,7 +305,7 @@ namespace Obsidian.Entities
 
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
-            if (!(message is ChatMessage chatMessage))
+            if (message is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
 
             return this.SendMessageAsync(chatMessage, type, sender);
@@ -303,9 +325,9 @@ namespace Obsidian.Entities
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(IChatMessage reason)
         {
-            var chatMessage = reason as ChatMessage;
-            if (chatMessage is null)
+            if (reason is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
+
             return KickAsync(chatMessage);
         }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
@@ -316,9 +338,9 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
 
-            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
+            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.Score);
 
-            await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (int)this.PlayerBitMask);
+            await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (byte)this.PlayerBitMask);
 
             await stream.WriteEntityMetdata(17, EntityMetadataType.Byte, (byte)this.MainHand);
 
@@ -333,7 +355,7 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Client.GameState.ChangeGamemodeState(gamemode));
+            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
 
@@ -461,4 +483,6 @@ namespace Obsidian.Entities
             return true;
         }
     }
+
+    
 }

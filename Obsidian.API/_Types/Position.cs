@@ -41,6 +41,7 @@ namespace Obsidian.API
         /// </summary>
         public double Distance => DistanceTo(this, Zero);
 
+        public SoundPosition SoundPosition => new SoundPosition(this.X, this.Y, this.Z);
         public bool Equals(Position other) => other.X.Equals(X) && other.Y.Equals(Y) && other.Z.Equals(Z);
 
         /// <summary>
@@ -54,7 +55,7 @@ namespace Obsidian.API
             new Position(Math.Clamp(X, min.X, max.X), Math.Clamp(Y, min.Y, max.Y), Math.Clamp(Z, min.Z, max.Z));
 
         public Position ChunkClamp() =>
-            this.Clamp(Position.Zero, new Position(15, 255, 15));
+            this.Clamp(Zero, new Position(15, 255, 15));
 
         /// <summary>
         ///     Calculates the distance between two Position objects.

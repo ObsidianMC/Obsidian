@@ -2,8 +2,7 @@
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Server;
-using Obsidian.Util;
+using Obsidian.Net.Packets.Play.Serverbound;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -15,22 +14,6 @@ namespace Obsidian
         public static ILogger Logger => Globals.PacketLogger;
 
         public static ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
-
-
-        /*public static async Task<IPacket> ReadCompressedPacketAsync(MinecraftStream stream)//TODO
-        {
-            var packetLength = await stream.ReadVarIntAsync();
-            var dataLength = await stream.ReadVarIntAsync();
-
-            using var deStream = new MinecraftStream(new ZlibStream(stream, SharpCompress.Compressors.CompressionMode.Decompress, CompressionLevel.BestSpeed));
-
-            var packetId = await deStream.ReadVarIntAsync();
-            var packetData = await deStream.ReadUInt8ArrayAsync(dataLength - packetId.GetVarIntLength());
-
-            return new Packet(packetId, packetData);
-        }*/
-
-
 
         public static void RegisterHandlers()
         {
@@ -58,13 +41,13 @@ namespace Obsidian
             //Packets.TryAdd(0x16, VehicleMove);
             //Packets.TryAdd(0x17, SteerBoat);
             Packets.TryAdd(0x18, new PickItem());
-            //Packets.TryAdd(0x19, CraftRecipeRequest);
+            Packets.TryAdd(0x19, new CraftRecipeRequest());
             //Packets.TryAdd(0x1A, PlayerAbilities);
             Packets.TryAdd(0x1B, new PlayerDigging());
             Packets.TryAdd(0x1C, new EntityAction());
             //Packets.TryAdd(0x1D, SteerVehicle);
-            //Packets.TryAdd(0x1E, SetDisplayRecipe);
-            //Packets.TryAdd(0x1F, SetRecipeBookSState);
+            Packets.TryAdd(0x1E, new SetDisplayedRecipe());
+            //Packets.TryAdd(0x1F, SetRecipeBookState);
             Packets.TryAdd(0x20, new NameItem());
             //Packets.TryAdd(0x21, ResourcePackStatus);
             //Packets.TryAdd(0x22, AdvancementTab);
@@ -100,6 +83,5 @@ namespace Obsidian
             }
 
         }
-
     }
 }

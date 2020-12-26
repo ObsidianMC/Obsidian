@@ -1,7 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Net;
-using Obsidian.Net.Packets.Play.Client;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -35,7 +35,7 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
-        public EntityBitMask EntityBitMask { get; set; }
+        public EntityBitMask EntityBitMask { get; set; } = EntityBitMask.None;
 
         public Pose Pose { get; set; } = Pose.Standing;
 

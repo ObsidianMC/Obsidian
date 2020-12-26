@@ -1,4 +1,5 @@
-﻿using Obsidian.CommandFramework.ArgumentParsers;
+﻿using Obsidian.API.Crafting;
+using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.CommandFramework.Entities;
 using System;
 using System.Collections.Generic;
@@ -25,5 +26,6 @@ namespace Obsidian.API
         public IPlayer GetPlayer(Guid uuid);
         public void RegisterCommandClass<T>() where T : BaseCommandClass;
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
+        public void RegisterRecipes(params IRecipe[] recipes);
     }
 }

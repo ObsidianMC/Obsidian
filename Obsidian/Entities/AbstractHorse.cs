@@ -16,7 +16,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, this.HorseMask);
 
-            if (this.Owner != null)
+            if (this.Owner != default)
                 await stream.WriteEntityMetdata(17, EntityMetadataType.OptUuid, Owner, true);
         }
     }

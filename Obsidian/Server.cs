@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Chat;
@@ -12,16 +13,14 @@ using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Items;
 using Obsidian.Logging;
 using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Play.Client;
-using Obsidian.Net.Packets.Play.Server;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
 using Obsidian.Util;
 using Obsidian.Util.Debug;
 using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -42,9 +41,11 @@ namespace Obsidian
         private readonly ConcurrentQueue<QueueChat> chatMessages;
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
+        private readonly TcpListener tcpListener;
 
         internal readonly CancellationTokenSource cts;
-        private readonly TcpListener tcpListener;
+
+        internal static byte LastInventoryId;
 
         public const ProtocolVersion protocol = ProtocolVersion.v1_16_4;
         public ProtocolVersion Protocol => protocol;
@@ -57,7 +58,7 @@ namespace Obsidian
 
         public IOperatorList Operators { get; }
 
-        internal ConcurrentDictionary<int, Inventory> CachedWindows { get; } = new ConcurrentDictionary<int, Inventory>();
+        internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new ConcurrentDictionary<Guid, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
 
@@ -140,12 +141,18 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-
         public void RegisterCommandClass<T>() where T : BaseCommandClass =>
             this.Commands.RegisterCommandClass<T>();
 
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
+
+        //TODO make sure to re-send recipes
+        public void RegisterRecipes(params IRecipe[] recipes)
+        {
+            foreach (var recipe in recipes)
+                Registry.Recipes.Add(recipe.Name.ToSnakeCase(), recipe);
+        }
 
         /// <summary>
         /// Checks if a player is online.
@@ -225,6 +232,7 @@ namespace Obsidian
             await Registry.RegisterBiomesAsync();
             await Registry.RegisterDimensionsAsync();
             await Registry.RegisterTagsAsync();
+            await Registry.RegisterRecipesAsync();
 
             PacketHandler.RegisterHandlers();
 
@@ -386,7 +394,7 @@ namespace Obsidian
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = droppedItem.Id,
+                            Id = Registry.GetItem(droppedItem.Type).Id,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = loc
@@ -474,15 +482,15 @@ namespace Obsidian
 
                         this.World.SetBlock(digging.Location, Registry.GetBlock(Materials.Air));
 
-                        var itemId = Registry.GetItem(block.Type)?.Id;
+                        var itemId = Registry.GetItem(block.Type).Id;
 
-                        if (itemId is null) { break; }
+                        if (itemId == 0) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = (int) itemId,
+                            Id = itemId,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
                             Location = digging.Location.Add((Globals.Random.NextDouble() * 0.5F) + 0.25D,
@@ -578,7 +586,7 @@ namespace Obsidian
                     itersPerSecond = 0;
                     stopWatch.Restart();
                 }
-                Task.Run(() => World.ManageChunks());
+                _ = Task.Run(() => World.ManageChunks());
             }
         }
 
@@ -651,6 +659,8 @@ namespace Obsidian
         }
 
         private Task OnServerTick() => Task.CompletedTask;
+
+        
 
         #endregion Events
 
