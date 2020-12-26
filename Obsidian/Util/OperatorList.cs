@@ -124,17 +124,18 @@ namespace Obsidian.Util
             {
                 Player = player ?? throw new ArgumentNullException(nameof(player));
 
-                string GetCode()
+                static string GetCode()
                 {
-                    string code = "";
-                    var random = new Random();
+                    var random = Globals.Random;
+                    const int codeLength = 10;
                     const string chars = "0123456789ABCDEFabcdef";
-                    for (int i = 0; i < 10; i++)
+                    var code = new char[codeLength];
+                    for (int i = 0; i < codeLength; i++)
                     {
-                        code += chars[random.Next(0, chars.Length - 1)];
+                        code[i] = chars[random.Next(0, chars.Length - 1)];
                     }
 
-                    return code;
+                    return new string(code);
                 }
 
                 Code = GetCode();

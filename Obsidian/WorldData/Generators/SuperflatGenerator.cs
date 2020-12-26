@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.Util.Registry;
 
 namespace Obsidian.WorldData.Generators
@@ -15,12 +14,12 @@ namespace Obsidian.WorldData.Generators
             {
                 for (var z1 = 0; z1 < 16; z1++)
                 {
-                    chunk.SetBlock(x1, 5, z1, Registry.GetBlock(Materials.GrassBlock));
-                    chunk.SetBlock(x1, 4, z1, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x1, 3, z1, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x1, 2, z1, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x1, 1, z1, Registry.GetBlock(Materials.Dirt));
-                    chunk.SetBlock(x1, 0, z1, Registry.GetBlock(Materials.Bedrock));
+                    chunk.SetBlock(x1, 5, z1, Registry.GetBlock(Material.GrassBlock));
+                    chunk.SetBlock(x1, 4, z1, Registry.GetBlock(Material.Dirt));
+                    chunk.SetBlock(x1, 3, z1, Registry.GetBlock(Material.Dirt));
+                    chunk.SetBlock(x1, 2, z1, Registry.GetBlock(Material.Dirt));
+                    chunk.SetBlock(x1, 1, z1, Registry.GetBlock(Material.Dirt));
+                    chunk.SetBlock(x1, 0, z1, Registry.GetBlock(Material.Bedrock));
                 }
             }
 

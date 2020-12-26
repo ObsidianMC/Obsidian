@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 using System;
@@ -14,25 +13,25 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-            int worldX = (chunk.X << 4) + (int)pos.X;
-            int worldZ = (chunk.Z << 4) + (int)pos.Z;
+            int worldX = (chunk.X << 4) + pos.X;
+            int worldZ = (chunk.Z << 4) + pos.Z;
 
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Grass));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
             var poppyNoise = noise.Decoration(worldX * 0.06, 9, worldZ * 0.06); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Poppy));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Poppy));
 
             var dandyNoise = noise.Decoration(worldX * 0.06, 10, worldZ * 0.06); // 0.03 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Materials.Dandelion));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Dandelion));
 
             #region Trees
             // Abandon hope all ye who enter here
-            var oakLeaves = Registry.GetBlock(Materials.BirchLeaves);
+            var oakLeaves = Registry.GetBlock(Material.BirchLeaves);
             var treeNoise = noise.Decoration(worldX * 0.1, 13, worldZ * 0.1);
             var treeHeight = TreeHeight(treeNoise);
             if (treeHeight > 0)
@@ -40,9 +39,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 //Leaves
                 for (int y = treeHeight + 1; y > treeHeight - 2; y--)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
-                        for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                        for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                         {
                             var loc = new Position(x, y + pos.Y, z).ChunkClamp();
                             // Skip the top edges.
@@ -60,7 +59,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
                 for (int y = 1; y <= treeHeight; y++)
                 {
-                    chunk.SetBlock(pos + (0, y, 0), new Block("minecraft:birch_log", 80, Materials.BirchLog));
+                    chunk.SetBlock(pos + (0, y, 0), new Block(80));
                 }
             }
 
@@ -75,7 +74,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 0; x < rowsToDraw; x++)
                 {
-                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                    for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
@@ -104,7 +103,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int x = 15; x > 15 - rowsToDraw; x--)
                 {
-                    for (double z = pos.Z - 2; z <= pos.Z + 2; z++)
+                    for (int z = pos.Z - 2; z <= pos.Z + 2; z++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
@@ -133,7 +132,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 0; z < rowsToDraw; z++)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
@@ -162,7 +161,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                 for (int z = 15; z > 15 - rowsToDraw; z--)
                 {
-                    for (double x = pos.X - 2; x <= pos.X + 2; x++)
+                    for (int x = pos.X - 2; x <= pos.X + 2; x++)
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {

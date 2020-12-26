@@ -1,18 +1,17 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class BlockBreakAnimation : IPacket
+    public partial class BlockBreakAnimation : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
         [Field(1)]
-        public Position Location { get; set; }
+        public PositionF Position { get; set; }
 
         /// <summary>
         /// 0-9 to set it, any other value to remove it
@@ -22,12 +21,14 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x08;
 
-        public BlockBreakAnimation() { }
+        public BlockBreakAnimation()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

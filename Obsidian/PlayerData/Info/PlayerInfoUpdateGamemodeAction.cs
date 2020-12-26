@@ -13,5 +13,12 @@ namespace Obsidian.PlayerData.Info
 
             await stream.WriteVarIntAsync(this.Gamemode);
         }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteVarInt(Gamemode);
+        }
     }
 }

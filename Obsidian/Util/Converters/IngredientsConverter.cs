@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using static Obsidian.Registry;
+using static Obsidian.Util.Registry.Registry;
 
 namespace Obsidian.Util.Converters
 {

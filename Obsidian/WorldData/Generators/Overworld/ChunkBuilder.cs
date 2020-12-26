@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
+using Obsidian.Util.Registry;
 using System;
 
 namespace Obsidian.WorldData.Generators.Overworld
@@ -8,16 +9,16 @@ namespace Obsidian.WorldData.Generators.Overworld
     {
         public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] undergroundHeightmap, double[,] bedrockHeightmap, bool debug = false)
         {
-            var air = Registry.GetBlock(Materials.Air);
-            var bedrock = Registry.GetBlock(Materials.Bedrock);
-            var stone = Registry.GetBlock(Materials.Stone);
-            var water = Registry.GetBlock(Materials.Water);
-            var coarseDirt = Registry.GetBlock(Materials.CoarseDirt);
-            var dirt = Registry.GetBlock(Materials.Dirt);
-            var sand = Registry.GetBlock(Materials.Sand);
-            var clay = Registry.GetBlock(Materials.Clay);
-            var grassBlock = Registry.GetBlock(Materials.GrassBlock);
-            var snowBlock = Registry.GetBlock(Materials.SnowBlock);
+            var air = Registry.GetBlock(Material.Air);
+            var bedrock = Registry.GetBlock(Material.Bedrock);
+            var stone = Registry.GetBlock(Material.Stone);
+            var water = Registry.GetBlock(Material.Water);
+            var coarseDirt = Registry.GetBlock(Material.CoarseDirt);
+            var dirt = Registry.GetBlock(Material.Dirt);
+            var sand = Registry.GetBlock(Material.Sand);
+            var clay = Registry.GetBlock(Material.Clay);
+            var grassBlock = Registry.GetBlock(9);
+            var snowBlock = Registry.GetBlock(Material.SnowBlock);
 
             int highestY = 0;
 
@@ -66,21 +67,13 @@ namespace Obsidian.WorldData.Generators.Overworld
                             }
                             else if (by <= terrainY)
                             {
-                                switch (chunk.BiomeContainer.Biomes[0])
+                                b = (chunk.BiomeContainer.Biomes[0]) switch
                                 {
-                                    case (int)Biomes.DeepOcean:
-                                        b = coarseDirt;
-                                        break;
-                                    case (int)Biomes.Ocean:
-                                        b = dirt;
-                                        break;
-                                    case (int)Biomes.River:
-                                        b = sand;
-                                        break;
-                                    default:
-                                        b = clay;
-                                        break;
-                                }
+                                    (int)Biomes.DeepOcean => coarseDirt,
+                                    (int)Biomes.Ocean => dirt,
+                                    (int)Biomes.River => sand,
+                                    _ => clay,
+                                };
                             }
                         }
 
@@ -136,7 +129,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         public static void CarveCaves(OverworldNoise noiseGen, Chunk chunk, double[,] rhm, double[,] bhm, bool debug = false)
         {
-            var b = Registry.GetBlock(Materials.CaveAir);
+            var b = Registry.GetBlock(Material.CaveAir);
             for (int bx = 0; bx < 16; bx++)
             {
                 for (int bz = 0; bz < 16; bz++)
@@ -148,7 +141,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                         bool caveAir = noiseGen.Cave(bx + (chunk.X * 16), by, bz + (chunk.Z * 16));
                         if (caveAir)
                         {
-                            if (debug) { b = Registry.GetBlock(Materials.LightGrayStainedGlass); }
+                            if (debug) { b = Registry.GetBlock(Material.LightGrayStainedGlass); }
                             chunk.SetBlock(bx, by, bz, b);
                         }
                     }

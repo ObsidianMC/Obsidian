@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
@@ -113,7 +112,7 @@ namespace Obsidian.WorldData.Generators
                         bool isCoal = noiseGen.Coal(worldX, by, worldZ);
                         if (isCoal)
                         {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Materials.CoalOre));
+                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Material.CoalOre));
                         }
                     }
                 }

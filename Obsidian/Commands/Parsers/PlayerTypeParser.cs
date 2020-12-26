@@ -9,7 +9,10 @@ namespace Obsidian.Commands.Parsers
 {
     public class PlayerTypeParser : BaseArgumentParser<IPlayer>
     {
-        public PlayerTypeParser() : base("obsidian:player") { }
+        public PlayerTypeParser() : base("obsidian:player")
+        {
+        }
+
         public override bool TryParseArgument(string input, ObsidianContext context, out IPlayer result)
         {
             var ctx = context;
@@ -24,7 +27,7 @@ namespace Obsidian.Commands.Parsers
             }
             else
             {
-                // is not valid guid, try find with name
+                // is not valid GUID, try find with name
                 player = server.OnlinePlayers.FirstOrDefault(x => x.Value.Username == input).Value;
             }
 

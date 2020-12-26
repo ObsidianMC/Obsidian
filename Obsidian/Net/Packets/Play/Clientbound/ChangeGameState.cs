@@ -1,22 +1,22 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public abstract class ChangeGameState<T> : IPacket
+    public abstract partial class ChangeGameState<T> : IPacket
     {
-        [Field(0, Type = DataType.UnsignedByte)]
-
+        [Field(0), ActualType(typeof(byte))]
         public ChangeGameStateReason Reason { get; set; }
 
-        [Field(1, Type = DataType.Float)]
+        [Field(1), ActualType(typeof(float))]
         public abstract T Value { get; set; }
 
         public int Id => 0x1D;
 
-        public ChangeGameState() { }
+        public ChangeGameState()
+        {
+        }
 
         public ChangeGameState(ChangeGameStateReason reason)
         {
@@ -27,8 +27,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
+
     public enum ChangeGameStateReason : byte
     {
         NoRespawnBlockAvailable,

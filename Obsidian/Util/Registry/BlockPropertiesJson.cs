@@ -49,7 +49,7 @@ namespace Obsidian.Util.Registry
         public Instruments Instrument { get; set; }
         public Part Part { get; set; }
         public Shape Shape { get; set; }
-        public Half Half { get; set; }
+        public EHalf Half { get; set; }
         public MinecraftType Type { get; set; }
         public Hinge Hinge { get; set; }
         public Face Face { get; set; }

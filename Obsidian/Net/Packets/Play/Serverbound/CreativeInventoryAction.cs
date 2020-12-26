@@ -1,13 +1,13 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.Util.Extensions;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class CreativeInventoryAction : IPacket
+    public partial class CreativeInventoryAction : IPacket
     {
         [Field(0)]
         public short ClickedSlot { get; set; }
@@ -17,7 +17,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x29;
 
-        public CreativeInventoryAction() : base() { }
+        public CreativeInventoryAction() : base()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

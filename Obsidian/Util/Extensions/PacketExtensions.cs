@@ -1,12 +1,7 @@
-﻿using Obsidian.API;
-using Obsidian.Chat;
-using Obsidian.Items;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Net.Packets;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -33,81 +28,6 @@ namespace Obsidian.Util.Extensions
             await dataStream.CopyToAsync(stream);
 
             stream.Lock.Release();
-        }
-
-        internal static DataType ToDataType(this Type type)
-        {
-            if (type.IsEnum)
-                return DataType.VarInt;
-
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Int32:
-                    return DataType.Int;
-                case TypeCode.Int64:
-                    return DataType.Long;
-
-                case TypeCode.Boolean:
-                    return DataType.Boolean;
-
-                case TypeCode.SByte:
-                    return DataType.Byte;
-
-                case TypeCode.Byte:
-                    return DataType.UnsignedByte;
-
-                case TypeCode.Int16:
-                    return DataType.Short;
-
-                case TypeCode.UInt16:
-                    return DataType.UnsignedShort;
-
-                case TypeCode.Single:
-                    return DataType.Float;
-
-                case TypeCode.Double:
-                    return DataType.Double;
-
-                case TypeCode.String:
-                    return DataType.String;
-
-                case TypeCode.Empty:
-                    throw new NullReferenceException(nameof(type));
-
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                    throw new ArgumentException("Invalid data type. Please use int or long", nameof(type));
-
-                case TypeCode.DateTime:
-                case TypeCode.Object:
-                    {
-                        if (type == typeof(ChatMessage))
-                            return DataType.Chat;
-                        else if (type == typeof(Angle))
-                            return DataType.Angle;
-                        else if (type == typeof(Position) || type == typeof(SoundPosition))
-                            return DataType.Position;
-                        else if (type == typeof(Velocity))
-                            return DataType.Velocity;
-                        else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList))
-                            return DataType.Array;
-                        else if (type == typeof(Guid))
-                            return DataType.UUID;
-                        else if (type == typeof(byte[]))
-                            return DataType.ByteArray;
-                        else if (type == typeof(ItemStack))
-                            return DataType.Slot;
-
-                        return DataType.Auto;
-                    }
-                case TypeCode.DBNull:
-                case TypeCode.Decimal:
-                case TypeCode.Char:
-                    throw new NotSupportedException(nameof(type));
-
-                default:
-                    return DataType.Auto;
-            }
         }
 
         internal static Dictionary<FieldAttribute, string> GetAllMemberNames(this IPacket packet)

@@ -16,16 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="RawPlugin.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="RawPlugin.cs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj">
       <Private>false</Private>
     </ProjectReference>

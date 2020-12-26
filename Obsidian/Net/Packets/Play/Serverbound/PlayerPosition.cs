@@ -1,14 +1,14 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class PlayerPosition : IPacket
+    public partial class PlayerPosition : IPacket
     {
-        [Field(0, true)]
-        public Position Position { get; set; }
+        [Field(0), Absolute]
+        public PositionF Position { get; set; }
 
         [Field(1)]
 
@@ -16,9 +16,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x12;
 
-        public PlayerPosition() { }
+        public PlayerPosition()
+        {
+        }
 
-        public PlayerPosition(Position pos, bool onground)
+        public PlayerPosition(PositionF pos, bool onground)
         {
             this.Position = pos;
             this.OnGround = onground;
@@ -28,11 +30,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async Task ReadAsync(MinecraftStream stream)
         {
-            this.Position = await stream.ReadAbsolutePositionAsync();
+            this.Position = await stream.ReadAbsolutePositionFAsync();
             this.OnGround = await stream.ReadBooleanAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, this.Position, this.OnGround);
             await player.World.UpdateClientChunksAsync(player.client);

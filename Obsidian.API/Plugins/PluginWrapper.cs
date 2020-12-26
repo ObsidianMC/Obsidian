@@ -7,7 +7,7 @@ namespace Obsidian.API.Plugins
     /// </summary>
     public abstract class PluginWrapper
     {
-        private PluginBase plugin;
+        internal PluginBase plugin;
 
         public PluginWrapper()
         {

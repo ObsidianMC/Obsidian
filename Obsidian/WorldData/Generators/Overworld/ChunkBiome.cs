@@ -22,21 +22,23 @@ namespace Obsidian.WorldData.Generators.Overworld
         public static Biomes GetBiome(int worldX, int worldZ, OverworldNoise noiseGen)
         {
             Temp t;
-            double temperature = noiseGen.GetBiomeTemp(worldX, 0, worldZ);
+            double temperature = noiseGen.GetBiomeTemp(worldX, worldZ);
             if (temperature > 0.8) { t = Temp.hot; }
             else if (temperature > 0.45) { t = Temp.warm; }
             else if (temperature > -0.2) { t = Temp.cold; }
             else { t = Temp.freezing; }
 
             Humidity h;
-            double humidity = noiseGen.GetBiomeHumidity(worldX, 0, worldZ);
+            double humidity = noiseGen.GetBiomeHumidity(worldX, worldZ);
             if (humidity > 0.33) { h = Humidity.dry; }
             else if (humidity > -0.33) { h = Humidity.neutral; }
             else { h = Humidity.wet; }
 
+#pragma warning disable CS8524 // The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+
             Biomes b = Biomes.Nether;
             // River
-            if (noiseGen.isRiver(worldX, worldZ))
+            if (noiseGen.IsRiver(worldX, worldZ))
             {
                 b = t switch
                 {
@@ -47,7 +49,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 };
             }
             // Mountain
-            else if (noiseGen.isMountain(worldX, worldZ))
+            else if (noiseGen.IsMountain(worldX, worldZ))
             {
                 switch (t)
                 {
@@ -82,7 +84,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             // Badlands/Foothills
-            else if (noiseGen.isBadlands(worldX, worldZ))
+            else if (noiseGen.IsBadlands(worldX, worldZ))
             {
                 switch (t)
                 {
@@ -117,7 +119,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             // Hills
-            else if (noiseGen.isHills(worldX, worldZ))
+            else if (noiseGen.IsHills(worldX, worldZ))
             {
                 switch (t)
                 {
@@ -152,7 +154,7 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             //Plains
-            else if (noiseGen.isPlains(worldX, worldZ))
+            else if (noiseGen.IsPlains(worldX, worldZ))
             {
                 switch (t)
                 {
@@ -188,7 +190,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             }
             // Ocean
 
-            else if (noiseGen.isOcean(worldX, worldZ))
+            else if (noiseGen.IsOcean(worldX, worldZ))
             {
                 switch (t)
                 {
@@ -207,7 +209,13 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
 
-            else { b = Biomes.Plains; }
+            else
+            {
+                b = Biomes.Plains;
+            }
+
+#pragma warning restore CS8524 // The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
+
             return b;
         }
     }

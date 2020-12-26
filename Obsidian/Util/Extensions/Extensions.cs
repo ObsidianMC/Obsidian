@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.Entities;
+using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace Obsidian.Util.Extensions
     {
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
-        public static bool IsAir(this ItemStack item) => item == null || item.Type == Materials.Air;
+        public static bool IsAir(this ItemStack item) => item == null || item.Type == Material.Air;
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
@@ -54,13 +54,16 @@ namespace Obsidian.Util.Extensions
             return (add > 0 ? clickedSlot + add : clickedSlot - sub, sub > 0 || add > 0);
         }
 
-        public static bool NotFluid(this BlockState state) => !(state is BlockFluid);
+        public static Item GetItem(this ItemStack itemStack)
+        {
+            return Registry.Registry.GetItem(itemStack.Type);
+        }
 
         public static int ToChunkCoord(this double value) => (int)value >> 4;
 
         public static int ToChunkCoord(this int value) => value >> 4;
 
-        public static (int x, int z) ToChunkCoord(this Position value) => ((int)value.X >> 4, (int)value.Z >> 4);
+        public static (int x, int z) ToChunkCoord(this PositionF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
@@ -128,6 +131,11 @@ namespace Obsidian.Util.Extensions
             return amount;
         }
 
+        public static float NextSingle(this Random random)
+        {
+            return (float)random.NextDouble();
+        }
+
         // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
         public static string MinecraftShaDigest(this byte[] data)
         {
@@ -185,7 +193,7 @@ namespace Obsidian.Util.Extensions
             true => new Regex("^([a-f]|r|o|m|n|k|l|[0-9])$"),
             false => new Regex("^([§|&])([a-f]|r|o|m|n|k|l|[0-9])$")
         }).IsMatch($"{suspectedColor.ToLower()}");
-
+    
         public static bool IsRealChatColor(this char suspectedColor) => suspectedColor.ToString().ToLower().IsRealChatColor(true);
         #endregion
     }

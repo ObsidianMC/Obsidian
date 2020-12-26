@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -8,13 +7,17 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol#Update_View_Position
     /// </summary>
-    public class UpdateViewPosition : IPacket
+    public partial class UpdateViewPosition : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int ChunkX;
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int ChunkZ;
+
+        private UpdateViewPosition()
+        {
+        }
 
         public UpdateViewPosition(int chunkx, int chunkz)
         {
@@ -24,7 +27,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x40;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

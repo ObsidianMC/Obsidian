@@ -1,13 +1,12 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class WindowItems : IPacket
+    public partial class WindowItems : IPacket
     {
         [Field(0)]
         public byte WindowId { get; set; }
@@ -15,12 +14,14 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public short Count { get; set; }
 
-        [Field(2, Type = DataType.Array)]
+        [Field(2), FixedLength(1)]
         public List<ItemStack> Items { get; set; }
 
         public int Id => 0x13;
 
-        public WindowItems() { }
+        public WindowItems()
+        {
+        }
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 

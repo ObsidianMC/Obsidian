@@ -5,17 +5,17 @@ using System.Linq;
 
 namespace Obsidian.Plugins
 {
-    public class DirectoryWatcher : IDisposable
+    public sealed class DirectoryWatcher : IDisposable
     {
-        private string[] _filters = new string[0];
-        public string[] Filters { get => _filters; set => _filters = value ?? new string[0]; }
+        private string[] _filters = Array.Empty<string>();
+        public string[] Filters { get => _filters; set => _filters = value ?? Array.Empty<string>(); }
 
         public event Action<string> FileChanged;
         public event Action<string, string> FileRenamed;
         public event Action<string> FileDeleted;
 
-        private readonly Dictionary<string, FileSystemWatcher> watchers = new Dictionary<string, FileSystemWatcher>();
-        private readonly Dictionary<string, DateTime> updateTimestamps = new Dictionary<string, DateTime>();
+        private readonly Dictionary<string, FileSystemWatcher> watchers = new();
+        private readonly Dictionary<string, DateTime> updateTimestamps = new();
 
         private const double minUpdateInterval = 3.0;
 

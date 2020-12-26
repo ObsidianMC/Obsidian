@@ -1,10 +1,10 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public class LoginStart : IPacket
+    public partial class LoginStart : IPacket
     {
         [Field(0)]
         public string Username { get; private set; }

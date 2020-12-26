@@ -14,5 +14,14 @@ namespace Obsidian.PlayerData.Info
 
             await stream.WriteStringAsync(this.DisplayName);
         }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteBoolean(HasDisplayName);
+            if (HasDisplayName)
+                stream.WriteString(DisplayName);
+        }
     }
 }

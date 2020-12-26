@@ -22,15 +22,14 @@ namespace Obsidian.Util
         public IServerDescription Description { get; set; }
 
         /// <summary>
-        /// This is a base64 png image, that has dimensions of 64x64
+        /// This is a base64 png image, that has dimensions of 64x64.
         /// </summary>
         [JsonProperty("favicon")]
         public string Favicon { get; set; }
 
         /// <summary>
-        /// Generates a server status from the specified <paramref name="server"/>
+        /// Generates a server status from the specified <paramref name="server"/>.
         /// </summary>
-        /// <param name="server"></param>
         public ServerStatus(Server server)
         {
             if (server == null)
@@ -43,7 +42,7 @@ namespace Obsidian.Util
             var favicon_file = "favicon.png";
             if (File.Exists(favicon_file))
             {
-                byte[] imageArray = System.IO.File.ReadAllBytes(@"favicon.png");
+                byte[] imageArray = File.ReadAllBytes(@"favicon.png");
                 byte[] valid_PNG_Header = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
                 var isValidImage = !valid_PNG_Header.Select((x, i) => x.Equals(imageArray[i])).Contains(false);
                 if (isValidImage)

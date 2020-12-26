@@ -15,7 +15,7 @@ namespace Obsidian.Commands
     public class MainCommandModule : BaseCommandClass
     {
         #region help
-        const int CommandsPerPage = 15;
+        private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
         public async Task HelpAsync(ObsidianContext Context) => await HelpAsync(Context, 1);
@@ -43,7 +43,7 @@ namespace Obsidian.Commands
                     availablecommands.Add(cmd);
             }
 
-            int commandcount = availablecommands.Count();
+            int commandcount = availablecommands.Count;
 
             var remainder = commandcount % CommandsPerPage;
             int pagecount = (commandcount - remainder) / CommandsPerPage; // all commands / page commands - remainder
@@ -256,7 +256,7 @@ namespace Obsidian.Commands
         #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-        public async Task TeleportAsync(ObsidianContext Context, [Remaining] Position location)
+        public async Task TeleportAsync(ObsidianContext Context, [Remaining] PositionF location)
         {
             var player = (Player)Context.Player;
             await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
@@ -353,7 +353,6 @@ namespace Obsidian.Commands
             });
         }
         #endregion
-
 
         #region permissions
         [CommandGroup("permission")]

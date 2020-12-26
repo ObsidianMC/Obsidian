@@ -4,7 +4,7 @@ namespace Obsidian.API
 {
     public class ItemStack : IEquatable<ItemStack>
     {
-        public readonly static ItemStack Air = new ItemStack(Materials.Air, 0);
+        public readonly static ItemStack Air = new ItemStack(Material.Air, 0);
 
         internal bool Present { get; set; }
 
@@ -12,9 +12,9 @@ namespace Obsidian.API
 
         public ItemMeta ItemMeta { get; internal set; }
 
-        public Materials Type { get; }
+        public Material Type { get; }
 
-        public ItemStack(Materials type, short count = 1, ItemMeta? meta = null)
+        public ItemStack(Material type, short count = 1, ItemMeta? meta = null)
         {
             this.Type = type;
             this.Count = count;

@@ -12,7 +12,6 @@ namespace Obsidian
     public class PacketHandler
     {
         public static ILogger Logger => Globals.PacketLogger;
-
         public static ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
 
         public static void RegisterHandlers()

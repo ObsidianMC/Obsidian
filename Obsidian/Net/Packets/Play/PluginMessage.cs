@@ -1,12 +1,11 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using System;
+using Obsidian.Serialization.Attributes;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class PluginMessage : IPacket
+    public partial class PluginMessage : IPacket
     {
         [Field(0)]
         public string Channel { get; private set; }
@@ -16,7 +15,9 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id { get; set; } = 0x17;
 
-        public PluginMessage() { }
+        public PluginMessage()
+        {
+        }
 
         public PluginMessage(string channel, byte[] data)
         {

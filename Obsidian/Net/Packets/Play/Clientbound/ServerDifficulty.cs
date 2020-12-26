@@ -1,17 +1,20 @@
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using Obsidian.WorldData;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ServerDifficulty : IPacket
+    public partial class ServerDifficulty : IPacket
     {
-        [Field(0, Type = DataType.UnsignedByte)]
-        public Difficulty Difficulty { get; }
+        [Field(0), ActualType(typeof(byte))]
+        public Difficulty Difficulty { get; private set; }
 
         public int Id => 0x0D;
+
+        private ServerDifficulty()
+        {
+        }
 
         public ServerDifficulty(Difficulty difficulty) => this.Difficulty = difficulty;
 
@@ -19,6 +22,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

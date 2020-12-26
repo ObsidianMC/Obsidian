@@ -6,19 +6,16 @@ using Obsidian.WorldData;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace Obsidian.Entities
 {
     public class Entity : IEquatable<Entity>, IEntity
     {
-        public readonly Timer TickTimer = new Timer();
-
         public World World { get; set; }
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal Position LastLocation { get; set; } = new Position();
+        internal PositionF LastPosition { get; set; }
 
         internal Angle LastPitch { get; set; }
 
@@ -26,7 +23,7 @@ namespace Obsidian.Entities
 
         internal int TeleportId { get; set; }
 
-        public Position Location { get; set; } = new Position();
+        public PositionF Position { get; set; }
 
         public Angle Pitch { get; set; }
 
@@ -48,23 +45,25 @@ namespace Obsidian.Entities
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
 
-        public Entity() { }
+        public Entity()
+        {
+        }
 
         #region Update methods
-        internal virtual async Task UpdateAsync(Server server, Position position, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             var newPos = position * 32 * 64;
-            var lastPos = this.LastLocation * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
 
             short newX = (short)(newPos.X - lastPos.X);
             short newY = (short)(newPos.Y - lastPos.Y);
             short newZ = (short)(newPos.Z - lastPos.Z);
 
-            var isNewLocation = position != this.LastLocation;
+            var isNewLocation = position != this.LastPosition;
 
             if (isNewLocation)
             {
-                await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
+                server.BroadcastPacketWithoutQueue(new EntityPosition
                 {
                     EntityId = this.EntityId,
 
@@ -77,6 +76,7 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, onGround);
             }
+            await Task.CompletedTask;
         }
 
         internal virtual async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
@@ -85,7 +85,7 @@ namespace Obsidian.Entities
 
             if (isNewRotation)
             {
-                await server.BroadcastPacketWithoutQueueAsync(new EntityRotation
+                server.BroadcastPacketWithoutQueue(new EntityRotation
                 {
                     EntityId = this.EntityId,
                     OnGround = onGround,
@@ -96,18 +96,19 @@ namespace Obsidian.Entities
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
             }
+            await Task.CompletedTask;
         }
 
-        internal virtual async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
         {
             var newPos = position * 32 * 64;
-            var lastPos = this.LastLocation * 32 * 64;
+            var lastPos = this.LastPosition * 32 * 64;
 
             short newX = (short)(newPos.X - lastPos.X);
             short newY = (short)(newPos.Y - lastPos.Y);
             short newZ = (short)(newPos.Z - lastPos.Z);
 
-            var isNewLocation = position != this.LastLocation;
+            var isNewLocation = position != this.LastPosition;
 
             var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
 
@@ -116,7 +117,7 @@ namespace Obsidian.Entities
             {
                 if (isNewRotation)
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new EntityPositionAndRotation
+                    server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
                     {
                         EntityId = this.EntityId,
 
@@ -135,7 +136,7 @@ namespace Obsidian.Entities
                 }
                 else
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new EntityPosition
+                    server.BroadcastPacketWithoutQueue(new EntityPosition
                     {
                         EntityId = this.EntityId,
 
@@ -149,11 +150,12 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
             }
+            await Task.CompletedTask;
         }
 
         internal void CopyPosition(bool withLook = false)
         {
-            this.LastLocation = this.Location;
+            this.LastPosition = this.Position;
 
             if (withLook)
                 this.CopyLook();
@@ -165,26 +167,26 @@ namespace Obsidian.Entities
             this.LastPitch = this.Pitch;
         }
 
-        public void UpdatePosition(Position pos, bool onGround = true)
+        public void UpdatePosition(PositionF pos, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location = pos;
+            this.Position = pos;
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(Position pos, Angle yaw, Angle pitch, bool onGround = true)
+        public void UpdatePosition(PositionF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
-            this.Location = pos;
+            this.Position = pos;
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(double x, double y, double z, bool onGround = true)
+        public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
             this.CopyPosition();
-            this.Location = new Position(x, y, z);
+            this.Position = new PositionF(x, y, z);
             this.OnGround = onGround;
         }
 
@@ -213,11 +215,37 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
         }
 
+        public virtual void Write(MinecraftStream stream)
+        {
+            stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
+            stream.WriteUnsignedByte((byte)EntityBitMask);
+
+            stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
+            stream.WriteVarInt(Air);
+
+            stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
+            stream.WriteBoolean(CustomName is not null);
+            if (CustomName is not null)
+                stream.WriteChat(CustomName);
+
+            stream.WriteEntityMetadataType(3, EntityMetadataType.Boolean);
+            stream.WriteBoolean(CustomNameVisible);
+
+            stream.WriteEntityMetadataType(4, EntityMetadataType.Boolean);
+            stream.WriteBoolean(Silent);
+
+            stream.WriteEntityMetadataType(5, EntityMetadataType.Boolean);
+            stream.WriteBoolean(NoGravity);
+
+            stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
+            stream.WriteVarInt((int)Pose);
+        }
+
         public virtual Task TickAsync() => Task.CompletedTask;
 
         public bool Equals([AllowNull] Entity other)
         {
-            if (ReferenceEquals(other, null))
+            if (other is null)
                 return false;
 
             if (ReferenceEquals(this, other))
@@ -235,11 +263,9 @@ namespace Obsidian.Entities
             if (ReferenceEquals(a, b))
                 return true;
 
-            if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
-                return false;
-
             return a.Equals(b);
         }
+
         public static bool operator !=(Entity a, Entity b) => !(a == b);
 
         public override int GetHashCode() => this.EntityId.GetHashCode();

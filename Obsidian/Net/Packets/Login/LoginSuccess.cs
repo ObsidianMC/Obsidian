@@ -1,11 +1,11 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public class LoginSuccess : IPacket
+    public partial class LoginSuccess : IPacket
     {
         [Field(0)]
         public Guid UUID { get; set; }
@@ -14,6 +14,10 @@ namespace Obsidian.Net.Packets.Login
         public string Username { get; set; }
 
         public int Id => 0x02;
+
+        private LoginSuccess()
+        {
+        }
 
         public LoginSuccess(Guid uuid, string username)
         {

@@ -1,12 +1,12 @@
 ﻿using Obsidian.Boss;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class BossBar : IPacket
+    public partial class BossBar : IPacket
     {
         [Field(0)]
         public Guid UUID { get; private set; }
@@ -16,7 +16,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x0C;
 
-        public BossBar() { }
+        public BossBar()
+        {
+        }
+
         public BossBar(Guid uuid, BossBarAction action)
         {
             this.UUID = uuid;
@@ -27,6 +30,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

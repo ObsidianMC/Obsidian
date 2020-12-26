@@ -1,7 +1,6 @@
 ﻿using DaanV2.UUID;
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using Obsidian.API.Crafting.Builders;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.CommandFramework.Attributes;
@@ -18,10 +17,10 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
 using Obsidian.PlayerData.Info;
-using Obsidian.Serializer;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
+using Obsidian.Util.Registry;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -49,7 +48,7 @@ namespace Obsidian
 
         private bool disposed;
         private bool compressionEnabled;
-        private bool encryptionEnabled;
+        public bool EncryptionEnabled { get; private set; }
 
         private const int compressionThreshold = 256;
 
@@ -60,7 +59,7 @@ namespace Obsidian
         internal int id;
 
         /// <summary>
-        /// The client brand
+        /// The client brand.
         /// </summary>
         public string Brand { get; set; }
 
@@ -85,24 +84,16 @@ namespace Obsidian
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
             this.LoadedChunks = new List<(int cx, int cz)>();
-
+            
             Stream parentStream = this.tcp.GetStream();
             this.minecraftStream = new MinecraftStream(parentStream);
-
+            
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
             packetQueue = new BufferBlock<IPacket>(blockOptions);
-            var sendPacketBlock = new ActionBlock<IPacket>(async packet =>
+            var sendPacketBlock = new ActionBlock<IPacket>(packet =>
             {
-                try
-                {
-                    if (tcp.Connected)
-                        await SendPacketAsync(packet);
-                }
-                catch (Exception e)
-                {
-                    if (Globals.Config.VerboseLogging)
-                        Logger.LogError(e.Message + "\n" + e.StackTrace);
-                }
+                if (tcp.Connected && packet is not DeclareCommands)
+                    SendPacket(packet);
             },
             blockOptions);
 
@@ -115,7 +106,7 @@ namespace Obsidian
             int length = await this.minecraftStream.ReadVarIntAsync();
             byte[] receivedData = new byte[length];
 
-            await this.minecraftStream.ReadAsync(receivedData, 0, length);
+            await minecraftStream.ReadAsync(receivedData.AsMemory(0, length));
 
             int packetId = 0;
             byte[] packetData = Array.Empty<byte>();
@@ -131,7 +122,7 @@ namespace Obsidian
                         arlen = length - packetId.GetVarIntLength();
 
                     packetData = new byte[arlen];
-                    await packetStream.ReadAsync(packetData, 0, packetData.Length);
+                    await packetStream.ReadAsync(packetData.AsMemory(0, packetData.Length));
                 }
                 catch
                 {
@@ -161,13 +152,13 @@ namespace Obsidian
 
                                 await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
 
-                                await this.SendPacketAsync(new RequestResponse(status));
+                                this.SendPacket(new RequestResponse(status));
                                 break;
 
                             case 0x01:
-                                var pong = await PacketSerializer.FastDeserializeAsync<PingPong>(data);
+                                var pong = PingPong.Deserialize(data);
 
-                                await this.SendPacketAsync(pong);
+                                this.SendPacket(pong);
 
                                 this.Disconnect();
                                 break;
@@ -177,14 +168,14 @@ namespace Obsidian
                     case ClientState.Handshaking:
                         if (id == 0x00)
                         {
-                            var handshake = await PacketSerializer.FastDeserializeAsync<Handshake>(data);
+                            var handshake = Handshake.Deserialize(data);
 
                             var nextState = handshake.NextState;
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
                                 this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
-                                await this.DisconnectAsync(ChatMessage.Simple("you seem suspicious"));
+                                await this.DisconnectAsync("you seem suspicious");
                             }
 
                             this.State = nextState;
@@ -205,7 +196,7 @@ namespace Obsidian
                                 break;
 
                             case 0x00:
-                                var loginStart = await PacketSerializer.FastDeserializeAsync<LoginStart>(data);
+                                var loginStart = LoginStart.Deserialize(data);
 
                                 string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
@@ -228,7 +219,7 @@ namespace Obsidian
 
                                     this.randomToken = values.randomToken;
 
-                                    await this.SendPacketAsync(new EncryptionRequest(values.publicKey, this.randomToken));
+                                    this.SendPacket(new EncryptionRequest(values.publicKey, this.randomToken));
 
                                     break;
                                 }
@@ -242,7 +233,7 @@ namespace Obsidian
                                 await this.ConnectAsync();
                                 break;
                             case 0x01:
-                                var encryptionResponse = PacketSerializer.FastDeserialize<EncryptionResponse>(data);
+                                var encryptionResponse = EncryptionResponse.Deserialize(data);
 
                                 this.sharedKey = this.packetCryptography.Decrypt(encryptionResponse.SharedSecret);
                                 var decryptedToken = this.packetCryptography.Decrypt(encryptionResponse.VerifyToken);
@@ -264,7 +255,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.encryptionEnabled = true;
+                                this.EncryptionEnabled = true;
                                 this.minecraftStream = new AesStream(this.tcp.GetStream(), this.sharedKey);
 
                                 //await this.SetCompression();
@@ -302,17 +293,15 @@ namespace Obsidian
         }
 
         // TODO fix compression
-        private async Task SetCompressionAsync()
+        private void SetCompression()
         {
-            await this.SendPacketAsync(new SetCompression(compressionThreshold));
+            this.SendPacket(new SetCompression(compressionThreshold));
             this.compressionEnabled = true;
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
         private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
         {
-            RecipesLength = Registry.Recipes.Values.Count,
-
             Recipes = Registry.Recipes
         });
 
@@ -334,7 +323,6 @@ namespace Obsidian
 
                 Gamemode = Gamemode.Creative,
 
-                WorldCount = 1,
                 WorldNames = new List<string> { "minecraft:world" },
 
                 Codecs = new MixedCodec
@@ -389,7 +377,7 @@ namespace Obsidian
             await this.LoadChunksAsync();
 
             //TODO: check for last position
-            var spawnPosition = new Position(
+            var spawnPosition = new PositionF(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ);
@@ -399,14 +387,14 @@ namespace Obsidian
 
             this.Logger.LogDebug("Sent Join Game packet.");
 
-            this.Player.Location = spawnPosition;
+            this.Player.Position = spawnPosition;
 
             await this.QueuePacketAsync(new ClientPlayerPositionLook
             {
-                Position = this.Player.Location,
+                Position = this.Player.Position,
                 Yaw = 0,
                 Pitch = 0,
-                Flags = PositionFlags.NONE,
+                Flags = PositionFlags.None,
                 TeleportId = 0
             });
             this.Logger.LogDebug("Sent Position packet.");
@@ -415,14 +403,13 @@ namespace Obsidian
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
-        #region Packet Sending Methods
+        #region Packet sending
+        internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
-        internal Task DisconnectAsync(ChatMessage reason) => this.SendPacketAsync(new Disconnect(reason, this.State));
-
-        internal async Task ProcessKeepAliveAsync(long id)
+        internal void ProcessKeepAlive(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
-            await this.SendPacketAsync(new KeepAlive(id));
+            this.SendPacket(new KeepAlive(id));
             this.missedKeepalives++; // This will be decreased after an answer is received.
 
             if (this.missedKeepalives > this.config.MaxMissedKeepAlives)
@@ -566,20 +553,31 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerInfo(0, list));
         }
 
-        internal async Task SendPacketAsync(IPacket packet)
+        internal void SendPacket(IPacket packet)
         {
             try
             {
-                if (this.compressionEnabled)
+                if (!this.compressionEnabled)
                 {
-                    //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
+                    packet.Serialize(minecraftStream);
                 }
                 else
                 {
-                    await PacketSerializer.SerializeAsync(packet, this.minecraftStream);
+                    //await packet.WriteCompressedAsync(minecraftStream, compressionThreshold);//TODO
                 }
             }
-            catch (Exception) { } // when packets are interrupted, threads may hang..
+            catch (SocketException)
+            {
+                // Clients can disconnect at any point, causing exception to be raised
+                if (!tcp.Connected)
+                {
+                    Disconnect();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Sending packet failed");
+            }
         }
 
         internal async Task QueuePacketAsync(IPacket packet)
@@ -637,12 +635,11 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             this.Logger.LogDebug("Sent player list decoration");
         }
-
-        #endregion Packet Sending Methods
+        #endregion Packet sending
 
         internal void Disconnect() => this.Cancellation.Cancel();
 
-        #region Dispose methods
+        #region Disposing
         protected virtual void Dispose(bool disposing)
         {
             if (this.disposed)

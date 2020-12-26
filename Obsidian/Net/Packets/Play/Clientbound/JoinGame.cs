@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using Obsidian.Util.Registry.Codecs;
 using Obsidian.Util.Registry.Codecs.Biomes;
 using Obsidian.Util.Registry.Codecs.Dimensions;
@@ -13,33 +12,30 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public class MixedCodec
     {
         public CodecCollection<int, DimensionCodec> Dimensions { get; set; }
-
         public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
-    public class JoinGame : IPacket
+
+    public partial class JoinGame : IPacket
     {
-        [Field(0, Type = DataType.Int)]
+        [Field(0)]
         public int EntityId { get; set; }
 
         [Field(1)]
         public bool Hardcore { get; set; } = false;
 
-        [Field(2, Type = DataType.UnsignedByte)]
+        [Field(2), ActualType(typeof(byte))]
         public Gamemode Gamemode { get; set; } = Gamemode.Survival;
 
         [Field(3)]
         public sbyte PreviousGamemode { get; set; } = 0;
 
-        [Field(4, Type = DataType.VarInt)]
-        public int WorldCount { get; set; }
-
-        [Field(5, Type = DataType.Array)]
+        [Field(5)]
         public List<string> WorldNames { get; set; }
 
-        [Field(6, Type = DataType.NbtTag)]
+        [Field(6)]
         public MixedCodec Codecs { get; set; }
 
-        [Field(7, Type = DataType.NbtTag)]
+        [Field(7)]
         public DimensionCodec Dimension { get; set; }
 
         [Field(8)]
@@ -48,10 +44,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(9)]
         public long HashedSeed { get; set; }
 
-        [Field(10, Type = DataType.VarInt)]
-        private int maxPlayers { get; } = 0;
+        [Field(10), VarLength]
+        private int MaxPlayers { get; } = 0;
 
-        [Field(11, Type = DataType.VarInt)]
+        [Field(11), VarLength]
         public int ViewDistance { get; set; } = 8;
 
         [Field(12)]
@@ -68,13 +64,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x24;
 
-        public JoinGame() { }
+        public JoinGame()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 
     public enum LevelType

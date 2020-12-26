@@ -1,10 +1,10 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class PlayerRotation : IPacket
+    public partial class PlayerRotation : IPacket
     {
         [Field(0)]
         public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
@@ -19,7 +19,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x14;
 
-        public PlayerRotation() { }
+        public PlayerRotation()
+        {
+        }
 
         public PlayerRotation(float yaw, float pitch, bool onground)
         {
@@ -37,10 +39,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.OnGround = await stream.ReadBooleanAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, this.Yaw, this.Pitch, this.OnGround);
         }
-
     }
 }

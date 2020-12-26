@@ -31,17 +31,17 @@ namespace Obsidian.CommandFramework
             }
         }
 
-        public string FindMinecraftType(Type t)
+        public string FindMinecraftType(Type type)
         {
-            if (this._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == t))
+            if (_argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == type))
             {
                 // Gets parser
-                var parsertype = this._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == t).GetType();
-                var parser = Activator.CreateInstance(parsertype);
+                var parserType = _argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == type).GetType();
+                var parser = Activator.CreateInstance(parserType);
 
-                return (string)parsertype.GetMethod("GetParserIdentifier").Invoke(parser, null);
+                return (string)parserType.GetMethod("GetParserIdentifier").Invoke(parser, null);
             }
-            Console.WriteLine("big oopsie");
+
             throw new Exception("No such parser registered!");
         }
         public Command[] GetAllCommands()
@@ -51,18 +51,18 @@ namespace Obsidian.CommandFramework
 
         public void AddArgumentParser(BaseArgumentParser parser)
         {
-            this._argumentParsers.Add(parser);
+            _argumentParsers.Add(parser);
         }
 
         public void RegisterCommandClass<T>() where T : BaseCommandClass
         {
             var t = typeof(T);
 
-            registerSubgroups(t);
-            registerSubcommands(t);
+            RegisterSubgroups(t);
+            RegisterSubcommands(t);
         }
 
-        private void registerSubgroups(Type t, Command parent = null)
+        private void RegisterSubgroups(Type t, Command parent = null)
         {
             // find all command groups under this command
             var subtypes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
@@ -77,21 +77,18 @@ namespace Obsidian.CommandFramework
 
                 var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
-                var desc = "";
-                var usage = "";
-
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
 
                 var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this);
 
-                registerSubgroups(st, cmd);
-                registerSubcommands(st, cmd);
+                RegisterSubgroups(st, cmd);
+                RegisterSubcommands(st, cmd);
 
                 this._commands.Add(cmd);
             }
         }
 
-        private void registerSubcommands(Type t, Command parent = null)
+        private void RegisterSubcommands(Type t, Command parent = null)
         {
             // loop through methods and find valid commands
             var methods = t.GetMethods();
@@ -135,12 +132,12 @@ namespace Obsidian.CommandFramework
                 var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
 
                 // [0] is the command name, all other values are arguments.
-                await executeCommand(command, ctx);
+                await ExecuteCommand(command, ctx);
             }
             await Task.Yield();
         }
 
-        private async Task executeCommand(string[] command, ObsidianContext ctx)
+        private async Task ExecuteCommand(string[] command, ObsidianContext ctx)
         {
             Command cmd = null;
             var args = command;

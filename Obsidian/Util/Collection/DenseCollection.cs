@@ -26,13 +26,13 @@ namespace Obsidian.Util.Collection
         {
             get
             {
-                x %= 32;
-                z %= 32;
+                x %= Width;
+                z %= Width;
 
                 if (x < 0)
-                    x = 32 + x;
+                    x = Width + x;
                 if (z < 0)
-                    z = 32 + z;
+                    z = Width + z;
 
                 return source[x + z * Width];
             }
@@ -41,13 +41,13 @@ namespace Obsidian.Util.Collection
             {
                 lock (lockObject)
                 {
-                    x %= 32;
-                    z %= 32;
+                    x %= Width;
+                    z %= Width;
 
                     if (x < 0)
-                        x = 32 + x;
+                        x = Width + x;
                     if (z < 0)
-                        z = 32 + z;
+                        z = Width + z;
 
                     int index = x + z * Width;
 

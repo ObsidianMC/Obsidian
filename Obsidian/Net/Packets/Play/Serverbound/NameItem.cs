@@ -1,17 +1,19 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class NameItem : IPacket
+    public partial class NameItem : IPacket
     {
         [Field(0)]
         public string ItemName { get; set; }
 
         public int Id => 0x20;
 
-        public NameItem() { }
+        public NameItem()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -20,6 +22,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.ItemName = await stream.ReadStringAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

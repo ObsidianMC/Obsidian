@@ -156,7 +156,7 @@ namespace Obsidian.Plugins.PluginProviders
                 {
                     string str = item.GetProperty("path").GetString();
                     int slashIndex = str.LastIndexOf('/');
-                    return slashIndex != -1 ? str.Substring(slashIndex + 1) == target : str == target;
+                    return slashIndex != -1 ? str[(slashIndex + 1)..] == target : str == target;
                 });
             }
             else
@@ -165,7 +165,7 @@ namespace Obsidian.Plugins.PluginProviders
                 {
                     string str = item.GetProperty("path").GetString();
                     int slashIndex = str.LastIndexOf('/');
-                    if (slashIndex != -1 ? str.Substring(slashIndex + 1) == target : str == target)
+                    if (slashIndex != -1 ? str[(slashIndex + 1)..] == target : str == target)
                     {
                         csproj = item;
                         break;
@@ -236,10 +236,10 @@ namespace Obsidian.Plugins.PluginProviders
         {
             int nameIndex = url.LastIndexOf('/');
             int ownerIndex = url.LastIndexOf('/', nameIndex - 1);
-            return (url.Substring(ownerIndex + 1, nameIndex - ownerIndex - 1), url.Substring(nameIndex + 1));
+            return (url.Substring(ownerIndex + 1, nameIndex - ownerIndex - 1), url[(nameIndex + 1)..]);
         }
 
-        private PluginContainer Failed(string name, string path, ILogger logger = default, string reason = null)
+        private static PluginContainer Failed(string name, string path, ILogger logger = default, string reason = null)
         {
             logger?.LogError($"Loading plugin {name} failed with reason: {reason}");
             return new PluginContainer(new PluginInfo(name), path);

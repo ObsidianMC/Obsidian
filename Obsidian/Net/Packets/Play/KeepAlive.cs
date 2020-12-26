@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public class KeepAlive : IPacket
+    public partial class KeepAlive : IPacket
     {
         [Field(0)]
         public long KeepAliveId { get; set; }
@@ -14,7 +14,9 @@ namespace Obsidian.Net.Packets.Play
 
         public byte[] Data { get; }
 
-        public KeepAlive() { }
+        public KeepAlive()
+        {
+        }
 
         public KeepAlive(long id)
         {
@@ -30,7 +32,7 @@ namespace Obsidian.Net.Packets.Play
             this.KeepAliveId = await stream.ReadLongAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player)
+        public Task HandleAsync(Server server, Player player)
         {
             PacketHandler.Logger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
                        $"{this.KeepAliveId} previously missed {player.client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
