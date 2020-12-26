@@ -235,7 +235,7 @@ namespace Obsidian
 
             PacketHandler.RegisterHandlers();
             Block.Initialize();
-            SebastiansCube.Initialize();
+            Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");

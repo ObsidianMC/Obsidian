@@ -15,10 +15,10 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        private readonly SebastiansCube[] cubes = new SebastiansCube[cubesTotal];
+        private readonly Cube[] cubes = new Cube[cubesTotal];
         private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
-        private const int cubesHorizontal = 16 / SebastiansCube.width;
-        private const int cubesVertical = 256 / SebastiansCube.height;
+        private const int cubesHorizontal = 16 / Cube.width;
+        private const int cubesVertical = 256 / Cube.height;
         private const int xMult = cubesTotal / cubesHorizontal;
         private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
 
@@ -53,7 +53,7 @@ namespace Obsidian.WorldData
                 {
                     for (int y = 0; y < cubesVertical; y++, index++)
                     {
-                        cubes[index] = new SebastiansCube(x * SebastiansCube.width, y * SebastiansCube.height, z * SebastiansCube.width);
+                        cubes[index] = new Cube(x * Cube.width, y * Cube.height, z * Cube.width);
                     }
                 }
             }
@@ -105,11 +105,11 @@ namespace Obsidian.WorldData
         public void CalculateHeightmap()
         {
             Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
-            for (int x = 0; x < cubesHorizontal * SebastiansCube.width; x++)
+            for (int x = 0; x < cubesHorizontal * Cube.width; x++)
             {
-                for (int z = 0; z < cubesHorizontal * SebastiansCube.width; z++)
+                for (int z = 0; z < cubesHorizontal * Cube.width; z++)
                 {
-                    for (int y = cubesVertical * SebastiansCube.height - 1; y >= 0; y--)
+                    for (int y = cubesVertical * Cube.height - 1; y >= 0; y--)
                     {
                         var block = new Block(GetBlockStateId(x, y, z));
                         if (block.IsAir)
@@ -153,7 +153,7 @@ namespace Obsidian.WorldData
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeIndex(int x, int y, int z)
         {
-            return x / SebastiansCube.width * xMult + z / SebastiansCube.width * zMult + y / cubesVertical;
+            return x / Cube.width * xMult + z / Cube.width * zMult + y / cubesVertical;
         }
     }
 }
