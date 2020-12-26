@@ -3,7 +3,7 @@
 namespace Obsidian.Serialization.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class ReadMethod : Attribute
+    public class ReadMethodAttribute : Attribute
     {
     }
 }
