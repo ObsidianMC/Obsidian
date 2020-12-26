@@ -95,9 +95,6 @@ namespace Obsidian
         {   
             this.Config = config;
             
-            SebastiansCube.Initialize();
-            ServerImplementationRegistry.RegisterServerImplementations();
-            
             this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
             this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
             // This stuff down here needs to be looked into
@@ -237,6 +234,9 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             PacketHandler.RegisterHandlers();
+            Block.Initialize();
+            SebastiansCube.Initialize();
+            ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();

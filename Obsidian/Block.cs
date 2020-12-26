@@ -8,7 +8,8 @@ namespace Obsidian
     {
         public static Block Air => new Block(0, 0);
 
-        private static readonly short[] interactables = new short[] { 2034, 3356, 3373, 5137, 5255, 6614, 6618, 6622, 6626, 6732, 14795, 14815, 14825, 14837 };
+        private static short[] interactables;
+        private static bool initialized = false;
 
         public string UnlocalizedName => Registry.Blocks[Id];
         public string Name => Material.ToString();
@@ -73,6 +74,31 @@ namespace Obsidian
         public static bool operator !=(Block a, Block b)
         {
             return a.baseId != b.baseId || a.state != b.state;
+        }
+
+        internal static void Initialize()
+        {
+            if (initialized)
+                return;
+            initialized = true;
+
+            interactables = new[]
+            {
+                Registry.NumericToBase[(int)Material.Chest],
+                Registry.NumericToBase[(int)Material.CraftingTable],
+                Registry.NumericToBase[(int)Material.Furnace],
+                Registry.NumericToBase[(int)Material.BrewingStand],
+                Registry.NumericToBase[(int)Material.EnderChest],
+                Registry.NumericToBase[(int)Material.Anvil],
+                Registry.NumericToBase[(int)Material.ChippedAnvil],
+                Registry.NumericToBase[(int)Material.DamagedAnvil],
+                Registry.NumericToBase[(int)Material.TrappedChest],
+                Registry.NumericToBase[(int)Material.Hopper],
+                Registry.NumericToBase[(int)Material.Barrel],
+                Registry.NumericToBase[(int)Material.Smoker],
+                Registry.NumericToBase[(int)Material.BlastFurnace],
+                Registry.NumericToBase[(int)Material.Grindstone],
+            };
         }
     }
 }
