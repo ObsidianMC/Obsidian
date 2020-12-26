@@ -38,13 +38,12 @@ namespace SamplePlugin
         {
             Logger.Log($"Permission {args.Permission} revoked from player {args.Player.Username}");
             await Task.CompletedTask;
-
         }
+
         public async Task OnPermissionGranted(PermissionGrantedEventArgs args)
         {
             Logger.Log($"Permission {args.Permission} granted to player {args.Player.Username}");
             await Task.CompletedTask;
-
         }
 
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
