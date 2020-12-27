@@ -34,7 +34,7 @@ namespace Obsidian.Net.Packets.Play
 
         public Task HandleAsync(Server server, Player player)
         {
-            PacketHandler.Logger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
+            Globals.PacketLogger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
                        $"{this.KeepAliveId} previously missed {player.client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
 
             player.client.missedKeepalives = 0;

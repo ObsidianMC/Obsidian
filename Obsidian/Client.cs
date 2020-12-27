@@ -42,6 +42,8 @@ namespace Obsidian
 
         private readonly PacketCryptography packetCryptography;
 
+        private readonly ClientHandler handler;
+
         private MinecraftStream minecraftStream;
 
         private Config config;
@@ -84,10 +86,11 @@ namespace Obsidian
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
             this.LoadedChunks = new List<(int cx, int cz)>();
-            
+            this.handler = new ClientHandler();
+
             Stream parentStream = this.tcp.GetStream();
             this.minecraftStream = new MinecraftStream(parentStream);
-            
+
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(packet =>
@@ -99,6 +102,8 @@ namespace Obsidian
 
             var linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
             packetQueue.LinkTo(sendPacketBlock, linkOptions);
+
+            this.handler.RegisterHandlers();
         }
 
         private async Task<(int id, byte[] data)> GetNextPacketAsync()
@@ -271,7 +276,7 @@ namespace Obsidian
 
                         //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
 
-                        await PacketHandler.HandlePlayPackets((id, data), this);
+                        await this.handler.HandlePlayPackets((id, data), this);
                         break;
                 }
 
@@ -675,11 +680,11 @@ namespace Obsidian
 
             GC.SuppressFinalize(this);
         }
-        #endregion
 
         ~Client()
         {
             this.Dispose(false);
         }
+        #endregion
     }
 }

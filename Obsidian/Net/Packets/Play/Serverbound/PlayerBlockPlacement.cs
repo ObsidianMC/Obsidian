@@ -362,9 +362,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
+            //TODO calculate the block state
             server.World.SetBlock(position, block);
-
-            player.client.SendPacket(new BlockChange(position, block.StateId));
 
             await server.BroadcastBlockPlacementAsync(player, block, position);
         }

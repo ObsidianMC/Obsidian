@@ -233,7 +233,6 @@ namespace Obsidian
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
-            PacketHandler.RegisterHandlers();
             Block.Initialize();
             Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
