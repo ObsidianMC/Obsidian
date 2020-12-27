@@ -73,7 +73,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
 
-            if (this.WindowId == 0 && player.LastClickedBlock.Material == Material.EnderChest && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
+            if (this.WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
                 inventory = player.Inventory;
 
             switch (this.Mode)
