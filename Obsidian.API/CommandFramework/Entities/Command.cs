@@ -81,13 +81,16 @@ namespace Obsidian.CommandFramework.Entities
         public async Task ExecuteAsync(ObsidianContext context, string[] args)
         {
             // Find matching overload
-            if (!this.Overloads.Any(x => x.GetParameters().Count() - 1 == args.Count()
+            if (!this.Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
             {
-                throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+                //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+                await context.Player.SendMessageAsync($"&4Correct usage: {this.Usage}");
+
+                return;
             }
 
-            var method = this.Overloads.First(x => x.GetParameters().Count() - 1 == args.Count()
+            var method = this.Overloads.First(x => x.GetParameters().Length - 1 == args.Length
             || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
             // create instance of declaring type to execute.

@@ -351,7 +351,7 @@ namespace Obsidian.Commands
             }
             else
             {
-                await context.Player.SendMessageAsync("Invalid entity type");
+                await player.SendMessageAsync("&4Invalid entity type");
             }
         }
 

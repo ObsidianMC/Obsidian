@@ -10,6 +10,6 @@ namespace Obsidian.API
         public long Time { get; }
         public Gamemode GameType { get; }
 
-        public Task SpawnEntityAsync(PositionF position, EntityType type);
+        public Task<IEntity> SpawnEntityAsync(PositionF position, EntityType type);
     }
 }

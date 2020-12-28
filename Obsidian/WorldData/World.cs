@@ -414,7 +414,7 @@ namespace Obsidian.WorldData
             });
         }
 
-        public async Task SpawnEntityAsync(PositionF position, EntityType type)
+        public async Task<IEntity> SpawnEntityAsync(PositionF position, EntityType type)
         {
             // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
             // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,
@@ -423,7 +423,7 @@ namespace Obsidian.WorldData
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
 
             var nonLiving = Array.BinarySearch(Entity.MiscEntities, (int)type) > -1;
-            Entity entity = null;
+            Entity entity;
 
             (int chunkX, int chunkZ) = position.ToChunkCoord();
 
@@ -478,6 +478,8 @@ namespace Obsidian.WorldData
             }
 
             this.TryAddEntity(entity);
+
+            return entity;
         }
 
         internal void Init(WorldGenerator gen)
