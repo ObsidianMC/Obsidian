@@ -14,6 +14,7 @@ using Obsidian.Util.Registry.Codecs.Dimensions;
 using Obsidian.Util.Registry.Enums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -26,20 +27,20 @@ namespace Obsidian.Util.Registry
     {
         internal static ILogger Logger { get; set; }
 
-        public static Dictionary<Material, Item> Items = new Dictionary<Material, Item>();
-        public static Dictionary<string, IRecipe> Recipes = new Dictionary<string, IRecipe>();
-        public static readonly string[] Blocks = new string[763];
+        public static readonly Dictionary<Material, Item> Items = new();
+        public static readonly Dictionary<string, IRecipe> Recipes = new();
+        public static readonly string[] BlockNames = new string[763]; // 762 - block count
 
-        public static Dictionary<string, List<Tag>> Tags = new Dictionary<string, List<Tag>>();
+        public static readonly Dictionary<string, List<Tag>> Tags = new();
 
-        public static readonly MatchTarget[] StateToMatch = new MatchTarget[17112];
-        public static readonly short[] NumericToBase = new short[763];
+        public static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
+        public static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
-        internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new CodecCollection<int, DimensionCodec>("minecraft:dimension_type");
+        internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new("minecraft:dimension_type");
 
-        internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new CodecCollection<string, BiomeCodec>("minecraft:worldgen/biome");
+        internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new("minecraft:worldgen/biome");
 
-        private readonly static JsonSerializer recipeSerializer = new JsonSerializer();
+        private readonly static JsonSerializer recipeSerializer = new();
 
         private readonly static string mainDomain = "Obsidian.Assets";
 
@@ -85,20 +86,17 @@ namespace Obsidian.Util.Registry
                     var baseId = (short)states.States.Min(state => state.Id);
                     NumericToBase[(int)material] = baseId;
 
-                    Blocks[(int)material] = "minecraft:" + name;
+                    BlockNames[(int)material] = "minecraft:" + name;
 
                     foreach (var state in states.States)
                     {
                         StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
-
-                        if (id == state.Id)
-                            continue;
                     }
                     registered++;
                 }
             }
 
-            Logger?.LogDebug($"Successfully registered {registered} blocks..");
+            Logger?.LogDebug($"Successfully registered {registered} blocks...");
         }
 
         public static async Task RegisterItemsAsync()
@@ -129,7 +127,7 @@ namespace Obsidian.Util.Registry
                 registered++;
             }
 
-            Logger?.LogDebug($"Successfully registered {registered} items..");
+            Logger?.LogDebug($"Successfully registered {registered} items...");
         }
 
         public static async Task RegisterBiomesAsync()
@@ -159,7 +157,7 @@ namespace Obsidian.Util.Registry
                     registered++;
                 }
             }
-            Logger?.LogDebug($"Successfully registered {registered} codec biomes");
+            Logger?.LogDebug($"Successfully registered {registered} codec biomes...");
         }
 
         public static async Task RegisterDimensionsAsync()
@@ -190,7 +188,7 @@ namespace Obsidian.Util.Registry
                     registered++;
                 }
             }
-            Logger?.LogDebug($"Successfully registered {registered} codec dimensions");
+            Logger?.LogDebug($"Successfully registered {registered} codec dimensions...");
         }
 
         public static async Task RegisterTagsAsync()
@@ -345,7 +343,7 @@ namespace Obsidian.Util.Registry
                 }
             }
 
-            Logger?.LogDebug($"Registered {Recipes.Count} recipes");
+            Logger?.LogDebug($"Registered {Recipes.Count} recipes...");
         }
 
         public static Block GetBlock(Material material) => new Block(material);
@@ -353,7 +351,7 @@ namespace Obsidian.Util.Registry
         public static Block GetBlock(int id) => new Block(id);
 
         public static Block GetBlock(string unlocalizedName) =>
-            new Block(NumericToBase[Array.IndexOf(Blocks, unlocalizedName)]);
+            new Block(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
 
         public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
         public static Item GetItem(Material mat) => Items.GetValueOrDefault(mat);
@@ -377,6 +375,7 @@ namespace Obsidian.Util.Registry
         public string BaseTagName { get; set; }
     }
 
+    [DebuggerDisplay("{@base}:{numeric}")]
     public struct MatchTarget
     {
         public short @base;

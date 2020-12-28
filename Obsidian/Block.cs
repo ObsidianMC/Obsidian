@@ -1,17 +1,19 @@
 ﻿using Obsidian.API;
 using Obsidian.Util.Registry;
 using System;
+using System.Diagnostics;
 
 namespace Obsidian
 {
-    public readonly struct Block
+    [DebuggerDisplay("{Name,nq}:{Id}")]
+    public readonly struct Block : IEquatable<Block>
     {
         public static Block Air => new Block(0, 0);
 
         private static short[] interactables;
         private static bool initialized = false;
 
-        public string UnlocalizedName => Registry.Blocks[Id];
+        public string UnlocalizedName => Registry.BlockNames[Id];
         public string Name => Material.ToString();
         public Material Material => (Material)Registry.StateToMatch[baseId].numeric;
         public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
@@ -61,19 +63,29 @@ namespace Obsidian
             return StateId;
         }
 
+        public bool Is(Material material)
+        {
+            return Registry.StateToMatch[baseId].numeric == (int)material;
+        }
+
         public override bool Equals(object obj)
         {
             return (obj is Block block) && block.StateId == StateId;
         }
 
+        public bool Equals(Block other)
+        {
+            return other.StateId == StateId;
+        }
+
         public static bool operator ==(Block a, Block b)
         {
-            return a.baseId == b.baseId && a.state == b.state;
+            return a.StateId == b.StateId;
         }
 
         public static bool operator !=(Block a, Block b)
         {
-            return a.baseId != b.baseId || a.state != b.state;
+            return a.StateId != b.StateId;
         }
 
         internal static void Initialize()
