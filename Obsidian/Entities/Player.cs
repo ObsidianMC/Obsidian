@@ -93,7 +93,7 @@ namespace Obsidian.Entities
             this.Uuid = uuid;
             this.Username = username;
             this.client = client;
-            this.EntityId = client.id;
+            this.Id = client.id;
             this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
             {
                 Owner = uuid
@@ -118,11 +118,11 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
+                        CollectorEntityId = this.Id,
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -157,11 +157,11 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
+                        CollectorEntityId = this.Id,
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });
@@ -191,11 +191,11 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
+                        CollectorEntityId = this.Id,
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
                     {
                         Present = true
                     });

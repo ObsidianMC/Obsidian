@@ -339,6 +339,22 @@ namespace Obsidian.Commands
         }
         #endregion
 
+        [Command("spawnentity")]
+        [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
+        public async Task SpawnEntityAsync(ObsidianContext context, string entityType)
+        {
+            var player = context.Player;
+            if (Enum.TryParse<EntityType>(entityType, true, out var type))
+            {
+                await player.WorldLocation.SpawnEntityAsync(player.Position, type);
+                await player.SendMessageAsync($"Spawning: {type}");
+            }
+            else
+            {
+                await context.Player.SendMessageAsync("Invalid entity type");
+            }
+        }
+
         #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]

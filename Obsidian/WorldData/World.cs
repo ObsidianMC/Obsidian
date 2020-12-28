@@ -66,7 +66,7 @@ namespace Obsidian.WorldData
 
             List<(int, int)> clientNeededChunks = new List<(int, int)>();
             List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
-            
+
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
@@ -122,7 +122,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
-            return region.Entities.TryRemove(entity.EntityId, out _);
+            return region.Entities.TryRemove(entity.Id, out _);
         }
 
         public Region GetRegionForChunk(int chunkX, int chunkZ)
@@ -414,6 +414,72 @@ namespace Obsidian.WorldData
             });
         }
 
+        public async Task SpawnEntityAsync(PositionF position, EntityType type)
+        {
+            // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
+            // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,
+            // LlamaSpit, Minecart, ChestMinecart, CommandBlockMinecart, FurnaceMinecart, HopperMinecart
+            // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
+            // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
+
+            var nonLiving = Array.BinarySearch(Entity.MiscEntities, (int)type) > -1;
+            Entity entity = null;
+
+            (int chunkX, int chunkZ) = position.ToChunkCoord();
+
+            if (nonLiving)
+            {
+                entity = new Entity
+                {
+                    Position = position,
+                    Id = this.TotalLoadedEntities() + 1,
+                    Type = type
+                };
+
+                if(type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
+                {
+                    //TODO
+                }
+                else
+                {
+                    await this.Server.BroadcastPacketAsync(new SpawnEntity
+                    {
+                        EntityId = entity.Id,
+                        Uuid = entity.Uuid,
+                        Type = type,
+                        Position = position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 0,
+                        Velocity = new Velocity(0, 0, 0)
+                    });
+                }
+            }
+            else
+            {
+                entity = new Living
+                {
+                    Position = position,
+                    Id = this.TotalLoadedEntities() + 1,
+                    Type = type
+                };
+
+                await this.Server.BroadcastPacketAsync(new SpawnLivingEntity
+                {
+                    EntityId = entity.Id,
+                    Uuid = entity.Uuid,
+                    Type = type,
+                    Position = position,
+                    Pitch = 0,
+                    Yaw = 0,
+                    HeadPitch = 0,
+                    Velocity = new Velocity(0, 0, 0)
+                });
+            }
+
+            this.TryAddEntity(entity);
+        }
+
         internal void Init(WorldGenerator gen)
         {
             // Make world directory
@@ -481,7 +547,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
-            return region.Entities.TryAdd(entity.EntityId, entity);
+            return region.Entities.TryAdd(entity.Id, entity);
         }
     }
 }

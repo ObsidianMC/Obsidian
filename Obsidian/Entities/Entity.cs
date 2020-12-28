@@ -11,6 +11,8 @@ namespace Obsidian.Entities
 {
     public class Entity : IEquatable<Entity>, IEntity
     {
+        internal static int[] MiscEntities;
+
         public World World { get; set; }
         public IWorld WorldLocation => World;
 
@@ -30,11 +32,15 @@ namespace Obsidian.Entities
         public Angle Yaw { get; set; }
         #endregion Location properties
 
-        public int EntityId { get; internal set; }
+        public int Id { get; internal set; }
+
+        public Guid Uuid { get; set; } = Guid.NewGuid();
 
         public EntityBitMask EntityBitMask { get; set; } = EntityBitMask.None;
 
         public Pose Pose { get; set; } = Pose.Standing;
+
+        public EntityType Type { get; set; }
 
         public int Air { get; set; } = 300;
 
@@ -44,6 +50,48 @@ namespace Obsidian.Entities
         public bool Silent { get; private set; }
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
+
+        internal static void Initialize()
+        {
+            MiscEntities = new[]
+            {
+                (int)EntityType.Arrow,
+                (int)EntityType.SpectralArrow,
+                (int)EntityType.Boat,
+                (int)EntityType.DragonFireball,
+                (int)EntityType.AreaEffectCloud,
+                (int)EntityType.EndCrystal,
+                (int)EntityType.EvokerFangs,
+                (int)EntityType.ExperienceOrb,
+                (int)EntityType.FireworkRocket,
+                (int)EntityType.FallingBlock,
+                (int)EntityType.Item,
+                (int)EntityType.ItemFrame,
+                (int)EntityType.Fireball,
+                (int)EntityType.LeashKnot,
+                (int)EntityType.LightningBolt,
+                (int)EntityType.LlamaSpit,
+                (int)EntityType.Minecart,
+                (int)EntityType.ChestMinecart,
+                (int)EntityType.CommandBlockMinecart,
+                (int)EntityType.FurnaceMinecart,
+                (int)EntityType.HopperMinecart,
+                (int)EntityType.SpawnerMinecart,
+                (int)EntityType.TntMinecart,
+                (int)EntityType.Painting,
+                (int)EntityType.Tnt,
+                (int)EntityType.ShulkerBullet,
+                (int)EntityType.EnderPearl,
+                (int)EntityType.Snowball,
+                (int)EntityType.SmallFireball,
+                (int)EntityType.Egg,
+                (int)EntityType.ExperienceBottle,
+                (int)EntityType.Potion,
+                (int)EntityType.Trident,
+                (int)EntityType.FishingBobber,
+                (int)EntityType.EyeOfEnder
+            };
+        }
 
         public Entity()
         {
@@ -65,14 +113,14 @@ namespace Obsidian.Entities
             {
                 server.BroadcastPacketWithoutQueue(new EntityPosition
                 {
-                    EntityId = this.EntityId,
+                    EntityId = this.Id,
 
                     DeltaX = newX,
                     DeltaY = newY,
                     DeltaZ = newZ,
 
                     OnGround = onGround
-                }, this.EntityId);
+                }, this.Id);
 
                 this.UpdatePosition(position, onGround);
             }
@@ -87,11 +135,11 @@ namespace Obsidian.Entities
             {
                 server.BroadcastPacketWithoutQueue(new EntityRotation
                 {
-                    EntityId = this.EntityId,
+                    EntityId = this.Id,
                     OnGround = onGround,
                     Yaw = yaw,
                     Pitch = pitch
-                }, this.EntityId);
+                }, this.Id);
 
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
@@ -119,7 +167,7 @@ namespace Obsidian.Entities
                 {
                     server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
                     {
-                        EntityId = this.EntityId,
+                        EntityId = this.Id,
 
                         DeltaX = newX,
                         DeltaY = newY,
@@ -130,7 +178,7 @@ namespace Obsidian.Entities
                         Pitch = pitch,
 
                         OnGround = onGround
-                    }, this.EntityId);
+                    }, this.Id);
 
                     this.CopyLook();
                 }
@@ -138,14 +186,14 @@ namespace Obsidian.Entities
                 {
                     server.BroadcastPacketWithoutQueue(new EntityPosition
                     {
-                        EntityId = this.EntityId,
+                        EntityId = this.Id,
 
                         DeltaX = newX,
                         DeltaY = newY,
                         DeltaZ = newZ,
 
                         OnGround = onGround
-                    }, this.EntityId);
+                    }, this.Id);
                 }
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
@@ -251,12 +299,12 @@ namespace Obsidian.Entities
             if (ReferenceEquals(this, other))
                 return true;
 
-            return this.EntityId == other.EntityId;
+            return this.Id == other.Id;
         }
 
         public override bool Equals(object obj) => Equals(obj as Entity);
 
-        public static implicit operator int(Entity entity) => entity.EntityId;
+        public static implicit operator int(Entity entity) => entity.Id;
 
         public static bool operator ==(Entity a, Entity b)
         {
@@ -268,6 +316,6 @@ namespace Obsidian.Entities
 
         public static bool operator !=(Entity a, Entity b) => !(a == b);
 
-        public override int GetHashCode() => this.EntityId.GetHashCode();
+        public override int GetHashCode() => this.Id.GetHashCode();
     }
 }

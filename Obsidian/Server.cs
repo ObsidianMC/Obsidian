@@ -234,6 +234,7 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
+            Entity.Initialize();
             Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
@@ -347,13 +348,13 @@ namespace Obsidian
 
         internal async Task BroadcastPacketAsync(IPacket packet, params int[] excluded)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.Id)))
                 await player.client.QueuePacketAsync(packet);
         }
 
         internal void BroadcastPacketWithoutQueue(IPacket packet, params int[] excluded)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.Id)))
                 player.client.SendPacket(packet);
         }
 
@@ -370,7 +371,7 @@ namespace Obsidian
 
         private bool TryAddEntity(World world, Entity entity)
         {
-            this.Logger.LogDebug($"{entity.EntityId} new ID");
+            this.Logger.LogDebug($"{entity.Id} new ID");
 
             return world.TryAddEntity(entity);
         }
@@ -618,7 +619,7 @@ namespace Obsidian
                 //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = joinedPlayer.EntityId,
+                    EntityId = joinedPlayer.Id,
                     Uuid = joinedPlayer.Uuid,
                     Position = joinedPlayer.Position,
                     Yaw = 0,
@@ -628,7 +629,7 @@ namespace Obsidian
                 //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
                 await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = player.EntityId,
+                    EntityId = player.Id,
                     Uuid = player.Uuid,
                     Position = player.Position,
                     Yaw = 0,

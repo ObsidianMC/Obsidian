@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.API
 {
     public enum EntityType : int
     {

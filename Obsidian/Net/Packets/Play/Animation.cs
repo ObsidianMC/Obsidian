@@ -35,14 +35,14 @@ namespace Obsidian.Net.Packets.Play
                 case Hand.Right:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
-                        EntityId = player.EntityId,
+                        EntityId = player.Id,
                         Animation = EAnimation.SwingMainArm
                     }, player);
                     break;
                 case Hand.OffHand:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
-                        EntityId = player.EntityId,
+                        EntityId = player.Id,
                         Animation = EAnimation.SwingOffhand
                     }, player);
                     break;
