@@ -21,9 +21,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1), VarLength]
         public int RootIndex = 0;
 
-        public DeclareCommands()
-        {
-        }
+        public DeclareCommands() { }
 
         public void AddNode(CommandNode node)
         {

@@ -11,7 +11,7 @@ namespace Obsidian.Commands
         Root = 0x00,
         Literal = 0x01,
         Argument = 0x02,
-        IsExecutabe = 0x04,
+        IsExecutable = 0x04,
         HasRedirect = 0x08,
         HasSuggestions = 0x10
     }

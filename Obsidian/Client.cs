@@ -465,7 +465,7 @@ namespace Obsidian
                 {
                     var args = overload.GetParameters().Skip(1); // skipping obsidian context
                     if (!args.Any())
-                        cmdnode.Type |= CommandNodeType.IsExecutabe;
+                        cmdnode.Type |= CommandNodeType.IsExecutable;
 
                     var prev = cmdnode;
 
@@ -475,7 +475,7 @@ namespace Obsidian
                         {
                             Index = ++index,
                             Name = arg.Name,
-                            Type = CommandNodeType.Argument | CommandNodeType.IsExecutabe
+                            Type = CommandNodeType.Argument | CommandNodeType.IsExecutable
                         };
 
                         prev.AddChild(argnode);
