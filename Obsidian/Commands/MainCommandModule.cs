@@ -4,6 +4,7 @@ using Obsidian.CommandFramework;
 using Obsidian.CommandFramework.Attributes;
 using Obsidian.CommandFramework.Entities;
 using Obsidian.Entities;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -202,7 +203,7 @@ namespace Obsidian.Commands
         #region declarecmds
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
-        public Task DeclareCommandsTestAsync(ObsidianContext Context) => ((Player)Context.Player).client.SendDeclareCommandsAsync();
+        public Task DeclareCommandsTestAsync(ObsidianContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
         #endregion
 
         #region gamemode

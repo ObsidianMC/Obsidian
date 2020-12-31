@@ -3,6 +3,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.API.Crafting;
+using Obsidian.CommandFramework.Attributes;
+using Obsidian.Commands;
+using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -26,6 +29,8 @@ namespace Obsidian.Util.Registry
     public class Registry
     {
         internal static ILogger Logger { get; set; }
+
+        public static readonly DeclareCommands DeclareCommandsPacket = new();
 
         public static readonly Dictionary<Material, Item> Items = new();
         public static readonly Dictionary<string, IRecipe> Recipes = new();
@@ -344,6 +349,65 @@ namespace Obsidian.Util.Registry
             }
 
             Logger?.LogDebug($"Registered {Recipes.Count} recipes...");
+        }
+
+        public static void RegisterCommands(Server server)
+        {
+            var index = 0;
+
+            var node = new CommandNode()
+            {
+                Type = CommandNodeType.Root,
+                Index = index
+            };
+
+            foreach (var cmd in server.Commands.GetAllCommands())
+            {
+                var cmdNode = new CommandNode()
+                {
+                    Index = ++index,
+                    Name = cmd.Name,
+                    Type = CommandNodeType.Literal
+                };
+
+                foreach (var overload in cmd.Overloads.Take(1))
+                {
+                    var args = overload.GetParameters().Skip(1); // skipping obsidian context
+                    if (!args.Any())
+                        cmdNode.Type |= CommandNodeType.IsExecutable;
+
+                    CommandNode prev = cmdNode;
+
+                    foreach (var arg in args)
+                    {
+                        var argNode = new CommandNode()
+                        {
+                            Index = ++index,
+                            Name = arg.Name,
+                            Type = CommandNodeType.Argument | CommandNodeType.IsExecutable
+                        };
+
+                        Type type = arg.ParameterType;
+
+                        var mctype = server.Commands.FindMinecraftType(type);
+
+                        argNode.Parser = mctype switch
+                        {
+                            "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
+                            "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
+                            _ => new CommandParser(mctype),
+                        };
+
+                        prev.AddChild(argNode);
+
+                        prev = argNode;
+                    }
+                }
+
+                node.AddChild(cmdNode);
+            }
+
+            DeclareCommandsPacket.AddNode(node);
         }
 
         public static Block GetBlock(Material material) => new Block(material);
