@@ -95,7 +95,7 @@ namespace Obsidian
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(packet =>
             {
-                if (tcp.Connected && packet is not DeclareCommands)
+                if (tcp.Connected)
                     SendPacket(packet);
             },
             blockOptions);
@@ -453,50 +453,53 @@ namespace Obsidian
 
             foreach (var cmd in this.Server.Commands.GetAllCommands())
             {
-                var cmdnode = new CommandNode()
+                var cmdNode = new CommandNode()
                 {
                     Index = ++index,
                     Name = cmd.Name,
                     Type = CommandNodeType.Literal
                 };
-                node.AddChild(cmdnode);
 
                 foreach (var overload in cmd.Overloads.Take(1))
                 {
                     var args = overload.GetParameters().Skip(1); // skipping obsidian context
                     if (!args.Any())
-                        cmdnode.Type |= CommandNodeType.IsExecutable;
+                        cmdNode.Type |= CommandNodeType.IsExecutable;
 
-                    var prev = cmdnode;
+                    CommandNode prev = cmdNode;
 
                     foreach (var arg in args)
                     {
-                        var argnode = new CommandNode()
+                        var argNode = new CommandNode()
                         {
                             Index = ++index,
                             Name = arg.Name,
                             Type = CommandNodeType.Argument | CommandNodeType.IsExecutable
                         };
 
-                        prev.AddChild(argnode);
-                        prev = argnode;
-
                         Type type = arg.ParameterType;
 
                         var mctype = this.Server.Commands.FindMinecraftType(type);
 
-                        argnode.Parser = mctype switch
+                        argNode.Parser = mctype switch
                         {
                             "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
                             "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
                             _ => new CommandParser(mctype),
                         };
+
+                        prev.AddChild(argNode);
+
+                        prev = argNode;
                     }
                 }
+
+                node.AddChild(cmdNode);
             }
 
             packet.AddNode(node);
             await this.QueuePacketAsync(packet);
+
             this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 

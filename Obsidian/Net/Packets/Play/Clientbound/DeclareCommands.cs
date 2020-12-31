@@ -1,6 +1,8 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Util.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,12 +16,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public List<CommandNode> Nodes { get; } = new List<CommandNode>();
 
-        public int Id => 0x10;
-
-        public byte[] Data { get; }
-
         [Field(1), VarLength]
         public int RootIndex = 0;
+
+        public int Id => 0x10;
 
         public DeclareCommands() { }
 
