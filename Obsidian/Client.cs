@@ -95,7 +95,7 @@ namespace Obsidian
             packetQueue = new BufferBlock<IPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IPacket>(packet =>
             {
-                if (tcp.Connected && packet is not DeclareCommands)
+                if (tcp.Connected)
                     SendPacket(packet);
             },
             blockOptions);
@@ -365,7 +365,8 @@ namespace Obsidian
 
             await this.DeclareRecipes();
 
-            await this.SendDeclareCommandsAsync();
+            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
+            this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
             {
@@ -437,67 +438,6 @@ namespace Obsidian
             //        }), this.MinecraftStream);
             //    }
             //}).ConfigureAwait(false);
-        }
-
-        internal async Task SendDeclareCommandsAsync()
-        {
-            // TODO only build packet for first player, or prebuild packet. Very unlikely to add commands after server start??
-            var packet = new DeclareCommands();
-            var index = 0;
-
-            var node = new CommandNode()
-            {
-                Type = CommandNodeType.Root,
-                Index = index
-            };
-
-            foreach (var cmd in this.Server.Commands.GetAllCommands())
-            {
-                var cmdnode = new CommandNode()
-                {
-                    Index = ++index,
-                    Name = cmd.Name,
-                    Type = CommandNodeType.Literal
-                };
-                node.AddChild(cmdnode);
-
-                foreach (var overload in cmd.Overloads.Take(1))
-                {
-                    var args = overload.GetParameters().Skip(1); // skipping obsidian context
-                    if (!args.Any())
-                        cmdnode.Type |= CommandNodeType.IsExecutabe;
-
-                    var prev = cmdnode;
-
-                    foreach (var arg in args)
-                    {
-                        var argnode = new CommandNode()
-                        {
-                            Index = ++index,
-                            Name = arg.Name,
-                            Type = CommandNodeType.Argument | CommandNodeType.IsExecutabe
-                        };
-
-                        prev.AddChild(argnode);
-                        prev = argnode;
-
-                        Type type = arg.ParameterType;
-
-                        var mctype = this.Server.Commands.FindMinecraftType(type);
-
-                        argnode.Parser = mctype switch
-                        {
-                            "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
-                            "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
-                            _ => new CommandParser(mctype),
-                        };
-                    }
-                }
-            }
-
-            packet.AddNode(node);
-            await this.QueuePacketAsync(packet);
-            this.Logger.LogDebug("Sent Declare Commands packet.");
         }
 
         internal async Task RemovePlayerFromListAsync(IPlayer player)

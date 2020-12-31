@@ -18,6 +18,13 @@ namespace Obsidian.Commands
 
             await stream.WriteVarIntAsync((int)this.Type);
         }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteVarInt((int)this.Type);
+        }
     }
 
     public enum StringType : int

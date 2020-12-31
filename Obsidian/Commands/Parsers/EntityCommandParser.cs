@@ -16,6 +16,13 @@ namespace Obsidian.Commands.Parsers
 
             await stream.WriteByteAsync((sbyte)this.Mask);
         }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteByte((sbyte)this.Mask);
+        }
     }
 
     public enum EntityCommadBitMask : sbyte
