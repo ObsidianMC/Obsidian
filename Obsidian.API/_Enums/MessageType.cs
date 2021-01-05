@@ -3,9 +3,7 @@
     public enum MessageType : sbyte
     {
         Chat,
-
         System,
-
         ActionBar
     }
 }

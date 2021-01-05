@@ -1055,5 +1055,35 @@ namespace Obsidian.Net
                 WriteItemStack(smithingRecipe.Result.First());
             }
         }
+
+        [WriteMethod]
+        public void WriteParticleData(ParticleData value)
+        {
+            if (value is null || value == ParticleData.None)
+                return;
+            
+            switch (value.ParticleType)
+            {
+                case ParticleType.Block:
+                    WriteVarInt(value.GetDataAs<int>());
+                    break;
+
+                case ParticleType.Dust:
+                    var (red, green, blue, scale) = value.GetDataAs<(float, float, float, float)>();
+                    WriteFloat(red);
+                    WriteFloat(green);
+                    WriteFloat(blue);
+                    WriteFloat(scale);
+                    break;
+
+                case ParticleType.FallingDust:
+                    WriteVarInt(value.GetDataAs<int>());
+                    break;
+
+                case ParticleType.Item:
+                    WriteItemStack(value.GetDataAs<ItemStack>());
+                    break;
+            }
+        }
     }
 }
