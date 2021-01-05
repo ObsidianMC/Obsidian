@@ -522,7 +522,7 @@ namespace Obsidian
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = new Velocity((short)(digging.Position.X * (8000 / 20)), (short)(digging.Position.Y * (8000 / 20)), (short)(digging.Position.Z * (8000 / 20)))
+                            Velocity = Velocity.FromPosition(digging.Position)
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
