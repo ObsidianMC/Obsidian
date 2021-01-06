@@ -12,6 +12,14 @@
 
   <PropertyGroup>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <Company>Obsidian Team</Company>
+    <Authors>Obsidian Team</Authors>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <Description>A C# implementation of the Minecraft server protocol (.NET 5)</Description>
+    <PackageProjectUrl>https://github.com/ObsidianServer/Obsidian</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
+    <PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +29,10 @@
     <EmbeddedResource Remove="Sounds\**" />
     <None Remove="PluginMessages\**" />
     <None Remove="Sounds\**" />
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

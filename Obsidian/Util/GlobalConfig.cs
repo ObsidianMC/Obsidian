@@ -19,9 +19,7 @@ namespace Obsidian.Util
         [JsonProperty("debugMode")]
         public bool DebugMode;
 
-
         [JsonProperty("verboseExceptionLogging")]
         public bool VerboseLogging { get; set; } = false;
-
     }
 }
