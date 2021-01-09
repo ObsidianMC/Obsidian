@@ -17,6 +17,17 @@ namespace Obsidian.Boss
 
         public BossBarFlags Flags { get; set; }
 
+        public override byte[] ToArray()
+        {
+            using var stream = new MinecraftStream();
+            stream.WriteChat(Title);
+            stream.WriteFloat(Health);
+            stream.WriteVarInt(Color);
+            stream.WriteVarInt(Division);
+            stream.WriteUnsignedByte((byte)Flags);
+            return stream.ToArray();
+        }
+
         public override async Task<byte[]> ToArrayAsync()
         {
             using var stream = new MinecraftStream();

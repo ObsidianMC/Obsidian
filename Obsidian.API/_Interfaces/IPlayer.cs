@@ -12,7 +12,7 @@ namespace Obsidian.API
         public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
-        public MainHand MainHand { get; set; }
+        public Hand MainHand { get; set; }
         public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool Sleeping { get; set; }
@@ -41,7 +41,7 @@ namespace Obsidian.API
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
-        public Task TeleportAsync(Position position);
+        public Task TeleportAsync(PositionF position);
         public Task TeleportAsync(IPlayer to);
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);

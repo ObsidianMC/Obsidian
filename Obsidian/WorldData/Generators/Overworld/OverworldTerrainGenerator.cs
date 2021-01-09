@@ -11,7 +11,7 @@ namespace Obsidian.WorldData.Generators.Overworld
     /// A port of the complex planetary surface example from libnoise
     /// See http://libnoise.sourceforge.net/examples/complexplanet/index.html
     /// </remarks>
-    class OverworldTerrainGenerator
+    internal class OverworldTerrainGenerator
     {
         public OverworldTerrainSettings Settings { get; set; }
 
@@ -34,7 +34,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
         #region Module Groups
 
-        Module CreateContinentDefinition()
+        private Module CreateContinentDefinition()
         {
             // Roughly defines the positions and base elevations of the planet's continents.
             //
@@ -194,7 +194,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return continentDefinition;
         }
 
-        Module CreateTerrainTypeDefinition(Module continentDefinition)
+        private Module CreateTerrainTypeDefinition(Module continentDefinition)
         {
             // Defines the positions of the terrain types on the planet.
             //
@@ -245,7 +245,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return terrainTypeDefinition;
         }
 
-        Module CreateMountainousTerrain()
+        private Module CreateMountainousTerrain()
         {
             // This subgroup generates the base-mountain elevations.  Other subgroups
             // will add the ridges and low areas to the base elevations.
@@ -511,7 +511,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return mountainousTerrain;
         }
 
-        Module CreateHillyTerrain()
+        private Module CreateHillyTerrain()
         {
             // Generates the hilly terrain.
             //
@@ -626,7 +626,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return hillyTerrain;
         }
 
-        Module CreatePlainsTerrain()
+        private Module CreatePlainsTerrain()
         {
             // Generates the plains terrain.
             //
@@ -698,7 +698,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return plainsTerrain;
         }
 
-        Module CreateBadlandsTerrain()
+        private Module CreateBadlandsTerrain()
         {
             // Generates the sandy terrain for the badlands.
             //
@@ -877,7 +877,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return badlandsTerrain;
         }
 
-        Module CreateRiverPositions()
+        private Module CreateRiverPositions()
         {
             // Generates the river positions.
             //
@@ -965,7 +965,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return riverPositions;
         }
 
-        Module CreateScaledMountainousTerrain(Module mountainousTerrain)
+        private Module CreateScaledMountainousTerrain(Module mountainousTerrain)
         {
             // Scales the output value from the mountainous-terrain group
             // so that it can be added to the elevation defined by the continent-
@@ -1037,7 +1037,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return scaledMountainousTerrain;
         }
 
-        Module CreateScaledHillyTerrain(Module hillyTerrain)
+        private Module CreateScaledHillyTerrain(Module hillyTerrain)
         {
             // Scales the output value from the hilly-terrain group so
             // that it can be added to the elevation defined by the continent-
@@ -1111,7 +1111,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return scaledHillyTerrain;
         }
 
-        Module CreateScaledPlainsTerrain(Module plainsTerrain)
+        private Module CreateScaledPlainsTerrain(Module plainsTerrain)
         {
             // Scales the output value from the plains-terrain group so
             // that it can be added to the elevations defined by the continent-
@@ -1145,7 +1145,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return scaledPlainsTerrain;
         }
 
-        Module CreateScaledBadlandsTerrain(Module badlandsTerrain)
+        private Module CreateScaledBadlandsTerrain(Module badlandsTerrain)
         {
             // Scales the output value from the badlands-terrain group so
             // that it can be added to the elevations defined by the continent-
@@ -1179,7 +1179,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             return scaledBadlandsTerrain;
         }
 
-        Module CreateFinalPlanet(Module continentDefinition, Module terrainTypeDefinition,
+        private Module CreateFinalPlanet(Module continentDefinition, Module terrainTypeDefinition,
             Module scaledPlainsTerrain, Module scaledHillyTerrain, Module scaledMountainousTerrain,
             Module scaledBadlandsTerrain, Module riverPositions)
         {

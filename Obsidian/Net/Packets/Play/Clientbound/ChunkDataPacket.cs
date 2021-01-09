@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ChunkDataPacket : IPacket
+    public partial class ChunkDataPacket : IPacket
     {
         public Chunk Chunk { get; set; }
 
         public int Id => 0x20;
 
-        public int changedSectionFilter = 65535;//0b1111111111111111;
+        public int changedSectionFilter = 65535; // 0b1111111111111111;
 
         public ChunkDataPacket(Chunk chunk) : base() => this.Chunk = chunk;
 
@@ -81,6 +81,53 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+
+        public void Serialize(MinecraftStream minecraftStream)
+        {
+            using var stream = new MinecraftStream();
+            using var dataStream = new MinecraftStream();
+
+            stream.WriteInt(Chunk.X);
+            stream.WriteInt(Chunk.Z);
+
+            stream.WriteBoolean(true); // full chunk
+
+            int chunkSectionY = 0, mask = 0;
+            foreach (var section in Chunk.Sections)
+            {
+                if ((changedSectionFilter & 1 << chunkSectionY) != 0)
+                {
+                    mask |= 1 << chunkSectionY;
+                    section.WriteTo(dataStream);
+                }
+
+                chunkSectionY++;
+            }
+
+            stream.WriteVarInt(mask);
+
+            Chunk.CalculateHeightmap();
+            var writer = new NbtWriter(stream, string.Empty);
+            foreach (var (type, heightmap) in Chunk.Heightmaps)
+                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
+            writer.EndCompound();
+            writer.Finish();
+
+            Chunk.BiomeContainer.WriteTo(stream);
+
+            dataStream.Position = 0;
+            stream.WriteVarInt((int)dataStream.Length);
+            dataStream.CopyTo(stream);
+
+            stream.WriteVarInt(0);
+
+            minecraftStream.Lock.Wait();
+            minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
+            minecraftStream.WriteVarInt(Id);
+            stream.Position = 0;
+            stream.CopyTo(minecraftStream);
+            minecraftStream.Lock.Release();
+        }
     }
 }

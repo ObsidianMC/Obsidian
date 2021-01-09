@@ -3,8 +3,8 @@ using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
 using Obsidian.Util;
-using Obsidian.Util.Registry;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData
 {
@@ -15,7 +15,12 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        public Dictionary<short, Block> Blocks { get; internal set; } = new Dictionary<short, Block>();
+        private readonly Cube[] cubes = new Cube[cubesTotal];
+        private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
+        private const int cubesHorizontal = 16 / Cube.width;
+        private const int cubesVertical = 256 / Cube.height;
+        private const int xMult = cubesTotal / cubesHorizontal;
+        private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
 
         public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
@@ -40,30 +45,40 @@ namespace Obsidian.WorldData
         {
             for (int i = 0; i < 16; i++)
                 this.Sections[i] = new ChunkSection(4, i);
+
+            int index = 0;
+            for (int x = 0; x < cubesHorizontal; x++)
+            {
+                for (int z = 0; z < cubesHorizontal; z++)
+                {
+                    for (int y = 0; y < cubesVertical; y++, index++)
+                    {
+                        cubes[index] = new Cube(x * Cube.width, y * Cube.height, z * Cube.width);
+                    }
+                }
+            }
         }
 
-        public Block GetBlock(Position position) => this.GetBlock((int)position.X, (int)position.Y, (int)position.Z);
+        public Block GetBlock(Position position) => GetBlock(position.X, position.Y, position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
-            x = Helpers.Modulo(x, 16);
-            z = Helpers.Modulo(z, 16);
-            var value = (short)((x << 8) | (z << 4) | y);
-
-            return this.Sections[y >> 4].GetBlock(x, y & 15, z) ?? this.Blocks.GetValueOrDefault(value) ?? Registry.GetBlock(Materials.Air);
+            short value = GetBlockStateId(x, y, z);
+            return new Block(value);
         }
 
-        public void SetBlock(Position position, Block block) => this.SetBlock((int)position.X, (int)position.Y, (int)position.Z, block);
+        public void SetBlock(Position position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
+            SetBlockStateId(x, y, z, block.StateId);
+
             x = Helpers.Modulo(x, 16);
             z = Helpers.Modulo(z, 16);
-            var value = (short)((x << 8) | (z << 4) | y);
 
-            this.Blocks[value] = block;
-            this.Sections[y >> 4].SetBlock(x, y & 15, z, block);
+            Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
+
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
@@ -89,24 +104,56 @@ namespace Obsidian.WorldData
 
         public void CalculateHeightmap()
         {
-            for (int x = 0; x < 16; x++)
+            Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
+            for (int x = 0; x < cubesHorizontal * Cube.width; x++)
             {
-                for (int z = 0; z < 16; z++)
+                for (int z = 0; z < cubesHorizontal * Cube.width; z++)
                 {
-                    var key = (short)((x << 8) | (z << 4) | 255);
-                    for (int y = 255; y >= 0; y--, key--)
+                    for (int y = cubesVertical * Cube.height - 1; y >= 0; y--)
                     {
-                        if (this.Blocks.TryGetValue(key, out var block))
-                        {
-                            if (block.IsAir)
-                                continue;
+                        var block = new Block(GetBlockStateId(x, y, z));
+                        if (block.IsAir)
+                            continue;
 
-                            this.Heightmaps[HeightmapType.MotionBlocking].Set(x, z, y);
-                            break;
-                        }
+                        target.Set(x, z, value: y);
+                        break;
                     }
                 }
             }
+        }
+
+        public short GetBlockStateId(int x, int y, int z)
+        {
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
+
+            return cubes[ComputeIndex(x, y, z)][x, y, z];
+        }
+
+        public void SetBlockStateId(int x, int y, int z, short id)
+        {
+            x %= 16;
+            z %= 16;
+            if (x < 0) x += 16;
+            if (z < 0) z += 16;
+
+            cubes[ComputeIndex(x, y, z)][x, y, z] = id;
+        }
+
+        public void CheckHomogeneity()
+        {
+            for (int i = 0; i < cubesTotal; i++)
+            {
+                cubes[i].CheckHomogeneity();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ComputeIndex(int x, int y, int z)
+        {
+            return x / Cube.width * xMult + z / Cube.width * zMult + y / cubesVertical;
         }
     }
 }

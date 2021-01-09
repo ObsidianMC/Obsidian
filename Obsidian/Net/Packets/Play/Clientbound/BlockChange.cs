@@ -1,26 +1,27 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class BlockChange : IPacket
+    public partial class BlockChange : IPacket
     {
         [Field(0)]
-        public Position Location { get; private set; }
+        public Position Position { get; private set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), VarLength]
         public int BlockId { get; private set; }
 
         public int Id => 0x0B;
 
-        public BlockChange() { }
-
-        public BlockChange(Position loc, int block)
+        public BlockChange()
         {
-            Location = loc;
+        }
+
+        public BlockChange(Position position, int block)
+        {
+            Position = position;
             BlockId = block;
         }
 
@@ -28,6 +29,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

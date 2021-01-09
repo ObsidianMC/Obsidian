@@ -1,26 +1,26 @@
 ﻿using Obsidian.Entities;
 using Obsidian.PlayerData.Info;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class PlayerInfo : IPacket
+    public partial class PlayerInfo : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int Action { get; }
 
-
-        [Field(1, Type = DataType.Array)]
+        [Field(1)]
         public List<PlayerInfoAction> Actions { get; }
 
         public int Id => 0x32;
 
         public byte[] Data { get; }
 
-        public PlayerInfo() { }
+        public PlayerInfo()
+        {
+        }
 
         public PlayerInfo(int action, List<PlayerInfoAction> actions)
         {
@@ -32,6 +32,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

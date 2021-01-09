@@ -36,7 +36,35 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
 
-            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != Position.Zero);
+            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Position.Zero);
+        }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteEntityMetadataType(7, EntityMetadataType.Byte);
+            stream.WriteByte((byte)LivingBitMask);
+
+            stream.WriteEntityMetadataType(8, EntityMetadataType.Float);
+            stream.WriteFloat(Health);
+
+            stream.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
+            stream.WriteVarInt((int)ActiveEffectColor);
+
+            stream.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
+            stream.WriteBoolean(AmbientPotionEffect);
+
+            stream.WriteEntityMetadataType(11, EntityMetadataType.VarInt);
+            stream.WriteVarInt(AbsorbedArrows);
+
+            stream.WriteEntityMetadataType(12, EntityMetadataType.VarInt);
+            stream.WriteVarInt(AbsorbtionAmount);
+
+            stream.WriteEntityMetadataType(13, EntityMetadataType.OptPosition);
+            stream.WriteBoolean(BedBlockPosition != default);
+            if (BedBlockPosition != default)
+                stream.WritePositionF(BedBlockPosition);
         }
     }
 }

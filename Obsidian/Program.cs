@@ -11,8 +11,8 @@ namespace Obsidian
 {
     public static class Program
     {
-        private static Dictionary<int, Server> Servers = new Dictionary<int, Server>();
-        private static TaskCompletionSource<bool> cancelKeyPress = new TaskCompletionSource<bool>();
+        private static readonly Dictionary<int, Server> Servers = new();
+        private static readonly TaskCompletionSource<bool> cancelKeyPress = new();
 
         private const string globalConfigFile = "global_config.json";
 

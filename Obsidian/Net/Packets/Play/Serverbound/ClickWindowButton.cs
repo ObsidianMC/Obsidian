@@ -1,10 +1,10 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class ClickWindowButton : IPacket
+    public partial class ClickWindowButton : IPacket
     {
         [Field(0)]
         public sbyte WindowId { get; set; }
@@ -14,7 +14,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x08;
 
-        public ClickWindowButton() { }
+        public ClickWindowButton()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -24,6 +26,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.ButtonId = await stream.ReadByteAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

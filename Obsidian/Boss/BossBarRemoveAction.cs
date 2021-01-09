@@ -7,6 +7,8 @@ namespace Obsidian.Boss
     {
         public override int Action => 1;
 
+        public override byte[] ToArray() => Array.Empty<byte>();
+
         public override Task<byte[]> ToArrayAsync() => Task.FromResult(Array.Empty<byte>());
     }
 }

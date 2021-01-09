@@ -1,19 +1,21 @@
 using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class ServerHeldItemChange : IPacket
+    public partial class ServerHeldItemChange : IPacket
     {
         [Field(0)]
         public short Slot { get; set; }
 
         public int Id => 0x25;
 
-        public ServerHeldItemChange() { }
+        public ServerHeldItemChange()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -22,7 +24,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.Slot = await stream.ReadShortAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             player.CurrentSlot = (short)(this.Slot + 36);
 

@@ -1,18 +1,19 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class SetDisplayedRecipe : IPacket
+    public partial class SetDisplayedRecipe : IPacket
     {
-        [Field(0, Type = DataType.Identifier)]
+        [Field(0)]
         public string RecipeId { get; set; }
 
         public int Id => 0x1E;
 
-        public SetDisplayedRecipe() { }
+        public SetDisplayedRecipe()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

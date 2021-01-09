@@ -13,15 +13,13 @@ namespace Obsidian.Util
         public LogLevel LogLevel = LogLevel.Debug;
 
 #else
-        public LogLevel LogLevel = LogLevel.Error;
+        public LogLevel LogLevel = LogLevel.Information;
 #endif
 
         [JsonProperty("debugMode")]
         public bool DebugMode;
 
-
         [JsonProperty("verboseExceptionLogging")]
         public bool VerboseLogging { get; set; } = false;
-
     }
 }

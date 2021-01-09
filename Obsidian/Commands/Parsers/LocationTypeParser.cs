@@ -6,32 +6,33 @@ using System;
 
 namespace Obsidian.Commands.Parsers
 {
-    public class LocationTypeParser : BaseArgumentParser<Position>
+    public class LocationTypeParser : BaseArgumentParser<PositionF>
     {
-        public LocationTypeParser() : base("minecraft:vec3") { }
-        public override bool TryParseArgument(string input, ObsidianContext context, out Position result)
+        public LocationTypeParser() : base("minecraft:vec3")
         {
-            result = default;
+        }
 
+        public override bool TryParseArgument(string input, ObsidianContext context, out PositionF result)
+        {
             var splitted = input.Split(' ');
-            var location = new Position();
+            var location = new PositionF();
 
             int count = 0;
             var ctx = context;
             foreach (var text in splitted)
             {
-                if (double.TryParse(text, out var doubleResult))
+                if (float.TryParse(text, out var floatResult))
                 {
                     switch (count)
                     {
                         case 0:
-                            location.X = doubleResult;
+                            location.X = floatResult;
                             break;
                         case 1:
-                            location.Y = doubleResult;
+                            location.Y = floatResult;
                             break;
                         case 2:
-                            location.Z = doubleResult;
+                            location.Z = floatResult;
                             break;
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");
@@ -44,13 +45,13 @@ namespace Obsidian.Commands.Parsers
                     switch (count)
                     {
                         case 0:
-                            location.X = player.Location.X;
+                            location.X = player.Position.X;
                             break;
                         case 1:
-                            location.Y = player.Location.Y;
+                            location.Y = player.Position.Y;
                             break;
                         case 2:
-                            location.Z = player.Location.Z;
+                            location.Z = player.Position.Z;
                             break;
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");

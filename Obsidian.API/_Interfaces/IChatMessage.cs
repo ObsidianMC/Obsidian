@@ -8,6 +8,8 @@ namespace Obsidian.API
         internal static Func<IChatMessage> createNew;
         public static IChatMessage CreateNew() => createNew();
 
+        public static IChatMessage Empty => Simple(string.Empty);
+
         public string Text { get; set; }
         public bool Bold { get; set; }
         public bool Italic { get; set; }

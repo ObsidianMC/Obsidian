@@ -9,13 +9,15 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using static Obsidian.Registry;
+using static Obsidian.Util.Registry.Registry;
 
 namespace Obsidian.Util.Converters
 {
     public class CraftingKeyConverter : JsonConverter<IReadOnlyDictionary<char, Ingredient>>
     {
-        public CraftingKeyConverter() { }
+        public CraftingKeyConverter()
+        {
+        }
 
         public override IReadOnlyDictionary<char, Ingredient> ReadJson(JsonReader reader, Type objectType, [AllowNull] IReadOnlyDictionary<char, Ingredient> existingValue, bool hasExistingValue, JsonSerializer serializer)
         {

@@ -1,14 +1,14 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class ServerPlayerPositionLook : IPacket
+    public partial class ServerPlayerPositionLook : IPacket
     {
-        [Field(0, true)]
-        public Position Position { get; set; }
+        [Field(0), Absolute]
+        public PositionF Position { get; set; }
 
         [Field(1)]
         public float Pitch { get; set; }
@@ -21,19 +21,21 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x34;
 
-        public ServerPlayerPositionLook() { }
+        public ServerPlayerPositionLook()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public async Task ReadAsync(MinecraftStream stream)
         {
-            this.Position = await stream.ReadAbsolutePositionAsync();
+            this.Position = await stream.ReadAbsolutePositionFAsync();
             this.Pitch = await stream.ReadFloatAsync();
             this.Yaw = await stream.ReadFloatAsync();
             this.OnGround = await stream.ReadBooleanAsync();
         }
 
-        public async Task HandleAsync(Obsidian.Server server, Player player)
+        public async Task HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, this.Position, this.Yaw, this.Pitch, this.OnGround);
         }

@@ -41,5 +41,22 @@ namespace Obsidian.PlayerData.Info
             if (this.HasDisplayName)
                 await stream.WriteChatAsync(this.DisplayName);
         }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteString(Name);
+            stream.WriteVarInt(Properties.Count);
+
+            foreach (SkinProperties properties in Properties)
+                stream.Write(properties.ToArray());
+
+            stream.WriteVarInt(Gamemode);
+            stream.WriteVarInt(Ping);
+            stream.WriteBoolean(HasDisplayName);
+            if (HasDisplayName)
+                stream.WriteChat(DisplayName);
+        }
     }
 }

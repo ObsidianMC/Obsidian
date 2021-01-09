@@ -1,24 +1,25 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class EntityAction : IPacket
+    public partial class EntityAction : IPacket
     {
-        [Field(0, Type = DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1, Type = DataType.VarInt)]
+        [Field(1), ActualType(typeof(int)), VarLength]
         public EAction Action { get; set; }
 
-        [Field(2, Type = DataType.VarInt)]
+        [Field(2), VarLength]
         public int JumpBoost { get; set; }
 
         public int Id => 0x1C;
 
-        public EntityAction() { }
+        public EntityAction()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -29,7 +30,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.JumpBoost = await stream.ReadVarIntAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player)
+        public Task HandleAsync(Server server, Player player)
         {
             switch (this.Action)
             {
@@ -57,8 +58,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
                 case EAction.StartFlyingWithElytra:
                     player.FlyingWithElytra = true;
-                    break;
-                default:
                     break;
             }
 

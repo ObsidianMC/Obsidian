@@ -9,7 +9,7 @@ using System.Runtime.Loader;
 
 namespace Obsidian.Plugins
 {
-    public class PluginContainer : IDisposable
+    public sealed class PluginContainer : IDisposable
     {
         public PluginBase Plugin { get; private set; }
         public PluginInfo Info { get; }
@@ -28,10 +28,10 @@ namespace Obsidian.Plugins
         public bool IsReady => HasPermissions && HasDependencies;
         public bool Loaded { get; internal set; }
 
-        internal Dictionary<PluginPermissions, WeakReference<SecuredServiceBase>> SecuredServices { get; } = new Dictionary<PluginPermissions, WeakReference<SecuredServiceBase>>();
-        internal List<IDisposable> DisposableServices { get; } = new List<IDisposable>();
-        internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new List<ScheduledDependencyInjection>();
-        internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new Dictionary<EventContainer, Delegate>();
+        internal Dictionary<PluginPermissions, WeakReference<SecuredServiceBase>> SecuredServices { get; } = new();
+        internal List<IDisposable> DisposableServices { get; } = new();
+        internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new();
+        internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new();
 
         private Type pluginType;
 
@@ -71,7 +71,7 @@ namespace Obsidian.Plugins
         #endregion
 
         #region Dependencies
-        public void RegisterDependencies(PluginManager manager, ILogger? logger = null)
+        public void RegisterDependencies(PluginManager manager, ILogger logger = null)
         {
             // FieldInfo[] and PropertyInfo[] can't be merged into MemberInfo[], since it includes methods etc. and MemberInfo doesn't have SetValue method
 
@@ -138,7 +138,7 @@ namespace Obsidian.Plugins
             }
         }
 
-        private object CreateInjection(Type targetType, PluginBase plugin, ILogger? logger = null)
+        private static object CreateInjection(Type targetType, PluginBase plugin, ILogger logger = null)
         {
             if (targetType == typeof(PluginBase))
             {
@@ -146,10 +146,10 @@ namespace Obsidian.Plugins
             }
             else
             {
-                object wrapper;
+                PluginWrapper wrapper;
                 try
                 {
-                    wrapper = Activator.CreateInstance(targetType);
+                    wrapper = (PluginWrapper)Activator.CreateInstance(targetType);
                 }
                 catch
                 {
@@ -157,7 +157,7 @@ namespace Obsidian.Plugins
                     return null;
                 }
 
-                typeof(PluginWrapper).GetField("plugin", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(wrapper, plugin);
+                wrapper.plugin = plugin;
 
                 Type pluginType = plugin.GetType();
                 var methods = pluginType.GetMethods();
@@ -191,7 +191,7 @@ namespace Obsidian.Plugins
             }
         }
 
-        private PluginContainer GetDependency(PluginManager manager, ILogger logger, string name, Version minVersion)
+        private static PluginContainer GetDependency(PluginManager manager, ILogger logger, string name, Version minVersion)
         {
             foreach (var plugin in manager.Plugins)
             {
@@ -225,7 +225,7 @@ namespace Obsidian.Plugins
             return HasDependencies = true;
         }
 
-        private bool IsValidDependency(string expectedName, Version minVersion, PluginContainer actual, ILogger logger)
+        private static bool IsValidDependency(string expectedName, Version minVersion, PluginContainer actual, ILogger logger)
         {
             if (actual.Info.Name == expectedName || actual.ClassName == expectedName)
             {

@@ -157,30 +157,30 @@ namespace Obsidian.WorldData.Generators.Overworld
             return value < 0.05 && value > 0;
         }
 
-        public bool isRiver(float x, float z)
+        public bool IsRiver(float x, float z)
         {
             var value = generator.RiversPos.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value < 0.5 && !isOcean(x, z) && !isDeepOcean(x, z);
+            return value < 0.5 && !IsOcean(x, z) && !IsDeepOcean(x, z);
         }
 
-        public bool isMountain(float x, float z)
+        public bool IsMountain(float x, float z)
         {
             return generator.ContinentsWithMountains.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) > 0.5;
         }
 
-        public bool isHills(float x, float z)
+        public bool IsHills(float x, float z)
         {
             var value = generator.ContinentsWithHills.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
             return value > -0.05;
         }
 
-        public bool isBadlands(float x, float z)
+        public bool IsBadlands(float x, float z)
         {
             var value = generator.ContinentsWithBadlands.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
             return value > 0.5;
         }
 
-        public bool isPlains(float x, float z)
+        public bool IsPlains(float x, float z)
         {
             var value = generator.ContinentsWithPlains.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
             return value > -0.15;
@@ -191,24 +191,24 @@ namespace Obsidian.WorldData.Generators.Overworld
             return (int)Math.Min(generator.BaseContinents.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch, 0);
         }
 
-        public bool isOcean(float x, float z)
+        public bool IsOcean(float x, float z)
         {
             var value = generator.BaseContinents.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value < 0 && !isPlains(x, z);
+            return value < 0 && !IsPlains(x, z);
         }
 
-        public bool isDeepOcean(float x, float z)
+        public bool IsDeepOcean(float x, float z)
         {
             var value = generator.BaseContinents.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch);
-            return value < -0.4 && !isPlains(x, z);
+            return value < -0.4 && !IsPlains(x, z);
         }
 
-        public double GetBiomeTemp(int x, int y, int z)
+        public double GetBiomeTemp(int x, int z)
         {
             return BiomeNoise.GetValue(x * generatorSettings.TerrainHorizStretch / 6, 0, z * generatorSettings.TerrainHorizStretch / 6);
         }
 
-        public double GetBiomeHumidity(int x, int y, int z)
+        public double GetBiomeHumidity(int x, int z)
         {
             return BiomeHumidity.GetValue(x * generatorSettings.TerrainHorizStretch / 6, 0, z * generatorSettings.TerrainHorizStretch / 6);
         }

@@ -3,13 +3,12 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Blocks;
 using Obsidian.Boss;
 using Obsidian.Chat;
-using Obsidian.Items;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,7 +41,7 @@ namespace Obsidian.Entities
         public PlayerBitMask PlayerBitMask { get; set; }
         public Gamemode Gamemode { get; set; }
 
-        public MainHand MainHand { get; set; } = MainHand.Right;
+        public Hand MainHand { get; set; } = Hand.Right;
 
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
@@ -103,20 +102,20 @@ namespace Obsidian.Entities
             LoadPerms();
         }
 
-        internal override async Task UpdateAsync(Server server, Position position, bool onGround)
+        internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
-            this.HeadY = position.Y + 1.62;
+            this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 1))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 1))
             {
                 if (entity is ItemEntity item)
                 {
                     if (!item.CanPickup)
                         continue;
 
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -128,7 +127,7 @@ namespace Obsidian.Entities
                         Present = true
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 
@@ -142,20 +141,20 @@ namespace Obsidian.Entities
             }
         }
 
-        internal override async Task UpdateAsync(Server server, Position position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
-            this.HeadY = position.Y + 1.62;
+            this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, .8))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 0.8f))
             {
                 if (entity is ItemEntity item)
                 {
                     if (!item.CanPickup)
                         continue;
 
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -167,7 +166,7 @@ namespace Obsidian.Entities
                         Present = true
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 
@@ -185,11 +184,11 @@ namespace Obsidian.Entities
         {
             await base.UpdateAsync(server, yaw, pitch, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Location, 2))
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, 2))
             {
                 if (entity is ItemEntity item)
                 {
-                    await server.BroadcastPacketWithoutQueueAsync(new CollectItem
+                    server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -201,7 +200,7 @@ namespace Obsidian.Entities
                         Present = true
                     });
 
-                    await this.client.SendPacketAsync(new SetSlot
+                    this.client.SendPacket(new SetSlot
                     {
                         Slot = (short)slot,
 
@@ -259,10 +258,10 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task TeleportAsync(Position pos)
+        public async Task TeleportAsync(PositionF pos)
         {
-            this.LastLocation = this.Location;
-            this.Location = pos;
+            this.LastPosition = this.Position;
+            this.Position = pos;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
 
             var tid = Globals.Random.Next(0, 999);
@@ -271,14 +270,14 @@ namespace Obsidian.Entities
                 new PlayerTeleportEventArgs
                 (
                     this,
-                    this.Location,
+                    this.Position,
                     pos
                 ));
 
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
                 Position = pos,
-                Flags = PositionFlags.NONE,
+                Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
@@ -288,14 +287,14 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
-            LastLocation = this.Location;
-            this.Location = to.Location;
+            LastPosition = this.Position;
+            this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
             await this.client.QueuePacketAsync(new ClientPlayerPositionLook
             {
-                Position = to.Location,
-                Flags = PositionFlags.NONE,
+                Position = to.Position,
+                Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
@@ -351,6 +350,35 @@ namespace Obsidian.Entities
                 await stream.WriteEntityMetdata(19, EntityMetadataType.Nbt, this.RightShoulder);
         }
 
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteEntityMetadataType(14, EntityMetadataType.Float);
+            stream.WriteFloat(AdditionalHearts);
+
+            stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
+            stream.WriteVarInt(Score);
+
+            stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
+            stream.WriteByte((byte)PlayerBitMask);
+
+            stream.WriteEntityMetadataType(17, EntityMetadataType.Byte);
+            stream.WriteByte((byte)MainHand);
+
+            if (LeftShoulder is not null)
+            {
+                stream.WriteEntityMetadataType(18, EntityMetadataType.Nbt);
+                stream.WriteVarInt(LeftShoulder);
+            }
+
+            if (RightShoulder is not null)
+            {
+                stream.WriteEntityMetadataType(19, EntityMetadataType.Nbt);
+                stream.WriteVarInt(RightShoulder);
+            }
+        }
+
         public override string ToString() => this.Username;
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
@@ -358,7 +386,6 @@ namespace Obsidian.Entities
             await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
             this.Gamemode = gamemode;
         }
-
 
         public async Task<bool> GrantPermission(string permission)
         {
@@ -465,6 +492,7 @@ namespace Obsidian.Entities
 
             return Task.FromResult(result);
         }
+
         public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
@@ -483,6 +511,4 @@ namespace Obsidian.Entities
             return true;
         }
     }
-
-    
 }

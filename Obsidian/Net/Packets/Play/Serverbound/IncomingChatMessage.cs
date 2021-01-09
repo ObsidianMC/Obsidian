@@ -1,17 +1,19 @@
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class IncomingChatMessage : IPacket
+    public partial class IncomingChatMessage : IPacket
     {
         [Field(0)]
         public string Message { get; private set; }
 
         public int Id => 0x03;
 
-        public IncomingChatMessage() { }
+        public IncomingChatMessage()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -20,7 +22,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.Message = await stream.ReadStringAsync();
         }
 
-        public Task HandleAsync(Obsidian.Server server, Player player) =>
+        public Task HandleAsync(Server server, Player player) =>
             server.ParseMessageAsync(this.Message, player.client);
     }
 }

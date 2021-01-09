@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
-using Obsidian.Serializer.Enums;
+using Obsidian.Serialization.Attributes;
 using System;
 using System.Threading.Tasks;
 
@@ -13,15 +12,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         X = 0x01,
         Y = 0x02,
         Z = 0x04,
-        Y_ROT = 0x08,
-        X_ROT = 0x10,
-        NONE = 0x00
+        RotationY = 0x08,
+        RotationX = 0x10,
+        None = 0x00
     }
 
-    public class ClientPlayerPositionLook : IPacket
+    public partial class ClientPlayerPositionLook : IPacket
     {
-        [Field(0, true)]
-        public Position Position { get; set; }
+        [Field(0), Absolute]
+        public PositionF Position { get; set; }
 
         [Field(1)]
         public float Yaw { get; set; }
@@ -29,17 +28,19 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public float Pitch { get; set; }
 
-        [Field(3, Type = DataType.Byte)]
+        [Field(3), ActualType(typeof(sbyte))]
         public PositionFlags Flags { get; set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [Field(4, Type = DataType.VarInt)]
+        [Field(4), VarLength]
         public int TeleportId { get; set; }
 
         public int Id => 0x34;
 
         public byte[] Data { get; }
 
-        public ClientPlayerPositionLook() { }
+        public ClientPlayerPositionLook()
+        {
+        }
 
         public ClientPlayerPositionLook(byte[] data) { this.Data = data; }
 
@@ -47,7 +48,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
-
 }

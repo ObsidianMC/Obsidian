@@ -1,12 +1,12 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class EntityMovement : IPacket
+    public partial class EntityMovement : IPacket
     {
-        [Field(0, Type = Serializer.Enums.DataType.VarInt)]
+        [Field(0), VarLength]
         public int EntityId { get; set; }
 
         public int Id => 0x2A;
@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

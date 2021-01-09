@@ -16,7 +16,7 @@ namespace Obsidian.API
 
         public Guid Owner { get; set; }
 
-        public IChatMessage Title { get; set; }
+        public IChatMessage Title { get; set; } = IChatMessage.Empty;
 
         public InventoryType Type { get; }
 

@@ -1,8 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Entities;
-using Obsidian.Events.EventArgs;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.Util.Extensions;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     /// <summary>
     /// https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
     /// </summary>
-    public class ClickWindow : IPacket
+    public partial class ClickWindow : IPacket
     {
         /// <summary>
         /// The ID of the window which was clicked. 0 for player inventory.
@@ -41,7 +40,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         /// <summary>
         /// Inventory operation mode
         /// </summary>
-        [Field(4)]
+        [Field(4), ActualType(typeof(int)), VarLength]
         public InventoryOperationMode Mode { get; set; }
 
         /// <summary>
@@ -52,7 +51,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x09;
 
-        public ClickWindow() { }
+        public ClickWindow()
+        {
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -72,7 +73,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
 
-            if (this.WindowId == 0 && player.LastClickedBlock.Type == Materials.EnderChest && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
+            if (this.WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
                 inventory = player.Inventory;
 
             switch (this.Mode)
@@ -143,7 +144,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         break;
                     }
                 case InventoryOperationMode.MouseDrag:
-                    this.HandleDragClick(inventory, server, player, value);
+                    this.HandleDragClick(inventory, player, value);
                     break;
 
                 case InventoryOperationMode.DoubleClick:
@@ -235,7 +236,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private void HandleDragClick(Inventory inventory, Server server, Player player, int value)
+        private void HandleDragClick(Inventory inventory, Player player, int value)
         {
             if (this.ClickedSlot == -999)
             {
@@ -264,29 +265,17 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     inventory.SetItem(value, this.Item);
                 }
             }
-            else
-            {
-                //It shouldn't get here
-            }
         }
     }
 
     public enum InventoryOperationMode : int
     {
         MouseClick,
-
         ShiftMouseClick,
-
         NumberKeys,
-
         MiddleMouseClick,
-
         Drop,
-
         MouseDrag,
-
         DoubleClick
     }
-
-
 }

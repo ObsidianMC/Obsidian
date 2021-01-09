@@ -1,17 +1,21 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using Obsidian.Util;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public class RequestResponse : IPacket
+    public partial class RequestResponse : IPacket
     {
         [Field(0)]
         public string Json;
 
         public int Id => 0x00;
+
+        public RequestResponse()
+        {
+        }
 
         public RequestResponse(string json) => this.Json = json;
 
@@ -21,6 +25,6 @@ namespace Obsidian.Net.Packets.Status
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Obsidian.Server server, Player player) => Task.CompletedTask;
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

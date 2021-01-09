@@ -1,10 +1,10 @@
 using Obsidian.Entities;
-using Obsidian.Serializer.Attributes;
+using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public class PingPong : IPacket
+    public partial class PingPong : IPacket
     {
         [Field(0)]
         public long Payload;

@@ -7,7 +7,6 @@
         internal long[] Storage;
         private readonly int bitsPerEntry;
         private readonly long maxEntryValue;
-        private readonly int arraySize;
 
         private int specialIndex;
 
@@ -15,34 +14,33 @@
 
         public DataArray(int bitsPerEntryIn, int arraySizeIn)
         {
-            this.arraySize = arraySizeIn;
             this.bitsPerEntry = bitsPerEntryIn;
             this.maxEntryValue = (1L << bitsPerEntryIn) - 1L;
             this.magicNumber = (char)(64 / bitsPerEntryIn);
 
             this.specialIndex = 3 * (this.magicNumber - 1);
 
-            int j = (arraySizeIn + this.magicNumber - 1) / this.magicNumber;
+            int storageSize = (arraySizeIn + this.magicNumber - 1) / this.magicNumber;
 
-            this.Storage = new long[j];
+            this.Storage = new long[storageSize];
         }
 
         public int this[int index]
         {
-            set
-            {
-                int i = this.GetIndex(index);
-                long j = this.Storage[i];
-                int k = (index - i * this.magicNumber) * this.bitsPerEntry;
-                this.Storage[i] = j & ~(this.maxEntryValue << k) | (value & this.maxEntryValue) << k;
-            }
-
             get
             {
                 int i = this.GetIndex(index);
                 long j = this.Storage[i];
                 int k = (index - i * this.magicNumber) * this.bitsPerEntry;
                 return (int)(j >> k & this.maxEntryValue);
+            }
+
+            set
+            {
+                int i = this.GetIndex(index);
+                long j = this.Storage[i];
+                int k = (index - i * this.magicNumber) * this.bitsPerEntry;
+                this.Storage[i] = j & ~(this.maxEntryValue << k) | (value & this.maxEntryValue) << k;
             }
         }
 

@@ -24,6 +24,5 @@
             this.Inventory = inventory;
             this.Item = item;
         }
-
     }
 }

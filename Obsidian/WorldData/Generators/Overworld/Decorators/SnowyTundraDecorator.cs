@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Util.Registry;
 
@@ -13,13 +12,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
         {
-            int worldX = (chunk.X << 4) + (int)pos.X;
-            int worldZ = (chunk.Z << 4) + (int)pos.Z;
-
-            var sand = Registry.GetBlock(Materials.SnowBlock);
-            var sandstone = Registry.GetBlock(Materials.PackedIce);
-            var deadbush = Registry.GetBlock(Materials.Snow);
-            var cactus = Registry.GetBlock(Materials.FrostedIce);
+            int worldX = (chunk.X << 4) + pos.X;
+            int worldZ = (chunk.Z << 4) + pos.Z;
+            
+            var sand = Registry.GetBlock(Material.SnowBlock);
+            var sandstone = Registry.GetBlock(Material.PackedIce);
+            var deadbush = Registry.GetBlock(Material.Snow);
+            var cactus = Registry.GetBlock(Material.FrostedIce);
 
             for (int y = 0; y > -4; y--)
                 chunk.SetBlock(pos + (0, y, 0), sand);
