@@ -73,7 +73,7 @@ namespace Obsidian.Util
 
         public ServerVersion(string name = null, ProtocolVersion? protocol = null)
         {
-            this.Name = name ?? $"Obsidian {Enum.GetName(typeof(ProtocolVersion), protocol ?? Server.protocol)}";
+            this.Name = name ?? $"Obsidian {(Enum.GetName(typeof(ProtocolVersion), protocol ?? Server.protocol)).Replace('_', '.').TrimStart('v')}";
             this.Protocol = protocol ?? Server.protocol;
         }
     }
