@@ -11,6 +11,13 @@
         OpenUrl,
 
         /// <summary>
+        /// Copies Value to the clipboard.
+        ///
+        /// Only used for click event.
+        /// </summary>
+        CopyToClipboard,
+
+        /// <summary>
         /// Runs the given command. Not required to be a command - clicking this only causes the client to send the given content as a chat message, so if not prefixed with /, they will say the given text instead.
         /// If used in a book GUI, the GUI is closed after clicking.
         ///
