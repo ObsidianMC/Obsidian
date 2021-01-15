@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.CommandFramework.Attributes
+namespace Obsidian.API
 {
     public class GroupCommandAttribute : Attribute
     {

@@ -1,8 +1,6 @@
-﻿using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.Attributes;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.CommandFramework.Attributes
+namespace Obsidian.API
 {
     public class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {
@@ -17,7 +15,7 @@ namespace Obsidian.CommandFramework.Attributes
             this.op = op;
         }
 
-        public override async Task<bool> RunChecksAsync(ObsidianContext ctx)
+        public override async Task<bool> RunChecksAsync(CommandContext ctx)
         {
             if (this.op && ctx.Player.IsOperator)
                 return true;

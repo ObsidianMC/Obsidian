@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.CommandFramework.ArgumentParsers
+namespace Obsidian.API
 {
     public abstract class BaseArgumentParser { }
 
@@ -9,12 +9,12 @@ namespace Obsidian.CommandFramework.ArgumentParsers
         private string MinecraftType = "";
         public BaseArgumentParser(string minecraftType)
         {
-            if (!MinecraftTypes.IsValidMcType(minecraftType))
+            if (!MinecraftArgumentTypes.IsValidMcType(minecraftType))
                 throw new Exception($"not a valid minecraft type! {minecraftType} in {this.GetType().Name}");
 
             this.MinecraftType = minecraftType;
         }
-        public abstract bool TryParseArgument(string input, ObsidianContext ctx, out T result);
+        public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
 
         public string GetParserIdentifier()
         {

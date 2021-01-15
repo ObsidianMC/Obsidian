@@ -1,13 +1,12 @@
 ﻿using Obsidian.API;
 
-namespace Obsidian.CommandFramework
+namespace Obsidian.API
 {
-    public class ObsidianContext
+    public class CommandContext
     {
-        internal CommandHandler Commands;
         internal string Message;
 
-        public ObsidianContext(string message, IPlayer player, IServer server/*, IClient client*/)
+        public CommandContext(string message, IPlayer player, IServer server/*, IClient client*/)
         {
             this.Player = player;
             this.Server = server;

@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace Obsidian.CommandFramework.ArgumentParsers
+namespace Obsidian.API
 {
     public class StringArgumentParser : BaseArgumentParser<string>
     {
         public StringArgumentParser() : base("brigadier:string") { }
-        public override bool TryParseArgument(string input, ObsidianContext ctx, out string result)
+        public override bool TryParseArgument(string input, CommandContext ctx, out string result)
         {
             result = input;
             return true;
@@ -15,7 +15,7 @@ namespace Obsidian.CommandFramework.ArgumentParsers
     public class GuidArgumentParser : BaseArgumentParser<Guid>
     {
         public GuidArgumentParser() : base("minecraft:uuid") { }
-        public override bool TryParseArgument(string input, ObsidianContext ctx, out Guid result)
+        public override bool TryParseArgument(string input, CommandContext ctx, out Guid result)
         {
             return Guid.TryParse(input, out result);
         }

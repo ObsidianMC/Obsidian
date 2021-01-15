@@ -1,12 +1,13 @@
-﻿using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Exceptions;
+﻿
+using Obsidian.API;
+using Obsidian.Commands.Framework.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Obsidian.CommandFramework.Entities
+namespace Obsidian.Commands.Framework.Entities
 {
     public class Command
     {
@@ -78,7 +79,7 @@ namespace Obsidian.CommandFramework.Entities
         /// <typeparam name="T">Context type.</typeparam>
         /// <param name="Context">Execution context.</param>
         /// <returns></returns>
-        public async Task ExecuteAsync(ObsidianContext context, string[] args)
+        public async Task ExecuteAsync(CommandContext context, string[] args)
         {
             // Find matching overload
             if (!this.Overloads.Any(x => x.GetParameters().Count() - 1 == args.Count()
