@@ -72,15 +72,15 @@ namespace Obsidian.Commands
                 var commandName = new ChatMessage
                 {
                     Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage)}",
-                    ClickEvent = new TextComponent
+                    ClickEvent = new ClickComponent
                     {
-                        Action = ETextAction.SuggestCommand,
+                        Action = EClickAction.SuggestCommand,
                         Value = $"{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} " : cmd.Usage)}"
                     },
-                    HoverEvent = new TextComponent
+                    HoverEvent = new HoverComponent
                     {
-                        Action = ETextAction.ShowText,
-                        Value = $"Click to suggest the command"
+                        Action = EHoverAction.ShowText,
+                        Contents = $"Click to suggest the command"
                     }
                 };
                 commands.AddExtra(commandName);
@@ -92,7 +92,6 @@ namespace Obsidian.Commands
                 commands.AddExtra(commandInfo);
 
             }
-
             await player.SendMessageAsync(commands);
         }
         #endregion
@@ -142,9 +141,9 @@ namespace Obsidian.Commands
                 var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? ChatColor.DarkGreen : ChatColor.DarkRed;
                 plugin.Text = colorByState + pluginContainer.Info.Name;
 
-                plugin.HoverEvent = new TextComponent { Action = ETextAction.ShowText, Value = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
+                plugin.HoverEvent = new HoverComponent { Action = EHoverAction.ShowText, Contents = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
                 if (pluginContainer.Info.ProjectUrl != null)
-                    plugin.ClickEvent = new TextComponent { Action = ETextAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
+                    plugin.ClickEvent = new ClickComponent { Action = EClickAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
 
                 messages.Add(plugin);
 
@@ -155,6 +154,8 @@ namespace Obsidian.Commands
             }
             if (messages.Count > 0)
                 message.AddExtra(messages);
+            else
+                message.Text = $"{ChatColor.Gold}There is no plugins installed{ChatColor.Reset}";
 
             await player.SendMessageAsync(message);
         }
@@ -422,15 +423,15 @@ namespace Obsidian.Commands
             var usage = new ChatMessage
             {
                 Text = $"{ChatColor.Red}{commandUsage}",
-                ClickEvent = new TextComponent
+                ClickEvent = new ClickComponent
                 {
-                    Action = ETextAction.SuggestCommand,
+                    Action = EClickAction.SuggestCommand,
                     Value = $"{commandSuggest}"
                 },
-                HoverEvent = new TextComponent
+                HoverEvent = new HoverComponent
                 {
-                    Action = ETextAction.ShowText,
-                    Value = $"Click to suggest the command"
+                    Action = EHoverAction.ShowText,
+                    Contents = $"Click to suggest the command"
                 }
             };
 

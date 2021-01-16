@@ -28,10 +28,10 @@ namespace Obsidian.Chat
         public string Insertion { get; set; }
 
         [JsonProperty("clickEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ITextComponent ClickEvent { get; set; }
+        public IClickComponent ClickEvent { get; set; }
 
         [JsonProperty("hoverEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public ITextComponent HoverEvent { get; set; }
+        public IHoverComponent HoverEvent { get; set; }
 
         [JsonProperty("extra", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<ChatMessage> Extra { get; set; }
