@@ -16,13 +16,15 @@ namespace Obsidian.Commands.Framework
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;
         internal Dictionary<PluginContainer, CommandDependencyBundle> _dependencies;
+        internal Server _server;
 
-        public CommandHandler(string prefix)
+        public CommandHandler(string prefix, Server server)
         {
             this._commandParser = new CommandParser(prefix);
             this._commands = new List<Command>();
             this._argumentParsers = new List<BaseArgumentParser>();
             this._dependencies = new Dictionary<PluginContainer, CommandDependencyBundle>();
+            this._server = server;
 
             var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
             // use reflection to find all predefined argument parsers

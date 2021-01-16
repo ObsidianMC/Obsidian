@@ -29,7 +29,7 @@ namespace Obsidian.Util.Registry
     {
         internal static ILogger Logger { get; set; }
 
-        public static readonly DeclareCommands DeclareCommandsPacket = new();
+        public static DeclareCommands DeclareCommandsPacket = new();
 
         public static readonly Dictionary<Material, Item> Items = new();
         public static readonly Dictionary<string, IRecipe> Recipes = new();
@@ -352,6 +352,7 @@ namespace Obsidian.Util.Registry
 
         public static void RegisterCommands(Server server)
         {
+            DeclareCommandsPacket = new();
             var index = 0;
 
             var node = new CommandNode()

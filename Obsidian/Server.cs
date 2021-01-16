@@ -114,7 +114,7 @@ namespace Obsidian
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
             Logger.LogDebug("Initializing command handler...");
-            this.Commands = new CommandHandler("/");
+            this.Commands = new CommandHandler("/", this);
 
             Logger.LogDebug("Registering commands...");
             this.Commands.RegisterCommandClass(null, new MainCommandModule());
@@ -235,7 +235,6 @@ namespace Obsidian
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
-            Registry.RegisterCommands(this);
             Block.Initialize();
             Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
@@ -250,6 +249,8 @@ namespace Obsidian
             this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+
+            Registry.RegisterCommands(this);
 
             this.World = new World("world1", this);
             if (!this.World.Load())
@@ -358,6 +359,13 @@ namespace Obsidian
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
+        }
+
+        internal async Task BroadcastNewCommandsAsync()
+        {
+            Registry.RegisterCommands(this);
+            foreach (var (_, player) in this.OnlinePlayers)
+                await player.client.SendDeclareCommandsAsync();
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)

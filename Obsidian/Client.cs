@@ -362,7 +362,7 @@ namespace Obsidian
 
             await this.DeclareRecipes();
 
-            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
+            await SendDeclareCommandsAsync();
             this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
@@ -435,6 +435,11 @@ namespace Obsidian
             //        }), this.MinecraftStream);
             //    }
             //}).ConfigureAwait(false);
+        }
+
+        internal async Task SendDeclareCommandsAsync()
+        {
+            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
         }
 
         internal async Task RemovePlayerFromListAsync(IPlayer player)
