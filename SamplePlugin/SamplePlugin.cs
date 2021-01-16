@@ -65,11 +65,16 @@ namespace SamplePlugin
     [CommandRoot]
     public class MyCommands
     {
+        public ILogger logger;
+        public MyCommands(ILogger l)
+        {
+            this.logger = l;
+        }
+
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
         public async Task MyCommandAsync(CommandContext ctx)
         {
-            var logger = await ctx.Dependencies.GetDependencyAsync<ILogger>();
             logger.Log("Logging via dependencies for command framework");
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }

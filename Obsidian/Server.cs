@@ -114,13 +114,13 @@ namespace Obsidian
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
             Logger.LogDebug("Initializing command handler...");
-            this.Commands = new CommandHandler("/", this);
+            this.Commands = new CommandHandler("/");
 
             Logger.LogDebug("Registering commands...");
             this.Commands.RegisterCommandClass(null, new MainCommandModule());
 
             var commandDependencies = new CommandDependencyBundle();
-            commandDependencies.RegisterDependencyAsync(this.Commands).RunSynchronously();
+            commandDependencies.RegisterDependency(this.Commands);
             this.Commands.RegisterPluginDependencies(commandDependencies, null);
 
             Logger.LogDebug("Registering custom argument parsers...");

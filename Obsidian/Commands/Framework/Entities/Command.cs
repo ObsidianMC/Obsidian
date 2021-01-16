@@ -32,7 +32,7 @@ namespace Obsidian.Commands.Framework.Entities
         internal object ParentInstance { get; set; }
 
         public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
-            CommandHandler handler, PluginContainer plugin, object parentinstance = null)
+            CommandHandler handler, PluginContainer plugin, object parentinstance)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -43,6 +43,7 @@ namespace Obsidian.Commands.Framework.Entities
             this.Description = description;
             this.Usage = usage;
             this.ParentInstance = parentinstance;
+            this.Plugin = plugin;
         }
 
         public bool CheckCommand(string[] input, Command parent)

@@ -133,6 +133,8 @@ namespace Obsidian.Plugins
             }
 
             PluginContainer plugin = await provider.GetPluginAsync(path, logger).ConfigureAwait(false);
+            plugin.Plugin.registerSingleCommand = (method) => commands.RegisterSingleCommand(method, plugin);
+            plugin.Plugin.registerCommandDependencies = (dependencies) => commands.RegisterPluginDependencies(dependencies, plugin);
 
             return HandlePlugin(plugin, permissions);
         }
@@ -152,18 +154,6 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
-            plugin.Plugin.registerSingleCommand = (method) => commands.RegisterSingleCommand(method, plugin);
-            plugin.Plugin.registerCommandDependencies = (dependencies) => commands.RegisterPluginDependencies(dependencies, plugin);
-
-            // Registering commands from within plugin
-            commands.RegisterCommandClass(plugin, plugin.Plugin);
-
-            // registering commands found in plugin assembly
-            var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
-            foreach(var root in commandroots)
-            {
-                commands.RegisterCommandClass(plugin, commands.CreateCommandRootInstance(root, plugin));
-            }
 
             if (plugin.IsReady)
             {
@@ -173,6 +163,15 @@ namespace Obsidian.Plugins
                 }
                 RegisterEvents(plugin);
                 InvokeOnLoad(plugin);
+                // Registering commands from within plugin
+                commands.RegisterCommandClass(plugin, plugin.Plugin);
+
+                // registering commands found in plugin assembly
+                var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+                foreach (var root in commandroots)
+                {
+                    commands.RegisterCommandClass(plugin, commands.CreateCommandRootInstance(root, plugin));
+                }
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }

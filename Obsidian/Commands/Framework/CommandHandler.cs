@@ -16,15 +16,14 @@ namespace Obsidian.Commands.Framework
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;
         internal Dictionary<PluginContainer, CommandDependencyBundle> _dependencies;
-        internal Server _server;
+        internal CommandDependencyBundle _obsidianDependencies;
 
-        public CommandHandler(string prefix, Server server)
+        public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
             this._commands = new List<Command>();
             this._argumentParsers = new List<BaseArgumentParser>();
             this._dependencies = new Dictionary<PluginContainer, CommandDependencyBundle>();
-            this._server = server;
 
             var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
             // use reflection to find all predefined argument parsers
@@ -37,6 +36,19 @@ namespace Obsidian.Commands.Framework
 
         public void RegisterPluginDependencies(CommandDependencyBundle dependencies, PluginContainer plugin)
         {
+            if(plugin == null)
+            {
+                if(_obsidianDependencies == null)
+                {
+                    this._obsidianDependencies = dependencies;
+                    return;
+                }
+                else
+                {
+                    throw new Exception("Requested plugin already has dependencies registered!");
+                }
+            }
+
             if (_dependencies.ContainsKey(plugin))
             {
                 throw new Exception("Requested plugin already has dependencies registered!");
@@ -81,7 +93,7 @@ namespace Obsidian.Commands.Framework
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin);
+            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null);
             command.Overloads.Add(m);
 
             this._commands.Add(command);
@@ -97,15 +109,15 @@ namespace Obsidian.Commands.Framework
             var t = typeof(T);
 
             RegisterSubgroups(t, plugin);
-            RegisterSubcommands(t, plugin);
+            RegisterSubcommands(t, plugin, CreateCommandRootInstance(t, plugin));
         }
 
         public async Task<object> CreateCommandRootInstance(Type t, PluginContainer plugin)
         {
             CommandDependencyBundle dependencies = null;
-            if (this._dependencies.ContainsKey(plugin))
+            if (plugin == null || this._dependencies.ContainsKey(plugin))
             {
-                dependencies = this._dependencies[plugin];
+                dependencies = this._dependencies[plugin] ?? _obsidianDependencies;
                 // get constructor with most params.
                 var constructor = t.GetConstructors()?.OrderByDescending(x => x.GetParameters().Count())?.First();
 
@@ -148,7 +160,9 @@ namespace Obsidian.Commands.Framework
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
 
-                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin);
+                var instance = CreateCommandRootInstance(st, plugin);
+
+                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, instance);
 
                 RegisterSubgroups(st, plugin, cmd);
                 RegisterSubcommands(st, plugin, cmd);
@@ -157,7 +171,7 @@ namespace Obsidian.Commands.Framework
             }
         }
 
-        private void RegisterSubcommands(Type t, PluginContainer plugin, Command parent = null)
+        private void RegisterSubcommands(Type t, PluginContainer plugin, object instance, Command parent = null)
         {
             // loop through methods and find valid commands
             var methods = t.GetMethods();
@@ -180,7 +194,7 @@ namespace Obsidian.Commands.Framework
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin);
+                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, instance);
                 command.Overloads.Add(m);
 
                 // Add overloads.
@@ -217,9 +231,9 @@ namespace Obsidian.Commands.Framework
 
             if (cmd != null)
             {
-                if (_dependencies.ContainsKey(cmd.Plugin))
+                if (cmd.Plugin == null || _dependencies.ContainsKey(cmd.Plugin))
                 {
-                    ctx.Dependencies = _dependencies[cmd.Plugin];
+                    ctx.Dependencies = _dependencies[cmd.Plugin] ?? _obsidianDependencies;
                 }
                 else
                 {

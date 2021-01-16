@@ -13,7 +13,7 @@ namespace Obsidian.API
     public class CommandDependencyBundle
     {
         private List<object> depencencies;
-        private object _lock;
+        private object _lock = new object();
 
         public CommandDependencyBundle()
         {
@@ -45,6 +45,16 @@ namespace Obsidian.API
 
                 depencencies.Add(dependency);
             }
+        }
+
+        internal void RegisterDependency<T>(T dependency)
+        {
+            if (depencencies.Any(x => x.GetType() == typeof(T)))
+            {
+                throw new Exception($"A dependency with type {typeof(T)} was already registered in this bundle.");
+            }
+
+            depencencies.Add(dependency);
         }
 
         /// <summary>
