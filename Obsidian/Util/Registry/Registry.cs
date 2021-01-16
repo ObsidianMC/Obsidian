@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.CommandFramework.Attributes;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Entities;

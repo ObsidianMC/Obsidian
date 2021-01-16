@@ -1,8 +1,7 @@
 using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Entities;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Util.Registry;
 using System;
@@ -13,18 +12,19 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Commands
 {
-    public class MainCommandModule : BaseCommandClass
+    public class MainCommandModule
     {
         #region help
         private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
-        public async Task HelpAsync(ObsidianContext Context) => await HelpAsync(Context, 1);
+        public async Task HelpAsync(CommandContext Context) => await HelpAsync(Context, 1);
         [CommandOverload]
-        public async Task HelpAsync(ObsidianContext Context, int page)
+        public async Task HelpAsync(CommandContext Context, int page)
         {
             var player = (Player)Context.Player;
-            var allcommands = Context.Commands.GetAllCommands();
+            var commandhandler = await Context.Dependencies.GetDependencyAsync<CommandHandler>();
+            var allcommands = commandhandler.GetAllCommands();
             var availablecommands = new List<Command>();
 
             // filter available commands
@@ -100,7 +100,7 @@ namespace Obsidian.Commands
         #region tps
         [Command("tps")]
         [CommandInfo("Gets server TPS", "/tps")]
-        public async Task TPSAsync(ObsidianContext ctx)
+        public async Task TPSAsync(CommandContext ctx)
         {
             ChatColor color;
             var player = (Player)ctx.Player;
@@ -121,7 +121,7 @@ namespace Obsidian.Commands
         #region plugins
         [Command("plugins", "pl")]
         [CommandInfo("Gets all plugins", "/plugins")]
-        public async Task PluginsAsync(ObsidianContext Context)
+        public async Task PluginsAsync(CommandContext Context)
         {
             var srv = (Server)Context.Server;
             var player = (Player)Context.Player;
@@ -163,7 +163,7 @@ namespace Obsidian.Commands
         #region forcechunkreload
         [Command("forcechunkreload")]
         [CommandInfo("Force chunk reload", "/forcechunkreload")]
-        public async Task ForceChunkReloadAsync(ObsidianContext Context)
+        public async Task ForceChunkReloadAsync(CommandContext Context)
         {
             var player = (Player)Context.Player;
             var server = (Server)Context.Server;
@@ -177,39 +177,39 @@ namespace Obsidian.Commands
         #region echo
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
-        public Task EchoAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text);
+        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text);
         #endregion
 
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
         [RequirePermission(op: true, permissions: "obsidian.announce")]
-        public Task AnnounceAsync(ObsidianContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
+        public Task AnnounceAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
         #endregion
 
         #region leave
         [Command("leave", "kickme")]
         [CommandInfo("kicks you", "/leave")]
-        public Task LeaveAsync(ObsidianContext Context) => Context.Player.KickAsync("Is this what you wanted?");
+        public Task LeaveAsync(CommandContext Context) => Context.Player.KickAsync("Is this what you wanted?");
         #endregion
 
         #region uptime
         [Command("uptime", "up")]
         [CommandInfo("Gets current uptime", "/uptime")]
-        public Task UptimeAsync(ObsidianContext Context)
+        public Task UptimeAsync(CommandContext Context)
             => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
         #endregion
 
         #region declarecmds
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
-        public Task DeclareCommandsTestAsync(ObsidianContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
+        public Task DeclareCommandsTestAsync(CommandContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
         #endregion
 
         #region gamemode
         [Command("gamemode")]
         [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
-        public async Task GamemodeAsync(ObsidianContext Context)
+        public async Task GamemodeAsync(CommandContext Context)
         {
             var chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
             var player = (Player)Context.Player;
@@ -217,7 +217,7 @@ namespace Obsidian.Commands
         }
 
         [CommandOverload]
-        public async Task GamemodeAsync(ObsidianContext Context, [Remaining] string args_)
+        public async Task GamemodeAsync(CommandContext Context, [Remaining] string args_)
         {
             var chatMessage = ChatMessage.Simple("");
             var args = args_.Contains(" ") ? args_.Split(" ").ToList() : new List<string> { args_ };
@@ -257,7 +257,7 @@ namespace Obsidian.Commands
         #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-        public async Task TeleportAsync(ObsidianContext Context, [Remaining] PositionF location)
+        public async Task TeleportAsync(CommandContext Context, [Remaining] PositionF location)
         {
             var player = (Player)Context.Player;
             await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
@@ -269,7 +269,7 @@ namespace Obsidian.Commands
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
         [RequirePermission]
-        public async Task GiveOpAsync(ObsidianContext Context, IPlayer player)
+        public async Task GiveOpAsync(CommandContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
             var onlinePlayers = server.OnlinePlayers;
@@ -286,7 +286,7 @@ namespace Obsidian.Commands
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
         [RequirePermission]
-        public async Task UnclaimOpAsync(ObsidianContext Context, IPlayer player)
+        public async Task UnclaimOpAsync(CommandContext Context, IPlayer player)
         {
             var server = (Server)Context.Server;
             var onlinePlayers = server.OnlinePlayers;
@@ -302,7 +302,7 @@ namespace Obsidian.Commands
         #region oprequest
         [Command("oprequest", "opreq")]
         [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
-        public async Task RequestOpAsync(ObsidianContext Context, string code = null)
+        public async Task RequestOpAsync(CommandContext Context, string code = null)
         {
             var server = (Server)Context.Server;
             var player = (Player)Context.Player;
@@ -334,7 +334,7 @@ namespace Obsidian.Commands
         #region obsidian
         [Command("obsidian")]
         [CommandInfo("Shows obsidian popup", "/obsidian")]
-        public async Task ObsidianAsync(ObsidianContext Context)
+        public async Task ObsidianAsync(CommandContext Context)
         {
             await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
@@ -344,7 +344,7 @@ namespace Obsidian.Commands
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
         [RequirePermission(permissions: "obsidian.stop")]
-        public async Task StopAsync(ObsidianContext Context)
+        public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
             await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player.Username}{ChatColor.Reset}.");
@@ -361,7 +361,7 @@ namespace Obsidian.Commands
         public class Permission
         {
             [GroupCommand]
-            public async Task CheckPermission(ObsidianContext ctx, string permission)
+            public async Task CheckPermission(CommandContext ctx, string permission)
             {
                 if (await ctx.Player.HasPermission(permission))
                 {
@@ -374,7 +374,7 @@ namespace Obsidian.Commands
             }
 
             [Command("grant")]
-            public async Task GrantPermission(ObsidianContext ctx, string permission)
+            public async Task GrantPermission(CommandContext ctx, string permission)
             {
                 if (await ctx.Player.GrantPermission(permission))
                 {
@@ -386,7 +386,7 @@ namespace Obsidian.Commands
                 }
             }
             [Command("revoke")]
-            public async Task RevokePermission(ObsidianContext ctx, string permission)
+            public async Task RevokePermission(CommandContext ctx, string permission)
             {
                 if (await ctx.Player.RevokePermission(permission))
                 {
@@ -405,7 +405,7 @@ namespace Obsidian.Commands
         [Command("breakpoint")]
         [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
         [RequirePermission(op: true)]
-        public async Task BreakpointAsync(ObsidianContext Context)
+        public async Task BreakpointAsync(CommandContext Context)
         {
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);

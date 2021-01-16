@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using System;
 
 namespace Obsidian.API
 {
@@ -17,6 +18,21 @@ namespace Obsidian.API
         public IPlayer Player { get; private set; }
 
         public IServer Server { get; private set; }
+
+        public CommandDependencyBundle Dependencies
+        {
+            get
+            {
+                return _depencendies;
+            }
+            set
+            {
+                if (_depencendies != null)
+                    throw new Exception("Dependencies were already set for this context!");
+                _depencendies = value;
+            }
+        }
+        private CommandDependencyBundle _depencendies;
 
         // public IClient Client { get; private set; }
     }

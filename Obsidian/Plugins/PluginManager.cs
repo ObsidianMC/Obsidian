@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Plugins;
+using Obsidian.Commands.Framework;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Util.Extensions;
@@ -39,26 +40,28 @@ namespace Obsidian.Plugins
         private readonly IServer server;
         private readonly List<EventContainer> events = new();
         private readonly ILogger logger;
+        private readonly CommandHandler commands;
 
         private const string loadEvent = "OnLoad";
 
-        public PluginManager() : this(null, null, null)
+        public PluginManager(CommandHandler commands) : this(null, null, null, commands)
         {
         }
 
-        public PluginManager(object eventSource) : this(eventSource, null, null)
+        public PluginManager(object eventSource, CommandHandler commands) : this(eventSource, null, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, IServer server) : this(eventSource, server, null)
+        public PluginManager(object eventSource, IServer server, CommandHandler commands) : this(eventSource, server, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, IServer server, ILogger logger)
+        public PluginManager(object eventSource, IServer server, ILogger logger, CommandHandler commands)
         {
             this.server = server;
             this.logger = logger;
             this.eventSource = eventSource;
+            this.commands = commands;
 
             DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
             {
@@ -149,6 +152,18 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
+            plugin.Plugin.registerSingleCommand = (method) => commands.RegisterSingleCommand(method, plugin);
+            plugin.Plugin.registerCommandDependencies = (dependencies) => commands.RegisterPluginDependencies(dependencies, plugin);
+
+            // Registering commands from within plugin
+            commands.RegisterCommandClass(plugin, plugin.Plugin);
+
+            // registering commands found in plugin assembly
+            var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+            foreach(var root in commandroots)
+            {
+                commands.RegisterCommandClass(plugin, commands.CreateCommandRootInstance(root, plugin));
+            }
 
             if (plugin.IsReady)
             {
@@ -204,6 +219,8 @@ namespace Obsidian.Plugins
                     stagedPlugins.Remove(plugin);
                 }
             }
+
+            commands.UnregisterPluginCommands(plugin);
 
             UnregisterEvents(plugin);
 

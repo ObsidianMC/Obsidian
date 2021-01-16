@@ -1,6 +1,6 @@
-﻿using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Entities;
+﻿using Obsidian.API;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Entities;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -27,39 +27,39 @@ namespace Obsidian.Tests
         {
             var cmd = new CommandHandler("/");
 
-            cmd.RegisterCommandClass<Command>();
+            cmd.RegisterCommandClass<Command>(null, new Command());
 
-            await cmd.ProcessCommand(new ObsidianContext("/ping 69 hello", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hello", null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("hello", Command.arg2out);
 
-            await cmd.ProcessCommand(new ObsidianContext("/pong ping 420 bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/pong ping 420 bye", null, null));
             Assert.Equal(420, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new ObsidianContext("/ping 12 12", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 12 12", null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new ObsidianContext("/ping 69 hey bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
         }
 
-        public class Command : BaseCommandClass
+        public class Command
         {
             public static int arg1out = 0;
             public static string arg2out = "";
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
-            public async Task ping(ObsidianContext ctx, int arg1, int arg2)
+            public async Task ping(CommandContext ctx, int arg1, int arg2)
             {
             }
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
-            public async Task ping(ObsidianContext ctx, int arg1, string arg2)
+            public async Task ping(CommandContext ctx, int arg1, string arg2)
             {
                 arg1out = arg1;
                 arg2out = arg2;
@@ -67,7 +67,7 @@ namespace Obsidian.Tests
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
-            public async Task ping(ObsidianContext ctx, int arg1, string arg2, string arg3)
+            public async Task ping(CommandContext ctx, int arg1, string arg2, string arg3)
             {
             }
 
@@ -77,7 +77,7 @@ namespace Obsidian.Tests
             {
                 [Command("ping")]
                 [CommandInfo(description: "ping")]
-                public async Task ping(ObsidianContext ctx, int arg1, string arg2)
+                public async Task ping(CommandContext ctx, int arg1, string arg2)
                 {
                     arg1out = arg1;
                     arg2out = arg2;

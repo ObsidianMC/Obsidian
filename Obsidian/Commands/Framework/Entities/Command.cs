@@ -1,6 +1,7 @@
 ﻿
 using Obsidian.API;
 using Obsidian.Commands.Framework.Exceptions;
+using Obsidian.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,9 +25,14 @@ namespace Obsidian.Commands.Framework.Entities
 
         public List<MethodInfo> Overloads { get; internal set; }
 
+        internal PluginContainer Plugin;
+
         internal CommandHandler Handler { get; set; }
 
-        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, CommandHandler handler)
+        internal object ParentInstance { get; set; }
+
+        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
+            CommandHandler handler, PluginContainer plugin, object parentinstance = null)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -36,6 +42,7 @@ namespace Obsidian.Commands.Framework.Entities
             this.Overloads = new List<MethodInfo>();
             this.Description = description;
             this.Usage = usage;
+            this.ParentInstance = parentinstance;
         }
 
         public bool CheckCommand(string[] input, Command parent)

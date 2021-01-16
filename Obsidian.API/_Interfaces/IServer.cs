@@ -22,8 +22,6 @@ namespace Obsidian.API
         public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer GetPlayer(string username);
         public IPlayer GetPlayer(Guid uuid);
-        public void RegisterCommandClass<T>();
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
         public void RegisterRecipes(params IRecipe[] recipes);
     }
 }

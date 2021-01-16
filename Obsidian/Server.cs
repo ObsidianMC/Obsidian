@@ -3,11 +3,9 @@ using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Chat;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
-using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -119,7 +117,11 @@ namespace Obsidian
             this.Commands = new CommandHandler("/");
 
             Logger.LogDebug("Registering commands...");
-            this.Commands.RegisterCommandClass<MainCommandModule>();
+            this.Commands.RegisterCommandClass(null, new MainCommandModule());
+
+            var commandDependencies = new CommandDependencyBundle();
+            commandDependencies.RegisterDependencyAsync(this.Commands).RunSynchronously();
+            this.Commands.RegisterPluginDependencies(commandDependencies, null);
 
             Logger.LogDebug("Registering custom argument parsers...");
             this.Commands.AddArgumentParser(new LocationTypeParser());
@@ -130,7 +132,7 @@ namespace Obsidian
 
             this.Events = new MinecraftEventHandler();
 
-            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"));
+            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), this.Commands);
 
             this.Operators = new OperatorList(this);
 
@@ -139,8 +141,8 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-        public void RegisterCommandClass<T>() where T : BaseCommandClass =>
-            this.Commands.RegisterCommandClass<T>();
+        public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
+            this.Commands.RegisterCommandClass<T>(plugin, instance);
 
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
@@ -314,7 +316,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new ObsidianContext(message, source.Player, this);
+            var context = new CommandContext(message, source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);

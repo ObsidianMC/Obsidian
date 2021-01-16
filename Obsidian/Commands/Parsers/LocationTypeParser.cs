@@ -1,6 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.Entities;
 using System;
 
@@ -12,7 +10,7 @@ namespace Obsidian.Commands.Parsers
         {
         }
 
-        public override bool TryParseArgument(string input, ObsidianContext context, out PositionF result)
+        public override bool TryParseArgument(string input, CommandContext context, out PositionF result)
         {
             var splitted = input.Split(' ');
             var location = new PositionF();
