@@ -5,10 +5,10 @@ using Obsidian.Util.Converters;
 
 namespace Obsidian.Chat
 {
-    public class TextComponent : ITextComponent
+    public class ClickComponent : IClickComponent
     {
-        [JsonProperty("action"), JsonConverter(typeof(DefaultEnumConverter<ETextAction>))]
-        public ETextAction Action { get; set; }
+        [JsonProperty("action"), JsonConverter(typeof(DefaultEnumConverter<EClickAction>))]
+        public EClickAction Action { get; set; }
 
         [JsonProperty("value")]
         public string Value { get; set; }
