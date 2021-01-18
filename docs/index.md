@@ -1,37 +1,11 @@
-## Welcome to GitHub Pages
+![logo](https://i.imgur.com/jU1lkP4.png)
 
-You can use the [editor on GitHub](https://github.com/ObsidianMC/Obsidian/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
+---
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+[![Build Status](https://dev.azure.com/naamloos-ops/Obsidian/_apis/build/status/Naamloos.Obsidian?branchName=master)](https://dev.azure.com/naamloos-ops/Obsidian/_build/latest?definitionId=1&branchName=master)
+[![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
-### Markdown
+---
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/ObsidianMC/Obsidian/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+## What is Obsidian?
+Obsidian is a Minecraft Java Edition server written in C#. It runs on .NET 5.
