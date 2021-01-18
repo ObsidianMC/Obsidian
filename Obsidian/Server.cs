@@ -251,8 +251,6 @@ namespace Obsidian
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-            Registry.RegisterCommands(this);
-
             this.World = new World("world1", this);
             if (!this.World.Load())
             {
@@ -266,6 +264,8 @@ namespace Obsidian
 
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
+
+            Registry.RegisterCommands(this);
 
             _ = Task.Run(this.ServerLoop);
 

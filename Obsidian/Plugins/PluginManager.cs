@@ -5,6 +5,7 @@ using Obsidian.Commands.Framework;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -172,6 +173,7 @@ namespace Obsidian.Plugins
                 {
                     commands.RegisterCommandClass(plugin, root, null);
                 }
+                Registry.RegisterCommands((Server)this.server);
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }

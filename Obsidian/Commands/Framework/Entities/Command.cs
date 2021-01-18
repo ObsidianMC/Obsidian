@@ -173,5 +173,10 @@ namespace Obsidian.Commands.Framework.Entities
 
             await task;
         }
+
+        public override string ToString()
+        {
+            return $"{this.Handler._prefix}{this.GetQualifiedName()}";
+        }
     }
 }
