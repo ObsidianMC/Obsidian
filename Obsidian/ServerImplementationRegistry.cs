@@ -14,7 +14,8 @@ namespace Obsidian
             registered = true;
 
             IChatMessage.createNew = () => new ChatMessage();
-            ITextComponent.createNew = () => new TextComponent();
+            IClickComponent.createNew = () => new ClickComponent();
+            IHoverComponent.createNew = () => new HoverComponent();
         }
     }
 }
