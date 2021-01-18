@@ -133,8 +133,6 @@ namespace Obsidian.Plugins
             }
 
             PluginContainer plugin = await provider.GetPluginAsync(path, logger).ConfigureAwait(false);
-            plugin.Plugin.registerSingleCommand = (method) => commands.RegisterSingleCommand(method, plugin);
-            plugin.Plugin.registerCommandDependencies = (dependencies) => commands.RegisterPluginDependencies(dependencies, plugin);
 
             return HandlePlugin(plugin, permissions);
         }
@@ -154,6 +152,8 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
+            plugin.Plugin.registerCommandDependencies = (CommandDependencyBundle dependencies) => this.commands.RegisterPluginDependencies(dependencies, plugin);
+            plugin.Plugin.registerSingleCommand = (Action method) => this.commands.RegisterSingleCommand(method, plugin, null);
 
             if (plugin.IsReady)
             {
@@ -164,13 +164,13 @@ namespace Obsidian.Plugins
                 RegisterEvents(plugin);
                 InvokeOnLoad(plugin);
                 // Registering commands from within plugin
-                commands.RegisterCommandClass(plugin, plugin.Plugin);
+                commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);
 
                 // registering commands found in plugin assembly
                 var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
                 foreach (var root in commandroots)
                 {
-                    commands.RegisterCommandClass(plugin, commands.CreateCommandRootInstance(root, plugin));
+                    commands.RegisterCommandClass(plugin, root, null);
                 }
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
@@ -400,3 +400,5 @@ namespace Obsidian.Plugins
 
 // thank you Roxxel && DorrianD3V for the invasion <3
 // thank you Jonpro03 for your awesome contributions
+// thank you Sebastian for your amazing plugin framework <3
+// thank you Tides, Craftplacer for being part of the team early on <3

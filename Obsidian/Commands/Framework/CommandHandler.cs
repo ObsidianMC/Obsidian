@@ -25,7 +25,7 @@ namespace Obsidian.Commands.Framework
             this._argumentParsers = new List<BaseArgumentParser>();
             this._dependencies = new Dictionary<PluginContainer, CommandDependencyBundle>();
 
-            var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
+            var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
             // use reflection to find all predefined argument parsers
 
             foreach (var parser in parsers)
@@ -80,7 +80,7 @@ namespace Obsidian.Commands.Framework
             _argumentParsers.Add(parser);
         }
 
-        public void RegisterSingleCommand(Action method, PluginContainer plugin)
+        public void RegisterSingleCommand(Action method, PluginContainer plugin, Type t)
         {
             var m = method.Method;
 
@@ -93,7 +93,7 @@ namespace Obsidian.Commands.Framework
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null);
+            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null, t);
             command.Overloads.Add(m);
 
             this._commands.Add(command);
@@ -104,12 +104,12 @@ namespace Obsidian.Commands.Framework
             this._commands.RemoveAll(x => x.Plugin == plugin);
         }
 
-        public void RegisterCommandClass<T>(PluginContainer plugin, T instance)
-        {
-            var t = typeof(T);
+        public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
 
+        public void RegisterCommandClass(PluginContainer plugin, Type t, object instance = null)
+        {
             RegisterSubgroups(t, plugin);
-            RegisterSubcommands(t, plugin, CreateCommandRootInstance(t, plugin));
+            RegisterSubcommands(t, plugin, instance);
         }
 
         public async Task<object> CreateCommandRootInstance(Type t, PluginContainer plugin)
@@ -117,7 +117,15 @@ namespace Obsidian.Commands.Framework
             CommandDependencyBundle dependencies = null;
             if (plugin == null || this._dependencies.ContainsKey(plugin))
             {
-                dependencies = this._dependencies[plugin] ?? _obsidianDependencies;
+                if (plugin == null)
+                {
+                    dependencies = _obsidianDependencies;
+                }
+                else
+                {
+                    dependencies = _dependencies[plugin];
+                }
+
                 // get constructor with most params.
                 var constructor = t.GetConstructors()?.OrderByDescending(x => x.GetParameters().Count())?.First();
 
@@ -160,9 +168,7 @@ namespace Obsidian.Commands.Framework
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
 
-                var instance = CreateCommandRootInstance(st, plugin);
-
-                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, instance);
+                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
 
                 RegisterSubgroups(st, plugin, cmd);
                 RegisterSubcommands(st, plugin, cmd);
@@ -194,7 +200,7 @@ namespace Obsidian.Commands.Framework
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, instance);
+                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
                 command.Overloads.Add(m);
 
                 // Add overloads.
@@ -231,14 +237,18 @@ namespace Obsidian.Commands.Framework
 
             if (cmd != null)
             {
-                if (cmd.Plugin == null || _dependencies.ContainsKey(cmd.Plugin))
+                if(cmd.Plugin == null)
                 {
-                    ctx.Dependencies = _dependencies[cmd.Plugin] ?? _obsidianDependencies;
+                    ctx.Dependencies = _obsidianDependencies;
                 }
                 else
                 {
-                    ctx.Dependencies = new NullDependency();
+                    if (_dependencies.ContainsKey(cmd.Plugin))
+                        ctx.Dependencies = _dependencies[cmd.Plugin];
+                    else
+                        ctx.Dependencies = new NullDependency();
                 }
+
                 await cmd.ExecuteAsync(ctx, args);
             }
             else

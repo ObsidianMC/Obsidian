@@ -127,6 +127,7 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
+
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 

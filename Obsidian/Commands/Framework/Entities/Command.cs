@@ -30,9 +30,10 @@ namespace Obsidian.Commands.Framework.Entities
         internal CommandHandler Handler { get; set; }
 
         internal object ParentInstance { get; set; }
+        internal Type ParentType { get; set; }
 
         public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
-            CommandHandler handler, PluginContainer plugin, object parentinstance)
+            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -44,6 +45,7 @@ namespace Obsidian.Commands.Framework.Entities
             this.Usage = usage;
             this.ParentInstance = parentinstance;
             this.Plugin = plugin;
+            this.ParentType = parentType;
         }
 
         public bool CheckCommand(string[] input, Command parent)
@@ -100,7 +102,9 @@ namespace Obsidian.Commands.Framework.Entities
             || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
             // create instance of declaring type to execute.
-            var obj = Activator.CreateInstance(method.DeclaringType);
+            var obj = this.ParentInstance;
+            if (obj == null && this.ParentType != null)
+                obj = await this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
 
             // Get required params
             var methodparams = method.GetParameters().Skip(1).ToArray();
@@ -126,6 +130,7 @@ namespace Obsidian.Commands.Framework.Entities
                 if (this.Handler._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
                 {
                     // Gets parser
+                    // TODO premake instances of parsers in command handler
                     var parsertype = this.Handler._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
                     var parser = Activator.CreateInstance(parsertype);
 

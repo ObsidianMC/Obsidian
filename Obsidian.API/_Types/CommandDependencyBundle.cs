@@ -22,7 +22,7 @@ namespace Obsidian.API
 
         public bool HasType(Type t)
         {
-            return this.depencencies.Any(x => x.GetType() == t);
+            return this.depencencies.Any(x => x.GetType().IsAssignableTo(t));
         }
 
         /// <summary>
@@ -38,18 +38,13 @@ namespace Obsidian.API
 
             lock (_lock)
             {
-                if (depencencies.Any(x => x.GetType() == typeof(T)))
-                {
-                    throw new Exception($"A dependency with type {typeof(T)} was already registered in this bundle.");
-                }
-
-                depencencies.Add(dependency);
+                this.RegisterDependency(dependency);
             }
         }
 
         internal void RegisterDependency<T>(T dependency)
         {
-            if (depencencies.Any(x => x.GetType() == typeof(T)))
+            if (depencencies.Any(x => x.GetType().IsAssignableTo(typeof(T))))
             {
                 throw new Exception($"A dependency with type {typeof(T)} was already registered in this bundle.");
             }
@@ -65,17 +60,7 @@ namespace Obsidian.API
         public virtual async Task<T> GetDependencyAsync<T>()
         {
             // We'll want this async as it has a lock.
-            await Task.Yield();
-
-            lock (_lock)
-            {
-                if (!depencencies.Any(x => x.GetType() == typeof(T)))
-                {
-                    throw new Exception($"No dependency with type {typeof(T)} was registered in this bundle.");
-                }
-
-                return (T)depencencies.First(x => x.GetType() == typeof(T));
-            }
+            return (T)await GetDependencyAsync(typeof(T));
         }
 
         /// <summary>
@@ -90,12 +75,12 @@ namespace Obsidian.API
 
             lock (_lock)
             {
-                if (!depencencies.Any(x => x.GetType() == t))
+                if (!depencencies.Any(x => x.GetType().IsAssignableTo(t)))
                 {
                     throw new Exception($"No dependency with type {t} was registered in this bundle.");
                 }
 
-                return depencencies.First(x => x.GetType() == t);
+                return depencencies.First(x => x.GetType().IsAssignableTo(t));
             }
         }
     }
