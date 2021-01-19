@@ -28,10 +28,6 @@ namespace SamplePlugin
             Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
             Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
 
-            var commanddependencies = new CommandDependencyBundle();
-            await commanddependencies.RegisterDependencyAsync(Logger);
-            this.RegisterCommandDependencies(commanddependencies);
-
             await Task.CompletedTask;
         }
 
@@ -65,17 +61,18 @@ namespace SamplePlugin
     [CommandRoot]
     public class MyCommands
     {
-        public ILogger logger;
-        public MyCommands(ILogger l)
-        {
-            this.logger = l;
-        }
+        [Inject]
+        public SamplePlugin Plugin { get; set; }
+
+        [Inject]
+        public ILogger Logger { get; set; }
 
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
         public async Task MyCommandAsync(CommandContext ctx)
         {
-            logger.Log("Logging via dependencies for command framework");
+            Plugin.Logger.Log("Testing Plugin as injected dependency");
+            Logger.Log("Testing Services as injected dependency");
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }

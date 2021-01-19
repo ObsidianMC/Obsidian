@@ -1,4 +1,6 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API;
+using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
@@ -15,16 +17,14 @@ namespace Obsidian.Commands.Framework
         internal List<Command> _commands;
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;
-        internal Dictionary<PluginContainer, CommandDependencyBundle> _dependencies;
-        internal CommandDependencyBundle _obsidianDependencies;
         internal string _prefix;
+        internal PluginManager _plugins;
 
         public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
             this._commands = new List<Command>();
             this._argumentParsers = new List<BaseArgumentParser>();
-            this._dependencies = new Dictionary<PluginContainer, CommandDependencyBundle>();
             this._prefix = prefix;
 
             var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
@@ -36,27 +36,9 @@ namespace Obsidian.Commands.Framework
             }
         }
 
-        public void RegisterPluginDependencies(CommandDependencyBundle dependencies, PluginContainer plugin)
+        public void LinkPluginManager(PluginManager plugins)
         {
-            if(plugin == null)
-            {
-                if(_obsidianDependencies == null)
-                {
-                    this._obsidianDependencies = dependencies;
-                    return;
-                }
-                else
-                {
-                    throw new Exception("Requested plugin already has dependencies registered!");
-                }
-            }
-
-            if (_dependencies.ContainsKey(plugin))
-            {
-                throw new Exception("Requested plugin already has dependencies registered!");
-            }
-
-            this._dependencies.Add(plugin, dependencies);
+            this._plugins = plugins;
         }
 
         public string FindMinecraftType(Type type)
@@ -116,41 +98,23 @@ namespace Obsidian.Commands.Framework
 
         public async Task<object> CreateCommandRootInstance(Type t, PluginContainer plugin)
         {
-            CommandDependencyBundle dependencies = null;
-            if (plugin == null || this._dependencies.ContainsKey(plugin))
+            // get constructor with most params.
+            var instance = Activator.CreateInstance(t);
+
+            var injectables = t.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
+            foreach(var injectable in injectables)
             {
-                if (plugin == null)
+                if(injectable.PropertyType == typeof(PluginBase) || injectable.PropertyType == plugin.Plugin.GetType())
                 {
-                    dependencies = _obsidianDependencies;
+                    injectable.SetValue(instance, plugin.Plugin);
                 }
                 else
                 {
-                    dependencies = _dependencies[plugin];
-                }
-
-                // get constructor with most params.
-                var constructor = t.GetConstructors()?.OrderByDescending(x => x.GetParameters().Count())?.First();
-
-                if(constructor != null)
-                {
-                    var activatorparams = new List<object>();
-
-                    // This should also ensure dependencies are in order of constructor params.
-                    foreach(var param in constructor.GetParameters())
-                    {
-                        if (!dependencies.HasType(param.ParameterType))
-                        {
-                            throw new Exception("Constructor has unregistered param type!");
-                        }
-
-                        activatorparams.Add(await dependencies.GetDependencyAsync(param.ParameterType));
-                    }
-
-                    return Activator.CreateInstance(t, activatorparams.ToArray());
+                    this._plugins.serviceProvider.InjectServices(instance, plugin, _plugins.logger);
                 }
             }
-            // No dependencies found.
-            return Activator.CreateInstance(t);
+
+            return instance;
         }
 
         private void RegisterSubgroups(Type t, PluginContainer plugin, Command parent = null)
@@ -239,17 +203,7 @@ namespace Obsidian.Commands.Framework
 
             if (cmd != null)
             {
-                if(cmd.Plugin == null)
-                {
-                    ctx.Dependencies = _obsidianDependencies;
-                }
-                else
-                {
-                    if (_dependencies.ContainsKey(cmd.Plugin))
-                        ctx.Dependencies = _dependencies[cmd.Plugin];
-                    else
-                        ctx.Dependencies = new NullDependency();
-                }
+                ctx.Plugin = cmd.Plugin?.Plugin;
 
                 await cmd.ExecuteAsync(ctx, args);
             }

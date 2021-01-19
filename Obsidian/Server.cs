@@ -115,13 +115,11 @@ namespace Obsidian
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
+            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), this.Commands);
+            this.Commands.LinkPluginManager(this.PluginManager);
 
             Logger.LogDebug("Registering commands...");
             this.Commands.RegisterCommandClass(null, new MainCommandModule());
-
-            var commandDependencies = new CommandDependencyBundle();
-            commandDependencies.RegisterDependency(this.Commands);
-            this.Commands.RegisterPluginDependencies(commandDependencies, null);
 
             Logger.LogDebug("Registering custom argument parsers...");
             this.Commands.AddArgumentParser(new LocationTypeParser());
@@ -132,8 +130,6 @@ namespace Obsidian
             Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
-
-            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), this.Commands);
 
             this.Operators = new OperatorList(this);
 

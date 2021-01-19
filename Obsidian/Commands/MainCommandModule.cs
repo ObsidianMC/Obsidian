@@ -23,7 +23,8 @@ namespace Obsidian.Commands
         public async Task HelpAsync(CommandContext Context, int page)
         {
             var player = (Player)Context.Player;
-            var commandhandler = await Context.Dependencies.GetDependencyAsync<CommandHandler>();
+            var server = (Server)Context.Server;
+            var commandhandler = server.Commands;
             var allcommands = commandhandler.GetAllCommands();
             var availablecommands = new List<Command>();
 

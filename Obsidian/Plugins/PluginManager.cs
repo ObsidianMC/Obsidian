@@ -36,11 +36,11 @@ namespace Obsidian.Plugins
 
         private readonly List<PluginContainer> plugins = new();
         private readonly List<PluginContainer> stagedPlugins = new();
-        private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
+        internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
         private readonly object eventSource;
         private readonly IServer server;
         private readonly List<EventContainer> events = new();
-        private readonly ILogger logger;
+        internal readonly ILogger logger;
         private readonly CommandHandler commands;
 
         private const string loadEvent = "OnLoad";
@@ -153,7 +153,6 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
-            plugin.Plugin.registerCommandDependencies = (CommandDependencyBundle dependencies) => this.commands.RegisterPluginDependencies(dependencies, plugin);
             plugin.Plugin.registerSingleCommand = (Action method) => this.commands.RegisterSingleCommand(method, plugin, null);
 
             if (plugin.IsReady)

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Plugins;
 using System;
 
 namespace Obsidian.API
@@ -19,20 +20,7 @@ namespace Obsidian.API
 
         public IServer Server { get; private set; }
 
-        public CommandDependencyBundle Dependencies
-        {
-            get
-            {
-                return _depencendies;
-            }
-            set
-            {
-                if (_depencendies != null)
-                    throw new Exception("Dependencies were already set for this context!");
-                _depencendies = value;
-            }
-        }
-        private CommandDependencyBundle _depencendies;
+        public PluginBase Plugin { get; internal set; }
 
         // public IClient Client { get; private set; }
     }

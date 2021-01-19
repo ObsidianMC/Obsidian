@@ -14,15 +14,9 @@ namespace Obsidian.API.Plugins
         public IPluginInfo Info { get; internal set; }
 
         internal Action<Action> registerSingleCommand;
-        internal Action<CommandDependencyBundle> registerCommandDependencies;
         internal Action unload;
 
         private Type typeCache;
-
-        public void RegisterCommandDependencies(CommandDependencyBundle dependencies)
-        {
-            this.registerCommandDependencies(dependencies);
-        }
 
         public void RegisterCommand(Action action)
         {
