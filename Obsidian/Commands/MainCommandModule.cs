@@ -139,8 +139,10 @@ namespace Obsidian.Commands
                 var info = pluginContainer.Info;
 
                 var plugin = new ChatMessage();
-                var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? ChatColor.DarkGreen : ChatColor.DarkRed;
-                plugin.Text = colorByState + pluginContainer.Info.Name;
+                var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? HexColor.Green : HexColor.Red;
+
+                plugin.Text = pluginContainer.Info.Name;
+                plugin.Color = colorByState;
 
                 plugin.HoverEvent = new HoverComponent { Action = EHoverAction.ShowText, Contents = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
                 if (pluginContainer.Info.ProjectUrl != null)
