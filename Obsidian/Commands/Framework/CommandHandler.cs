@@ -1,34 +1,44 @@
-﻿using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Entities;
-using Obsidian.CommandFramework.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.API;
+using Obsidian.API.Plugins;
+using Obsidian.Commands.Framework.Entities;
+using Obsidian.Commands.Framework.Exceptions;
+using Obsidian.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Obsidian.CommandFramework
+namespace Obsidian.Commands.Framework
 {
     public class CommandHandler
     {
         internal List<Command> _commands;
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;
+        internal string _prefix;
+        internal PluginManager _plugins;
 
         public CommandHandler(string prefix)
         {
             this._commandParser = new CommandParser(prefix);
             this._commands = new List<Command>();
             this._argumentParsers = new List<BaseArgumentParser>();
+            this._prefix = prefix;
 
-            var parsers = typeof(BaseArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
+            var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(x => typeof(BaseArgumentParser).IsAssignableFrom(x) && !x.IsAbstract);
             // use reflection to find all predefined argument parsers
 
             foreach (var parser in parsers)
             {
                 _argumentParsers.Add((BaseArgumentParser)Activator.CreateInstance(parser));
             }
+        }
+
+        public void LinkPluginManager(PluginManager plugins)
+        {
+            this._plugins = plugins;
         }
 
         public string FindMinecraftType(Type type)
@@ -54,15 +64,60 @@ namespace Obsidian.CommandFramework
             _argumentParsers.Add(parser);
         }
 
-        public void RegisterCommandClass<T>() where T : BaseCommandClass
+        public void RegisterSingleCommand(Action method, PluginContainer plugin, Type t)
         {
-            var t = typeof(T);
+            var m = method.Method;
 
-            RegisterSubgroups(t);
-            RegisterSubcommands(t);
+            // Get command name from first constructor argument for command attribute.
+            var cmd = m.GetCustomAttribute<CommandAttribute>();
+            var name = cmd.CommandName;
+            // Get aliases
+            var aliases = cmd.Aliases;
+            var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
+
+            var info = m.GetCustomAttribute<CommandInfoAttribute>();
+
+            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null, t);
+            command.Overloads.Add(m);
+
+            this._commands.Add(command);
         }
 
-        private void RegisterSubgroups(Type t, Command parent = null)
+        public void UnregisterPluginCommands(PluginContainer plugin)
+        {
+            this._commands.RemoveAll(x => x.Plugin == plugin);
+        }
+
+        public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
+
+        public void RegisterCommandClass(PluginContainer plugin, Type t, object instance = null)
+        {
+            RegisterSubgroups(t, plugin);
+            RegisterSubcommands(t, plugin, instance);
+        }
+
+        public async Task<object> CreateCommandRootInstance(Type t, PluginContainer plugin)
+        {
+            // get constructor with most params.
+            var instance = Activator.CreateInstance(t);
+
+            var injectables = t.GetProperties().Where(x => x.GetCustomAttribute<InjectAttribute>() != null);
+            foreach(var injectable in injectables)
+            {
+                if(injectable.PropertyType == typeof(PluginBase) || injectable.PropertyType == plugin.Plugin.GetType())
+                {
+                    injectable.SetValue(instance, plugin.Plugin);
+                }
+                else
+                {
+                    this._plugins.serviceProvider.InjectServices(instance, plugin, _plugins.logger);
+                }
+            }
+
+            return instance;
+        }
+
+        private void RegisterSubgroups(Type t, PluginContainer plugin, Command parent = null)
         {
             // find all command groups under this command
             var subtypes = t.GetNestedTypes().Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandGroupAttribute)));
@@ -79,16 +134,16 @@ namespace Obsidian.CommandFramework
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
 
-                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this);
+                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
 
-                RegisterSubgroups(st, cmd);
-                RegisterSubcommands(st, cmd);
+                RegisterSubgroups(st, plugin, cmd);
+                RegisterSubcommands(st, plugin, cmd);
 
                 this._commands.Add(cmd);
             }
         }
 
-        private void RegisterSubcommands(Type t, Command parent = null)
+        private void RegisterSubcommands(Type t, PluginContainer plugin, object instance, Command parent = null)
         {
             // loop through methods and find valid commands
             var methods = t.GetMethods();
@@ -111,7 +166,7 @@ namespace Obsidian.CommandFramework
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
 
-                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this);
+                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
                 command.Overloads.Add(m);
 
                 // Add overloads.
@@ -121,23 +176,20 @@ namespace Obsidian.CommandFramework
             }
         }
 
-        public async Task ProcessCommand(ObsidianContext ctx)
+        public async Task ProcessCommand(CommandContext ctx)
         {
-            ctx.Commands = this;
-
             // split the command message into command and args.
             if (_commandParser.IsCommandQualified(ctx.Message, out string qualified))
             {
                 // if string is "command-qualified" we'll try to execute it.
                 var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
 
-                // [0] is the command name, all other values are arguments.
                 await ExecuteCommand(command, ctx);
             }
             await Task.Yield();
         }
 
-        private async Task ExecuteCommand(string[] command, ObsidianContext ctx)
+        private async Task ExecuteCommand(string[] command, CommandContext ctx)
         {
             Command cmd = null;
             var args = command;
@@ -150,7 +202,11 @@ namespace Obsidian.CommandFramework
             }
 
             if (cmd != null)
+            {
+                ctx.Plugin = cmd.Plugin?.Plugin;
+
                 await cmd.ExecuteAsync(ctx, args);
+            }
             else
                 throw new CommandNotFoundException("No such command was found!");
         }

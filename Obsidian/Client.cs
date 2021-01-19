@@ -3,9 +3,6 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Chat;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.Commands;
-using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -365,7 +362,7 @@ namespace Obsidian
 
             await this.DeclareRecipes();
 
-            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
+            await SendDeclareCommandsAsync();
             this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
@@ -438,6 +435,11 @@ namespace Obsidian
             //        }), this.MinecraftStream);
             //    }
             //}).ConfigureAwait(false);
+        }
+
+        internal async Task SendDeclareCommandsAsync()
+        {
+            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
         }
 
         internal async Task RemovePlayerFromListAsync(IPlayer player)

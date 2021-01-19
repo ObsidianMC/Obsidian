@@ -1,4 +1,4 @@
-﻿namespace Obsidian.CommandFramework
+﻿namespace Obsidian.API
 {
     public enum PermissionCheckType
     {

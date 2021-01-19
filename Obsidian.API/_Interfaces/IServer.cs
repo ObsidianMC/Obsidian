@@ -1,6 +1,4 @@
 ﻿using Obsidian.API.Crafting;
-using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -24,8 +22,6 @@ namespace Obsidian.API
         public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer GetPlayer(string username);
         public IPlayer GetPlayer(Guid uuid);
-        public void RegisterCommandClass<T>() where T : BaseCommandClass;
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
         public void RegisterRecipes(params IRecipe[] recipes);
     }
 }

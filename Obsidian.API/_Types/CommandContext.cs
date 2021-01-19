@@ -1,13 +1,14 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Plugins;
+using System;
 
-namespace Obsidian.CommandFramework
+namespace Obsidian.API
 {
-    public class ObsidianContext
+    public class CommandContext
     {
-        internal CommandHandler Commands;
         internal string Message;
 
-        public ObsidianContext(string message, IPlayer player, IServer server/*, IClient client*/)
+        public CommandContext(string message, IPlayer player, IServer server/*, IClient client*/)
         {
             this.Player = player;
             this.Server = server;
@@ -18,6 +19,8 @@ namespace Obsidian.CommandFramework
         public IPlayer Player { get; private set; }
 
         public IServer Server { get; private set; }
+
+        public PluginBase Plugin { get; internal set; }
 
         // public IClient Client { get; private set; }
     }

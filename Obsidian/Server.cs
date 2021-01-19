@@ -3,11 +3,9 @@ using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Chat;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
-using Obsidian.CommandFramework.Exceptions;
 using Obsidian.Commands;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -117,20 +115,21 @@ namespace Obsidian
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
+            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), this.Commands);
+            this.Commands.LinkPluginManager(this.PluginManager);
 
             Logger.LogDebug("Registering commands...");
-            this.Commands.RegisterCommandClass<MainCommandModule>();
+            this.Commands.RegisterCommandClass(null, new MainCommandModule());
 
             Logger.LogDebug("Registering custom argument parsers...");
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
+
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 
             this.Events = new MinecraftEventHandler();
-
-            this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"));
 
             this.Operators = new OperatorList(this);
 
@@ -139,8 +138,8 @@ namespace Obsidian
             this.Events.ServerTick += this.OnServerTick;
         }
 
-        public void RegisterCommandClass<T>() where T : BaseCommandClass =>
-            this.Commands.RegisterCommandClass<T>();
+        public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
+            this.Commands.RegisterCommandClass<T>(plugin, instance);
 
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             this.Commands.AddArgumentParser(parser);
@@ -233,7 +232,6 @@ namespace Obsidian
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
-            Registry.RegisterCommands(this);
             Block.Initialize();
             Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
@@ -262,6 +260,8 @@ namespace Obsidian
 
             if (!this.Config.OnlineMode)
                 this.Logger.LogInformation($"Starting in offline mode...");
+
+            Registry.RegisterCommands(this);
 
             _ = Task.Run(this.ServerLoop);
 
@@ -314,7 +314,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new ObsidianContext(message, source.Player, this);
+            var context = new CommandContext(message, source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);
@@ -356,6 +356,13 @@ namespace Obsidian
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
+        }
+
+        internal async Task BroadcastNewCommandsAsync()
+        {
+            Registry.RegisterCommands(this);
+            foreach (var (_, player) in this.OnlinePlayers)
+                await player.client.SendDeclareCommandsAsync();
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)

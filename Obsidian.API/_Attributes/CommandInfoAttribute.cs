@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.CommandFramework.Attributes
+namespace Obsidian.API
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class CommandInfoAttribute : Attribute

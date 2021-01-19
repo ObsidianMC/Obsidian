@@ -20,14 +20,19 @@ namespace Obsidian.Plugins.ServiceProviders
         {
         }
 
-        public void InjectServices(PluginContainer container, ILogger logger)
+        public void InjectServices(PluginContainer container, ILogger logger) => InjectServices(container.Plugin, container, logger);
+        
+        public void InjectServices(object o, PluginContainer container, ILogger logger)
         {
             var serviceCache = new Dictionary<Type, object>();
 
-            PropertyInfo[] properties = container.Plugin.GetType().GetProperties();
+            PropertyInfo[] properties = o.GetType().GetProperties();
             foreach (var property in properties)
             {
                 if (property.GetCustomAttribute<InjectAttribute>() == null)
+                    continue;
+
+                if (property.PropertyType.IsAssignableTo(typeof(PluginBase)))
                     continue;
 
                 if (serviceImplementationTypes.TryGetValue(property.PropertyType, out var implementationType))
@@ -44,11 +49,11 @@ namespace Obsidian.Plugins.ServiceProviders
                             container.RegisterDisposableService(disposableService);
                     }
 
-                    property.SetValue(container.Plugin, service);
+                    property.SetValue(o, service);
                 }
                 else if (singletons.TryGetValue(property.PropertyType, out var singleton))
                 {
-                    property.SetValue(container.Plugin, singleton);
+                    property.SetValue(o, singleton);
                 }
                 else
                 {
