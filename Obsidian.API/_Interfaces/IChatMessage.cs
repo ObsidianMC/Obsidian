@@ -11,6 +11,7 @@ namespace Obsidian.API
         public static IChatMessage Empty => Simple(string.Empty);
 
         public string Text { get; set; }
+        public HexColor Color { get; set; }
         public bool Bold { get; set; }
         public bool Italic { get; set; }
         public bool Underline { get; set; }
@@ -30,6 +31,13 @@ namespace Obsidian.API
         {
             IChatMessage chatMessage = CreateNew();
             chatMessage.Text = text;
+            return chatMessage;
+        }
+        public static IChatMessage Simple(string text, HexColor color)
+        {
+            IChatMessage chatMessage = CreateNew();
+            chatMessage.Text = text;
+            chatMessage.Color = color;
             return chatMessage;
         }
 
