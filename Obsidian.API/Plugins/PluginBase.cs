@@ -12,9 +12,16 @@ namespace Obsidian.API.Plugins
     public abstract class PluginBase
     {
         public IPluginInfo Info { get; internal set; }
+
+        internal Action<Action> registerSingleCommand;
         internal Action unload;
 
         private Type typeCache;
+
+        public void RegisterCommand(Action action)
+        {
+            registerSingleCommand(action);
+        }
 
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.

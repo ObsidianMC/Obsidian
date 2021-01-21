@@ -1,12 +1,14 @@
-﻿using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Exceptions;
+﻿
+using Obsidian.API;
+using Obsidian.Commands.Framework.Exceptions;
+using Obsidian.Plugins;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Obsidian.CommandFramework.Entities
+namespace Obsidian.Commands.Framework.Entities
 {
     public class Command
     {
@@ -23,9 +25,15 @@ namespace Obsidian.CommandFramework.Entities
 
         public List<MethodInfo> Overloads { get; internal set; }
 
+        internal PluginContainer Plugin;
+
         internal CommandHandler Handler { get; set; }
 
-        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, CommandHandler handler)
+        internal object ParentInstance { get; set; }
+        internal Type ParentType { get; set; }
+
+        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
+            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -35,6 +43,9 @@ namespace Obsidian.CommandFramework.Entities
             this.Overloads = new List<MethodInfo>();
             this.Description = description;
             this.Usage = usage;
+            this.ParentInstance = parentinstance;
+            this.Plugin = plugin;
+            this.ParentType = parentType;
         }
 
         public bool CheckCommand(string[] input, Command parent)
@@ -78,7 +89,7 @@ namespace Obsidian.CommandFramework.Entities
         /// <typeparam name="T">Context type.</typeparam>
         /// <param name="Context">Execution context.</param>
         /// <returns></returns>
-        public async Task ExecuteAsync(ObsidianContext context, string[] args)
+        public async Task ExecuteAsync(CommandContext context, string[] args)
         {
             // Find matching overload
             if (!this.Overloads.Any(x => x.GetParameters().Count() - 1 == args.Count()
@@ -91,7 +102,9 @@ namespace Obsidian.CommandFramework.Entities
             || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
             // create instance of declaring type to execute.
-            var obj = Activator.CreateInstance(method.DeclaringType);
+            var obj = this.ParentInstance;
+            if (obj == null && this.ParentType != null)
+                obj = await this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
 
             // Get required params
             var methodparams = method.GetParameters().Skip(1).ToArray();
@@ -117,6 +130,7 @@ namespace Obsidian.CommandFramework.Entities
                 if (this.Handler._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
                 {
                     // Gets parser
+                    // TODO premake instances of parsers in command handler
                     var parsertype = this.Handler._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
                     var parser = Activator.CreateInstance(parsertype);
 
@@ -158,6 +172,11 @@ namespace Obsidian.CommandFramework.Entities
             var task = (Task)method.Invoke(obj, parsedargs);
 
             await task;
+        }
+
+        public override string ToString()
+        {
+            return $"{this.Handler._prefix}{this.GetQualifiedName()}";
         }
     }
 }

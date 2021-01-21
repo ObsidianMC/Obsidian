@@ -2,9 +2,6 @@
 using Obsidian.API.Events;
 using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.CommandFramework.Entities;
 using System;
 using System.Threading.Tasks;
 
@@ -30,7 +27,7 @@ namespace SamplePlugin
         {
             Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
             Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
-            server.RegisterCommandClass<MyCommands>();
+
             await Task.CompletedTask;
         }
 
@@ -52,14 +49,30 @@ namespace SamplePlugin
 
             await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
+
+        [Command("plugincommand")]
+        [CommandInfo("woop dee doo this command is from within a plugin class!!")]
+        public async Task PluginCommandAsync(CommandContext ctx)
+        {
+            await ctx.Player.SendMessageAsync("Hello from plugin command implemented in Plugin class!");
+        }
     }
 
-    public class MyCommands : BaseCommandClass
+    [CommandRoot]
+    public class MyCommands
     {
+        [Inject]
+        public SamplePlugin Plugin { get; set; }
+
+        [Inject]
+        public ILogger Logger { get; set; }
+
         [Command("mycommand")]
         [CommandInfo("woop dee doo this command is from a plugin")]
-        public async Task MyCommandAsync(ObsidianContext ctx)
+        public async Task MyCommandAsync(CommandContext ctx)
         {
+            Plugin.Logger.Log("Testing Plugin as injected dependency");
+            Logger.Log("Testing Services as injected dependency");
             await ctx.Player.SendMessageAsync("Hello from plugin command!");
         }
     }

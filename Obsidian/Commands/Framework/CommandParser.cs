@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace Obsidian.CommandFramework
+namespace Obsidian.Commands.Framework
 {
     public class CommandParser
     {

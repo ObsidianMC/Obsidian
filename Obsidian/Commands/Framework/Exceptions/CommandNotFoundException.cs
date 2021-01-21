@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.CommandFramework.Exceptions
+namespace Obsidian.Commands.Framework.Exceptions
 {
     public class CommandNotFoundException : Exception
     {

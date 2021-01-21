@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 
-namespace Obsidian.CommandFramework
+namespace Obsidian.API
 {
-    public class MinecraftTypes
+    public class MinecraftArgumentTypes
     {
         // TODO maybe make a Dictionary mapping an enum to a string?
         private static string[] mcTypes =

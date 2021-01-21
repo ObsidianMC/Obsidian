@@ -1,6 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.CommandFramework;
-using Obsidian.CommandFramework.ArgumentParsers;
 using Obsidian.Entities;
 using System;
 using System.Linq;
@@ -13,7 +11,7 @@ namespace Obsidian.Commands.Parsers
         {
         }
 
-        public override bool TryParseArgument(string input, ObsidianContext context, out IPlayer result)
+        public override bool TryParseArgument(string input, CommandContext context, out IPlayer result)
         {
             var ctx = context;
             var server = (Server)ctx.Server;
