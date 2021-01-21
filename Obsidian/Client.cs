@@ -176,12 +176,12 @@ namespace Obsidian
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
-                                this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
+                                this.Logger.LogDebug($"Client sent unexpected state ({ChatColor.Red}{(int)nextState}{ChatColor.White}), forcing it to disconnect");
                                 await this.DisconnectAsync("you seem suspicious");
                             }
 
                             this.State = nextState;
-                            this.Logger.LogInformation($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
+                            this.Logger.LogInformation($"Handshaking with client (protocol: {ChatColor.Yellow}{handshake.Version.GetDescription()} {ChatColor.White}[{ChatColor.Yellow}{(int)handshake.Version}{ChatColor.White}], server: {ChatColor.Yellow}{handshake.ServerAddress}:{handshake.ServerPort}{ChatColor.White})");
                         }
                         else
                         {
