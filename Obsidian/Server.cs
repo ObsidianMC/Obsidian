@@ -300,14 +300,15 @@ namespace Obsidian
             }
         }
 
-        internal async Task ParseMessageAsync(string message, Client source, MessageType type = MessageType.Chat)
+        internal async Task ParseMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
         {
+            if (format == null) format = "<{0}> {1}";
             if (!message.StartsWith('/'))
             {
-                var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message));
+                var chat = await this.Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
 
                 if (!chat.Cancel)
-                    await this.BroadcastAsync($"<{source.Player.Username}> {message}", type);
+                    await this.BroadcastAsync(string.Format(format, source.Player.Username, message), type);
 
                 return;
             }

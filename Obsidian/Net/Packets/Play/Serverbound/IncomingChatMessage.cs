@@ -8,6 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     {
         [Field(0)]
         public string Message { get; private set; }
+        public string Format { get; private set; }
 
         public int Id => 0x03;
 
@@ -20,9 +21,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Message = await stream.ReadStringAsync();
+            this.Format = "<{0}> {1}";
         }
 
         public Task HandleAsync(Server server, Player player) =>
-            server.ParseMessageAsync(this.Message, player.client);
+            server.ParseMessageAsync(this.Message, this.Format, player.client);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Util;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -36,7 +37,7 @@ namespace Obsidian
             Console.ForegroundColor = ConsoleColor.Black;
             Console.WriteLine(asciilogo);
             Console.ResetColor();
-            Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.ToString().Replace('_', '.')}");
+            Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
 
             Console.CancelKeyPress += OnConsoleCancelKeyPressed;
 
