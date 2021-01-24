@@ -56,6 +56,8 @@ namespace Obsidian
 
         public IOperatorList Operators { get; }
 
+        public IScoreboardManager ScoreboardManager { get; private set; }
+
         internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new ConcurrentDictionary<Guid, Inventory>();
 
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
@@ -239,6 +241,8 @@ namespace Obsidian
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
+
+            this.ScoreboardManager = new ScoreboardManager(this);
 
             this.Logger.LogInformation("Loading plugins...");
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.

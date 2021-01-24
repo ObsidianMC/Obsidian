@@ -43,6 +43,8 @@ namespace Obsidian.Entities
 
         public Hand MainHand { get; set; } = Hand.Right;
 
+        public IScoreboard CurrentScoreboard { get; set; }
+
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
         public bool Sprinting { get; set; }
@@ -213,6 +215,14 @@ namespace Obsidian.Entities
             }
         }
 
+        internal async Task SendScoreboardInfo(ScoreboardObjectivePacket packet, UpdateScore scorePacket = null)
+        {
+            await this.client.QueuePacketAsync(packet);
+
+            if (scorePacket != null)
+                await this.client.QueuePacketAsync(scorePacket);
+        }
+
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
         public void LoadPerms()
@@ -241,6 +251,38 @@ namespace Obsidian.Entities
                 File.Create(file).Close();
 
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
+        }
+
+        public async Task DisplayScoreboard(IScoreboard scoreboard, ScoreboardPosition position)
+        {
+            var actualBoard = (Scoreboard)scoreboard;
+
+            this.CurrentScoreboard = actualBoard;
+
+            await this.client.QueuePacketAsync(new ScoreboardObjectivePacket
+            {
+                ObjectiveName = actualBoard.Name,
+                Mode = ScoreboardMode.Create,
+                Value = actualBoard.objective.Value,
+                Type = actualBoard.objective.DisplayType
+            });
+
+            foreach (var (name, score) in actualBoard.scores)
+            {
+                await this.client.QueuePacketAsync(new UpdateScore
+                {
+                    EntityName = name,
+                    ObjectiveName = actualBoard.objective.ObjectiveName,
+                    Action = 0,
+                    Value = score
+                });
+            }
+
+            await this.client.QueuePacketAsync(new DisplayScoreboard
+            {
+                ScoreName = actualBoard.Name,
+                Position = position
+            });
         }
 
         public async Task OpenInventoryAsync(Inventory inventory)
