@@ -16,6 +16,9 @@ namespace Obsidian.API
         public IOperatorList Operators { get; }
         public IWorld DefaultWorld { get; }
         public IConfig Configuration { get; }
+
+        public IScoreboardManager ScoreboardManager { get; }
+
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
