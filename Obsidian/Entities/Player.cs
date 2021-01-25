@@ -267,14 +267,14 @@ namespace Obsidian.Entities
                 Type = actualBoard.objective.DisplayType
             });
 
-            foreach (var (name, score) in actualBoard.scores)
+            foreach (var (_, score) in actualBoard.scores)
             {
                 await this.client.QueuePacketAsync(new UpdateScore
                 {
-                    EntityName = name,
+                    EntityName = score.DisplayText,
                     ObjectiveName = actualBoard.objective.ObjectiveName,
                     Action = 0,
-                    Value = score
+                    Value = score.Value
                 });
             }
 

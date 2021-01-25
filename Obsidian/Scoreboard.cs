@@ -1,18 +1,18 @@
 ﻿using Obsidian.API;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian
 {
     public class Scoreboard : IScoreboard
     {
+        private readonly Server server;
+
         internal ScoreboardObjective objective;
 
         internal readonly Dictionary<string, IScore> scores = new Dictionary<string, IScore>();
-
-        private readonly Server server;
 
         internal string Name { get; set; }
 
@@ -39,11 +39,11 @@ namespace Obsidian
                     {
                         await player.client.QueuePacketAsync(obj);
 
-                        foreach (var (name, score) in this.scores)
+                        foreach (var (_, score) in this.scores.OrderBy(x => x.Value.Value))
                         {
                             await player.client.QueuePacketAsync(new UpdateScore
                             {
-                                EntityName = name,
+                                EntityName = score.DisplayText,
                                 ObjectiveName = this.objective.ObjectiveName,
                                 Action = 0,
                                 Value = score.Value
@@ -68,11 +68,11 @@ namespace Obsidian
                 {
                     await player.client.QueuePacketAsync(obj);
 
-                    foreach (var (name, score) in this.scores)
+                    foreach (var (_, score) in this.scores.OrderBy(x => x.Value.Value))
                     {
                         await player.client.QueuePacketAsync(new UpdateScore
                         {
-                            EntityName = name,
+                            EntityName = score.DisplayText,
                             ObjectiveName = this.objective.ObjectiveName,
                             Action = 0,
                             Value = score.Value
@@ -97,9 +97,43 @@ namespace Obsidian
             }
         }
 
-        public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int score = 0)
+        public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int value = 0)
         {
-            
+            var score = new Score
+            {
+                DisplayText = displayText,
+                Value = value
+            };
+
+            if (this.scores.Count > 0)
+            {
+                score.Value = this.scores.Select(x => x.Value).OrderByDescending(x => x.Value).Last().Value;
+
+                foreach (var element in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
+                    element.Value += 1;
+            }
+
+            this.scores[scoreName] = score;
+
+            foreach (var (_, player) in this.server.OnlinePlayers)
+            {
+                if (player.CurrentScoreboard == this)
+                {
+                    foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
+                    {
+                        await player.client.QueuePacketAsync(new UpdateScore
+                        {
+                            EntityName = s.DisplayText,
+                            ObjectiveName = this.objective.ObjectiveName,
+                            Action = 0,
+                            Value = s.Value
+                        });
+                    }
+                }
+            }
+
         }
+
+        public IScore GetScore(string scoreName) => this.scores.GetValueOrDefault(scoreName);
     }
 }
