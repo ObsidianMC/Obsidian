@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Obsidian.Boss
+namespace Obsidian.BossBar
 {
     [Flags]
     public enum BossBarFlags : byte

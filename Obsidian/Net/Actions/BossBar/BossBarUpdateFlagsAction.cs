@@ -1,11 +1,13 @@
-﻿using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+using Obsidian.BossBar;
+
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateFlagsAction : BossBarAction
     {
         public override int Action => 5;
+
         public BossBarFlags Flags { get; set; }
 
         public override byte[] ToArray()

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarRemoveAction : BossBarAction
     {

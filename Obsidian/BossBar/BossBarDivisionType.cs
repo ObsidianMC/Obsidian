@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Boss
+﻿namespace Obsidian.BossBar
 {
     public enum BossBarDivisionType : int
     {

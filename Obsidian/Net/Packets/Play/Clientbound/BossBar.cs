@@ -1,8 +1,9 @@
-﻿using Obsidian.Boss;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+
+using Obsidian.Entities;
+using Obsidian.Net.Actions.BossBar;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {

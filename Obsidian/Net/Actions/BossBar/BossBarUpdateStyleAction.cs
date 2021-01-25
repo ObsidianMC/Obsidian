@@ -1,7 +1,8 @@
-﻿using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+using Obsidian.BossBar;
+
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateStyleAction : BossBarAction
     {
