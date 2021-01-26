@@ -8,6 +8,7 @@ using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
+using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
@@ -272,7 +273,7 @@ namespace Obsidian.Entities
                 await this.client.QueuePacketAsync(new UpdateScore
                 {
                     EntityName = score.DisplayText,
-                    ObjectiveName = actualBoard.objective.ObjectiveName,
+                    ObjectiveName = actualBoard.Name,
                     Action = 0,
                     Value = score.Value
                 });

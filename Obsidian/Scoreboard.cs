@@ -10,9 +10,9 @@ namespace Obsidian
     {
         private readonly Server server;
 
-        internal ScoreboardObjective objective;
-
         internal readonly Dictionary<string, IScore> scores = new Dictionary<string, IScore>();
+
+        internal ScoreboardObjective objective;
 
         internal string Name { get; set; }
 
@@ -21,6 +21,7 @@ namespace Obsidian
             this.server = server;
         }
 
+        
         public async Task CreateOrUpdateObjectiveAsync(IChatMessage title, DisplayType displayType = DisplayType.Integer)
         {
             var obj = new ScoreboardObjectivePacket
@@ -39,12 +40,12 @@ namespace Obsidian
                     {
                         await player.client.QueuePacketAsync(obj);
 
-                        foreach (var (_, score) in this.scores.OrderBy(x => x.Value.Value))
+                        foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                         {
                             await player.client.QueuePacketAsync(new UpdateScore
                             {
                                 EntityName = score.DisplayText,
-                                ObjectiveName = this.objective.ObjectiveName,
+                                ObjectiveName = this.Name,
                                 Action = 0,
                                 Value = score.Value
                             });
@@ -68,12 +69,12 @@ namespace Obsidian
                 {
                     await player.client.QueuePacketAsync(obj);
 
-                    foreach (var (_, score) in this.scores.OrderBy(x => x.Value.Value))
+                    foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                     {
                         await player.client.QueuePacketAsync(new UpdateScore
                         {
                             EntityName = score.DisplayText,
-                            ObjectiveName = this.objective.ObjectiveName,
+                            ObjectiveName = this.Name,
                             Action = 0,
                             Value = score.Value
                         });
@@ -86,7 +87,7 @@ namespace Obsidian
         {
             var obj = new ScoreboardObjectivePacket
             {
-                ObjectiveName = this.Name,
+                ObjectiveName = this.objective.ObjectiveName,
                 Mode = ScoreboardMode.Remove
             };
 

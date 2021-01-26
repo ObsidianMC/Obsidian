@@ -4,7 +4,7 @@ namespace Obsidian
 {
     public class ScoreboardManager : IScoreboardManager
     {
-        private Server server;
+        private readonly Server server;
 
         public IScoreboard DefaultScoreboard { get; }
 
