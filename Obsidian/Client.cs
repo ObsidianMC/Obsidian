@@ -35,6 +35,8 @@ namespace Obsidian
 {
     public class Client : IDisposable
     {
+        public event Action<Client> Disconnected;
+        
         private byte[] randomToken;
         private byte[] sharedKey;
 
@@ -294,6 +296,8 @@ namespace Obsidian
 
                 if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
+
+                Disconnected?.Invoke(this);
             }
         }
 
@@ -587,7 +591,11 @@ namespace Obsidian
         }
         #endregion Packet sending
 
-        internal void Disconnect() => this.Cancellation.Cancel();
+        internal void Disconnect()
+        {
+            Cancellation.Cancel();
+            Disconnected?.Invoke(this);
+        }
 
         #region Disposing
         protected virtual void Dispose(bool disposing)
