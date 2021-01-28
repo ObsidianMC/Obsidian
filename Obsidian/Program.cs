@@ -1,12 +1,18 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+
+using Microsoft.CodeAnalysis;
+
+using Newtonsoft.Json;
+
+using Obsidian.Util;
+using Obsidian.Util.Extensions;
 
 namespace Obsidian
 {
@@ -14,7 +20,12 @@ namespace Obsidian
     {
         private static readonly Dictionary<int, Server> Servers = new();
         private static readonly TaskCompletionSource<bool> cancelKeyPress = new();
+        private static bool shutdownPending;
 
+        /// <summary>
+        /// Event handler for Windows console events
+        /// </summary>
+        private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
         private const string globalConfigFile = "global_config.json";
 
         private static async Task Main()
@@ -23,10 +34,10 @@ namespace Obsidian
             string version = "0.1";
 #else
             string version = "0.1-DEV";
-            string asmpath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string asmpath = Assembly.GetExecutingAssembly().Location;
             //This will strip just the working path name:
             //C:\Program Files\MyApplication
-            string asmdir = System.IO.Path.GetDirectoryName(asmpath);
+            string asmdir = Path.GetDirectoryName(asmpath);
             Environment.CurrentDirectory = asmdir;
 #endif
             // Kept for consistant number parsing
@@ -39,7 +50,16 @@ namespace Obsidian
             Console.ResetColor();
             Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
 
-            Console.CancelKeyPress += OnConsoleCancelKeyPressed;
+            // Hook into Windows' native console closing events, otherwise use .NET's native event.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                _windowsConsoleEventHandler += new NativeMethods.HandlerRoutine(OnConsoleEvent);
+                NativeMethods.SetConsoleCtrlHandler(_windowsConsoleEventHandler, true);
+            }
+            else
+            {
+                Console.CancelKeyPress += OnConsoleCancelKeyPressed;
+            }
 
             if (File.Exists(globalConfigFile))
             {
@@ -82,17 +102,36 @@ namespace Obsidian
 
             await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 
-            Console.WriteLine("Server(s) killed. Press any key to return...");
-            Console.ReadKey(intercept: false);
+            if (!shutdownPending)
+            {
+                Console.WriteLine("Server(s) killed. Press any key to return...");
+                Console.ReadKey(intercept: false);
+            }
         }
 
         private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
+            StopProgram();
+            cancelKeyPress.SetResult(true);
+        }
+
+        private static bool OnConsoleEvent(NativeMethods.CtrlType ctrlType)
+        {
+            Console.WriteLine("Received {0}", ctrlType);
+            StopProgram();
+            return true;
+        }
+
+        /// <summary>
+        /// Gracefully shuts sub-servers down and exits Obsidian.
+        /// </summary>
+        private static void StopProgram()
+        {
+            shutdownPending = true;
+
             foreach (var (_, server) in Servers)
                 server.StopServer();
-
-            cancelKeyPress.SetResult(true);
         }
 
         // Cool startup console logo because that's cool

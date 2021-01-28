@@ -1,7 +1,6 @@
-﻿using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateHealthAction : BossBarAction
     {

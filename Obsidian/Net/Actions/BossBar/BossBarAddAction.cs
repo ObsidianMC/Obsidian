@@ -1,13 +1,15 @@
-﻿using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+using Obsidian.BossBar;
+using Obsidian.Chat;
+
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarAddAction : BossBarAction
     {
         public override int Action => 0;
 
-        public Chat.ChatMessage Title { get; set; }
+        public ChatMessage Title { get; set; }
 
         public float Health { get; set; }
 

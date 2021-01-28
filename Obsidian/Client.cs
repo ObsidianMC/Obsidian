@@ -1,11 +1,14 @@
 ﻿using DaanV2.UUID;
+
 using Microsoft.Extensions.Logging;
+
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
@@ -13,12 +16,12 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
