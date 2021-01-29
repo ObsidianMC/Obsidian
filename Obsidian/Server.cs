@@ -114,6 +114,10 @@ namespace Obsidian
             this.chatMessages = new ConcurrentQueue<QueueChat>();
             this.placed = new ConcurrentQueue<PlayerBlockPlacement>();
 
+            this.Events = new MinecraftEventHandler();
+
+            this.Operators = new OperatorList(this);
+
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
             this.PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), this.Commands);
@@ -129,10 +133,6 @@ namespace Obsidian
 
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
-
-            this.Events = new MinecraftEventHandler();
-
-            this.Operators = new OperatorList(this);
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
