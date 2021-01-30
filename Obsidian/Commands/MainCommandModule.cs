@@ -239,8 +239,7 @@ namespace Obsidian.Commands
                         }
                         else
                         {
-                            await Context.Player.SetGamemodeAsync(gamemode);
-                            chatMessage = ChatMessage.Simple($"{ChatColor.Reset}Your current game mode is {ChatColor.Red}{gamemode}{ChatColor.Reset}.");
+                            chatMessage = ChatMessage.Simple($"{ChatColor.Reset}Your're already in {ChatColor.Red}{gamemode}{ChatColor.Reset} game mode.");
                         }
                     }
                     catch (Exception)

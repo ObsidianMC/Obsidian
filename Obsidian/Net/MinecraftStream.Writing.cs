@@ -1,17 +1,19 @@
 ﻿using Newtonsoft.Json;
+
 using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
+using Obsidian.Net.Actions.BossBar;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.PlayerData.Info;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs.Dimensions;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;

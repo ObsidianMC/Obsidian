@@ -1,10 +1,10 @@
-﻿using Obsidian.Chat;
-using Obsidian.Net;
-using Obsidian.Util.Mojang;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Obsidian.PlayerData.Info
+using Obsidian.Chat;
+using Obsidian.Util.Mojang;
+
+namespace Obsidian.Net.Actions.PlayerInfo
 {
     public class PlayerInfoAddAction : PlayerInfoAction
     {
@@ -28,7 +28,7 @@ namespace Obsidian.PlayerData.Info
 
             await stream.WriteVarIntAsync(this.Properties.Count);
 
-            foreach (SkinProperties props in this.Properties)
+            foreach (var props in this.Properties)
                 await stream.WriteAsync(await props.ToArrayAsync());
 
 
@@ -49,7 +49,7 @@ namespace Obsidian.PlayerData.Info
             stream.WriteString(Name);
             stream.WriteVarInt(Properties.Count);
 
-            foreach (SkinProperties properties in Properties)
+            foreach (var properties in Properties)
                 stream.Write(properties.ToArray());
 
             stream.WriteVarInt(Gamemode);

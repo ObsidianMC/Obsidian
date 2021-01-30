@@ -4,9 +4,11 @@ using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,6 +20,25 @@ namespace Obsidian.Util.Extensions
         public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
         public static bool IsAir(this ItemStack item) => item == null || item.Type == Material.Air;
+        // Source: https://stackoverflow.com/a/1415187
+        public static string GetDescription(this Enum value)
+        {
+                Type type = value.GetType();
+                string name = Enum.GetName(type, value);
+                if (name != null)
+                {
+                    FieldInfo field = type.GetField(name);
+                    if (field != null)
+                    {
+                        DescriptionAttribute attr = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
+                        if (attr != null)
+                        {
+                            return attr.Description;
+                        }
+                    }
+                }
+                return null;
+        }
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value

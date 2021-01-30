@@ -1,7 +1,6 @@
-﻿using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.PlayerData.Info
+namespace Obsidian.Net.Actions.PlayerInfo
 {
     public class PlayerInfoUpdateDisplayNameAction : PlayerInfoAction
     {

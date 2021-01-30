@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+namespace Obsidian.Net.Actions.BossBar
 {
     public abstract class BossBarAction
     {

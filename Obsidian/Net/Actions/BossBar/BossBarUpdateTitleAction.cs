@@ -1,8 +1,8 @@
-﻿using Obsidian.Chat;
-using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Obsidian.Boss
+using Obsidian.Chat;
+
+namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateTitleAction : BossBarAction
     {

@@ -3,9 +3,10 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Boss;
+using Obsidian.BossBar;
 using Obsidian.Chat;
 using Obsidian.Net;
+using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
@@ -362,7 +363,7 @@ namespace Obsidian.Entities
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) =>
             client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
 
-        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new BossBar(uuid, action));
+        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(IChatMessage reason)

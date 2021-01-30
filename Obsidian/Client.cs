@@ -1,11 +1,14 @@
 ﻿using DaanV2.UUID;
+
 using Microsoft.Extensions.Logging;
+
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
@@ -13,12 +16,12 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -176,12 +179,12 @@ namespace Obsidian
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
-                                this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
+                                this.Logger.LogDebug($"Client sent unexpected state ({ChatColor.Red}{(int)nextState}{ChatColor.White}), forcing it to disconnect");
                                 await this.DisconnectAsync("you seem suspicious");
                             }
 
                             this.State = nextState;
-                            this.Logger.LogInformation($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
+                            this.Logger.LogInformation($"Handshaking with client (protocol: {ChatColor.Yellow}{handshake.Version.GetDescription()} {ChatColor.White}[{ChatColor.Yellow}{(int)handshake.Version}{ChatColor.White}], server: {ChatColor.Yellow}{handshake.ServerAddress}:{handshake.ServerPort}{ChatColor.White})");
                         }
                         else
                         {
