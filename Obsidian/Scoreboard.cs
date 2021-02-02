@@ -11,11 +11,11 @@ namespace Obsidian
     {
         private readonly Server server;
 
-        internal readonly Dictionary<string, IScore> scores = new Dictionary<string, IScore>();
-
-        internal ScoreboardObjective objective;
+        internal readonly Dictionary<string, Score> scores = new Dictionary<string, Score>();
 
         internal string Name { get; set; }
+
+        public ScoreboardObjective Objective;
 
         public Scoreboard(Server server)
         {
@@ -27,12 +27,12 @@ namespace Obsidian
             var obj = new ScoreboardObjectivePacket
             {
                 ObjectiveName = this.Name,
-                Mode = this.objective != null ? ScoreboardMode.Update : ScoreboardMode.Create,
+                Mode = this.Objective != null ? ScoreboardMode.Update : ScoreboardMode.Create,
                 Value = title,
                 Type = displayType
             };
 
-            if (this.objective != null)
+            if (this.Objective != null)
             {
                 foreach (var (_, player) in this.server.OnlinePlayers)
                 {
@@ -56,7 +56,7 @@ namespace Obsidian
                 return;
             }
 
-            this.objective = new ScoreboardObjective
+            this.Objective = new ScoreboardObjective
             {
                 ObjectiveName = this.Name,
                 Value = title,
@@ -90,7 +90,7 @@ namespace Obsidian
         {
             var obj = new ScoreboardObjectivePacket
             {
-                ObjectiveName = this.objective.ObjectiveName,
+                ObjectiveName = this.Objective.ObjectiveName,
                 Mode = ScoreboardMode.Remove
             };
 
@@ -128,7 +128,7 @@ namespace Obsidian
                         await player.client.QueuePacketAsync(new UpdateScore
                         {
                             EntityName = s.DisplayText,
-                            ObjectiveName = this.objective.ObjectiveName,
+                            ObjectiveName = this.Objective.ObjectiveName,
                             Action = 0,
                             Value = s.Value
                         });
@@ -138,6 +138,6 @@ namespace Obsidian
 
         }
 
-        public IScore GetScore(string scoreName) => this.scores.GetValueOrDefault(scoreName);
+        public Score GetScore(string scoreName) => this.scores.GetValueOrDefault(scoreName);
     }
 }

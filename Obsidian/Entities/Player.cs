@@ -265,8 +265,8 @@ namespace Obsidian.Entities
             {
                 ObjectiveName = actualBoard.Name,
                 Mode = ScoreboardMode.Create,
-                Value = actualBoard.objective.Value,
-                Type = actualBoard.objective.DisplayType
+                Value = actualBoard.Objective.Value,
+                Type = actualBoard.Objective.DisplayType
             });
 
             foreach (var (_, score) in actualBoard.scores)
