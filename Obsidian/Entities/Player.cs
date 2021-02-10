@@ -255,7 +255,7 @@ namespace Obsidian.Entities
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
-        public async Task DisplayScoreboard(IScoreboard scoreboard, ScoreboardPosition position)
+        public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
         {
             var actualBoard = (Scoreboard)scoreboard;
 
@@ -263,7 +263,7 @@ namespace Obsidian.Entities
 
             await this.client.QueuePacketAsync(new ScoreboardObjectivePacket
             {
-                ObjectiveName = actualBoard.Name,
+                ObjectiveName = actualBoard.name,
                 Mode = ScoreboardMode.Create,
                 Value = actualBoard.Objective.Value,
                 Type = actualBoard.Objective.DisplayType
@@ -274,7 +274,7 @@ namespace Obsidian.Entities
                 await this.client.QueuePacketAsync(new UpdateScore
                 {
                     EntityName = score.DisplayText,
-                    ObjectiveName = actualBoard.Name,
+                    ObjectiveName = actualBoard.name,
                     Action = 0,
                     Value = score.Value
                 });
@@ -282,7 +282,7 @@ namespace Obsidian.Entities
 
             await this.client.QueuePacketAsync(new DisplayScoreboard
             {
-                ScoreName = actualBoard.Name,
+                ScoreName = actualBoard.name,
                 Position = position
             });
         }
