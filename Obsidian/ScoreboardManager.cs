@@ -27,12 +27,6 @@ namespace Obsidian
 
             return new Scoreboard(name, this.server);
         }
-
-        public void TryAdd(string name)
-        {
-            if (this.scoreboards.Add(name))
-                this.server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
-        }
     }
 
     /// <summary>
