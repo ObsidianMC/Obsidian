@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
+using Obsidian.Util.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -73,7 +74,7 @@ namespace Obsidian.Util
 
         public ServerVersion(string name = null, ProtocolVersion? protocol = null)
         {
-            this.Name = name ?? $"Obsidian {Enum.GetName(typeof(ProtocolVersion), protocol ?? Server.protocol)}";
+            this.Name = name ?? $"Obsidian {(protocol ?? Server.protocol).GetDescription()}";
             this.Protocol = protocol ?? Server.protocol;
         }
     }

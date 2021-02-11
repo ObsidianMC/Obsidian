@@ -11,8 +11,8 @@
     <Company>Obsidian Team</Company>
     <Product>Obsidian</Product>
     <Description>The plugin API for Obsidian, a Minecraft server.</Description>
-    <PackageProjectUrl>https://github.com/Naamloos/Obsidian</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Naamloos/Obsidian</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ObsidianServer/Obsidian</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
     <PackageTags>minecraft obsidian api plugin plugins</PackageTags>
     <PackageIconUrl>https://i.imgur.com/jU1lkP4.png</PackageIconUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>

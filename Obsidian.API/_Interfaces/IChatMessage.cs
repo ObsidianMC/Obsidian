@@ -11,14 +11,15 @@ namespace Obsidian.API
         public static IChatMessage Empty => Simple(string.Empty);
 
         public string Text { get; set; }
+        public HexColor Color { get; set; }
         public bool Bold { get; set; }
         public bool Italic { get; set; }
         public bool Underline { get; set; }
         public bool Strikethrough { get; set; }
         public bool Obfuscated { get; set; }
         public string Insertion { get; set; }
-        public ITextComponent ClickEvent { get; set; }
-        public ITextComponent HoverEvent { get; set; }
+        public IClickComponent ClickEvent { get; set; }
+        public IHoverComponent HoverEvent { get; set; }
         public IEnumerable<IChatMessage> Extras { get; }
 
         public IChatMessage AddExtra(IChatMessage chatMessage);
@@ -32,16 +33,23 @@ namespace Obsidian.API
             chatMessage.Text = text;
             return chatMessage;
         }
-
-        public IChatMessage WithClickAction(ETextAction action, string value, string translate = null)
+        public static IChatMessage Simple(string text, HexColor color)
         {
-            ClickEvent = ITextComponent.CreateNew(action, value, translate);
+            IChatMessage chatMessage = CreateNew();
+            chatMessage.Text = text;
+            chatMessage.Color = color;
+            return chatMessage;
+        }
+
+        public IChatMessage WithClickAction(EClickAction action, string value, string translate = null)
+        {
+            ClickEvent = IClickComponent.CreateNew(action, value, translate);
             return this;
         }
 
-        public IChatMessage WithHoverAction(ETextAction action, string value, string translate = null)
+        public IChatMessage WithHoverAction(EHoverAction action, object value, string translate = null)
         {
-            HoverEvent = ITextComponent.CreateNew(action, value, translate);
+            HoverEvent = IHoverComponent.CreateNew(action, value, translate);
             return this;
         }
 

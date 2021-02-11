@@ -50,6 +50,9 @@ namespace Obsidian.API
         public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
         public Task OpenInventoryAsync(Inventory inventory);
+
+        public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
+
         public Task<bool> GrantPermission(string permission);
         public Task<bool> RevokePermission(string permission);
         public Task<bool> HasPermission(string permission);

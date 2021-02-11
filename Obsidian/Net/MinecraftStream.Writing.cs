@@ -1,17 +1,19 @@
 ﻿using Newtonsoft.Json;
+
 using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.Boss;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
+using Obsidian.Net.Actions.BossBar;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.PlayerData.Info;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry.Codecs.Dimensions;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -225,9 +227,9 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WriteString(string value)
+        public void WriteString(string value, int maxLength = short.MaxValue)
         {
-            System.Diagnostics.Debug.Assert(value.Length <= short.MaxValue);
+            System.Diagnostics.Debug.Assert(value.Length <= maxLength);
 
             var bytes = Encoding.UTF8.GetBytes(value);
             WriteVarInt(bytes.Length);
@@ -1053,6 +1055,36 @@ namespace Obsidian.Net
                     WriteItemStack(item);
 
                 WriteItemStack(smithingRecipe.Result.First());
+            }
+        }
+
+        [WriteMethod]
+        public void WriteParticleData(ParticleData value)
+        {
+            if (value is null || value == ParticleData.None)
+                return;
+            
+            switch (value.ParticleType)
+            {
+                case ParticleType.Block:
+                    WriteVarInt(value.GetDataAs<int>());
+                    break;
+
+                case ParticleType.Dust:
+                    var (red, green, blue, scale) = value.GetDataAs<(float, float, float, float)>();
+                    WriteFloat(red);
+                    WriteFloat(green);
+                    WriteFloat(blue);
+                    WriteFloat(scale);
+                    break;
+
+                case ParticleType.FallingDust:
+                    WriteVarInt(value.GetDataAs<int>());
+                    break;
+
+                case ParticleType.Item:
+                    WriteItemStack(value.GetDataAs<ItemStack>());
+                    break;
             }
         }
     }

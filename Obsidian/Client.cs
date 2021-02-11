@@ -1,14 +1,14 @@
 ﻿using DaanV2.UUID;
+
 using Microsoft.Extensions.Logging;
+
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Chat;
-using Obsidian.CommandFramework.Attributes;
-using Obsidian.Commands;
-using Obsidian.Commands.Parsers;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Handshaking;
 using Obsidian.Net.Packets.Login;
@@ -16,12 +16,12 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.PlayerData.Info;
 using Obsidian.Util;
 using Obsidian.Util.Extensions;
 using Obsidian.Util.Mojang;
 using Obsidian.Util.Registry;
 using Obsidian.WorldData;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +35,8 @@ namespace Obsidian
 {
     public class Client : IDisposable
     {
+        public event Action<Client> Disconnected;
+        
         private byte[] randomToken;
         private byte[] sharedKey;
 
@@ -179,12 +181,12 @@ namespace Obsidian
 
                             if (nextState != ClientState.Status && nextState != ClientState.Login)
                             {
-                                this.Logger.LogDebug($"Client sent unexpected state ({(int)nextState}), forcing it to disconnect");
+                                this.Logger.LogDebug($"Client sent unexpected state ({ChatColor.Red}{(int)nextState}{ChatColor.White}), forcing it to disconnect");
                                 await this.DisconnectAsync("you seem suspicious");
                             }
 
                             this.State = nextState;
-                            this.Logger.LogInformation($"Handshaking with client (protocol: {handshake.Version}, server: {handshake.ServerAddress}:{handshake.ServerPort})");
+                            this.Logger.LogInformation($"Handshaking with client (protocol: {ChatColor.Yellow}{handshake.Version.GetDescription()} {ChatColor.White}[{ChatColor.Yellow}{(int)handshake.Version}{ChatColor.White}], server: {ChatColor.Yellow}{handshake.ServerAddress}:{handshake.ServerPort}{ChatColor.White})");
                         }
                         else
                         {
@@ -294,6 +296,8 @@ namespace Obsidian
 
                 if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
+
+                Disconnected?.Invoke(this);
             }
         }
 
@@ -351,8 +355,8 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            // TODO figure out why tags make air blocks a fluid
-            /*await this.QueuePacketAsync(new TagsPacket
+            // IG its fixed??
+            await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
 
@@ -361,11 +365,11 @@ namespace Obsidian
                 Fluid = Registry.Tags["fluids"],
 
                 Entities = Registry.Tags["entity_types"]
-            });*/
+            });
 
             await this.DeclareRecipes();
 
-            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
+            await SendDeclareCommandsAsync();
             this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
@@ -438,6 +442,11 @@ namespace Obsidian
             //        }), this.MinecraftStream);
             //    }
             //}).ConfigureAwait(false);
+        }
+
+        internal async Task SendDeclareCommandsAsync()
+        {
+            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
         }
 
         internal async Task RemovePlayerFromListAsync(IPlayer player)
@@ -582,7 +591,11 @@ namespace Obsidian
         }
         #endregion Packet sending
 
-        internal void Disconnect() => this.Cancellation.Cancel();
+        internal void Disconnect()
+        {
+            Cancellation.Cancel();
+            Disconnected?.Invoke(this);
+        }
 
         #region Disposing
         protected virtual void Dispose(bool disposing)

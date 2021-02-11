@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Plugins;
+using Obsidian.Commands.Framework;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Util.Extensions;
+using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,31 +36,33 @@ namespace Obsidian.Plugins
 
         private readonly List<PluginContainer> plugins = new();
         private readonly List<PluginContainer> stagedPlugins = new();
-        private readonly ServiceProvider serviceProvider = ServiceProvider.Create();
+        internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
         private readonly object eventSource;
         private readonly IServer server;
         private readonly List<EventContainer> events = new();
-        private readonly ILogger logger;
+        internal readonly ILogger logger;
+        private readonly CommandHandler commands;
 
         private const string loadEvent = "OnLoad";
 
-        public PluginManager() : this(null, null, null)
+        public PluginManager(CommandHandler commands) : this(null, null, null, commands)
         {
         }
 
-        public PluginManager(object eventSource) : this(eventSource, null, null)
+        public PluginManager(object eventSource, CommandHandler commands) : this(eventSource, null, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, IServer server) : this(eventSource, server, null)
+        public PluginManager(object eventSource, IServer server, CommandHandler commands) : this(eventSource, server, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, IServer server, ILogger logger)
+        public PluginManager(object eventSource, IServer server, ILogger logger, CommandHandler commands)
         {
             this.server = server;
             this.logger = logger;
             this.eventSource = eventSource;
+            this.commands = commands;
 
             DirectoryWatcher.FileChanged += (path) => Task.Run(() =>
             {
@@ -149,6 +153,7 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
+            plugin.Plugin.registerSingleCommand = (Action method) => this.commands.RegisterSingleCommand(method, plugin, null);
 
             if (plugin.IsReady)
             {
@@ -158,6 +163,16 @@ namespace Obsidian.Plugins
                 }
                 RegisterEvents(plugin);
                 InvokeOnLoad(plugin);
+                // Registering commands from within plugin
+                commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);
+
+                // registering commands found in plugin assembly
+                var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+                foreach (var root in commandroots)
+                {
+                    commands.RegisterCommandClass(plugin, root, null);
+                }
+                Registry.RegisterCommands((Server)this.server);
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }
@@ -204,6 +219,8 @@ namespace Obsidian.Plugins
                     stagedPlugins.Remove(plugin);
                 }
             }
+
+            commands.UnregisterPluginCommands(plugin);
 
             UnregisterEvents(plugin);
 
@@ -384,3 +401,5 @@ namespace Obsidian.Plugins
 
 // thank you Roxxel && DorrianD3V for the invasion <3
 // thank you Jonpro03 for your awesome contributions
+// thank you Sebastian for your amazing plugin framework <3
+// thank you Tides, Craftplacer for being part of the team early on <3

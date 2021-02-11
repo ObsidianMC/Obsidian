@@ -1,6 +1,4 @@
 ﻿using Obsidian.API.Crafting;
-using Obsidian.CommandFramework.ArgumentParsers;
-using Obsidian.CommandFramework.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,14 +16,15 @@ namespace Obsidian.API
         public IOperatorList Operators { get; }
         public IWorld DefaultWorld { get; }
         public IConfig Configuration { get; }
+
+        public IScoreboardManager ScoreboardManager { get; }
+
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
         public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer GetPlayer(string username);
         public IPlayer GetPlayer(Guid uuid);
-        public void RegisterCommandClass<T>() where T : BaseCommandClass;
-        public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser;
         public void RegisterRecipes(params IRecipe[] recipes);
     }
 }
