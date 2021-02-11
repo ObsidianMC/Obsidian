@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using System;
 using System.Collections.Generic;
 
 namespace Obsidian
@@ -22,7 +21,7 @@ namespace Obsidian
 
         public IScoreboard CreateScoreboard(string name)
         {
-            if (this.scoreboards.Add(name))
+            if (!this.scoreboards.Add(name))
                 this.server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
 
             return new Scoreboard(name, this.server);

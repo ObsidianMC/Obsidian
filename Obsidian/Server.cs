@@ -45,7 +45,7 @@ namespace Obsidian
 
         internal static byte LastInventoryId;
 
-        public const ProtocolVersion protocol = ProtocolVersion.v1_16_4;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_16_5;
         public ProtocolVersion Protocol => protocol;
 
         public short TPS { get; private set; }

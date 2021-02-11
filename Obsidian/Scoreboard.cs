@@ -124,7 +124,6 @@ namespace Obsidian
             }
         }
 
-
         private async Task UpdateObjectiveAsync(ScoreboardObjectivePacket packet)
         {
             foreach (var (_, player) in this.server.OnlinePlayers)

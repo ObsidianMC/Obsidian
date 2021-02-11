@@ -22,6 +22,9 @@ namespace Obsidian.API
         v1_16_3 = 753,
 
         [Description("1.16.4")]
-        v1_16_4 = 754
+        v1_16_4 = 754,
+
+        [Description("1.16.5")]
+        v1_16_5 = 754
     }
 }

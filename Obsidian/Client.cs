@@ -355,8 +355,8 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            // TODO figure out why tags make air blocks a fluid
-            /*await this.QueuePacketAsync(new TagsPacket
+            // IG its fixed??
+            await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
 
@@ -365,7 +365,7 @@ namespace Obsidian
                 Fluid = Registry.Tags["fluids"],
 
                 Entities = Registry.Tags["entity_types"]
-            });*/
+            });
 
             await this.DeclareRecipes();
 
