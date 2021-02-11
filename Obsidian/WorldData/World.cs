@@ -483,5 +483,16 @@ namespace Obsidian.WorldData
 
             return region.Entities.TryAdd(entity.EntityId, entity);
         }
+
+        public async Task SpawnExperienceOrb(PositionF position, short count)
+        {
+            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb
+            {
+                Count = count,
+                Position = position,
+                EntityId = 2 
+                // 2 = Experience Orb Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
+            });
+        }
     }
 }
