@@ -28,6 +28,18 @@ namespace Obsidian.Entities
         public Angle Pitch { get; set; }
 
         public Angle Yaw { get; set; }
+        public PositionF LookDirection
+        {
+            get
+            {
+                PositionF direction = new PositionF();
+
+                direction.X = (float)(Math.Cos(Yaw) * Math.Cos(Pitch));
+                direction.Y = (float)(Math.Sin(Yaw) * Math.Cos(Pitch));
+                direction.Z = (float)Math.Sin(Pitch);
+                return direction;
+            }
+        }
         #endregion Location properties
 
         public int EntityId { get; internal set; }

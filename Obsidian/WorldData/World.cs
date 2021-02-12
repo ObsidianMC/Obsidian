@@ -494,5 +494,11 @@ namespace Obsidian.WorldData
                 // 2 = Experience Orb Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
             });
         }
+
+        public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
+        {
+            if (uuid == Guid.Empty) uuid = Guid.NewGuid();
+            await this.Server.BroadcastPacketAsync(new SpawnPainting(9, uuid, painting.Id, position, direction));
+        }
     }
 }
