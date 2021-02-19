@@ -43,7 +43,7 @@ namespace Obsidian.Entities
         public PlayerBitMask PlayerBitMask { get; set; }
         public Gamemode Gamemode { get; set; }
 
-        public Hand MainHand { get; set; } = Hand.Right;
+        public Hand MainHand { get; set; } = Hand.MainHand;
 
         public IScoreboard CurrentScoreboard { get; set; }
 
