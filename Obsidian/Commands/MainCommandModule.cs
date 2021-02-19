@@ -345,7 +345,7 @@ namespace Obsidian.Commands
 
         [Command("spawnentity")]
         [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
-        public async Task SpawnEntityAsync(ObsidianContext context, string entityType)
+        public async Task SpawnEntityAsync(CommandContext context, string entityType)
         {
             var player = context.Player;
             if (Enum.TryParse<EntityType>(entityType, true, out var type))
