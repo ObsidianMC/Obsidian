@@ -7,33 +7,30 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class OpenWindow : IPacket
     {
         [Field(0), VarLength]
-        public int WindowId { get; set; }
+        public int WindowId { get; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
-        public WindowType Type { get; set; }
+        public WindowType Type { get; }
 
         [Field(2)]
-        public ChatMessage Title { get; set; }
+        public ChatMessage Title { get; }
 
         public int Id => 0x2D;
 
-        public OpenWindow()
-        {
-        }
-
         public OpenWindow(Inventory inventory)
         {
-            this.Title = (ChatMessage)inventory.Title;
+            Title = (ChatMessage)inventory.Title;
 
             if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
-                this.Type = type;
+                Type = type;
             else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
-                this.Type = type;
+                Type = type;
 
-            this.WindowId = inventory.Id;
+            WindowId = inventory.Id;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
@@ -45,7 +42,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public override string ToString() => $"{this.WindowId}:{this.Type}";
     }
 
-    // Do not mess up the order this is how its supposed to be ordered
+    // Do not mess up the order this is how it's supposed to be ordered
     public enum WindowType : int
     {
         Generic9x1,

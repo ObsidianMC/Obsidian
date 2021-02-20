@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class SpawnPlayer : IPacket
     {
         [Field(0), VarLength]
@@ -24,10 +25,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Angle Pitch { get; set; }
 
         public int Id => 0x04;
-
-        public SpawnPlayer()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

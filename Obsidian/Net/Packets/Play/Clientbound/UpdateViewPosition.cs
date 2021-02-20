@@ -4,25 +4,20 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    /// <summary>
-    /// https://wiki.vg/index.php?title=Protocol#Update_View_Position
-    /// </summary>
+    // Source: https://wiki.vg/index.php?title=Protocol#Update_View_Position
+    [ClientOnly]
     public partial class UpdateViewPosition : IPacket
     {
         [Field(0), VarLength]
-        public int ChunkX;
+        public int ChunkX { get; }
 
         [Field(1), VarLength]
-        public int ChunkZ;
-
-        private UpdateViewPosition()
-        {
-        }
+        public int ChunkZ { get; }
 
         public UpdateViewPosition(int chunkx, int chunkz)
         {
-            this.ChunkX = chunkx;
-            this.ChunkZ = chunkz;
+            ChunkX = chunkx;
+            ChunkZ = chunkz;
         }
 
         public int Id => 0x40;

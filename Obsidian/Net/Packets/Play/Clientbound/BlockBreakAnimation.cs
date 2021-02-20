@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class BlockBreakAnimation : IPacket
     {
         [Field(0), VarLength]
@@ -20,10 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public sbyte DestroyStage { get; set; }
 
         public int Id => 0x08;
-
-        public BlockBreakAnimation()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

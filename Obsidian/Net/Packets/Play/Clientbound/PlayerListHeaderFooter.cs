@@ -5,27 +5,23 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class PlayerListHeaderFooter : IPacket
     {
         [Field(0)]
-        public ChatMessage Header { get; private set; }
+        public ChatMessage Header { get; }
 
         [Field(1)]
-        public ChatMessage Footer { get; private set; }
+        public ChatMessage Footer { get; }
 
         public int Id => 0x53;
-        public byte[] Data { get; set; }
-
-        private PlayerListHeaderFooter()
-        {
-        }
 
         public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer)
         {
             var empty = ChatMessage.Empty;
 
-            this.Header = header ?? empty;
-            this.Footer = footer ?? empty;
+            Header = header ?? empty;
+            Footer = footer ?? empty;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

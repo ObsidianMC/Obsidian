@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class BlockChange : IPacket
     {
         [Field(0)]
@@ -14,10 +15,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int BlockId { get; private set; }
 
         public int Id => 0x0B;
-
-        public BlockChange()
-        {
-        }
 
         public BlockChange(Position position, int block)
         {

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class PlayerInfo : IPacket
     {
         [Field(0), VarLength]
@@ -17,16 +18,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x32;
 
-        public byte[] Data { get; }
-
-        public PlayerInfo()
-        {
-        }
-
         public PlayerInfo(int action, List<PlayerInfoAction> actions)
         {
-            this.Action = action;
-            this.Actions = actions;
+            Action = action;
+            Actions = actions;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

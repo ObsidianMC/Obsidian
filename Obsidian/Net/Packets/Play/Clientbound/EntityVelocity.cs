@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class EntityVelocity :  IPacket
     {
         [Field(0), VarLength]
@@ -14,10 +15,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Velocity Velocity { get; set; }
 
         public int Id => 0x46;
-
-        public EntityVelocity()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

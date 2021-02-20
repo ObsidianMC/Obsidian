@@ -309,10 +309,7 @@ namespace Obsidian
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
-        private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
-        {
-            Recipes = Registry.Recipes
-        });
+        private Task DeclareRecipesAsync() => QueuePacketAsync(DeclareRecipes.FromRegistry);
 
         private async Task ConnectAsync()
         {
@@ -367,7 +364,7 @@ namespace Obsidian
                 Entities = Registry.Tags["entity_types"]
             });
 
-            await this.DeclareRecipes();
+            await this.DeclareRecipesAsync();
 
             await SendDeclareCommandsAsync();
             this.Logger.LogDebug("Sent Declare Commands packet.");

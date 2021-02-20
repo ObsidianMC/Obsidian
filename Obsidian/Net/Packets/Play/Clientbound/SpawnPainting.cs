@@ -6,36 +6,31 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class SpawnPainting : IPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; private set; }
+        private const int entityId = 9; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
 
         [Field(1)]
-        public Guid UUID { get; private set; }
+        public Guid UUID { get; }
 
         [Field(2), VarLength]
-        public int Motive { get; private set; }
+        public int Motive { get; }
 
         [Field(3)]
-        public Position Position { get; private set; }
+        public Position Position { get; }
 
         [Field(4), ActualType(typeof(byte))]
-        public PaintingDirection Direction { get; private set; }
+        public PaintingDirection Direction { get; }
 
         public int Id => 0x03;
 
-        public SpawnPainting()
+        public SpawnPainting(Guid uuid, int motive, Position position, PaintingDirection direction)
         {
-        }
-
-        public SpawnPainting(Guid uuid, int motive, Position pos, PaintingDirection direction)
-        {
-            // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
-            EntityId = 9;
             UUID = uuid;
             Motive = motive;
-            Position = pos;
+            Position = position;
             Direction = direction;
         }
 

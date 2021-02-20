@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public abstract partial class ChangeGameState<T> : IPacket
     {
         [Field(0), ActualType(typeof(byte))]
-        public ChangeGameStateReason Reason { get; set; }
+        public ChangeGameStateReason Reason { get; }
 
         [Field(1), ActualType(typeof(float))]
         public abstract T Value { get; set; }
@@ -20,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public ChangeGameState(ChangeGameStateReason reason)
         {
-            this.Reason = reason;
+            Reason = reason;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

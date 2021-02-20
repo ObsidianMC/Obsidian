@@ -5,29 +5,24 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class SpawnExperienceOrb : IPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; private set; }
+        private const int entityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
 
         [Field(1), Absolute]
-        public PositionF Position { get; private set; }
+        public PositionF Position { get; }
 
         [Field(2)]
-        public short Count { get; private set; }
+        public short Count { get; }
 
         public int Id => 0x01;
-
-        public SpawnExperienceOrb()
-        {
-        }
 
         public SpawnExperienceOrb(short count, PositionF position)
         {
             Count = count;
             Position = position;
-            // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
-            EntityId = 2;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

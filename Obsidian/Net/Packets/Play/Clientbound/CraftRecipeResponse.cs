@@ -4,24 +4,21 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class CraftRecipeResponse : IPacket
     {
         [Field(0)]
-        public sbyte WindowId { get; private set; }
+        public sbyte WindowId { get; }
 
         [Field(1)]
-        public string RecipeId { get; private set; }
+        public string RecipeId { get; }
 
         public int Id => 0x2F;
 
-        private CraftRecipeResponse()
-        {
-        }
-
         public CraftRecipeResponse(sbyte windowId, string recipeId)
         {
-            this.WindowId = windowId;
-            this.RecipeId = recipeId;
+            WindowId = windowId;
+            RecipeId = recipeId;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

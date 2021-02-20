@@ -4,31 +4,21 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class UnloadChunk : IPacket
     {
         [Field(0)]
-        public int X { get; private set; }
+        public int X { get; }
 
         [Field(1)]
-        public int Z { get; private set; }
+        public int Z { get; }
 
         public int Id => 0x1C;
 
-        public byte[] Data { get; }
-
-        private UnloadChunk()
-        {
-        }
-
-        public UnloadChunk(byte[] data)
-        {
-            this.Data = data;
-        }
-
         public UnloadChunk(int x, int z)
         {
-            this.X = x;
-            this.Z = z;
+            X = x;
+            Z = z;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

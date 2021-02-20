@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class ChatMessagePacket : IPacket
     {
         [Field(0)]
@@ -17,22 +18,18 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public sbyte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
         [Field(2), FixedLength(2)]
-        public List<long> Sender { get; private set; } = new List<long>
+        public List<long> Sender { get; private set; } = new()
         {
             0, 0
         };
 
         public int Id => 0x0E;
 
-        public ChatMessagePacket()
-        {
-        }
-
         public ChatMessagePacket(ChatMessage message, MessageType type, Guid sender)
         {
-            this.Message = message;
-            this.Position = (sbyte)type;
-            //this.Sender = sender;
+            Message = message;
+            Position = (sbyte)type;
+            //Sender = sender;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

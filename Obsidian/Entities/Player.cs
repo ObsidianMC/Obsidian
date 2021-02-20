@@ -293,12 +293,7 @@ namespace Obsidian.Entities
 
             if (inventory.HasItems())
             {
-                await this.client.QueuePacketAsync(new WindowItems
-                {
-                    WindowId = inventory.Id,
-                    Count = (short)inventory.Items.Length,
-                    Items = inventory.Items.ToList()
-                });
+                await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
             }
         }
 

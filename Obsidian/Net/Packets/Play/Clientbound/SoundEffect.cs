@@ -5,36 +5,33 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class SoundEffect : IPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
-        public Sounds SoundId { get; set; }
+        public Sounds SoundId { get; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
-        public SoundCategory Category { get; set; }
+        public SoundCategory Category { get; }
 
         [Field(2)]
-        public SoundPosition Position { get; set; }
+        public SoundPosition Position { get; }
 
         [Field(3)]
-        public float Volume { get; set; }
+        public float Volume { get; }
 
         [Field(4)]
-        public float Pitch { get; set; }
+        public float Pitch { get; }
 
         public int Id => 0x51;
 
-        private SoundEffect()
+        public SoundEffect(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f)
         {
-        }
-
-        public SoundEffect(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1.0f, float volume = 1f)
-        {
-            this.SoundId = soundId;
-            this.Position = position;
-            this.Category = category;
-            this.Pitch = pitch;
-            this.Volume = volume;
+            SoundId = soundId;
+            Position = position;
+            Category = category;
+            Pitch = pitch;
+            Volume = volume;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

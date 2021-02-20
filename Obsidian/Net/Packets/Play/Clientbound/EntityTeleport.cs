@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class EntityTeleport : IPacket
     {
         [Field(0), VarLength]
@@ -23,10 +24,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool OnGround { get; set; }
 
         public int Id => 0x56;
-
-        public EntityTeleport()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
