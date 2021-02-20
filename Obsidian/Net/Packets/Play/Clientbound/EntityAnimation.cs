@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityAnimation : IPacket
+    [ClientOnly]
+    public partial class EntityAnimation : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -13,10 +14,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public EAnimation Animation { get; set; }
 
         public int Id => 0x05;
-
-        public EntityAnimation() : base()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -8,9 +8,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    /// <summary>
-    /// https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
-    /// </summary>
+    // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
+    [ServerOnly]
     public partial class ClickWindow : IPacket
     {
         /// <summary>
@@ -50,10 +49,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack Item { get; set; }
 
         public int Id => 0x09;
-
-        public ClickWindow()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

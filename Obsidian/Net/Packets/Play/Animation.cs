@@ -6,21 +6,14 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class Animation : IPacket
+    public partial class Animation : ISerializablePacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; }
 
         public int Id => 0x2C;
 
-        public Animation()
-        {
-        }
-
-        public Task WriteAsync(MinecraftStream stream)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public async Task ReadAsync(MinecraftStream stream)
         {

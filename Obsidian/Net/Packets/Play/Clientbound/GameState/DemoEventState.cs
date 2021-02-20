@@ -4,7 +4,10 @@
     {
         public override DemoEvent Value { get; set; }
 
-        public DemoEventState(DemoEvent @event) => this.Value = @event;
+        public DemoEventState(DemoEvent @event)
+        {
+            Value = @event;
+        }
     }
 
     public enum DemoEvent

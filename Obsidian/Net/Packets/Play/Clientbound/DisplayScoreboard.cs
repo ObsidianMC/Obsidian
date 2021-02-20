@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class DisplayScoreboard : IPacket
+    [ClientOnly]
+    public partial class DisplayScoreboard : ISerializablePacket
     {
         [Field(0), ActualType(typeof(sbyte))]
         public ScoreboardPosition Position { get; set; }
@@ -15,19 +16,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x43;
 
-        public Task HandleAsync(Server server, Player player)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
-        public Task ReadAsync(MinecraftStream stream)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task WriteAsync(MinecraftStream stream)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 }

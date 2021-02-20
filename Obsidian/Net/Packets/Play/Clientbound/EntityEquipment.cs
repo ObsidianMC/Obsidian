@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityEquipment : IPacket
+    [ClientOnly]
+    public partial class EntityEquipment : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -17,10 +18,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public ItemStack Item { get; set; }
 
         public int Id => 0x47;
-
-        public EntityEquipment() : base()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

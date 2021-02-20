@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public partial class PingPong : IPacket
+    public partial class PingPong : ISerializablePacket
     {
         [Field(0)]
         public long Payload;

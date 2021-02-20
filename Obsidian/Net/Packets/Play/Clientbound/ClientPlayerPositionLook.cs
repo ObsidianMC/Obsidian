@@ -17,7 +17,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         None = 0x00
     }
 
-    public partial class ClientPlayerPositionLook : IPacket
+    [ClientOnly]
+    public partial class ClientPlayerPositionLook : ISerializablePacket
     {
         [Field(0), Absolute]
         public PositionF Position { get; set; }
@@ -36,13 +37,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x34;
 
-        public byte[] Data { get; }
-
         public ClientPlayerPositionLook()
         {
         }
-
-        public ClientPlayerPositionLook(byte[] data) { this.Data = data; }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

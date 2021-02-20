@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+using System;
+using System.Threading.Tasks;
+
 
 namespace Obsidian.API
 {
@@ -11,5 +13,7 @@ namespace Obsidian.API
         public Gamemode GameType { get; }
 
         public Task<IEntity> SpawnEntityAsync(PositionF position, EntityType type);
+        public Task SpawnExperienceOrbs(PositionF position, short count);
+        public Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default);
     }
 }

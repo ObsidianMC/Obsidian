@@ -5,20 +5,18 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class SpawnPosition : IPacket
+    [ClientOnly]
+    public partial class SpawnPosition : ISerializablePacket
     {
         [Field(0)]
-        public PositionF Position { get; private set; }
+        public PositionF Position { get; }
 
         public int Id => 0x42;
 
-        public byte[] Data { get; }
-
-        private SpawnPosition()
+        public SpawnPosition(PositionF position)
         {
+            Position = position;
         }
-
-        public SpawnPosition(PositionF position) => this.Position = position;
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

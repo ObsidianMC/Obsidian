@@ -2,12 +2,11 @@
 using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Util.Extensions;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ScoreboardObjectivePacket : IPacket
+    public class ScoreboardObjectivePacket : ISerializablePacket
     {
         public string ObjectiveName { get; set; }
 
@@ -19,15 +18,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x4A;
 
-        public Task HandleAsync(Server server, Player player)
-        {
-            throw new NotImplementedException();
-        }
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
-        public Task ReadAsync(MinecraftStream stream)
-        {
-            throw new NotImplementedException();
-        }
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public void Serialize(MinecraftStream stream)
         {
@@ -52,13 +45,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.Lock.Release();
         }
 
-        public Task WriteAsync(MinecraftStream stream)
-        {
-            throw new NotImplementedException();
-        }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
     }
-
-
 
     public enum ScoreboardMode : sbyte
     {

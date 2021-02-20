@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityPosition : IPacket
+    [ClientOnly]
+    public partial class EntityPosition : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -22,10 +23,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool OnGround { get; set; }
 
         public int Id => 0x27;
-
-        public EntityPosition()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

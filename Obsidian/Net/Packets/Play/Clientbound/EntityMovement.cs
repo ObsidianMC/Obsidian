@@ -4,14 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityMovement : IPacket
+    [ClientOnly]
+    public partial class EntityMovement : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
 
         public int Id => 0x2A;
-
-        public EntityMovement() { }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

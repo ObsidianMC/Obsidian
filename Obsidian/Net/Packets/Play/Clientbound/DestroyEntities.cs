@@ -5,20 +5,17 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class DestroyEntities : IPacket
+    [ClientOnly]
+    public partial class DestroyEntities : ISerializablePacket
     {
         [Field(0), VarLength]
-        public List<int> EntityIds { get; set; } = new List<int>();
+        public List<int> EntityIds { get; set; } = new();
 
         public int Id => 0x36;
 
-        public DestroyEntities()
-        {
-        }
+        public void AddEntity(int entity) => EntityIds.Add(entity);
 
-        public void AddEntity(int entity) => this.EntityIds.Add(entity);
-
-        public void AddEntityRange(params int[] entities) => this.EntityIds.AddRange(entities);
+        public void AddEntityRange(params int[] entities) => EntityIds.AddRange(entities);
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -4,7 +4,10 @@
     {
         public override RespawnReason Value { get; set; }
 
-        public EnableRespawnScreen(RespawnReason reason) => this.Value = reason;
+        public EnableRespawnScreen(RespawnReason reason)
+        {
+            Value = reason;
+        }
     }
 
     public enum RespawnReason

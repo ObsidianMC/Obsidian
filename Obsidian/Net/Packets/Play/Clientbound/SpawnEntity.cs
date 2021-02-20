@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class SpawnEntity : IPacket
+    [ClientOnly]
+    public partial class SpawnEntity : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -33,10 +34,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Velocity Velocity { get; set; }
 
         public int Id => 0x00;
-
-        public SpawnEntity()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -1,34 +1,29 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    /// <summary>
-    /// https://wiki.vg/index.php?title=Protocol#Declare_Commands
-    /// </summary>
-    public partial class DeclareCommands : IPacket
+    // Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
+    [ClientOnly]
+    public partial class DeclareCommands : ISerializablePacket
     {
         [Field(0)]
-        public List<CommandNode> Nodes { get; } = new List<CommandNode>();
+        public List<CommandNode> Nodes { get; } = new();
 
         [Field(1), VarLength]
         public int RootIndex = 0;
 
         public int Id => 0x10;
 
-        public DeclareCommands() { }
-
         public void AddNode(CommandNode node)
         {
-            this.Nodes.Add(node);
+            Nodes.Add(node);
 
             foreach (var child in node.Children)
-                this.AddNode(child);
+                AddNode(child);
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

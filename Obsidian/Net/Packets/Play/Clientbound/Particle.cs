@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class Particle : IPacket
+    [ClientOnly]
+    public partial class Particle : ISerializablePacket
     {
         [Field(0), ActualType(typeof(int))]
         public ParticleType Type { get; set; }
@@ -39,10 +40,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x22;
 
-        public Particle()
-        {
-        }
-
         public Particle(ParticleType type, PositionF position, int particleCount)
         {
             Type = type;
@@ -50,20 +47,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             ParticleCount = particleCount;
         }
 
-        public Task WriteAsync(MinecraftStream stream)
-        {
-            Serialize(stream);
-            return Task.CompletedTask;
-        }
+        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task ReadAsync(MinecraftStream stream)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task HandleAsync(Server server, Player player)
-        {
-            throw new System.NotImplementedException();
-        }
+        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

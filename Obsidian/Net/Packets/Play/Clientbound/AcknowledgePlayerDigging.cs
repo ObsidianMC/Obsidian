@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class AcknowledgePlayerDigging : IPacket
+    [ClientOnly]
+    public partial class AcknowledgePlayerDigging : ISerializablePacket
     {
         [Field(0)]
         public Position Position { get; set; }
@@ -21,10 +22,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool Successful { get; set; }
 
         public int Id => 0x07;
-
-        public AcknowledgePlayerDigging()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -6,21 +6,24 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class BlockBreakAnimation : ISerializablePacket
+    public partial class SpawnExperienceOrb : ISerializablePacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        private const int entityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
 
-        [Field(1)]
-        public PositionF Position { get; set; }
+        [Field(1), Absolute]
+        public PositionF Position { get; }
 
-        /// <summary>
-        /// 0-9 to set it, any other value to remove it
-        /// </summary>
         [Field(2)]
-        public sbyte DestroyStage { get; set; }
+        public short Count { get; }
 
-        public int Id => 0x08;
+        public int Id => 0x01;
+
+        public SpawnExperienceOrb(short count, PositionF position)
+        {
+            Count = count;
+            Position = position;
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

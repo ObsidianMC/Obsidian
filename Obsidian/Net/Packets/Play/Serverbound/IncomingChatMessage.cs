@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class IncomingChatMessage : IPacket
     {
         [Field(0)]
@@ -11,10 +12,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public string Format { get; private set; }
 
         public int Id => 0x03;
-
-        public IncomingChatMessage()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

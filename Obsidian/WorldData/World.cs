@@ -551,5 +551,16 @@ namespace Obsidian.WorldData
 
             return region.Entities.TryAdd(entity.Id, entity);
         }
+
+        public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
+        {
+            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
+        }
+
+        public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
+        {
+            if (uuid == Guid.Empty) uuid = Guid.NewGuid();
+            await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
+        }
     }
 }

@@ -6,28 +6,25 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class NamedSoundEffect : IPacket
+    [ClientOnly]
+    public partial class NamedSoundEffect : ISerializablePacket
     {
         [Field(0)]
-        public string Name { get; private set; }
+        public string Name { get; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
-        public SoundCategory Category { get; private set; }
+        public SoundCategory Category { get; }
 
         [Field(2)]
-        public SoundPosition Position { get; private set; }
+        public SoundPosition Position { get; }
 
         [Field(3)]
-        public float Volume { get; private set; }
+        public float Volume { get; }
 
         [Field(4)]
-        public float Pitch { get; private set; }
+        public float Pitch { get; }
 
         public int Id => 0x18;
-
-        private NamedSoundEffect()
-        {
-        }
 
         public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume)
         {
@@ -36,11 +33,11 @@ namespace Obsidian.Net.Packets.Play.Clientbound
                 throw new ArgumentException("message", nameof(name));
             }
 
-            this.Name = name;
-            this.Category = category;
-            this.Position = location;
-            this.Volume = volume;
-            this.Pitch = pitch;
+            Name = name;
+            Category = category;
+            Position = location;
+            Volume = volume;
+            Pitch = pitch;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

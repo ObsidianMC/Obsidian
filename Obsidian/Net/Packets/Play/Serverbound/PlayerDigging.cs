@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class PlayerDigging : IPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
@@ -18,10 +19,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
 
         public int Id => 0x1B;
-
-        public PlayerDigging()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
