@@ -199,7 +199,9 @@ namespace {@namespace}
                 {
                     if (field.IsGeneric)
                     {
-                        elementName = $"({field.OriginalType})(object){elementName}";
+                        string tempName = $"temp{field.Name}";
+                        builder.AppendCode($"var {tempName} = {elementName};");
+                        elementName = $"System.Runtime.CompilerServices.Unsafe.As<{field.ActualType}, {field.OriginalType}>(ref {tempName})";
                     }
                     else
                     {
@@ -271,13 +273,15 @@ namespace {@namespace}
 
                 if (TryGetMethod(elementType, syntaxProvider.ReadMethods, out string methodName))
                 {
-                    methodName = "stream." + methodName;
+                    methodName = $"stream.{methodName}()";
                     
                     if (field.OriginalType is not null)
                     {
                         if (field.IsGeneric)
                         {
-                            methodName = $"({field.ActualType})(object){methodName}";
+                            string tempName = $"temp{field.Name}";
+                            builder.AppendCode($"var {tempName} = {methodName};");
+                            methodName = $"System.Runtime.CompilerServices.Unsafe.As<{field.ActualType}, {field.OriginalType}>(ref {tempName})";
                         }
                         else
                         {
@@ -285,7 +289,7 @@ namespace {@namespace}
                         }
                     }
 
-                    builder.AppendCode($"packet.{elementName} = {methodName}();");
+                    builder.AppendCode($"packet.{elementName} = {methodName};");
                 }
                 else
                 {
