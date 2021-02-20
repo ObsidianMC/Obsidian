@@ -28,15 +28,19 @@ namespace Obsidian.Entities
         public Angle Pitch { get; set; }
 
         public Angle Yaw { get; set; }
+
         public PositionF LookDirection
         {
             get
             {
-                PositionF direction = new PositionF();
-
-                direction.X = (float)(Math.Cos(Yaw) * Math.Cos(Pitch));
-                direction.Y = (float)(Math.Sin(Yaw) * Math.Cos(Pitch));
-                direction.Z = (float)Math.Sin(Pitch);
+                float yaw = Yaw, pitch = Pitch; // avoid multiple conversions
+                float pitchCos = MathF.Cos(pitch);
+                PositionF direction = new PositionF
+                {
+                    X = MathF.Cos(yaw) * pitchCos,
+                    Y = MathF.Sin(yaw) * pitchCos,
+                    Z = MathF.Sin(pitch)
+                };
                 return direction;
             }
         }
