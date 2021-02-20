@@ -6,16 +6,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class ServerHeldItemChange : IPacket
     {
         [Field(0)]
         public short Slot { get; set; }
 
         public int Id => 0x25;
-
-        public ServerHeldItemChange()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

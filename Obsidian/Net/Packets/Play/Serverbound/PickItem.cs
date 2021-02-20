@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class PickItem : IPacket
     {
         [Field(0)]
@@ -11,12 +12,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x18;
 
-        public PickItem()
-        {
-        }
-
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

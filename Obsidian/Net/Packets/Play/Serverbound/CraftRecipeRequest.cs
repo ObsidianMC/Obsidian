@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class CraftRecipeRequest : IPacket
     {
         [Field(0)]
@@ -17,10 +18,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public bool MakeAll { get; set; }
 
         public int Id => 0x19;
-
-        public CraftRecipeRequest()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

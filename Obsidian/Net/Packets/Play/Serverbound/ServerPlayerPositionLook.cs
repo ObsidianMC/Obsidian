@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class ServerPlayerPositionLook : IPacket
     {
         [Field(0), Absolute]
@@ -20,10 +21,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public bool OnGround { get; set; }
 
         public int Id => 0x34;
-
-        public ServerPlayerPositionLook()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
