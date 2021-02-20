@@ -6,16 +6,12 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class CloseWindow : IPacket
+    public partial class CloseWindow : ISerializablePacket
     {
         [Field(0)]
         public byte WindowId { get; set; }
 
         public int Id => 0x0A;
-
-        public CloseWindow()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

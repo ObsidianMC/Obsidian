@@ -12,8 +12,6 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x1F;
 
-        public byte[] Data { get; }
-
         public KeepAlive()
         {
         }
@@ -22,8 +20,6 @@ namespace Obsidian.Net.Packets.Play
         {
             this.KeepAliveId = id;
         }
-
-        public KeepAlive(byte[] data) { this.Data = data; }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

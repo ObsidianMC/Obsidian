@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class WindowConfirmation : IPacket
+    public partial class WindowConfirmation : ISerializablePacket
     {
         [Field(0)]
         public sbyte WindowId { get; set; }
@@ -16,10 +16,6 @@ namespace Obsidian.Net.Packets.Play
         public bool Accepted { get; set; }
 
         public int Id => 0x11;
-
-        public WindowConfirmation()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
