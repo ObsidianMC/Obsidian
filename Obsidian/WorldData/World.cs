@@ -66,7 +66,7 @@ namespace Obsidian.WorldData
 
             List<(int, int)> clientNeededChunks = new List<(int, int)>();
             List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
-            
+
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
@@ -482,6 +482,17 @@ namespace Obsidian.WorldData
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
             return region.Entities.TryAdd(entity.EntityId, entity);
+        }
+
+        public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
+        {
+            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
+        }
+
+        public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
+        {
+            if (uuid == Guid.Empty) uuid = Guid.NewGuid();
+            await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
         }
     }
 }

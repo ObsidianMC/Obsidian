@@ -8,6 +8,7 @@ namespace Obsidian.API
         public PositionF Position { get; set; }
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
+        public PositionF LookDirection { get; }
         public int EntityId { get; }
         public EntityBitMask EntityBitMask { get; set; }
         public Pose Pose { get; set; }
