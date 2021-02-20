@@ -13,6 +13,10 @@ namespace Obsidian.Net.Packets.Status
 
         public int Id => 0x00;
 
+        public RequestResponse()
+        {
+        }
+
         public RequestResponse(string json)
         {
             Json = json;
