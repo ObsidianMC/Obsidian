@@ -8,7 +8,7 @@ using Obsidian.Serialization.Attributes;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class BossBar : IPacket
+    public partial class BossBar : ISerializablePacket
     {
         [Field(0)]
         public Guid UUID { get; private set; }

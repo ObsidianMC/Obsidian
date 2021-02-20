@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     }
 
     [ClientOnly]
-    public partial class ClientPlayerPositionLook : IPacket
+    public partial class ClientPlayerPositionLook : ISerializablePacket
     {
         [Field(0), Absolute]
         public PositionF Position { get; set; }

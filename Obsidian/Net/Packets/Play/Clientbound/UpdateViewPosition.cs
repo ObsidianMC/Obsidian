@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Update_View_Position
     [ClientOnly]
-    public partial class UpdateViewPosition : IPacket
+    public partial class UpdateViewPosition : ISerializablePacket
     {
         [Field(0), VarLength]
         public int ChunkX { get; }

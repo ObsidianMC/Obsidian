@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class Particle : IPacket
+    public partial class Particle : ISerializablePacket
     {
         [Field(0), ActualType(typeof(int))]
         public ParticleType Type { get; set; }

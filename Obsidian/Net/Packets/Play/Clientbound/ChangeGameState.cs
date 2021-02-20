@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public abstract partial class ChangeGameState<T> : IPacket
+    public abstract partial class ChangeGameState<T> : ISerializablePacket
     {
         [Field(0), ActualType(typeof(byte))]
         public ChangeGameStateReason Reason { get; }

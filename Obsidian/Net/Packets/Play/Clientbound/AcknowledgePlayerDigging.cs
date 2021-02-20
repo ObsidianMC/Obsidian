@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class AcknowledgePlayerDigging : IPacket
+    public partial class AcknowledgePlayerDigging : ISerializablePacket
     {
         [Field(0)]
         public Position Position { get; set; }

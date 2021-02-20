@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class UpdateScore : IPacket
+    public class UpdateScore : ISerializablePacket
     {
         /// <summary>
         /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.

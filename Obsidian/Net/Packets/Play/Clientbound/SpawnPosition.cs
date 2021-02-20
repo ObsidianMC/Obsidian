@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnPosition : IPacket
+    public partial class SpawnPosition : ISerializablePacket
     {
         [Field(0)]
         public PositionF Position { get; }

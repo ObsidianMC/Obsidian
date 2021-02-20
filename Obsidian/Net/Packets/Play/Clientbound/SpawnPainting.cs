@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnPainting : IPacket
+    public partial class SpawnPainting : ISerializablePacket
     {
         [Field(0), VarLength]
         private const int entityId = 9; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs

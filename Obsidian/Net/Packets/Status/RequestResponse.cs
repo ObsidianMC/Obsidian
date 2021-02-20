@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public partial class RequestResponse : IPacket
+    public partial class RequestResponse : ISerializablePacket
     {
         [Field(0)]
         public string Json;

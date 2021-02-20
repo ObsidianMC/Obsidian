@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SetSlot : IPacket
+    public partial class SetSlot : ISerializablePacket
     {
         /// <summary>
         /// 0 for player inventory. -1 For the currently dragged item.

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DestroyEntities : IPacket
+    public partial class DestroyEntities : ISerializablePacket
     {
         [Field(0), VarLength]
         public List<int> EntityIds { get; set; } = new();

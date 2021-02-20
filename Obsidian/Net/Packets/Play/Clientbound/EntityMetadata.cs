@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class EntityMetadata : IPacket
+    public partial class EntityMetadata : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }

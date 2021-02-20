@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
     [ClientOnly]
-    public partial class DeclareCommands : IPacket
+    public partial class DeclareCommands : ISerializablePacket
     {
         [Field(0)]
         public List<CommandNode> Nodes { get; } = new();

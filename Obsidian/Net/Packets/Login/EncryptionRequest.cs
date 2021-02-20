@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public partial class EncryptionRequest : IPacket
+    public partial class EncryptionRequest : ISerializablePacket
     {
         [Field(0)]
         public string ServerId { get; private set; } = string.Empty;

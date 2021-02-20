@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class PlayerInfo : IPacket
+    public partial class PlayerInfo : ISerializablePacket
     {
         [Field(0), VarLength]
         public int Action { get; }

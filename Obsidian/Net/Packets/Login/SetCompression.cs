@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public partial class SetCompression : IPacket
+    public partial class SetCompression : ISerializablePacket
     {
         [Field(0)]
         public int Threshold { get; private set; }

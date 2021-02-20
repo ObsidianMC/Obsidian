@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class CraftRecipeResponse : IPacket
+    public partial class CraftRecipeResponse : ISerializablePacket
     {
         [Field(0)]
         public sbyte WindowId { get; }

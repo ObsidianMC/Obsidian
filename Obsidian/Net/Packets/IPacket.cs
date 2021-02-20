@@ -5,14 +5,12 @@ namespace Obsidian.Net.Packets
 {
     public interface IPacket
     {
-        int Id { get; }
+        public int Id { get; }
 
-        Task WriteAsync(MinecraftStream stream);
+        public Task WriteAsync(MinecraftStream stream);
 
-        Task ReadAsync(MinecraftStream stream);
+        public Task ReadAsync(MinecraftStream stream);
 
-        Task HandleAsync(Server server, Player player);
-
-        public void Serialize(MinecraftStream stream);
+        public Task HandleAsync(Server server, Player player);
     }
 }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ClientHeldItemChange : IPacket
+    public partial class ClientHeldItemChange : ISerializablePacket
     {
         [Field(0)]
         public byte Slot { get; }

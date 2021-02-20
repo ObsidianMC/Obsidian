@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DisplayScoreboard : IPacket
+    public partial class DisplayScoreboard : ISerializablePacket
     {
         [Field(0), ActualType(typeof(sbyte))]
         public ScoreboardPosition Position { get; set; }

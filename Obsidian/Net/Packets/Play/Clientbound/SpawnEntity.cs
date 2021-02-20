@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnEntity : IPacket
+    public partial class SpawnEntity : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }

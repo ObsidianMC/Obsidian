@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class KeepAlive : IPacket
+    public partial class KeepAlive : ISerializablePacket
     {
         [Field(0)]
         public long KeepAliveId { get; set; }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public partial class Disconnect : IPacket
+    public partial class Disconnect : ISerializablePacket
     {
         [Field(0)]
         private ChatMessage Reason { get; set; }

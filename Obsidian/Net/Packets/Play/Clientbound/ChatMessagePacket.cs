@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ChatMessagePacket : IPacket
+    public partial class ChatMessagePacket : ISerializablePacket
     {
         [Field(0)]
         public ChatMessage Message { get; private set; }

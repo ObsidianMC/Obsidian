@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class OpenWindow : IPacket
+    public partial class OpenWindow : ISerializablePacket
     {
         [Field(0), VarLength]
         public int WindowId { get; }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ScoreboardObjectivePacket : IPacket
+    public class ScoreboardObjectivePacket : ISerializablePacket
     {
         public string ObjectiveName { get; set; }
 

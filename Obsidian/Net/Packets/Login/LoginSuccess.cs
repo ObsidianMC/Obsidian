@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public partial class LoginSuccess : IPacket
+    public partial class LoginSuccess : ISerializablePacket
     {
         [Field(0)]
         public Guid UUID { get; set; }

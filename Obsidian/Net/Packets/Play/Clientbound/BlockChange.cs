@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class BlockChange : IPacket
+    public partial class BlockChange : ISerializablePacket
     {
         [Field(0)]
         public Position Position { get; private set; }

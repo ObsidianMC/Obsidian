@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class PlayerListHeaderFooter : IPacket
+    public partial class PlayerListHeaderFooter : ISerializablePacket
     {
         [Field(0)]
         public ChatMessage Header { get; }

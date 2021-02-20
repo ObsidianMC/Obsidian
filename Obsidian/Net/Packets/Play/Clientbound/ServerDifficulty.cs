@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ServerDifficulty : IPacket
+    public partial class ServerDifficulty : ISerializablePacket
     {
         [Field(0), ActualType(typeof(byte))]
         public Difficulty Difficulty { get; }

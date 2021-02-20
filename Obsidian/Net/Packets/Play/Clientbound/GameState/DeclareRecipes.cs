@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DeclareRecipes : IPacket
+    public partial class DeclareRecipes : ISerializablePacket
     {
         [Field(0)]
         public Dictionary<string, IRecipe> Recipes { get; }

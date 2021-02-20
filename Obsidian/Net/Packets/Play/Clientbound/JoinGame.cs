@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     }
 
     [ClientOnly]
-    public partial class JoinGame : IPacket
+    public partial class JoinGame : ISerializablePacket
     {
         [Field(0)]
         public int EntityId { get; set; }

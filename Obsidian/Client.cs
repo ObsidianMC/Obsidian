@@ -40,7 +40,7 @@ namespace Obsidian
         private byte[] randomToken;
         private byte[] sharedKey;
 
-        private readonly BufferBlock<IPacket> packetQueue;
+        private readonly BufferBlock<ISerializablePacket> packetQueue;
 
         private readonly PacketCryptography packetCryptography;
 
@@ -94,8 +94,8 @@ namespace Obsidian
             this.minecraftStream = new MinecraftStream(parentStream);
 
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
-            packetQueue = new BufferBlock<IPacket>(blockOptions);
-            var sendPacketBlock = new ActionBlock<IPacket>(packet =>
+            packetQueue = new BufferBlock<ISerializablePacket>(blockOptions);
+            var sendPacketBlock = new ActionBlock<ISerializablePacket>(packet =>
             {
                 if (tcp.Connected)
                     SendPacket(packet);
@@ -504,7 +504,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerInfo(0, list));
         }
 
-        internal void SendPacket(IPacket packet)
+        internal void SendPacket(ISerializablePacket packet)
         {
             try
             {
@@ -531,7 +531,7 @@ namespace Obsidian
             }
         }
 
-        internal async Task QueuePacketAsync(IPacket packet)
+        internal async Task QueuePacketAsync(ISerializablePacket packet)
         {
             var args = await this.Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnExperienceOrb : IPacket
+    public partial class SpawnExperienceOrb : ISerializablePacket
     {
         [Field(0), VarLength]
         private const int entityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs

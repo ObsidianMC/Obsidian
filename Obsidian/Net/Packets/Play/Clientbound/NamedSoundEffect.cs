@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class NamedSoundEffect : IPacket
+    public partial class NamedSoundEffect : ISerializablePacket
     {
         [Field(0)]
         public string Name { get; }

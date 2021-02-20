@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class UnlockRecipes : IPacket
+    public partial class UnlockRecipes : ISerializablePacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public UnlockRecipeAction Action { get; set; }
