@@ -4,13 +4,14 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
+    [ServerOnly]
     public partial class EncryptionResponse : IPacket
     {
         [Field(0)]
         public byte[] SharedSecret { get; private set; }
 
         [Field(1)]
-        public byte[] VerifyToken { get; set; }
+        public byte[] VerifyToken { get; private set; }
 
         public int Id => 0x01;
 

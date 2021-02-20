@@ -5,24 +5,21 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
+    [ClientOnly]
     public partial class LoginSuccess : ISerializablePacket
     {
         [Field(0)]
-        public Guid UUID { get; set; }
+        public Guid UUID { get; }
 
         [Field(1)]
-        public string Username { get; set; }
+        public string Username { get; }
 
         public int Id => 0x02;
 
-        private LoginSuccess()
-        {
-        }
-
         public LoginSuccess(Guid uuid, string username)
         {
-            this.Username = username;
-            this.UUID = uuid;
+            Username = username;
+            UUID = uuid;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

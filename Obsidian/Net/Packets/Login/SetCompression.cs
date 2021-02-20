@@ -4,22 +4,19 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
+    [ClientOnly]
     public partial class SetCompression : ISerializablePacket
     {
         [Field(0)]
-        public int Threshold { get; private set; }
+        public int Threshold { get; }
 
         public bool Enabled => Threshold < 0;
 
         public int Id => 0x03;
 
-        private SetCompression()
-        {
-        }
-
         public SetCompression(int threshold)
         {
-            this.Threshold = threshold;
+            Threshold = threshold;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
