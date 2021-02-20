@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
-    public class Painting
+    public struct Painting
     {
 
-        public readonly short Id;
-        public readonly byte X;
-        public readonly byte Y;
-        public readonly byte Width;
-        public readonly byte Height;
+        public short Id { get; private set; }
+        public byte X { get; private set; }
+        public byte Y { get; private set; }
+        public byte Width { get; private set; }
+        public byte Height { get; private set; }
 
 
         internal Painting(short id, byte x, byte y, byte width, byte height)

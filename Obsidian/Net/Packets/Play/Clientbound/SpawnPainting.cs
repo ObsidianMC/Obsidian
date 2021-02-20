@@ -14,19 +14,19 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     {
 
         [Field(0), VarLength]
-        public int EntityId;
+        public int EntityId { get; private set; }
 
         [Field(1)]
-        public Guid UUID;
+        public Guid UUID { get; private set; }
 
         [Field(2), VarLength]
-        public int Motive;
+        public int Motive { get; private set; }
 
         [Field(3)]
-        public Position Position;
+        public Position Position { get; private set; }
 
         [Field(4), ActualType(typeof(byte))]
-        public PaintingDirection Direction;
+        public PaintingDirection Direction { get; private set; }
 
         public int Id => 0x03;
 
@@ -35,9 +35,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             
         }
 
-        public SpawnPainting(int entityId, Guid uuid, int motive, Position pos, PaintingDirection direction)
+        public SpawnPainting(Guid uuid, int motive, Position pos, PaintingDirection direction)
         {
-            EntityId = entityId;
+            // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
+            EntityId = 9;
             UUID = uuid;
             Motive = motive;
             Position = pos;

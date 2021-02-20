@@ -66,7 +66,7 @@ namespace Obsidian.WorldData
 
             List<(int, int)> clientNeededChunks = new List<(int, int)>();
             List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
-            
+
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
@@ -484,21 +484,15 @@ namespace Obsidian.WorldData
             return region.Entities.TryAdd(entity.EntityId, entity);
         }
 
-        public async Task SpawnExperienceOrb(PositionF position, short count)
+        public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
         {
-            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb
-            {
-                Count = count,
-                Position = position,
-                EntityId = 2 
-                // 2 = Experience Orb Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
-            });
+            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
         }
 
         public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
         {
             if (uuid == Guid.Empty) uuid = Guid.NewGuid();
-            await this.Server.BroadcastPacketAsync(new SpawnPainting(9, uuid, painting.Id, position, direction));
+            await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
         }
     }
 }

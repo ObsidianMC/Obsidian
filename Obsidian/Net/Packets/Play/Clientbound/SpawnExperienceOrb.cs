@@ -12,15 +12,24 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class SpawnExperienceOrb : IPacket
     {
         [Field(0), VarLength]
-        public int EntityId;
+        public int EntityId { get; private set; }
 
         [Field(1), Absolute]
-        public PositionF Position;
+        public PositionF Position { get; private set; }
 
         [Field(2)]
-        public short Count;
+        public short Count { get; private set; }
 
         public int Id => 0x01;
+
+
+        public SpawnExperienceOrb(short count, PositionF position)
+        {
+            Count = count;
+            Position = position;
+            // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
+            EntityId = 2;
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
