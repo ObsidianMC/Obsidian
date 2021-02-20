@@ -23,6 +23,11 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Id => 0x01;
 
 
+        public SpawnExperienceOrb()
+        {
+
+        }
+
         public SpawnExperienceOrb(short count, PositionF position)
         {
             Count = count;
