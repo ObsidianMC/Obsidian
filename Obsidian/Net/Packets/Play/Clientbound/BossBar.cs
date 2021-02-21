@@ -7,7 +7,8 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class BossBar : IPacket
+    [ClientOnly]
+    public partial class BossBar : ISerializablePacket
     {
         [Field(0)]
         public Guid UUID { get; private set; }
@@ -16,10 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public BossBarAction Action { get; private set; }
 
         public int Id => 0x0C;
-
-        public BossBar()
-        {
-        }
 
         public BossBar(Guid uuid, BossBarAction action)
         {

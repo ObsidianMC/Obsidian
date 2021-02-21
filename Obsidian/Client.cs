@@ -35,10 +35,12 @@ namespace Obsidian
 {
     public class Client : IDisposable
     {
+        public event Action<Client> Disconnected;
+        
         private byte[] randomToken;
         private byte[] sharedKey;
 
-        private readonly BufferBlock<IPacket> packetQueue;
+        private readonly BufferBlock<ISerializablePacket> packetQueue;
 
         private readonly PacketCryptography packetCryptography;
 
@@ -92,8 +94,8 @@ namespace Obsidian
             this.minecraftStream = new MinecraftStream(parentStream);
 
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
-            packetQueue = new BufferBlock<IPacket>(blockOptions);
-            var sendPacketBlock = new ActionBlock<IPacket>(packet =>
+            packetQueue = new BufferBlock<ISerializablePacket>(blockOptions);
+            var sendPacketBlock = new ActionBlock<ISerializablePacket>(packet =>
             {
                 if (tcp.Connected)
                     SendPacket(packet);
@@ -294,6 +296,8 @@ namespace Obsidian
 
                 if (this.Player != null)
                     this.Server.OnlinePlayers.TryRemove(this.Player.Uuid, out var _);
+
+                Disconnected?.Invoke(this);
             }
         }
 
@@ -305,10 +309,7 @@ namespace Obsidian
             this.Logger.LogDebug("Compression has been enabled.");
         }
 
-        private Task DeclareRecipes() => this.QueuePacketAsync(new DeclareRecipes
-        {
-            Recipes = Registry.Recipes
-        });
+        private Task DeclareRecipesAsync() => QueuePacketAsync(DeclareRecipes.FromRegistry);
 
         private async Task ConnectAsync()
         {
@@ -351,8 +352,8 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            // TODO figure out why tags make air blocks a fluid
-            /*await this.QueuePacketAsync(new TagsPacket
+            // IG its fixed??
+            await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
 
@@ -361,9 +362,9 @@ namespace Obsidian
                 Fluid = Registry.Tags["fluids"],
 
                 Entities = Registry.Tags["entity_types"]
-            });*/
+            });
 
-            await this.DeclareRecipes();
+            await this.DeclareRecipesAsync();
 
             await SendDeclareCommandsAsync();
             this.Logger.LogDebug("Sent Declare Commands packet.");
@@ -503,7 +504,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerInfo(0, list));
         }
 
-        internal void SendPacket(IPacket packet)
+        internal void SendPacket(ISerializablePacket packet)
         {
             try
             {
@@ -530,7 +531,7 @@ namespace Obsidian
             }
         }
 
-        internal async Task QueuePacketAsync(IPacket packet)
+        internal async Task QueuePacketAsync(ISerializablePacket packet)
         {
             var args = await this.Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
 
@@ -587,7 +588,11 @@ namespace Obsidian
         }
         #endregion Packet sending
 
-        internal void Disconnect() => this.Cancellation.Cancel();
+        internal void Disconnect()
+        {
+            Cancellation.Cancel();
+            Disconnected?.Invoke(this);
+        }
 
         #region Disposing
         protected virtual void Dispose(bool disposing)

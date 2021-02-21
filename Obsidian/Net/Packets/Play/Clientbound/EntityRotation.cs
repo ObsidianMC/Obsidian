@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityRotation : IPacket
+    [ClientOnly]
+    public partial class EntityRotation : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -20,10 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool OnGround { get; set; }
 
         public int Id => 0x29;
-
-        public EntityRotation()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

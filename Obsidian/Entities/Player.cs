@@ -9,6 +9,7 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Util;
+using Obsidian.Util.Extensions;
 using Obsidian.Util.Registry;
 using System;
 using System.Collections.Generic;
@@ -43,6 +44,8 @@ namespace Obsidian.Entities
         public Gamemode Gamemode { get; set; }
 
         public Hand MainHand { get; set; } = Hand.Right;
+
+        public IScoreboard CurrentScoreboard { get; set; }
 
         public bool Sleeping { get; set; }
         public bool Sneaking { get; set; }
@@ -214,6 +217,14 @@ namespace Obsidian.Entities
             }
         }
 
+        internal async Task SendScoreboardInfo(ScoreboardObjectivePacket packet, UpdateScore scorePacket = null)
+        {
+            await this.client.QueuePacketAsync(packet);
+
+            if (scorePacket != null)
+                await this.client.QueuePacketAsync(scorePacket);
+        }
+
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
         public void LoadPerms()
@@ -244,18 +255,45 @@ namespace Obsidian.Entities
             File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
         }
 
+        public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
+        {
+            var actualBoard = (Scoreboard)scoreboard;
+
+            this.CurrentScoreboard = actualBoard;
+
+            await this.client.QueuePacketAsync(new ScoreboardObjectivePacket
+            {
+                ObjectiveName = actualBoard.name,
+                Mode = ScoreboardMode.Create,
+                Value = actualBoard.Objective.Value,
+                Type = actualBoard.Objective.DisplayType
+            });
+
+            foreach (var (_, score) in actualBoard.scores)
+            {
+                await this.client.QueuePacketAsync(new UpdateScore
+                {
+                    EntityName = score.DisplayText,
+                    ObjectiveName = actualBoard.name,
+                    Action = 0,
+                    Value = score.Value
+                });
+            }
+
+            await this.client.QueuePacketAsync(new DisplayScoreboard
+            {
+                ScoreName = actualBoard.name,
+                Position = position
+            });
+        }
+
         public async Task OpenInventoryAsync(Inventory inventory)
         {
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
             if (inventory.HasItems())
             {
-                await this.client.QueuePacketAsync(new WindowItems
-                {
-                    WindowId = inventory.Id,
-                    Count = (short)inventory.Items.Length,
-                    Items = inventory.Items.ToList()
-                });
+                await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
             }
         }
 

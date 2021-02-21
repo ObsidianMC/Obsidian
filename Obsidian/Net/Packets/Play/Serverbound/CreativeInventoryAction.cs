@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class CreativeInventoryAction : IPacket
     {
         [Field(0)]
@@ -16,10 +17,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack ClickedItem { get; set; }
 
         public int Id => 0x29;
-
-        public CreativeInventoryAction() : base()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

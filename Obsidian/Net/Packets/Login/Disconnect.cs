@@ -5,23 +5,18 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    public partial class Disconnect : IPacket
+    [ClientOnly]
+    public partial class Disconnect : ISerializablePacket
     {
         [Field(0)]
-        private ChatMessage Reason { get; set; }
+        private ChatMessage Reason { get; }
 
         public int Id { get; }
 
-        public byte[] Data { get; set; }
-
-        private Disconnect()
-        {
-        }
-
         public Disconnect(ChatMessage reason, ClientState state)
         {
-            this.Id = state == ClientState.Play ? 0x19 : 0x00;
-            this.Reason = reason;
+            Id = state == ClientState.Play ? 0x19 : 0x00;
+            Reason = reason;
         }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;

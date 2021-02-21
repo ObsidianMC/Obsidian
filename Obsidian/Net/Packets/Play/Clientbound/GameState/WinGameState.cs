@@ -4,7 +4,10 @@
     {
         public override WinStateReason Value { get; set; }
 
-        public WinGameState(WinStateReason newReason) => this.Value = newReason;
+        public WinGameState(WinStateReason newReason)
+        {
+            Value = newReason;
+        }
     }
 
     public enum WinStateReason

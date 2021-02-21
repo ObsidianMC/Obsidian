@@ -6,6 +6,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound.GameState
     {
         public override Gamemode Value { get; set; }
 
-        public ChangeGamemodeState(Gamemode newMode) => this.Value = newMode;
+        public ChangeGamemodeState(Gamemode newMode)
+        {
+            Value = newMode;
+        }
     }
 }

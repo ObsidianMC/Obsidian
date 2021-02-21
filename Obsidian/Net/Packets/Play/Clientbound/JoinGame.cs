@@ -15,7 +15,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
 
-    public partial class JoinGame : IPacket
+    [ClientOnly]
+    public partial class JoinGame : ISerializablePacket
     {
         [Field(0)]
         public int EntityId { get; set; }
@@ -63,10 +64,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool Flat { get; set; } = false;
 
         public int Id => 0x24;
-
-        public JoinGame()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

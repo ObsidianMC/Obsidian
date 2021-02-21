@@ -4,16 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class NameItem : IPacket
     {
         [Field(0)]
         public string ItemName { get; set; }
 
         public int Id => 0x20;
-
-        public NameItem()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

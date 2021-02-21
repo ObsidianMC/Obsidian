@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class EntityMetadata : IPacket
+    [ClientOnly]
+    public partial class EntityMetadata : ISerializablePacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -13,10 +14,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Entity Entity { get; set; }
 
         public int Id => 0x44;
-
-        public EntityMetadata()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

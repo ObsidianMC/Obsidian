@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class ClientSettings : IPacket
     {
         [Field(0)]
@@ -25,10 +26,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public int MainHand { get; private set; }
 
         public int Id => 0x05;
-
-        public ClientSettings()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class PlayerBlockPlacement : IPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
@@ -34,10 +35,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public bool InsideBlock { get; set; }
 
         public int Id => 0x2E;
-
-        public PlayerBlockPlacement()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

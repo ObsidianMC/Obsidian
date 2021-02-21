@@ -6,21 +6,25 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class WindowItems : IPacket
+    [ClientOnly]
+    public partial class WindowItems : ISerializablePacket
     {
         [Field(0)]
-        public byte WindowId { get; set; }
+        public byte WindowId { get; }
 
         [Field(1)]
-        public short Count { get; set; }
+        public short Count { get; }
 
         [Field(2), FixedLength(1)]
-        public List<ItemStack> Items { get; set; }
+        public List<ItemStack> Items { get; }
 
         public int Id => 0x13;
 
-        public WindowItems()
+        public WindowItems(byte windowId, List<ItemStack> items)
         {
+            WindowId = windowId;
+            Count = (short)items.Count;
+            Items = items;
         }
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class EntityAction : IPacket
     {
         [Field(0), VarLength]
@@ -16,10 +17,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public int JumpBoost { get; set; }
 
         public int Id => 0x1C;
-
-        public EntityAction()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

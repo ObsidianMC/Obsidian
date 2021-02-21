@@ -45,7 +45,7 @@ namespace Obsidian
 
         internal static byte LastInventoryId;
 
-        public const ProtocolVersion protocol = ProtocolVersion.v1_16_4;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_16_5;
         public ProtocolVersion Protocol => protocol;
 
         public short TPS { get; private set; }
@@ -55,6 +55,8 @@ namespace Obsidian
         public PluginManager PluginManager { get; }
 
         public IOperatorList Operators { get; }
+
+        public IScoreboardManager ScoreboardManager { get; private set; }
 
         internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new ConcurrentDictionary<Guid, Inventory>();
 
@@ -83,12 +85,12 @@ namespace Obsidian
         public World World { get; private set; }
         public IWorld DefaultWorld => World;
 
-        public string ServerFolderPath => Path.GetFullPath($"Server-{this.Id}");
+        public string ServerFolderPath { get; }
 
         /// <summary>
-        /// Creates a new Server instance.
+        /// Creates a new instance of <see cref="Server"/>.
         /// </summary>
-        /// <param name="version">Version the server is running. <i>(independent of minecraft version)</i></param>
+        /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
         {   
             this.Config = config;
@@ -103,6 +105,7 @@ namespace Obsidian
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverId;
+            this.ServerFolderPath = Path.GetFullPath($"Server-{this.Id}");
 
             this.tcpListener = new TcpListener(IPAddress.Any, this.Port);
 
@@ -135,7 +138,6 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
-            this.Events.ServerTick += this.OnServerTick;
         }
 
         public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
@@ -208,7 +210,7 @@ namespace Obsidian
         }
 
         /// <summary>
-        /// Starts this server.
+        /// Starts this server asynchronously.
         /// </summary>
         public async Task StartServerAsync()
         {
@@ -239,6 +241,8 @@ namespace Obsidian
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
+
+            this.ScoreboardManager = new ScoreboardManager(this);
 
             this.Logger.LogInformation("Loading plugins...");
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.
@@ -274,17 +278,14 @@ namespace Obsidian
 
             while (!this.cts.IsCancellationRequested)
             {
-                if (this.tcpListener.Pending())
-                {
-                    var tcp = await this.tcpListener.AcceptTcpClientAsync();
-                    this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
+                var tcp = await this.tcpListener.AcceptTcpClientAsync();
+                this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                    var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
-                    this.clients.Add(client);
+                var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
+                this.clients.Add(client);
+                client.Disconnected += client => clients.TryRemove(client);
 
-                    _ = Task.Run(client.StartConnectionAsync);
-                }
-                await Task.Delay(50);
+                _ = Task.Run(client.StartConnectionAsync);
             }
 
             this.Logger.LogWarning("Server is shutting down...");
@@ -347,13 +348,13 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(IPacket packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(ISerializablePacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal void BroadcastPacketWithoutQueue(IPacket packet, params int[] excluded)
+        internal void BroadcastPacketWithoutQueue(ISerializablePacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
@@ -562,7 +563,7 @@ namespace Obsidian
 
             while (!this.cts.IsCancellationRequested)
             {
-                await Task.Delay(50);
+                await Task.Delay(50, cts.Token);
 
                 await this.Events.InvokeServerTickAsync();
 
@@ -577,28 +578,25 @@ namespace Obsidian
                     keepAliveTicks = 0;
                 }
 
-                foreach (var (uuid, player) in this.OnlinePlayers)
+                if (Config.Baah.HasValue)
                 {
-                    if (this.Config.Baah.HasValue)
+                    foreach (var (uuid, player) in this.OnlinePlayers)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                    }
-
-                    if (this.chatMessages.TryPeek(out QueueChat msg))
-                        await player.SendMessageAsync(msg.Message, msg.Type);
+                    } 
                 }
 
-                this.chatMessages.TryDequeue(out var _);
-
-                foreach (var client in clients)
+                while (chatMessages.TryDequeue(out QueueChat msg))
                 {
-                    if (!client.tcp.Connected)
-                        this.clients.TryRemove(client);
+                    foreach (var (uuid, player) in this.OnlinePlayers)
+                    {
+                        await player.SendMessageAsync(msg.Message, msg.Type);
+                    }
                 }
-                itersPerSecond++;
 
                 // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
+                itersPerSecond++;
                 if (stopWatch.ElapsedMilliseconds >= 1000L)
                 {
                     TPS = itersPerSecond;
@@ -675,11 +673,6 @@ namespace Obsidian
             await Task.Delay(500);
             await this.SendSpawnPlayerAsync(joined);
         }
-
-        private Task OnServerTick() => Task.CompletedTask;
-
-        
-
         #endregion Events
 
         private struct QueueChat

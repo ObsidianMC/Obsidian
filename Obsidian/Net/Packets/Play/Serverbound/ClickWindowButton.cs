@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class ClickWindowButton : IPacket
     {
         [Field(0)]
@@ -13,10 +14,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public sbyte ButtonId { get; set; }
 
         public int Id => 0x08;
-
-        public ClickWindowButton()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

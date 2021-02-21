@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public partial class RequestResponse : IPacket
+    public partial class RequestResponse : ISerializablePacket
     {
         [Field(0)]
         public string Json;
@@ -17,9 +17,15 @@ namespace Obsidian.Net.Packets.Status
         {
         }
 
-        public RequestResponse(string json) => this.Json = json;
+        public RequestResponse(string json)
+        {
+            Json = json;
+        }
 
-        public RequestResponse(ServerStatus status) => this.Json = JsonConvert.SerializeObject(status);
+        public RequestResponse(ServerStatus status)
+        {
+            Json = JsonConvert.SerializeObject(status);
+        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

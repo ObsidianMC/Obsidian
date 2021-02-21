@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class ChunkDataPacket : IPacket
+    public partial class ChunkDataPacket : ISerializablePacket
     {
         public Chunk Chunk { get; set; }
 
@@ -16,7 +16,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int changedSectionFilter = 65535; // 0b1111111111111111;
 
-        public ChunkDataPacket(Chunk chunk) : base() => this.Chunk = chunk;
+        public ChunkDataPacket(Chunk chunk)
+        {
+            Chunk = chunk;
+        }
 
         public async Task WriteAsync(MinecraftStream stream)
         {

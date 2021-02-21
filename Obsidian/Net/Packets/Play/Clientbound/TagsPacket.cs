@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class TagsPacket : IPacket
+    [ClientOnly]
+    public partial class TagsPacket : ISerializablePacket
     {
         [Field(0)]
         public List<Tag> Blocks { get; set; }
@@ -20,10 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public List<Tag> Entities { get; set; }
 
         public int Id => 0x5B;
-
-        public TagsPacket()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
@@ -42,6 +39,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Count => Entries.Count;
 
-        public List<int> Entries { get; set; } = new List<int>();
+        public List<int> Entries { get; set; } = new();
     }
 }

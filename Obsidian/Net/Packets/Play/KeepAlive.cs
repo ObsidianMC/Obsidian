@@ -5,14 +5,12 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class KeepAlive : IPacket
+    public partial class KeepAlive : ISerializablePacket
     {
         [Field(0)]
         public long KeepAliveId { get; set; }
 
         public int Id => 0x1F;
-
-        public byte[] Data { get; }
 
         public KeepAlive()
         {
@@ -22,8 +20,6 @@ namespace Obsidian.Net.Packets.Play
         {
             this.KeepAliveId = id;
         }
-
-        public KeepAlive(byte[] data) { this.Data = data; }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

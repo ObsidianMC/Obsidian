@@ -4,16 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class SetDisplayedRecipe : IPacket
     {
         [Field(0)]
         public string RecipeId { get; set; }
 
         public int Id => 0x1E;
-
-        public SetDisplayedRecipe()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 

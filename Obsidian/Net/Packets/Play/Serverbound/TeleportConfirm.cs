@@ -4,16 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
+    [ServerOnly]
     public partial class TeleportConfirm : IPacket
     {
         [Field(0), VarLength]
         public int TeleportId { get; set; }
 
         public int Id => 0x00;
-
-        public TeleportConfirm()
-        {
-        }
 
         public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
