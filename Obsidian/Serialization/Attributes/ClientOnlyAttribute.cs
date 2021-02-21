@@ -6,7 +6,7 @@ namespace Obsidian.Serialization.Attributes
     /// Marks a packet as write-only.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-    public class ClientOnlyAttribute : Attribute
+    public sealed class ClientOnlyAttribute : Attribute
     {
     }
 }

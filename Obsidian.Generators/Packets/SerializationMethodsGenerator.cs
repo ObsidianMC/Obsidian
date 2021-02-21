@@ -19,6 +19,7 @@ namespace Obsidian.Generators.Packets
         private const string varLengthAttribute = "VarLength";
         private const string clientOnly = "ClientOnlyAttribute";
         private const string serverOnly = "ServerOnlyAttribute";
+        private const string countType = "CountType";
 
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -188,7 +189,23 @@ namespace {@namespace}
                         elementType += "_Abs";
 
                     if (field.FixedLength < 0)
-                        builder.AppendCode($"packetStream.WriteVarInt({field.Name}.{lengthProperty});");
+                    {
+                        if (field.CountType is null)
+                        {
+                            builder.AppendCode($"packetStream.WriteVarInt({field.Name}.{lengthProperty});");
+                        }
+                        else
+                        {
+                            if (!syntaxProvider.WriteMethods.TryGetValue(field.CountType, out string writeCountMethod))
+                            {
+                                // CountType has no write method
+                                syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with its count type", field.Declaration));
+                                return false;
+                            }
+
+                            builder.AppendCode($"packetStream.{writeCountMethod}(({field.CountType}){field.Name}.{lengthProperty});");
+                        }
+                    }
 
                     builder.AppendCode($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
                     builder.AppendCode("{");
@@ -263,7 +280,26 @@ namespace {@namespace}
                     if (field.IsAbsolute)
                         elementType += "_Abs";
 
-                    string countValue = field.FixedLength >= 0 ? field.FixedLength.ToString() : "stream.ReadVarInt()";
+                    string countValue;
+                    if (field.FixedLength >= 0)
+                    {
+                        countValue = field.FixedLength.ToString();
+                    }
+                    else if (field.CountType is not null)
+                    {
+                        if (!syntaxProvider.ReadMethods.TryGetValue(field.CountType, out string readCountMethod))
+                        {
+                            // CountType has no read method
+                            syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with its count type", field.Declaration));
+                            return false;
+                        }
+
+                        countValue = $"stream.{readCountMethod}();";
+                    }
+                    else
+                    {
+                        countValue = "stream.ReadVarInt()";
+                    }
                     builder.AppendCode(field.TypeName.EndsWith("[]") ? $"packet.{field.Name} = new {elementType}[{countValue}];" : $"packet.{field.Name} = new {field.TypeName}({countValue});");
 
                     builder.AppendCode($"for (int i = 0; i < packet.{field.Name}.{lengthProperty}; i++)");
@@ -364,6 +400,7 @@ namespace {@namespace}
             public string TypeName { get; }
             public string OriginalType { get; }
             public string ActualType { get; }
+            public string CountType { get; }
             public int Index { get; }
             public bool IsArray { get; }
             public bool IsAbsolute { get; }
@@ -385,6 +422,7 @@ namespace {@namespace}
                 Index = int.Parse(fieldAttribute.ArgumentList.Arguments.First().GetText().ToString());
 
                 OriginalType = null;
+                CountType = null;
                 IsAbsolute = false;
                 IsVarLength = false;
                 FixedLength = -1;
@@ -407,9 +445,12 @@ namespace {@namespace}
                             break;
 
                         case actualTypeAttribute:
-                            var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
-                            TypeName = @typeof.Type.GetText().ToString().Split('.').Last();
+                            TypeName = GetAttributeTypeArgument(attribute);
                             OriginalType = TypeName;
+                            break;
+
+                        case countType:
+                            CountType = GetAttributeTypeArgument(attribute);
                             break;
                     }
                 }
@@ -421,6 +462,12 @@ namespace {@namespace}
                     if (IsAbsolute)
                         TypeName += "_Abs";
                 }
+            }
+
+            private static string GetAttributeTypeArgument(AttributeSyntax attribute)
+            {
+                var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
+                return @typeof.Type.GetText().ToString().Split('.').Last();
             }
         }
     }

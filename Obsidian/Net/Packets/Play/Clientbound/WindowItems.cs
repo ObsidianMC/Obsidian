@@ -12,10 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public byte WindowId { get; }
 
-        [Field(1)]
-        public short Count { get; }
-
-        [Field(2), FixedLength(1)]
+        [Field(2), CountType(typeof(short))]
         public List<ItemStack> Items { get; }
 
         public int Id => 0x13;
@@ -23,7 +20,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public WindowItems(byte windowId, List<ItemStack> items)
         {
             WindowId = windowId;
-            Count = (short)items.Count;
             Items = items;
         }
 

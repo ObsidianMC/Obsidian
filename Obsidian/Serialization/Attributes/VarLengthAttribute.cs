@@ -3,7 +3,7 @@
 namespace Obsidian.Serialization.Attributes
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public class VarLengthAttribute : Attribute
+    public sealed class VarLengthAttribute : Attribute
     {
     }
 }
