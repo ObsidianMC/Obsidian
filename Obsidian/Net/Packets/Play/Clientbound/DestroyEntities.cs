@@ -17,8 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public void AddEntityRange(params int[] entities) => EntityIds.AddRange(entities);
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;

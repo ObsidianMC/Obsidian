@@ -50,8 +50,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x09;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.WindowId = await stream.ReadUnsignedByteAsync();

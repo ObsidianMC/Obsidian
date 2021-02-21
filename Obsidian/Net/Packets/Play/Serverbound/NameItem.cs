@@ -12,8 +12,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x20;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.ItemName = await stream.ReadStringAsync();

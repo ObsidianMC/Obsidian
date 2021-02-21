@@ -21,8 +21,6 @@ namespace Obsidian.Net.Packets.Handshaking
 
         public int Id => 0x00;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;

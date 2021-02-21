@@ -44,8 +44,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
             stream.Lock.Release();
         }
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 
     public enum ScoreboardMode : sbyte
