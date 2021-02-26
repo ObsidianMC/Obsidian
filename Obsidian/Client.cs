@@ -278,7 +278,7 @@ namespace Obsidian
 
                         //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
 
-                        await this.handler.HandlePlayPackets((id, data), this);
+                        await this.handler.HandlePlayPackets(id, data, this);
                         break;
                 }
 
