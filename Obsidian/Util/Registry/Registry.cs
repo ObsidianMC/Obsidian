@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Util.Registry
 {
-    public class Registry
+    public static partial class Registry
     {
         internal static ILogger Logger { get; set; }
 
