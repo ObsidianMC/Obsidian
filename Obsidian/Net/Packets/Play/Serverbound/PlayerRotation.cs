@@ -31,8 +31,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.OnGround = onground;
         }
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Yaw = await stream.ReadFloatAsync();

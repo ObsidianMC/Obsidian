@@ -12,8 +12,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x00;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.TeleportId = await stream.ReadVarIntAsync();

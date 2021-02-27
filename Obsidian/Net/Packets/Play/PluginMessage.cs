@@ -52,8 +52,6 @@ namespace Obsidian.Net.Packets.Play
             return result;
         }
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Channel = await stream.ReadStringAsync();

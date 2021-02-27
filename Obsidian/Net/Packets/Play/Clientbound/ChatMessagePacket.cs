@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public sbyte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
 
         [Field(2), FixedLength(2)]
-        public List<long> Sender { get; private set; } = new()
+        public List<long> Sender { get; private set; } = new(2)
         {
             0, 0
         };
@@ -31,8 +31,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = (sbyte)type;
             //Sender = sender;
         }
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
