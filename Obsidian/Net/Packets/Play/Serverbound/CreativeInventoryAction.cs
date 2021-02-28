@@ -43,7 +43,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 await server.BroadcastPacketAsync(new EntityEquipment
                 {
-                    EntityId = player.Id,
+                    EntityId = player.EntityId,
                     Slot = ESlot.MainHand,
                     Item = new ItemStack(heldItem.Type, heldItem.Count, heldItem.ItemMeta)
                     {

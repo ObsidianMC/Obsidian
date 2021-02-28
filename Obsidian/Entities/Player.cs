@@ -97,7 +97,7 @@ namespace Obsidian.Entities
             this.Uuid = uuid;
             this.Username = username;
             this.client = client;
-            this.Id = client.id;
+            this.EntityId = client.id;
             this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
             {
                 Owner = uuid
@@ -122,7 +122,7 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.Id,
+                        CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
 
@@ -161,7 +161,7 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.Id,
+                        CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
 
@@ -195,7 +195,7 @@ namespace Obsidian.Entities
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.Id,
+                        CollectorEntityId = this.EntityId,
                         PickupItemCount = item.Count
                     });
 

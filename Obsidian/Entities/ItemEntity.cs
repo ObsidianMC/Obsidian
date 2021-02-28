@@ -9,7 +9,7 @@ namespace Obsidian.Entities
     // TODO item entity has to have a MaterialType prop
     public class ItemEntity : Entity
     {
-        public int EntityId { get; set; }
+        public int Id { get; set; }
 
         public sbyte Count { get; set; }
 

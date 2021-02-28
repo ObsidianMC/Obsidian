@@ -4,6 +4,7 @@ using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
@@ -48,7 +49,7 @@ namespace Obsidian.Entities
         }
         #endregion Location properties
 
-        public int Id { get; internal set; }
+        public int EntityId { get; internal set; }
 
         public Guid Uuid { get; set; } = Guid.NewGuid();
 
@@ -129,14 +130,14 @@ namespace Obsidian.Entities
             {
                 server.BroadcastPacketWithoutQueue(new EntityPosition
                 {
-                    EntityId = this.Id,
+                    EntityId = this.EntityId,
 
                     DeltaX = newX,
                     DeltaY = newY,
                     DeltaZ = newZ,
 
                     OnGround = onGround
-                }, this.Id);
+                }, this.EntityId);
 
                 this.UpdatePosition(position, onGround);
             }
@@ -151,11 +152,11 @@ namespace Obsidian.Entities
             {
                 server.BroadcastPacketWithoutQueue(new EntityRotation
                 {
-                    EntityId = this.Id,
+                    EntityId = this.EntityId,
                     OnGround = onGround,
                     Yaw = yaw,
                     Pitch = pitch
-                }, this.Id);
+                }, this.EntityId);
 
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
@@ -183,7 +184,7 @@ namespace Obsidian.Entities
                 {
                     server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
                     {
-                        EntityId = this.Id,
+                        EntityId = this.EntityId,
 
                         DeltaX = newX,
                         DeltaY = newY,
@@ -194,7 +195,7 @@ namespace Obsidian.Entities
                         Pitch = pitch,
 
                         OnGround = onGround
-                    }, this.Id);
+                    }, this.EntityId);
 
                     this.CopyLook();
                 }
@@ -202,14 +203,14 @@ namespace Obsidian.Entities
                 {
                     server.BroadcastPacketWithoutQueue(new EntityPosition
                     {
-                        EntityId = this.Id,
+                        EntityId = this.EntityId,
 
                         DeltaX = newX,
                         DeltaY = newY,
                         DeltaZ = newZ,
 
                         OnGround = onGround
-                    }, this.Id);
+                    }, this.EntityId);
                 }
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
@@ -305,6 +306,8 @@ namespace Obsidian.Entities
             stream.WriteVarInt((int)Pose);
         }
 
+        public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance);
+
         public virtual Task TickAsync() => Task.CompletedTask;
 
         public bool Equals([AllowNull] Entity other)
@@ -315,12 +318,12 @@ namespace Obsidian.Entities
             if (ReferenceEquals(this, other))
                 return true;
 
-            return this.Id == other.Id;
+            return this.EntityId == other.EntityId;
         }
 
         public override bool Equals(object obj) => Equals(obj as Entity);
 
-        public static implicit operator int(Entity entity) => entity.Id;
+        public static implicit operator int(Entity entity) => entity.EntityId;
 
         public static bool operator ==(Entity a, Entity b)
         {
@@ -332,6 +335,6 @@ namespace Obsidian.Entities
 
         public static bool operator !=(Entity a, Entity b) => !(a == b);
 
-        public override int GetHashCode() => this.Id.GetHashCode();
+        public override int GetHashCode() => this.EntityId.GetHashCode();
     }
 }

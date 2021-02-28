@@ -351,13 +351,13 @@ namespace Obsidian
 
         internal async Task BroadcastPacketAsync(ISerializablePacket packet, params int[] excluded)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.Id)))
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
         internal void BroadcastPacketWithoutQueue(ISerializablePacket packet, params int[] excluded)
         {
-            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.Id)))
+            foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
         }
 
@@ -381,7 +381,7 @@ namespace Obsidian
 
         private bool TryAddEntity(World world, Entity entity)
         {
-            this.Logger.LogDebug($"{entity.Id} new ID");
+            this.Logger.LogDebug($"{entity.EntityId} new ID");
 
             return world.TryAddEntity(entity);
         }
@@ -626,7 +626,7 @@ namespace Obsidian
                 //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
                 await player.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = joinedPlayer.Id,
+                    EntityId = joinedPlayer.EntityId,
                     Uuid = joinedPlayer.Uuid,
                     Position = joinedPlayer.Position,
                     Yaw = 0,
@@ -636,7 +636,7 @@ namespace Obsidian
                 //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
                 await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
                 {
-                    EntityId = player.Id,
+                    EntityId = player.EntityId,
                     Uuid = player.Uuid,
                     Position = player.Position,
                     Yaw = 0,

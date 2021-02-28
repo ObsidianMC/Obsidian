@@ -122,7 +122,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
-            return region.Entities.TryRemove(entity.Id, out _);
+            return region.Entities.TryRemove(entity.EntityId, out _);
         }
 
         public Region GetRegionForChunk(int chunkX, int chunkZ)
@@ -432,7 +432,7 @@ namespace Obsidian.WorldData
                 entity = new Entity
                 {
                     Position = position,
-                    Id = this.TotalLoadedEntities() + 1,
+                    EntityId = this.TotalLoadedEntities() + 1,
                     Type = type
                 };
 
@@ -444,7 +444,7 @@ namespace Obsidian.WorldData
                 {
                     await this.Server.BroadcastPacketAsync(new SpawnEntity
                     {
-                        EntityId = entity.Id,
+                        EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
                         Type = type,
                         Position = position,
@@ -460,13 +460,13 @@ namespace Obsidian.WorldData
                 entity = new Living
                 {
                     Position = position,
-                    Id = this.TotalLoadedEntities() + 1,
+                    EntityId = this.TotalLoadedEntities() + 1,
                     Type = type
                 };
 
                 await this.Server.BroadcastPacketAsync(new SpawnLivingEntity
                 {
-                    EntityId = entity.Id,
+                    EntityId = entity.EntityId,
                     Uuid = entity.Uuid,
                     Type = type,
                     Position = position,
@@ -549,7 +549,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
 
-            return region.Entities.TryAdd(entity.Id, entity);
+            return region.Entities.TryAdd(entity.EntityId, entity);
         }
 
         public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
