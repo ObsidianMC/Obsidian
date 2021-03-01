@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
@@ -21,5 +22,7 @@ namespace Obsidian.API
 
         public Task RemoveAsync();
         public Task TickAsync();
+
+        public IEnumerable<IEntity> GetEntitiesNear(float distance);
     }
 }
