@@ -288,7 +288,7 @@ namespace Obsidian
             Logger.LogInformation($"Disconnected client");
 
             if (this.State == ClientState.Play)
-                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player));
+                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player, DateTimeOffset.Now));
 
             if (tcp.Connected)
             {
