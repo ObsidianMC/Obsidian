@@ -606,6 +606,14 @@ namespace Obsidian.Net
             value.Write(this);
         }
 
+        [WriteMethod]
+        public void WriteStatistic(Statistic value)
+        {
+            WriteVarInt(value.CategoryId);
+            WriteVarInt(value.StatisticId);
+            WriteVarInt(value.Value);
+        }
+
         public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
             await this.WriteUnsignedByteAsync(index);

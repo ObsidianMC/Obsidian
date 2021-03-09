@@ -4,20 +4,6 @@
         <name>Obsidian.API</name>
     </assembly>
     <members>
-        <member name="M:Obsidian.CommandFramework.Entities.Command.GetQualifiedName">
-            <summary>
-            Gets the full qualified command name.
-            </summary>
-            <returns>Full qualified command name.</returns>
-        </member>
-        <member name="M:Obsidian.CommandFramework.Entities.Command.ExecuteAsync(Obsidian.CommandFramework.ObsidianContext,System.String[])">
-            <summary>
-            Executes this command.
-            </summary>
-            <typeparam name="T">Context type.</typeparam>
-            <param name="Context">Execution context.</param>
-            <returns></returns>
-        </member>
         <member name="T:Obsidian.API.Events.AsyncEventHandler">
             <summary>
             Represents an asynchronous event handler.
@@ -63,6 +49,11 @@
             The message that was sent.
             </summary>
         </member>
+        <member name="P:Obsidian.API.Events.IncomingChatMessageEventArgs.Format">
+            <summary>
+            The message format.
+            </summary>
+        </member>
         <member name="P:Obsidian.API.Events.InventoryClickEventArgs.Inventory">
             <summary>
             Gets the clicked inventory
@@ -86,6 +77,11 @@
         <member name="P:Obsidian.API.Events.PlayerJoinEventArgs.JoinDate">
             <summary>
             The date the player joined.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Events.PlayerLeaveEventArgs.LeaveDate">
+            <summary>
+            The date the player left.
             </summary>
         </member>
         <member name="T:Obsidian.API.Plugins.AliasAttribute">
