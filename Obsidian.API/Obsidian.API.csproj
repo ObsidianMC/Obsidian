@@ -26,4 +26,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="docfx" Version="2.56.7" />
+  </ItemGroup>
+
 </Project>
