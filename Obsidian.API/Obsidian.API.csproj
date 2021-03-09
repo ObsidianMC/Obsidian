@@ -20,11 +20,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>E:\Git Repos\Obsidian\Obsidian.API\Obsidian.API.xml</DocumentationFile>
+    <DocumentationFile>Obsidian.API.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>E:\Git Repos\Obsidian\Obsidian.API\Obsidian.API.xml</DocumentationFile>
+    <DocumentationFile>Obsidian.API.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
