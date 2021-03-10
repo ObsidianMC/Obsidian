@@ -1199,6 +1199,19 @@
             Calculates the square of a <paramref name="number"/>.
             </summary>
         </member>
+        <member name="M:Obsidian.API.Traverse.#ctor(Obsidian.API.PositionF,Obsidian.API.PositionF)">
+            <summary>
+            Initializes instance of <see cref="T:Obsidian.API.Traverse"/> with given start and end points
+            </summary>
+            <param name="startPoint">Start point of traversal</param>
+            <param name="endPoint">End point of traversal</param>
+        </member>
+        <member name="M:Obsidian.API.Traverse.Run">
+            <summary>
+            Runs voxel traversing
+            </summary>
+            <returns>List of intersected positions</returns>
+        </member>
         <member name="T:Obsidian.API.Velocity">
             <summary>
             Represents velocity of an entity in the world.
