@@ -197,7 +197,7 @@ namespace Obsidian.Util.Extensions
                 if (!string.IsNullOrEmpty(msg) && msg.Length > 1)
                 {
                     var colorStr = msg[0].ToString().ToLower()[0];
-                    var consoleColor = ChatColor.FromCode(colorStr).ToConsoleColor();
+                    var consoleColor = ChatColor.FromCode(colorStr).ConsoleColor;
                     if (colorStr.IsRealChatColor())
                     {
                         if (colorStr == 'r') Console.ResetColor();

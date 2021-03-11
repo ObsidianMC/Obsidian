@@ -58,7 +58,7 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteBoolean(bool value)
         {
-            BaseStream.WriteByte(value ? 0x01 : 0x00);
+            BaseStream.WriteByte((byte)(value ? 0x01 : 0x00));
         }
 
         public async Task WriteBooleanAsync(bool value)
@@ -462,7 +462,7 @@ namespace Obsidian.Net
 
                 if (meta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", meta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(meta.Unbreakable ? 1 : 0));
 
                     if (meta.Durability > 0)
                         writer.WriteInt("Damage", meta.Durability);
@@ -753,7 +753,7 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(itemMeta.Unbreakable ? 1 : 0));
 
                     if (itemMeta.Durability > 0)
                         writer.WriteInt("Damage", itemMeta.Durability);
