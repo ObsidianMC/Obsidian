@@ -14,7 +14,7 @@ namespace Obsidian
     public static class Globals
     {
         public static HttpClient HttpClient { get; } = new HttpClient();
-        public static Random Random { get; } = new Random();
+        public static XorshiftRandom Random { get; } = new XorshiftRandom();
         public static GlobalConfig Config { get; set; }
         public static ILogger PacketLogger { get; set; }
         public static DefaultContractResolver ContractResolver { get; } = new DefaultContractResolver
