@@ -1,21 +1,19 @@
 ﻿using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
-namespace Obsidian.Util
+namespace MicroAsyncBenchmark
 {
     // This implements XorShift+.
-    public sealed class XorshiftRandom : IDisposable
+    public sealed class XorshiftRandom
     {
         private ulong state_a;
         private ulong state_b;
-        private SemaphoreSlim semaphore;
 
         public XorshiftRandom()
         {
             state_a = (ulong)Environment.TickCount64;
             state_b = (ulong)Environment.TickCount64 >> 32;
-            semaphore = new SemaphoreSlim(1, 1);
         }
 
         public int Next()
@@ -31,7 +29,23 @@ namespace Obsidian.Util
 
         public int Next(int minValue, int maxValue)
         {
-            return (Next() & (maxValue - minValue)) + minValue;
+            uint exclusiveRange = (uint)(maxValue - minValue);
+
+            if (exclusiveRange > 1)
+            {
+                int bits = Log2Ceiling(exclusiveRange);
+
+                while (true)
+                {
+                    uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
+                    if (result < exclusiveRange)
+                    {
+                        return (int)result + minValue;
+                    }
+                }
+            }
+
+            return minValue;
         }
 
         public double NextDouble()
@@ -49,6 +63,13 @@ namespace Obsidian.Util
             return Convert.ToSingle(Step());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private uint NextUInt32()
+        {
+            ulong value = Step();
+            return (uint)(value & 0xFFFFFFFF);
+        }
+
         /// <summary>
         /// Increases the RNG by one step and returns it's ulong value.
         /// https://en.wikipedia.org/wiki/Xorshift#xorshift+                                                                                           
@@ -56,28 +77,26 @@ namespace Obsidian.Util
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ulong Step()
         {
-            semaphore.Wait();
-            try
-            {
-                ulong t = state_a;
-                ulong s = state_b;
+            ulong t = state_a;
+            ulong s = state_b;
 
-                state_a = s;
-                t ^= t << 23;
-                t ^= t >> 17;
-                t ^= s ^ (s >> 26);
-                state_b = t;
-                return t + s;
-            }
-            finally
-            {
-                semaphore.Release();
-            }
+            state_a = s;
+            t ^= t << 23;
+            t ^= t >> 17;
+            t ^= s ^ (s >> 26);
+            state_b = t;
+            return t + s;
         }
 
-        public void Dispose()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int Log2Ceiling(uint value)
         {
-            semaphore.Dispose();
+            int result = BitOperations.Log2(value);
+            if (BitOperations.PopCount(value) != 1)
+            {
+                result++;
+            }
+            return result;
         }
     }
 }
