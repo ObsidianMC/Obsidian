@@ -23,24 +23,20 @@ namespace SamplePlugin
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs
-        public async Task OnLoad(IServer server)
+        public void OnLoad(IServer server)
         {
             Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
             Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
-
-            await Task.CompletedTask;
         }
 
-        public async Task OnPermissionRevoked(PermissionRevokedEventArgs args)
+        public void OnPermissionRevoked(PermissionRevokedEventArgs args)
         {
             Logger.Log($"Permission {args.Permission} revoked from player {args.Player.Username}");
-            await Task.CompletedTask;
         }
 
-        public async Task OnPermissionGranted(PermissionGrantedEventArgs args)
+        public void OnPermissionGranted(PermissionGrantedEventArgs args)
         {
             Logger.Log($"Permission {args.Permission} granted to player {args.Player.Username}");
-            await Task.CompletedTask;
         }
 
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)

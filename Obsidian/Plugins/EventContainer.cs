@@ -1,16 +1,16 @@
-﻿using System.Reflection;
+﻿using Obsidian.Events;
 
 namespace Obsidian.Plugins
 {
     internal class EventContainer
     {
         public string Name { get; }
-        public EventInfo Event { get; }
+        public IEventRegistry EventRegistry { get; }
 
-        public EventContainer(string name, EventInfo @event)
+        public EventContainer(string name, IEventRegistry eventRegistry)
         {
             Name = name;
-            Event = @event;
+            EventRegistry = eventRegistry;
         }
     }
 }
