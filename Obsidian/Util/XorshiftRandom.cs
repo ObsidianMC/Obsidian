@@ -1,29 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Obsidian.Util
 {
     // This implements XorShift+.
-    public class XorshiftRandom
+    public sealed class XorshiftRandom : IDisposable
     {
         private ulong state_a;
         private ulong state_b;
-        private Semaphore semaphore;
+        private SemaphoreSlim semaphore;
 
         public XorshiftRandom()
         {
             state_a = (ulong)Environment.TickCount64;
             state_b = (ulong)Environment.TickCount64 >> 32;
-            semaphore = new Semaphore(1, 1);
+            semaphore = new SemaphoreSlim(1, 1);
         }
 
         public int Next()
         {
-            var value = step();
+            var value = Step();
             return (int)(value & 0xFFFFFFFF);
         }
 
@@ -39,27 +36,27 @@ namespace Obsidian.Util
 
         public double NextDouble()
         {
-            return Convert.ToDouble(step());
+            return Convert.ToDouble(Step());
         }
 
         public ulong NextUlong()
         {
-            return step();
+            return Step();
         }
 
         public float NextSingle()
         {
-            return Convert.ToSingle(step());
+            return Convert.ToSingle(Step());
         }
 
         /// <summary>
         /// Increases the RNG by one step and returns it's ulong value.
         /// https://en.wikipedia.org/wiki/Xorshift#xorshift+                                                                                           
         /// </summary>
-        /// <returns></returns>
-        private ulong step()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ulong Step()
         {
-            semaphore.WaitOne();
+            semaphore.Wait();
             try
             {
                 ulong t = state_a;
@@ -76,6 +73,11 @@ namespace Obsidian.Util
             {
                 semaphore.Release();
             }
+        }
+
+        public void Dispose()
+        {
+            semaphore.Dispose();
         }
     }
 }
