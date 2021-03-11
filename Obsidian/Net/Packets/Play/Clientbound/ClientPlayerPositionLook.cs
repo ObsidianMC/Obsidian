@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class ClientPlayerPositionLook : ISerializablePacket
     {
         [Field(0), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(1)]
         public float Yaw { get; set; }

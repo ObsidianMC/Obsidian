@@ -15,7 +15,7 @@ namespace Obsidian.Entities
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal PositionF LastPosition { get; set; }
+        internal VectorF LastPosition { get; set; }
 
         internal Angle LastPitch { get; set; }
 
@@ -23,19 +23,19 @@ namespace Obsidian.Entities
 
         internal int TeleportId { get; set; }
 
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         public Angle Pitch { get; set; }
 
         public Angle Yaw { get; set; }
 
-        public PositionF LookDirection
+        public VectorF LookDirection
         {
             get
             {
                 float yaw = Yaw, pitch = Pitch; // avoid multiple conversions
                 float pitchCos = MathF.Cos(pitch);
-                PositionF direction = new PositionF
+                VectorF direction = new VectorF
                 {
                     X = MathF.Cos(yaw) * pitchCos,
                     Y = MathF.Sin(yaw) * pitchCos,
@@ -66,7 +66,7 @@ namespace Obsidian.Entities
         }
 
         #region Update methods
-        internal virtual async Task UpdateAsync(Server server, PositionF position, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, VectorF position, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastPosition * 32 * 64;
@@ -115,7 +115,7 @@ namespace Obsidian.Entities
             await Task.CompletedTask;
         }
 
-        internal virtual async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
+        internal virtual async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             var newPos = position * 32 * 64;
             var lastPos = this.LastPosition * 32 * 64;
@@ -183,14 +183,14 @@ namespace Obsidian.Entities
             this.LastPitch = this.Pitch;
         }
 
-        public void UpdatePosition(PositionF pos, bool onGround = true)
+        public void UpdatePosition(VectorF pos, bool onGround = true)
         {
             this.CopyPosition();
             this.Position = pos;
             this.OnGround = onGround;
         }
 
-        public void UpdatePosition(PositionF pos, Angle yaw, Angle pitch, bool onGround = true)
+        public void UpdatePosition(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
             this.CopyPosition(true);
             this.Position = pos;
@@ -202,7 +202,7 @@ namespace Obsidian.Entities
         public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
             this.CopyPosition();
-            this.Position = new PositionF(x, y, z);
+            this.Position = new VectorF(x, y, z);
             this.OnGround = onGround;
         }
 

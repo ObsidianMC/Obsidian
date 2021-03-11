@@ -1040,163 +1040,300 @@
             A class that represents an angle from 0° to 360° degrees.
             </summary>
         </member>
-        <member name="T:Obsidian.API.Position">
+        <member name="T:Obsidian.API.Vector">
             <summary>
-            Represents position in three-dimensional space. Uses <see cref="T:System.Int32"/>.
+            Represents a three-dimensional vector. Uses <see cref="T:System.Int32"/>.
             </summary>
         </member>
-        <member name="P:Obsidian.API.Position.X">
+        <member name="P:Obsidian.API.Vector.X">
             <summary>
-            X component of the <see cref="T:Obsidian.API.Position"/>.
+            The X component of the <see cref="T:Obsidian.API.Vector"/>.
             </summary>
         </member>
-        <member name="P:Obsidian.API.Position.Y">
+        <member name="P:Obsidian.API.Vector.Y">
             <summary>
-            Y component of the <see cref="T:Obsidian.API.Position"/>.
+            The Y component of the <see cref="T:Obsidian.API.Vector"/>.
             </summary>
         </member>
-        <member name="P:Obsidian.API.Position.Z">
+        <member name="P:Obsidian.API.Vector.Z">
             <summary>
-            Z component of the <see cref="T:Obsidian.API.Position"/>.
+            The Z component of the <see cref="T:Obsidian.API.Vector"/>.
             </summary>
         </member>
-        <member name="M:Obsidian.API.Position.#ctor(System.Int32)">
+        <member name="M:Obsidian.API.Vector.#ctor(System.Int32)">
             <summary>
-            Creates new instance of <see cref="T:Obsidian.API.Position"/> with <see cref="P:Obsidian.API.Position.X"/>, <see cref="P:Obsidian.API.Position.Y"/> and <see cref="P:Obsidian.API.Position.Z"/> set to <paramref name="value"/>.
+            Creates new instance of <see cref="T:Obsidian.API.Vector"/> with <see cref="P:Obsidian.API.Vector.X"/>, <see cref="P:Obsidian.API.Vector.Y"/> and <see cref="P:Obsidian.API.Vector.Z"/> set to <paramref name="value"/>.
             </summary>
-            <param name="value">Value of <see cref="P:Obsidian.API.Position.X"/>, <see cref="P:Obsidian.API.Position.Y"/> and <see cref="P:Obsidian.API.Position.Z"/>.</param>
+            <param name="value">Value of <see cref="P:Obsidian.API.Vector.X"/>, <see cref="P:Obsidian.API.Vector.Y"/> and <see cref="P:Obsidian.API.Vector.Z"/>.</param>
         </member>
-        <member name="M:Obsidian.API.Position.#ctor(System.Int32,System.Int32,System.Int32)">
+        <member name="M:Obsidian.API.Vector.#ctor(System.Int32,System.Int32,System.Int32)">
             <summary>
-            Creates a new instance of <see cref="T:Obsidian.API.Position"/> with specific values.
-            </summary>
-            <param name="x">Value of X coordinate.</param>
-            <param name="y">Value of Y coordinate.</param>
-            <param name="z">Value of Z coordinate.</param>
-        </member>
-        <member name="M:Obsidian.API.Position.ToString">
-            <summary>
-            Returns <see cref="T:Obsidian.API.Position"/> formatted as a <see cref="T:System.String"/>.
-            </summary>
-            <returns></returns>
-        </member>
-        <member name="P:Obsidian.API.Position.Magnitude">
-            <summary>
-            Calculates distance of this <see cref="T:Obsidian.API.Position"/> from <see cref="F:Obsidian.API.Position.Zero"/>.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.Position.Equals(Obsidian.API.Position)">
-            <summary>
-            Indicates whether this <see cref="T:Obsidian.API.Position"/> is near equal to <paramref name="other"/>.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.Position.Clamp(Obsidian.API.Position,Obsidian.API.Position)">
-            <summary>
-            Returns <see cref="T:Obsidian.API.Position"/> clamped to the inclusive range of <paramref name="min"/> and <paramref name="max"/>.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.Position.ChunkClamp">
-            <summary>
-            Returns <see cref="T:Obsidian.API.Position"/> clamped to fit inside a single minecraft chunk.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.Position.DistanceTo(Obsidian.API.Position,Obsidian.API.Position)">
-            <summary>
-            Calculates the distance between two <see cref="T:Obsidian.API.Position"/> objects.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.Position.Square(System.Int32)">
-            <summary>
-            Calculates the square of a <paramref name="number"/>.
-            </summary>
-        </member>
-        <member name="T:Obsidian.API.PositionF">
-            <summary>
-            Represents position in three-dimensional space. Uses <see cref="T:System.Single"/>.
-            </summary>
-        </member>
-        <member name="P:Obsidian.API.PositionF.X">
-            <summary>
-            X component of the <see cref="T:Obsidian.API.PositionF"/>.
-            </summary>
-        </member>
-        <member name="P:Obsidian.API.PositionF.Y">
-            <summary>
-            Y component of the <see cref="T:Obsidian.API.PositionF"/>.
-            </summary>
-        </member>
-        <member name="P:Obsidian.API.PositionF.Z">
-            <summary>
-            Z component of the <see cref="T:Obsidian.API.PositionF"/>.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.PositionF.#ctor(System.Single)">
-            <summary>
-            Creates new instance of <see cref="T:Obsidian.API.PositionF"/> with <see cref="P:Obsidian.API.PositionF.X"/>, <see cref="P:Obsidian.API.PositionF.Y"/> and <see cref="P:Obsidian.API.PositionF.Z"/> set to <paramref name="value"/>.
-            </summary>
-            <param name="value">Value of <see cref="P:Obsidian.API.PositionF.X"/>, <see cref="P:Obsidian.API.PositionF.Y"/> and <see cref="P:Obsidian.API.PositionF.Z"/>.</param>
-        </member>
-        <member name="M:Obsidian.API.PositionF.#ctor(System.Int32,System.Int32,System.Int32)">
-            <summary>
-            Creates a new instance of <see cref="T:Obsidian.API.PositionF"/> with specific values.
+            Creates a new instance of <see cref="T:Obsidian.API.Vector"/> with specific values.
             </summary>
             <param name="x">Value of X coordinate.</param>
             <param name="y">Value of Y coordinate.</param>
             <param name="z">Value of Z coordinate.</param>
         </member>
-        <member name="M:Obsidian.API.PositionF.#ctor(System.Single,System.Single,System.Single)">
+        <member name="P:Obsidian.API.Vector.Magnitude">
             <summary>
-            Creates a new instance of <see cref="T:Obsidian.API.PositionF"/> with specific values.
+            Calculates magnitude of this <see cref="T:Obsidian.API.Vector"/>.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.MagnitudeSquared">
+            <summary>
+            Calculates magnitude of this <see cref="T:Obsidian.API.Vector"/> squared.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.Equals(Obsidian.API.Vector)">
+            <summary>
+            Indicates whether this <see cref="T:Obsidian.API.Vector"/> is near equal to <paramref name="other"/>.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.Clamp(Obsidian.API.Vector,Obsidian.API.Vector)">
+            <summary>
+            Returns <see cref="T:Obsidian.API.Vector"/> clamped to the inclusive range of <paramref name="min"/> and <paramref name="max"/>.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.ChunkClamp">
+            <summary>
+            Returns <see cref="T:Obsidian.API.Vector"/> clamped to fit inside a single minecraft chunk.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.ChunkClamped(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Creates new <see cref="T:Obsidian.API.Vector"/> clamped to fit inside a single minecraft chunk.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.Distance(Obsidian.API.Vector,Obsidian.API.Vector)">
+            <summary>
+            Calculates the distance between two <see cref="T:Obsidian.API.Vector"/>s.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.Vector.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Obsidian.API.Vector.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:Obsidian.API.Vector.ToString">
+            <summary>
+            Returns <see cref="T:Obsidian.API.Vector"/> formatted as a <see cref="T:System.String"/>.
+            </summary>
+            <returns>String representaion of this <see cref="T:Obsidian.API.Vector"/>.</returns>
+        </member>
+        <member name="F:Obsidian.API.Vector.Zero">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.One">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(1, 1, 1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Up">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 1, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Down">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, -1, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Left">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(-1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Right">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Backwards">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 0, -1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.Forwards">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 0, 1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.East">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.West">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(-1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.North">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 0, -1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.Vector.South">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.Vector"/> with coordinates <c>(0, 0, 1)</c>.
+            </summary>
+        </member>
+        <member name="T:Obsidian.API.VectorF">
+            <summary>
+            Represents a three-dimensional vector. Uses <see cref="T:System.Single"/>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.VectorF.X">
+            <summary>
+            The X component of the <see cref="T:Obsidian.API.VectorF"/>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.VectorF.Y">
+            <summary>
+            The Y component of the <see cref="T:Obsidian.API.VectorF"/>.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.VectorF.Z">
+            <summary>
+            The Z component of the <see cref="T:Obsidian.API.VectorF"/>.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.VectorF.#ctor(System.Single)">
+            <summary>
+            Creates new instance of <see cref="T:Obsidian.API.VectorF"/> with <see cref="P:Obsidian.API.VectorF.X"/>, <see cref="P:Obsidian.API.VectorF.Y"/> and <see cref="P:Obsidian.API.VectorF.Z"/> set to <paramref name="value"/>.
+            </summary>
+            <param name="value">Value of <see cref="P:Obsidian.API.VectorF.X"/>, <see cref="P:Obsidian.API.VectorF.Y"/> and <see cref="P:Obsidian.API.VectorF.Z"/>.</param>
+        </member>
+        <member name="M:Obsidian.API.VectorF.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Creates a new instance of <see cref="T:Obsidian.API.VectorF"/> with specific values.
             </summary>
             <param name="x">Value of X coordinate.</param>
             <param name="y">Value of Y coordinate.</param>
             <param name="z">Value of Z coordinate.</param>
         </member>
-        <member name="M:Obsidian.API.PositionF.ToString">
+        <member name="M:Obsidian.API.VectorF.#ctor(System.Single,System.Single,System.Single)">
             <summary>
-            Returns <see cref="T:Obsidian.API.PositionF"/> formatted as a <see cref="T:System.String"/>.
+            Creates a new instance of <see cref="T:Obsidian.API.VectorF"/> with specific values.
             </summary>
-            <returns></returns>
+            <param name="x">Value of X coordinate.</param>
+            <param name="y">Value of Y coordinate.</param>
+            <param name="z">Value of Z coordinate.</param>
         </member>
-        <member name="P:Obsidian.API.PositionF.Magnitude">
+        <member name="P:Obsidian.API.VectorF.Magnitude">
             <summary>
-            Calculates distance of this <see cref="T:Obsidian.API.PositionF"/> from <see cref="F:Obsidian.API.PositionF.Zero"/>.
-            </summary>
-        </member>
-        <member name="M:Obsidian.API.PositionF.Equals(Obsidian.API.PositionF)">
-            <summary>
-            Indicates whether this <see cref="T:Obsidian.API.PositionF"/> is near equal to <paramref name="other"/>.
+            Calculates magnitude of this <see cref="T:Obsidian.API.VectorF"/>.
             </summary>
         </member>
-        <member name="M:Obsidian.API.PositionF.Floor">
+        <member name="M:Obsidian.API.VectorF.MagnitudeSquared">
             <summary>
-            Truncates the decimal component of each part of this <see cref="T:Obsidian.API.PositionF"/>.
+            Calculates magnitude of this <see cref="T:Obsidian.API.VectorF"/> squared.
             </summary>
         </member>
-        <member name="M:Obsidian.API.PositionF.Normalize">
+        <member name="M:Obsidian.API.VectorF.Equals(Obsidian.API.VectorF)">
             <summary>
-            Performs vector normalization on this <see cref="T:Obsidian.API.PositionF"/>'s coordinates.
-            </summary>
-            <returns>Normalized <see cref="T:Obsidian.API.PositionF"/>.</returns>
-        </member>
-        <member name="M:Obsidian.API.PositionF.Clamp(Obsidian.API.PositionF,Obsidian.API.PositionF)">
-            <summary>
-            Returns <see cref="T:Obsidian.API.PositionF"/> clamped to the inclusive range of <paramref name="min"/> and <paramref name="max"/>.
+            Indicates whether this <see cref="T:Obsidian.API.VectorF"/> is near equal to <paramref name="other"/>.
             </summary>
         </member>
-        <member name="M:Obsidian.API.PositionF.ChunkClamp">
+        <member name="M:Obsidian.API.VectorF.Floor">
             <summary>
-            Returns <see cref="T:Obsidian.API.PositionF"/> clamped to fit inside a single minecraft chunk.
+            Truncates the decimal component of each part of this <see cref="T:Obsidian.API.VectorF"/>.
             </summary>
         </member>
-        <member name="M:Obsidian.API.PositionF.DistanceTo(Obsidian.API.PositionF,Obsidian.API.PositionF)">
+        <member name="M:Obsidian.API.VectorF.Normalize">
             <summary>
-            Calculates the distance between two <see cref="T:Obsidian.API.PositionF"/> objects.
+            Performs vector normalization on this <see cref="T:Obsidian.API.VectorF"/>'s coordinates.
+            </summary>
+            <returns>Normalized <see cref="T:Obsidian.API.VectorF"/>.</returns>
+        </member>
+        <member name="M:Obsidian.API.VectorF.Clamp(Obsidian.API.VectorF,Obsidian.API.VectorF)">
+            <summary>
+            Returns <see cref="T:Obsidian.API.VectorF"/> clamped to the inclusive range of <paramref name="min"/> and <paramref name="max"/>.
             </summary>
         </member>
-        <member name="M:Obsidian.API.PositionF.Square(System.Single)">
+        <member name="M:Obsidian.API.VectorF.ChunkClamped(System.Single,System.Single,System.Single)">
             <summary>
-            Calculates the square of a <paramref name="number"/>.
+            Creates new <see cref="T:Obsidian.API.Vector"/> clamped to fit inside a single minecraft chunk.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.VectorF.Distance(Obsidian.API.VectorF,Obsidian.API.VectorF)">
+            <summary>
+            Calculates the distance between two <see cref="T:Obsidian.API.VectorF"/>s.
+            </summary>
+        </member>
+        <member name="M:Obsidian.API.VectorF.Equals(System.Object)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Obsidian.API.VectorF.GetHashCode">
+            <inheritdoc/>
+        </member>
+        <member name="M:Obsidian.API.VectorF.ToString">
+            <summary>
+            Returns <see cref="T:Obsidian.API.VectorF"/> formatted as a <see cref="T:System.String"/>.
+            </summary>
+            <returns>String representaion of this <see cref="T:Obsidian.API.VectorF"/>.</returns>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Zero">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.One">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(1, 1, 1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Up">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 1, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Down">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, -1, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Left">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(-1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Right">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Backwards">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 0, -1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.Forwards">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 0, 1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.East">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.West">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(-1, 0, 0)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.North">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 0, -1)</c>.
+            </summary>
+        </member>
+        <member name="F:Obsidian.API.VectorF.South">
+            <summary>
+            A read-only field that represents <see cref="T:Obsidian.API.VectorF"/> with coordinates <c>(0, 0, 1)</c>.
             </summary>
         </member>
         <member name="T:Obsidian.API.Velocity">
@@ -1248,26 +1385,26 @@
             <param name="y">How many blocks can be travelled on the Y axis in a tick (50ms).</param>
             <param name="z">How many blocks can be travelled on the Z axis in a tick (50ms).</param>
         </member>
-        <member name="M:Obsidian.API.Velocity.FromPosition(Obsidian.API.Position)">
+        <member name="M:Obsidian.API.Velocity.FromPosition(Obsidian.API.Vector)">
             <summary>
-            Turns <see cref="T:Obsidian.API.Position"/> into <see cref="T:Obsidian.API.Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
+            Turns <see cref="T:Obsidian.API.Vector"/> into <see cref="T:Obsidian.API.Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
             </summary>
-            <param name="position"><see cref="T:Obsidian.API.Position"/> to be used for conversion.</param>
+            <param name="position"><see cref="T:Obsidian.API.Vector"/> to be used for conversion.</param>
         </member>
-        <member name="M:Obsidian.API.Velocity.FromPosition(Obsidian.API.PositionF)">
+        <member name="M:Obsidian.API.Velocity.FromPosition(Obsidian.API.VectorF)">
             <summary>
-            Turns <see cref="T:Obsidian.API.PositionF"/> into <see cref="T:Obsidian.API.Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
+            Turns <see cref="T:Obsidian.API.VectorF"/> into <see cref="T:Obsidian.API.Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
             </summary>
-            <param name="position"><see cref="T:Obsidian.API.PositionF"/> to be used for conversion.</param>
+            <param name="position"><see cref="T:Obsidian.API.VectorF"/> to be used for conversion.</param>
         </member>
-        <member name="M:Obsidian.API.Velocity.FromDirection(Obsidian.API.Position,Obsidian.API.Position)">
+        <member name="M:Obsidian.API.Velocity.FromDirection(Obsidian.API.Vector,Obsidian.API.Vector)">
             <summary>
             Returns such velocity, that can travel from <paramref name="from"/> to <paramref name="to"/> in a second.
             </summary>
             <param name="from">Starting position.</param>
             <param name="to">Target position.</param>
         </member>
-        <member name="M:Obsidian.API.Velocity.FromDirection(Obsidian.API.PositionF,Obsidian.API.PositionF)">
+        <member name="M:Obsidian.API.Velocity.FromDirection(Obsidian.API.VectorF,Obsidian.API.VectorF)">
             <summary>
             Returns such velocity, that can travel from <paramref name="from"/> to <paramref name="to"/> in a second.
             </summary>

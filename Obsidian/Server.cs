@@ -291,7 +291,7 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
+        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
@@ -402,7 +402,7 @@ namespace Obsidian
                         if (droppedItem is null || droppedItem.Type == Material.Air)
                             return;
 
-                        var loc = new PositionF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+                        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
                         var item = new ItemEntity
                         {
@@ -514,7 +514,7 @@ namespace Obsidian
                             Id = itemId,
                             EntityBitMask = EntityBitMask.Glowing,
                             World = this.World,
-                            Position = digging.Position + new PositionF(
+                            Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f)

@@ -391,7 +391,7 @@ namespace Obsidian.Net
         }
 
         [ReadMethod]
-        public Position ReadPosition()
+        public Vector ReadPosition()
         {
             ulong value = this.ReadUnsignedLong();
 
@@ -408,7 +408,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new Position
+            return new Vector
             {
                 X = (int)x,
 
@@ -419,9 +419,9 @@ namespace Obsidian.Net
         }
 
         [ReadMethod, Absolute]
-        public Position ReadAbsolutePosition()
+        public Vector ReadAbsolutePosition()
         {
-            return new Position
+            return new Vector
             {
                 X = (int)ReadDouble(),
                 Y = (int)ReadDouble(),
@@ -429,9 +429,9 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<Position> ReadAbsolutePositionAsync()
+        public async Task<Vector> ReadAbsolutePositionAsync()
         {
-            return new Position
+            return new Vector
             {
                 X = (int)await ReadDoubleAsync(),
                 Y = (int)await ReadDoubleAsync(),
@@ -439,7 +439,7 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<Position> ReadPositionAsync()
+        public async Task<Vector> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
 
@@ -456,7 +456,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new Position
+            return new Vector
             {
                 X = (int)x,
 
@@ -467,7 +467,7 @@ namespace Obsidian.Net
         }
 
         [ReadMethod]
-        public PositionF ReadPositionF()
+        public VectorF ReadPositionF()
         {
             ulong value = this.ReadUnsignedLong();
 
@@ -484,7 +484,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new PositionF
+            return new VectorF
             {
                 X = x,
 
@@ -495,9 +495,9 @@ namespace Obsidian.Net
         }
 
         [ReadMethod, Absolute]
-        public PositionF ReadAbsolutePositionF()
+        public VectorF ReadAbsolutePositionF()
         {
-            return new PositionF
+            return new VectorF
             {
                 X = (float)ReadDouble(),
                 Y = (float)ReadDouble(),
@@ -505,9 +505,9 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<PositionF> ReadAbsolutePositionFAsync()
+        public async Task<VectorF> ReadAbsolutePositionFAsync()
         {
-            return new PositionF
+            return new VectorF
             {
                 X = (float) await ReadDoubleAsync(),
                 Y = (float) await ReadDoubleAsync(),
@@ -515,7 +515,7 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<PositionF> ReadPositionFAsync()
+        public async Task<VectorF> ReadPositionFAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
 
@@ -532,7 +532,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new PositionF
+            return new VectorF
             {
                 X = x,
 
