@@ -6,10 +6,10 @@ namespace Obsidian.API
     public struct BoundingBox : IEquatable<BoundingBox>
     {
         public const int CornerCount = 8;
-        public PositionF Max;
-        public PositionF Min;
+        public VectorF Max;
+        public VectorF Min;
 
-        public BoundingBox(PositionF min, PositionF max)
+        public BoundingBox(VectorF min, VectorF max)
         {
             this.Min = min;
             this.Max = max;
@@ -54,26 +54,26 @@ namespace Obsidian.API
             return ContainmentType.Intersects;
         }
 
-        public bool Contains(PositionF vec)
+        public bool Contains(VectorF vec)
         {
             return Min.X <= vec.X && vec.X <= Max.X &&
                    Min.Y <= vec.Y && vec.Y <= Max.Y &&
                    Min.Z <= vec.Z && vec.Z <= Max.Z;
         }
 
-        public static BoundingBox CreateFromPoints(IEnumerable<PositionF> points)
+        public static BoundingBox CreateFromPoints(IEnumerable<VectorF> points)
         {
             if (points == null)
                 throw new ArgumentNullException();
 
             var empty = true;
-            var pos2 = new PositionF(float.MaxValue);
-            var pos1 = new PositionF(float.MinValue);
+            var pos2 = new VectorF(float.MaxValue);
+            var pos1 = new VectorF(float.MinValue);
 
             foreach (var Position in points)
             {
-                pos2 = PositionF.Min(pos2, Position);
-                pos1 = PositionF.Max(pos1, Position);
+                pos2 = VectorF.Min(pos2, Position);
+                pos1 = VectorF.Max(pos1, Position);
                 empty = false;
             }
 
@@ -83,20 +83,20 @@ namespace Obsidian.API
             return new BoundingBox(pos2, pos1);
         }
 
-        public BoundingBox OffsetBy(PositionF offset) => new BoundingBox(Min + offset, Max + offset);
+        public BoundingBox OffsetBy(VectorF offset) => new BoundingBox(Min + offset, Max + offset);
 
-        public PositionF[] GetCorners()
+        public VectorF[] GetCorners()
         {
             return new[]
             {
-                new PositionF(Min.X, Max.Y, Max.Z),
-                new PositionF(Max.X, Max.Y, Max.Z),
-                new PositionF(Max.X, Min.Y, Max.Z),
-                new PositionF(Min.X, Min.Y, Max.Z),
-                new PositionF(Min.X, Max.Y, Min.Z),
-                new PositionF(Max.X, Max.Y, Min.Z),
-                new PositionF(Max.X, Min.Y, Min.Z),
-                new PositionF(Min.X, Min.Y, Min.Z)
+                new VectorF(Min.X, Max.Y, Max.Z),
+                new VectorF(Max.X, Max.Y, Max.Z),
+                new VectorF(Max.X, Min.Y, Max.Z),
+                new VectorF(Min.X, Min.Y, Max.Z),
+                new VectorF(Min.X, Max.Y, Min.Z),
+                new VectorF(Max.X, Max.Y, Min.Z),
+                new VectorF(Max.X, Min.Y, Min.Z),
+                new VectorF(Min.X, Min.Y, Min.Z)
             };
         }
 

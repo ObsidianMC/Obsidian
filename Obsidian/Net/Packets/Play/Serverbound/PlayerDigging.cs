@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public DiggingStatus Status { get; private set; }
 
         [Field(1)]
-        public Position Position { get; private set; }
+        public Vector Position { get; private set; }
 
         [Field(2), ActualType(typeof(sbyte))]
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit

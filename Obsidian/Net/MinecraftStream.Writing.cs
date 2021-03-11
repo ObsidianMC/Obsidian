@@ -58,7 +58,7 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteBoolean(bool value)
         {
-            BaseStream.WriteByte(value ? 0x01 : 0x00);
+            BaseStream.WriteByte((byte)(value ? 0x01 : 0x00));
         }
 
         public async Task WriteBooleanAsync(bool value)
@@ -386,7 +386,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePosition(Position value)
+        public void WritePosition(API.Vector value)
         {
             var val = (long)(value.X & 0x3FFFFFF) << 38;
             val |= (long)(value.Z & 0x3FFFFFF) << 12;
@@ -396,7 +396,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod, Absolute]
-        public void WriteAbsolutePosition(Position value)
+        public void WriteAbsolutePosition(API.Vector value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
@@ -404,7 +404,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePositionF(PositionF value)
+        public void WritePositionF(VectorF value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
             val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
@@ -414,7 +414,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod, Absolute]
-        public void WriteAbsolutePositionF(PositionF value)
+        public void WriteAbsolutePositionF(VectorF value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
@@ -462,7 +462,7 @@ namespace Obsidian.Net
 
                 if (meta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", meta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(meta.Unbreakable ? 1 : 0));
 
                     if (meta.Durability > 0)
                         writer.WriteInt("Damage", meta.Durability);
@@ -659,14 +659,14 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.Position:
-                    await this.WritePositionFAsync((PositionF)value);
+                    await this.WritePositionFAsync((VectorF)value);
                     break;
 
                 case EntityMetadataType.OptPosition:
                     await this.WriteBooleanAsync(optional);
 
                     if (optional)
-                        await this.WritePositionFAsync((PositionF)value);
+                        await this.WritePositionFAsync((VectorF)value);
 
                     break;
 
@@ -712,7 +712,7 @@ namespace Obsidian.Net
 
         public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
 
-        public async Task WritePositionAsync(Position value)
+        public async Task WritePositionAsync(API.Vector value)
         {
             var val = (long)(value.X & 0x3FFFFFF) << 38;
             val |= (long)(value.Z & 0x3FFFFFF) << 12;
@@ -721,7 +721,7 @@ namespace Obsidian.Net
             await this.WriteLongAsync(val);
         }
 
-        public async Task WritePositionFAsync(PositionF value)
+        public async Task WritePositionFAsync(VectorF value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
             val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
@@ -753,7 +753,7 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(itemMeta.Unbreakable ? 1 : 0));
 
                     if (itemMeta.Durability > 0)
                         writer.WriteInt("Damage", itemMeta.Durability);

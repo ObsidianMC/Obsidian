@@ -132,7 +132,7 @@ namespace Obsidian.WorldData
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
 
-        public Region GetRegionForChunk(Position location)
+        public Region GetRegionForChunk(Vector location)
         {
             return this.GetRegionForChunk(location.X, location.Z);
         }
@@ -169,9 +169,9 @@ namespace Obsidian.WorldData
         /// </summary>
         /// <param name="worldLocation">World location of the chunk.</param>
         /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
-        public Chunk GetChunk(Position worldLocation) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord());
+        public Chunk GetChunk(Vector worldLocation) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord());
 
-        public Block GetBlock(Position location) => GetBlock(location.X, location.Y, location.Z);
+        public Block GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
@@ -180,7 +180,7 @@ namespace Obsidian.WorldData
             return chunk is null ? Block.Air : chunk.GetBlock(x, y, z);
         }
 
-        public void SetBlock(Position location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
+        public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
@@ -201,7 +201,7 @@ namespace Obsidian.WorldData
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlockMeta(x, y, z, meta);
         }
 
-        public void SetBlockMeta(Position location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
+        public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
@@ -212,9 +212,9 @@ namespace Obsidian.WorldData
             return this.Regions[value].LoadedChunks[chunkX, chunkZ].GetBlockMeta(x, y, z);
         }
 
-        public BlockMeta GetBlockMeta(Position location) => this.GetBlockMeta(location.X, location.Y, location.Z);
+        public BlockMeta GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
 
-        public IEnumerable<Entity> GetEntitiesNear(PositionF location, float distance = 10f)
+        public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
         {
             var (chunkX, chunkZ) = location.ToChunkCoord();
 
@@ -223,7 +223,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 return new List<Entity>();
 
-            return region.Entities.Select(x => x.Value).Where(x => PositionF.DistanceTo(location, x.Position) <= distance);
+            return region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance);
         }
 
         public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
@@ -484,12 +484,12 @@ namespace Obsidian.WorldData
             return region.Entities.TryAdd(entity.EntityId, entity);
         }
 
-        public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
+        public async Task SpawnExperienceOrbs(VectorF position, short count = 1)
         {
             await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
         }
 
-        public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
+        public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
         {
             if (uuid == Guid.Empty) uuid = Guid.NewGuid();
             await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));

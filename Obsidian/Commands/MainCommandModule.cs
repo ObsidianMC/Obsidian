@@ -260,7 +260,7 @@ namespace Obsidian.Commands
         #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-        public async Task TeleportAsync(CommandContext Context, [Remaining] PositionF location)
+        public async Task TeleportAsync(CommandContext Context, [Remaining] VectorF location)
         {
             var player = (Player)Context.Player;
             await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");

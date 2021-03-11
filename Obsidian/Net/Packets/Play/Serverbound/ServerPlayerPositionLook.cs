@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class ServerPlayerPositionLook : IPacket
     {
         [Field(0), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(1)]
         public float Pitch { get; set; }

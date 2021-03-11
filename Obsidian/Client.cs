@@ -384,7 +384,7 @@ namespace Obsidian
             await this.LoadChunksAsync();
 
             //TODO: check for last position
-            var spawnPosition = new PositionF(
+            var spawnPosition = new VectorF(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ);
