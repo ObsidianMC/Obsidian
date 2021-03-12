@@ -5,15 +5,15 @@ using System.Runtime.CompilerServices;
 namespace Obsidian.Util
 {
     // This implements XorShift+.
-    public sealed class XorshiftRandom
+    public struct XorshiftRandom
     {
         private ulong state_a;
         private ulong state_b;
 
-        public XorshiftRandom()
+        public XorshiftRandom(long seed)
         {
-            state_a = (ulong)Environment.TickCount64;
-            state_b = (ulong)Environment.TickCount64 >> 32;
+            state_a = (ulong)seed;
+            state_b = (ulong)seed >> 32;
         }
 
         public int Next()
@@ -68,6 +68,11 @@ namespace Obsidian.Util
         {
             ulong value = Step();
             return (uint)(value & 0xFFFFFFFF);
+        }
+
+        public static XorshiftRandom Create()
+        {
+	        return new(Environment.TickCount64);
         }
 
         /// <summary>
