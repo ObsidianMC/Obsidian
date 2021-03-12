@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class PlayerPosition : IPacket
     {
         [Field(0), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(1)]
 
@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerPosition(PositionF pos, bool onground)
+        public PlayerPosition(VectorF pos, bool onground)
         {
             this.Position = pos;
             this.OnGround = onground;

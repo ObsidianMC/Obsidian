@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public EntityType Type { get; set; }
 
         [Field(3), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(4)]
         public Angle Yaw { get; set; }

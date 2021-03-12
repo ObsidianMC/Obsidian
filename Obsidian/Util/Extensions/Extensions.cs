@@ -84,7 +84,7 @@ namespace Obsidian.Util.Extensions
 
         public static int ToChunkCoord(this int value) => value >> 4;
 
-        public static (int x, int z) ToChunkCoord(this PositionF value) => ((int)value.X >> 4, (int)value.Z >> 4);
+        public static (int x, int z) ToChunkCoord(this VectorF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 

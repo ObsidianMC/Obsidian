@@ -11,7 +11,7 @@ namespace Obsidian.API
         public long Time { get; }
         public Gamemode GameType { get; }
 
-        public Task SpawnExperienceOrbs(PositionF position, short count);
-        public Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default);
+        public Task SpawnExperienceOrbs(VectorF position, short count);
+        public Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default);
     }
 }

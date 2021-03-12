@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Guid Uuid { get; set; }
 
         [Field(2), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(3)]
         public Angle Yaw { get; set; }

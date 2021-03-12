@@ -13,9 +13,9 @@ namespace Obsidian.Events.EventArgs
         /// </summary>
         public Block Block { get; }
 
-        public PositionF Position { get; }
+        public VectorF Position { get; }
 
-        public BlockInteractEventArgs(Player who, Block block, PositionF location) : base(who)
+        public BlockInteractEventArgs(Player who, Block block, VectorF location) : base(who)
         {
             this.Block = block;
             this.Position = location;

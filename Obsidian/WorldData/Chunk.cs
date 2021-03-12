@@ -59,7 +59,7 @@ namespace Obsidian.WorldData
             }
         }
 
-        public Block GetBlock(Position position) => GetBlock(position.X, position.Y, position.Z);
+        public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
@@ -67,7 +67,7 @@ namespace Obsidian.WorldData
             return new Block(value);
         }
 
-        public void SetBlock(Position position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
+        public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
@@ -89,7 +89,7 @@ namespace Obsidian.WorldData
             return this.BlockMetaStore.GetValueOrDefault(value);
         }
 
-        public BlockMeta GetBlockMeta(Position position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
+        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
@@ -100,7 +100,7 @@ namespace Obsidian.WorldData
             this.BlockMetaStore[value] = meta;
         }
 
-        public void SetBlockMeta(Position position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
+        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
 
         public void CalculateHeightmap()
         {

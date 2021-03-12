@@ -106,7 +106,7 @@ namespace Obsidian.Entities
             LoadPerms();
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
@@ -145,7 +145,7 @@ namespace Obsidian.Entities
             }
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
@@ -297,7 +297,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task TeleportAsync(PositionF pos)
+        public async Task TeleportAsync(VectorF pos)
         {
             this.LastPosition = this.Position;
             this.Position = pos;

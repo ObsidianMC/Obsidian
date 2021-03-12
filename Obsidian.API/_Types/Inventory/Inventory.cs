@@ -12,7 +12,7 @@ namespace Obsidian.API
 
         public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 
-        public Position BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public Guid Owner { get; set; }
 
