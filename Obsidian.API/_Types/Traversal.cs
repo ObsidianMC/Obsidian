@@ -9,8 +9,8 @@ namespace Obsidian.API
 {
     public class Traverse
     {
-        private PositionF StartPoint { get; }
-        private PositionF EndPoint { get; }
+        private VectorF StartPoint { get; }
+        private VectorF EndPoint { get; }
 
         /// <summary>
         /// Initializes instance of <see cref="Traverse"/> with given start and end points
@@ -18,7 +18,7 @@ namespace Obsidian.API
         /// <param name="startPoint">Start point of traversal</param>
         /// <param name="endPoint">End point of traversal</param>
 
-        public Traverse(PositionF startPoint, PositionF endPoint)
+        public Traverse(VectorF startPoint, VectorF endPoint)
         {
             StartPoint = startPoint;
             EndPoint = endPoint;
@@ -26,27 +26,27 @@ namespace Obsidian.API
 
         private static float Frac0(float x)
         {
-            return (float)(x - Math.Floor(x));
+            return x - MathF.Floor(x);
         }
         private static float Frac1(float x)
         {
-            return (float)(1 - x + Math.Floor(x));
+            return 1 - x + MathF.Floor(x);
         }
 
         /// <summary>
         /// Runs voxel traversing
         /// </summary>
         /// <returns>List of intersected positions</returns>
-        public List<PositionF> Run()
+        public List<VectorF> Run()
         {
 
-            List<PositionF> blocks = new List<PositionF>();
+            List<VectorF> blocks = new List<VectorF>();
 
             float tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
-            PositionF voxel = new PositionF();
+            VectorF voxel = new VectorF();
 
             float x1 = StartPoint.X, y1 = StartPoint.Y, z1 = StartPoint.Z; // start point   
-            float x2 = EndPoint.X, y2 = EndPoint.Y, z2 = EndPoint.Z; // start point   
+            float x2 = EndPoint.X, y2 = EndPoint.Y, z2 = EndPoint.Z; // end point   
 
 
             var dx = Math.Sign(x2 - x1); // x direction
