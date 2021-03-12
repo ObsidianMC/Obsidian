@@ -4,22 +4,9 @@
         <name>Obsidian.API</name>
     </assembly>
     <members>
-        <member name="T:Obsidian.API.Events.AsyncEventHandler">
-            <summary>
-            Represents an asynchronous event handler.
-            </summary>
-            <returns>Event handling task.</returns>
-        </member>
-        <member name="T:Obsidian.API.Events.AsyncEventHandler`1">
-            <summary>
-            Represents an asynchronous event handler.
-            </summary>
-            <typeparam name="T">Type of EventArgs for the event.</typeparam>
-            <returns>Event handling task.</returns>
-        </member>
         <member name="T:Obsidian.API.Events.AsyncEventArgs">
             <summary>
-            Represents asynchronous event arguments.
+            Represents the base class for classes that contain event data, where events are invoked asynchronously.
             </summary>
         </member>
         <member name="P:Obsidian.API.Events.AsyncEventArgs.Handled">
@@ -27,16 +14,10 @@
             Gets or sets whether the event was completely handled. Setting this to true will prevent remaining handlers from running.
             </summary>
         </member>
-        <member name="T:Obsidian.API.Events.AsyncEvent">
+        <member name="T:Obsidian.API.Events.BaseMinecraftEventArgs">
             <summary>
-            Represents an asynchronously-handled event.
+            Represents the base class for classes that contain minecraft event data.
             </summary>
-        </member>
-        <member name="T:Obsidian.API.Events.AsyncEvent`1">
-            <summary>
-            Represents an asynchronously-handled event.
-            </summary>
-            <typeparam name="T">Type of EventArgs for this event.</typeparam>
         </member>
         <member name="P:Obsidian.API.Events.BaseMinecraftEventArgs.Server">
             <summary>
@@ -44,6 +25,16 @@
             </summary>
         </member>
         <!-- Badly formed XML comment ignored for member "M:Obsidian.API.Events.BaseMinecraftEventArgs.#ctor(Obsidian.API.IServer)" -->
+        <member name="T:Obsidian.API.Events.ICancellable">
+            <summary>
+            Provides a mechanism for cancelling default behaviour.
+            </summary>
+        </member>
+        <member name="P:Obsidian.API.Events.ICancellable.Cancel">
+            <summary>
+            Gets or sets a value indicating whether the default behaviour should be cancelled.
+            </summary>
+        </member>
         <member name="P:Obsidian.API.Events.IncomingChatMessageEventArgs.Message">
             <summary>
             The message that was sent.
@@ -71,7 +62,7 @@
         </member>
         <member name="P:Obsidian.API.Events.PlayerEventArgs.Player">
             <summary>
-            The player involved in this event
+            The player involved in this event.
             </summary>
         </member>
         <member name="P:Obsidian.API.Events.PlayerJoinEventArgs.JoinDate">
@@ -1039,6 +1030,9 @@
             <summary>
             A class that represents an angle from 0° to 360° degrees.
             </summary>
+        </member>
+        <member name="M:Obsidian.API.HexColor.ToString">
+            <inheritdoc/>
         </member>
         <member name="T:Obsidian.API.Position">
             <summary>

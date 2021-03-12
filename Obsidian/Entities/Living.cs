@@ -18,7 +18,7 @@ namespace Obsidian.Entities
 
         public int AbsorbtionAmount { get; set; }
 
-        public Position BedBlockPosition { get; set; }
+        public Vector BedBlockPosition { get; set; }
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
@@ -36,7 +36,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
 
-            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Position.Zero);
+            await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Vector.Zero);
         }
 
         public override void Write(MinecraftStream stream)

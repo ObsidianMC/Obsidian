@@ -83,7 +83,7 @@ namespace Obsidian.Logging
                     {
                         var colorStr = msg[0].ToString().ToLower()[0];
 
-                        var color = ChatColor.FromCode(colorStr).ToConsoleColor();
+                        var color = ChatColor.FromCode(colorStr).ConsoleColor;
                         string[] lines = msg.Contains("\n") ? msg.Split("\n").ToArray() : new string[] { msg };
 
                         for (int i = 0; i < lines.Length; i++)

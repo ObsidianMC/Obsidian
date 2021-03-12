@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int EntityId { get; set; }
 
         [Field(1)]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         /// <summary>
         /// 0-9 to set it, any other value to remove it

@@ -9,14 +9,14 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class BlockChange : ISerializablePacket
     {
         [Field(0)]
-        public Position Position { get; private set; }
+        public Vector Position { get; private set; }
 
         [Field(1), VarLength]
         public int BlockId { get; private set; }
 
         public int Id => 0x0B;
 
-        public BlockChange(Position position, int block)
+        public BlockChange(Vector position, int block)
         {
             Position = position;
             BlockId = block;

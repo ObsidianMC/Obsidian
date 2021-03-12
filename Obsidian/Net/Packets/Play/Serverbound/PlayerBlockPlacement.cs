@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
 
         [Field(1)]
-        public Position Position { get; set; }
+        public Vector Position { get; set; }
 
         [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }

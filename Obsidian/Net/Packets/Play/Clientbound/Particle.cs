@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool LongDistance { get; set; }
 
         [Field(2), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(3)]
         public float OffsetX { get; set; }
@@ -40,7 +40,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x22;
 
-        public Particle(ParticleType type, PositionF position, int particleCount)
+        public Particle(ParticleType type, VectorF position, int particleCount)
         {
             Type = type;
             Position = position;

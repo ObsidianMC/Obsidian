@@ -19,14 +19,14 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Motive { get; }
 
         [Field(3)]
-        public Position Position { get; }
+        public Vector Position { get; }
 
         [Field(4), ActualType(typeof(byte))]
         public PaintingDirection Direction { get; }
 
         public int Id => 0x03;
 
-        public SpawnPainting(Guid uuid, int motive, Position position, PaintingDirection direction)
+        public SpawnPainting(Guid uuid, int motive, Vector position, PaintingDirection direction)
         {
             UUID = uuid;
             Motive = motive;

@@ -84,7 +84,7 @@ namespace Obsidian.Util.Extensions
 
         public static int ToChunkCoord(this int value) => value >> 4;
 
-        public static (int x, int z) ToChunkCoord(this PositionF value) => ((int)value.X >> 4, (int)value.Z >> 4);
+        public static (int x, int z) ToChunkCoord(this VectorF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
@@ -197,7 +197,7 @@ namespace Obsidian.Util.Extensions
                 if (!string.IsNullOrEmpty(msg) && msg.Length > 1)
                 {
                     var colorStr = msg[0].ToString().ToLower()[0];
-                    var consoleColor = ChatColor.FromCode(colorStr).ToConsoleColor();
+                    var consoleColor = ChatColor.FromCode(colorStr).ConsoleColor;
                     if (colorStr.IsRealChatColor())
                     {
                         if (colorStr == 'r') Console.ResetColor();

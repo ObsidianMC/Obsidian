@@ -5,11 +5,11 @@ namespace Obsidian.WorldData
     public abstract class TileEntity
     {
         //[NbtIgnore]
-        public PositionF Position
+        public VectorF Position
         {
             get
             {
-                return new PositionF(X, Y, Z);
+                return new VectorF(X, Y, Z);
             }
         }
 

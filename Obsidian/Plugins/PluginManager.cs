@@ -2,6 +2,7 @@
 using Obsidian.API;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
+using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Util.Extensions;
@@ -153,7 +154,7 @@ namespace Obsidian.Plugins
             plugin.PermissionsChanged += OnPluginStateChanged;
 
             plugin.Plugin.unload = () => UnloadPlugin(plugin);
-            plugin.Plugin.registerSingleCommand = (Action method) => this.commands.RegisterSingleCommand(method, plugin, null);
+            plugin.Plugin.registerSingleCommand = (Action method) => commands.RegisterSingleCommand(method, plugin, null);
 
             if (plugin.IsReady)
             {
@@ -163,16 +164,18 @@ namespace Obsidian.Plugins
                 }
                 RegisterEvents(plugin);
                 InvokeOnLoad(plugin);
-                // Registering commands from within plugin
+
+                // Registering commands from within the plugin
                 commands.RegisterCommandClass(plugin, plugin.Plugin.GetType(), plugin.Plugin);
 
-                // registering commands found in plugin assembly
-                var commandroots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
-                foreach (var root in commandroots)
+                // Registering commands found in the plugin assembly
+                var commandRoots = plugin.Plugin.GetType().Assembly.GetTypes().Where(x => x.GetCustomAttributes(false).Any(y => y.GetType() == typeof(CommandRootAttribute)));
+                foreach (var root in commandRoots)
                 {
                     commands.RegisterCommandClass(plugin, root, null);
                 }
-                Registry.RegisterCommands((Server)this.server);
+                Registry.RegisterCommands((Server)server);
+
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
             }
@@ -324,9 +327,13 @@ namespace Obsidian.Plugins
         private void GetEvents(object eventSource)
         {
             var sourceType = eventSource.GetType();
-            foreach (var @event in sourceType.GetEvents())
+            foreach (var fieldInfo in sourceType.GetFields())
             {
-                events.Add(new EventContainer($"On{@event.Name}", @event));
+                var field = fieldInfo.GetValue(eventSource) as IEventRegistry;
+                if (field is not null && field.Name is not null)
+                {
+                    events.Add(new EventContainer($"On{field.Name}", field));
+                }
             }
         }
 
@@ -336,14 +343,9 @@ namespace Obsidian.Plugins
             foreach (var @event in events)
             {
                 var handler = pluginType.GetMethod(@event.Name);
-                if (handler != null)
+                if (handler is not null && @event.EventRegistry.TryRegisterEvent(handler, plugin.Plugin, out var @delegate))
                 {
-                    var @delegate = Delegate.CreateDelegate(@event.Event.EventHandlerType, plugin.Plugin, handler, throwOnBindFailure: false);
-                    if (@delegate != null)
-                    {
-                        @event.Event.AddEventHandler(eventSource, @delegate);
-                        plugin.EventHandlers.Add(@event, @delegate);
-                    }
+                    plugin.EventHandlers.Add(@event, @delegate);
                 }
             }
         }
@@ -354,7 +356,7 @@ namespace Obsidian.Plugins
             {
                 if (plugin.EventHandlers.TryGetValue(@event, out var handler))
                 {
-                    @event.Event.RemoveEventHandler(eventSource, handler);
+                    @event.EventRegistry.UnregisterEvent(handler);
                     plugin.EventHandlers.Remove(@event);
                 }
             }

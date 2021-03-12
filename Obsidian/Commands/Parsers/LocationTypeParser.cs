@@ -4,16 +4,16 @@ using System;
 
 namespace Obsidian.Commands.Parsers
 {
-    public class LocationTypeParser : BaseArgumentParser<PositionF>
+    public class LocationTypeParser : BaseArgumentParser<VectorF>
     {
         public LocationTypeParser() : base("minecraft:vec3")
         {
         }
 
-        public override bool TryParseArgument(string input, CommandContext context, out PositionF result)
+        public override bool TryParseArgument(string input, CommandContext context, out VectorF result)
         {
             var splitted = input.Split(' ');
-            var location = new PositionF();
+            var location = new VectorF();
 
             int count = 0;
             var ctx = context;
