@@ -2,7 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace MicroAsyncBenchmark
+namespace Obsidian.Util
 {
     // This implements XorShift+.
     public sealed class XorshiftRandom
