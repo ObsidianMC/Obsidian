@@ -36,8 +36,8 @@ namespace Obsidian.API
         /// <summary>
         /// Runs voxel traversing
         /// </summary>
-        /// <returns>List of intersected positions</returns>
-        public List<VectorF> Run()
+        /// <returns>IEnumerable of intersected positions</returns>
+        public IEnumerable<VectorF> Run()
         {
 
             List<VectorF> blocks = new List<VectorF>();
