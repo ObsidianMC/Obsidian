@@ -24,7 +24,20 @@ namespace Obsidian.Util
 
         public int Next(int maxValue)
         {
-            return Next() % maxValue;
+            if (maxValue > 1)
+            {
+                int bits = Log2Ceiling((uint)maxValue);
+                while (true)
+                {
+                    uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
+                    if (result < (uint)maxValue)
+                    {
+                        return (int)result;
+                    }
+                }
+            }
+
+            return 0;
         }
 
         public int Next(int minValue, int maxValue)
@@ -70,6 +83,7 @@ namespace Obsidian.Util
             return (uint)(value & 0xFFFFFFFF);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static XorshiftRandom Create()
         {
 	        return new(Environment.TickCount64);
