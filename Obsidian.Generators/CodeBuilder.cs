@@ -14,6 +14,13 @@ namespace Obsidian.Generators
 
         private const string indentationString = "    ";
 
+        public CodeBuilder Indent()
+        {
+            for (int i = 0; i < indent; i++)
+                builder.Append(indentationString);
+            return this;
+        }
+
         public CodeBuilder Append(string text)
         {
             builder.Append(text);
@@ -151,9 +158,7 @@ namespace Obsidian.Generators
 
         private CodeBuilder AppendLine(string line)
         {
-            for (int i = 0; i < indent; i++)
-                builder.Append(indentationString);
-
+            Indent();
             builder.AppendLine(line);
             return this;
         }
