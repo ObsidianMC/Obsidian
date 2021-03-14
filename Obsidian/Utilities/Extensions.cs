@@ -9,17 +9,19 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Obsidian.Utilities.Extensions
+namespace Obsidian.Utilities
 {
     public static class Extensions
     {
-        public static readonly Regex pattern = new Regex(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
+        public static readonly Regex pattern = new(@"[A-Z]{2,}(?=[A-Z][a-z]+[0-9]*|\b)|[A-Z]?[a-z]+[0-9]*|[A-Z]|[0-9]+");
 
         public static bool IsAir(this ItemStack item) => item == null || item.Type == Material.Air;
+
         // Source: https://stackoverflow.com/a/1415187
         public static string GetDescription(this Enum value)
         {
@@ -80,10 +82,10 @@ namespace Obsidian.Utilities.Extensions
             return Registry.Registry.GetItem(itemStack.Type);
         }
 
-        public static int ToChunkCoord(this double value) => (int)value >> 4;
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ToChunkCoord(this int value) => value >> 4;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int x, int z) ToChunkCoord(this VectorF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);

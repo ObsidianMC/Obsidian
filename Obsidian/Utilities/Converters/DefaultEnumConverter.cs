@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 using System;
 using System.Diagnostics.CodeAnalysis;
 

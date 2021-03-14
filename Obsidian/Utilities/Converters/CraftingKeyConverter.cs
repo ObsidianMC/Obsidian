@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Items;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

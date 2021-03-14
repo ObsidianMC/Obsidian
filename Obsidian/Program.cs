@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 
 using Obsidian.Utilities;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 
 namespace Obsidian
 {

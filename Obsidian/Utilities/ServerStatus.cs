@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

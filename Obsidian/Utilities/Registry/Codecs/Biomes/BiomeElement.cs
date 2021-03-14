@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.Nbt.Tags;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {

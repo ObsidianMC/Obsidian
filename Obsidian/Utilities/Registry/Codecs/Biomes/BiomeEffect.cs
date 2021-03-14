@@ -1,5 +1,5 @@
 ﻿using Obsidian.Nbt.Tags;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {

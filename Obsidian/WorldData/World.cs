@@ -6,7 +6,7 @@ using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

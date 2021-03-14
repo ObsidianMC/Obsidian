@@ -9,7 +9,6 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
-using Obsidian.Utilities.Extensions;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;

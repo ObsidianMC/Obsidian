@@ -4,7 +4,7 @@ using Obsidian.Chat;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Extensions;
+using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
 using System.IO;
