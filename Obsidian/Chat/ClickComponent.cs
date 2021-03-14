@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Obsidian.API;
-using Obsidian.Util.Converters;
+using Obsidian.Utilities.Converters;
 // ReSharper disable InconsistentNaming
 
 namespace Obsidian.Chat

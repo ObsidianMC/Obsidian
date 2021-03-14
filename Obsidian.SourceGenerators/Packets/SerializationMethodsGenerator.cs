@@ -98,7 +98,7 @@ namespace Obsidian.Generators.Packets
             }
 
             source.Using("Obsidian.Net");
-            source.Using("Obsidian.Util.Extensions");
+            source.Using("Obsidian.Utilities.Extensions");
             source.Using("System.Runtime.CompilerServices");
             source.Line();
 

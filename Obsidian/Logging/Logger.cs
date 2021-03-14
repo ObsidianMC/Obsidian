@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities.Extensions;
 using System;
 using System.Linq;
 

@@ -11,8 +11,8 @@ using Microsoft.CodeAnalysis;
 
 using Newtonsoft.Json;
 
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Extensions;
 
 namespace Obsidian
 {

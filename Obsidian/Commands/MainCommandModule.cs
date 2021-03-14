@@ -3,7 +3,7 @@ using Obsidian.Chat;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

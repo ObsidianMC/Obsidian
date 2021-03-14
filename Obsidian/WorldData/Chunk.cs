@@ -2,7 +2,7 @@
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt.Tags;
-using Obsidian.Util;
+using Obsidian.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 

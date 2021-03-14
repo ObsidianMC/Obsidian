@@ -1,4 +1,4 @@
-﻿using Obsidian.Util.Registry.Enums;
+﻿using Obsidian.Utilities.Registry.Enums;
 using System;
 
 namespace Obsidian.Blocks

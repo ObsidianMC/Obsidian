@@ -2,8 +2,8 @@
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
-using Obsidian.Util;
-using Obsidian.Util.Collection;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Collection;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
