@@ -33,9 +33,12 @@ namespace Obsidian.Plugins.Services
             Log(LogLevel.Warning, default, message, default, Format);
         }
 
-        private string Format(string message, Exception exception)
+        private static string Format(string message, Exception exception)
         {
-            return message + exception?.ToString();
+            if (exception is null)
+                return message;
+            
+            return message + exception.ToString();
         }
     }
 }
