@@ -1,9 +1,5 @@
-﻿using Obsidian.API;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
@@ -50,17 +46,17 @@ namespace Obsidian.API
 
 
             var dx = Math.Sign(x2 - x1); // x direction
-            if (dx != 0) tDeltaX = Math.Min(dx / (x2 - x1), 10000000.0f); else tDeltaX = 10000000.0f;
+            if (dx != 0) tDeltaX = Math.Min(dx / (x2 - x1), float.PositiveInfinity); else tDeltaX = float.PositiveInfinity;
             if (dx > 0) tMaxX = tDeltaX * Frac1(x1); else tMaxX = tDeltaX * Frac0(x1);
             voxel.X = x1;
 
             var dy = Math.Sign(y2 - y1); // y direction
-            if (dy != 0) tDeltaY = Math.Min(dy / (y2 - y1), 10000000.0f); else tDeltaY = 10000000.0f;
+            if (dy != 0) tDeltaY = Math.Min(dy / (y2 - y1), float.PositiveInfinity); else tDeltaY = float.PositiveInfinity;
             if (dy > 0) tMaxY = tDeltaY * Frac1(y1); else tMaxY = tDeltaY * Frac0(y1);
             voxel.Y = y1;
 
             var dz = Math.Sign(z2 - z1); // z direction
-            if (dz != 0) tDeltaZ = Math.Min(dz / (z2 - z1), 10000000.0f); else tDeltaZ = 10000000.0f;
+            if (dz != 0) tDeltaZ = Math.Min(dz / (z2 - z1), float.PositiveInfinity); else tDeltaZ = float.PositiveInfinity;
             if (dz > 0) tMaxZ = tDeltaZ * Frac1(z1); else tMaxZ = tDeltaZ * Frac0(z1);
             voxel.Z = z1;
 
