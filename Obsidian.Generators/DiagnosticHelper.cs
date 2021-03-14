@@ -6,6 +6,11 @@ namespace Obsidian.Generators
 {
     public static class DiagnosticHelper
     {
+        public static void ReportDiagnostic(this GeneratorExecutionContext context, DiagnosticSeverity severity, string text, SyntaxNode target)
+        {
+            context.ReportDiagnostic(severity, text, target.GetLocation());
+        }
+
         public static void ReportDiagnostic(this GeneratorExecutionContext context, DiagnosticSeverity severity, string text, Location? location = null)
         {
             string id = severity switch
@@ -17,6 +22,12 @@ namespace Obsidian.Generators
                 _ => "UKW000"
             };
             var descriptor = new DiagnosticDescriptor(id, text, text, "Generators", severity, true);
+            var diagnostic = Diagnostic.Create(descriptor, location ?? Location.None);
+            context.ReportDiagnostic(diagnostic);
+        }
+
+        public static void ReportDiagnostic(this GeneratorExecutionContext context, DiagnosticDescriptor descriptor, Location? location = null)
+        {
             var diagnostic = Diagnostic.Create(descriptor, location ?? Location.None);
             context.ReportDiagnostic(diagnostic);
         }

@@ -192,7 +192,7 @@ namespace Obsidian.Generators.Packets
                             if (!syntaxProvider.WriteMethods.TryGetValue(field.CountType, out string writeCountMethod))
                             {
                                 // CountType has no write method
-                                syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with its count type", field.Declaration));
+                                syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with its count type", field.Declaration);
                                 return false;
                             }
 
@@ -224,9 +224,7 @@ namespace Obsidian.Generators.Packets
                 else
                 {
                     // Creating serialization method failed
-#if DEBUG
-                    syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with it", field.Declaration));
-#endif
+                    syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with it", field.Declaration);
                     return false;
                 }
 
@@ -281,7 +279,7 @@ namespace Obsidian.Generators.Packets
                         if (!syntaxProvider.ReadMethods.TryGetValue(field.CountType, out string readCountMethod))
                         {
                             // CountType has no read method
-                            syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with its count type", field.Declaration));
+                            syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with its count type", field.Declaration);
                             return false;
                         }
 
@@ -319,9 +317,7 @@ namespace Obsidian.Generators.Packets
                 else
                 {
                     // Creating serialization method failed
-#if DEBUG
-                    syntaxProvider.Context.ReportDiagnostic(DiagnosticDescriptors.Create(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration));
-#endif
+                    syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration);
                     return false;
                 }
 
