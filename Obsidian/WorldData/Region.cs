@@ -108,7 +108,7 @@ namespace Obsidian.WorldData
             foreach (var chunkNbt in chunksNbt)
             {
                 var chunk = GetChunkFromNbt((NbtCompound) chunkNbt);
-                var index = (Helpers.Modulo(chunk.X, cubicRegionSize), Helpers.Modulo(chunk.Z, cubicRegionSize));
+                var index = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
                 LoadedChunks[index.Item1, index.Item2] = chunk;
             }
             regionNbt = null;

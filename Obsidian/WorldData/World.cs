@@ -127,7 +127,7 @@ namespace Obsidian.WorldData
 
         public Region GetRegionForChunk(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
@@ -155,7 +155,7 @@ namespace Obsidian.WorldData
                 return null;
             }
 
-            var index = (Helpers.Modulo(chunkX, Region.cubicRegionSize), Helpers.Modulo(chunkZ, Region.cubicRegionSize));
+            var index = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
 
             // chunk hasn't been generated yet
@@ -186,7 +186,7 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
             this.Regions[value].IsDirty = true;
@@ -196,7 +196,7 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlockMeta(x, y, z, meta);
         }
@@ -207,7 +207,7 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             return this.Regions[value].LoadedChunks[chunkX, chunkZ].GetBlockMeta(x, y, z);
         }
@@ -360,7 +360,7 @@ namespace Obsidian.WorldData
 
         public Region LoadRegion(int regionX, int regionZ)
         {
-            long value = Helpers.IntsToLong(regionX, regionZ);
+            long value = NumericsHelper.IntsToLong(regionX, regionZ);
             this.Regions.TryAdd(value, null);
             if (this.Regions.ContainsKey(value))
                 if (this.Regions[value] is not null)
@@ -384,7 +384,7 @@ namespace Obsidian.WorldData
             {
                 if (RegionsToLoad.TryDequeue(out var job))
                 {
-                    if (!this.Regions.ContainsKey(Helpers.IntsToLong(job.Item1, job.Item2))) // Sanity check
+                    if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.Item1, job.Item2))) // Sanity check
                         LoadRegion(job.Item1, job.Item2);
                 }
             }
@@ -409,7 +409,7 @@ namespace Obsidian.WorldData
                     return;
                 }
                 Chunk c = Generator.GenerateChunk(job.x, job.z);
-                var index = (x: Helpers.Modulo(c.X, Region.cubicRegionSize), z: Helpers.Modulo(c.Z, Region.cubicRegionSize));
+                var index = (x: NumericsHelper.Modulo(c.X, Region.cubicRegionSize), z: NumericsHelper.Modulo(c.Z, Region.cubicRegionSize));
                 region.LoadedChunks[index.x, index.z] = c;
             });
         }
