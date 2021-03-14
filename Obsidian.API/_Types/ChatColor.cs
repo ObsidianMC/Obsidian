@@ -35,12 +35,19 @@ namespace Obsidian.API
                 }
             }
 
-            throw new ArgumentException("Provided string doesn't contain any valid code characters.", nameof(code));
+            throw new ArgumentException("String doesn't contain any valid code characters.", nameof(code));
         }
 
         public static ChatColor FromCode(char code)
         {
-            return code switch
+            if (!TryParse(code, out var color))
+                throw new ArgumentException("Character doesn't match any color.", nameof(code));
+            return color;
+        }
+
+        public static bool TryParse(char code, out ChatColor color)
+        {
+            color = code switch
             {
                 '0' => Black,
                 '1' => DarkBlue,
@@ -64,8 +71,10 @@ namespace Obsidian.API
                 'n' => Underline,
                 'o' => Italic,
                 'r' => Reset,
-                _ => throw new ArgumentException("Provided character doesn't match any color", nameof(code))
+                _ => default
             };
+
+            return color.Code != default;
         }
         #endregion
 

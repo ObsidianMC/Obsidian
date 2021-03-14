@@ -392,7 +392,11 @@ namespace Obsidian.Plugins
 
         private void InvokeOnLoad(PluginContainer plugin)
         {
-            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server).TryRunSynchronously();
+            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server);
+            if (task.Status == TaskStatus.Created)
+            {
+                task.RunSynchronously();
+            }
             if (task.Status == TaskStatus.Faulted)
             {
                 logger?.LogError(task.Exception?.InnerException, $"Invoking {plugin.Info.Name}.{loadEvent} faulted.");
