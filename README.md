@@ -25,10 +25,10 @@
 - [ ] Backwards version compatibility
 
 ## Contribute
-Read about how you can contribute [here](https://github.com/ObsidianServer/Obsidian/wiki/Contribute)
+Read about how you can contribute [here](https://obsidian-mc.net/articles/contrib.html)
 
 ## Develop plugins
-Find out about plugin development [here](https://github.com/ObsidianServer/Obsidian/wiki/Plugin-development)
+Find out about plugin development [here](https://obsidian-mc.net/articles/plugins.html)
 
 ## The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
