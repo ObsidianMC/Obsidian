@@ -11,6 +11,7 @@ namespace Obsidian.Tests
         [Fact]
         public async Task TestTokenizing()
         {
+            await Task.Yield();
             var message = "/test help help \"help help \\n\" help";
             var expected = new[] { "test", "help", "help", "help help \n", "help" };
 
@@ -55,12 +56,14 @@ namespace Obsidian.Tests
             [CommandInfo(description: "ping")]
             public async Task ping(CommandContext ctx, int arg1, int arg2)
             {
+                await Task.Yield();
             }
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
             public async Task ping(CommandContext ctx, int arg1, string arg2)
             {
+                await Task.Yield();
                 arg1out = arg1;
                 arg2out = arg2;
             }
@@ -69,6 +72,7 @@ namespace Obsidian.Tests
             [CommandInfo(description: "ping")]
             public async Task ping(CommandContext ctx, int arg1, string arg2, string arg3)
             {
+                await Task.Yield();
             }
 
             [CommandGroup("pong")]
@@ -79,6 +83,7 @@ namespace Obsidian.Tests
                 [CommandInfo(description: "ping")]
                 public async Task ping(CommandContext ctx, int arg1, string arg2)
                 {
+                    await Task.Yield();
                     arg1out = arg1;
                     arg2out = arg2;
                 }

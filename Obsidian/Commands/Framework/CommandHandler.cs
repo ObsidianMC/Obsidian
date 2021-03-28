@@ -98,6 +98,7 @@ namespace Obsidian.Commands.Framework
 
         public async Task<object> CreateCommandRootInstance(Type t, PluginContainer plugin)
         {
+            await Task.Yield();
             // get constructor with most params.
             var instance = Activator.CreateInstance(t);
 
