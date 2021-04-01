@@ -1,4 +1,5 @@
-﻿using SharpNoise;
+﻿using Obsidian.WorldData.Generators.Overworld.Terrain;
+using SharpNoise;
 using SharpNoise.Modules;
 using System;
 
@@ -16,12 +17,16 @@ namespace Obsidian.WorldData.Generators.Overworld
         private OverworldTerrainGenerator generator;
         private Module generatorModule;
 
+        private OverworldTerrain newTerrain;
+
         public OverworldNoise(int seed)
         {
             generatorSettings = new OverworldTerrainSettings()
             {
                 Seed = seed
             };
+
+            newTerrain = new OverworldTerrain(generatorSettings);
 
             generator = new OverworldTerrainGenerator(generatorSettings);
             generatorModule = generator.CreateModule();
@@ -133,6 +138,11 @@ namespace Obsidian.WorldData.Generators.Overworld
             //return generatorModule.GetValue(x, 5, z);
             return generatorModule.GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch;
             //return generator.CreateScaledPlainsTerrain(generator.CreatePlainsTerrain()).GetValue(x * generatorSettings.TerrainHorizStretch, 0, z * generatorSettings.TerrainHorizStretch) * generatorSettings.TerrainVertStretch + 27;
+        }
+
+        public double TerrainNew(int x, int z)
+        {
+            return newTerrain.GetValue(x, z);
         }
 
         public double Underground(float x, float z)
