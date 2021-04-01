@@ -35,10 +35,13 @@ namespace Obsidian.WorldData.Generators
                         chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Material.Air));
 
 
-                    terrainHeights[(bx * 16) + bz] = terrainHeightmap[bx, bz] = noiseGen.Terrain(bx + (cx * 16), bz + (cz * 16));
+                    terrainHeights[(bx * 16) + bz] = terrainHeightmap[bx, bz] = noiseGen.TerrainNew(bx + (cx * 16), bz + (cz * 16));
+                    chunk.SetBlock(bx, (int)terrainHeightmap[bx, bz], bz, Registry.GetBlock(Material.GreenStainedGlass));
+
+
                     /*                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
                                         bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
-                    */
+
                     if (noiseGen.IsRiver(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 26, bz, Registry.GetBlock(Material.LightBlueStainedGlass));
 
@@ -59,6 +62,8 @@ namespace Obsidian.WorldData.Generators
 
                     if (noiseGen.IsDeepOcean(bx + (cx * 16), bz + (cz * 16)))
                         chunk.SetBlock(bx, 21, bz, Registry.GetBlock(Material.BlueStainedGlass));
+
+                    */
                 }
             }
             /*
@@ -108,8 +113,8 @@ namespace Obsidian.WorldData.Generators
                                 chunk.SetBlock(bx, (int)rockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.BrownStainedGlass));
                                 chunk.SetBlock(bx, (int)bedrockHeightmap[bx, bz], bz, Registry.GetBlock(Materials.Bedrock));
                             }
-                        }*/
-
+                        }
+            */
             //ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
 
             //GenerateCoal(chunk, rockHeightmap);

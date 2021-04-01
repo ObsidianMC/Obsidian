@@ -177,7 +177,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             TerrainOffset = 1.3;
 
             RiverDepth = 0.3;
-            SeaLevel = 8 / 64.0;
+            SeaLevel = -0.18;
             ShelfLevel = -4 / 64.0;
 
             MountainsAmount = 0.25;
@@ -192,7 +192,7 @@ namespace Obsidian.WorldData.Generators.Overworld
             ContinentLacunarity = 2.508984375;
             MountainLacunarity = 2.03;
             HillsLacunarity = 2.162109375;
-            PlainsLacunarity = 2.814453125;
+            PlainsLacunarity = 1.014453125;
             BadlandsLacunarity = 1.200890625;
 
             CaveFillPercent = 0.5;
