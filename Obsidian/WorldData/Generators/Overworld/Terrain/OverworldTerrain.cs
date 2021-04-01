@@ -14,31 +14,22 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         private readonly OverworldTerrainSettings settings;
 
-        private readonly BaseTerrain badlands, plains, hills;
+        private readonly BaseTerrain badlands, plains, hills, mountains;
 
-        private readonly Module baseContinents;
+        private readonly Module baseContinents, terrainDefinition, continentDefinition;
 
         public OverworldTerrain(OverworldTerrainSettings ots)
         {
             settings = ots;
-            Cache unscaledPlanet = new Cache();
+
             plains = new PlainsTerrain(ots);
             hills = new HillsTerrain(ots);
             badlands = new BadlandsTerrain(ots);
-
-            var contDef = ContinentalDefinition();
-            var terDef = TerrainTypeDefinition(contDef);
-
+            mountains = new MountainsTerrain(ots);
 
             baseContinents = BaseContinents();
-
-
-
-
-            unscaledPlanet = new Cache
-            {
-                Source0 = TerrainTypeDefinition(contDef)
-            };
+            continentDefinition = ContinentalDefinition();
+            terrainDefinition = TerrainTypeDefinition();
 
             // Scale bias scales the output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -47,18 +38,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             {
                 Scale = (settings.MaxElev - settings.MinElev) / 2.0,
                 Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
-                Source0 = unscaledPlanet,
+                Source0 = MergeTerrain(),
             };
         }
 
         public double GetValue(double x, double z, double y = 0)
         {
             return Result.GetValue(x*0.01f, y, z*0.01f);
-        }
-
-        private Module Continents()
-        {
-            return null;
         }
 
         // Generates the river positions.
@@ -144,7 +130,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         // [Terrain-type-definition group]: Caches the output value from the
         // roughness-probability-shift module.  This is the output value for
         // the entire terrain-type-definition group.
-        private Module TerrainTypeDefinition(Module continentDefinition)
+        private Module TerrainTypeDefinition()
         {
             return new Cache
             {
@@ -191,7 +177,171 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
-            return null;
+            var continentsWithHills = new Cache
+            {
+                // [Select-high-elevations module]: This selector module ensures that
+                // the hills only appear at higher elevations.  It does this by selecting
+                // the output value from the continent-with-hills module if the
+                // corresponding output value from the terrain-type-defintion group is
+                // above a certain value. Otherwise, it selects the output value from the
+                // continents-with-plains subgroup.
+                Source0 = new Select
+                {
+                    LowerBound = 1 - settings.HillsAmount,
+                    UpperBound = 1001 - settings.HillsAmount,
+                    EdgeFalloff = 0.25,
+                    Source0 = continentsWithPlains,
+                    // [Continents-with-hills module]:  This addition module adds the scaled-
+                    // hilly-terrain group to the base-continent-elevation subgroup.
+                    Source1 = new Add
+                    {
+                        Source0 = baseContinents,
+                        Source1 = hills.Result,
+                    },
+                    Control = terrainDefinition,
+                },
+            };
+
+            var continentsWithMountains = new Cache
+            {
+                // [Select-high-elevations module]: This selector module ensures that
+                // mountains only appear at higher elevations.  It does this by selecting
+                // the output value from the continent-with-mountains module if the
+                // corresponding output value from the terrain-type-defintion group is
+                // above a certain value.  Otherwise, it selects the output value from
+                // the continents-with-hills subgroup.  Note that the continents-with-
+                // hills subgroup also contains the plains terrain.
+                Source0 = new Select
+                {
+                    LowerBound = 1 - settings.MountainsAmount,
+                    UpperBound = 1001 - settings.MountainsAmount,
+                    EdgeFalloff = 0.25,
+                    Source0 = continentsWithHills,
+                    // [Add-increased-mountain-heights module]: This addition module adds
+                    // the increased-mountain-heights module to the continents-and-
+                    // mountains module.  The highest continent elevations now have the
+                    // highest mountains.
+                    Source1 = new Add
+                    {
+                        // [Continents-and-mountains module]:  This addition module adds the
+                        // scaled-mountainous-terrain group to the base-continent-elevation
+                        // subgroup.
+                        Source0 = new Add
+                        {
+                            Source0 = baseContinents,
+                            Source1 = mountains.Result,
+                        },
+                        // [Increase-mountain-heights module]:  This curve module applies a curve
+                        // to the output value from the continent-definition group.  This
+                        // modified output value is used by a subsequent noise module to add
+                        // additional height to the mountains based on the current continent
+                        // elevation.  The higher the continent elevation, the higher the
+                        // mountains.
+                        Source1 = new Curve
+                        {
+                            ControlPoints = new List<Curve.ControlPoint>
+                            {
+                                new Curve.ControlPoint (-1.0, -0.0625),
+                                new Curve.ControlPoint ( 0.0,  0.0000),
+                                new Curve.ControlPoint ( 1.0 - settings.MountainsAmount,  0.0625),
+                                new Curve.ControlPoint ( 1.0,  0.2500),
+                            },
+                            Source0 = continentDefinition,
+                        }
+                    },
+                    Control = terrainDefinition
+                }
+            };
+
+            var continentsWithBadlands = new Cache
+            {
+                // [Apply-badlands module]: This maximum-value module causes the badlands
+                // to "poke out" from the rest of the terrain.  It does this by ensuring
+                // that only the maximum of the output values from the continents-with-
+                // mountains subgroup and the select-badlands-positions modules
+                // contribute to the output value of this subgroup.  One side effect of
+                // this process is that the badlands will not appear in mountainous
+                // terrain.
+                Source0 = new Max
+                {
+                    Source0 = continentsWithMountains,
+                    // [Select-badlands-positions module]: This selector module places
+                    // badlands at random spots on the continents based on the Perlin noise
+                    // generated by the badlands-positions module.  To do this, it selects
+                    // the output value from the continents-and-badlands module if the
+                    // corresponding output value from the badlands-position module is
+                    // greater than a specified value.  Otherwise, this selector module
+                    // selects the output value from the continents-with-mountains subgroup.
+                    // There is also a wide transition between these two noise modules so
+                    // that the badlands can blend into the rest of the terrain on the
+                    // continents.
+                    Source1 = new Select
+                    {
+                        LowerBound = 1 - settings.BadlandsAmount,
+                        UpperBound = 1001 - settings.BadlandsAmount,
+                        EdgeFalloff = 0.25,
+                        Source0 = continentsWithMountains,
+                        // [Continents-and-badlands module]:  This addition module adds the
+                        // scaled-badlands-terrain group to the base-continent-elevation
+                        // subgroup.
+                        Source1 = new Add
+                        {
+                            Source0 = baseContinents,
+                            Source1 = badlands.Result,
+                        },
+                        // [Badlands-positions module]: This Perlin-noise module generates some
+                        // random noise, which is used by subsequent noise modules to specify the
+                        // locations of the badlands.
+                        Control = new Perlin
+                        {
+                            Seed = settings.Seed + 140,
+                            Frequency = 16.5,
+                            Persistence = 0.5,
+                            Lacunarity = settings.ContinentLacunarity,
+                            OctaveCount = 2,
+                            Quality = NoiseQuality.Fast,
+                        },
+                    },
+                },
+            };
+
+            var continentsWithRivers = new Cache
+            {
+                // [Blended-rivers-to-continents module]: This selector module outputs
+                // deep rivers near sea level and shallower rivers in higher terrain.  It
+                // does this by selecting the output value from the continents-with-
+                // badlands subgroup if the corresponding output value from the
+                // continents-with-badlands subgroup is far from sea level.  Otherwise,
+                // this selector module selects the output value from the add-rivers-to-
+                // continents module.
+                Source0 = new Select
+                {
+                    LowerBound = settings.SeaLevel,
+                    UpperBound = settings.ContinentHeightScale + settings.SeaLevel,
+                    EdgeFalloff = settings.ContinentHeightScale - settings.SeaLevel,
+                    Source0 = continentsWithBadlands,
+                    // [Add-rivers-to-continents module]: This addition module adds the
+                    // rivers to the continents-with-badlands subgroup.  Because the scaled-
+                    // rivers module only outputs a negative value, the scaled-rivers module
+                    // carves the rivers out of the terrain.
+                    Source1 = new Add
+                    {
+                        Source0 = continentsWithBadlands,
+                        // [Scaled-rivers module]: This scale/bias module scales the output value
+                        // from the river-positions group so that it is measured in planetary
+                        // elevation units and is negative; this is required for Add-rivers-to-continents.
+                        Source1 = new ScaleBias
+                        {
+                            Scale = settings.RiverDepth / 2.0,
+                            Bias = -settings.RiverDepth / 2.0,
+                            Source0 = Rivers(),
+                        },
+                    },
+                    Control = continentsWithBadlands
+                }
+            };
+
+            return continentsWithRivers;
         }
 
         // Generates the base elevations for the continents, before

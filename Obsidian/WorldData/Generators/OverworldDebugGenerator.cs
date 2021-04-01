@@ -36,7 +36,9 @@ namespace Obsidian.WorldData.Generators
 
 
                     terrainHeights[(bx * 16) + bz] = terrainHeightmap[bx, bz] = noiseGen.TerrainNew(bx + (cx * 16), bz + (cz * 16));
-                    chunk.SetBlock(bx, (int)terrainHeightmap[bx, bz], bz, Registry.GetBlock(Material.GreenStainedGlass));
+                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
+                    bedrockHeightmap[bx, bz] = noiseGen.Bedrock(bx + (cx * 16), bz + (cz * 16)) + 1;
+                    //chunk.SetBlock(bx, (int)terrainHeightmap[bx, bz], bz, Registry.GetBlock(Material.GreenStainedGlass));
 
 
                     /*                    rockHeightmap[bx, bz] = noiseGen.Underground(bx + (cx * 16), bz + (cz * 16)) + terrainHeightmap[bx, bz] - 5;
@@ -115,7 +117,7 @@ namespace Obsidian.WorldData.Generators
                             }
                         }
             */
-            //ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
+            ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
 
             //GenerateCoal(chunk, rockHeightmap);
             //ChunkBuilder.CarveCaves(noiseGen, chunk, rockHeightmap, bedrockHeightmap, true);
