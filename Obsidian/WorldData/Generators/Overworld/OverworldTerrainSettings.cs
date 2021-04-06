@@ -171,20 +171,20 @@ namespace Obsidian.WorldData.Generators.Overworld
             Seed = 1337;
             MinElev = 40;
             MaxElev = 168;
-            ContinentFrequency = 1.9;
+            ContinentFrequency = 0.5;
 
             ContinentHeightScale = 1;
             TerrainOffset = 1.3;
 
             RiverDepth = 0.3;
-            SeaLevel = -0.18;
+            SeaLevel = 0;
             ShelfLevel = -4 / 64.0;
 
-            MountainsAmount = 0.25;
+            MountainsAmount = 0.45;
             HillsAmount = 0.22;
             BadlandsAmount = 0.25;
 
-            MountainGlaciation = 1.075;
+            MountainGlaciation = 2.075;
             MountainsTwist = 2.1337;
             HillsTwist = 1;
             BadlandsTwist = 3;
