@@ -177,6 +177,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
+            //return ContinentalDefinition();
+
             var continentsWithHills = new Cache
             {
                 // [Select-high-elevations module]: This selector module ensures that
@@ -364,22 +366,27 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 // continent-definition group is below the shelf level.  Otherwise, it
                 // selects the output value from the base-scaled-continent-elevations
                 // module.
-                Source0 = new Select
+                Source0 = new ScaleBias
                 {
-                    LowerBound = 0 - 1000,
-                    UpperBound = 0,
-                    EdgeFalloff = 0.03125,
-                    // [Base-scaled-continent-elevations module]: This scale/bias module
-                    // scales the output value from the continent-definition group so that it
-                    // is measured in planetary elevation units 
-                    Source0 = new ScaleBias
+                    Scale = 0.5, // No amplification
+                    Bias = -0.45, // Adjust to get to sea level
+                    Source0 = new Select
                     {
-                        Scale = settings.ContinentHeightScale,
-                        Bias = 0,
-                        Source0 = ContinentalDefinition(),
-                    },
-                    Source1 = ContinentalShelves(),
-                    Control = ContinentalDefinition(),
+                        LowerBound = 0 - 1000,
+                        UpperBound = 0,
+                        EdgeFalloff = 0.003125,
+                        // [Base-scaled-continent-elevations module]: This scale/bias module
+                        // scales the output value from the continent-definition group so that it
+                        // is measured in planetary elevation units 
+                        Source0 = new ScaleBias
+                        {
+                            Scale = 0.5,
+                            Bias = 0,
+                            Source0 = ContinentalDefinition(),
+                        },
+                        Source1 = ContinentalShelves(),
+                        Control = ContinentalDefinition(),
+                    }
                 }
             };
         }
@@ -398,8 +405,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     // that their depths are measured in planetary elevation units.
                     Source0 = new ScaleBias
                     {
-                        Scale = -0.125,
-                        Bias = -0.125,
+                        Scale = 0, // disable terracing
+                        Bias = -0.225,
                         // [Shelf-creator module]: This terracing module applies a terracing
                         // curve to the continent-definition group at the specified shelf level.
                         // This terrace becomes the continental shelf.  Note that this terracing
@@ -411,10 +418,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         {
                             ControlPoints = new List<double>
                             {
-                                -1.0,
-                                -0.75,
+                                -0.50,
                                 -0.375,
-                                1.0,
+                                -0.25,
+                                0.1,
                             },
                             Source0 = ContinentalDefinition(),
                         },
@@ -425,7 +432,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     // subgroup is only concerned about the oceans.
                     Source1 = new Clamp
                     {
-                        LowerBound = -0.75,
+                        LowerBound = -0.35,
                         UpperBound = settings.SeaLevel,
                         // [Oceanic-trench-basis module]: This ridged-multifractal-noise module
                         // generates some coherent noise that will be used to generate the
@@ -433,12 +440,12 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         Source0 = new RidgedMulti
                         {
                             Seed = settings.Seed + 130,
-                            Frequency = settings.ContinentFrequency / 4.375,
+                            Frequency = 0.8,
                             Lacunarity = settings.ContinentLacunarity,
-                            OctaveCount = 16,
+                            OctaveCount = 4,
                             Quality = NoiseQuality.Fast,
                         }
-                    },
+                    }
                 }
             };
         }
@@ -482,7 +489,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         // is required for step 5.
                         Source0 = new ScaleBias
                         {
-                            Scale = 0.375,
+                            Scale = 0.0375,
                             Bias = 0.625,
                             // [Carver module]: This higher-frequency Perlin-noise module will be
                             // used by subsequent noise modules to carve out chunks from the mountain
@@ -494,7 +501,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                 Frequency = settings.ContinentFrequency*0.5,
                                 Persistence = 0.5,
                                 Lacunarity = settings.ContinentLacunarity,
-                                OctaveCount = 11,
+                                OctaveCount = 3,
                                 Quality = NoiseQuality.Fast,
                             },
                         },
@@ -510,7 +517,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                 new Curve.ControlPoint( 0.0000 + settings.SeaLevel, -0.375 + settings.SeaLevel),
                                 new Curve.ControlPoint( 0.0625 + settings.SeaLevel,  0.125 + settings.SeaLevel),
                                 new Curve.ControlPoint( 0.1250 + settings.SeaLevel,  0.250 + settings.SeaLevel),
-                                new Curve.ControlPoint( 0.2500 + settings.SeaLevel,  1.000 + settings.SeaLevel),
+                                new Curve.ControlPoint( 0.2500 + settings.SeaLevel,  0.450 + settings.SeaLevel),
                                 new Curve.ControlPoint( 0.5000 + settings.SeaLevel,  0.250 + settings.SeaLevel),
                                 new Curve.ControlPoint( 0.7500 + settings.SeaLevel,  0.250 + settings.SeaLevel),
                                 new Curve.ControlPoint( 1.0000 + settings.SeaLevel,  0.500 + settings.SeaLevel),
@@ -522,11 +529,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             Source0 = new Perlin
                             {
                                 Seed = settings.Seed + 0,
-                                Frequency = settings.ContinentFrequency*0.1,
+                                Frequency = settings.ContinentFrequency * 0.25,
                                 Persistence = 0.5,
                                 Lacunarity = settings.ContinentLacunarity,
-                                OctaveCount = 14,
-                                Quality = NoiseQuality.Fast,
+                                OctaveCount = 4,
+                                Quality = NoiseQuality.Best,
                             },
                         },
                     },

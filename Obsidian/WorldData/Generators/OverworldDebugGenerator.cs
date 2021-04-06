@@ -117,7 +117,7 @@ namespace Obsidian.WorldData.Generators
                             }
                         }
             */
-            ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, true);
+            ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap, false);
 
             //GenerateCoal(chunk, rockHeightmap);
             //ChunkBuilder.CarveCaves(noiseGen, chunk, rockHeightmap, bedrockHeightmap, true);
