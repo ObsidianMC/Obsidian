@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.API
 {
     [Flags]
-    public enum CommandIssuer
+    public enum CommandIssuers
     {
         None,
         Client,

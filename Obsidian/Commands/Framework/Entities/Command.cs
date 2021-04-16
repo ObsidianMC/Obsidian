@@ -27,14 +27,14 @@ namespace Obsidian.Commands.Framework.Entities
         public List<MethodInfo> Overloads { get; internal set; }
 
         internal PluginContainer Plugin;
-        internal CommandIssuer AllowedIssuers { get; set; }
+        internal CommandIssuers AllowedIssuers { get; set; }
         internal CommandHandler Handler { get; set; }
 
         internal object ParentInstance { get; set; }
         internal Type ParentType { get; set; }
 
         public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks,
-            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType, CommandIssuer allowedIssuers)
+            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType, CommandIssuers allowedIssuers)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -97,7 +97,7 @@ namespace Obsidian.Commands.Framework.Entities
             if (!this.AllowedIssuers.HasFlag(context.Issuer))
             {
 
-                throw new NotAllowedCommandIssuerException(
+                throw new DisallowedCommandIssuerException(
                     $"Command {this.GetQualifiedName()} cannot be executed as {context.Issuer}", AllowedIssuers);
             }
 

@@ -292,38 +292,13 @@ namespace Obsidian
         internal async Task ExecuteCommand(string input)
         {
             var console = new ConsoleClient(Logger, this);
-            var context = new CommandContext(Commands._prefix + input, console, this, CommandIssuer.Console);
+            var context = new CommandContext(Commands._prefix + input, console, this, CommandIssuers.Console);
             try
             {
                 await Commands.ProcessCommand(context);
             }
-            catch (CommandArgumentParsingException)
-            {
-                Logger.LogError($"Invalid arguments! Parsing failed.");
-            }
-            catch (CommandExecutionCheckException)
-            {
-                Logger.LogError($"You can not execute this command.");
-            }
-            catch (CommandNotFoundException)
-            {
-                Logger.LogError($"No such command was found.");
-            }
-            catch (NoSuchParserException)
-            {
-                Logger.LogError($"The command you executed has a argument that has no matching parser.");
-            }
-            catch (InvalidCommandOverloadException)
-            {
-                Logger.LogError($"No such overload is available for this command.");
-            }
-            catch (NotAllowedCommandIssuerException e)
-            {
-                Logger.LogError(e.Message);
-            }
             catch (Exception e)
             {
-                Logger.LogError($"Critically failed executing command");
                 Logger.LogError(e, e.Message);
             }
         }
@@ -353,34 +328,13 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, source.Player, this, CommandIssuer.Client);
+            var context = new CommandContext(message, source.Player, this, CommandIssuers.Client);
             try
             {
                 await Commands.ProcessCommand(context);
             }
-            catch (CommandArgumentParsingException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Invalid arguments! Parsing failed." });
-            }
-            catch (CommandExecutionCheckException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}You can not execute this command." });
-            }
-            catch (CommandNotFoundException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such command was found." });
-            }
-            catch (NoSuchParserException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}The command you executed has a argument that has no matching parser." });
-            }
-            catch (InvalidCommandOverloadException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such overload is available for this command." });
-            }
             catch (Exception e)
             {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {e.Message}" });
                 Logger.LogError(e, e.Message);
             }
         }
@@ -595,20 +549,8 @@ namespace Obsidian
         {
             var keepAliveTicks = 0;
 
-            short itersPerSecond = 0;
             var stopWatch = Stopwatch.StartNew(); // for TPS measuring
-            _ = Task.Run(() =>
-            {
-                while (true)
-                {
-                    if (stopWatch.ElapsedMilliseconds >= 1000L)
-                    {
-                        TPS = itersPerSecond;
-                        itersPerSecond = 0;
-                        stopWatch.Restart();
-                    }
-                }
-            });
+
             while (!this.cts.IsCancellationRequested)
             {
                 await Task.Delay(50, cts.Token);
@@ -643,8 +585,9 @@ namespace Obsidian
                     }
                 }
 
-                // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
-                itersPerSecond++;
+                TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
+                stopWatch.Restart();
+                
                 _ = Task.Run(() => World.ManageChunks());
             }
         }

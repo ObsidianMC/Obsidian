@@ -12,11 +12,11 @@ namespace Obsidian.API
     {
         
 
-        public IssuerScopeAttribute(CommandIssuer issuers)
+        public IssuerScopeAttribute(CommandIssuers issuers)
         {
             Issuers = issuers;
         }
 
-        public CommandIssuer Issuers { get; }
+        public CommandIssuers Issuers { get; }
     }
 }

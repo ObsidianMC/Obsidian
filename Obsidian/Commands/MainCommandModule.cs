@@ -169,7 +169,7 @@ namespace Obsidian.Commands
         #region forcechunkreload
         [Command("forcechunkreload")]
         [CommandInfo("Force chunk reload", "/forcechunkreload")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task ForceChunkReloadAsync(CommandContext Context)
         {
             var player = (Player)Context.Player;
@@ -197,7 +197,7 @@ namespace Obsidian.Commands
         #region leave
         [Command("leave", "kickme")]
         [CommandInfo("kicks you", "/leave")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public Task LeaveAsync(CommandContext Context) => Context.Player.KickAsync("Is this what you wanted?");
         #endregion
 
@@ -211,14 +211,14 @@ namespace Obsidian.Commands
         #region declarecmds
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public Task DeclareCommandsTestAsync(CommandContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
         #endregion
 
         #region gamemode
         [Command("gamemode")]
         [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task GamemodeAsync(CommandContext Context)
         {
             var chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
@@ -227,7 +227,7 @@ namespace Obsidian.Commands
         }
 
         [CommandOverload]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task GamemodeAsync(CommandContext Context, [Remaining] string args_)
         {
             var chatMessage = ChatMessage.Simple("");
@@ -267,7 +267,7 @@ namespace Obsidian.Commands
         #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task TeleportAsync(CommandContext Context, [Remaining] VectorF location)
         {
             var player = Context.Player;
@@ -280,7 +280,7 @@ namespace Obsidian.Commands
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
         [RequirePermission]
-        [IssuerScope(CommandIssuer.Any)]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task GiveOpAsync(CommandContext Context, IPlayer player)
         {
             if (player == null)
@@ -296,7 +296,7 @@ namespace Obsidian.Commands
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
         [RequirePermission]
-        [IssuerScope(CommandIssuer.Any)]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task UnclaimOpAsync(CommandContext Context, IPlayer player)
         {
             if (player == null)
@@ -311,7 +311,7 @@ namespace Obsidian.Commands
         #region oprequest
         [Command("oprequest", "opreq")]
         [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
-        [IssuerScope(CommandIssuer.Client)]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task RequestOpAsync(CommandContext Context, string code = null)
         {
             var server = (Server)Context.Server;
