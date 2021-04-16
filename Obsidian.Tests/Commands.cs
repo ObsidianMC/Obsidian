@@ -30,19 +30,19 @@ namespace Obsidian.Tests
 
             cmd.RegisterCommandClass<Command>(null, new Command());
 
-            await cmd.ProcessCommand(new CommandContext("/ping 69 hello", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hello", null, null, CommandIssuer.Client));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("hello", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/pong ping 420 bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/pong ping 420 bye", null, null, CommandIssuer.Client));
             Assert.Equal(420, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/ping 12 12", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 12 12", null, null, CommandIssuer.Client));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", null, null, CommandIssuer.Client));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
         }

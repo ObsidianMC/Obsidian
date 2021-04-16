@@ -91,16 +91,9 @@ namespace Obsidian
         /// </summary>
         /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
-        {   
+        {
             this.Config = config;
-            
-            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
-            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
-            // This stuff down here needs to be looked into
-            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
-            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
-            
+
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverId;
@@ -118,6 +111,13 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.Operators = new OperatorList(this);
+
+            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
+            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
+            // This stuff down here needs to be looked into
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
+            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
@@ -272,7 +272,6 @@ namespace Obsidian
 
             stopwatch.Stop();
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
-
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -288,6 +287,45 @@ namespace Obsidian
             }
 
             this.Logger.LogWarning("Server is shutting down...");
+        }
+
+        internal async Task ExecuteCommand(string input)
+        {
+            var console = new ConsoleClient(Logger, this);
+            var context = new CommandContext(Commands._prefix + input, console, this, CommandIssuer.Console);
+            try
+            {
+                await Commands.ProcessCommand(context);
+            }
+            catch (CommandArgumentParsingException)
+            {
+                Logger.LogError($"Invalid arguments! Parsing failed.");
+            }
+            catch (CommandExecutionCheckException)
+            {
+                Logger.LogError($"You can not execute this command.");
+            }
+            catch (CommandNotFoundException)
+            {
+                Logger.LogError($"No such command was found.");
+            }
+            catch (NoSuchParserException)
+            {
+                Logger.LogError($"The command you executed has a argument that has no matching parser.");
+            }
+            catch (InvalidCommandOverloadException)
+            {
+                Logger.LogError($"No such overload is available for this command.");
+            }
+            catch (NotAllowedCommandIssuerException e)
+            {
+                Logger.LogError(e.Message);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"Critically failed executing command");
+                Logger.LogError(e, e.Message);
+            }
         }
 
         internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
@@ -315,7 +353,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, source.Player, this);
+            var context = new CommandContext(message, source.Player, this, CommandIssuer.Client);
             try
             {
                 await Commands.ProcessCommand(context);
@@ -559,7 +597,18 @@ namespace Obsidian
 
             short itersPerSecond = 0;
             var stopWatch = Stopwatch.StartNew(); // for TPS measuring
-
+            _ = Task.Run(() =>
+            {
+                while (true)
+                {
+                    if (stopWatch.ElapsedMilliseconds >= 1000L)
+                    {
+                        TPS = itersPerSecond;
+                        itersPerSecond = 0;
+                        stopWatch.Restart();
+                    }
+                }
+            });
             while (!this.cts.IsCancellationRequested)
             {
                 await Task.Delay(50, cts.Token);
@@ -583,7 +632,7 @@ namespace Obsidian
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                    } 
+                    }
                 }
 
                 while (chatMessages.TryDequeue(out QueueChat msg))
@@ -596,12 +645,6 @@ namespace Obsidian
 
                 // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
                 itersPerSecond++;
-                if (stopWatch.ElapsedMilliseconds >= 1000L)
-                {
-                    TPS = itersPerSecond;
-                    itersPerSecond = 0;
-                    stopWatch.Restart();
-                }
                 _ = Task.Run(() => World.ManageChunks());
             }
         }

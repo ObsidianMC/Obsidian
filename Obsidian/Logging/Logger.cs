@@ -54,11 +54,11 @@ namespace Obsidian.Logging
             void PrintLinePrefix()
             {
                 Console.ResetColor();
-                Console.Write(time);
+                ConsoleIO.Write(time);
                 Console.ForegroundColor = logLevelColor;
-                Console.Write(level);
+                ConsoleIO.Write(level);
                 Console.ResetColor();
-                Console.Write(prefix);
+                ConsoleIO.Write(prefix);
             }
 
             string message = formatter(state, exception);
@@ -72,7 +72,7 @@ namespace Obsidian.Logging
 
                     Console.ForegroundColor = ConsoleColor.White;
                     lines[i].RenderColoredConsoleMessage();
-                    Console.WriteLine();
+                    ConsoleIO.WriteLine(string.Empty);
                 }
             }
         }

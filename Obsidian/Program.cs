@@ -5,13 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
 
 using Newtonsoft.Json;
 
-using Obsidian.Utilities;
 using Obsidian.Utilities;
 
 namespace Obsidian
@@ -99,7 +99,7 @@ namespace Obsidian
                 throw new InvalidOperationException("Multiple servers cannot be binded to the same port");
 
             var serverTasks = Servers.Select(entry => entry.Value.StartServerAsync());
-
+            InitConsoleInput();
             await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 
             if (!shutdownPending)
@@ -108,6 +108,87 @@ namespace Obsidian
                 Console.ReadKey(intercept: false);
             }
         }
+
+        private static void InitConsoleInput()
+        {
+            new Thread(new ThreadStart(async () =>
+            {
+                try
+                {
+                    Server currentServer = Servers.First().Value;
+                    Thread.Sleep(2000);
+                    while (!shutdownPending)
+                    {
+                        if (currentServer == null && Servers.Count == 0 && !shutdownPending)
+                            break;
+
+                        string input = ConsoleIO.ReadLine();
+
+                        if (input.StartsWith('.'))
+                        {
+                            if (input.StartsWith(".switch"))
+                            {
+                                string[] parts = input.Split(" ");
+                                if (parts.Length < 2)
+                                {
+                                    ConsoleIO.WriteLine("Invalid server id");
+                                    continue;
+                                }
+                                if (!int.TryParse(parts[1], out int serverId))
+                                {
+                                    ConsoleIO.WriteLine("Invalid server id");
+                                    continue;
+                                }
+                                if (!Servers.TryGetValue(serverId, out var server))
+                                {
+                                    ConsoleIO.WriteLine("No server with given id found");
+                                    continue;
+                                }
+
+                                currentServer = server;
+                                ConsoleIO.WriteLine($"Changed current server to {server.Id}");
+
+                            }
+                            else if (input.StartsWith(".execute"))
+                            {
+                                string[] parts = input.Split(" ");
+                                if (parts.Length < 3)
+                                {
+                                    ConsoleIO.WriteLine("Invalid server id or command");
+                                    continue;
+                                }
+                                if (!int.TryParse(parts[1], out int serverId))
+                                {
+                                    ConsoleIO.WriteLine("Invalid server id");
+                                    continue;
+                                }
+                                if (!Servers.TryGetValue(serverId, out var server))
+                                {
+                                    ConsoleIO.WriteLine("No server with given id found");
+                                    continue;
+                                }
+
+                                ConsoleIO.WriteLine($"Executing command on Server-{server.Id}");
+                                await server.ExecuteCommand(string.Join(' ', parts.Skip(2)));
+                            }
+                        }
+                        else
+                        {
+                            await currentServer.ExecuteCommand(input);
+                            if (input == "stop")
+                            {
+                                Servers.Remove(currentServer.Id);
+                                currentServer = Servers.FirstOrDefault().Value;
+                            }
+                        }
+
+                    }
+                }
+                catch (IOException) { }
+                catch (NullReferenceException) { }
+            })).Start();
+        }
+
 
         private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {

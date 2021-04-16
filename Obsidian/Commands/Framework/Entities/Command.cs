@@ -2,6 +2,7 @@
 using Obsidian.API;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,14 +27,14 @@ namespace Obsidian.Commands.Framework.Entities
         public List<MethodInfo> Overloads { get; internal set; }
 
         internal PluginContainer Plugin;
-
+        internal CommandIssuer AllowedIssuers { get; set; }
         internal CommandHandler Handler { get; set; }
 
         internal object ParentInstance { get; set; }
         internal Type ParentType { get; set; }
 
-        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
-            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType)
+        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks,
+            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType, CommandIssuer allowedIssuers)
         {
             this.Name = name;
             this.Aliases = aliases;
@@ -46,6 +47,7 @@ namespace Obsidian.Commands.Framework.Entities
             this.ParentInstance = parentinstance;
             this.Plugin = plugin;
             this.ParentType = parentType;
+            this.AllowedIssuers = allowedIssuers;
         }
 
         public bool CheckCommand(string[] input, Command parent)
@@ -91,6 +93,15 @@ namespace Obsidian.Commands.Framework.Entities
         /// <returns></returns>
         public async Task ExecuteAsync(CommandContext context, string[] args)
         {
+            //Check if issuer can execute this command
+            if (!this.AllowedIssuers.HasFlag(context.Issuer))
+            {
+
+                throw new NotAllowedCommandIssuerException(
+                    $"Command {this.GetQualifiedName()} cannot be executed as {context.Issuer}", AllowedIssuers);
+            }
+
+
             // Find matching overload
             if (!this.Overloads.Any(x => x.GetParameters().Count() - 1 == args.Count()
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
