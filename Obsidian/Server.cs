@@ -5,6 +5,7 @@ using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
@@ -291,8 +292,7 @@ namespace Obsidian
 
         internal async Task ExecuteCommand(string input)
         {
-            var console = new ConsoleClient(Logger, this);
-            var context = new CommandContext(Commands._prefix + input, console, this, CommandIssuers.Console);
+            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), this);
             try
             {
                 await Commands.ProcessCommand(context);
@@ -328,7 +328,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, source.Player, this, CommandIssuers.Client);
+            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), this);
             try
             {
                 await Commands.ProcessCommand(context);

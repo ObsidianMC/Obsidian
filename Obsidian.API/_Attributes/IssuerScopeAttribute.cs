@@ -10,8 +10,6 @@ namespace Obsidian.API
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
     public class IssuerScopeAttribute  : Attribute
     {
-        
-
         public IssuerScopeAttribute(CommandIssuers issuers)
         {
             Issuers = issuers;

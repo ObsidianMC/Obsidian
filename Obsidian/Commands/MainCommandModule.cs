@@ -24,7 +24,7 @@ namespace Obsidian.Commands
         [CommandOverload]
         public async Task HelpAsync(CommandContext Context, int page)
         {
-            var player = Context.Player;
+            var sender = Context.Sender;
             var server = (Server)Context.Server;
             var commandhandler = server.Commands;
             var allcommands = commandhandler.GetAllCommands();
@@ -56,7 +56,7 @@ namespace Obsidian.Commands
 
             if (page < 1 || page > pagecount)
             {
-                await player.SendMessageAsync(ChatMessage.Simple($"{ChatColor.Red}Invalid help page."));
+                await sender.SendMessageAsync(ChatMessage.Simple($"{ChatColor.Red}Invalid help page."));
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace Obsidian.Commands
                 commands.AddExtra(commandInfo);
 
             }
-            await player.SendMessageAsync(commands);
+            await sender.SendMessageAsync(commands);
         }
         #endregion
 
@@ -105,7 +105,7 @@ namespace Obsidian.Commands
         public async Task TPSAsync(CommandContext ctx)
         {
             ChatColor color;
-            var player = ctx.Player;
+            var sender = ctx.Sender;
 
             if (ctx.Server.TPS > 15) color = ChatColor.BrightGreen;
             else if (ctx.Server.TPS > 10) color = ChatColor.Yellow;
@@ -115,7 +115,7 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
             };
-            await player.SendMessageAsync(message);
+            await sender.SendMessageAsync(message);
 
         }
         #endregion
@@ -126,7 +126,7 @@ namespace Obsidian.Commands
         public async Task PluginsAsync(CommandContext Context)
         {
             var srv = (Server)Context.Server;
-            var player = Context.Player;
+            var sender = Context.Sender;
             var pluginCount = srv.PluginManager.Plugins.Count;
             var message = new ChatMessage
             {
@@ -162,7 +162,7 @@ namespace Obsidian.Commands
             else
                 message.Text = $"{ChatColor.Gold}There is no plugins installed{ChatColor.Reset}";
 
-            await player.SendMessageAsync(message);
+            await sender.SendMessageAsync(message);
         }
         #endregion
 
@@ -184,7 +184,7 @@ namespace Obsidian.Commands
         #region echo
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
-        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync($"[{Context.Player.Username}] {text}");
+        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
         #endregion
 
         #region announce
@@ -357,7 +357,7 @@ namespace Obsidian.Commands
         public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
-            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player.Username}{ChatColor.Reset}.");
+            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player?.Username ?? Context.Sender.ToString()}{ChatColor.Reset}.");
             await Task.Run(() =>
             {
                 server.StopServer();

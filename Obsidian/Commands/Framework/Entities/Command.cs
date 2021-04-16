@@ -94,11 +94,11 @@ namespace Obsidian.Commands.Framework.Entities
         public async Task ExecuteAsync(CommandContext context, string[] args)
         {
             //Check if issuer can execute this command
-            if (!this.AllowedIssuers.HasFlag(context.Issuer))
+            if (!this.AllowedIssuers.HasFlag(context.Sender.Issuer))
             {
 
                 throw new DisallowedCommandIssuerException(
-                    $"Command {this.GetQualifiedName()} cannot be executed as {context.Issuer}", AllowedIssuers);
+                    $"Command {this.GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
             }
 
 
