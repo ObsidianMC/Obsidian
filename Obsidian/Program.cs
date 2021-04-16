@@ -114,7 +114,7 @@ namespace Obsidian
             Task.Run(async () =>
             {
                 Server currentServer = Servers.First().Value;
-                Thread.Sleep(2000);
+                await Task.Delay(2000);
                 while (!shutdownPending)
                 {
                     if (currentServer == null && Servers.Count == 0)
