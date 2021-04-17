@@ -7,7 +7,6 @@ namespace Obsidian.Utilities
     {
         public static void RenderColoredConsoleMessage(this string message)
         {
-            var output = Console.Out;
             int start = 0;
             int end = message.Length - 1;
 
@@ -24,7 +23,7 @@ namespace Obsidian.Utilities
                 // Print text with previous color
                 if (start != i)
                 {
-                    output.Write(message.AsSpan(start, i - start));
+                    ConsoleIO.Write(message.AsSpan(start, i - start).ToString());
                 }
 
                 // Change color
@@ -44,7 +43,7 @@ namespace Obsidian.Utilities
 
             // Print remaining text if any
             if (start != message.Length)
-                output.Write(message.AsSpan(start));
+                ConsoleIO.Write(message.AsSpan(start).ToString());
 
             Console.ResetColor();
         }

@@ -8,20 +8,17 @@ namespace Obsidian.API
     {
         internal string Message;
 
-        public CommandContext(string message, IPlayer player, IServer server/*, IClient client*/)
+        public CommandContext(string message, ICommandSender commandSender, IServer server)
         {
-            this.Player = player;
             this.Server = server;
+            this.Sender = commandSender;
             this.Message = message;
-            //this.Client = client;
         }
 
         public IPlayer Player { get; private set; }
 
         public IServer Server { get; private set; }
-
+        public ICommandSender Sender { get; }
         public PluginBase Plugin { get; internal set; }
-
-        // public IClient Client { get; private set; }
     }
 }

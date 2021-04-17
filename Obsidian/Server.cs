@@ -5,6 +5,7 @@ using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
@@ -91,16 +92,9 @@ namespace Obsidian
         /// </summary>
         /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
-        {   
+        {
             this.Config = config;
-            
-            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
-            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
-            // This stuff down here needs to be looked into
-            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
-            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
-            
+
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverId;
@@ -118,6 +112,13 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.Operators = new OperatorList(this);
+
+            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
+            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
+            // This stuff down here needs to be looked into
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
+            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
@@ -272,7 +273,6 @@ namespace Obsidian
 
             stopwatch.Stop();
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
-
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -288,6 +288,19 @@ namespace Obsidian
             }
 
             this.Logger.LogWarning("Server is shutting down...");
+        }
+
+        internal async Task ExecuteCommand(string input)
+        {
+            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), this);
+            try
+            {
+                await Commands.ProcessCommand(context);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, e.Message);
+            }
         }
 
         internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
@@ -315,34 +328,13 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, source.Player, this);
+            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), this);
             try
             {
                 await Commands.ProcessCommand(context);
             }
-            catch (CommandArgumentParsingException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Invalid arguments! Parsing failed." });
-            }
-            catch (CommandExecutionCheckException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}You can not execute this command." });
-            }
-            catch (CommandNotFoundException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such command was found." });
-            }
-            catch (NoSuchParserException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}The command you executed has a argument that has no matching parser." });
-            }
-            catch (InvalidCommandOverloadException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such overload is available for this command." });
-            }
             catch (Exception e)
             {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {e.Message}" });
                 Logger.LogError(e, e.Message);
             }
         }
@@ -557,7 +549,6 @@ namespace Obsidian
         {
             var keepAliveTicks = 0;
 
-            short itersPerSecond = 0;
             var stopWatch = Stopwatch.StartNew(); // for TPS measuring
 
             while (!this.cts.IsCancellationRequested)
@@ -583,7 +574,7 @@ namespace Obsidian
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                    } 
+                    }
                 }
 
                 while (chatMessages.TryDequeue(out QueueChat msg))
@@ -594,14 +585,9 @@ namespace Obsidian
                     }
                 }
 
-                // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
-                itersPerSecond++;
-                if (stopWatch.ElapsedMilliseconds >= 1000L)
-                {
-                    TPS = itersPerSecond;
-                    itersPerSecond = 0;
-                    stopWatch.Restart();
-                }
+                TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
+                stopWatch.Restart();
+                
                 _ = Task.Run(() => World.ManageChunks());
             }
         }

@@ -76,8 +76,9 @@ namespace Obsidian.Commands.Framework
             var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
+            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
 
-            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null, t);
+            var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", null, checks.ToArray(), this, plugin, null, t, issuers);
             command.Overloads.Add(m);
 
             this._commands.Add(command);
@@ -134,8 +135,9 @@ namespace Obsidian.Commands.Framework
                 var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
+                var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
 
-                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
+                var cmd = new Command(name, aliases.ToArray(), info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t, issuers);
 
                 RegisterSubgroups(st, plugin, cmd);
                 RegisterSubcommands(st, plugin, cmd);
@@ -166,8 +168,9 @@ namespace Obsidian.Commands.Framework
                 var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
+                var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
 
-                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t);
+                var command = new Command(name, aliases, info?.Description ?? "", info?.Usage ?? "", parent, checks.ToArray(), this, plugin, null, t, issuers);
                 command.Overloads.Add(m);
 
                 // Add overloads.

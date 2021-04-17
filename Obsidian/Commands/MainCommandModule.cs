@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Commands.Framework;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Obsidian.Commands
 {
@@ -22,7 +24,7 @@ namespace Obsidian.Commands
         [CommandOverload]
         public async Task HelpAsync(CommandContext Context, int page)
         {
-            var player = (Player)Context.Player;
+            var sender = Context.Sender;
             var server = (Server)Context.Server;
             var commandhandler = server.Commands;
             var allcommands = commandhandler.GetAllCommands();
@@ -54,7 +56,7 @@ namespace Obsidian.Commands
 
             if (page < 1 || page > pagecount)
             {
-                await player.SendMessageAsync(ChatMessage.Simple($"{ChatColor.Red}Invalid help page."));
+                await sender.SendMessageAsync(ChatMessage.Simple($"{ChatColor.Red}Invalid help page."));
                 return;
             }
 
@@ -93,7 +95,7 @@ namespace Obsidian.Commands
                 commands.AddExtra(commandInfo);
 
             }
-            await player.SendMessageAsync(commands);
+            await sender.SendMessageAsync(commands);
         }
         #endregion
 
@@ -103,7 +105,7 @@ namespace Obsidian.Commands
         public async Task TPSAsync(CommandContext ctx)
         {
             ChatColor color;
-            var player = (Player)ctx.Player;
+            var sender = ctx.Sender;
 
             if (ctx.Server.TPS > 15) color = ChatColor.BrightGreen;
             else if (ctx.Server.TPS > 10) color = ChatColor.Yellow;
@@ -113,7 +115,7 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
             };
-            await player.SendMessageAsync(message);
+            await sender.SendMessageAsync(message);
 
         }
         #endregion
@@ -124,7 +126,7 @@ namespace Obsidian.Commands
         public async Task PluginsAsync(CommandContext Context)
         {
             var srv = (Server)Context.Server;
-            var player = (Player)Context.Player;
+            var sender = Context.Sender;
             var pluginCount = srv.PluginManager.Plugins.Count;
             var message = new ChatMessage
             {
@@ -160,13 +162,14 @@ namespace Obsidian.Commands
             else
                 message.Text = $"{ChatColor.Gold}There is no plugins installed{ChatColor.Reset}";
 
-            await player.SendMessageAsync(message);
+            await sender.SendMessageAsync(message);
         }
         #endregion
 
         #region forcechunkreload
         [Command("forcechunkreload")]
         [CommandInfo("Force chunk reload", "/forcechunkreload")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task ForceChunkReloadAsync(CommandContext Context)
         {
             var player = (Player)Context.Player;
@@ -181,7 +184,7 @@ namespace Obsidian.Commands
         #region echo
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
-        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text);
+        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
         #endregion
 
         #region announce
@@ -194,6 +197,7 @@ namespace Obsidian.Commands
         #region leave
         [Command("leave", "kickme")]
         [CommandInfo("kicks you", "/leave")]
+        [IssuerScope(CommandIssuers.Client)]
         public Task LeaveAsync(CommandContext Context) => Context.Player.KickAsync("Is this what you wanted?");
         #endregion
 
@@ -207,20 +211,23 @@ namespace Obsidian.Commands
         #region declarecmds
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
+        [IssuerScope(CommandIssuers.Client)]
         public Task DeclareCommandsTestAsync(CommandContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
         #endregion
 
         #region gamemode
         [Command("gamemode")]
         [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task GamemodeAsync(CommandContext Context)
         {
             var chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
-            var player = (Player)Context.Player;
+            var player = Context.Player;
             await player.SendMessageAsync(chatMessage);
         }
 
         [CommandOverload]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task GamemodeAsync(CommandContext Context, [Remaining] string args_)
         {
             var chatMessage = ChatMessage.Simple("");
@@ -252,7 +259,7 @@ namespace Obsidian.Commands
             {
                 chatMessage = SendCommandUsage("/gamemode <survival/creative/adventure/spectator>");
             }
-            var player = (Player)Context.Player;
+            var player = Context.Player;
             await player.SendMessageAsync(chatMessage);
         }
         #endregion
@@ -260,9 +267,10 @@ namespace Obsidian.Commands
         #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task TeleportAsync(CommandContext Context, [Remaining] VectorF location)
         {
-            var player = (Player)Context.Player;
+            var player = Context.Player;
             await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
             await player.TeleportAsync(location);
         }
@@ -272,14 +280,13 @@ namespace Obsidian.Commands
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
         [RequirePermission]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task GiveOpAsync(CommandContext Context, IPlayer player)
         {
-            var server = (Server)Context.Server;
-            var onlinePlayers = server.OnlinePlayers;
-            if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
+            if (player == null)
                 return;
 
-            server.Operators.AddOperator((Player)player);
+            Context.Server.Operators.AddOperator(player);
 
             await Context.Player.SendMessageAsync($"Made {player} a server operator");
         }
@@ -289,14 +296,13 @@ namespace Obsidian.Commands
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
         [RequirePermission]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task UnclaimOpAsync(CommandContext Context, IPlayer player)
         {
-            var server = (Server)Context.Server;
-            var onlinePlayers = server.OnlinePlayers;
-            if (!onlinePlayers.ContainsKey(player.Uuid) || !onlinePlayers.Any(x => x.Value.Username == player.Username))
+            if (player == null)
                 return;
 
-            server.Operators.RemoveOperator((Player)player);
+            Context.Server.Operators.RemoveOperator(player);
 
             await Context.Player.SendMessageAsync($"Made {player} no longer a server operator");
         }
@@ -305,10 +311,11 @@ namespace Obsidian.Commands
         #region oprequest
         [Command("oprequest", "opreq")]
         [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task RequestOpAsync(CommandContext Context, string code = null)
         {
             var server = (Server)Context.Server;
-            var player = (Player)Context.Player;
+            var player = Context.Player;
 
             if (!server.Config.AllowOperatorRequests)
             {
@@ -350,7 +357,7 @@ namespace Obsidian.Commands
         public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
-            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player.Username}{ChatColor.Reset}.");
+            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player?.Username ?? Context.Sender.ToString()}{ChatColor.Reset}.");
             await Task.Run(() =>
             {
                 server.StopServer();
