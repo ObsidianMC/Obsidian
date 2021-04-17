@@ -23,7 +23,7 @@ namespace Obsidian.Utilities
                 // Print text with previous color
                 if (start != i)
                 {
-                    ConsoleIO.Write(message.AsSpan(start, i - start).ToString());
+                    ConsoleIO.Write(message.Substring(start, i - start));
                 }
 
                 // Change color
@@ -43,7 +43,7 @@ namespace Obsidian.Utilities
 
             // Print remaining text if any
             if (start != message.Length)
-                ConsoleIO.Write(message.AsSpan(start).ToString());
+                ConsoleIO.Write(message.Substring(start));
 
             Console.ResetColor();
         }

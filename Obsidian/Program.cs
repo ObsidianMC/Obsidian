@@ -1,18 +1,14 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using Newtonsoft.Json;
+using Obsidian.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.CodeAnalysis;
-
-using Newtonsoft.Json;
-
-using Obsidian.Utilities;
 
 namespace Obsidian
 {
@@ -126,7 +122,7 @@ namespace Obsidian
                     {
                         if (input.StartsWith(".switch"))
                         {
-                            string[] parts = input.Split(" ");
+                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             if (parts.Length < 2)
                             {
                                 ConsoleIO.WriteLine("Invalid server id");
@@ -145,11 +141,10 @@ namespace Obsidian
 
                             currentServer = server;
                             ConsoleIO.WriteLine($"Changed current server to {server.Id}");
-
                         }
                         else if (input.StartsWith(".execute"))
                         {
-                            string[] parts = input.Split(" ");
+                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             if (parts.Length < 3)
                             {
                                 ConsoleIO.WriteLine("Invalid server id or command");
@@ -182,7 +177,6 @@ namespace Obsidian
                 }
             });
         }
-
 
         private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {

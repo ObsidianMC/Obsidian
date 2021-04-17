@@ -292,7 +292,7 @@ namespace Obsidian
 
         internal async Task ExecuteCommand(string input)
         {
-            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), this);
+            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
             try
             {
                 await Commands.ProcessCommand(context);
@@ -328,7 +328,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), this);
+            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);
