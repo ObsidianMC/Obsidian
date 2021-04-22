@@ -426,10 +426,12 @@ namespace Obsidian.WorldData
 
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating world...");
-            for (int x = -Region.cubicRegionSize; x < Region.cubicRegionSize; x++)
+            this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
+            int pregenerationRange = Server.Config.PregenerateChunkRange;
+
+            for (int x = -pregenerationRange; x < pregenerationRange; x++)
             {
-                for (int z = -Region.cubicRegionSize; z < Region.cubicRegionSize; z++)
+                for (int z = -pregenerationRange; z < pregenerationRange; z++)
                 {
                     if (!ChunksToGen.Contains((x, z)))
                         ChunksToGen.Enqueue((x, z));
