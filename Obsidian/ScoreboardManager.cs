@@ -31,7 +31,7 @@ namespace Obsidian
     /// <summary>
     /// Criterias are used with the default scoreboard
     /// </summary>
-    public enum ScoreoardCriteria
+    public enum ScoreboardCriteria
     {
         Dummy,
         Trigger,
