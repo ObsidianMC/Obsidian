@@ -56,5 +56,8 @@ namespace Obsidian.Utilities
 
         [JsonProperty("udpBroadcast")]
         public bool UDPBroadcast = false;
+        
+        [JsonProperty("pregenerateChunkRange")]
+        public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
     }
 }
