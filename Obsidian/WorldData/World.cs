@@ -427,7 +427,7 @@ namespace Obsidian.WorldData
         internal void GenerateWorld()
         {
             this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateRegions})");
-            int pregenerationRange = (Server.Config.PregenerateRegions) / 2;
+            int pregenerationRange = Server.Config.PregenerateRegions;
 
             for (int x = (-Region.cubicRegionSize) * pregenerationRange; x < (Region.cubicRegionSize) * pregenerationRange; x++)
             {
