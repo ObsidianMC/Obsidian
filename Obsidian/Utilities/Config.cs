@@ -54,7 +54,7 @@ namespace Obsidian.Utilities
         [JsonProperty("downloadplugins")]
         public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
 
-        [JsonProperty("pregenerateRegions")]
-        public int PregenerateRegions { get; set; } = 1; // by default, pregenerate one region.
+        [JsonProperty("pregenerateChunkRange")]
+        public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
     }
 }
