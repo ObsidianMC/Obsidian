@@ -29,6 +29,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,6 +41,7 @@ namespace Obsidian
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
         private readonly TcpListener tcpListener;
+        private readonly UdpClient udpClient;
 
         internal readonly CancellationTokenSource cts;
 
@@ -138,6 +140,21 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
+
+            if (this.Config.UDPBroadcast)
+            {
+                this.udpClient = new UdpClient("224.0.2.60", 4445);
+                _ = Task.Run(async () =>
+                {
+                    while (!this.cts.IsCancellationRequested)
+                    {
+                        await Task.Delay(1500); // Official clients do this too.
+                        var str = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                        await this.udpClient.SendAsync(str, str.Length);
+                    }
+                });
+            }
+
         }
 
         public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>

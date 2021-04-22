@@ -53,5 +53,8 @@ namespace Obsidian.Utilities
 
         [JsonProperty("downloadplugins")]
         public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
+
+        [JsonProperty("udpBroadcast")]
+        public bool UDPBroadcast = false;
     }
 }
