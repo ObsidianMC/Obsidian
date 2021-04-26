@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.API", "Obsidian.AP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.SourceGenerators", "Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj", "{E2E66B12-7A4B-429A-9053-8D7C731E28C1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.IO", "Obsidian.IO\Obsidian.IO.csproj", "{F3F61F81-2C93-4780-BDF2-2492FAE8A862}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3F61F81-2C93-4780-BDF2-2492FAE8A862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3F61F81-2C93-4780-BDF2-2492FAE8A862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3F61F81-2C93-4780-BDF2-2492FAE8A862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3F61F81-2C93-4780-BDF2-2492FAE8A862}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
