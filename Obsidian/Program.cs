@@ -7,23 +7,19 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using CL = Obsidian.IO.Console.CommandLine;
 
 namespace Obsidian
 {
     public static class Program
     {
         private static readonly Dictionary<int, Server> Servers = new();
-        private static readonly TaskCompletionSource<bool> cancelKeyPress = new();
+        private static Server activeServer;
         private static bool shutdownPending;
 
-        /// <summary>
-        /// Event handler for Windows console events
-        /// </summary>
-        private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
         private const string globalConfigFile = "global_config.json";
-
+        
         private static async Task Main()
         {
 #if RELEASE
@@ -39,23 +35,20 @@ namespace Obsidian
             // Kept for consistant number parsing
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-            Console.Title = $"Obsidian {version}";
-            Console.BackgroundColor = ConsoleColor.White;
-            Console.ForegroundColor = ConsoleColor.Black;
-            Console.WriteLine(asciilogo);
-            Console.ResetColor();
-            Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
+            CL.TakeControl();
+            CL.Title = $"Obsidian {version}";
+            CL.BackgroundColor = ConsoleColor.White;
+            CL.ForegroundColor = ConsoleColor.Black;
+            CL.WriteLine(asciilogo);
+            CL.ResetColor();
+            CL.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
 
-            // Hook into Windows' native console closing events, otherwise use .NET's native event.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                _windowsConsoleEventHandler += new NativeMethods.HandlerRoutine(OnConsoleEvent);
-                NativeMethods.SetConsoleCtrlHandler(_windowsConsoleEventHandler, true);
-            }
-            else
-            {
-                Console.CancelKeyPress += OnConsoleCancelKeyPressed;
-            }
+            CL.CancelKeyPress += OnConsoleCancelKeyPress;
+
+            CL.RegisterCommand("switch", SwitchCommand);
+            CL.RegisterCommand("eval", EvalCommand);
+            CL.RegisterCommand("stop", StopCommand);
+            CL.RegisterCommand("stopall", ExitCommand);
 
             if (File.Exists(globalConfigFile))
             {
@@ -65,7 +58,14 @@ namespace Obsidian
             {
                 Globals.Config = new GlobalConfig();
                 File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
-                Console.WriteLine("Created new global configuration file");
+                CL.WriteLine("Created new global configuration file");
+            }
+
+            if (Globals.Config.ServerCount < 1)
+            {
+                CL.WriteLine($"Server count is set to {Globals.Config.ServerCount}, no servers were run.");
+                CL.WaitForExit();
+                return;
             }
 
             for (int i = 0; i < Globals.Config.ServerCount; i++)
@@ -85,7 +85,7 @@ namespace Obsidian
                 {
                     config = new Config();
                     File.WriteAllText(configPath, JsonConvert.SerializeObject(config, Formatting.Indented));
-                    Console.WriteLine($"Created new configuration file for Server-{i}");
+                    CL.WriteLine($"Created new configuration file for Server-{i}");
                 }
 
                 Servers.Add(i, new Server(config, version, i));
@@ -94,100 +94,111 @@ namespace Obsidian
             if (Servers.GroupBy(entry => entry.Value.Port).Any(group => group.Count() > 1))
                 throw new InvalidOperationException("Multiple servers cannot be binded to the same port");
 
+            TrySetActiveServer(index: 0);
+
             var serverTasks = Servers.Select(entry => entry.Value.StartServerAsync());
-            InitConsoleInput();
-            await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
+            await Task.WhenAll(serverTasks);
 
-            if (!shutdownPending)
+            CL.WriteLine("Server(s) killed. Press any key to return...");
+            CL.WaitForExit();
+        }
+
+        private static ValueTask SwitchCommand(string[] args, ReadOnlyMemory<char> fullArgs)
+        {
+            if (args.Length == 0)
             {
-                Console.WriteLine("Server(s) killed. Press any key to return...");
-                Console.ReadKey(intercept: false);
+                activeServer = null;
+                CL.ResetCommandPrefix();
+                Success("Switched successfully");
+                return ValueTask.CompletedTask;
             }
-        }
 
-        private static void InitConsoleInput()
-        {
-            Task.Run(async () =>
+            if (args.Length != 1)
             {
-                Server currentServer = Servers.First().Value;
-                await Task.Delay(2000);
-                while (!shutdownPending)
+                Error($"Switch command accepts 0 or 1 argument");
+                return ValueTask.CompletedTask;
+            }
+
+            if (int.TryParse(args[0], out int index))
+            {
+                if (TrySetActiveServer(index))
                 {
-                    if (currentServer == null && Servers.Count == 0)
-                        break;
-
-                    string input = ConsoleIO.ReadLine();
-
-                    if (input.StartsWith('.'))
-                    {
-                        if (input.StartsWith(".switch"))
-                        {
-                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length < 2)
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!int.TryParse(parts[1], out int serverId))
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!Servers.TryGetValue(serverId, out var server))
-                            {
-                                ConsoleIO.WriteLine("No server with given id found");
-                                continue;
-                            }
-
-                            currentServer = server;
-                            ConsoleIO.WriteLine($"Changed current server to {server.Id}");
-                        }
-                        else if (input.StartsWith(".execute"))
-                        {
-                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length < 3)
-                            {
-                                ConsoleIO.WriteLine("Invalid server id or command");
-                                continue;
-                            }
-                            if (!int.TryParse(parts[1], out int serverId))
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!Servers.TryGetValue(serverId, out var server))
-                            {
-                                ConsoleIO.WriteLine("No server with given id found");
-                                continue;
-                            }
-
-                            ConsoleIO.WriteLine($"Executing command on Server-{server.Id}");
-                            await server.ExecuteCommand(string.Join(' ', parts.Skip(2)));
-                        }
-                    }
-                    else
-                    {
-                        await currentServer.ExecuteCommand(input);
-                        if (input == "stop")
-                        {
-                            Servers.Remove(currentServer.Id);
-                            currentServer = Servers.FirstOrDefault().Value;
-                        }
-                    }
+                    Success($"Switched to server {index}");
                 }
-            });
+                else
+                {
+
+                    Error($"No server with ID {index} found");
+                }
+            }
+            else
+            {
+                Error("Invalid server ID");
+            }
+
+            return ValueTask.CompletedTask;
         }
 
-        private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
+        private static async ValueTask EvalCommand(string[] args, ReadOnlyMemory<char> fullArgs)
         {
-            e.Cancel = true;
+            await activeServer?.ExecuteCommand(fullArgs);
+        }
+
+        private static ValueTask StopCommand(string[] args, ReadOnlyMemory<char> fullArgs)
+        {
+            if (activeServer is null)
+            {
+                Error("No server selected");
+                return ValueTask.CompletedTask;
+            }
+
+            CL.ResetCommandPrefix();
+            Servers.Remove(activeServer.Id);
+            activeServer.StopServer();
+            activeServer = null;
+
+            Success("Server stopped");
+            return ValueTask.CompletedTask;
+        }
+
+        private static ValueTask ExitCommand(string[] args, ReadOnlyMemory<char> fullArgs)
+        {
             StopProgram();
-            cancelKeyPress.SetResult(true);
+            return ValueTask.CompletedTask;
         }
 
-        private static bool OnConsoleEvent(NativeMethods.CtrlType ctrlType)
+        private static bool TrySetActiveServer(int index)
         {
-            Console.WriteLine("Received {0}", ctrlType);
+            if (Servers.TryGetValue(index, out var server))
+            {
+                if (server == activeServer)
+                    return true;
+
+                activeServer = server;
+                CL.CommandPrefix = $"Server-{index}> ";
+                return true;
+            }
+            return false;
+        }
+
+        private static void Error(string message)
+        {
+            CL.ForegroundColor = ConsoleColor.Red;
+            CL.BackgroundColor = ConsoleColor.Black;
+            CL.WriteLine(message);
+            CL.ResetColor();
+        }
+
+        private static void Success(string message)
+        {
+            CL.ForegroundColor = ConsoleColor.Green;
+            CL.BackgroundColor = ConsoleColor.Black;
+            CL.WriteLine(message);
+            CL.ResetColor();
+        }
+
+        private static bool OnConsoleCancelKeyPress()
+        {
             StopProgram();
             return true;
         }

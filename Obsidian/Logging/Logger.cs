@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.IO.Console;
 using Obsidian.Utilities;
 using System;
 
@@ -53,12 +54,12 @@ namespace Obsidian.Logging
 
             void PrintLinePrefix()
             {
-                Console.ResetColor();
-                ConsoleIO.Write(time);
-                Console.ForegroundColor = logLevelColor;
-                ConsoleIO.Write(level);
-                Console.ResetColor();
-                ConsoleIO.Write(prefix);
+                CommandLine.ResetColor();
+                CommandLine.Write(time);
+                CommandLine.ForegroundColor = logLevelColor;
+                CommandLine.Write(level);
+                CommandLine.ResetColor();
+                CommandLine.Write(prefix);
             }
 
             string message = formatter(state, exception);
@@ -70,9 +71,9 @@ namespace Obsidian.Logging
                 {
                     PrintLinePrefix();
 
-                    Console.ForegroundColor = ConsoleColor.White;
+                    CommandLine.ForegroundColor = ConsoleColor.White;
                     lines[i].RenderColoredConsoleMessage();
-                    ConsoleIO.WriteLine(string.Empty);
+                    CommandLine.WriteLine();
                 }
             }
         }

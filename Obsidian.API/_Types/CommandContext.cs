@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Plugins;
+using System;
 
 namespace Obsidian.API
 {
@@ -8,9 +9,9 @@ namespace Obsidian.API
         public IServer Server { get; private set; }
         public ICommandSender Sender { get; }
         public PluginBase Plugin { get; internal set; }
-        internal string Message { get; }
+        internal ReadOnlyMemory<char> Message { get; }
 
-        public CommandContext(string message, ICommandSender commandSender, IPlayer player, IServer server)
+        public CommandContext(ReadOnlyMemory<char> message, ICommandSender commandSender, IPlayer player, IServer server)
         {
             Server = server;
             Sender = commandSender;

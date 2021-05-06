@@ -17,6 +17,9 @@ namespace Obsidian.API
 
         public override async Task<bool> RunChecksAsync(CommandContext ctx)
         {
+            if (ctx.Sender.Issuer.HasFlag(CommandIssuers.Console) || ctx.Sender.Issuer.HasFlag(CommandIssuers.RemoteConsole))
+                return true;
+
             if (this.op && ctx.Player.IsOperator)
                 return true;
 

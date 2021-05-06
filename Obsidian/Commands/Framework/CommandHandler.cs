@@ -183,10 +183,10 @@ namespace Obsidian.Commands.Framework
         public async Task ProcessCommand(CommandContext ctx)
         {
             // split the command message into command and args.
-            if (_commandParser.IsCommandQualified(ctx.Message, out string qualified))
+            if (_commandParser.IsCommandQualified(ctx.Message, out ReadOnlyMemory<char> qualified))
             {
                 // if string is "command-qualified" we'll try to execute it.
-                var command = _commandParser.SplitQualifiedString(qualified); // first, parse the command
+                var command = _commandParser.SplitQualifiedString(qualified.Span); // first, parse the command
 
                 await ExecuteCommand(command, ctx);
             }

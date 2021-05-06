@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.IO.Console;
 using System;
 
 namespace Obsidian.Utilities
@@ -23,17 +24,17 @@ namespace Obsidian.Utilities
                 // Print text with previous color
                 if (start != i)
                 {
-                    ConsoleIO.Write(message.Substring(start, i - start));
+                    CommandLine.Write(message.AsSpan(start, i - start));
                 }
 
                 // Change color
                 if (colorCode == 'r')
                 {
-                    Console.ResetColor();
+                    CommandLine.ResetColor();
                 }
                 else
                 {
-                    Console.ForegroundColor = color.ConsoleColor.Value;
+                    CommandLine.ForegroundColor = color.ConsoleColor.Value;
                 }
 
                 // Skip color code
@@ -43,9 +44,9 @@ namespace Obsidian.Utilities
 
             // Print remaining text if any
             if (start != message.Length)
-                ConsoleIO.Write(message.Substring(start));
+                CommandLine.Write(message.AsSpan(start));
 
-            Console.ResetColor();
+            CommandLine.ResetColor();
         }
     }
 }

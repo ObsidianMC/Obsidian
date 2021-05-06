@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Obsidian.Commands.Framework
@@ -9,22 +10,22 @@ namespace Obsidian.Commands.Framework
 
         public CommandParser(string prefix)
         {
-            this._prefix = prefix;
+            _prefix = prefix;
         }
 
-        public bool IsCommandQualified(string input, out string qualifiedcommand)
+        public bool IsCommandQualified(ReadOnlyMemory<char> input, out ReadOnlyMemory<char> qualifiedCommand)
         {
-            qualifiedcommand = null;
-            if (input.StartsWith(_prefix))
+            qualifiedCommand = null;
+            if (input.Span.StartsWith(_prefix))
             {
-                qualifiedcommand = input.Substring(_prefix.Length);
+                qualifiedCommand = input.Slice(_prefix.Length);
                 return true;
             }
 
             return false;
         }
 
-        public string[] SplitQualifiedString(string input)
+        public string[] SplitQualifiedString(ReadOnlySpan<char> input)
         {
             List<string> tokens = new List<string>();
 

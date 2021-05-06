@@ -277,7 +277,17 @@ namespace Obsidian
 
             while (!this.cts.IsCancellationRequested)
             {
-                var tcp = await this.tcpListener.AcceptTcpClientAsync();
+                TcpClient tcp;
+                try
+                {
+                    tcp = await tcpListener.AcceptTcpClientAsync();
+                }
+                catch
+                {
+                    // Connecting interupted
+                    continue;
+                }
+
                 this.Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
                 var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
@@ -290,9 +300,9 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task ExecuteCommand(string input)
+        internal async Task ExecuteCommand(ReadOnlyMemory<char> input)
         {
-            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
+            var context = new CommandContext(input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
             try
             {
                 await Commands.ProcessCommand(context);
@@ -328,7 +338,7 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
+            var context = new CommandContext(message.AsMemory(), new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);

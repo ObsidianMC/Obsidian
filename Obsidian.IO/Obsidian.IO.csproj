@@ -1,20 +1,34 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  <PropertyGroup>
+    <TargetsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</TargetsWindows>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Console\CommandLine.Windows.cs" />
+    <Compile Remove="Console\CommandLine.Common.cs" />
+    <Compile Remove="Console\NativeMethods.cs" />
+  </ItemGroup>
+
+  <!-- Windows -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Console\CommandLine.Windows.cs" />
+    <Compile Include="Console\NativeMethods.cs" />
+  </ItemGroup>
+  
+  <!-- Non-Windows -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'false'">
+    <Compile Include="Console\CommandLine.Common.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
-    <ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

@@ -288,7 +288,7 @@ namespace Obsidian.Commands
 
             Context.Server.Operators.AddOperator(player);
 
-            await Context.Player.SendMessageAsync($"Made {player} a server operator");
+            await Context.Sender.SendMessageAsync($"Made {player} a server operator");
         }
         #endregion
 
