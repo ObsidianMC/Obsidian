@@ -73,6 +73,13 @@ namespace Obsidian.API
             return this;
         }
 
+        public ItemMetaBuilder WithName(IChatMessage name)
+        {
+            this.Name = name;
+
+            return this;
+        }
+
         public ItemMetaBuilder AddLore(string lore)
         {
             this.lore.Add(IChatMessage.Simple(lore));

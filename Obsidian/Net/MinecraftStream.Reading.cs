@@ -763,7 +763,8 @@ namespace Obsidian.Net
                                         {
                                             if (displayTag.Name.EqualsIgnoreCase("name"))
                                             {
-                                                itemMetaBuilder.WithName(displayTag.StringValue);
+                                                var messages = JsonConvert.DeserializeObject<ChatMessage[]>(displayTag.StringValue);
+                                                itemMetaBuilder.WithName(messages[0]);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
                                             {
