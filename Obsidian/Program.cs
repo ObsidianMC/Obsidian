@@ -163,6 +163,8 @@ namespace Obsidian
 
         private static ValueTask ExitCommand(string[] args, ReadOnlyMemory<char> fullArgs)
         {
+            activeServer = null;
+            CL.ResetCommandPrefix();
             StopProgram();
             return ValueTask.CompletedTask;
         }
