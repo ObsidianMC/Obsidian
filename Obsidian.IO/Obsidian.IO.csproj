@@ -26,9 +26,5 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'false'">
     <Compile Include="Console\CommandLine.Common.cs" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
-  </ItemGroup>
 
 </Project>

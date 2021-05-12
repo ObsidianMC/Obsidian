@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -389,64 +388,6 @@ namespace Obsidian.IO
                 buffer[index++] = temp;
             }
             while (unsigned != 0);
-        }
-        #endregion
-
-        #region Writing Obsidian.API types
-        public void WriteAngle(Angle value)
-        {
-            buffer[index++] = value.Value;
-        }
-
-        public void WriteChatMessage(IChatMessage chatMessage)
-        {
-            WriteVarString(chatMessage.ToString());
-        }
-
-        public void WriteVector(Vector value)
-        {
-            var val = (long)(value.X & 0x3FFFFFF) << 38;
-            val |= (long)(value.Z & 0x3FFFFFF) << 12;
-            val |= (long)(value.Y & 0xFFF);
-
-            WriteLong(val);
-        }
-
-        public void WriteAbsolutePosition(Vector value)
-        {
-            WriteDouble(value.X);
-            WriteDouble(value.Y);
-            WriteDouble(value.Z);
-        }
-
-        public void WriteVectorF(VectorF value)
-        {
-            var val = (long)((int)value.X & 0x3FFFFFF) << 38;
-            val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
-            val |= (long)((int)value.Y & 0xFFF);
-
-            WriteLong(val);
-        }
-
-        public void WriteAbsolutePositionF(VectorF value)
-        {
-            WriteDouble(value.X);
-            WriteDouble(value.Y);
-            WriteDouble(value.Z);
-        }
-
-        public void WriteVelocity(Velocity value)
-        {
-            WriteShort(value.X);
-            WriteShort(value.Y);
-            WriteShort(value.Z);
-        }
-
-        public void WriteSoundPosition(SoundPosition value)
-        {
-            WriteInt(value.X);
-            WriteInt(value.Y);
-            WriteInt(value.Z);
         }
         #endregion
 
