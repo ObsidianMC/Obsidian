@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Nbt
 {
+    //TODO keep track of tags and make sure compounds are properly closed
     public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
     {
         private NbtTagType? expectedListType;
