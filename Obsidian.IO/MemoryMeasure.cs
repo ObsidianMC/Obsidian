@@ -6,13 +6,6 @@ namespace Obsidian.IO
 {
     public static class MemoryMeasure
     {
-        public const int GuidByteCount = 16;
-        public const int AngleByteCount = 1;
-        public const int VelocityByteCount = 6;
-        public const int SoundPositionByteCount = 12;
-        public const int PositionByteCount = 8;
-        public const int AbsolutePositionByteCount = 24;
-
         private static readonly Encoding utf8 = Encoding.UTF8;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
