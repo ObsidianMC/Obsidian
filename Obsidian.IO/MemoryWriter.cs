@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -117,180 +118,88 @@ namespace Obsidian.IO
             buffer[index++] = Unsafe.As<bool, byte>(ref value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteShort(short value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<short>() = value;
 
             index += sizeof(short);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUShort(ushort value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<ushort>() = value;
 
             index += sizeof(ushort);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteInt(int value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<int>() = value;
 
             index += sizeof(int);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt(uint value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<uint>() = value;
 
             index += sizeof(uint);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteLong(long value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 5
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 6
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 7
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 8
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<long>() = value;
 
             index += sizeof(long);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteULong(ulong value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 5
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 6
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 7
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 8
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = BinaryPrimitives.ReverseEndianness(value);
+            }
+            GetRef<ulong>() = value;
 
             index += sizeof(ulong);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteFloat(float value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
-
-            index += sizeof(float);
+            WriteInt(Unsafe.As<float, int>(ref value));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDouble(double value)
         {
-            ref byte target = ref GetRef();
-            ref byte source = ref GetLastByteRef(ref value);
-
-            target = source; // 1
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 2
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 3
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 4
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 5
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 6
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 7
-            target = ref Unsafe.Add(ref target, 1);
-            source = ref Unsafe.Add(ref source, -1);
-            target = source; // 8
-
-            index += sizeof(double);
+            WriteLong(Unsafe.As<double, long>(ref value));
         }
         #endregion
 
