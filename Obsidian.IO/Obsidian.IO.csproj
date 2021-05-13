@@ -8,11 +8,14 @@
 
   <PropertyGroup>
     <TargetsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</TargetsWindows>
+    <TargetsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</TargetsLinux>
+    <TargetsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</TargetsOSX>
+    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Console\CommandLine.Windows.cs" />
-    <Compile Remove="Console\CommandLine.Common.cs" />
+    <Compile Remove="Console\CommandLine.Unix.cs" />
     <Compile Remove="Console\NativeMethods.cs" />
   </ItemGroup>
 
@@ -22,9 +25,9 @@
     <Compile Include="Console\NativeMethods.cs" />
   </ItemGroup>
   
-  <!-- Non-Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'false'">
-    <Compile Include="Console\CommandLine.Common.cs" />
+  <!-- Unix -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="Console\CommandLine.Unix.cs" />
   </ItemGroup>
 
 </Project>
