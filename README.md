@@ -5,9 +5,7 @@
 [![Build Status](https://dev.azure.com/naamloos-ops/Obsidian/_apis/build/status/Naamloos.Obsidian?branchName=master)](https://dev.azure.com/naamloos-ops/Obsidian/_build/latest?definitionId=1&branchName=master)
 [![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
-Obsidian is a C# implementation of the Minecraft server protocol. It runs on the .NET 5 Framework.
-
-Obsidian is currently still in development, and a lot of love and care is being put into the project!
+Obsidian is a C# implementation of the Minecraft server protocol. It runs on the .NET 5 Framework. Obsidian is currently still in development, and a lot of love and care is being put into the project!
 
 ## ✅ Roadmap
 - [x] A custom plugin framework
@@ -16,7 +14,7 @@ Obsidian is currently still in development, and a lot of love and care is being 
 - [x] Block breaking/placing
 - [ ] Other gamemodes besides creative
 - [ ] Usable storage and crafting blocks
-- [ ] Low memory usage
+- [x] Low memory usage
 - [ ] Inventory management
 - [ ] Daylight and weather cycle
 - [ ] Complete world generation
