@@ -14,19 +14,11 @@ namespace Obsidian.Nbt
 
         public NbtReader() : this(new MemoryStream()) { }
 
-        public NbtReader(Stream input, CompressionMode? mode = null)
+        public NbtReader(Stream input, bool gzip = false)
         {
-            if(mode.HasValue)
+            if(gzip)
             {
-                switch (mode.Value)
-                {
-                    case CompressionMode.Decompress:
-                        this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
-                        break;
-                    case CompressionMode.Compress:
-                    default:
-                        break;
-                }
+                this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
 
                 return;
             }

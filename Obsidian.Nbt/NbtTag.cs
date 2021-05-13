@@ -25,6 +25,8 @@
 
         public byte GetByte() => (byte)this.value;
 
+        public bool GetBool() => this.GetByte() == 1;
+
         public float GetFloat() => (float)this.value;
 
         public double GetDouble() => (double)this.value;

@@ -13,5 +13,7 @@
         public static NbtTag ToShort(string name, short value) => new(NbtTagType.Short, name, value);
 
         public static NbtTag ToString(string name, string value) => new(NbtTagType.String, name, value);
+
+        public static NbtTag ToLong(string name, long value) => new(NbtTagType.Long, name, value);
     }
 }
