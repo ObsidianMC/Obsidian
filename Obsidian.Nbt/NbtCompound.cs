@@ -11,6 +11,8 @@ namespace Obsidian.Nbt
 
         public int Count => this.children.Count;
 
+        public NbtTag this[string name] { get => this.children[name]; set => this.children[name] = value; }
+
         public NbtCompound(string name = null) : base(NbtTagType.Compound)
         {
             if (this.Parent?.Type == NbtTagType.Compound && name == null)

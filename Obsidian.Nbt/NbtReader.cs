@@ -1,21 +1,42 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
 namespace Obsidian.Nbt
 {
-    public class NbtReader : BinaryReader
+    public class NbtReader
     {
         public NbtTagType? CurrentTag { get; set; }
 
+        public Stream BaseStream { get; }
+
         public NbtReader() : this(new MemoryStream()) { }
 
-        public NbtReader(Stream input) : base(input) { }
+        public NbtReader(Stream input, CompressionMode? mode = null)
+        {
+            if(mode.HasValue)
+            {
+                switch (mode.Value)
+                {
+                    case CompressionMode.Decompress:
+                        this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
+                        break;
+                    case CompressionMode.Compress:
+                    default:
+                        break;
+                }
+
+                return;
+            }
+
+            this.BaseStream = input;
+        }
 
         public NbtTagType ReadTagType()
         {
-            var type = this.ReadByte();
+            var type = this.BaseStream.ReadByte();
 
             if (type < 0)
                 return NbtTagType.End;
@@ -32,7 +53,7 @@ namespace Obsidian.Nbt
                 case NbtTagType.End:
                     return new NbtTag(type);
                 case NbtTagType.Byte:
-                    return new NbtTag(type, this.ReadString(), this.ReadByte());
+                    return new NbtTag(type, this.ReadString(), this.BaseStream.ReadByte());
                 case NbtTagType.Short:
                     return new NbtTag(type, this.ReadString(), this.ReadInt16());
                 case NbtTagType.Int:
@@ -137,22 +158,24 @@ namespace Obsidian.Nbt
 
         #region overrides
 
-        public override string ReadString()
+        public string ReadString()
         {
             var length = this.ReadInt16();
 
             if (length < 0)
                 throw new InvalidOperationException("Negative length value found");
 
-            var data = this.ReadBytes(length);
+            Span<byte> buffer = stackalloc byte[length];
 
-            return Encoding.UTF8.GetString(data);
+            this.BaseStream.Read(buffer);
+
+            return Encoding.UTF8.GetString(buffer);
         }
 
-        public override short ReadInt16()
+        public short ReadInt16()
         {
             Span<byte> buffer = stackalloc byte[2];
-            this.Read(buffer);
+            this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();
@@ -160,10 +183,10 @@ namespace Obsidian.Nbt
             return BitConverter.ToInt16(buffer);
         }
 
-        public override int ReadInt32()
+        public int ReadInt32()
         {
             Span<byte> buffer = stackalloc byte[4];
-            this.Read(buffer);
+            this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();
@@ -171,10 +194,10 @@ namespace Obsidian.Nbt
             return BitConverter.ToInt32(buffer);
         }
 
-        public override long ReadInt64()
+        public long ReadInt64()
         {
             Span<byte> buffer = stackalloc byte[8];
-            this.Read(buffer);
+            this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();
@@ -182,10 +205,10 @@ namespace Obsidian.Nbt
             return BitConverter.ToInt64(buffer);
         }
 
-        public override float ReadSingle()
+        public float ReadSingle()
         {
             Span<byte> buffer = stackalloc byte[4];
-            this.Read(buffer);
+            this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();
@@ -194,10 +217,10 @@ namespace Obsidian.Nbt
             return BitConverter.ToSingle(buffer);
         }
 
-        public override double ReadDouble()
+        public double ReadDouble()
         {
             Span<byte> buffer = stackalloc byte[4];
-            this.Read(buffer);
+            this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();

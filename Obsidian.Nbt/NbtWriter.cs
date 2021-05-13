@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 
 namespace Obsidian.Nbt
@@ -27,11 +28,18 @@ namespace Obsidian.Nbt
             this.WriteString(name);
         }
 
-        public NbtWriter(Stream outstream, NbtTag root)
+        public NbtWriter(Stream outstream, CompressionMode compressionMode)
         {
-            this.BaseStream = outstream;
-
-            this.WriteTag(root);
+            switch (compressionMode)
+            {
+                case CompressionMode.Decompress:
+                    break;
+                case CompressionMode.Compress:
+                    this.BaseStream = new GZipStream(outstream, compressionMode);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public void WriteCompoundStart(string name = "")
@@ -114,6 +122,8 @@ namespace Obsidian.Nbt
 
                     foreach (var (_, child) in (NbtCompound)tag)
                         this.WriteTag(child);
+
+                    this.EndCompound();
                     break;
                 case NbtTagType.ByteArray:
                     break;
