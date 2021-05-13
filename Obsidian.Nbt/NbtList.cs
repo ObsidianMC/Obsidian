@@ -13,8 +13,9 @@ namespace Obsidian.Nbt
 
         public NbtTagType ListType { get; }
 
-        public NbtList(NbtTagType listType) : base(NbtTagType.List)
+        public NbtList(NbtTagType listType, string name = "") : base(NbtTagType.List)
         {
+            this.Name = name;
             this.ListType = listType;
         }
 

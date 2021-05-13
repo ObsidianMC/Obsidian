@@ -1,12 +1,12 @@
 ﻿namespace Obsidian.Nbt
 {
-    public class NbtTag
+    public partial class NbtTag
     {
         public NbtTagType Type { get; }
 
         public NbtTag Parent { get; set; }
 
-        public string Name { get; internal set; }
+        public string Name { get; set; }
 
         private object value;
 

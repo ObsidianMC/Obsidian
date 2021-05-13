@@ -9,6 +9,8 @@ namespace Obsidian.Nbt
     {
         private readonly Dictionary<string, NbtTag> children = new();
 
+        public int Count => this.children.Count;
+
         public NbtCompound(string name = null) : base(NbtTagType.Compound)
         {
             if (this.Parent?.Type == NbtTagType.Compound && name == null)
@@ -20,18 +22,16 @@ namespace Obsidian.Nbt
         public NbtCompound(List<NbtTag> children) : this()
         {
             foreach (var child in children)
-                this.AddTag(child.Name, child);
+                this.Add(child.Name, child);
         }
 
         public NbtCompound(string name, List<NbtTag> children) : this(name)
         {
             foreach (var child in children)
-                this.AddTag(child.Name, child);
+                this.Add(child.Name, child);
         }
 
-        public void AddTag(string name, NbtTag value) => this.children.Add(name, value);
-
-        public bool RemoveTag(string name) => this.children.Remove(name);
+        public bool Remove(string name) => this.children.Remove(name);
 
         public bool HasTag(string name) => this.children.ContainsKey(name);
 
@@ -39,12 +39,10 @@ namespace Obsidian.Nbt
 
         public void Clear() => this.children.Clear();
 
-        public int Count() => this.children.Count;
-
         public override string ToString()
         {
             var sb = new StringBuilder();
-            var count = this.Count();
+            var count = this.Count;
 
             sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
 
@@ -55,6 +53,10 @@ namespace Obsidian.Nbt
 
             return sb.ToString();
         }
+
+        public void Add(string name, NbtTag tag) => this.children.Add(name, tag);
+
+        public void Add(NbtTag tag) => this.children.Add(tag.Name, tag);
 
         public IEnumerator<KeyValuePair<string, NbtTag>> GetEnumerator() => this.children.GetEnumerator();
 

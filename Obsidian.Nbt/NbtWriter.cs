@@ -24,7 +24,14 @@ namespace Obsidian.Nbt
             this.RootType = rootType;
 
             this.Write(rootType);
-            this.Write(name);
+            this.WriteString(name);
+        }
+
+        public NbtWriter(Stream outstream, NbtTag root)
+        {
+            this.BaseStream = outstream;
+
+            this.WriteTag(root);
         }
 
         public void WriteCompoundStart(string name = "")
@@ -33,7 +40,7 @@ namespace Obsidian.Nbt
 
             this.Write(NbtTagType.Compound);
             if (!string.IsNullOrEmpty(name))
-                this.Write(name);
+                this.WriteString(name);
         }
 
         public void WriteListStart(string name, NbtTagType listType, int length)
@@ -45,10 +52,10 @@ namespace Obsidian.Nbt
 
             this.Write(NbtTagType.List);
             if (!string.IsNullOrEmpty(name))
-                this.Write(name);
+                this.WriteString(name);
 
             this.Write(listType);
-            this.Write(length);
+            this.WriteInt(length);
         }
 
         public void EndList()
@@ -66,13 +73,67 @@ namespace Obsidian.Nbt
             this.Write(NbtTagType.End);
         }
 
+        public void WriteTag(NbtTag tag)
+        {
+            var name = tag.Name;
+            switch (tag.Type)
+            {
+                case NbtTagType.End://Probably shouldn't allow this
+                    //this.EndCompound();
+                    break;
+                case NbtTagType.Byte:
+                    this.WriteByte(name, tag.GetByte());
+                    break;
+                case NbtTagType.Short:
+                    this.WriteShort(name, tag.GetShort());
+                    break;
+                case NbtTagType.Int:
+                    this.WriteInt(name, tag.GetInt());
+                    break;
+                case NbtTagType.Long:
+                    this.WriteLong(name, tag.GetLong());
+                    break;
+                case NbtTagType.Float:
+                    this.WriteFloat(name, tag.GetFloat());
+                    break;
+                case NbtTagType.Double:
+                    this.WriteDouble(name, tag.GetDouble());
+                    break;
+                case NbtTagType.String:
+                    this.WriteString(name, tag.GetString());
+                    break;
+                case NbtTagType.List:
+                    var list = (NbtList)tag;
+                    this.WriteListStart(name, list.ListType, list.Count);
+
+                    foreach (var child in list)
+                        this.WriteTag(child);
+                    break;
+                case NbtTagType.Compound:
+                    this.WriteCompoundStart(name);
+
+                    foreach (var (_, child) in (NbtCompound)tag)
+                        this.WriteTag(child);
+                    break;
+                case NbtTagType.ByteArray:
+                    break;
+                case NbtTagType.IntArray:
+                    break;
+                case NbtTagType.LongArray:
+                    break;
+                case NbtTagType.Unknown:
+                default:
+                    throw new InvalidOperationException("Unknown tag type");
+            }
+        }
+
         public void WriteString(string name, string value)
         {
             this.Validate(name, NbtTagType.String);
 
             this.Write(NbtTagType.String);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteString(value);
         }
 
         public void WriteByte(string name, byte value)
@@ -80,8 +141,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Byte);
 
             this.Write(NbtTagType.Byte);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteShort(value);
         }
 
         public void WriteShort(string name, short value)
@@ -89,8 +150,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Short);
 
             this.Write(NbtTagType.Short);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteShort(value);
         }
 
         public void WriteInt(string name, int value)
@@ -98,8 +159,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Int);
 
             this.Write(NbtTagType.Int);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteInt(value);
         }
 
         public void WriteLong(string name, long value)
@@ -107,8 +168,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Long);
 
             this.Write(NbtTagType.Long);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteLong(value);
         }
 
         public void WriteFloat(string name, float value)
@@ -116,8 +177,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Float);
 
             this.Write(NbtTagType.Float);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteFloat(value);
         }
 
         public void WriteDouble(string name, double value)
@@ -125,8 +186,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Double);
 
             this.Write(NbtTagType.Double);
-            this.Write(name);
-            this.Write(value);
+            this.WriteString(name);
+            this.WriteDouble(value);
         }
 
         public void Validate(string name, NbtTagType type)
@@ -153,7 +214,7 @@ namespace Obsidian.Nbt
         //TODO
         public void TryFinish()
         {
-           
+
         }
 
         public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();

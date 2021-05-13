@@ -65,9 +65,14 @@ namespace Obsidian.Nbt
             return null;
         }
 
-        public NbtTag ReadNextTag()
+        public NbtTag ReadNextTag(bool readName = true)
         {
             var firstType = this.ReadTagType();
+
+            string tagName = "";
+
+            if (readName)
+                tagName = this.ReadString();
 
             switch (firstType)
             {
@@ -85,27 +90,38 @@ namespace Obsidian.Nbt
                     break;
                 case NbtTagType.Double:
                     break;
-                case NbtTagType.ByteArray:
-                    break;
                 case NbtTagType.String:
                     break;
                 case NbtTagType.List:
+                    var listType = this.ReadTagType();
+
+                    var list = new NbtList(listType, tagName);
+
+                    var length = this.ReadInt32();
+
+                    if (length < 0)
+                        throw new InvalidOperationException("Got negative list length.");
+
+                    for (var i = 0; i < length; i++)
+                        list.Add(this.ReadNextTag(false));
+
                     break;
                 case NbtTagType.Compound:
                     {
-                        var compoundName = this.ReadString();
-                        var compound = new NbtCompound(compoundName);
+                        var compound = new NbtCompound(tagName);
 
                         NbtTagType type;
                         while ((type = this.ReadTagType()) != NbtTagType.End)
                         {
                             var tag = this.GetCurrentTag(type);
 
-                            compound.AddTag(tag.Name, tag);
+                            compound.Add(tag);
                         }
 
                         return compound;
                     }
+                case NbtTagType.ByteArray:
+                    break;
                 case NbtTagType.IntArray:
                     break;
                 case NbtTagType.LongArray:
