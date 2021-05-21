@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 
 using Obsidian.Chat;
-using Obsidian.Util.Mojang;
+using Obsidian.Utilities.Mojang;
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {

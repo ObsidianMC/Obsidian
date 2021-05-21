@@ -5,8 +5,8 @@ using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -392,7 +392,11 @@ namespace Obsidian.Plugins
 
         private void InvokeOnLoad(PluginContainer plugin)
         {
-            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server).TryRunSynchronously();
+            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server);
+            if (task.Status == TaskStatus.Created)
+            {
+                task.RunSynchronously();
+            }
             if (task.Status == TaskStatus.Faulted)
             {
                 logger?.LogError(task.Exception?.InnerException, $"Invoking {plugin.Info.Name}.{loadEvent} faulted.");

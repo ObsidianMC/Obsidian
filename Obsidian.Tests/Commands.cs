@@ -11,6 +11,7 @@ namespace Obsidian.Tests
         [Fact]
         public async Task TestTokenizing()
         {
+            await Task.Yield();
             var message = "/test help help \"help help \\n\" help";
             var expected = new[] { "test", "help", "help", "help help \n", "help" };
 
@@ -27,21 +28,23 @@ namespace Obsidian.Tests
         {
             var cmd = new CommandHandler("/");
 
+            ICommandSender sender = new CommandSender(CommandIssuers.Console, player: null, logger: null);
+
             cmd.RegisterCommandClass<Command>(null, new Command());
 
-            await cmd.ProcessCommand(new CommandContext("/ping 69 hello", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hello", sender, null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("hello", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/pong ping 420 bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/pong ping 420 bye", sender, null, null));
             Assert.Equal(420, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/ping 12 12", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 12 12", sender, null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
 
-            await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", null, null));
+            await cmd.ProcessCommand(new CommandContext("/ping 69 hey bye", sender, null, null));
             Assert.Equal(69, Command.arg1out);
             Assert.Equal("bye", Command.arg2out);
         }
@@ -53,32 +56,41 @@ namespace Obsidian.Tests
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
+            [IssuerScope(CommandIssuers.Any)]
             public async Task ping(CommandContext ctx, int arg1, int arg2)
             {
+                await Task.Yield();
             }
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
+            [IssuerScope(CommandIssuers.Any)]
             public async Task ping(CommandContext ctx, int arg1, string arg2)
             {
+                await Task.Yield();
                 arg1out = arg1;
                 arg2out = arg2;
             }
 
             [Command("ping")]
             [CommandInfo(description: "ping")]
+            [IssuerScope(CommandIssuers.Any)]
             public async Task ping(CommandContext ctx, int arg1, string arg2, string arg3)
             {
+                await Task.Yield();
             }
 
             [CommandGroup("pong")]
             [CommandInfo(description: "pong")]
+            [IssuerScope(CommandIssuers.Any)]
             public class Pong
             {
                 [Command("ping")]
                 [CommandInfo(description: "ping")]
+                [IssuerScope(CommandIssuers.Any)]
                 public async Task ping(CommandContext ctx, int arg1, string arg2)
                 {
+                    await Task.Yield();
                     arg1out = arg1;
                     arg2out = arg2;
                 }

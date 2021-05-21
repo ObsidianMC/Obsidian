@@ -3,8 +3,8 @@ using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.IO;
 using System.Text;
@@ -766,7 +766,8 @@ namespace Obsidian.Net
                                         {
                                             if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                                             {
-                                                itemMetaBuilder.WithName(stringTag.Value);
+                                                var messages = JsonConvert.DeserializeObject<ChatMessage[]>(stringTag.Value);
+                                                itemMetaBuilder.WithName(messages[0]);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
                                             {

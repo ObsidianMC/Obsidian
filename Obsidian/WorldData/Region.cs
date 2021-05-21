@@ -1,8 +1,8 @@
 ﻿using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
-using Obsidian.Util;
-using Obsidian.Util.Collection;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Collection;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -117,8 +117,8 @@ namespace Obsidian.WorldData
 
             foreach (var chunkNbt in chunksNbt)
             {
-                var chunk = GetChunkFromNbt((NbtCompound)chunkNbt);
-                var index = (Helpers.Modulo(chunk.X, cubicRegionSize), Helpers.Modulo(chunk.Z, cubicRegionSize));
+                var chunk = GetChunkFromNbt((NbtCompound) chunkNbt);
+                var index = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
                 LoadedChunks[index.Item1, index.Item2] = chunk;
             }
 

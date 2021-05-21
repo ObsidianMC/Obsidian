@@ -16,10 +16,9 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Mojang;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Mojang;
+using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 
 using System;

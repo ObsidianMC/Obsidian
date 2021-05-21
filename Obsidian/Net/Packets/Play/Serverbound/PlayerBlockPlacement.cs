@@ -4,7 +4,7 @@ using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;
 

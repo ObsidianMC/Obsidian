@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Crafting;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Tags;
 using Obsidian.Net;
+using Obsidian.Utilities.Registry;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Obsidian.Tests
 {
     public class Nbt
     {
+        private bool isSetup;
         private readonly ITestOutputHelper output;
 
         public Nbt(ITestOutputHelper output)
@@ -114,6 +116,8 @@ namespace Obsidian.Tests
         [Fact]
         public async Task ReadSlot()
         {
+            await SetupAsync();
+
             await using var stream = new MinecraftStream();
 
             var itemMeta = new ItemMetaBuilder()
@@ -121,7 +125,9 @@ namespace Obsidian.Tests
                 .WithDurability(1)
                 .Build();
 
-            /*var dataSlot = new ItemStack(25, 0, itemMeta)
+            var material = Material.Bedrock;
+
+            var dataSlot = new ItemStack(material, 0, itemMeta)
             {
                 Present = true
             };
@@ -134,10 +140,21 @@ namespace Obsidian.Tests
 
             Assert.True(slot.Present);
             Assert.Equal(0, slot.Count);
-            Assert.Equal(25, slot.Id);
+            Assert.Equal(material, slot.Type);
 
-            Assert.Equal("test", slot.ItemMeta.Value.Name);
-            Assert.Equal(1, slot.ItemMeta.Value.Durability);*/
+            Assert.Equal("test", slot.ItemMeta.Name.Text);
+            Assert.Equal(1, slot.ItemMeta.Durability);
+        }
+
+        private async Task SetupAsync()
+        {
+            if (isSetup)
+                return;
+            isSetup = true;
+
+            ServerImplementationRegistry.RegisterServerImplementations();
+            await Registry.RegisterBlocksAsync();
+            await Registry.RegisterItemsAsync();
         }
     }
 }

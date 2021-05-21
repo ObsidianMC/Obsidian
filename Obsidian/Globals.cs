@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Obsidian.API;
-using Obsidian.Util;
-using Obsidian.Util.Converters;
-using Obsidian.Util.Registry.Enums;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Converters;
+using Obsidian.Utilities.Registry.Enums;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
