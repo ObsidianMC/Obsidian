@@ -33,5 +33,7 @@ namespace Obsidian.Nbt
         public IEnumerator<T> GetEnumerator() => this.list.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        public IEnumerable<T> GetArray() => this.list;
     }
 }
