@@ -1,41 +1,38 @@
-﻿namespace Obsidian.Nbt
+﻿using System;
+
+namespace Obsidian.Nbt
 {
-    public partial class NbtTag
+    public struct NbtTag<T> : INbtTag
     {
         public NbtTagType Type { get; }
 
-        public NbtTag Parent { get; set; }
-
         public string Name { get; set; }
 
-        private object value;
+        /// <summary>
+        /// This is either null, a compound or list
+        /// </summary>
+        public INbtTag Parent { get; set; }
 
-        public NbtTag(NbtTagType type)
-        {
-            this.Type = type;
-        }
+        public T Value { get; }
 
-        public NbtTag(NbtTagType type, string name, object value) : this(type)
+        public NbtTag(string name, T value, INbtTag parent = null)
         {
             this.Name = name;
-            this.value = value;
+            this.Parent = parent;
+            this.Value = value;
+            this.Type = value switch
+            {
+                bool => NbtTagType.Byte,
+                byte => NbtTagType.Byte,
+                short => NbtTagType.Short,
+                int => NbtTagType.Int,
+                long => NbtTagType.Long,
+                float => NbtTagType.Float,
+                double => NbtTagType.Double,
+                string => NbtTagType.String,
+                _ => throw new InvalidOperationException()
+            };
         }
-
-        public string GetString() => this.value.ToString();
-
-        public byte GetByte() => (byte)this.value;
-
-        public bool GetBool() => this.GetByte() == 1;
-
-        public float GetFloat() => (float)this.value;
-
-        public double GetDouble() => (double)this.value;
-
-        public int GetInt() => (int)this.value;
-
-        public long GetLong() => (long)this.value;
-
-        public short GetShort() => (short)this.value;
 
         public override string ToString()
         {
@@ -48,21 +45,19 @@
                 case NbtTagType.Float:
                 case NbtTagType.Double:
                 case NbtTagType.String:
-                    return $"TAG_{this.Type}('{this.Name}'): {this.value}";
-                case NbtTagType.ByteArray:
-                    break;
-                case NbtTagType.List:
-                    break;
-                case NbtTagType.Compound:
-                    return ((NbtCompound)this).ToString();
-                case NbtTagType.IntArray:
-                    break;
-                case NbtTagType.LongArray:
-                    break;
+                    return $"TAG_{this.Type}('{this.Name}'): {this.Value}";
                 default:
-                    break;
+                    throw new NotSupportedException("Only generic types are supported.");
             }
-            return "";
         }
+    }
+
+    public interface INbtTag
+    {
+        public NbtTagType Type { get; }
+
+        public string Name { get; set; }
+
+        public INbtTag Parent { get; set; }
     }
 }

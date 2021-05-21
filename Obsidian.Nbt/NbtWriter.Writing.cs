@@ -10,8 +10,6 @@ namespace Obsidian.Nbt
 
         public void WriteString(string value)
         {
-            this.Validate(null, NbtTagType.String);
-
             if (string.IsNullOrEmpty(value))
             {
                 this.WriteShort(0);
@@ -29,8 +27,6 @@ namespace Obsidian.Nbt
 
         public void WriteShort(short value)
         {
-            this.Validate(null, NbtTagType.Short);
-
             Span<byte> buffer = stackalloc byte[2];
 
             BitConverter.TryWriteBytes(buffer, value);
@@ -43,8 +39,6 @@ namespace Obsidian.Nbt
 
         public void WriteInt(int value)
         {
-            this.Validate(null, NbtTagType.Int);
-
             Span<byte> buffer = stackalloc byte[4];
 
             BitConverter.TryWriteBytes(buffer, value);
@@ -57,8 +51,6 @@ namespace Obsidian.Nbt
 
         public void WriteFloat(float value)
         {
-            this.Validate(null, NbtTagType.Float);
-
             Span<byte> buffer = stackalloc byte[4];
 
             BitConverter.TryWriteBytes(buffer, value);
@@ -71,8 +63,6 @@ namespace Obsidian.Nbt
 
         public void WriteLong(long value)
         {
-            this.Validate(null, NbtTagType.Long);
-
             Span<byte> buffer = stackalloc byte[8];
 
             BitConverter.TryWriteBytes(buffer, value);
@@ -85,8 +75,6 @@ namespace Obsidian.Nbt
 
         public void WriteDouble(double value)
         {
-            this.Validate(null, NbtTagType.Double);
-
             Span<byte> buffer = stackalloc byte[8];
 
             BitConverter.TryWriteBytes(buffer, value);

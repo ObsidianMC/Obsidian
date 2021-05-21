@@ -5,29 +5,35 @@ using System.Text;
 
 namespace Obsidian.Nbt
 {
-    public class NbtCompound : NbtTag, IEnumerable<KeyValuePair<string, NbtTag>>
+    public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
     {
-        private readonly Dictionary<string, NbtTag> children = new();
+        private readonly Dictionary<string, INbtTag> children = new();
 
         public int Count => this.children.Count;
 
-        public NbtTag this[string name] { get => this.children[name]; set => this.children[name] = value; }
+        public NbtTagType Type => NbtTagType.Compound;
 
-        public NbtCompound(string name = null) : base(NbtTagType.Compound)
+        public string Name { get; set; }
+
+        public INbtTag Parent { get; set; }
+
+        public INbtTag this[string name] { get => this.children[name]; set => this.children[name] = value; }
+
+        public NbtCompound(string name = "") 
         {
-            if (this.Parent?.Type == NbtTagType.Compound && name == null)
+            if (this.Parent?.Type == NbtTagType.Compound && string.IsNullOrEmpty(name))
                 throw new InvalidOperationException("Tags within a compound must be named.");
 
             this.Name = name;
         }
 
-        public NbtCompound(List<NbtTag> children) : this()
+        public NbtCompound(List<INbtTag> children) : this()
         {
             foreach (var child in children)
                 this.Add(child.Name, child);
         }
 
-        public NbtCompound(string name, List<NbtTag> children) : this(name)
+        public NbtCompound(string name, List<INbtTag> children) : this(name)
         {
             foreach (var child in children)
                 this.Add(child.Name, child);
@@ -37,7 +43,41 @@ namespace Obsidian.Nbt
 
         public bool HasTag(string name) => this.children.ContainsKey(name);
 
-        public bool TryGetTag(string name, out NbtTag tag) => this.children.TryGetValue(name, out tag);
+        public bool TryGetTag(string name, out INbtTag tag) => this.children.TryGetValue(name, out tag);
+
+        private T GetTagValue<T>(string name)
+        {
+            if(this.TryGetTag(name, out var tag))
+            {
+                var actualTag = (NbtTag<T>)tag;
+
+                return actualTag.Value;
+            }
+
+            return default;
+        }
+
+        public byte GetByte(string name) => this.GetTagValue<byte>(name);
+
+        public short GetShort(string name) => this.GetTagValue<short>(name);
+
+        public int GetInt(string name) => this.GetTagValue<int>(name);
+
+        public long GetLong(string name) => this.GetTagValue<long>(name);
+
+        public float GetFloat(string name) => this.GetTagValue<float>(name);
+
+        public string GetString(string name) => this.GetTagValue<string>(name);
+
+        public bool GetBool(string name)
+        {
+            if (!this.TryGetTag(name, out var tag))
+                return false;
+
+            var actualTag = (NbtTag<byte>)tag;
+
+            return actualTag.Value == 1;
+        }
 
         public void Clear() => this.children.Clear();
 
@@ -56,11 +96,11 @@ namespace Obsidian.Nbt
             return sb.ToString();
         }
 
-        public void Add(string name, NbtTag tag) => this.children.Add(name, tag);
+        public void Add(string name, INbtTag tag) => this.children.Add(name, tag);
 
-        public void Add(NbtTag tag) => this.children.Add(tag.Name, tag);
+        public void Add(INbtTag tag) => this.children.Add(tag.Name, tag);
 
-        public IEnumerator<KeyValuePair<string, NbtTag>> GetEnumerator() => this.children.GetEnumerator();
+        public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() => this.children.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }

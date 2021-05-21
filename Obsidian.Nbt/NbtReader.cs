@@ -16,7 +16,7 @@ namespace Obsidian.Nbt
 
         public NbtReader(Stream input, bool gzip = false)
         {
-            if(gzip)
+            if (gzip)
             {
                 this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
 
@@ -38,47 +38,47 @@ namespace Obsidian.Nbt
             return (NbtTagType)type;
         }
 
-        private NbtTag GetCurrentTag(NbtTagType type)
+        private INbtTag GetCurrentTag(NbtTagType type)
         {
-            switch (type)
+            var name = this.ReadString();
+
+            var length = type.IsArray() ? this.ReadInt32() : 0;
+
+            INbtTag tag = type switch
             {
-                case NbtTagType.End:
-                    return new NbtTag(type);
-                case NbtTagType.Byte:
-                    return new NbtTag(type, this.ReadString(), this.BaseStream.ReadByte());
-                case NbtTagType.Short:
-                    return new NbtTag(type, this.ReadString(), this.ReadInt16());
-                case NbtTagType.Int:
-                    return new NbtTag(type, this.ReadString(), this.ReadInt32());
-                case NbtTagType.Long:
-                    return new NbtTag(type, this.ReadString(), this.ReadInt64());
-                case NbtTagType.Float:
-                    return new NbtTag(type, this.ReadString(), this.ReadSingle());
-                case NbtTagType.Double:
-                    return new NbtTag(type, this.ReadString(), this.ReadDouble());
-                case NbtTagType.String:
-                    return new NbtTag(type, this.ReadString(), this.ReadString());
+                NbtTagType.Byte => new NbtTag<byte>(name, this.ReadByte()),
+                NbtTagType.Short => new NbtTag<short>(name, this.ReadInt16()),
+                NbtTagType.Int => new NbtTag<int>(name, this.ReadInt32()),
+                NbtTagType.Long => new NbtTag<long>(name, this.ReadInt64()),
+                NbtTagType.Float => new NbtTag<float>(name, this.ReadSingle()),
+                NbtTagType.Double => new NbtTag<double>(name, this.ReadDouble()),
+                NbtTagType.String => new NbtTag<string>(name, this.ReadString()),
+                _ => null
+            };
+
+            /*switch (type)
+            {
                 case NbtTagType.List:
                     break;
                 case NbtTagType.Compound:
                     break;
                 case NbtTagType.IntArray:
+
+                    break;
                 case NbtTagType.LongArray:
                 case NbtTagType.ByteArray:
-                    var arrayType = this.ReadTagType();
-                    var length = this.ReadInt32();
-
 
                     break;
                 case NbtTagType.Unknown:
                 default:
                     break;
-            }
+            }*/
 
-            return null;
+            return tag;
         }
 
-        public NbtTag ReadNextTag(bool readName = true)
+
+        public INbtTag ReadNextTag(bool readName = true)
         {
             var firstType = this.ReadTagType();
 
@@ -90,7 +90,7 @@ namespace Obsidian.Nbt
             switch (firstType)
             {
                 case NbtTagType.End:
-                    throw new EndOfStreamException("End of tag has been reached.");
+                    return null;
                 case NbtTagType.Byte:
                     break;
                 case NbtTagType.Short:
@@ -134,11 +134,26 @@ namespace Obsidian.Nbt
                         return compound;
                     }
                 case NbtTagType.ByteArray:
-                    break;
+                    var byteArray = new NbtArray<byte>(tagName, this.ReadInt32());
+
+                    for (int i = 0; i < byteArray.Count; i++)
+                        byteArray.Add(this.ReadByte());
+
+                    return byteArray;
                 case NbtTagType.IntArray:
-                    break;
+                    var intArray = new NbtArray<int>(tagName, this.ReadInt32());
+
+                    for (int i = 0; i < intArray.Count; i++)
+                        intArray.Add(this.ReadInt32());
+
+                    return intArray;
                 case NbtTagType.LongArray:
-                    break;
+                    var longArray = new NbtArray<long>(tagName, this.ReadInt32());
+
+                    for (int i = 0; i < longArray.Count; i++)
+                        longArray.Add(this.ReadInt64());
+
+                    return longArray;
                 case NbtTagType.Unknown:
                     break;
                 default:
@@ -148,7 +163,9 @@ namespace Obsidian.Nbt
             return null;
         }
 
-        #region overrides
+        #region Methods
+
+        public byte ReadByte() => (byte)this.BaseStream.ReadByte();
 
         public string ReadString()
         {

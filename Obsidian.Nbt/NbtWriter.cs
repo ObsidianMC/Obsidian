@@ -47,8 +47,8 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Compound);
 
             this.Write(NbtTagType.Compound);
-            if (!string.IsNullOrEmpty(name))
-                this.WriteString(name);
+
+            this.WriteString(name);
         }
 
         public void WriteListStart(string name, NbtTagType listType, int length)
@@ -81,7 +81,7 @@ namespace Obsidian.Nbt
             this.Write(NbtTagType.End);
         }
 
-        public void WriteTag(NbtTag tag)
+        public void WriteTag(INbtTag tag)
         {
             var name = tag.Name;
             switch (tag.Type)
@@ -90,25 +90,25 @@ namespace Obsidian.Nbt
                     //this.EndCompound();
                     break;
                 case NbtTagType.Byte:
-                    this.WriteByte(name, tag.GetByte());
+                    this.WriteByte(name, ((NbtTag<byte>)tag).Value);
                     break;
                 case NbtTagType.Short:
-                    this.WriteShort(name, tag.GetShort());
+                    this.WriteShort(name, ((NbtTag<short>)tag).Value);
                     break;
                 case NbtTagType.Int:
-                    this.WriteInt(name, tag.GetInt());
+                    this.WriteInt(name, ((NbtTag<int>)tag).Value);
                     break;
                 case NbtTagType.Long:
-                    this.WriteLong(name, tag.GetLong());
+                    this.WriteLong(name, ((NbtTag<long>)tag).Value);
                     break;
                 case NbtTagType.Float:
-                    this.WriteFloat(name, tag.GetFloat());
+                    this.WriteFloat(name, ((NbtTag<float>)tag).Value);
                     break;
                 case NbtTagType.Double:
-                    this.WriteDouble(name, tag.GetDouble());
+                    this.WriteDouble(name, ((NbtTag<double>)tag).Value);
                     break;
                 case NbtTagType.String:
-                    this.WriteString(name, tag.GetString());
+                    this.WriteString(name, ((NbtTag<string>)tag).Value);
                     break;
                 case NbtTagType.List:
                     var list = (NbtList)tag;
