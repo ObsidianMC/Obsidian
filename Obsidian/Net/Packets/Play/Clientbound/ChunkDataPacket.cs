@@ -49,11 +49,11 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.WriteVarInt(mask);
 
             Chunk.CalculateHeightmap();
-            var writer = new NbtWriter(stream, string.Empty);
+            var writer = new NbtWriter(stream, NbtTagType.Compound, string.Empty);
             foreach (var (type, heightmap) in Chunk.Heightmaps)
-                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
+                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
+
             writer.EndCompound();
-            writer.Finish();
 
             Chunk.BiomeContainer.WriteTo(stream);
 

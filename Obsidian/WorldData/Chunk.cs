@@ -1,7 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.Nbt.Tags;
+using Obsidian.Nbt;
 using Obsidian.Util;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -25,7 +25,7 @@ namespace Obsidian.WorldData
         public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
-        public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
+        public List<INbtTag> BlockEntities { get; private set; } = new List<INbtTag>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 

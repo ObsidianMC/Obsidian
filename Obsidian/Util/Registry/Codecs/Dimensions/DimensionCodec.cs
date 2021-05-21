@@ -1,4 +1,4 @@
-﻿using Obsidian.Nbt.Tags;
+﻿using Obsidian.Nbt;
 
 namespace Obsidian.Util.Registry.Codecs.Dimensions
 {
@@ -18,9 +18,9 @@ namespace Obsidian.Util.Registry.Codecs.Dimensions
 
             var compound = new NbtCompound()
             {
-                new NbtInt("id", this.Id),
+                new NbtTag<int>("id", this.Id),
 
-                new NbtString("name", this.Name),
+                new NbtTag<string>("name", this.Name),
 
                element
             };
@@ -30,33 +30,34 @@ namespace Obsidian.Util.Registry.Codecs.Dimensions
 
         public NbtCompound ToNbt()
         {
-            var compound = new NbtCompound("")
+            var compound = new NbtCompound
             {
-                new NbtByte("piglin_safe", (byte)(this.Element.PiglinSafe ? 1 : 0)),
-                new NbtByte("natural", (byte)(this.Element.Natural ? 1 : 0)),
+                new NbtTag<bool>("piglin_safe", this.Element.PiglinSafe),
 
-                new NbtFloat("ambient_light", this.Element.AmbientLight),
+                new NbtTag<bool>("natural", this.Element.Natural),
 
-                new NbtString("infiniburn", this.Element.Infiniburn),
+                new NbtTag<float>("ambient_light", this.Element.AmbientLight),
 
-                new NbtByte("respawn_anchor_works", (byte)(this.Element.RespawnAnchorWorks ? 1 : 0)),
-                new NbtByte("has_skylight", (byte)(this.Element.HasSkylight ? 1 : 0)),
-                new NbtByte("bed_works", (byte)(this.Element.BedWorks ? 1 : 0)),
+                new NbtTag<string>("infiniburn", this.Element.Infiniburn),
 
-                new NbtString("effects", this.Element.Effects),
+                new NbtTag<bool>("respawn_anchor_works", this.Element.RespawnAnchorWorks),
+                new NbtTag<bool>("has_skylight", this.Element.HasSkylight),
+                new NbtTag<bool>("bed_works", this.Element.BedWorks),
 
-                new NbtByte("has_raids", (byte)(this.Element.HasRaids ? 1 : 0)),
+                new NbtTag<string>("effects", this.Element.Effects),
 
-                new NbtInt("logical_height", this.Element.LogicalHeight),
+                new NbtTag<bool>("has_raids", this.Element.HasRaids ),
 
-                new NbtFloat("coordinate_scale", this.Element.CoordinateScale),
+                new NbtTag<int>("logical_height", this.Element.LogicalHeight),
 
-                new NbtByte("ultrawarm", (byte)(this.Element.Ultrawarm ? 1 : 0)),
-                new NbtByte("has_ceiling", (byte)(this.Element.HasCeiling ? 1 : 0))
+                new NbtTag<float>("coordinate_scale", this.Element.CoordinateScale),
+
+                new NbtTag<bool>("ultrawarm", this.Element.Ultrawarm),
+                new NbtTag<bool>("has_ceiling", this.Element.HasCeiling)
             };
 
             if (this.Element.FixedTime.HasValue)
-                compound.Add(new NbtFloat("fixed_time", this.Element.FixedTime.Value));
+                compound.Add(new NbtTag<float>("fixed_time", this.Element.FixedTime.Value));
 
             return compound;
         }

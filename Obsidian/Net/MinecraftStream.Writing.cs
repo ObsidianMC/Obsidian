@@ -6,7 +6,6 @@ using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
-using Obsidian.Nbt.Tags;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -456,7 +455,7 @@ namespace Obsidian.Net
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
 
-                NbtWriter writer = new(this, string.Empty);
+                NbtWriter writer = new(this, NbtTagType.Compound, string.Empty);
                 ItemMeta meta = value.ItemMeta;
 
                 if (meta.HasTags())
@@ -471,7 +470,7 @@ namespace Obsidian.Net
 
                     if (meta.CanDestroy is not null)
                     {
-                        writer.BeginList("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
+                        writer.WriteListStart("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
 
                         foreach (var block in meta.CanDestroy)
                             writer.WriteString(block);
@@ -481,13 +480,13 @@ namespace Obsidian.Net
 
                     if (meta.Name is not null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
                         writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)meta.Name }));
 
                         if (meta.Lore is not null)
                         {
-                            writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+                            writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                             foreach (var lore in meta.Lore)
                                 writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -499,9 +498,9 @@ namespace Obsidian.Net
                     }
                     else if (meta.Lore is not null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
-                        writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+                        writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                         foreach (var lore in meta.Lore)
                             writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -516,7 +515,7 @@ namespace Obsidian.Net
                 writer.WriteByte("Count", (byte)value.Count);
 
                 writer.EndCompound();
-                writer.Finish();
+                writer.TryFinish();
             }
         }
 
@@ -544,27 +543,29 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteMixedCodec(MixedCodec value)
         {
+            var writer = new NbtWriter(this, NbtTagType.Compound, "");
+
             var dimensions = new NbtCompound(value.Dimensions.Name)
             {
-                new NbtString("type", value.Dimensions.Name)
+                new NbtTag<string>("type", value.Dimensions.Name)
             };
 
-            var list = new NbtList("value", NbtTagType.Compound);
+            var list = new NbtList(NbtTagType.Compound, "value");
 
             foreach (var (_, codec) in value.Dimensions)
             {
                 codec.Write(list);
             }
 
-            dimensions.Add(list);
+            dimensions.Add("value", list);
 
             #region biomes
             var biomeCompound = new NbtCompound(value.Biomes.Name)
             {
-                new NbtString("type", value.Biomes.Name)
+                new NbtTag<string>("type", value.Biomes.Name)
             };
 
-            var biomes = new NbtList("value", NbtTagType.Compound);
+            var biomes = new NbtList(NbtTagType.Compound, "value");
 
             foreach (var (_, biome) in value.Biomes)
             {
@@ -577,18 +578,20 @@ namespace Obsidian.Net
             var compound = new NbtCompound(string.Empty)
             {
                 dimensions,
+
                 biomeCompound
             };
-            var nbt = new NbtFile(compound);
 
-            nbt.SaveToStream(this, NbtCompression.None);
+
+            writer.WriteTag(compound);
         }
 
         [WriteMethod]
         public void WriteDimensionCodec(DimensionCodec value)
         {
-            var nbt = new NbtFile(value.ToNbt());
-            nbt.SaveToStream(this, NbtCompression.None);
+            var writer = new NbtWriter(this, NbtTagType.Compound, "");
+
+            writer.WriteTag(value.ToNbt());
         }
 
         [WriteMethod]
@@ -745,7 +748,7 @@ namespace Obsidian.Net
                 await WriteVarIntAsync(item.Id);
                 await WriteByteAsync((sbyte)slot.Count);
 
-                var writer = new NbtWriter(this, "");
+                var writer = new NbtWriter(this, NbtTagType.Compound, "");
 
                 var itemMeta = slot.ItemMeta;
 
@@ -762,7 +765,7 @@ namespace Obsidian.Net
 
                     if (itemMeta.CanDestroy != null)
                     {
-                        writer.BeginList("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
+                        writer.WriteListStart("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
 
                         foreach (var block in itemMeta.CanDestroy)
                             writer.WriteString(block);
@@ -772,13 +775,13 @@ namespace Obsidian.Net
 
                     if (itemMeta.Name != null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
                         writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
 
                         if (itemMeta.Lore != null)
                         {
-                            writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+                            writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
                                 writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -790,9 +793,9 @@ namespace Obsidian.Net
                     }
                     else if (itemMeta.Lore != null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
-                        writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+                        writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
                             writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -807,7 +810,7 @@ namespace Obsidian.Net
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
-                writer.Finish();
+                writer.TryFinish();
             }
         }
 
@@ -1070,7 +1073,7 @@ namespace Obsidian.Net
         {
             if (value is null || value == ParticleData.None)
                 return;
-            
+
             switch (value.ParticleType)
             {
                 case ParticleType.Block:

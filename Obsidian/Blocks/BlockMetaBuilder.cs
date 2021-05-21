@@ -1,5 +1,5 @@
 ﻿using Obsidian.Chat;
-using Obsidian.Nbt.Tags;
+using Obsidian.Nbt;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -61,14 +61,14 @@ namespace Obsidian.Blocks
             return this;
         }
 
-        public BlockMetaBuilder AddBlockStateTag(NbtTag tag)
+        public BlockMetaBuilder AddBlockStateTag(INbtTag tag)
         {
             this.BlockStateTag.Add(tag);
 
             return this;
         }
 
-        public BlockMetaBuilder AddBlockEntityTag(NbtTag tag)
+        public BlockMetaBuilder AddBlockEntityTag(INbtTag tag)
         {
             this.BlockEntityTag.Add(tag);
 
