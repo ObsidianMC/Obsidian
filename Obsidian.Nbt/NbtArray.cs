@@ -1,13 +1,15 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Obsidian.Nbt
 {
-    public class NbtArray<T> : INbtTag, IEnumerable<T>, ICollection<T>
+    public class NbtArray<T> : INbtTag, IEnumerable, ICollection
     {
-        private readonly List<T> list;
+        private readonly T[] array;
 
-        public int Count => this.list.Count;
+        public int Count => this.array.Length;
 
         public bool IsReadOnly => false;
 
@@ -16,24 +18,23 @@ namespace Obsidian.Nbt
         public string Name { get; set; }
         public INbtTag Parent { get; set; }
 
-        public NbtArray(string name, int length) => (this.Name, this.list) = (name, new List<T>(length));
+        public bool IsSynchronized => this.array.IsSynchronized;
 
-        public NbtArray(string name, IEnumerable<T> array) => (this.Name, this.list) = (name, new(array));
+        public object SyncRoot => this.array.SyncRoot;
 
-        public void Add(T item) => this.list.Add(item);
+        public T this[int index] { get => this.array[index]; set => this.array[index] = value; }
 
-        public void Clear() => this.list.Clear();
+        public NbtArray(string name, int length) => (this.Name, this.array) = (name, new T[length]);
 
-        public bool Contains(T item) => this.list.Contains(item);
+        public NbtArray(string name, IEnumerable<T> array) => (this.Name, this.array) = (name, array.ToArray());
 
-        public void CopyTo(T[] array, int arrayIndex) => this.list.CopyTo(array, arrayIndex);
+        public NbtArray(string name, T[] array) => (this.Name, this.array) = (name, array);
 
-        public bool Remove(T item) => this.list.Remove(item);
+        public void CopyTo(Array array, int index) => this.array.CopyTo(array, index);
+        public IEnumerator GetEnumerator() => this.array.GetEnumerator();
 
-        public IEnumerator<T> GetEnumerator() => this.list.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
-
-        public IEnumerable<T> GetArray() => this.list;
+        public bool Contains(T item) => this.array.Contains(item);
+        public T[] GetArray() => this.array;
+       
     }
 }

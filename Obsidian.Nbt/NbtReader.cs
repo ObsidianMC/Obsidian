@@ -30,7 +30,7 @@ namespace Obsidian.Nbt
         {
             var type = this.BaseStream.ReadByte();
 
-            if (type < 0)
+            if (type <= 0)
                 return NbtTagType.End;
             else if (type > (byte)NbtTagType.LongArray)
                 throw new ArgumentOutOfRangeException($"Tag is out of range: {(NbtTagType)type}");
@@ -38,11 +38,12 @@ namespace Obsidian.Nbt
             return (NbtTagType)type;
         }
 
-        private INbtTag GetCurrentTag(NbtTagType type)
+        private INbtTag GetCurrentTag(NbtTagType type, bool readName = true)
         {
-            var name = this.ReadString();
+            string name = string.Empty;
 
-            var length = type.IsArray() ? this.ReadInt32() : 0;
+            if (readName)
+                name = this.ReadString();
 
             INbtTag tag = type switch
             {
@@ -53,30 +54,86 @@ namespace Obsidian.Nbt
                 NbtTagType.Float => new NbtTag<float>(name, this.ReadSingle()),
                 NbtTagType.Double => new NbtTag<double>(name, this.ReadDouble()),
                 NbtTagType.String => new NbtTag<string>(name, this.ReadString()),
+                NbtTagType.Compound => this.ReadCompoundTag(name),
+                NbtTagType.List => this.ReadListTag(name),
+                NbtTagType.ByteArray => this.ReadArray(name, type),
+                NbtTagType.IntArray => this.ReadArray(name, type),
+                NbtTagType.LongArray => this.ReadArray(name, type),
                 _ => null
             };
-
-            /*switch (type)
-            {
-                case NbtTagType.List:
-                    break;
-                case NbtTagType.Compound:
-                    break;
-                case NbtTagType.IntArray:
-
-                    break;
-                case NbtTagType.LongArray:
-                case NbtTagType.ByteArray:
-
-                    break;
-                case NbtTagType.Unknown:
-                default:
-                    break;
-            }*/
 
             return tag;
         }
 
+        private INbtTag ReadArray(string name, NbtTagType type)
+        {
+            var length = this.ReadInt32();
+
+            switch (type)
+            {
+                case NbtTagType.ByteArray:
+                    {
+                        var buffer = new byte[length];
+
+                        this.BaseStream.Read(buffer);
+
+                        return new NbtArray<byte>(name, buffer);
+                    }
+                case NbtTagType.IntArray:
+                    {
+                        var array = new NbtArray<int>(name, length);
+
+                        for (int i = 0; i < array.Count; i++)
+                        {
+                            array[i] = this.ReadInt32();
+                        }
+                        return array;
+                    }
+                case NbtTagType.LongArray:
+                    {
+                        var array = new NbtArray<long>(name, length);
+
+                        for (int i = 0; i < array.Count; i++)
+                            array[i] = this.ReadInt64();
+
+                        return array;
+                    }
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        private NbtList ReadListTag(string name)
+        {
+            var listType = this.ReadTagType();
+
+            var list = new NbtList(listType, name);
+
+            var length = this.ReadInt32();
+
+            if (length < 0)
+                throw new InvalidOperationException("Got negative list length.");
+
+            for (var i = 0; i < length; i++)
+                list.Add(this.GetCurrentTag(listType, false));
+
+            return list;
+        }
+
+        private NbtCompound ReadCompoundTag(string name)
+        {
+            var compound = new NbtCompound(name);
+
+            NbtTagType type;
+            while ((type = this.ReadTagType()) != NbtTagType.End)
+            {
+                var tag = this.GetCurrentTag(type);
+
+                compound.Add(tag);
+            }
+
+            return compound;
+        }
 
         public INbtTag ReadNextTag(bool readName = true)
         {
@@ -116,7 +173,7 @@ namespace Obsidian.Nbt
                         throw new InvalidOperationException("Got negative list length.");
 
                     for (var i = 0; i < length; i++)
-                        list.Add(this.ReadNextTag(false));
+                        list.Add(this.GetCurrentTag(listType, false));
 
                     break;
                 case NbtTagType.Compound:
@@ -134,26 +191,11 @@ namespace Obsidian.Nbt
                         return compound;
                     }
                 case NbtTagType.ByteArray:
-                    var byteArray = new NbtArray<byte>(tagName, this.ReadInt32());
-
-                    for (int i = 0; i < byteArray.Count; i++)
-                        byteArray.Add(this.ReadByte());
-
-                    return byteArray;
+                    return this.ReadArray(tagName, firstType);
                 case NbtTagType.IntArray:
-                    var intArray = new NbtArray<int>(tagName, this.ReadInt32());
-
-                    for (int i = 0; i < intArray.Count; i++)
-                        intArray.Add(this.ReadInt32());
-
-                    return intArray;
+                    return this.ReadArray(tagName, firstType);
                 case NbtTagType.LongArray:
-                    var longArray = new NbtArray<long>(tagName, this.ReadInt32());
-
-                    for (int i = 0; i < longArray.Count; i++)
-                        longArray.Add(this.ReadInt64());
-
-                    return longArray;
+                    return this.ReadArray(tagName, firstType);
                 case NbtTagType.Unknown:
                     break;
                 default:
@@ -171,8 +213,8 @@ namespace Obsidian.Nbt
         {
             var length = this.ReadInt16();
 
-            if (length < 0)
-                throw new InvalidOperationException("Negative length value found");
+            if (length <= 0)
+                return null;
 
             Span<byte> buffer = stackalloc byte[length];
 
