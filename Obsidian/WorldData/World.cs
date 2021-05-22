@@ -233,14 +233,15 @@ namespace Obsidian.WorldData
         //TODO
         public bool Load()
         {
-            var worldDir = Path.Join(Server.ServerFolderPath, Name);
-            var DataPath = Path.Combine(worldDir, "level.dat");
-            if (!File.Exists(DataPath)) { return false; }
+            var dataPath = Path.Join(Server.ServerFolderPath, Name, "level.dat");
 
-            //var DataFile = new NbtFile();
-            //DataFile.LoadFromFile(DataPath);
+            var fi = new FileInfo(dataPath);
 
-            var levelcompound = new NbtCompound();
+            if (!fi.Exists) { return false; }
+
+            var reader = new NbtReader(fi.OpenRead(), true);
+
+            var levelcompound = reader.ReadNextTag() as NbtCompound;
             this.Data = new Level()
             {
                 Hardcore = levelcompound.GetBool("hardcore"), // lel lazy bool conversion I guess
@@ -285,7 +286,7 @@ namespace Obsidian.WorldData
         {
             var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
 
-            var writer = new NbtWriter(worldFile.OpenWrite(), System.IO.Compression.CompressionMode.Compress);
+            var writer = new NbtWriter(worldFile.OpenWrite(), System.IO.Compression.CompressionMode.Compress, "");
             var levelCompound = new NbtCompound("Data")
             {
                 new NbtTag<byte>("hardcore", 1),

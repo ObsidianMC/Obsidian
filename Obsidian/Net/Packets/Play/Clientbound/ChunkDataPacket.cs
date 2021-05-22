@@ -49,7 +49,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.WriteVarInt(mask);
 
             Chunk.CalculateHeightmap();
-            var writer = new NbtWriter(stream, NbtTagType.Compound, string.Empty);
+            var writer = new NbtWriter(stream, string.Empty);
             foreach (var (type, heightmap) in Chunk.Heightmaps)
                 writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
 

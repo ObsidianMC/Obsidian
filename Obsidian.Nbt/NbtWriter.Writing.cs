@@ -6,7 +6,9 @@ namespace Obsidian.Nbt
 {
     public partial class NbtWriter
     {
-        private void Write(NbtTagType tagType) => this.WriteShort((byte)tagType);
+        private void Write(NbtTagType tagType) => this.WriteByte((byte)tagType);
+
+        public void WriteByte(byte value) => this.BaseStream.WriteByte(value);
 
         public void WriteString(string value)
         {
@@ -21,7 +23,7 @@ namespace Obsidian.Nbt
 
             var buffer = Encoding.UTF8.GetBytes(value);
 
-            this.WriteShort((short)buffer.Length);
+            this.WriteShort((short)value.Length);
             this.BaseStream.Write(buffer);
         }
 

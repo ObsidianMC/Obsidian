@@ -30,7 +30,7 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
 
         public NbtCompound ToNbt()
         {
-            var compound = new NbtCompound
+            var compound = new NbtCompound(this.Name)
             {
                 new NbtTag<bool>("piglin_safe", this.Element.PiglinSafe),
 
@@ -46,7 +46,7 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
 
                 new NbtTag<string>("effects", this.Element.Effects),
 
-                new NbtTag<bool>("has_raids", this.Element.HasRaids ),
+                new NbtTag<bool>("has_raids", this.Element.HasRaids),
 
                 new NbtTag<int>("logical_height", this.Element.LogicalHeight),
 
@@ -57,7 +57,7 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
             };
 
             if (this.Element.FixedTime.HasValue)
-                compound.Add(new NbtTag<float>("fixed_time", this.Element.FixedTime.Value));
+                compound.Add(new NbtTag<long>("fixed_time", this.Element.FixedTime.Value));
 
             return compound;
         }

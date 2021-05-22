@@ -81,7 +81,7 @@ namespace Obsidian.WorldData
 
             using var fileStream = regionFile.OpenWrite();
 
-            var writer = new NbtWriter(fileStream, CompressionMode.Compress);
+            var writer = new NbtWriter(fileStream, CompressionMode.Compress, "");
 
             writer.WriteTag(this.GetNbt());
 
@@ -144,7 +144,7 @@ namespace Obsidian.WorldData
                 var states = compound["BlockStates"] as NbtArray<long>;//TODO
                 var palettes = compound["Palette"] as NbtList;
 
-                chunk.Sections[secY].BlockStorage.Storage = states.ToArray();
+                chunk.Sections[secY].BlockStorage.Storage = states.GetArray();
 
                 var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY].Palette;
                 foreach (NbtCompound palette in palettes)
@@ -155,13 +155,12 @@ namespace Obsidian.WorldData
                 }
             }
 
-            chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtArray<int>).ToList();
+            chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtArray<int>).GetArray().ToList();
 
             foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
             {
                 var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
-                var values = ((NbtArray<long>)heightmap).ToArray();
-                chunk.Heightmaps[heightmapType].data.Storage = values;
+                chunk.Heightmaps[heightmapType].data.Storage = ((NbtArray<long>)heightmap).GetArray();
             }
 
             return chunk;
