@@ -453,7 +453,7 @@ namespace Obsidian.Net
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
 
-                NbtWriter writer = new(this, NbtTagType.Compound, string.Empty);
+                NbtWriter writer = new(this, string.Empty);
                 ItemMeta meta = value.ItemMeta;
 
                 if (meta.HasTags())
@@ -541,7 +541,7 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteMixedCodec(MixedCodec value)
         {
-            var writer = new NbtWriter(this, NbtTagType.Compound, "");
+            var writer = new NbtWriter(this, "");
 
             var dimensions = new NbtCompound(value.Dimensions.Name)
             {
@@ -573,23 +573,24 @@ namespace Obsidian.Net
             biomeCompound.Add(biomes);
             #endregion
 
-            var compound = new NbtCompound(string.Empty)
-            {
-                dimensions,
+            writer.WriteTag(dimensions);
+            writer.WriteTag(biomeCompound);
 
-                biomeCompound
-            };
-
-
-            writer.WriteTag(compound);
+            writer.EndCompound();
+            //writer.TryFinish();
         }
 
         [WriteMethod]
         public void WriteDimensionCodec(DimensionCodec value)
         {
-            var writer = new NbtWriter(this, NbtTagType.Compound, "");
+            var writer = new NbtWriter(this, "");
 
-            writer.WriteTag(value.ToNbt());
+            var tag = value.ToNbt();
+
+            writer.WriteTag(tag);
+
+            writer.EndCompound();
+            //writer.TryFinish();
         }
 
         [WriteMethod]
@@ -746,7 +747,7 @@ namespace Obsidian.Net
                 await WriteVarIntAsync(item.Id);
                 await WriteByteAsync((sbyte)slot.Count);
 
-                var writer = new NbtWriter(this, NbtTagType.Compound, "");
+                var writer = new NbtWriter(this, "");
 
                 var itemMeta = slot.ItemMeta;
 
