@@ -16,9 +16,8 @@ namespace Obsidian.IO
     /// where <see cref="byte"/>[] belongs to <see cref="ArrayPool{byte}.Shared"/>. When you are done writing, call
     /// <see cref="Dispose"/> to release the buffer back to the pool. <br />
     /// <see cref="MemoryWriter"/> does <b>NOT</b> do array bounds checks before writing to it. You must make sure that
-    /// the buffer is large enough, or do the bound checks yourself. You can call <see cref="EnsureCapacity(int)"/>, which
-    /// expands the buffer, if it's not large enough to hold specified amount of bytes. You can use <see cref="MemoryMeasure"/>
-    /// to measure data length in bytes.
+    /// the buffer is large enough, or do the bound checks yourself. You can use <see cref="HasCapacity(int)"/> and
+    /// <see cref="Expand"/>. You can use <see cref="MemoryMeasure"/> to measure data length.
     /// </remarks>
     /// <seealso cref="ArrayPool{T}"/>
     /// <seealso cref="MemoryMeasure"/>
@@ -87,11 +86,14 @@ namespace Obsidian.IO
         }
 
         #region Buffer management
-        public void EnsureCapacity(int neededCapacity)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool HasCapacity(int neededCapacity)
         {
-            if (index + neededCapacity < buffer.Length)
-                return;
+            return index + neededCapacity < buffer.Length;
+        }
 
+        public void Expand()
+        {
             var newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
             System.Buffer.BlockCopy(buffer, 0, newBuffer, 0, (int)index);
             ArrayPool<byte>.Shared.Return(buffer);
