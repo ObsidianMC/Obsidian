@@ -17,7 +17,7 @@ namespace Obsidian.Nbt
 
         public INbtTag Parent { get; set; }
 
-        public INbtTag this[string name] { get => this.children[name]; set => this.children[name] = value; }
+        public INbtTag this[string name] { get => this.children[name]; set => this.Add(name, value); }
 
         public NbtCompound(string name = "") 
         {
@@ -96,10 +96,21 @@ namespace Obsidian.Nbt
             return sb.ToString();
         }
 
-        public void Add(string name, INbtTag tag) => this.children.Add(name, tag);
+        public void Add(string name, INbtTag tag)
+        {
+            if (string.IsNullOrEmpty(name))
+                throw new InvalidOperationException("Tags inside a compound must be named.");
 
-        public void Add(INbtTag tag) => this.children.Add(tag.Name, tag);
+            this.children.Add(name, tag);
+        }
 
+        public void Add(INbtTag tag)
+        {
+            if (string.IsNullOrEmpty(tag.Name))
+                throw new InvalidOperationException("Tags inside a compound must be named.");
+
+            this.children.Add(tag.Name, tag);
+        }
         public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() => this.children.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();

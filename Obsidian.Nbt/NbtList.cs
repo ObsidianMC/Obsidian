@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Obsidian.Nbt
 {
@@ -16,7 +17,7 @@ namespace Obsidian.Nbt
         public NbtTagType Type => NbtTagType.List;
 
         public string Name { get; set; }
-        public INbtTag? Parent { get; set; }
+        public INbtTag Parent { get; set; }
 
         public NbtList(NbtTagType listType, string name = "")
         {
@@ -36,5 +37,20 @@ namespace Obsidian.Nbt
         public void RemoveAt(int index) => this.baseList.RemoveAt(index);
         public IEnumerator<INbtTag> GetEnumerator() => this.baseList.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            var count = this.Count;
+
+            sb.AppendLine($"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
+
+            foreach (var tag in this)
+                sb.AppendLine($"  {tag}");
+
+            sb.AppendLine("}");
+
+            return sb.ToString();
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace Obsidian.Nbt
         IntArray,
         LongArray,
 
-        Unknown
+        Unknown = 255
     }
 
     internal static class TypeExtensions
