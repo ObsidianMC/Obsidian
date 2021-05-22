@@ -167,14 +167,46 @@ namespace Obsidian.Nbt
                     this.EndCompound();
                     break;
                 case NbtTagType.ByteArray:
-                    break;
                 case NbtTagType.IntArray:
-                    break;
                 case NbtTagType.LongArray:
+                    this.WriteArray(tag);
                     break;
                 case NbtTagType.Unknown:
                 default:
                     throw new InvalidOperationException("Unknown tag type");
+            }
+        }
+
+        public void WriteArray(INbtTag tag)
+        {
+            this.Validate(tag.Name, tag.Type);
+
+            if (tag is NbtArray<int> intArray)
+            {
+                this.Write(NbtTagType.IntArray);
+                this.WriteString(tag.Name);
+                this.WriteInt(intArray.Count);
+
+                for (int i = 0; i < intArray.Count; i++)
+                    this.WriteInt(intArray[i]);
+            }
+            else if (tag is NbtArray<long> longArray)
+            {
+                this.Write(NbtTagType.LongArray);
+                this.WriteString(tag.Name);
+                this.WriteInt(longArray.Count);
+
+                for (int i = 0; i < longArray.Count; i++)
+                    this.WriteLong(longArray[i]);
+            }
+            else if (tag is NbtArray<byte> byteArray)
+            {
+                this.Write(NbtTagType.ByteArray);
+                this.WriteString(tag.Name);
+                this.WriteInt(byteArray.Count);
+
+                for (int i = 0; i < byteArray.Count; i++)
+                    this.BaseStream.Write(byteArray.GetArray());
             }
         }
 

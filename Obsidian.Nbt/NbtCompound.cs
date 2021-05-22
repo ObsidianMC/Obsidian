@@ -89,9 +89,24 @@ namespace Obsidian.Nbt
             sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
 
             foreach (var (_, tag) in this)
-                sb.AppendLine($"  {tag}");
+                sb.AppendLine($"  {tag.PrettyString()}");
 
             sb.AppendLine("}");
+
+            return sb.ToString();
+        }
+
+        public string PrettyString()
+        {
+            var sb = new StringBuilder();
+            var count = this.Count;
+
+            sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("  {");
+
+            foreach (var (_, tag) in this)
+                sb.AppendLine($"  {tag.PrettyString()}");
+
+            sb.AppendLine("  }");
 
             return sb.ToString();
         }
@@ -111,6 +126,7 @@ namespace Obsidian.Nbt
 
             this.children.Add(tag.Name, tag);
         }
+
         public IEnumerator<KeyValuePair<string, INbtTag>> GetEnumerator() => this.children.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();

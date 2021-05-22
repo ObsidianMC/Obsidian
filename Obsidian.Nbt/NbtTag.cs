@@ -34,6 +34,8 @@ namespace Obsidian.Nbt
             };
         }
 
+        public string PrettyString() => $"  {this}";
+
         public override string ToString()
         {
             switch (this.Type)
@@ -59,5 +61,7 @@ namespace Obsidian.Nbt
         public string Name { get; set; }
 
         public INbtTag Parent { get; set; }
+
+        public string PrettyString();
     }
 }

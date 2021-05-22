@@ -38,6 +38,22 @@ namespace Obsidian.Nbt
         public IEnumerator<INbtTag> GetEnumerator() => this.baseList.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
+        public string PrettyString()
+        {
+            var sb = new StringBuilder();
+            var count = this.Count;
+
+            sb.AppendLine($"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("  {");
+
+            foreach (var tag in this)
+                sb.AppendLine($"  {tag}");
+
+
+            sb.AppendLine("  }");
+
+            return sb.ToString();
+        }
+
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -46,7 +62,7 @@ namespace Obsidian.Nbt
             sb.AppendLine($"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
 
             foreach (var tag in this)
-                sb.AppendLine($"  {tag}");
+                sb.AppendLine($"  {tag.PrettyString()}");
 
             sb.AppendLine("}");
 
