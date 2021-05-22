@@ -196,13 +196,31 @@ namespace Obsidian.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteFloat(float value)
         {
-            WriteInt(Unsafe.As<float, int>(ref value));
+            if (!BitConverter.IsLittleEndian)
+            {
+                GetRef<int>() = BinaryPrimitives.ReverseEndianness(Unsafe.As<float, int>(ref value));
+            }
+            else
+            {
+                GetRef<int>() = Unsafe.As<float, int>(ref value);
+            }
+
+            index += sizeof(int);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDouble(double value)
         {
-            WriteLong(Unsafe.As<double, long>(ref value));
+            if (!BitConverter.IsLittleEndian)
+            {
+                GetRef<long>() = BinaryPrimitives.ReverseEndianness(Unsafe.As<double, long>(ref value));
+            }
+            else
+            {
+                GetRef<long>() = Unsafe.As<double, long>(ref value);
+            }
+
+            index += sizeof(long);
         }
         #endregion
 
