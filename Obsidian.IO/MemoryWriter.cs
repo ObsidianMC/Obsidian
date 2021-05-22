@@ -250,10 +250,20 @@ namespace Obsidian.IO
 
         public void WriteLongArray(long[] array)
         {
+            ref long target = ref GetRef<long>();
             for (int i = 0; i < array.Length; i++)
             {
-                WriteLong(array[i]);
+                long value = array[i];
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
+
+                target = value;
+                target = ref Unsafe.Add(ref target, 1);
             }
+            index = 0;
         }
         #endregion
 
@@ -311,11 +321,6 @@ namespace Obsidian.IO
         private ref T GetRef<T>() where T : struct
         {
             return ref Unsafe.As<byte, T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index));
-        }
-
-        private static unsafe ref byte GetLastByteRef<T>(ref T value) where T : unmanaged
-        {
-            return ref Unsafe.Add(ref Unsafe.As<T, byte>(ref value), sizeof(T) - 1);
         }
 
         private readonly string GetDebuggerDisplay()
