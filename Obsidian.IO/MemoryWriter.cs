@@ -89,13 +89,13 @@ namespace Obsidian.IO
         #region Buffer management
         public void EnsureCapacity(int neededCapacity)
         {
-            if (index + neededCapacity >= buffer.Length)
-            {
-                var newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
-                System.Buffer.BlockCopy(buffer, 0, newBuffer, 0, (int)index);
-                ArrayPool<byte>.Shared.Return(buffer);
-                buffer = newBuffer;
-            }
+            if (index + neededCapacity < buffer.Length)
+                return;
+
+            var newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
+            System.Buffer.BlockCopy(buffer, 0, newBuffer, 0, (int)index);
+            ArrayPool<byte>.Shared.Return(buffer);
+            buffer = newBuffer;
         }
         #endregion
 
@@ -103,19 +103,22 @@ namespace Obsidian.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteByte(byte value)
         {
-            buffer[index++] = value;
+            GetRef() = value;
+            index++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteSByte(sbyte value)
         {
-            buffer[index++] = Unsafe.As<sbyte, byte>(ref value);
+            GetRef<sbyte>() = value;
+            index++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteBool(bool value)
         {
-            buffer[index++] = Unsafe.As<bool, byte>(ref value);
+            GetRef<bool>() = value;
+            index++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -263,7 +266,7 @@ namespace Obsidian.IO
                 target = value;
                 target = ref Unsafe.Add(ref target, 1);
             }
-            index = 0;
+            index += array.Length * sizeof(long);
         }
         #endregion
 
