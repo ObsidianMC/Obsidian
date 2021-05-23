@@ -2,7 +2,7 @@
 
 namespace Obsidian.Nbt
 {
-    public struct NbtTag<T> : INbtTag
+    public class NbtTag<T> : INbtTag
     {
         public NbtTagType Type { get; }
 

@@ -579,7 +579,7 @@ namespace Obsidian.Net
             writer.WriteTag(biomeCompound);
 
             writer.EndCompound();
-            //writer.TryFinish();
+            writer.TryFinish();
         }
 
         [WriteMethod]
@@ -590,7 +590,7 @@ namespace Obsidian.Net
             value.TransferTags(writer);
 
             writer.EndCompound();
-            //writer.TryFinish();
+            writer.TryFinish();
         }
 
         [WriteMethod]

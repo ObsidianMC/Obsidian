@@ -6,7 +6,6 @@ using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
-using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
