@@ -10,8 +10,7 @@ namespace Obsidian.Nbt
     {
         private NbtTagType? expectedListType;
 
-        private Stack<NbtTagType> tags = new();
-        private Stack<NbtTagType> oldTags = new();
+        private Stack<NbtTagType> nodes = new();
 
         private int listSize;
         private int listIndex;
@@ -52,7 +51,7 @@ namespace Obsidian.Nbt
             this.AddTag(NbtTagType.Compound);
         }
 
-        private void AddTag(NbtTagType type) => this.tags.Push(type);
+        private void AddTag(NbtTagType type) => this.nodes.Push(type);
 
         public void WriteCompoundStart(string name = "")
         {
@@ -63,7 +62,6 @@ namespace Obsidian.Nbt
             this.RootType = NbtTagType.Compound;
 
             this.Write(NbtTagType.Compound);
-
             this.WriteString(name);
         }
 
@@ -79,19 +77,17 @@ namespace Obsidian.Nbt
             this.expectedListType = listType;
 
             this.Write(NbtTagType.List);
-
             this.WriteString(name);
-
             this.Write(listType);
             this.WriteInt(length);
         }
 
         public void EndList()
         {
-            if ((this.listIndex + 1) < this.listSize)
+            if (this.listIndex < this.listSize)
                 throw new InvalidOperationException("List cannot end because its size is smaller than the pre-defined size.");
 
-            var tag = this.tags.Pop();
+            var tag = this.nodes.Pop();
 
             if (tag != NbtTagType.List)
                 throw new InvalidOperationException();
@@ -103,7 +99,7 @@ namespace Obsidian.Nbt
 
         public void EndCompound()
         {
-            var tag = this.tags.Pop();
+            var tag = this.nodes.Pop();
 
             if (tag != NbtTagType.Compound)
                 throw new InvalidOperationException();
@@ -114,6 +110,7 @@ namespace Obsidian.Nbt
         public void WriteTag(INbtTag tag)
         {
             var name = tag.Name;
+
             switch (tag.Type)
             {
                 case NbtTagType.End:
@@ -148,7 +145,9 @@ namespace Obsidian.Nbt
                     break;
                 case NbtTagType.List:
                     var list = (NbtList)tag;
+
                     this.WriteListStart(name, list.ListType, list.Count);
+
                     foreach (var child in list)
                     {
                         this.WriteTag(child);
@@ -177,32 +176,32 @@ namespace Obsidian.Nbt
             }
         }
 
-        public void WriteArray(INbtTag tag)
+        public void WriteArray(INbtTag array)
         {
-            this.Validate(tag.Name, tag.Type);
+            this.Validate(array.Name, array.Type);
 
-            if (tag is NbtArray<int> intArray)
+            if (array is NbtArray<int> intArray)
             {
                 this.Write(NbtTagType.IntArray);
-                this.WriteString(tag.Name);
+                this.WriteString(array.Name);
                 this.WriteInt(intArray.Count);
 
                 for (int i = 0; i < intArray.Count; i++)
                     this.WriteInt(intArray[i]);
             }
-            else if (tag is NbtArray<long> longArray)
+            else if (array is NbtArray<long> longArray)
             {
                 this.Write(NbtTagType.LongArray);
-                this.WriteString(tag.Name);
+                this.WriteString(array.Name);
                 this.WriteInt(longArray.Count);
 
                 for (int i = 0; i < longArray.Count; i++)
                     this.WriteLong(longArray[i]);
             }
-            else if (tag is NbtArray<byte> byteArray)
+            else if (array is NbtArray<byte> byteArray)
             {
                 this.Write(NbtTagType.ByteArray);
-                this.WriteString(tag.Name);
+                this.WriteString(array.Name);
                 this.WriteInt(byteArray.Count);
 
                 for (int i = 0; i < byteArray.Count; i++)
@@ -226,6 +225,15 @@ namespace Obsidian.Nbt
             this.Write(NbtTagType.Byte);
             this.WriteString(name);
             this.WriteByte(value);
+        }
+
+        public void WriteBool(string name, bool value)
+        {
+            this.Validate(name, NbtTagType.Byte);
+
+            this.Write(NbtTagType.Byte);
+            this.WriteString(name);
+            this.WriteByte((byte)(value ? 1 : 0));
         }
 
         public void WriteShort(string name, short value)
@@ -278,7 +286,7 @@ namespace Obsidian.Nbt
             if (this.IsClosed)
                 throw new InvalidOperationException("Cannot write any more tags. Writer has been closed.");
 
-            var parent = this.tags.Peek();
+            var parent = this.nodes.Peek();
 
             if (string.IsNullOrEmpty(name) && parent == NbtTagType.Compound)
                 throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type}:{name})");
@@ -289,7 +297,7 @@ namespace Obsidian.Nbt
                     throw new InvalidOperationException($"Expected list type: {this.expectedListType}. Got: {type}");
                 else if (!string.IsNullOrEmpty(name))
                     throw new InvalidOperationException("Tags inside lists must be nameless.");
-                else if ((this.listIndex + 1) > this.listSize)
+                else if (this.listIndex > this.listSize)
                     throw new IndexOutOfRangeException("Exceeded pre-defined list size");
 
                 this.listIndex++;
