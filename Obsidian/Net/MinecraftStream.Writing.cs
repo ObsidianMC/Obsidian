@@ -544,11 +544,6 @@ namespace Obsidian.Net
         {
             var writer = new NbtWriter(this, "");
 
-            var dimensions = new NbtCompound(value.Dimensions.Name)
-            {
-                new NbtTag<string>("type", value.Dimensions.Name)
-            };
-
             var list = new NbtList(NbtTagType.Compound, "value");
 
             foreach (var (_, codec) in value.Dimensions)
@@ -556,13 +551,14 @@ namespace Obsidian.Net
                 codec.Write(list);
             }
 
-            dimensions.Add(list);
+            var dimensions = new NbtCompound(value.Dimensions.Name)
+            {
+                new NbtTag<string>("type", value.Dimensions.Name),
+
+                list
+            };
 
             #region biomes
-            var biomeCompound = new NbtCompound(value.Biomes.Name)
-            {
-                new NbtTag<string>("type", value.Biomes.Name)
-            };
 
             var biomes = new NbtList(NbtTagType.Compound, "value");
 
@@ -571,14 +567,19 @@ namespace Obsidian.Net
                 biome.Write(biomes);
             }
 
-            biomeCompound.Add(biomes);
+            var biomeCompound = new NbtCompound(value.Biomes.Name)
+            {
+                new NbtTag<string>("type", value.Biomes.Name),
+
+                biomes
+            };
             #endregion
 
             writer.WriteTag(dimensions);
             writer.WriteTag(biomeCompound);
 
             writer.EndCompound();
-            writer.TryFinish();
+            //writer.TryFinish();
         }
 
         [WriteMethod]
@@ -589,7 +590,7 @@ namespace Obsidian.Net
             value.TransferTags(writer);
 
             writer.EndCompound();
-            writer.TryFinish();
+            //writer.TryFinish();
         }
 
         [WriteMethod]

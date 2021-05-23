@@ -60,15 +60,15 @@ namespace Obsidian.Nbt
             var t = $"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
 
             sb.AppendLine(t.PadLeft(depth + t.Length))
-                .AppendLine("{".PadLeft(depth + 1));
+                .AppendLine("{".PadLeft(depth * 2 + 1));
 
             foreach (var tag in this)
             {
                 var pretty = tag.PrettyString(depth);
-                sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth));
+                sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth * 2));
             }
 
-            sb.AppendLine("}".PadLeft(depth + 1));
+            sb.AppendLine("}".PadLeft(depth * 2 + 1));
 
             return sb.ToString();
         }
