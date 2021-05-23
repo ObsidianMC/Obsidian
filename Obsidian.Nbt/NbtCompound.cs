@@ -89,24 +89,29 @@ namespace Obsidian.Nbt
             sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
 
             foreach (var (_, tag) in this)
-                sb.AppendLine($"  {tag.PrettyString()}");
+                sb.AppendLine($"{tag.PrettyString()}");
 
             sb.AppendLine("}");
 
             return sb.ToString();
         }
 
-        public string PrettyString()
+        public string PrettyString(int depth = 4)
         {
             var sb = new StringBuilder();
             var count = this.Count;
 
-            sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("  {");
+            var t = $"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
+
+            sb.AppendLine(t.PadLeft(depth + t.Length)).AppendLine("{".PadLeft(depth * 2 + 1));
 
             foreach (var (_, tag) in this)
-                sb.AppendLine($"  {tag.PrettyString()}");
+            {
+                var pretty = tag.PrettyString(depth);
+                sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth * 2));
+            }
 
-            sb.AppendLine("  }");
+            sb.AppendLine("}".PadLeft(depth * 2 + 1));
 
             return sb.ToString();
         }
@@ -116,6 +121,8 @@ namespace Obsidian.Nbt
             if (string.IsNullOrEmpty(name))
                 throw new InvalidOperationException("Tags inside a compound must be named.");
 
+            tag.Parent = this;
+
             this.children.Add(name, tag);
         }
 
@@ -123,6 +130,8 @@ namespace Obsidian.Nbt
         {
             if (string.IsNullOrEmpty(tag.Name))
                 throw new InvalidOperationException("Tags inside a compound must be named.");
+
+            tag.Parent = this;
 
             this.children.Add(tag.Name, tag);
         }

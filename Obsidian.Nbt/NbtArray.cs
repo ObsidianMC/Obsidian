@@ -69,7 +69,11 @@ namespace Obsidian.Nbt
             }
         }
 
-        public string PrettyString() => $"  {this}";
+        public string PrettyString(int depth = 4)
+        {
+            var t = $"{this}";
+            return t.PadLeft(depth + t.Length);
+        }
 
         private void SetType()
         {

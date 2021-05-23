@@ -27,29 +27,48 @@ namespace Obsidian.Nbt
 
         public INbtTag this[int index] { get => this.baseList[index]; set => this.baseList[index] = value; }
 
-        public void Add(INbtTag item) => this.baseList.Add(item);
+        public void Add(INbtTag item)
+        {
+            item.Parent = this;
+
+            this.baseList.Add(item);
+        }
+
         public void Clear() => this.baseList.Clear();
+
         public bool Contains(INbtTag item) => this.baseList.Contains(item);
+
         public void CopyTo(INbtTag[] array, int arrayIndex) => this.baseList.CopyTo(array, arrayIndex);
+
         public int IndexOf(INbtTag item) => this.baseList.IndexOf(item);
+
         public void Insert(int index, INbtTag item) => this.baseList.Insert(index, item);
+
         public bool Remove(INbtTag item) => this.baseList.Remove(item);
+
         public void RemoveAt(int index) => this.baseList.RemoveAt(index);
+
         public IEnumerator<INbtTag> GetEnumerator() => this.baseList.GetEnumerator();
+
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-        public string PrettyString()
+        public string PrettyString(int depth = 4)
         {
             var sb = new StringBuilder();
             var count = this.Count;
 
-            sb.AppendLine($"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("  {");
+            var t = $"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
+
+            sb.AppendLine(t.PadLeft(depth + t.Length))
+                .AppendLine("{".PadLeft(depth + 1));
 
             foreach (var tag in this)
-                sb.AppendLine($"  {tag}");
+            {
+                var pretty = tag.PrettyString(depth);
+                sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth));
+            }
 
-
-            sb.AppendLine("  }");
+            sb.AppendLine("}".PadLeft(depth + 1));
 
             return sb.ToString();
         }
@@ -62,7 +81,7 @@ namespace Obsidian.Nbt
             sb.AppendLine($"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
 
             foreach (var tag in this)
-                sb.AppendLine($"  {tag.PrettyString()}");
+                sb.AppendLine($"{tag.PrettyString()}");
 
             sb.AppendLine("}");
 
