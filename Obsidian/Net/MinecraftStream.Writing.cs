@@ -13,6 +13,7 @@ using Obsidian.Utilities;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -555,7 +556,7 @@ namespace Obsidian.Net
                 codec.Write(list);
             }
 
-            dimensions.Add("value", list);
+            dimensions.Add(list);
 
             #region biomes
             var biomeCompound = new NbtCompound(value.Biomes.Name)
@@ -577,7 +578,7 @@ namespace Obsidian.Net
             writer.WriteTag(biomeCompound);
 
             writer.EndCompound();
-            //writer.TryFinish();
+            writer.TryFinish();
         }
 
         [WriteMethod]
@@ -585,12 +586,10 @@ namespace Obsidian.Net
         {
             var writer = new NbtWriter(this, "");
 
-            var tag = value.ToNbt();
-
-            writer.WriteTag(tag);
+            value.TransferTags(writer);
 
             writer.EndCompound();
-            //writer.TryFinish();
+            writer.TryFinish();
         }
 
         [WriteMethod]

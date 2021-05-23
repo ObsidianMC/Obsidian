@@ -12,18 +12,15 @@ namespace Obsidian.Nbt
 
         public void WriteString(string value)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                this.WriteShort(0);
-                return;
-            }
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
             if (value.Length > short.MaxValue)
                 throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
 
             var buffer = Encoding.UTF8.GetBytes(value);
 
-            this.WriteShort((short)value.Length);
+            this.WriteShort((short)buffer.Length);
             this.BaseStream.Write(buffer);
         }
 

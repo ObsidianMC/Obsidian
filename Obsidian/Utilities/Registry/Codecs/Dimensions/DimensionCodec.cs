@@ -16,7 +16,7 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
 
             element.Name = "element";
 
-            var compound = new NbtCompound()
+            var compound = new NbtCompound
             {
                 new NbtTag<int>("id", this.Id),
 
@@ -28,9 +28,37 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
             list.Add(compound);
         }
 
+        public void TransferTags(NbtWriter writer)
+        {
+            writer.WriteBool("piglin_safe", this.Element.PiglinSafe);
+            writer.WriteBool("natural", this.Element.Natural);
+
+            writer.WriteFloat("ambient_light", this.Element.AmbientLight);
+
+            if (this.Element.FixedTime.HasValue)
+                writer.WriteLong("fixed_time", this.Element.FixedTime.Value);
+
+            writer.WriteString("infiniburn", this.Element.Infiniburn);
+
+            writer.WriteBool("respawn_anchor_works", this.Element.RespawnAnchorWorks);
+            writer.WriteBool("has_skylight", this.Element.HasSkylight);
+            writer.WriteBool("bed_works", this.Element.BedWorks);
+
+            writer.WriteString("effects", this.Element.Effects);
+
+            writer.WriteBool("has_raids", this.Element.HasRaids);
+
+            writer.WriteInt("logical_height", this.Element.LogicalHeight);
+
+            writer.WriteFloat("coordinate_scale", this.Element.CoordinateScale);
+
+            writer.WriteBool("ultrawarm", this.Element.Ultrawarm);
+            writer.WriteBool("has_ceiling", this.Element.HasCeiling);
+        }
+
         public NbtCompound ToNbt()
         {
-            var compound = new NbtCompound(this.Name)
+            var compound = new NbtCompound
             {
                 new NbtTag<bool>("piglin_safe", this.Element.PiglinSafe),
 

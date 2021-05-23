@@ -169,6 +169,8 @@ namespace Obsidian.Nbt
 
                     var length = this.ReadInt32();
 
+                    Console.WriteLine("Got list");
+
                     if (length < 0)
                         throw new InvalidOperationException("Got negative list length.");
 
@@ -264,13 +266,12 @@ namespace Obsidian.Nbt
             if (BitConverter.IsLittleEndian)
                 buffer.Reverse();
 
-
             return BitConverter.ToSingle(buffer);
         }
 
         public double ReadDouble()
         {
-            Span<byte> buffer = stackalloc byte[4];
+            Span<byte> buffer = stackalloc byte[8];
             this.BaseStream.Read(buffer);
 
             if (BitConverter.IsLittleEndian)

@@ -40,9 +40,6 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
             if (!this.GrassColorModifier.IsNullOrEmpty())
                 effects.Add(new NbtTag<string>("grass_color_modifier", this.GrassColorModifier));
 
-            if (this.Particle != null)
-                this.Particle.Write(effects);
-
             if (this.AdditionsSound != null)
                 this.AdditionsSound.Write(effects);
 
@@ -51,6 +48,9 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
 
             if (!this.AmbientSound.IsNullOrEmpty())
                 effects.Add(new NbtTag<string>("ambient_sound", this.AmbientSound));
+
+            if (this.Particle != null)
+                this.Particle.Write(compound);
 
             compound.Add(effects);
         }
