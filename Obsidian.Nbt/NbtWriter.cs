@@ -59,6 +59,9 @@ namespace Obsidian.Nbt
 
             this.AddTag(NbtTagType.Compound);
 
+            if (this.RootType == NbtTagType.List)
+                return;
+
             this.RootType = NbtTagType.Compound;
 
             this.Write(NbtTagType.Compound);
