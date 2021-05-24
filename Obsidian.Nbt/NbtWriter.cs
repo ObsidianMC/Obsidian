@@ -15,8 +15,6 @@ namespace Obsidian.Nbt
         private int listSize;
         private int listIndex;
 
-        public bool IsClosed { get; internal set; }
-
         public Stream BaseStream { get; }
 
         public NbtWriter(Stream outstream, string name)
@@ -31,7 +29,7 @@ namespace Obsidian.Nbt
 
         public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
         {
-            this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : throw new NotSupportedException();
+            this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
@@ -70,7 +68,7 @@ namespace Obsidian.Nbt
             this.WriteString(name);
             this.Write(listType);
             this.WriteInt(length);
-        }
+s        }
 
         public void EndList()
         {
@@ -267,9 +265,6 @@ namespace Obsidian.Nbt
 
         public void Validate(string name, NbtTagType type)
         {
-            if (this.IsClosed)
-                throw new InvalidOperationException("Cannot write any more tags. Writer has been closed.");
-
             var parent = this.nodes.Peek();
 
             if (string.IsNullOrEmpty(name) && parent == NbtTagType.Compound)
