@@ -68,7 +68,7 @@ namespace Obsidian.Nbt
             this.WriteString(name);
             this.Write(listType);
             this.WriteInt(length);
-s        }
+        }
 
         public void EndList()
         {
