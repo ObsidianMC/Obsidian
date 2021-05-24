@@ -10,46 +10,49 @@ namespace Obsidian.Nbt
     {
         private NbtTagType? expectedListType;
 
-        private Stack<NbtTagType> nodes = new();
+        private Stack<NbtTagType> rootTags = new();
 
         private int listSize;
         private int listIndex;
 
+        public NbtTagType RootType => this.rootTags.Count > 0 ? this.rootTags.Peek() : NbtTagType.Unknown;
+
         public Stream BaseStream { get; }
 
-        public NbtWriter(Stream outstream, string name)
+        public NbtWriter(Stream outstream, string name = "")
         {
             this.BaseStream = outstream;
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
 
-            this.AddNode(NbtTagType.Compound);
+            this.AddRootTag(NbtTagType.Compound);
         }
 
-        public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
+        public NbtWriter(Stream outstream, NbtCompression compressionMode, string name = "")
         {
+            //TODO do ZLib compression
             this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
 
-            this.AddNode(NbtTagType.Compound);
+            this.AddRootTag(NbtTagType.Compound);
         }
 
-        private void AddNode(NbtTagType type) => this.nodes.Push(type);
+        private void AddRootTag(NbtTagType type) => this.rootTags.Push(type);
 
         public void WriteCompoundStart(string name = "")
         {
             this.Validate(name, NbtTagType.Compound);
 
-            if (this.nodes.Peek() == NbtTagType.List)
+            if (this.rootTags.Peek() == NbtTagType.List)
             {
-                this.AddNode(NbtTagType.Compound);
+                this.AddRootTag(NbtTagType.Compound);
                 return;
             }
 
-            this.AddNode(NbtTagType.Compound);
+            this.AddRootTag(NbtTagType.Compound);
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
@@ -59,7 +62,7 @@ namespace Obsidian.Nbt
         {
             this.Validate(name, NbtTagType.List);
 
-            this.AddNode(NbtTagType.List);
+            this.AddRootTag(NbtTagType.List);
 
             this.listSize = length;
             this.expectedListType = listType;
@@ -75,7 +78,7 @@ namespace Obsidian.Nbt
             if (this.listIndex < this.listSize)
                 throw new InvalidOperationException("List cannot end because its size is smaller than the pre-defined size.");
 
-            var tag = this.nodes.Pop();
+            var tag = this.rootTags.Pop();
             if (tag != NbtTagType.List)
                 throw new InvalidOperationException();
 
@@ -86,7 +89,7 @@ namespace Obsidian.Nbt
 
         public void EndCompound()
         {
-            var tag = this.nodes.Pop();
+            var tag = this.rootTags.Pop();
             if (tag != NbtTagType.Compound)
                 throw new InvalidOperationException();
 
@@ -265,7 +268,7 @@ namespace Obsidian.Nbt
 
         public void Validate(string name, NbtTagType type)
         {
-            var parent = this.nodes.Peek();
+            var parent = this.rootTags.Peek();
 
             if (string.IsNullOrEmpty(name) && parent == NbtTagType.Compound)
                 throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
@@ -285,7 +288,7 @@ namespace Obsidian.Nbt
 
         public void TryFinish()
         {
-            if (this.nodes.Count > 0)
+            if (this.rootTags.Count > 0)
                 throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
 
             this.BaseStream.Flush();
