@@ -81,7 +81,7 @@ namespace Obsidian.WorldData
 
             using var fileStream = regionFile.OpenWrite();
 
-            var writer = new NbtWriter(fileStream, CompressionMode.Compress, "");
+            var writer = new NbtWriter(fileStream, NbtCompression.GZip, "");
 
             writer.WriteTag(this.GetNbt());
 
@@ -109,7 +109,7 @@ namespace Obsidian.WorldData
 
             using var readStream = regionFile.OpenRead();
 
-            var reader = new NbtReader(readStream, true);
+            var reader = new NbtReader(readStream, NbtCompression.GZip);
 
             var regionCompound = (NbtCompound)reader.ReadNextTag();
 

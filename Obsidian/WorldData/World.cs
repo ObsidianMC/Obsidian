@@ -238,7 +238,7 @@ namespace Obsidian.WorldData
 
             if (!fi.Exists) { return false; }
 
-            var reader = new NbtReader(fi.OpenRead(), true);
+            var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
 
             var levelcompound = reader.ReadNextTag() as NbtCompound;
             this.Data = new Level()
@@ -315,7 +315,7 @@ namespace Obsidian.WorldData
             var path = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
             var playerFile = new FileInfo(path);
 
-            var pfile = new NbtReader(playerFile.OpenRead(), true);
+            var pfile = new NbtReader(playerFile.OpenRead(), NbtCompression.GZip);
 
             var playercompound = pfile.ReadNextTag() as NbtCompound;
             // filenames are player UUIDs. ???
