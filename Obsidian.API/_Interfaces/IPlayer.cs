@@ -7,6 +7,8 @@ namespace Obsidian.API
     public interface IPlayer : ILiving
     {
         public string Username { get; }
+        public string DisplayName { get; }
+
         public Guid Uuid { get; }
         public IServer Server { get; }
         public bool IsOperator { get; }
@@ -59,5 +61,7 @@ namespace Obsidian.API
         public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
         public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
+
+        public Task UpdateDisplayNameAsync(string newDisplayName);
     }
 }
