@@ -67,6 +67,8 @@ namespace Obsidian.Nbt
 
         public float GetFloat(string name) => this.GetTagValue<float>(name);
 
+        public double GetDouble(string name) => this.GetTagValue<double>(name);
+
         public string GetString(string name) => this.GetTagValue<string>(name);
 
         public bool GetBool(string name)
