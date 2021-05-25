@@ -1,6 +1,7 @@
-﻿using Obsidian.Nbt.Tags;
+﻿using Obsidian.Nbt;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Obsidian.Utilities.Collection
 {
@@ -51,14 +52,14 @@ namespace Obsidian.Utilities.Collection
             }
         }
 
-        public NbtTag Serialize(string tagName)
+        public INbtTag Serialize(string tagName)
         {
-            return new NbtByteArray(tagName, Data);
+            return new NbtArray<byte>(tagName, Data);
         }
 
-        public void Deserialize(NbtTag value)
+        public void Deserialize(INbtTag value)
         {
-            this.Data = value.ByteArrayValue;
+            this.Data = ((NbtArray<byte>)value).GetArray().ToArray();
         }
     }
 

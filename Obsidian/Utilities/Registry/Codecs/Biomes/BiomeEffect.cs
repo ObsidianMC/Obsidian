@@ -1,5 +1,4 @@
-﻿using Obsidian.Nbt.Tags;
-using Obsidian.Utilities;
+using Obsidian.Nbt;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {
@@ -26,23 +25,20 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
         {
             var effects = new NbtCompound("effects")
             {
-                new NbtInt("fog_color", this.FogColor),
-                new NbtInt("sky_color", this.SkyColor),
-                new NbtInt("water_color", this.WaterColor),
-                new NbtInt("water_fog_color", this.WaterFogColor)
+                new NbtTag<int>("fog_color", this.FogColor),
+                new NbtTag<int>("sky_color", this.SkyColor),
+                new NbtTag<int>("water_color", this.WaterColor),
+                new NbtTag<int>("water_fog_color", this.WaterFogColor)
             };
 
             if (this.FoliageColor > 0)
-                effects.Add(new NbtInt("foliage_color", this.FoliageColor));
+                effects.Add(new NbtTag<int>("foliage_color", this.FoliageColor));
 
             if (this.GrassColor > 0)
-                effects.Add(new NbtInt("grass_color", this.GrassColor));
+                effects.Add(new NbtTag<int>("grass_color", this.GrassColor));
 
             if (!this.GrassColorModifier.IsNullOrEmpty())
-                effects.Add(new NbtString("grass_color_modifier", this.GrassColorModifier));
-
-            if (this.Particle != null)
-                this.Particle.Write(effects);
+                effects.Add(new NbtTag<string>("grass_color_modifier", this.GrassColorModifier));
 
             if (this.AdditionsSound != null)
                 this.AdditionsSound.Write(effects);
@@ -51,7 +47,10 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
                 this.MoodSound.Write(effects);
 
             if (!this.AmbientSound.IsNullOrEmpty())
-                effects.Add(new NbtString("ambient_sound", this.AmbientSound));
+                effects.Add(new NbtTag<string>("ambient_sound", this.AmbientSound));
+
+            if (this.Particle != null)
+                this.Particle.Write(compound);
 
             compound.Add(effects);
         }
