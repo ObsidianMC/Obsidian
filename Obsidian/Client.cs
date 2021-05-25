@@ -395,7 +395,7 @@ namespace Obsidian
 
             this.Player.Position = spawnPosition;
 
-            await this.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = this.Player.Position,
                 Yaw = 0,

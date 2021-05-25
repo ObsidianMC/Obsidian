@@ -315,7 +315,7 @@ namespace Obsidian.Entities
                     pos
                 ));
 
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = pos,
                 Flags = PositionFlags.None,
@@ -331,7 +331,7 @@ namespace Obsidian.Entities
             this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = to.Position,
                 Flags = PositionFlags.None,
