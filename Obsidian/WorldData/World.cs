@@ -5,7 +5,6 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
-using Obsidian.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -244,7 +243,7 @@ namespace Obsidian.WorldData
             var levelcompound = reader.ReadNextTag() as NbtCompound;
             this.Data = new Level()
             {
-                Hardcore = levelcompound.GetBool("hardcore"), // lel lazy bool conversion I guess
+                Hardcore = levelcompound.GetBool("hardcore"),
                 MapFeatures = levelcompound.GetBool("MapFeatures"),
                 Raining = levelcompound.GetBool("raining"),
                 Thundering = levelcompound.GetBool("thundering"),
@@ -286,7 +285,7 @@ namespace Obsidian.WorldData
         {
             var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
 
-            var writer = new NbtWriter(worldFile.OpenWrite(), System.IO.Compression.CompressionMode.Compress, "");
+            var writer = new NbtWriter(worldFile.OpenWrite(), NbtCompression.GZip, "");
             var levelCompound = new NbtCompound("Data")
             {
                 new NbtTag<byte>("hardcore", 1),

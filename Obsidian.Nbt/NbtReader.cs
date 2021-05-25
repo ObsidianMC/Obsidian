@@ -14,16 +14,9 @@ namespace Obsidian.Nbt
 
         public NbtReader() : this(new MemoryStream()) { }
 
-        public NbtReader(Stream input, bool gzip = false)
+        public NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
         {
-            if (gzip)
-            {
-                this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
-
-                return;
-            }
-
-            this.BaseStream = input;
+            this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(input, CompressionMode.Compress) : input;//TODO support other compression modes
         }
 
         public NbtTagType ReadTagType()
