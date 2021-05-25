@@ -93,6 +93,12 @@ namespace Obsidian.Entities
                     Pitch = pitch
                 }, this.EntityId);
 
+                server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                {
+                    EntityId = this.EntityId,
+                    HeadYaw = yaw
+                });
+
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);
             }
