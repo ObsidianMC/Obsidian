@@ -1,5 +1,5 @@
 ﻿using Obsidian.Entities;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -53,7 +53,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
             stream.Lock.Release();
         }
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 }

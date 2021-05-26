@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
@@ -10,7 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
         }
 
-        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
+        public override void Decorate(Chunk chunk, Vector pos, OverworldNoise noise)
         {
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;

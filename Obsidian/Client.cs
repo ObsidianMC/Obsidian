@@ -16,10 +16,9 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Mojang;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Mojang;
+using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 
 using System;
@@ -278,7 +277,7 @@ namespace Obsidian
 
                         //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
 
-                        await this.handler.HandlePlayPackets((id, data), this);
+                        await this.handler.HandlePlayPackets(id, data, this);
                         break;
                 }
 
@@ -288,7 +287,7 @@ namespace Obsidian
             Logger.LogInformation($"Disconnected client");
 
             if (this.State == ClientState.Play)
-                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player));
+                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player, DateTimeOffset.Now));
 
             if (tcp.Connected)
             {
@@ -384,7 +383,7 @@ namespace Obsidian
             await this.LoadChunksAsync();
 
             //TODO: check for last position
-            var spawnPosition = new PositionF(
+            var spawnPosition = new VectorF(
                 Server.World.Data.SpawnX,
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ);
@@ -396,7 +395,7 @@ namespace Obsidian
 
             this.Player.Position = spawnPosition;
 
-            await this.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = this.Player.Position,
                 Yaw = 0,

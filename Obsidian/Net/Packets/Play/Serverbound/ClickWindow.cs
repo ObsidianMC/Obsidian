@@ -2,7 +2,7 @@
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -49,8 +49,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack Item { get; set; }
 
         public int Id => 0x09;
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public async Task ReadAsync(MinecraftStream stream)
         {

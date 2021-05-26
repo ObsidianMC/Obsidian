@@ -9,16 +9,14 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class SpawnPosition : ISerializablePacket
     {
         [Field(0)]
-        public PositionF Position { get; }
+        public VectorF Position { get; }
 
         public int Id => 0x42;
 
-        public SpawnPosition(PositionF position)
+        public SpawnPosition(VectorF position)
         {
             Position = position;
         }
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

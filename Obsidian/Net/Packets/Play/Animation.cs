@@ -13,8 +13,6 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x2C;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Hand = (Hand)await stream.ReadVarIntAsync();

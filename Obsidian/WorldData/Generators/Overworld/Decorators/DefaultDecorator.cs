@@ -9,7 +9,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
         }
 
-        public override void Decorate(Chunk chunk, Position pos, OverworldNoise noise)
+        public override void Decorate(Chunk chunk, Vector pos, OverworldNoise noise)
         {
         }
     }

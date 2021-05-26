@@ -5,10 +5,9 @@ namespace Obsidian.API
     public interface IEntity
     {
         public IWorld WorldLocation { get; }
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
-        public PositionF LookDirection { get; }
         public int EntityId { get; }
         public EntityBitMask EntityBitMask { get; set; }
         public Pose Pose { get; set; }

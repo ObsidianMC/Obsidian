@@ -2,10 +2,9 @@
 using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Nbt;
-using Obsidian.Nbt.Tags;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.IO;
 using System.Text;
@@ -391,7 +390,7 @@ namespace Obsidian.Net
         }
 
         [ReadMethod]
-        public Position ReadPosition()
+        public Vector ReadPosition()
         {
             ulong value = this.ReadUnsignedLong();
 
@@ -408,7 +407,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new Position
+            return new Vector
             {
                 X = (int)x,
 
@@ -419,9 +418,9 @@ namespace Obsidian.Net
         }
 
         [ReadMethod, Absolute]
-        public Position ReadAbsolutePosition()
+        public Vector ReadAbsolutePosition()
         {
-            return new Position
+            return new Vector
             {
                 X = (int)ReadDouble(),
                 Y = (int)ReadDouble(),
@@ -429,9 +428,9 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<Position> ReadAbsolutePositionAsync()
+        public async Task<Vector> ReadAbsolutePositionAsync()
         {
-            return new Position
+            return new Vector
             {
                 X = (int)await ReadDoubleAsync(),
                 Y = (int)await ReadDoubleAsync(),
@@ -439,7 +438,7 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<Position> ReadPositionAsync()
+        public async Task<Vector> ReadPositionAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
 
@@ -456,7 +455,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new Position
+            return new Vector
             {
                 X = (int)x,
 
@@ -467,7 +466,7 @@ namespace Obsidian.Net
         }
 
         [ReadMethod]
-        public PositionF ReadPositionF()
+        public VectorF ReadPositionF()
         {
             ulong value = this.ReadUnsignedLong();
 
@@ -484,7 +483,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new PositionF
+            return new VectorF
             {
                 X = x,
 
@@ -495,9 +494,9 @@ namespace Obsidian.Net
         }
 
         [ReadMethod, Absolute]
-        public PositionF ReadAbsolutePositionF()
+        public VectorF ReadAbsolutePositionF()
         {
-            return new PositionF
+            return new VectorF
             {
                 X = (float)ReadDouble(),
                 Y = (float)ReadDouble(),
@@ -505,9 +504,9 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<PositionF> ReadAbsolutePositionFAsync()
+        public async Task<VectorF> ReadAbsolutePositionFAsync()
         {
-            return new PositionF
+            return new VectorF
             {
                 X = (float) await ReadDoubleAsync(),
                 Y = (float) await ReadDoubleAsync(),
@@ -515,7 +514,7 @@ namespace Obsidian.Net
             };
         }
 
-        public async Task<PositionF> ReadPositionFAsync()
+        public async Task<VectorF> ReadPositionFAsync()
         {
             ulong value = await this.ReadUnsignedLongAsync();
 
@@ -532,7 +531,7 @@ namespace Obsidian.Net
             if (z >= Math.Pow(2, 25))
                 z -= (long)Math.Pow(2, 26);
 
-            return new PositionF
+            return new VectorF
             {
                 X = x,
 
@@ -586,29 +585,27 @@ namespace Obsidian.Net
 
                 var reader = new NbtReader(this);
 
-                while (reader.ReadToFollowing())
+                INbtTag tag;
+                while ((tag = reader.ReadNextTag()) != null)
                 {
                     var itemMetaBuilder = new ItemMetaBuilder();
 
-                    if (reader.IsCompound)
+                    if (tag is NbtCompound root)
                     {
-                        var root = (NbtCompound)reader.ReadAsTag();
-
-                        foreach (var tag in root)
+                        foreach (var (name, child) in root)
                         {
-                            switch (tag.Name.ToUpperInvariant())
+                            switch (name.ToUpperInvariant())
                             {
                                 case "ENCHANTMENTS":
                                     {
-                                        var enchantments = (NbtList)tag;
+                                        var enchantments = (NbtList)child;
 
                                         foreach (var enchant in enchantments)
                                         {
                                             if (enchant is NbtCompound compound)
                                             {
-                                                var id = compound.Get<NbtString>("id").Value;
 
-                                                itemMetaBuilder.AddEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
+                                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                                             }
                                         }
 
@@ -617,7 +614,7 @@ namespace Obsidian.Net
 
                                 case "STOREDENCHANTMENTS":
                                     {
-                                        var enchantments = (NbtList)tag;
+                                        var enchantments = (NbtList)child;
 
                                         //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
@@ -625,10 +622,10 @@ namespace Obsidian.Net
                                         {
                                             if (enchantment is NbtCompound compound)
                                             {
+                                                compound.TryGetTag("id", out var id);
+                                                compound.TryGetTag("lvl", out var lvl);
 
-                                                var id = compound.Get<NbtString>("id").Value;
-
-                                                itemMetaBuilder.AddStoredEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
+                                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                                             }
                                         }
                                         break;
@@ -636,34 +633,38 @@ namespace Obsidian.Net
 
                                 case "SLOT":
                                     {
-                                        itemMetaBuilder.WithSlot(tag.ByteValue);
+                                        var byteTag = (NbtTag<byte>)child;
+
+                                        itemMetaBuilder.WithSlot(byteTag.Value);
                                         //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
 
                                 case "DAMAGE":
                                     {
-                                        itemMetaBuilder.WithDurability(tag.IntValue);
+                                        var intTag = (NbtTag<int>)child;
+
+                                        itemMetaBuilder.WithDurability(intTag.Value);
                                         //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                         break;
                                     }
 
                                 case "DISPLAY":
                                     {
-                                        var display = (NbtCompound)tag;
+                                        var display = (NbtCompound)child;
 
-                                        foreach (var displayTag in display)
+                                        foreach (var (displayTagName, displayTag) in display)
                                         {
-                                            if (displayTag.Name.EqualsIgnoreCase("name"))
+                                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                                             {
-                                                itemMetaBuilder.WithName(displayTag.StringValue);
+                                                itemMetaBuilder.WithName(stringTag.Value);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
                                             {
                                                 var loreTag = (NbtList)displayTag;
 
-                                                foreach (var lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.StringValue));
+                                                foreach (NbtTag<string> lore in loreTag)
+                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
                                             }
                                         }
                                         break;
@@ -696,29 +697,27 @@ namespace Obsidian.Net
 
                 var reader = new NbtReader(this);
 
-                while (reader.ReadToFollowing())
+                INbtTag tag;
+                while ((tag = reader.ReadNextTag()) != null)
                 {
                     var itemMetaBuilder = new ItemMetaBuilder();
 
-                    if (reader.IsCompound)
+                    if (tag is NbtCompound root)
                     {
-                        var root = (NbtCompound)reader.ReadAsTag();
-
-                        foreach (var tag in root)
+     
+                        foreach (var (name, child) in root)
                         {
-                            switch (tag.Name.ToLower())
+                            switch (name.ToLower())
                             {
                                 case "enchantments":
                                     {
-                                        var enchantments = (NbtList)tag;
+                                        var enchantments = (NbtList)child;
 
                                         foreach (var enchant in enchantments)
                                         {
                                             if (enchant is NbtCompound compound)
                                             {
-                                                var id = compound.Get<NbtString>("id").Value;
-
-                                                itemMetaBuilder.AddEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
+                                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                                             }
                                         }
 
@@ -726,7 +725,7 @@ namespace Obsidian.Net
                                     }
                                 case "storedenchantments":
                                     {
-                                        var enchantments = (NbtList)tag;
+                                        var enchantments = (NbtList)child;
 
                                         //Globals.PacketLogger.LogDebug($"List Type: {enchantments.ListType}");
 
@@ -734,43 +733,48 @@ namespace Obsidian.Net
                                         {
                                             if (enchantment is NbtCompound compound)
                                             {
+                                                compound.TryGetTag("id", out var id);
+                                                compound.TryGetTag("lvl", out var lvl);
 
-                                                var id = compound.Get<NbtString>("id").Value;
-
-                                                itemMetaBuilder.AddStoredEnchantment(id.ToEnchantType(), compound.Get<NbtShort>("lvl").Value);
+                                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                                             }
                                         }
                                         break;
                                     }
                                 case "slot":
                                     {
-                                        itemMetaBuilder.WithSlot(tag.ByteValue);
+                                        var byteTag = (NbtTag<byte>)child;
+
+                                        itemMetaBuilder.WithSlot(byteTag.Value);
                                         //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
                                 case "damage":
                                     {
 
-                                        itemMetaBuilder.WithDurability(tag.IntValue);
+                                        var intTag = (NbtTag<int>)child;
+
+                                        itemMetaBuilder.WithDurability(intTag.Value);
                                         //Globals.PacketLogger.LogDebug($"Setting damage: {tag.IntValue}");
                                         break;
                                     }
                                 case "display":
                                     {
-                                        var display = (NbtCompound)tag;
+                                        var display = (NbtCompound)child;
 
-                                        foreach (var displayTag in display)
+                                        foreach (var (displayTagName, displayTag) in display)
                                         {
-                                            if (displayTag.Name.EqualsIgnoreCase("name"))
+                                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                                             {
-                                                itemMetaBuilder.WithName(displayTag.StringValue);
+                                                var messages = JsonConvert.DeserializeObject<ChatMessage[]>(stringTag.Value);
+                                                itemMetaBuilder.WithName(messages[0]);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
                                             {
                                                 var loreTag = (NbtList)displayTag;
 
-                                                foreach (var lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.StringValue));
+                                                foreach (NbtTag<string> lore in loreTag)
+                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
                                             }
                                         }
                                         break;

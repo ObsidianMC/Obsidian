@@ -3,10 +3,8 @@ using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
-using Obsidian.Nbt.Tags;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -127,12 +125,12 @@ namespace Obsidian.WorldData
 
         public Region GetRegionForChunk(int chunkX, int chunkZ)
         {
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             return this.Regions.SingleOrDefault(x => x.Key == value).Value;
         }
 
-        public Region GetRegionForChunk(Position location)
+        public Region GetRegionForChunk(Vector location)
         {
             return this.GetRegionForChunk(location.X, location.Z);
         }
@@ -155,7 +153,7 @@ namespace Obsidian.WorldData
                 return null;
             }
 
-            var index = (Helpers.Modulo(chunkX, Region.cubicRegionSize), Helpers.Modulo(chunkZ, Region.cubicRegionSize));
+            var index = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
             var chunk = region.LoadedChunks[index.Item1, index.Item2];
 
             // chunk hasn't been generated yet
@@ -169,9 +167,9 @@ namespace Obsidian.WorldData
         /// </summary>
         /// <param name="worldLocation">World location of the chunk.</param>
         /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
-        public Chunk GetChunk(Position worldLocation) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord());
+        public Chunk GetChunk(Vector worldLocation) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord());
 
-        public Block GetBlock(Position location) => GetBlock(location.X, location.Y, location.Z);
+        public Block GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
@@ -180,13 +178,13 @@ namespace Obsidian.WorldData
             return chunk is null ? Block.Air : chunk.GetBlock(x, y, z);
         }
 
-        public void SetBlock(Position location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
+        public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
             this.Regions[value].IsDirty = true;
@@ -196,25 +194,25 @@ namespace Obsidian.WorldData
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlockMeta(x, y, z, meta);
         }
 
-        public void SetBlockMeta(Position location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
+        public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
             int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
 
-            long value = Helpers.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
             return this.Regions[value].LoadedChunks[chunkX, chunkZ].GetBlockMeta(x, y, z);
         }
 
-        public BlockMeta GetBlockMeta(Position location) => this.GetBlockMeta(location.X, location.Y, location.Z);
+        public BlockMeta GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
 
-        public IEnumerable<Entity> GetEntitiesNear(PositionF location, float distance = 10f)
+        public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
         {
             var (chunkX, chunkZ) = location.ToChunkCoord();
 
@@ -223,7 +221,7 @@ namespace Obsidian.WorldData
             if (region is null)
                 return new List<Entity>();
 
-            return region.Entities.Select(x => x.Value).Where(x => PositionF.DistanceTo(location, x.Position) <= distance);
+            return region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance);
         }
 
         public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
@@ -234,33 +232,34 @@ namespace Obsidian.WorldData
         //TODO
         public bool Load()
         {
-            var worldDir = Path.Join(Server.ServerFolderPath, Name);
-            var DataPath = Path.Combine(worldDir, "level.dat");
-            if (!File.Exists(DataPath)) { return false; }
+            var dataPath = Path.Join(Server.ServerFolderPath, Name, "level.dat");
 
-            var DataFile = new NbtFile();
-            DataFile.LoadFromFile(DataPath);
+            var fi = new FileInfo(dataPath);
 
-            var levelcompound = DataFile.RootTag;
+            if (!fi.Exists) { return false; }
+
+            var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
+
+            var levelcompound = reader.ReadNextTag() as NbtCompound;
             this.Data = new Level()
             {
-                Hardcore = levelcompound["hardcore"].ByteValue == 1, // lel lazy bool conversion I guess
-                MapFeatures = levelcompound["MapFeatures"].ByteValue == 1,
-                Raining = levelcompound["raining"].ByteValue == 1,
-                Thundering = levelcompound["thundering"].ByteValue == 1,
-                GameType = (Gamemode)levelcompound["GameType"].IntValue,
-                GeneratorVersion = levelcompound["generatorVersion"].IntValue,
-                RainTime = levelcompound["rainTime"].IntValue,
-                SpawnX = levelcompound["SpawnX"].IntValue,
-                SpawnY = levelcompound["SpawnY"].IntValue,
-                SpawnZ = levelcompound["SpawnZ"].IntValue,
-                ThunderTime = levelcompound["thunderTime"].IntValue,
-                Version = levelcompound["version"].IntValue,
-                LastPlayed = levelcompound["LastPlayed"].LongValue,
-                RandomSeed = levelcompound["RandomSeed"].LongValue,
-                Time = levelcompound["Time"].LongValue,
-                GeneratorName = levelcompound["generatorName"].StringValue,
-                LevelName = levelcompound["LevelName"].StringValue
+                Hardcore = levelcompound.GetBool("hardcore"),
+                MapFeatures = levelcompound.GetBool("MapFeatures"),
+                Raining = levelcompound.GetBool("raining"),
+                Thundering = levelcompound.GetBool("thundering"),
+                GameType = (Gamemode)levelcompound.GetInt("GameType"),
+                GeneratorVersion = levelcompound.GetInt("generatorVersion"),
+                RainTime = levelcompound.GetInt("rainTime"),
+                SpawnX = levelcompound.GetInt("SpawnX"),
+                SpawnY = levelcompound.GetInt("SpawnY"),
+                SpawnZ = levelcompound.GetInt("SpawnZ"),
+                ThunderTime = levelcompound.GetInt("thunderTime"),
+                Version = levelcompound.GetInt("version"),
+                LastPlayed = levelcompound.GetLong("LastPlayed"),
+                RandomSeed = levelcompound.GetLong("RandomSeed"),
+                Time = levelcompound.GetLong("Time"),
+                GeneratorName = levelcompound.GetString("generatorName"),
+                LevelName = levelcompound.GetString("LevelName")
             };
 
             if (!Server.WorldGenerators.TryGetValue(this.Data.GeneratorName, out WorldGenerator value))
@@ -284,62 +283,63 @@ namespace Obsidian.WorldData
 
         public void Save()
         {
-            var worldFile = Path.Join(Server.ServerFolderPath, Name, "level.dat");
-            var dataFile = new NbtFile();
+            var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
+
+            var writer = new NbtWriter(worldFile.OpenWrite(), NbtCompression.GZip, "");
             var levelCompound = new NbtCompound("Data")
             {
-                new NbtByte("hardcore", 1),
-                new NbtByte("MapFeatures", 1),
-                new NbtByte("raining", 0),
-                new NbtByte("thundering", 0),
-                new NbtInt("GameType", (int)Gamemode.Creative),
-                new NbtInt("generatorVersion", 1),
-                new NbtInt("rainTime", 0),
-                new NbtInt("SpawnX", Data.SpawnX),
-                new NbtInt("SpawnY", Data.SpawnY),
-                new NbtInt("SpawnZ", Data.SpawnZ),
-                new NbtInt("thunderTime", 0),
-                new NbtInt("version", 19133),
-                new NbtLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()),
-                new NbtLong("RandomSeed", 1),
-                new NbtLong("Time", 0),
-                new NbtString("generatorName", Generator.Id),
-                new NbtString("LevelName", Name)
+                new NbtTag<byte>("hardcore", 1),
+                new NbtTag<byte>("MapFeatures", 1),
+                new NbtTag<byte>("raining", 0),
+                new NbtTag<byte>("thundering", 0),
+                new NbtTag<int>("GameType", (int)Gamemode.Creative),
+                new NbtTag<int>("generatorVersion", 1),
+                new NbtTag<int>("rainTime", 0),
+                new NbtTag<int>("SpawnX", Data.SpawnX),
+                new NbtTag<int>("SpawnY", Data.SpawnY),
+                new NbtTag<int>("SpawnZ", Data.SpawnZ),
+                new NbtTag<int>("thunderTime", 0),
+                new NbtTag<int>("version", 19133),
+                new NbtTag<long>("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()),
+                new NbtTag<long>("RandomSeed", 1),
+                new NbtTag<long>("Time", 0),
+                new NbtTag<string>("generatorName", Generator.Id),
+                new NbtTag<string>("LevelName", Name)
             };
 
-            dataFile.RootTag = levelCompound;
-            dataFile.SaveToFile(worldFile, NbtCompression.GZip);
+            writer.WriteTag(levelCompound);
         }
 
         public void LoadPlayer(Guid uuid)
         {
-            var playerfile = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
+            var path = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
+            var playerFile = new FileInfo(path);
 
-            var PFile = new NbtFile();
-            PFile.LoadFromFile(playerfile);
-            var playercompound = PFile.RootTag;
+            var pfile = new NbtReader(playerFile.OpenRead(), NbtCompression.GZip);
+
+            var playercompound = pfile.ReadNextTag() as NbtCompound;
             // filenames are player UUIDs. ???
-            var player = new Player(uuid, Path.GetFileNameWithoutExtension(playerfile), null)//TODO: changes
+            var player = new Player(uuid, Path.GetFileNameWithoutExtension(path), null)//TODO: changes
             {
-                OnGround = playercompound["OnGround"].ByteValue == 1,
-                Sleeping = playercompound["Sleeping"].ByteValue == 1,
-                Air = playercompound["Air"].ShortValue,
-                AttackTime = playercompound["AttackTime"].ShortValue,
-                DeathTime = playercompound["DeathTime"].ShortValue,
+                OnGround = playercompound.GetBool("OnGround"),
+                Sleeping = playercompound.GetBool("Sleeping"),
+                Air = playercompound.GetShort("Air"),
+                AttackTime = playercompound.GetShort("AttackTime"),
+                DeathTime = playercompound.GetShort("DeathTime"),
                 //Fire = playercompound["Fire"].ShortValue,
-                Health = playercompound["Health"].ShortValue,
-                HurtTime = playercompound["HurtTime"].ShortValue,
-                SleepTimer = playercompound["SleepTimer"].ShortValue,
-                Dimension = playercompound["Dimension"].IntValue,
-                FoodLevel = playercompound["foodLevel"].IntValue,
-                FoodTickTimer = playercompound["foodTickTimer"].IntValue,
-                Gamemode = (Gamemode)playercompound["playerGameType"].IntValue,
-                XpLevel = playercompound["XpLevel"].IntValue,
-                XpTotal = playercompound["XpTotal"].IntValue,
-                FallDistance = playercompound["FallDistance"].FloatValue,
-                FoodExhastionLevel = playercompound["foodExhastionLevel"].FloatValue,
-                FoodSaturationLevel = playercompound["foodSaturationLevel"].FloatValue,
-                Score = playercompound["XpP"].IntValue
+                Health = playercompound.GetShort("Health"),
+                HurtTime = playercompound.GetShort("HurtTime"),
+                SleepTimer = playercompound.GetShort("SleepTimer"),
+                Dimension = playercompound.GetInt("Dimension"),
+                FoodLevel = playercompound.GetInt("foodLevel"),
+                FoodTickTimer = playercompound.GetInt("foodTickTimer"),
+                Gamemode = (Gamemode)playercompound.GetInt("playerGameType"),
+                XpLevel = playercompound.GetInt("XpLevel"),
+                XpTotal = playercompound.GetInt("XpTotal"),
+                FallDistance = playercompound.GetFloat("FallDistance"),
+                FoodExhastionLevel = playercompound.GetFloat("foodExhastionLevel"),
+                FoodSaturationLevel = playercompound.GetFloat("foodSaturationLevel"),
+                Score = playercompound.GetInt("XpP")
                 // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
             };
             this.Players.TryAdd(uuid, player);
@@ -360,7 +360,7 @@ namespace Obsidian.WorldData
 
         public Region LoadRegion(int regionX, int regionZ)
         {
-            long value = Helpers.IntsToLong(regionX, regionZ);
+            long value = NumericsHelper.IntsToLong(regionX, regionZ);
             this.Regions.TryAdd(value, null);
             if (this.Regions.ContainsKey(value))
                 if (this.Regions[value] is not null)
@@ -384,7 +384,7 @@ namespace Obsidian.WorldData
             {
                 if (RegionsToLoad.TryDequeue(out var job))
                 {
-                    if (!this.Regions.ContainsKey(Helpers.IntsToLong(job.Item1, job.Item2))) // Sanity check
+                    if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.Item1, job.Item2))) // Sanity check
                         LoadRegion(job.Item1, job.Item2);
                 }
             }
@@ -409,7 +409,7 @@ namespace Obsidian.WorldData
                     return;
                 }
                 Chunk c = Generator.GenerateChunk(job.x, job.z);
-                var index = (x: Helpers.Modulo(c.X, Region.cubicRegionSize), z: Helpers.Modulo(c.Z, Region.cubicRegionSize));
+                var index = (x: NumericsHelper.Modulo(c.X, Region.cubicRegionSize), z: NumericsHelper.Modulo(c.Z, Region.cubicRegionSize));
                 region.LoadedChunks[index.x, index.z] = c;
             });
         }
@@ -426,10 +426,12 @@ namespace Obsidian.WorldData
 
         internal void GenerateWorld()
         {
-            this.Server.Logger.LogInformation("Generating world...");
-            for (int x = -Region.cubicRegionSize; x < Region.cubicRegionSize; x++)
+            this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
+            int pregenerationRange = Server.Config.PregenerateChunkRange;
+
+            for (int x = -pregenerationRange; x < pregenerationRange; x++)
             {
-                for (int z = -Region.cubicRegionSize; z < Region.cubicRegionSize; z++)
+                for (int z = -pregenerationRange; z < pregenerationRange; z++)
                 {
                     if (!ChunksToGen.Contains((x, z)))
                         ChunksToGen.Enqueue((x, z));
@@ -484,12 +486,12 @@ namespace Obsidian.WorldData
             return region.Entities.TryAdd(entity.EntityId, entity);
         }
 
-        public async Task SpawnExperienceOrbs(PositionF position, short count = 1)
+        public async Task SpawnExperienceOrbs(VectorF position, short count = 1)
         {
             await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
         }
 
-        public async Task SpawnPainting(Position position, Painting painting, PaintingDirection direction, Guid uuid = default)
+        public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
         {
             if (uuid == Guid.Empty) uuid = Guid.NewGuid();
             await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));

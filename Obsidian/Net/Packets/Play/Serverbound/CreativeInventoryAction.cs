@@ -2,7 +2,7 @@
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -17,8 +17,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack ClickedItem { get; set; }
 
         public int Id => 0x29;
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public async Task ReadAsync(MinecraftStream stream)
         {

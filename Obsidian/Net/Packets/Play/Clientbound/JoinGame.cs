@@ -1,9 +1,9 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry.Codecs;
-using Obsidian.Util.Registry.Codecs.Biomes;
-using Obsidian.Util.Registry.Codecs.Dimensions;
+using Obsidian.Utilities.Registry.Codecs;
+using Obsidian.Utilities.Registry.Codecs.Biomes;
+using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -64,8 +64,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool Flat { get; set; } = false;
 
         public int Id => 0x24;
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

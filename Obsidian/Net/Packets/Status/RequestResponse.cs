@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
@@ -26,8 +26,6 @@ namespace Obsidian.Net.Packets.Status
         {
             Json = JsonConvert.SerializeObject(status);
         }
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

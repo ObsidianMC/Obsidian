@@ -19,6 +19,14 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>Obsidian.API.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>Obsidian.API.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Include="..\LICENSE">
       <Pack>True</Pack>

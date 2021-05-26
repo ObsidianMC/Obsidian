@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public EntityType Type { get; set; }
 
         [Field(3), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(4)]
         public Angle Yaw { get; set; }
@@ -34,8 +34,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Velocity Velocity { get; set; }
 
         public int Id => 0x02;
-
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

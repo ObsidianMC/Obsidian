@@ -3,14 +3,13 @@
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.BossBar;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -27,6 +26,9 @@ namespace Obsidian.Entities
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
+
+        public string DisplayName { get; internal set; }
+
 
         /// <summary>
         /// The players inventory
@@ -106,7 +108,7 @@ namespace Obsidian.Entities
             LoadPerms();
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
@@ -145,7 +147,7 @@ namespace Obsidian.Entities
             }
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
@@ -297,7 +299,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task TeleportAsync(PositionF pos)
+        public async Task TeleportAsync(VectorF pos)
         {
             this.LastPosition = this.Position;
             this.Position = pos;
@@ -313,14 +315,13 @@ namespace Obsidian.Entities
                     pos
                 ));
 
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = pos,
                 Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
-
         }
 
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
@@ -330,7 +331,7 @@ namespace Obsidian.Entities
             this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = to.Position,
                 Flags = PositionFlags.None,
@@ -422,8 +423,35 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
+            var list = new List<PlayerInfoAction>()
+            {
+                new PlayerInfoUpdateGamemodeAction()
+                {
+                    Uuid = this.Uuid,
+                    Gamemode = (int)gamemode,
+                }
+            };
+
+            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(1, list));
+            await this.client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
+
             this.Gamemode = gamemode;
+        }
+
+        public async Task UpdateDisplayNameAsync(string newDisplayName)
+        {
+            var list = new List<PlayerInfoAction>()
+            {
+                new PlayerInfoUpdateDisplayNameAction()
+                {
+                    Uuid = this.Uuid,
+                    DisplayName = newDisplayName,
+                }
+            };
+
+            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
+
+            this.DisplayName = newDisplayName;
         }
 
         public async Task<bool> GrantPermission(string permission)

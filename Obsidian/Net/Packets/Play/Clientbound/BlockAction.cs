@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class BlockAction : ISerializablePacket
     {
         [Field(0)]
-        public Position Position { get; set; }
+        public Vector Position { get; set; }
 
         [Field(1)]
         public byte ActionId { get; set; }
@@ -26,6 +26,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
-        public Task WriteAsync(MinecraftStream stream) => Task.CompletedTask;
+        
     }
 }
