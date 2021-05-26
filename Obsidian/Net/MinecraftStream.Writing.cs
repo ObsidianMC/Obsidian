@@ -1067,6 +1067,20 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
+        public void WriteNbt(INbtTag nbt)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(nbt);
+        }
+
+        [WriteMethod]
+        public void WriteNbtCompound(NbtCompound compound)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(compound);
+        }
+
+        [WriteMethod]
         public void WriteParticleData(ParticleData value)
         {
             if (value is null || value == ParticleData.None)
