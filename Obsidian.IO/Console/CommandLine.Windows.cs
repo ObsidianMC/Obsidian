@@ -18,34 +18,6 @@ namespace Obsidian.IO.Console
 
     public static partial class CommandLine
     {
-        // Windows-only implementation of CommandLine
-
-        public static ConsoleColor ForegroundColor
-        {
-            get
-            {
-                return (ConsoleColor)(color & 0b1111);
-            }
-
-            set
-            {
-                color = (short)((color & 0b11110000) | (int)value);
-            }
-        }
-
-        public static ConsoleColor BackgroundColor
-        {
-            get
-            {
-                return (ConsoleColor)(color >> 4);
-            }
-
-            set
-            {
-                color = (short)((color & 0b1111) | ((int)value << 4));
-            }
-        }
-
         private static short color = (short)ConsoleColor.Gray;
 
         private static SafeFileHandle handle;
@@ -107,7 +79,7 @@ namespace Obsidian.IO.Console
         }
 #pragma warning restore CS8618
 
-        private static void TakeControlInternal()
+        private static partial void TakeControlInternal()
         {
             // Prevent Console interception
             Console.SetOut(TextWriter.Null);
@@ -159,13 +131,23 @@ namespace Obsidian.IO.Console
             StartReadingInput();
         }
 
-        public static void ResetColor()
+        public static partial void ResetColor()
         {
             color = (short)ConsoleColor.Gray;
         }
 
+        private static partial void SetForegroundColor(ConsoleColor color)
+        {
+            CommandLine.color = (short)((CommandLine.color & 0b11110000) | (int)color);
+        }
+
+        private static partial void SetBackgroundColor(ConsoleColor color)
+        {
+            CommandLine.color = (short)((CommandLine.color & 0b1111) | ((int)color << 4));
+        }
+
         #region Writing output
-        public static void Write(string? text)
+        public static partial void Write(string? text)
         {
             if (text is null)
                 return;
@@ -174,19 +156,19 @@ namespace Obsidian.IO.Console
             RedrawMessages();
         }
 
-        public static void Write(ReadOnlySpan<char> text)
+        public static partial void Write(ReadOnlySpan<char> text)
         {
             WriteInternal(text);
             RedrawMessages();
         }
 
-        public static void WriteLine()
+        public static partial void WriteLine()
         {
             WriteInternal(newLine);
             RedrawMessages();
         }
 
-        public static void WriteLine(string? text)
+        public static partial void WriteLine(string? text)
         {
             if (text is null)
                 return;
@@ -196,7 +178,7 @@ namespace Obsidian.IO.Console
             RedrawMessages();
         }
 
-        public static void WriteLine(ReadOnlySpan<char> text)
+        public static partial void WriteLine(ReadOnlySpan<char> text)
         {
             WriteInternal(text);
             WriteInternal(newLine);
@@ -361,7 +343,7 @@ namespace Obsidian.IO.Console
             Console.SetCursorPosition(defaultCommandPrefix.Length, inputRect.Top);
             RedrawInput();
 
-            cursorPosition = commandPrefix.Length;
+            cursorPosition = _commandPrefix.Length;
 
             Task.Run(() =>
             {
@@ -410,7 +392,7 @@ namespace Obsidian.IO.Console
 
                 case ConsoleKey.Home:
                     inputLeft = 0;
-                    cursorPosition = commandPrefix.Length;
+                    cursorPosition = _commandPrefix.Length;
                     Console.SetCursorPosition(cursorPosition, inputRect.Top);
                     RedrawInput();
                     break;
@@ -508,12 +490,12 @@ namespace Obsidian.IO.Console
 
         private static void WriteInputChar(char c)
         {
-            if (commandPrefix.Length + inputLength + 1 == inputBuffer.Length) // Don't write if the buffer is full
+            if (_commandPrefix.Length + inputLength + 1 == inputBuffer.Length) // Don't write if the buffer is full
                 return;
             inputLength++;
 
             int targetIndex = inputLeft + cursorPosition;       // Where the char should be written to
-            int inputEnd = commandPrefix.Length + inputLength;  // Last input char index
+            int inputEnd = _commandPrefix.Length + inputLength;  // Last input char index
             for (; inputEnd >= targetIndex; inputEnd--)         // Move text after to the right
             {
                 inputBuffer[inputEnd] = inputBuffer[inputEnd - 1];
@@ -527,7 +509,7 @@ namespace Obsidian.IO.Console
 
         private static void MoveCursorRight()
         {
-            if (inputLeft + cursorPosition - commandPrefix.Length == inputLength) // End of the input
+            if (inputLeft + cursorPosition - _commandPrefix.Length == inputLength) // End of the input
             {
                 return;
             }
@@ -547,7 +529,7 @@ namespace Obsidian.IO.Console
 
         private static void MoveCursorLeft()
         {
-            if (inputLeft == 0 && cursorPosition == commandPrefix.Length) // All the way to the left
+            if (inputLeft == 0 && cursorPosition == _commandPrefix.Length) // All the way to the left
             {
                 return;
             }
@@ -555,10 +537,10 @@ namespace Obsidian.IO.Console
             if (cursorPosition == 0) // Left side of the window
             {
                 inputLeft--;
-                if (inputLeft == commandPrefix.Length) // At the first input char -> jump all the way to the left to show command prefix
+                if (inputLeft == _commandPrefix.Length) // At the first input char -> jump all the way to the left to show command prefix
                 {
                     inputLeft = 0;
-                    cursorPosition = commandPrefix.Length;
+                    cursorPosition = _commandPrefix.Length;
                     Console.SetCursorPosition(cursorPosition, inputRect.Top);
                 }
             }
@@ -573,28 +555,28 @@ namespace Obsidian.IO.Console
 
         private static void RemoveInputCharAt(int index)
         {
-            if (index < commandPrefix.Length || index >= commandPrefix.Length + inputLength) // Make sure that index is not out of bounds
+            if (index < _commandPrefix.Length || index >= _commandPrefix.Length + inputLength) // Make sure that index is not out of bounds
             {
                 return;
             }
 
             inputBuffer[index] = ColoredChar.Empty; // Remove char
 
-            for (index += 1; index < commandPrefix.Length + inputLength; index++) // Move following text back
+            for (index += 1; index < _commandPrefix.Length + inputLength; index++) // Move following text back
             {
                 inputBuffer[index - 1] = inputBuffer[index];
             }
 
             inputLength--;
 
-            inputBuffer[commandPrefix.Length + inputLength] = ColoredChar.Empty; // Remove last char (leftover after moving text back)
+            inputBuffer[_commandPrefix.Length + inputLength] = ColoredChar.Empty; // Remove last char (leftover after moving text back)
 
             RedrawInput();
         }
 
         private static void RemoveInput(int index, int length)
         {
-            if (length < 1 || index < commandPrefix.Length || index + length > commandPrefix.Length + inputLength) // Make sure that range is not out of bounds
+            if (length < 1 || index < _commandPrefix.Length || index + length > _commandPrefix.Length + inputLength) // Make sure that range is not out of bounds
             {
                 return;
             }
@@ -604,14 +586,14 @@ namespace Obsidian.IO.Console
                 inputBuffer[i] = ColoredChar.Empty;
             }
 
-            for (int i = index + length; i < commandPrefix.Length + inputLength; i++) // Move following text back
+            for (int i = index + length; i < _commandPrefix.Length + inputLength; i++) // Move following text back
             {
                 inputBuffer[i - length] = inputBuffer[i];
             }
 
             inputLength -= length;
 
-            for (int i = commandPrefix.Length + inputLength; i < commandPrefix.Length + inputLength + length; i++) // Remove last -length- chars (leftover after moving text back)
+            for (int i = _commandPrefix.Length + inputLength; i < _commandPrefix.Length + inputLength + length; i++) // Remove last -length- chars (leftover after moving text back)
             {
                 inputBuffer[i] = ColoredChar.Empty;
             }
@@ -630,13 +612,13 @@ namespace Obsidian.IO.Console
 
         private static void ClearInput()
         {
-            for (int i = commandPrefix.Length; i < inputBuffer.Length; i++)
+            for (int i = _commandPrefix.Length; i < inputBuffer.Length; i++)
             {
                 inputBuffer[i] = ColoredChar.Empty;
             }
             inputLeft = 0;
             inputLength = 0;
-            cursorPosition = commandPrefix.Length;
+            cursorPosition = _commandPrefix.Length;
             Console.SetCursorPosition(cursorPosition, inputRect.Top);
             RedrawInput();
         }
@@ -646,7 +628,7 @@ namespace Obsidian.IO.Console
             Span<char> input = stackalloc char[inputLength];
             for (int i = 0; i < inputLength; i++)
             {
-                input[i] = inputBuffer[i + commandPrefix.Length].character;
+                input[i] = inputBuffer[i + _commandPrefix.Length].character;
             }
 
             ClearInput();
@@ -660,13 +642,13 @@ namespace Obsidian.IO.Console
         // Overwrites current input with specified text
         private static void SetInput(string text)
         {
-            for (int i = commandPrefix.Length; i < inputBuffer.Length; i++)
+            for (int i = _commandPrefix.Length; i < inputBuffer.Length; i++)
             {
                 inputBuffer[i] = ColoredChar.Empty;
             }
             for (int i = 0; i < text.Length; i++)
             {
-                inputBuffer[i + commandPrefix.Length] = new ColoredChar(text[i], (short)inputColor);
+                inputBuffer[i + _commandPrefix.Length] = new ColoredChar(text[i], (short)inputColor);
             }
 
             inputLength = text.Length;
@@ -684,10 +666,10 @@ namespace Obsidian.IO.Console
             else if (index < inputLeft)
             {
                 inputLeft = index;
-                if (inputLeft == commandPrefix.Length)
+                if (inputLeft == _commandPrefix.Length)
                 {
                     inputLeft = 0;
-                    cursorPosition = commandPrefix.Length;
+                    cursorPosition = _commandPrefix.Length;
                 }
                 else
                 {
@@ -705,8 +687,8 @@ namespace Obsidian.IO.Console
 
         private static void MoveCursorToEnd()
         {
-            inputLeft = Math.Max(0, commandPrefix.Length + inputLength - width + 1);
-            cursorPosition = commandPrefix.Length + inputLength - inputLeft;
+            inputLeft = Math.Max(0, _commandPrefix.Length + inputLength - width + 1);
+            cursorPosition = _commandPrefix.Length + inputLength - inputLeft;
             Console.SetCursorPosition(cursorPosition, inputRect.Top);
             RedrawInput();
         }
@@ -716,7 +698,7 @@ namespace Obsidian.IO.Console
         {
             index += step;
             bool insideWord = true;
-            for (; index >= commandPrefix.Length && index < commandPrefix.Length + inputLength; index += step)
+            for (; index >= _commandPrefix.Length && index < _commandPrefix.Length + inputLength; index += step)
             {
                 char c = inputBuffer[index].character;
                 bool isDelimiter = char.IsWhiteSpace(c) || c == '@';
@@ -727,18 +709,18 @@ namespace Obsidian.IO.Console
                 }
                 else if (!isDelimiter && !insideWord)
                 {
-                    return Math.Clamp(index - step, commandPrefix.Length, commandPrefix.Length + inputLength);
+                    return Math.Clamp(index - step, _commandPrefix.Length, _commandPrefix.Length + inputLength);
                 }
             }
-            return Math.Clamp(index, commandPrefix.Length, commandPrefix.Length + inputLength);
+            return Math.Clamp(index, _commandPrefix.Length, _commandPrefix.Length + inputLength);
         }
 
         // Note: clears input
-        private static void ChangeCommandPrefixInternal(string value)
+        private static partial void ChangeCommandPrefixInternal(string value)
         {
             value ??= string.Empty;
 
-            commandPrefix = value;
+            _commandPrefix = value;
             for (int i = 0; i < value.Length; i++)
             {
                 inputBuffer[i] = new ColoredChar(value[i], (short)inputColor);

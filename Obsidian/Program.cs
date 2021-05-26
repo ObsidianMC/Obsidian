@@ -49,6 +49,7 @@ namespace Obsidian
             CL.RegisterCommand("eval", EvalCommand);
             CL.RegisterCommand("stop", StopCommand);
             CL.RegisterCommand("stopall", ExitCommand);
+            CL.RegisterCommand("help", HelpCommand);
 
             if (File.Exists(globalConfigFile))
             {
@@ -101,6 +102,17 @@ namespace Obsidian
 
             CL.WriteLine("Server(s) killed. Press any key to return...");
             CL.WaitForExit();
+        }
+
+        private static ValueTask HelpCommand(string[] args, ReadOnlyMemory<char> fullArgs)
+        {
+            CL.WriteLine(@"help - list all commands
+switch - set commands scope to global
+switch <id> - set commands scope to a specific server
+eval /<command> - executes the command
+stop - stops the current server
+stopall - stops all servers");
+            return ValueTask.CompletedTask;
         }
 
         private static ValueTask SwitchCommand(string[] args, ReadOnlyMemory<char> fullArgs)

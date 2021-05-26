@@ -9,11 +9,6 @@ namespace Obsidian.IO.Console
     {
         private static TextWriter consoleOut;
 
-        static CommandLine()
-        {
-            Console.CancelKeyPress += (sender, args) => args.Cancel = CancelKeyPress?.Invoke() ?? false;
-        }
-
         private static partial void TakeControlInternal()
         {
             consoleOut = Console.Out;

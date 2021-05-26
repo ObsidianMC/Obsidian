@@ -6,21 +6,6 @@ namespace Obsidian.IO.Console
 {
     public static partial class CommandLine
     {
-        // Some implementation is platform specific
-        // These members need to be implemented for all platforms:
-        //
-        // ConsoleColor ForegroundColor { get; set; }
-        // ConsoleColor BackgroundColor { get; set; }
-        // void ResetColor()
-        // void Write(string text)
-        // void Write(ReadOnlySpan<char> text)
-        // void WriteLine()
-        // void WriteLine(string text)
-        // void WriteLine(ReadOnlySpan<char> text)
-        // 
-        // void TakeControlInternal()
-        // void ChangeCommandPrefixInternal(string value)
-        //
         // Reading key in a dedicated loop must check if the exitSemaphore
         // is not null, and if so, release it.
 
@@ -28,9 +13,35 @@ namespace Obsidian.IO.Console
 
         public static string CommandPrefix
         {
-            get => commandPrefix;
+            get => _commandPrefix;
             set => ChangeCommandPrefixInternal(value);
         }
+
+        private static readonly string defaultCommandPrefix = "> ";
+        private static string _commandPrefix = defaultCommandPrefix;
+
+        public static ConsoleColor ForegroundColor
+        {
+            get => _foregroundColor;
+            set
+            {
+                _foregroundColor = value;
+                SetForegroundColor(value);
+            }
+        }
+
+        public static ConsoleColor BackgroundColor
+        {
+            get => _backgroundColor;
+            set
+            {
+                _backgroundColor = value;
+                SetBackgroundColor(value);
+            }
+        }
+
+        private static ConsoleColor _foregroundColor;
+        private static ConsoleColor _backgroundColor;
 
         public static event Func<bool>? CancelKeyPress;
 
@@ -38,11 +49,23 @@ namespace Obsidian.IO.Console
 
         private static SemaphoreSlim? exitSemaphore;
 
-        private static readonly string defaultCommandPrefix = "> ";
-        private static string commandPrefix = defaultCommandPrefix;
+        
         private static readonly ConsoleColor inputColor = ConsoleColor.White;
 
         private static bool hasControl;
+
+        public static partial void ResetColor();
+        private static partial void SetForegroundColor(ConsoleColor color);
+        private static partial void SetBackgroundColor(ConsoleColor color);
+
+        public static partial void Write(string text);
+        public static partial void Write(ReadOnlySpan<char> text);
+        public static partial void WriteLine();
+        public static partial void WriteLine(string text);
+        public static partial void WriteLine(ReadOnlySpan<char> text);
+
+        private static partial void TakeControlInternal();
+        private static partial void ChangeCommandPrefixInternal(string value);
 
         public static void RegisterCommand(string command, CommandCallback callback)
         {
