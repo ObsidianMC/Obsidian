@@ -9,9 +9,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     [ClientOnly]
     public partial class UpdateHealth: ISerializablePacket
     {
-         [Field(0)] public float Health { get; set; }
-         
-         [VarLength]
+        [Field(0)] public float Health { get; set; }
+
+        [VarLength]
          [Field(1)] public int Food { get; set; }
          
          [Field(2)] public float FoodSaturation { get; set; }
