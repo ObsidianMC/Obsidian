@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -17,8 +18,8 @@ namespace Obsidian.Tests
 
             var cmd = new CommandParser("/");
 
-            cmd.IsCommandQualified(message, out string qualified);
-            var split = cmd.SplitQualifiedString(qualified);
+            cmd.IsCommandQualified(message.AsMemory(), out ReadOnlyMemory<char> qualified);
+            var split = cmd.SplitQualifiedString(qualified.Span);
             Assert.Equal(split, expected);
         }
 
