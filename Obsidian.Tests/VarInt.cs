@@ -1,3 +1,4 @@
+using Obsidian.IO;
 using Obsidian.Net;
 
 using System.Collections.Generic;
@@ -8,6 +9,19 @@ namespace Obsidian.Tests
 {
     public class VarInt
     {
+        [MemberData(nameof(VarIntData))]
+        [Theory(DisplayName = "Serialization of VarInt")]
+        public void Serialize(int input, byte[] expectedOutput)
+        {
+            var writer = MemoryWriter.WithBuffer(5);
+            writer.WriteVarInt(input);
+
+            byte[] actualBytes = writer.Memory.ToArray();
+
+            Assert.InRange(writer.BytesWritten, 1, 5);
+            Assert.Equal(expectedOutput, actualBytes);
+        }
+        
         [MemberData(nameof(VarIntData))]
         [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
         public async void SerializeAsync(int input, byte[] bytes)

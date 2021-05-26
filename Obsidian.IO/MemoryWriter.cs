@@ -25,6 +25,7 @@ namespace Obsidian.IO
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public struct MemoryWriter : IDisposable
     {
+        public ReadOnlyMemory<byte> Memory => new(buffer, 0, (int)index);
         public byte[] Buffer => buffer;
         public long BytesWritten => index;
 
@@ -299,37 +300,44 @@ namespace Obsidian.IO
 
         public void WriteVarInt(int value)
         {
-            var unsigned = (uint)value;
+            ref byte source = ref GetRef();
+            ref byte target = ref source;
 
-            do
+            uint unsigned = (uint)value;
+
+        WRITE_BYTE:
+            target = (byte)(unsigned & 127);
+            unsigned >>= 7;
+
+            if (unsigned != 0)
             {
-                var temp = (byte)(unsigned & 127);
-                unsigned >>= 7;
-
-                if (unsigned != 0)
-                    temp |= 128;
-
-                buffer[index++] = temp;
+                target |= 128;
+                target = ref Unsafe.Add(ref target, 1);
+                goto WRITE_BYTE;
             }
-            while (unsigned != 0);
+
+            index += Unsafe.ByteOffset(ref source, ref target) + 1;
         }
 
         public void WriteVarLong(long value)
         {
-            var unsigned = (ulong)value;
+            ref byte source = ref GetRef();
+            ref byte target = ref source;
 
-            do
+            ulong unsigned = (ulong)value;
+
+        WRITE_BYTE:
+            target = (byte)(unsigned & 127);
+            unsigned >>= 7;
+
+            if (unsigned != 0)
             {
-                var temp = (byte)(unsigned & 127);
-
-                unsigned >>= 7;
-
-                if (unsigned != 0)
-                    temp |= 128;
-
-                buffer[index++] = temp;
+                target |= 128;
+                target = ref Unsafe.Add(ref target, 1);
+                goto WRITE_BYTE;
             }
-            while (unsigned != 0);
+
+            index += Unsafe.ByteOffset(ref source, ref target) + 1;
         }
         #endregion
 

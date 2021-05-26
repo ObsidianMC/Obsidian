@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.IO;
+using Obsidian.Net;
 
 using System.Collections.Generic;
 
@@ -8,6 +9,19 @@ namespace Obsidian.Tests
 {
     public class VarLong
     {
+        [MemberData(nameof(VarLongData))]
+        [Theory(DisplayName = "Serialization of VarLong")]
+        public void Serialize(long input, byte[] expectedOutput)
+        {
+            var writer = MemoryWriter.WithBuffer(10);
+            writer.WriteVarLong(input);
+
+            byte[] actualBytes = writer.Memory.ToArray();
+
+            Assert.InRange(input, 1, 10);
+            Assert.Equal(expectedOutput, actualBytes);
+        }
+        
         [MemberData(nameof(VarLongData))]
         [Theory(DisplayName = "Serialization of VarLongs", Timeout = 100)]
         public async void SerializeAsync(long input, byte[] bytes)
