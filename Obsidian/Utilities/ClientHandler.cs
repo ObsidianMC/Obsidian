@@ -35,7 +35,7 @@ namespace Obsidian
             Packets.TryAdd(0x10, new KeepAlive());
             //Packets.TryAdd(0x11, LockDifficulty);
             Packets.TryAdd(0x12, new PlayerPosition());
-            Packets.TryAdd(0x13, new ServerPlayerPositionLook());
+            Packets.TryAdd(0x13, new PlayerPositionAndRotation());
             Packets.TryAdd(0x14, new PlayerRotation());
             //Packets.TryAdd(0x15, PlayerMovement);
             //Packets.TryAdd(0x16, VehicleMove);

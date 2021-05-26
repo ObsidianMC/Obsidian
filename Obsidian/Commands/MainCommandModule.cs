@@ -7,10 +7,13 @@ using Obsidian.Entities;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Commands
 {
@@ -21,6 +24,7 @@ namespace Obsidian.Commands
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
         public async Task HelpAsync(CommandContext Context) => await HelpAsync(Context, 1);
+        
         [CommandOverload]
         public async Task HelpAsync(CommandContext Context, int page)
         {
@@ -363,6 +367,23 @@ namespace Obsidian.Commands
                 server.StopServer();
             });
         }
+        #endregion
+
+        #region time
+
+        [Command("time")]
+        [CommandInfo("Sets declared time", "/time <timeOfDay>")]
+        public async Task TimeAsync(CommandContext Context) => TimeAsync(Context, 1337);
+        [CommandOverload]
+        public async Task TimeAsync(CommandContext Context,int time)
+        {
+            var player = Context.Player as Player;
+            player.client.SendPacket(new TimeUpdate(0, time));
+            await player.SendMessageAsync($"Time set to {time}");
+        }
+        
+        
+        
         #endregion
 
         #region permissions

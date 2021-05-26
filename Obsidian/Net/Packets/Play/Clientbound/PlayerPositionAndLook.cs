@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     }
 
     [ClientOnly]
-    public partial class ClientPlayerPositionLook : ISerializablePacket
+    public partial class PlayerPositionAndLook : ISerializablePacket
     {
         [Field(0), Absolute]
         public VectorF Position { get; set; }
@@ -36,10 +36,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int TeleportId { get; set; }
 
         public int Id => 0x34;
-
-        public ClientPlayerPositionLook()
-        {
-        }
 
         public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 

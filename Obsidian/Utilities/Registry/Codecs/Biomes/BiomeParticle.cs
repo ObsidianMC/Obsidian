@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Obsidian.Nbt.Tags;
+using Obsidian.Nbt;
 using Obsidian.Utilities.Converters;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
@@ -15,14 +15,14 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
         {
             var particle = new NbtCompound("particle")
             {
-                new NbtFloat("probability", this.Probability)
+                new NbtTag<float>("probability", this.Probability)
             };
 
             if (this.Options != null)
             {
                 var options = new NbtCompound("options")
                 {
-                    new NbtString("type", this.Options.Type)
+                    new NbtTag<string>("type", this.Options.Type)
                 };
 
                 particle.Add(options);

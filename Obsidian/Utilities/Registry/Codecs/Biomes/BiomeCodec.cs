@@ -1,4 +1,4 @@
-﻿using Obsidian.Nbt.Tags;
+﻿using Obsidian.Nbt;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {
@@ -14,8 +14,8 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
         {
             var compound = new NbtCompound
             {
-                new NbtString("name", this.Name),
-                new NbtInt("id", this.Id)
+                new NbtTag<string>("name", this.Name),
+                new NbtTag<int>("id", this.Id)
             };
 
             this.Element.Write(compound);

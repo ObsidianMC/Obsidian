@@ -28,22 +28,6 @@ namespace Obsidian.Entities
         public Angle Pitch { get; set; }
 
         public Angle Yaw { get; set; }
-
-        public VectorF LookDirection
-        {
-            get
-            {
-                float yaw = Yaw, pitch = Pitch; // avoid multiple conversions
-                float pitchCos = MathF.Cos(pitch);
-                VectorF direction = new VectorF
-                {
-                    X = MathF.Cos(yaw) * pitchCos,
-                    Y = MathF.Sin(yaw) * pitchCos,
-                    Z = MathF.Sin(pitch)
-                };
-                return direction;
-            }
-        }
         #endregion Location properties
 
         public int EntityId { get; internal set; }
@@ -108,6 +92,12 @@ namespace Obsidian.Entities
                     Yaw = yaw,
                     Pitch = pitch
                 }, this.EntityId);
+
+                server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                {
+                    EntityId = this.EntityId,
+                    HeadYaw = yaw
+                });
 
                 this.CopyLook();
                 this.UpdatePosition(yaw, pitch, onGround);

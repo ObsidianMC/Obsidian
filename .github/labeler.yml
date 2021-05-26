@@ -1,0 +1,30 @@
+github-actions:
+  - .github/workflows/*
+  - .github/workflows/**/*
+
+api:
+  - Obsidian.API/*
+  - Obsidian.API/**/*
+  
+commands:
+  - Obsidian/Commands/*
+  - Obsidian/Commands/**/*
+  - Obsidian.API/_Attributes/*
+  
+nbt:
+  - Obsidian.Nbt/*
+  - Obsidian.Nbt/**/*
+
+plugins:
+  - Obsidian/Plugins/*
+  - Obsidian/Plugins/**/*
+  - Obsidian.API/Plugins/*
+  - SamplePlugin/*
+
+source-generation:
+  - Obsidian.SourceGenerators/*
+  - Obsidian.SourceGenerators/**/*
+
+tests:
+  - Obsidian.Tests/*
+  - Obsidian.Tests/**/*
