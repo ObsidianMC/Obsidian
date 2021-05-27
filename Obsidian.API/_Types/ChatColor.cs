@@ -12,7 +12,7 @@ namespace Obsidian.API
         public char Code { get; }
         public string Name { get; }
 
-        public ChatColor(char code, string name, Color? color = null, ConsoleColor? consoleColor = null)
+        private ChatColor(char code, string name, Color? color = null, ConsoleColor? consoleColor = null)
         {
             Code = code;
             Name = name;
@@ -103,7 +103,7 @@ namespace Obsidian.API
         #endregion
 
         #region Effects
-        public static readonly ChatColor Obfuscated = new('k', "bold");
+        public static readonly ChatColor Obfuscated = new('k', "obfuscated");
         public static readonly ChatColor Bold = new('l', "bold");
         public static readonly ChatColor Strikethrough = new('m', "strikethrough");
         public static readonly ChatColor Underline = new('n', "underline");
