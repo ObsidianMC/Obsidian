@@ -285,7 +285,9 @@ namespace Obsidian.WorldData
         {
             var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
 
-            var writer = new NbtWriter(worldFile.OpenWrite(), NbtCompression.GZip, "");
+            using var fs = worldFile.OpenWrite();
+
+            var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
             writer.WriteBool("hardcore", false);
             writer.WriteBool("MapFeatures", true);
@@ -412,8 +414,8 @@ namespace Obsidian.WorldData
                     return;
                 }
                 Chunk c = Generator.GenerateChunk(job.x, job.z);
-                var index = (x: NumericsHelper.Modulo(c.X, Region.cubicRegionSize), z: NumericsHelper.Modulo(c.Z, Region.cubicRegionSize));
-                region.LoadedChunks[index.x, index.z] = c;
+                var (x, z) = (NumericsHelper.Modulo(c.X, Region.cubicRegionSize), NumericsHelper.Modulo(c.Z, Region.cubicRegionSize));
+                region.LoadedChunks[x, z] = c;
             });
         }
 

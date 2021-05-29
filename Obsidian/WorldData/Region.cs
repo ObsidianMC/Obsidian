@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities;
@@ -6,7 +7,6 @@ using Obsidian.Utilities.Collection;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +26,7 @@ namespace Obsidian.WorldData
 
         public string RegionFolder { get; }
 
-        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
+        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
 
         public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
@@ -81,11 +81,13 @@ namespace Obsidian.WorldData
 
             using var fileStream = regionFile.OpenWrite();
 
-            var writer = new NbtWriter(fileStream, NbtCompression.GZip, "");
+            var writer = new NbtWriter(fileStream, NbtCompression.GZip);
 
             writer.WriteTag(this.GetNbt());
 
             writer.BaseStream.Flush();
+
+            writer.TryFinish();
 
             backupRegionFile?.Delete();
 
