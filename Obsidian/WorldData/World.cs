@@ -286,28 +286,31 @@ namespace Obsidian.WorldData
             var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
 
             var writer = new NbtWriter(worldFile.OpenWrite(), NbtCompression.GZip, "");
-            var levelCompound = new NbtCompound("Data")
-            {
-                new NbtTag<byte>("hardcore", 1),
-                new NbtTag<byte>("MapFeatures", 1),
-                new NbtTag<byte>("raining", 0),
-                new NbtTag<byte>("thundering", 0),
-                new NbtTag<int>("GameType", (int)Gamemode.Creative),
-                new NbtTag<int>("generatorVersion", 1),
-                new NbtTag<int>("rainTime", 0),
-                new NbtTag<int>("SpawnX", Data.SpawnX),
-                new NbtTag<int>("SpawnY", Data.SpawnY),
-                new NbtTag<int>("SpawnZ", Data.SpawnZ),
-                new NbtTag<int>("thunderTime", 0),
-                new NbtTag<int>("version", 19133),
-                new NbtTag<long>("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds()),
-                new NbtTag<long>("RandomSeed", 1),
-                new NbtTag<long>("Time", 0),
-                new NbtTag<string>("generatorName", Generator.Id),
-                new NbtTag<string>("LevelName", Name)
-            };
 
-            writer.WriteTag(levelCompound);
+            writer.WriteBool("hardcore", false);
+            writer.WriteBool("MapFeatures", true);
+            writer.WriteBool("raining", false);
+            writer.WriteBool("thundering", false);
+
+            writer.WriteInt("GameType", (int)Gamemode.Creative);
+            writer.WriteInt("generatorVersion", 1);
+            writer.WriteInt("rainTime", 0);
+            writer.WriteInt("SpawnX", Data.SpawnX);
+            writer.WriteInt("SpawnY", Data.SpawnY);
+            writer.WriteInt("SpawnZ", Data.SpawnZ);
+            writer.WriteInt("thunderTime", 0);
+            writer.WriteInt("version", 19133);
+
+            writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
+            writer.WriteLong("RandomSeed", 1);
+            writer.WriteLong("Time", this.Time);
+
+            writer.WriteString("generatorName", Generator.Id);
+            writer.WriteString("LevelName", Name);
+
+            writer.EndCompound();
+
+            writer.TryFinish();
         }
 
         public void LoadPlayer(Guid uuid)

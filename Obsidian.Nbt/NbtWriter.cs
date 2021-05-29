@@ -113,6 +113,9 @@ namespace Obsidian.Nbt
 
         private bool CheckIfList()
         {
+            if (this.rootNodes.Count <= 0)
+                return false;
+
             var newRoot = this.rootNodes.Peek();
 
             if (newRoot.Type == NbtTagType.List)
@@ -169,19 +172,7 @@ namespace Obsidian.Nbt
                     this.WriteListStart(name, list.ListType, list.Count);
 
                     foreach (var child in list)
-                    {
                         this.WriteTag(child);
-
-                        if (list.Count == 3)
-                        {
-                            Console.WriteLine("Wrote Tag");
-                        }
-                    }
-
-                    if (list.Count == 3)
-                    {
-                        Console.WriteLine("Finished list");
-                    }
 
                     this.EndList();
                     break;
@@ -311,12 +302,10 @@ namespace Obsidian.Nbt
 
         public void Validate(string name, NbtTagType type)
         {
-            var parent = this.rootNodes.Peek();
-
-            if (string.IsNullOrEmpty(name) && parent.Type == NbtTagType.Compound)
+            if (string.IsNullOrEmpty(name) && this.RootType == NbtTagType.Compound)
                 throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
 
-            if (parent.Type == NbtTagType.List)
+            if (this.RootType == NbtTagType.List)
             {
                 if (this.expectedListType != type)
                     throw new InvalidOperationException($"Expected list type: {this.expectedListType}. Got: {type}");
