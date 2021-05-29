@@ -77,7 +77,7 @@ namespace Obsidian.WorldData
             FileInfo backupRegionFile = null;
 
             if (regionFile.Exists)
-                backupRegionFile = regionFile.CopyTo(path + ".bak");
+                backupRegionFile = regionFile.CopyTo($"{path}.bak", true);
 
             using var fileStream = regionFile.OpenWrite();
 
@@ -117,7 +117,7 @@ namespace Obsidian.WorldData
 
             foreach (var chunkNbt in chunksNbt)
             {
-                var chunk = GetChunkFromNbt((NbtCompound) chunkNbt);
+                var chunk = GetChunkFromNbt((NbtCompound)chunkNbt);
                 var index = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
                 LoadedChunks[index.Item1, index.Item2] = chunk;
             }

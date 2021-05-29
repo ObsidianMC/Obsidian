@@ -13,7 +13,6 @@ using Obsidian.Utilities;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -1065,6 +1064,20 @@ namespace Obsidian.Net
 
                 WriteItemStack(smithingRecipe.Result.First());
             }
+        }
+
+        [WriteMethod]
+        public void WriteNbt(INbtTag nbt)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(nbt);
+        }
+
+        [WriteMethod]
+        public void WriteNbtCompound(NbtCompound compound)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(compound);
         }
 
         [WriteMethod]

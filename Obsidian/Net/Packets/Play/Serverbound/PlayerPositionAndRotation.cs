@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class ServerPlayerPositionLook : IPacket
+    public partial class PlayerPositionAndRotation : IPacket
     {
         [Field(0), Absolute]
         public VectorF Position { get; set; }
 
         [Field(1)]
-        public float Pitch { get; set; }
+        public float Yaw { get; set; }
 
         [Field(2)]
-        public float Yaw { get; set; }
+        public float Pitch { get; set; }
 
         [Field(3)]
         public bool OnGround { get; set; }
