@@ -10,12 +10,12 @@ namespace Obsidian.Nbt
     {
         private NbtTagType? expectedListType;
 
-        private Stack<NbtTagType> rootTags = new();
+        private Stack<Node> rootNodes = new();
 
         private int listSize;
         private int listIndex;
 
-        public NbtTagType RootType => this.rootTags.Count > 0 ? this.rootTags.Peek() : NbtTagType.Unknown;
+        public NbtTagType RootType => this.rootNodes.Count > 0 ? this.rootNodes.Peek().Type : NbtTagType.Unknown;
 
         public Stream BaseStream { get; }
 
@@ -26,33 +26,42 @@ namespace Obsidian.Nbt
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
 
-            this.AddRootTag(NbtTagType.Compound);
+            this.AddRootTag(new Node { Type = NbtTagType.Compound });
         }
 
         public NbtWriter(Stream outstream, NbtCompression compressionMode, string name = "")
         {
-            //TODO do ZLib compression
+            //TODO ZLib compression
             this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
 
-            this.AddRootTag(NbtTagType.Compound);
+            this.AddRootTag(new Node { Type = NbtTagType.Compound });
         }
 
-        private void AddRootTag(NbtTagType type) => this.rootTags.Push(type);
+        private void AddRootTag(Node node)
+        {
+            if (this.RootType == NbtTagType.List)
+            {
+                this.rootNodes.Peek().ListIndex = this.listIndex;
+                this.listIndex = 0;
+            }
+
+            this.rootNodes.Push(node);
+        }
 
         public void WriteCompoundStart(string name = "")
         {
             this.Validate(name, NbtTagType.Compound);
 
-            if (this.rootTags.Peek() == NbtTagType.List)
+            if (this.RootType == NbtTagType.List)
             {
-                this.AddRootTag(NbtTagType.Compound);
+                this.AddRootTag(new Node { Type = NbtTagType.Compound });
                 return;
             }
 
-            this.AddRootTag(NbtTagType.Compound);
+            this.AddRootTag(new Node { Type = NbtTagType.Compound });
 
             this.Write(NbtTagType.Compound);
             this.WriteString(name);
@@ -62,7 +71,7 @@ namespace Obsidian.Nbt
         {
             this.Validate(name, NbtTagType.List);
 
-            this.AddRootTag(NbtTagType.List);
+            this.AddRootTag(new Node { Type = NbtTagType.List, ListSize = length, ExpectedListType = listType });
 
             this.listSize = length;
             this.expectedListType = listType;
@@ -78,9 +87,12 @@ namespace Obsidian.Nbt
             if (this.listIndex < this.listSize)
                 throw new InvalidOperationException("List cannot end because its size is smaller than the pre-defined size.");
 
-            var tag = this.rootTags.Pop();
-            if (tag != NbtTagType.List)
+            var tag = this.rootNodes.Pop();
+            if (tag.Type != NbtTagType.List)
                 throw new InvalidOperationException();
+
+            if (this.CheckIfList())
+                return;
 
             this.listSize = 0;
             this.listIndex = 0;
@@ -89,11 +101,30 @@ namespace Obsidian.Nbt
 
         public void EndCompound()
         {
-            var tag = this.rootTags.Pop();
-            if (tag != NbtTagType.Compound)
+            var tag = this.rootNodes.Pop();
+            if (tag.Type != NbtTagType.Compound)
                 throw new InvalidOperationException();
 
+            if (this.CheckIfList())
+                return;
+
             this.Write(NbtTagType.End);
+        }
+
+        private bool CheckIfList()
+        {
+            var newRoot = this.rootNodes.Peek();
+
+            if (newRoot.Type == NbtTagType.List)
+            {
+                this.listSize = newRoot.ListSize.Value;
+                this.listIndex = newRoot.ListIndex.Value;
+                this.expectedListType = newRoot.ExpectedListType.Value;
+
+                return true;
+            }
+
+            return false;
         }
 
         public void WriteTag(INbtTag tag)
@@ -138,7 +169,19 @@ namespace Obsidian.Nbt
                     this.WriteListStart(name, list.ListType, list.Count);
 
                     foreach (var child in list)
+                    {
                         this.WriteTag(child);
+
+                        if (list.Count == 3)
+                        {
+                            Console.WriteLine("Wrote Tag");
+                        }
+                    }
+
+                    if (list.Count == 3)
+                    {
+                        Console.WriteLine("Finished list");
+                    }
 
                     this.EndList();
                     break;
@@ -268,12 +311,12 @@ namespace Obsidian.Nbt
 
         public void Validate(string name, NbtTagType type)
         {
-            var parent = this.rootTags.Peek();
+            var parent = this.rootNodes.Peek();
 
-            if (string.IsNullOrEmpty(name) && parent == NbtTagType.Compound)
+            if (string.IsNullOrEmpty(name) && parent.Type == NbtTagType.Compound)
                 throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
 
-            if (parent == NbtTagType.List)
+            if (parent.Type == NbtTagType.List)
             {
                 if (this.expectedListType != type)
                     throw new InvalidOperationException($"Expected list type: {this.expectedListType}. Got: {type}");
@@ -288,7 +331,7 @@ namespace Obsidian.Nbt
 
         public void TryFinish()
         {
-            if (this.rootTags.Count > 0)
+            if (this.rootNodes.Count > 0)
                 throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
 
             this.BaseStream.Flush();
@@ -296,5 +339,16 @@ namespace Obsidian.Nbt
 
         public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
         public void Dispose() => this.BaseStream.Dispose();
+
+        private class Node
+        {
+            public NbtTagType Type { get; set; }
+
+            public int? ListSize { get; set; }
+
+            public int? ListIndex { get; set; }
+
+            public NbtTagType? ExpectedListType { get; set; }
+        }
     }
 }
