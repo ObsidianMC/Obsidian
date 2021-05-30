@@ -10,7 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
     public class OverworldTerrain
     {
-        private Module Result { get; set; }
+        public Module Result { get; set; }
 
         private readonly OverworldTerrainSettings settings;
 
@@ -22,7 +22,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         {
             settings = ots;
 
-            plains = new PlainsTerrain(ots);
+            /*plains = new PlainsTerrain(ots);
             hills = new HillsTerrain(ots);
             badlands = new BadlandsTerrain(ots);
             mountains = new MountainsTerrain(ots);
@@ -39,7 +39,72 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 Scale = (settings.MaxElev - settings.MinElev) / 2.0,
                 Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
                 Source0 = MergeTerrain(),
+            };*/
+
+            Module lowNoise = new ScalePoint
+            {
+                XScale = 171.103,
+                YScale = 85.5515,
+                ZScale = 171.103,
+                Source0 = new Perlin
+                {
+                    OctaveCount = 16,
+                    //Persistence = 0.5,
+                    Lacunarity = 1,
+                    Frequency = 1 / 191.51,
+                    Seed = settings.Seed
+                }
             };
+
+            Module highNoise = new ScalePoint
+            {
+                XScale = 171.103,
+                YScale = 85.5515,
+                ZScale = 171.103,
+                Source0 = new Perlin
+                {
+                    OctaveCount = 16,
+                    //Persistence = 0.5,
+                    Lacunarity = 1,
+                    Frequency = 1 / 191.51,
+                    Seed = settings.Seed + 1
+                }
+            };
+
+            Module selectorNoise = new ScalePoint
+            {
+                XScale = 1, //2.138,
+                YScale = 1.069,
+                ZScale = 1, //2.138,
+                Source0 = new Perlin
+                {
+                    OctaveCount = 8,
+                    //Persistence = 0.5,
+                    Lacunarity = 12.75,
+                    Frequency = 1 / 59.85,
+                    Seed = settings.Seed + 2
+                }
+            };
+
+            Module final = new Select
+            {
+                Source0 = highNoise,
+                Source1 = lowNoise,
+                Control = selectorNoise,
+                LowerBound = -0.5,
+                UpperBound = 0.5,
+                EdgeFalloff = 0.2
+            };
+
+            Result = new ScaleBias
+            {
+                Scale = (settings.MaxElev - settings.MinElev) / 2.0,
+                Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
+                Source0 = final
+            };
+
+            Result = selectorNoise;
+
         }
 
         public double GetValue(double x, double z, double y = 0)

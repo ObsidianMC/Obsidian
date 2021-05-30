@@ -169,8 +169,8 @@ namespace Obsidian.WorldData.Generators.Overworld
         public OverworldTerrainSettings()
         {
             Seed = 1337;
-            MinElev = 40;
-            MaxElev = 168;
+            MinElev = 40; // 0; // 40;
+            MaxElev = 168; // 256; // 168;
             ContinentFrequency = 0.5;
 
             ContinentHeightScale = 1;
