@@ -1,16 +1,16 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.BossBar;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
+using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Util;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,10 +23,15 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
+        internal HashSet<int> visiblePlayers = new();
+
         public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
+
+        public string DisplayName { get; internal set; }
+
 
         /// <summary>
         /// The players inventory
@@ -106,89 +111,58 @@ namespace Obsidian.Entities
             LoadPerms();
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, bool onGround)
         {
             await base.UpdateAsync(server, position, onGround);
 
             this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 1))
-            {
-                if (entity is ItemEntity item)
-                {
-                    if (!item.CanPickup)
-                        continue;
+            await this.TrySpawnPlayerAsync(position, server);
 
-                    server.BroadcastPacketWithoutQueue(new CollectItem
-                    {
-                        CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
-                        PickupItemCount = item.Count
-                    });
-
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
-                    {
-                        Present = true
-                    });
-
-                    this.client.SendPacket(new SetSlot
-                    {
-                        Slot = (short)slot,
-
-                        WindowId = 0,
-
-                        SlotData = this.Inventory.GetItem(slot)
-                    });
-
-                    await item.RemoveAsync();
-                }
-            }
+            await this.PickupNearbyItemsAsync(server, 1);
         }
 
-        internal override async Task UpdateAsync(Server server, PositionF position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
             this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 0.8f))
-            {
-                if (entity is ItemEntity item)
-                {
-                    if (!item.CanPickup)
-                        continue;
+            await this.TrySpawnPlayerAsync(position, server);
 
-                    server.BroadcastPacketWithoutQueue(new CollectItem
-                    {
-                        CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
-                        PickupItemCount = item.Count
-                    });
-
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
-                    {
-                        Present = true
-                    });
-
-                    this.client.SendPacket(new SetSlot
-                    {
-                        Slot = (short)slot,
-
-                        WindowId = 0,
-
-                        SlotData = this.Inventory.GetItem(slot)
-                    });
-
-                    await item.RemoveAsync();
-                }
-            }
+            await this.PickupNearbyItemsAsync(server, 0.8f);
         }
 
         internal override async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, yaw, pitch, onGround);
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 2))
+            await this.PickupNearbyItemsAsync(server, 2);
+        }
+
+        private async Task TrySpawnPlayerAsync(VectorF position, Server server)
+        {
+            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
+            {
+                if (!this.visiblePlayers.Contains(player.EntityId))
+                {
+                    this.visiblePlayers.Add(player.EntityId);
+
+                    await this.client.QueuePacketAsync(new SpawnPlayer
+                    {
+                        EntityId = player.EntityId,
+                        Uuid = player.Uuid,
+                        Position = player.Position,
+                        Yaw = player.Yaw,
+                        Pitch = player.Pitch
+                    });
+                }
+            }
+        }
+
+        private async Task PickupNearbyItemsAsync(Server server, float distance = 0.5f)
+        {
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
             {
                 if (entity is ItemEntity item)
                 {
@@ -212,7 +186,8 @@ namespace Obsidian.Entities
 
                         SlotData = this.Inventory.GetItem(slot)
                     });
-                    _ = Task.Run(() => item.RemoveAsync());
+
+                    await item.RemoveAsync();
                 }
             }
         }
@@ -297,7 +272,7 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task TeleportAsync(PositionF pos)
+        public async Task TeleportAsync(VectorF pos)
         {
             this.LastPosition = this.Position;
             this.Position = pos;
@@ -313,24 +288,23 @@ namespace Obsidian.Entities
                     pos
                 ));
 
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = pos,
                 Flags = PositionFlags.None,
                 TeleportId = tid
             });
             this.TeleportId = tid;
-
         }
 
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
-            LastPosition = this.Position;
+            this.LastPosition = this.Position;
             this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
-            await this.client.QueuePacketAsync(new ClientPlayerPositionLook
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
                 Position = to.Position,
                 Flags = PositionFlags.None,
@@ -422,8 +396,35 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            await client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
+            var list = new List<PlayerInfoAction>()
+            {
+                new PlayerInfoUpdateGamemodeAction()
+                {
+                    Uuid = this.Uuid,
+                    Gamemode = (int)gamemode,
+                }
+            };
+
+            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(1, list));
+            await this.client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
+
             this.Gamemode = gamemode;
+        }
+
+        public async Task UpdateDisplayNameAsync(string newDisplayName)
+        {
+            var list = new List<PlayerInfoAction>()
+            {
+                new PlayerInfoUpdateDisplayNameAction()
+                {
+                    Uuid = this.Uuid,
+                    DisplayName = newDisplayName,
+                }
+            };
+
+            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
+
+            this.DisplayName = newDisplayName;
         }
 
         public async Task<bool> GrantPermission(string permission)

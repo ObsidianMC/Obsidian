@@ -45,6 +45,9 @@ namespace Obsidian.Chat
         public IEnumerable<IChatMessage> Extras => GetExtras();
         public IEnumerable<IChatMessage> GetExtras()
         {
+            if (Extra == null)
+                yield break;
+
             foreach (var extra in Extra)
             {
                 yield return extra;

@@ -1,5 +1,4 @@
-﻿
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System;
@@ -13,53 +12,42 @@ namespace Obsidian.Commands.Framework.Entities
     public class Command
     {
         public string Name { get; private set; }
-
         public string[] Aliases { get; private set; }
-
-        public Command Parent { get; private set; }
-
         public string Description { get; private set; }
         public string Usage { get; private set; }
-
-        public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
-
-        public List<MethodInfo> Overloads { get; internal set; }
-
-        internal PluginContainer Plugin;
+        internal CommandIssuers AllowedIssuers { get; set; }
 
         internal CommandHandler Handler { get; set; }
+        public List<MethodInfo> Overloads { get; internal set; }
+        public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
+        internal PluginContainer Plugin { get; }
 
+        public Command Parent { get; private set; }
         internal object ParentInstance { get; set; }
         internal Type ParentType { get; set; }
 
-        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks, 
-            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType)
+        public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks,
+            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType, CommandIssuers allowedIssuers)
         {
-            this.Name = name;
-            this.Aliases = aliases;
-            this.Parent = parent;
-            this.ExecutionChecks = checks;
-            this.Handler = handler;
-            this.Overloads = new List<MethodInfo>();
-            this.Description = description;
-            this.Usage = usage;
-            this.ParentInstance = parentinstance;
-            this.Plugin = plugin;
-            this.ParentType = parentType;
+            Name = name;
+            Aliases = aliases;
+            Parent = parent;
+            ExecutionChecks = checks;
+            Handler = handler;
+            Description = description;
+            Usage = usage;
+            ParentInstance = parentinstance;
+            Plugin = plugin;
+            ParentType = parentType;
+            AllowedIssuers = allowedIssuers;
+            Overloads = new List<MethodInfo>();
         }
 
         public bool CheckCommand(string[] input, Command parent)
         {
-            if (this.Parent == parent && input.Count() > 0)
+            if (Parent == parent && input.Length > 0)
             {
-                if (this.Name == input[0])
-                {
-                    return true;
-                }
-                else if (this.Aliases.Count() > 0)
-                {
-                    return this.Aliases.Contains(input[0]);
-                }
+                return Name == input[0] || Aliases.Contains(input[0]);
             }
 
             return false;
@@ -91,6 +79,13 @@ namespace Obsidian.Commands.Framework.Entities
         /// <returns></returns>
         public async Task ExecuteAsync(CommandContext context, string[] args)
         {
+            // Check whether the issuer can execute this command
+            if (!this.AllowedIssuers.HasFlag(context.Sender.Issuer))
+            {
+                throw new DisallowedCommandIssuerException(
+                    $"Command {this.GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
+            }
+
             // Find matching overload
             if (!this.Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
@@ -104,7 +99,7 @@ namespace Obsidian.Commands.Framework.Entities
             var method = this.Overloads.First(x => x.GetParameters().Length - 1 == args.Length
             || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
-            // create instance of declaring type to execute.
+            // Create instance of declaring type to execute.
             var obj = this.ParentInstance;
             if (obj == null && this.ParentType != null)
                 obj = await this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);

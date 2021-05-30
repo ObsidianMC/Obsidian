@@ -5,16 +5,16 @@
 [![Build Status](https://dev.azure.com/naamloos-ops/Obsidian/_apis/build/status/Naamloos.Obsidian?branchName=master)](https://dev.azure.com/naamloos-ops/Obsidian/_build/latest?definitionId=1&branchName=master)
 [![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
-[WIP] A C# implementation of the Minecraft server protocol (.NET 5)
+Obsidian is a C# .NET 5 implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
 
-## Roadmap
+## ✅ Roadmap
 - [x] A custom plugin framework
 - [x] Player movement/Info and chat
 - [x] Basic chunk loading
 - [x] Block breaking/placing
 - [ ] Other gamemodes besides creative
 - [ ] Usable storage and crafting blocks
-- [ ] Low memory usage
+- [x] Low memory usage
 - [ ] Inventory management
 - [ ] Daylight and weather cycle
 - [ ] Complete world generation
@@ -24,20 +24,22 @@
 - [ ] Support for spigot plugins
 - [ ] Backwards version compatibility
 
-## Contribute
-Read about how you can contribute [here](https://github.com/ObsidianServer/Obsidian/wiki/Contribute)
+## 💻 Contribute
+Contributions are always welcome! 
+Read about how you can contribute [here](https://obsidian-mc.net/articles/contrib.html)
 
-## Develop plugins
-Find out about plugin development [here](https://github.com/ObsidianServer/Obsidian/wiki/Plugin-development)
+## 🔌 Develop plugins
+Plugins are cool! Wanna make them yourself?
+Find out about plugin development [here](https://obsidian-mc.net/articles/plugins.html)
 
-## The Obsidian Team
+## 😎 The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
 - [Tides](https://github.com/Tides) (developer)
 - [Craftplacer](https://github.com/Craftplacer/) (developer)
 - [Seb-stian](https://github.com/Seb-stian) (developer)
 - [Jonpro03](https://github.com/Jonpro03) (developer)
 
-## Contributors
+## 💕 Contributors
 Big thanks to everyone that contributed!
 <a href="https://github.com/obsidianserver/obsidian/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=obsidianserver/obsidian" />

@@ -1,5 +1,5 @@
 ﻿using Obsidian.Chat;
-using Obsidian.Nbt.Tags;
+using Obsidian.Nbt;
 using System;
 using System.Collections.Generic;
 

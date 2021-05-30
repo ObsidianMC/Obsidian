@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class BlockAction : ISerializablePacket
     {
         [Field(0)]
-        public Position Position { get; set; }
+        public Vector Position { get; set; }
 
         [Field(1)]
         public byte ActionId { get; set; }

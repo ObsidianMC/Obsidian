@@ -1,8 +1,8 @@
 ﻿using Obsidian.API;
 using Obsidian.Blocks;
 using Obsidian.ChunkData;
-using Obsidian.Nbt.Tags;
-using Obsidian.Util;
+using Obsidian.Nbt;
+using Obsidian.Utilities;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -25,7 +25,7 @@ namespace Obsidian.WorldData
         public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
-        public List<NbtTag> BlockEntities { get; private set; } = new List<NbtTag>();
+        public List<INbtTag> BlockEntities { get; private set; } = new List<INbtTag>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
@@ -59,7 +59,7 @@ namespace Obsidian.WorldData
             }
         }
 
-        public Block GetBlock(Position position) => GetBlock(position.X, position.Y, position.Z);
+        public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
@@ -67,14 +67,14 @@ namespace Obsidian.WorldData
             return new Block(value);
         }
 
-        public void SetBlock(Position position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
+        public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
             SetBlockStateId(x, y, z, block.StateId);
 
-            x = Helpers.Modulo(x, 16);
-            z = Helpers.Modulo(z, 16);
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
 
             Sections[y >> 4].SetBlock(x, y & 15, z, block);
         }
@@ -82,25 +82,25 @@ namespace Obsidian.WorldData
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
-            x = Helpers.Modulo(x, 16);
-            z = Helpers.Modulo(z, 16);
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
 
             return this.BlockMetaStore.GetValueOrDefault(value);
         }
 
-        public BlockMeta GetBlockMeta(Position position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
+        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
-            x = Helpers.Modulo(x, 16);
-            z = Helpers.Modulo(z, 16);
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
             var value = (short)((x << 8) | (z << 4) | y);
 
             this.BlockMetaStore[value] = meta;
         }
 
-        public void SetBlockMeta(Position position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
+        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
 
         public void CalculateHeightmap()
         {

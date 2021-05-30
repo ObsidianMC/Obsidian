@@ -7,6 +7,8 @@ namespace Obsidian.API
     public interface IPlayer : ILiving
     {
         public string Username { get; }
+        public string DisplayName { get; }
+
         public Guid Uuid { get; }
         public IServer Server { get; }
         public bool IsOperator { get; }
@@ -41,7 +43,7 @@ namespace Obsidian.API
         public float FoodExhastionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
-        public Task TeleportAsync(PositionF position);
+        public Task TeleportAsync(VectorF position);
         public Task TeleportAsync(IPlayer to);
         public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
@@ -59,5 +61,7 @@ namespace Obsidian.API
         public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
         public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
+
+        public Task UpdateDisplayNameAsync(string newDisplayName);
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;
 

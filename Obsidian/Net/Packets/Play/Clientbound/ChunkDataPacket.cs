@@ -1,6 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Nbt;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System.Linq;
 using System.Threading.Tasks;
@@ -51,9 +51,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Chunk.CalculateHeightmap();
             var writer = new NbtWriter(stream, string.Empty);
             foreach (var (type, heightmap) in Chunk.Heightmaps)
-                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
+                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
+
             writer.EndCompound();
-            writer.Finish();
 
             Chunk.BiomeContainer.WriteTo(stream);
 

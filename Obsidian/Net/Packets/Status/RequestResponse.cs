@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status

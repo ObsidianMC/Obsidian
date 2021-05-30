@@ -1,5 +1,5 @@
 ﻿using Obsidian.API;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld;
 using System;
 using System.Security.Cryptography;

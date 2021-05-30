@@ -1,7 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Entities;
-using Obsidian.Util.Extensions;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
