@@ -122,7 +122,6 @@ namespace Obsidian.Entities
             await this.PickupNearbyItemsAsync(server, 1);
         }
 
-        //SOmeone else has to confirm this but it seems the rotations we're receiving from player look and rotation is not in the right order?
         internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
