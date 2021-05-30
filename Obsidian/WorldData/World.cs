@@ -427,18 +427,14 @@ namespace Obsidian.WorldData
             // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
 
-            var nonLiving = Array.BinarySearch(Entity.MiscEntities, (int)type) > -1;
             Entity entity;
-
-            (int chunkX, int chunkZ) = position.ToChunkCoord();
-
-            if (nonLiving)
+            if (type.IsLiving())
             {
                 entity = new Entity
                 {
+                    Type = type,
                     Position = position,
-                    EntityId = this.TotalLoadedEntities() + 1,
-                    Type = type
+                    EntityId = this.TotalLoadedEntities() + 1
                 };
 
                 if(type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)

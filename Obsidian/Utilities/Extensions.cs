@@ -16,6 +16,45 @@ namespace Obsidian.Utilities
     {
         public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
 
+        internal static bool IsLiving(this EntityType type)
+        {
+            return new[] { EntityType.Arrow,
+                EntityType.SpectralArrow,
+                EntityType.Boat,
+                EntityType.DragonFireball,
+                EntityType.AreaEffectCloud,
+                EntityType.EndCrystal,
+                EntityType.EvokerFangs,
+                EntityType.ExperienceOrb,
+                EntityType.FireworkRocket,
+                EntityType.FallingBlock,
+                EntityType.Item,
+                EntityType.ItemFrame,
+                EntityType.Fireball,
+                EntityType.LeashKnot,
+                EntityType.LightningBolt,
+                EntityType.LlamaSpit,
+                EntityType.Minecart,
+                EntityType.ChestMinecart,
+                EntityType.CommandBlockMinecart,
+                EntityType.FurnaceMinecart,
+                EntityType.HopperMinecart,
+                EntityType.SpawnerMinecart,
+                EntityType.TntMinecart,
+                EntityType.Painting,
+                EntityType.Tnt,
+                EntityType.ShulkerBullet,
+                EntityType.EnderPearl,
+                EntityType.Snowball,
+                EntityType.SmallFireball,
+                EntityType.Egg,
+                EntityType.ExperienceBottle,
+                EntityType.Potion,
+                EntityType.Trident,
+                EntityType.FishingBobber,
+                EntityType.EyeOfEnder}.Contains(type);
+        }
+
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
         /// </summary>

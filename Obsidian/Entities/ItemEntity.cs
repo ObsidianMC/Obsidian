@@ -19,6 +19,8 @@ namespace Obsidian.Entities
 
         public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
 
+        public ItemEntity() => this.Type = EntityType.Item;
+
         public override async Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);

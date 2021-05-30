@@ -25,11 +25,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public Task HandleAsync(Server server, Player player)
         {
-            var entity = player.GetEntitiesNear(6).FirstOrDefault(x => x.EntityId == this.EntityId);
-
-            server.Logger.LogInformation("Interaction Type: {0} & Entity ID: {1}", this.Type.ToString(), this.EntityId);
-
-            server.Logger.LogInformation("Entity Type: {0}", entity?.Type);
+            var entity = player.GetEntitiesNear(3).FirstOrDefault(x => x.EntityId == this.EntityId);
 
             return Task.CompletedTask;
         }

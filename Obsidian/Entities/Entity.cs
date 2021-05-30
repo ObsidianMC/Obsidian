@@ -13,8 +13,6 @@ namespace Obsidian.Entities
 {
     public class Entity : IEquatable<Entity>, IEntity
     {
-        internal static int[] MiscEntities;
-
         public World World { get; set; }
         public IWorld WorldLocation => World;
 
@@ -49,52 +47,7 @@ namespace Obsidian.Entities
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
 
-        internal static void Initialize()
-        {
-            MiscEntities = new[]
-            {
-                (int)EntityType.Arrow,
-                (int)EntityType.SpectralArrow,
-                (int)EntityType.Boat,
-                (int)EntityType.DragonFireball,
-                (int)EntityType.AreaEffectCloud,
-                (int)EntityType.EndCrystal,
-                (int)EntityType.EvokerFangs,
-                (int)EntityType.ExperienceOrb,
-                (int)EntityType.FireworkRocket,
-                (int)EntityType.FallingBlock,
-                (int)EntityType.Item,
-                (int)EntityType.ItemFrame,
-                (int)EntityType.Fireball,
-                (int)EntityType.LeashKnot,
-                (int)EntityType.LightningBolt,
-                (int)EntityType.LlamaSpit,
-                (int)EntityType.Minecart,
-                (int)EntityType.ChestMinecart,
-                (int)EntityType.CommandBlockMinecart,
-                (int)EntityType.FurnaceMinecart,
-                (int)EntityType.HopperMinecart,
-                (int)EntityType.SpawnerMinecart,
-                (int)EntityType.TntMinecart,
-                (int)EntityType.Painting,
-                (int)EntityType.Tnt,
-                (int)EntityType.ShulkerBullet,
-                (int)EntityType.EnderPearl,
-                (int)EntityType.Snowball,
-                (int)EntityType.SmallFireball,
-                (int)EntityType.Egg,
-                (int)EntityType.ExperienceBottle,
-                (int)EntityType.Potion,
-                (int)EntityType.Trident,
-                (int)EntityType.FishingBobber,
-                (int)EntityType.EyeOfEnder
-            };
-        }
         public bool CanBeSeen { get; set; }
-
-        public Entity()
-        {
-        }
 
         #region Update methods
         internal virtual Task UpdateAsync(Server server, VectorF position, bool onGround)

@@ -251,7 +251,6 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            Entity.Initialize();
             Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 

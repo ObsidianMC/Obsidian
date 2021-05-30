@@ -12,7 +12,7 @@ namespace Obsidian.API
         public int EntityId { get; }
         public EntityBitMask EntityBitMask { get; set; }
         public Pose Pose { get; set; }
-        public EntityType Type { get; set; }
+        public EntityType Type { get; }
         public int Air { get; set; }
         public bool CustomNameVisible { get; }
         public bool Silent { get; }
