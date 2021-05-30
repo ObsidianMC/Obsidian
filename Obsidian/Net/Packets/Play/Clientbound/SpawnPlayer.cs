@@ -1,8 +1,6 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -25,7 +23,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Angle Pitch { get; set; }
 
         public int Id => 0x04;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

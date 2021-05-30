@@ -1,7 +1,5 @@
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.WorldData;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -17,7 +15,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Difficulty = difficulty;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

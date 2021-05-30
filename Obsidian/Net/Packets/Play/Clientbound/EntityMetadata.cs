@@ -1,6 +1,5 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -14,7 +13,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Entity Entity { get; set; }
 
         public int Id => 0x44;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,6 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -14,8 +12,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public EAnimation Animation { get; set; }
 
         public int Id => 0x05;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 
     public enum EAnimation : byte

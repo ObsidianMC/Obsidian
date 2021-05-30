@@ -1,9 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -32,8 +30,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
             WindowId = inventory.Id;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public override string ToString() => $"{this.WindowId}:{this.Type}";
     }

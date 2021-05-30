@@ -1,7 +1,5 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -33,7 +31,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Pitch = pitch;
             Volume = volume;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

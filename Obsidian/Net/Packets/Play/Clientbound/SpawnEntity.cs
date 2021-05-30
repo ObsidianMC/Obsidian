@@ -2,7 +2,6 @@
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -34,7 +33,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Velocity Velocity { get; set; }
 
         public int Id => 0x00;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

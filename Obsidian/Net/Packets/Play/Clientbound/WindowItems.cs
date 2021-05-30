@@ -1,8 +1,6 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -22,7 +20,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             WindowId = windowId;
             Items = items;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

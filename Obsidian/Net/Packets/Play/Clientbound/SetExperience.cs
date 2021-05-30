@@ -1,7 +1,5 @@
-﻿using System;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
+using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -36,7 +34,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
                 return 4.5f * sqrtLevel - 162.5f * level + 2220;
             return 0;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

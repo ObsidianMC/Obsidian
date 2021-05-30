@@ -1,6 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Utilities;
-using System.Threading.Tasks;
+﻿using Obsidian.Utilities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -27,8 +25,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Value { get; set; }
 
         public int Id => 0x4D;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public void Serialize(MinecraftStream stream)
         {

@@ -1,11 +1,9 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -64,8 +62,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool Flat { get; set; } = false;
 
         public int Id => 0x24;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 
     public enum LevelType

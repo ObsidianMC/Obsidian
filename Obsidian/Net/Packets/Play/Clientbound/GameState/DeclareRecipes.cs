@@ -1,9 +1,7 @@
 ﻿using Obsidian.API.Crafting;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -21,7 +19,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Recipes = recipes;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

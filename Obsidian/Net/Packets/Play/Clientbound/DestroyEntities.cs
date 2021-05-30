@@ -1,7 +1,5 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -16,7 +14,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public void AddEntity(int entity) => EntityIds.Add(entity);
 
         public void AddEntityRange(params int[] entities) => EntityIds.AddRange(entities);
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,9 +1,6 @@
-﻿using Obsidian.Entities;
-using Obsidian.Net.Actions.PlayerInfo;
+﻿using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Serialization.Attributes;
-
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -23,7 +20,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Action = action;
             Actions = actions;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,9 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
-
-using Obsidian.Entities;
-using Obsidian.Net.Actions.BossBar;
+﻿using Obsidian.Net.Actions.BossBar;
 using Obsidian.Serialization.Attributes;
+using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -23,7 +20,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             this.UUID = uuid;
             this.Action = action ?? throw new ArgumentNullException(nameof(action));
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

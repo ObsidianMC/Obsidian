@@ -1,7 +1,5 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -16,7 +14,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Angle HeadYaw { get; set; }
 
         public int Id => 0x3A;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

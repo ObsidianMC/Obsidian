@@ -1,10 +1,8 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
@@ -31,7 +29,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = (sbyte)type;
             //Sender = sender;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }
