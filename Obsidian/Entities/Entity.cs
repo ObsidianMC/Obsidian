@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -15,13 +16,9 @@ namespace Obsidian.Entities
         public IWorld WorldLocation => World;
 
         #region Location properties
-        internal VectorF LastPosition { get; set; }
-
-        internal Angle LastPitch { get; set; }
-
-        internal Angle LastYaw { get; set; }
-
         internal int TeleportId { get; set; }
+
+        public VectorF LastPosition { get; set; }
 
         public VectorF Position { get; set; }
 
@@ -45,21 +42,20 @@ namespace Obsidian.Entities
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
 
+        public bool CanBeSeen { get; set; }
+
         public Entity()
         {
         }
 
         #region Update methods
-        internal virtual async Task UpdateAsync(Server server, VectorF position, bool onGround)
+        internal virtual Task UpdateAsync(Server server, VectorF position, bool onGround)
         {
-            var newPos = position * 32 * 64;
-            var lastPos = this.LastPosition * 32 * 64;
+            short newX = (short)((position.X * 32 - this.Position.X * 32) * 128);
+            short newY = (short)((position.Y * 32 - this.Position.Y * 32) * 128);
+            short newZ = (short)((position.Z * 32 - this.Position.Z * 32) * 128);
 
-            short newX = (short)(newPos.X - lastPos.X);
-            short newY = (short)(newPos.Y - lastPos.Y);
-            short newZ = (short)(newPos.Z - lastPos.Z);
-
-            var isNewLocation = position != this.LastPosition;
+            var isNewLocation = position != this.Position;
 
             if (isNewLocation)
             {
@@ -76,51 +72,22 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, onGround);
             }
-            await Task.CompletedTask;
+
+            return Task.CompletedTask;
         }
 
-        internal virtual async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        
+        internal virtual Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
-            var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
-
-            if (isNewRotation)
-            {
-                server.BroadcastPacketWithoutQueue(new EntityRotation
-                {
-                    EntityId = this.EntityId,
-                    OnGround = onGround,
-                    Yaw = yaw,
-                    Pitch = pitch
-                }, this.EntityId);
-
-                server.BroadcastPacketWithoutQueue(new EntityHeadLook
-                {
-                    EntityId = this.EntityId,
-                    HeadYaw = yaw
-                });
-
-                this.CopyLook();
-                this.UpdatePosition(yaw, pitch, onGround);
-            }
-            await Task.CompletedTask;
-        }
-
-        internal virtual async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
-        {
-            var newPos = position * 32 * 64;
-            var lastPos = this.LastPosition * 32 * 64;
-
-            short newX = (short)(newPos.X - lastPos.X);
-            short newY = (short)(newPos.Y - lastPos.Y);
-            short newZ = (short)(newPos.Z - lastPos.Z);
-
-            var isNewLocation = position != this.LastPosition;
-
-            var isNewRotation = yaw != this.LastYaw || pitch != this.LastPitch;
-
+            var isNewLocation = position != this.Position;
+            var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
 
             if (isNewLocation)
             {
+                short newX = (short)((position.X * 32 - this.Position.X * 32) * 128);
+                short newY = (short)((position.Y * 32 - this.Position.Y * 32) * 128);
+                short newZ = (short)((position.Z * 32 - this.Position.Z * 32) * 128);
+
                 if (isNewRotation)
                 {
                     server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
@@ -132,13 +99,16 @@ namespace Obsidian.Entities
                         DeltaZ = newZ,
 
                         Yaw = yaw,
-
                         Pitch = pitch,
 
                         OnGround = onGround
                     }, this.EntityId);
 
-                    this.CopyLook();
+                    server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                    {
+                        EntityId = this.EntityId,
+                        HeadYaw = yaw
+                    });
                 }
                 else
                 {
@@ -156,33 +126,44 @@ namespace Obsidian.Entities
 
                 this.UpdatePosition(position, yaw, pitch, onGround);
             }
-            await Task.CompletedTask;
+
+            return Task.CompletedTask;
         }
 
-        internal void CopyPosition(bool withLook = false)
-        {
-            this.LastPosition = this.Position;
 
-            if (withLook)
-                this.CopyLook();
-        }
-
-        internal void CopyLook()
+        internal virtual Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
         {
-            this.LastYaw = this.Yaw;
-            this.LastPitch = this.Pitch;
+            var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
+
+            if (isNewRotation)
+            {
+                server.BroadcastPacketWithoutQueue(new EntityRotation
+                {
+                    EntityId = this.EntityId,
+                    OnGround = onGround,
+                    Yaw = yaw,
+                    Pitch = pitch
+                }, this.EntityId);
+
+                server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                {
+                    EntityId = this.EntityId,
+                    HeadYaw = yaw
+                });
+                this.UpdatePosition(yaw, pitch, onGround);
+            }
+
+            return Task.CompletedTask;
         }
 
         public void UpdatePosition(VectorF pos, bool onGround = true)
         {
-            this.CopyPosition();
             this.Position = pos;
             this.OnGround = onGround;
         }
 
         public void UpdatePosition(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
-            this.CopyPosition(true);
             this.Position = pos;
             this.Yaw = yaw;
             this.Pitch = pitch;
@@ -191,14 +172,12 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
-            this.CopyPosition();
             this.Position = new VectorF(x, y, z);
             this.OnGround = onGround;
         }
 
         public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
         {
-            this.CopyLook();
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onGround;

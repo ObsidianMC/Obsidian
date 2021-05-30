@@ -618,33 +618,6 @@ namespace Obsidian
             await this.RegisterAsync(new OverworldDebugGenerator(Config.Seed));
         }
 
-        private async Task SendSpawnPlayerAsync(IPlayer joined)
-        {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
-            {
-                var joinedPlayer = joined as Player;
-                //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
-                await player.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = joinedPlayer.EntityId,
-                    Uuid = joinedPlayer.Uuid,
-                    Position = joinedPlayer.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-
-                //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-            }
-        }
-
         public IEnumerable<IPlayer> Players => GetPlayers();
         private IEnumerable<IPlayer> GetPlayers()
         {
@@ -665,14 +638,15 @@ namespace Obsidian
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            var joined = e.Player;
+            var joined = e.Player as Player;
+
+            this.World.AddPlayer(joined);//TODO Gotta make sure we add the player to whatever world they were last in so this has to change
+
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
+            {
                 await other.client.AddPlayerToListAsync(joined);
-
-            // Need a delay here, otherwise players start flying
-            await Task.Delay(500);
-            await this.SendSpawnPlayerAsync(joined);
+            }
         }
         #endregion Events
 

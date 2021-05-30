@@ -25,14 +25,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public async Task ReadAsync(MinecraftStream stream)
         {
             this.Position = await stream.ReadAbsolutePositionFAsync();
-            this.Pitch = await stream.ReadFloatAsync();
             this.Yaw = await stream.ReadFloatAsync();
+            this.Pitch = await stream.ReadFloatAsync();
             this.OnGround = await stream.ReadBooleanAsync();
         }
 
-        public async Task HandleAsync(Server server, Player player)
-        {
-            await player.UpdateAsync(server, this.Position, this.Yaw, this.Pitch, this.OnGround);
-        }
+        public Task HandleAsync(Server server, Player player) => player.UpdateAsync(server, this.Position, this.Yaw, this.Pitch, this.OnGround);
     }
 }

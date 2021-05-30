@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -351,7 +352,6 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            // IG its fixed??
             await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
@@ -366,7 +366,6 @@ namespace Obsidian
             await this.DeclareRecipesAsync();
 
             await SendDeclareCommandsAsync();
-            this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
             {
@@ -388,10 +387,10 @@ namespace Obsidian
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ);
 
-            await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
-            this.Logger.LogDebug("Sent Spawn Position packet.");
+            var (chunkX, chunkZ) = spawnPosition.ToChunkCoord();
 
-            this.Logger.LogDebug("Sent Join Game packet.");
+            await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
+            await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
 
             this.Player.Position = spawnPosition;
 
@@ -403,8 +402,6 @@ namespace Obsidian
                 Flags = PositionFlags.None,
                 TeleportId = 0
             });
-            this.Logger.LogDebug("Sent Position packet.");
-
             // TODO fix its sending chunks too fast
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
@@ -570,10 +567,9 @@ namespace Obsidian
 
         private async Task SendServerBrand()
         {
-            await using var stream = new MinecraftStream();
-            await stream.WriteStringAsync("obsidian");
+            var value = Encoding.UTF8.GetBytes("obsidian");
 
-            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", value));
             this.Logger.LogDebug("Sent server brand.");
         }
 

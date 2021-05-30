@@ -1,5 +1,6 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
@@ -21,6 +22,8 @@ namespace Obsidian.Entities
     public class Player : Living, IPlayer
     {
         internal readonly Client client;
+
+        internal HashSet<int> visiblePlayers = new();
 
         public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
@@ -114,52 +117,56 @@ namespace Obsidian.Entities
 
             this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 1))
-            {
-                if (entity is ItemEntity item)
-                {
-                    if (!item.CanPickup)
-                        continue;
+            await this.TrySpawnPlayerAsync(position, server);
 
-                    server.BroadcastPacketWithoutQueue(new CollectItem
-                    {
-                        CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
-                        PickupItemCount = item.Count
-                    });
-
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
-                    {
-                        Present = true
-                    });
-
-                    this.client.SendPacket(new SetSlot
-                    {
-                        Slot = (short)slot,
-
-                        WindowId = 0,
-
-                        SlotData = this.Inventory.GetItem(slot)
-                    });
-
-                    await item.RemoveAsync();
-                }
-            }
+            await this.PickupNearbyItemsAsync(server, 1);
         }
 
+        //SOmeone else has to confirm this but it seems the rotations we're receiving from player look and rotation is not in the right order?
         internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(server, position, yaw, pitch, onGround);
 
             this.HeadY = position.Y + 1.62f;
 
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 0.8f))
+            await this.TrySpawnPlayerAsync(position, server);
+
+            await this.PickupNearbyItemsAsync(server, 0.8f);
+        }
+
+        internal override async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        {
+            await base.UpdateAsync(server, yaw, pitch, onGround);
+
+            await this.PickupNearbyItemsAsync(server, 2);
+        }
+
+        private async Task TrySpawnPlayerAsync(VectorF position, Server server)
+        {
+            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
+            {
+                if (!this.visiblePlayers.Contains(player.EntityId))
+                {
+                    this.visiblePlayers.Add(player.EntityId);
+
+                    await this.client.QueuePacketAsync(new SpawnPlayer
+                    {
+                        EntityId = player.EntityId,
+                        Uuid = player.Uuid,
+                        Position = player.Position,
+                        Yaw = player.Yaw,
+                        Pitch = player.Pitch
+                    });
+                }
+            }
+        }
+
+        private async Task PickupNearbyItemsAsync(Server server, float distance = 0.5f)
+        {
+            foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
             {
                 if (entity is ItemEntity item)
                 {
-                    if (!item.CanPickup)
-                        continue;
-
                     server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
@@ -182,39 +189,6 @@ namespace Obsidian.Entities
                     });
 
                     await item.RemoveAsync();
-                }
-            }
-        }
-
-        internal override async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
-        {
-            await base.UpdateAsync(server, yaw, pitch, onGround);
-
-            foreach (var entity in this.World.GetEntitiesNear(this.Position, 2))
-            {
-                if (entity is ItemEntity item)
-                {
-                    server.BroadcastPacketWithoutQueue(new CollectItem
-                    {
-                        CollectedEntityId = item.EntityId,
-                        CollectorEntityId = this.EntityId,
-                        PickupItemCount = item.Count
-                    });
-
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta)
-                    {
-                        Present = true
-                    });
-
-                    this.client.SendPacket(new SetSlot
-                    {
-                        Slot = (short)slot,
-
-                        WindowId = 0,
-
-                        SlotData = this.Inventory.GetItem(slot)
-                    });
-                    _ = Task.Run(() => item.RemoveAsync());
                 }
             }
         }
@@ -327,7 +301,7 @@ namespace Obsidian.Entities
         public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
         public async Task TeleportAsync(Player to)
         {
-            LastPosition = this.Position;
+            this.LastPosition = this.Position;
             this.Position = to.Position;
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
             var tid = Globals.Random.Next(0, 999);
