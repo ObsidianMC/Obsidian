@@ -19,7 +19,13 @@ namespace Obsidian.Nbt
 
         public Stream BaseStream { get; }
 
-        public NbtWriter(Stream outstream, string name = "")
+        public NbtWriter(Stream stream, NbtCompression compressionMode = NbtCompression.None)
+        {
+            //TODO ZLib compression
+            this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(stream, CompressionMode.Compress) : stream;
+        }
+
+        public NbtWriter(Stream outstream, string name)
         {
             this.BaseStream = outstream;
 
@@ -29,7 +35,7 @@ namespace Obsidian.Nbt
             this.AddRootTag(new Node { Type = NbtTagType.Compound });
         }
 
-        public NbtWriter(Stream outstream, NbtCompression compressionMode, string name = "")
+        public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
         {
             //TODO ZLib compression
             this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
@@ -105,8 +111,7 @@ namespace Obsidian.Nbt
             if (tag.Type != NbtTagType.Compound)
                 throw new InvalidOperationException();
 
-            if (this.CheckIfList())
-                return;
+            this.CheckIfList();
 
             this.Write(NbtTagType.End);
         }
