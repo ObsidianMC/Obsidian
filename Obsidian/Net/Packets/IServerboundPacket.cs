@@ -7,6 +7,6 @@ namespace Obsidian.Net.Packets
     {
         public void Populate(byte[] data);
         public void Populate(MinecraftStream stream);
-        public Task HandleAsync(Server server, Player player);
+        public ValueTask HandleAsync(Server server, Player player);
     }
 }

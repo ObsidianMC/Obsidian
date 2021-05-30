@@ -36,7 +36,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x2E;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             var currentItem = player.GetHeldItem();
 

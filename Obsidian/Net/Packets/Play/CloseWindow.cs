@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x0A;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             if (this.WindowId == 0)
                 return;

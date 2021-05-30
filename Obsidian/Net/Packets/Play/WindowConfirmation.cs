@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x11;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

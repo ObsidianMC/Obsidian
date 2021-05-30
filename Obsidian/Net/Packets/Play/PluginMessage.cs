@@ -25,26 +25,26 @@ namespace Obsidian.Net.Packets.Play
             this.PluginData = data;
         }
 
-        public async ValueTask<PluginMessageStore> HandleAsync()
+        public PluginMessageStore Handle()
         {
-            using var stream = new MinecraftStream(this.PluginData);
+            using var stream = new MinecraftStream(PluginData);
 
-            var result = this.Channel switch
+            var result = Channel switch
             {
                 "minecraft:brand" => new PluginMessageStore
                 {
                     Type = PluginMessageType.Brand,
-                    Value = await stream.ReadStringAsync()
+                    Value = stream.ReadString()
                 },
                 "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
                 {
                     Type = PluginMessageType.Register,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
+                    Value = Encoding.UTF8.GetString(PluginData)
                 },
                 "minecraft:unregister" => new PluginMessageStore
                 {
                     Type = PluginMessageType.UnRegister,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
+                    Value = Encoding.UTF8.GetString(PluginData)
                 },
                 _ => null
             };
@@ -64,12 +64,12 @@ namespace Obsidian.Net.Packets.Play
             PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
         }
 
-        public async Task HandleAsync(Server server, Player player)
+        public ValueTask HandleAsync(Server server, Player player)
         {
-            var result = await this.HandleAsync();
+            var result = Handle();
 
             if (result == null)
-                return;
+                return ValueTask.CompletedTask;
 
             switch (result.Type)
             {
@@ -99,6 +99,8 @@ namespace Obsidian.Net.Packets.Play
                 default:
                     break;
             }
+
+            return ValueTask.CompletedTask;
         }
     }
 

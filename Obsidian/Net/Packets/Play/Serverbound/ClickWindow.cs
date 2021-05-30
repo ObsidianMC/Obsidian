@@ -50,7 +50,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x09;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             var inventory = player.OpenedInventory;
 

@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play
 
         public int Id => 0x2C;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             //TODO broadcast entity animation to nearby players
             switch (this.Hand)

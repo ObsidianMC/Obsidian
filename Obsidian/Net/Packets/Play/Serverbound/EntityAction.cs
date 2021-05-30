@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1C;
 
-        public Task HandleAsync(Server server, Player player)
+        public ValueTask HandleAsync(Server server, Player player)
         {
             switch (this.Action)
             {
@@ -49,7 +49,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

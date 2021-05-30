@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x19;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.client.QueuePacketAsync(new CraftRecipeResponse(WindowId, RecipeId));
         }

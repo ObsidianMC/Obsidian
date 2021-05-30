@@ -25,7 +25,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             Format = "<{0}> {1}";
         }
 
-        public Task HandleAsync(Server server, Player player) =>
-            server.ParseMessageAsync(this.Message, this.Format, player.client);
+        public async ValueTask HandleAsync(Server server, Player player)
+        {
+            await server.ParseMessageAsync(Message, Format, player.client);
+        }
     }
 }

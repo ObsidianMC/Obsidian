@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x00;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             if (this.TeleportId == player.TeleportId)
                 return;

@@ -27,7 +27,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.OnGround = onground;
         }
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, this.Position, this.OnGround);
             await player.World.UpdateClientChunksAsync(player.client);

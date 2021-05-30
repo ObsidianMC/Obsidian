@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class PlayerRotation : IServerboundPacket
     {
         [Field(0)]
-        public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
+        public float Yaw { get => yaw; set => yaw = (value % 360 + 360) % 360; }
 
         private float yaw;
 
@@ -26,14 +26,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public PlayerRotation(float yaw, float pitch, bool onground)
         {
-            this.Yaw = yaw;
-            this.Pitch = pitch;
-            this.OnGround = onground;
+            Yaw = yaw;
+            Pitch = pitch;
+            OnGround = onground;
         }
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            await player.UpdateAsync(server, this.Yaw, this.Pitch, this.OnGround);
+            await player.UpdateAsync(server, Yaw, Pitch, OnGround);
         }
     }
 }

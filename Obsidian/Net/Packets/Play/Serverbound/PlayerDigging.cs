@@ -20,14 +20,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1B;
 
-        public async Task HandleAsync(Server server, Player player)
+        public ValueTask HandleAsync(Server server, Player player)
         {
             server.BroadcastPlayerDig(new PlayerDiggingStore
             {
                 Player = player.Uuid,
                 Packet = this
             });
-            await Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 

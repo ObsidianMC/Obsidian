@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x25;
 
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             player.CurrentSlot = (short)(this.Slot + 36);
 
