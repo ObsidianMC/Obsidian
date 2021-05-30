@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
-using Obsidian.API._Enums;
 using Obsidian.Entities;
 using System;
 using System.Linq;

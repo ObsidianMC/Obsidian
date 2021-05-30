@@ -419,7 +419,7 @@ namespace Obsidian.WorldData
             });
         }
 
-        public async Task<IEntity> SpawnEntityAsync(PositionF position, EntityType type)
+        public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
         {
             // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
             // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,

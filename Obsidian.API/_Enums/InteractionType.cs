@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API._Enums
+﻿namespace Obsidian.API
 {
     public enum InteractionType
     {

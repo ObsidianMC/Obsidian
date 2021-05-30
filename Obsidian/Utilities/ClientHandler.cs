@@ -12,7 +12,7 @@ namespace Obsidian
 {
     public class ClientHandler
     {
-        private readonly ConcurrentDictionary<int, IPacket> packets = new ConcurrentDictionary<int, IPacket>();
+        private ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
 
         public void RegisterHandlers()
         {
@@ -30,9 +30,9 @@ namespace Obsidian
             //Packets.TryAdd(0x0A, new CloseWindow()); !
             //Packets.TryAdd(0x0B, new PluginMessage()); !
             //Packets.TryAdd(0x0C, EditBook);
-            //packets.TryAdd(0x0E, new InteractEntity());
+            //Packets.TryAdd(0x0E, InteractEntity);
             //Packets.TryAdd(0x0F, GenerateStructure);
-            packets.TryAdd(0x10, new KeepAlive());
+            Packets.TryAdd(0x10, new KeepAlive());
             //Packets.TryAdd(0x11, LockDifficulty);
             Packets.TryAdd(0x12, new PlayerPosition());
             Packets.TryAdd(0x13, new PlayerPositionAndRotation());
@@ -53,14 +53,14 @@ namespace Obsidian
             //Packets.TryAdd(0x22, AdvancementTab);
             //Packets.TryAdd(0x23, SelectTrade);
             //Packets.TryAdd(0x24, SetBeaconEffect);
-            packets.TryAdd(0x25, new ServerHeldItemChange());
+            Packets.TryAdd(0x25, new ServerHeldItemChange());
             //Packets.TryAdd(0x26, UpdateCommandBlock);
             //Packets.TryAdd(0x27, UpdateCommandBlockMinecart);
             //Packets.TryAdd(0x28, new CreativeInventoryAction()); !
             //Packets.TryAdd(0x29, UpdateJigsawBlock);
             //Packets.TryAdd(0x2A, UpdateStructureBlock);
             //Packets.TryAdd(0x2B, UpdateSign);
-            packets.TryAdd(0x2C, new Animation());
+            Packets.TryAdd(0x2C, new Animation());
             //Packets.TryAdd(0x2D, Spectate);
             //Packets.TryAdd(0x2E, new PlayerBlockPlacement()); !
             //Packets.TryAdd(0x2F, UseItem);
@@ -102,10 +102,6 @@ namespace Obsidian
                     await HandleFromPoolAsync<PluginMessage>(data, client);
                     break;
 
-                case 0x0E:
-                    await HandleFromPoolAsync<InteractEntity>(data, client);
-                    break;
-
                 case 0x18:
                     await HandleFromPoolAsync<PickItem>(data, client);
                     break;
@@ -139,7 +135,7 @@ namespace Obsidian
                     break;
 
                 default:
-                    if (!packets.TryGetValue(id, out var packet))
+                    if (!Packets.TryGetValue(id, out var packet))
                         return;
 
                     try

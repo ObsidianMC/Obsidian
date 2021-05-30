@@ -12,7 +12,7 @@
         /// </summary>
         public bool Sneaking { get; }
 
-        public PositionF TargetPosition { get; internal set; }
+        public VectorF TargetPosition { get; internal set; }
 
         public Hand Hand { get; internal set; }
         
