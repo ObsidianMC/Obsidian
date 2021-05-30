@@ -49,7 +49,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 Source0 = new Perlin
                 {
                     OctaveCount = 16,
-                    //Persistence = 0.5,
+                    Persistence = 0.5,
                     Lacunarity = 1,
                     Frequency = 1 / 191.51,
                     Seed = settings.Seed
@@ -64,7 +64,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 Source0 = new Perlin
                 {
                     OctaveCount = 16,
-                    //Persistence = 0.5,
+                    Persistence = 0.5,
                     Lacunarity = 1,
                     Frequency = 1 / 191.51,
                     Seed = settings.Seed + 1
@@ -73,13 +73,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             Module selectorNoise = new ScalePoint
             {
-                XScale = 1, //2.138,
+                XScale = 2.138,
                 YScale = 1.069,
-                ZScale = 1, //2.138,
+                ZScale = 2.138,
                 Source0 = new Perlin
                 {
                     OctaveCount = 8,
-                    //Persistence = 0.5,
+                    Persistence = 0.5,
                     Lacunarity = 12.75,
                     Frequency = 1 / 59.85,
                     Seed = settings.Seed + 2
@@ -103,7 +103,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 Source0 = final
             };
 
-            Result = selectorNoise;
+            //Result = selectorNoise;
 
         }
 
