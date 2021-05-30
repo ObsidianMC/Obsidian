@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class PlayerRotation : IPacket
+    public partial class PlayerRotation : IServerboundPacket
     {
         [Field(0)]
         public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
@@ -29,13 +29,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onground;
-        }
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Yaw = await stream.ReadFloatAsync();
-            this.Pitch = await stream.ReadFloatAsync();
-            this.OnGround = await stream.ReadBooleanAsync();
         }
 
         public async Task HandleAsync(Server server, Player player)

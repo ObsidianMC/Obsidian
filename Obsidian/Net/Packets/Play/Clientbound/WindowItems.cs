@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class WindowItems : ISerializablePacket
+    public partial class WindowItems : IClientboundPacket
     {
         [Field(0)]
         public byte WindowId { get; }
@@ -24,7 +24,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         }
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 }

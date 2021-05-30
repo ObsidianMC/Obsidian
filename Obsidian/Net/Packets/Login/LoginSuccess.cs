@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Login
 {
     [ClientOnly]
-    public partial class LoginSuccess : ISerializablePacket
+    public partial class LoginSuccess : IClientboundPacket
     {
         [Field(0)]
         public Guid UUID { get; }
@@ -21,8 +21,6 @@ namespace Obsidian.Net.Packets.Login
             Username = username;
             UUID = uuid;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

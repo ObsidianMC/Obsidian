@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnExperienceOrb : ISerializablePacket
+    public partial class SpawnExperienceOrb : IClientboundPacket
     {
         [Field(0), VarLength]
         private const int entityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
@@ -24,8 +24,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Count = count;
             Position = position;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

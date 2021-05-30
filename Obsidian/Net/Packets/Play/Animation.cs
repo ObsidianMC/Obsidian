@@ -6,17 +6,12 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class Animation : ISerializablePacket
+    public partial class Animation : IClientboundPacket, IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; }
 
         public int Id => 0x2C;
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Hand = (Hand)await stream.ReadVarIntAsync();
-        }
 
         public async Task HandleAsync(Server server, Player player)
         {

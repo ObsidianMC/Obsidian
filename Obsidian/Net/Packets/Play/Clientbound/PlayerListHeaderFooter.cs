@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class PlayerListHeaderFooter : ISerializablePacket
+    public partial class PlayerListHeaderFooter : IClientboundPacket
     {
         [Field(0)]
         public ChatMessage Header { get; }
@@ -23,8 +23,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Header = header ?? empty;
             Footer = footer ?? empty;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

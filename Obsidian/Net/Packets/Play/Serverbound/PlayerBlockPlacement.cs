@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class PlayerBlockPlacement : IPacket
+    public partial class PlayerBlockPlacement : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
@@ -35,17 +35,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public bool InsideBlock { get; set; }
 
         public int Id => 0x2E;
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Hand = (Hand)await stream.ReadVarIntAsync();
-            this.Position = await stream.ReadPositionAsync();
-            this.Face = (BlockFace)await stream.ReadVarIntAsync();
-            this.CursorX = await stream.ReadFloatAsync();
-            this.CursorY = await stream.ReadFloatAsync();
-            this.CursorZ = await stream.ReadFloatAsync();
-            this.InsideBlock = await stream.ReadBooleanAsync();
-        }
 
         public async Task HandleAsync(Server server, Player player)
         {

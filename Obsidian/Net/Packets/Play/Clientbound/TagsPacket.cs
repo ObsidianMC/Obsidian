@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class TagsPacket : ISerializablePacket
+    public partial class TagsPacket : IClientboundPacket
     {
         [Field(0)]
         public List<Tag> Blocks { get; set; }
@@ -21,8 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public List<Tag> Entities { get; set; }
 
         public int Id => 0x5B;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

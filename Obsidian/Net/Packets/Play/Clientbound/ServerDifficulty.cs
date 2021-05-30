@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ServerDifficulty : ISerializablePacket
+    public partial class ServerDifficulty : IClientboundPacket
     {
         [Field(0), ActualType(typeof(byte))]
         public Difficulty Difficulty { get; }
@@ -17,8 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Difficulty = difficulty;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class CraftRecipeResponse : ISerializablePacket
+    public partial class CraftRecipeResponse : IClientboundPacket
     {
         [Field(0)]
         public sbyte WindowId { get; }
@@ -20,8 +20,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             WindowId = windowId;
             RecipeId = recipeId;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

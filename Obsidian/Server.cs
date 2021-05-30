@@ -355,13 +355,13 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(ISerializablePacket packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal void BroadcastPacketWithoutQueue(ISerializablePacket packet, params int[] excluded)
+        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);

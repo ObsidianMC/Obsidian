@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class Particle : ISerializablePacket
+    public partial class Particle : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int))]
         public ParticleType Type { get; set; }
@@ -46,8 +46,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = position;
             ParticleCount = particleCount;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

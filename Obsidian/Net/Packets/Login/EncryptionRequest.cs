@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Login
 {
     [ClientOnly]
-    public partial class EncryptionRequest : ISerializablePacket
+    public partial class EncryptionRequest : IClientboundPacket
     {
         [Field(0)]
         public string ServerId { get; } = string.Empty;
@@ -23,8 +23,6 @@ namespace Obsidian.Net.Packets.Login
             PublicKey = publicKey;
             VerifyToken = verifyToken;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

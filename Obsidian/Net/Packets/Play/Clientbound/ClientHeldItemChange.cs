@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ClientHeldItemChange : ISerializablePacket
+    public partial class ClientHeldItemChange : IClientboundPacket
     {
         [Field(0)]
         public byte Slot { get; }
@@ -16,8 +16,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Slot = slot;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DeclareRecipes : ISerializablePacket
+    public partial class DeclareRecipes : IClientboundPacket
     {
         [Field(0)]
         public Dictionary<string, IRecipe> Recipes { get; }
@@ -23,9 +23,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         }
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        
     }
 }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class PluginMessage : ISerializablePacket
+    public partial class PluginMessage : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
         public string Channel { get; private set; }
@@ -52,13 +52,16 @@ namespace Obsidian.Net.Packets.Play
             return result;
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public void Populate(byte[] data)
         {
-            this.Channel = await stream.ReadStringAsync();
+            using var stream = new MinecraftStream(data);
+            Populate(stream);
+        }
 
-            var length = stream.Length - stream.Position;
-
-            this.PluginData = await stream.ReadUInt8ArrayAsync((int)length);
+        public void Populate(MinecraftStream stream)
+        {
+            Channel = stream.ReadString();
+            PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
         }
 
         public async Task HandleAsync(Server server, Player player)

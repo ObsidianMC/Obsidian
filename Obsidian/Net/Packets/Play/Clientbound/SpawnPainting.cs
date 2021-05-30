@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SpawnPainting : ISerializablePacket
+    public partial class SpawnPainting : IClientboundPacket
     {
         [Field(0), VarLength]
         private const int entityId = 9; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
@@ -33,8 +33,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = position;
             Direction = direction;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

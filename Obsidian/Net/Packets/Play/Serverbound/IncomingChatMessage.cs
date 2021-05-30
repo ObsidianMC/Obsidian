@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class IncomingChatMessage : IPacket
+    public partial class IncomingChatMessage : IServerboundPacket
     {
         [Field(0)]
         public string Message { get; private set; }
@@ -13,10 +13,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x03;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public void Populate(byte[] data)
         {
-            this.Message = await stream.ReadStringAsync();
-            this.Format = "<{0}> {1}";
+            using var stream = new MinecraftStream(data);
+            Populate(stream);
+        }
+
+        public void Populate(MinecraftStream stream)
+        {
+            Message = stream.ReadString();
+            Format = "<{0}> {1}";
         }
 
         public Task HandleAsync(Server server, Player player) =>

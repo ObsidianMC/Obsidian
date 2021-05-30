@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class CreativeInventoryAction : IPacket
+    public partial class CreativeInventoryAction : IServerboundPacket
     {
         [Field(0)]
         public short ClickedSlot { get; set; }
@@ -17,12 +17,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack ClickedItem { get; set; }
 
         public int Id => 0x29;
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.ClickedSlot = await stream.ReadShortAsync();
-            this.ClickedItem = await stream.ReadSlotAsync();
-        }
 
         public async Task HandleAsync(Server server, Player player)
         {

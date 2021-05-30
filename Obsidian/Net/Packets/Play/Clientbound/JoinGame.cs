@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     }
 
     [ClientOnly]
-    public partial class JoinGame : ISerializablePacket
+    public partial class JoinGame : IClientboundPacket
     {
         [Field(0)]
         public int EntityId { get; set; }
@@ -64,8 +64,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public bool Flat { get; set; } = false;
 
         public int Id => 0x24;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

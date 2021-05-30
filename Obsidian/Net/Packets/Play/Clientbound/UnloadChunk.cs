@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class UnloadChunk : ISerializablePacket
+    public partial class UnloadChunk : IClientboundPacket
     {
         [Field(0)]
         public int X { get; }
@@ -20,8 +20,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             X = x;
             Z = z;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

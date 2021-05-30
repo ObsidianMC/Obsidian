@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class EntityAction : IPacket
+    public partial class EntityAction : IServerboundPacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -17,13 +17,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public int JumpBoost { get; set; }
 
         public int Id => 0x1C;
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.Action = (EAction)await stream.ReadVarIntAsync();
-            this.JumpBoost = await stream.ReadVarIntAsync();
-        }
 
         public Task HandleAsync(Server server, Player player)
         {

@@ -5,11 +5,13 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class TimeUpdate : ISerializablePacket
+    public partial class TimeUpdate : IClientboundPacket
     {
-        [Field(0)] public long WorldAge { get; set; }
+        [Field(0)]
+        public long WorldAge { get; set; }
 
-        [Field(1)] public long TimeOfDay { get; set; }
+        [Field(1)]
+        public long TimeOfDay { get; set; }
 
         public int Id => 0x4E;
 
@@ -18,8 +20,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             WorldAge = worldAge;
             TimeOfDay = timeOfDay;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

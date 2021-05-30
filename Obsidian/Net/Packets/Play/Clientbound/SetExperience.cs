@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SetExperience : ISerializablePacket
+    public partial class SetExperience : IClientboundPacket
     {
         [Field(0)] public float ExperienceBar { get; set; }
         
@@ -36,8 +36,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
                 return 4.5f * sqrtLevel - 162.5f * level + 2220;
             return 0;
         }
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-        
+
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

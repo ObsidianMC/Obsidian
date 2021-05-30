@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class KeepAlive : ISerializablePacket
+    public partial class KeepAlive : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
         public long KeepAliveId { get; set; }
@@ -18,12 +18,7 @@ namespace Obsidian.Net.Packets.Play
 
         public KeepAlive(long id)
         {
-            this.KeepAliveId = id;
-        }
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.KeepAliveId = await stream.ReadLongAsync();
+            KeepAliveId = id;
         }
 
         public Task HandleAsync(Server server, Player player)

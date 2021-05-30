@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Login
 {
     [ClientOnly]
-    public partial class Disconnect : ISerializablePacket
+    public partial class Disconnect : IClientboundPacket
     {
         [Field(0)]
         private ChatMessage Reason { get; }
@@ -18,8 +18,6 @@ namespace Obsidian.Net.Packets.Login
             Id = state == ClientState.Play ? 0x19 : 0x00;
             Reason = reason;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

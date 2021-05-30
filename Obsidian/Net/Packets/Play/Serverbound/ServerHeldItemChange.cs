@@ -7,17 +7,12 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class ServerHeldItemChange : IPacket
+    public partial class ServerHeldItemChange : IServerboundPacket
     {
         [Field(0)]
         public short Slot { get; set; }
 
         public int Id => 0x25;
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Slot = await stream.ReadShortAsync();
-        }
 
         public async Task HandleAsync(Server server, Player player)
         {

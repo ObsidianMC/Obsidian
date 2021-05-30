@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class BlockChange : ISerializablePacket
+    public partial class BlockChange : IClientboundPacket
     {
         [Field(0)]
         public Vector Position { get; private set; }
@@ -21,8 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = position;
             BlockId = block;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

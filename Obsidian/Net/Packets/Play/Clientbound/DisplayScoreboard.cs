@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DisplayScoreboard : ISerializablePacket
+    public partial class DisplayScoreboard : IClientboundPacket
     {
         [Field(0), ActualType(typeof(sbyte))]
         public ScoreboardPosition Position { get; set; }
@@ -17,9 +17,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Id => 0x43;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        
     }
 }
