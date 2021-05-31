@@ -36,13 +36,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
-            var scaled = new ScalePoint
-            {
-                XScale = 1 / 140.103,
-                YScale = 1 / 80.5515,
-                ZScale = 1 / 140.103,
-                Source0 = MergedLandOceanRivers()
-            };
+            var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -61,6 +55,47 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         public double GetValue(double x, double z, double y = 0)
         {
             return Result.GetValue(x, y, z);
+        }
+
+        public double GetBiomeTemp(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(temperature.BiomeSelector).GetValue(x, y, z);
+        }
+
+        public double GetBiomeHumidity(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(humidity.BiomeSelector).GetValue(x, y, z);
+        }
+
+        public double GetBiomeTerrain(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z);
+        }
+
+        public bool IsRiver(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(MergedRivers()).GetValue(x, y, z) > 0.5;
+        }
+
+        public bool IsMountain(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z) > 0.75;
+        }
+
+        public bool IsHills(double x, double z, double y = 0)
+        {
+            var val = GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z);
+            return val >= 0.25 && val <= 0.75;
+        }
+
+        public bool IsPlains(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z) < 0.25;
+        }
+
+        public bool IsOcean(double x, double z, double y = 0)
+        {
+            return GetScaledModuleOutput(LandOceanSelector()).GetValue(x, y, z) < 0.5;
         }
 
         private Module LandOceanSelector()
@@ -186,6 +221,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     LowerBound = 0.6,
                     UpperBound = 2.0
                 }   
+            };
+        }
+
+        private Module GetScaledModuleOutput(Module input)
+        {
+            return new ScalePoint
+            {
+                XScale = 1 / 140.103,
+                YScale = 1 / 80.5515,
+                ZScale = 1 / 140.103,
+                Source0 = input
             };
         }
     }

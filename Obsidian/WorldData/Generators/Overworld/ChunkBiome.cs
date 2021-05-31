@@ -1,4 +1,5 @@
 ﻿using Obsidian.ChunkData;
+using Obsidian.WorldData.Generators.Overworld.Terrain;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
@@ -19,7 +20,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
     public static class ChunkBiome
     {
-        public static Biomes GetBiome(int worldX, int worldZ, OverworldNoise noiseGen)
+        public static Biomes GetBiome(int worldX, int worldZ, OverworldTerrain noiseGen)
         {
             Temp t;
             double temperature = noiseGen.GetBiomeTemp(worldX, worldZ);
@@ -33,8 +34,6 @@ namespace Obsidian.WorldData.Generators.Overworld
             if (humidity > 0.33) { h = Humidity.dry; }
             else if (humidity > -0.33) { h = Humidity.neutral; }
             else { h = Humidity.wet; }
-
-#pragma warning disable CS8524 // The switch expression does not handle some values of its input type (it is not exhaustive) involving an unnamed enum value.
 
             Biomes b = Biomes.Nether;
             // River
@@ -73,41 +72,6 @@ namespace Obsidian.WorldData.Generators.Overworld
                             Humidity.wet => Biomes.SnowyTaigaMountains,
                             Humidity.neutral => Biomes.WoodedMountains,
                             Humidity.dry => Biomes.Mountains
-                        }; break;
-                    case Temp.freezing:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.SnowyTaigaMountains,
-                            Humidity.neutral => Biomes.SnowyMountains,
-                            Humidity.dry => Biomes.GravellyMountains
-                        }; break;
-                }
-            }
-            // Badlands/Foothills
-            else if (noiseGen.IsBadlands(worldX, worldZ))
-            {
-                switch (t)
-                {
-                    case Temp.hot:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.BambooJungle,
-                            Humidity.neutral => Biomes.BadlandsPlateau,
-                            Humidity.dry => Biomes.ErodedBadlands
-                        }; break;
-                    case Temp.warm:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.BirchForestHills,
-                            Humidity.neutral => Biomes.DarkForestHills,
-                            Humidity.dry => Biomes.GiantSpruceTaigaHills
-                        }; break;
-                    case Temp.cold:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.SnowyTaigaMountains,
-                            Humidity.neutral => Biomes.DarkForestHills,
-                            Humidity.dry => Biomes.WoodedHills
                         }; break;
                     case Temp.freezing:
                         b = h switch
@@ -189,7 +153,6 @@ namespace Obsidian.WorldData.Generators.Overworld
                 }
             }
             // Ocean
-
             else if (noiseGen.IsOcean(worldX, worldZ))
             {
                 switch (t)
