@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
     [ServerOnly]
-    public partial class ClickWindow : IPacket
+    public partial class ClickWindow : IServerboundPacket
     {
         /// <summary>
         /// The ID of the window which was clicked. 0 for player inventory.
@@ -50,17 +50,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x09;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.WindowId = await stream.ReadUnsignedByteAsync();
-            this.ClickedSlot = await stream.ReadShortAsync();
-            this.Button = await stream.ReadByteAsync();
-            this.ActionNumber = await stream.ReadShortAsync();
-            this.Mode = (InventoryOperationMode)await stream.ReadVarIntAsync();
-            this.Item = await stream.ReadSlotAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             var inventory = player.OpenedInventory;
 

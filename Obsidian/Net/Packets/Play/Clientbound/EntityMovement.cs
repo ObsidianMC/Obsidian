@@ -1,19 +1,13 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class EntityMovement : ISerializablePacket
+    public partial class EntityMovement : IClientboundPacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
 
         public int Id => 0x2A;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,15 +1,13 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class ChatMessagePacket : ISerializablePacket
+    public partial class ChatMessagePacket : IClientboundPacket
     {
         [Field(0)]
         public ChatMessage Message { get; private set; }
@@ -31,9 +29,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = (sbyte)type;
             //Sender = sender;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

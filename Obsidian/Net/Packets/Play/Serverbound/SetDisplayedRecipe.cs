@@ -5,18 +5,13 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class SetDisplayedRecipe : IPacket
+    public partial class SetDisplayedRecipe : IServerboundPacket
     {
         [Field(0)]
         public string RecipeId { get; set; }
 
         public int Id => 0x1E;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.RecipeId = await stream.ReadStringAsync();
-        }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }
