@@ -398,7 +398,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < Environment.ProcessorCount/2; a++)
+            for (int a = 0; a < Environment.ProcessorCount; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);

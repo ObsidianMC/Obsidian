@@ -170,7 +170,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// 0 -> 0.5 for more land
         /// -0.5 -> 0 for more ocean
         /// </summary>
-        public double OceanLandRatio { get; set; } = 0.0;
+        public double OceanLandRatio { get; set; } = 0.2;
 
         /// <summary>
         /// Size of Continents (and Oceans)
@@ -178,7 +178,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// Increase for larger continents
         /// Decrease for smaller
         /// </summary>
-        public double ContinentSize { get; set; } = 1.0;
+        public double ContinentSize { get; set; } = 2.0;
 
         /// <summary>
         /// 0 for equal amounts of wet/average/dry biomes
@@ -207,7 +207,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// Increase for larger biomes
         /// Decrease for smaller biomes
         /// </summary>
-        public double BiomeSize { get; set; } = 4.0;
+        public double BiomeSize { get; set; } = 2.0;
 
 
         public OverworldTerrainSettings()

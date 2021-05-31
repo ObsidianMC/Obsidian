@@ -21,9 +21,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     LowerBound = 0.0,
                     Source0 = new ScalePoint
                     {
-                        XScale = 1 / 16.0,
+                        XScale = 1 / 3.20,
                         YScale = 1 / 16.0,
-                        ZScale = 1 / 16.0,
+                        ZScale = 1 / 3.20,
                         Source0 = new Multiply
                         {
                             // [Positive-plains-basis-0 module]: This scale/bias module makes the
@@ -32,7 +32,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             // module.
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.1, // Flatten -1 < y < 1 to -0.1 < y < 0.1
+                                Scale = 0.01, // Flatten -1 < y < 1 to -0.1 < y < 0.1
                                 Bias = 0.3, // move -1 < y < 1 up by 0.1
                                 // [Plains-basis-0 module]: This billow-noise module, along with the
                                 // plains-basis-1 module, produces the plains.
@@ -42,7 +42,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                     Frequency = 18.5,
                                     Persistence = 0.5,
                                     Lacunarity = settings.PlainsLacunarity,
-                                    OctaveCount = 1,
+                                    OctaveCount = 3,
                                     Quality = NoiseQuality.Standard,
                                 }
                             },

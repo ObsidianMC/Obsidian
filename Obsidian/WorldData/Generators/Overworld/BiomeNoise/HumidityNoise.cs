@@ -20,19 +20,7 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
             {
                 Source0 = new Curve
                 {
-                    ControlPoints = new List<Curve.ControlPoint>
-                    {
-                        new Curve.ControlPoint(-3.000 - settings.BiomeHumidityRatio,  0.000),
-                        new Curve.ControlPoint(-0.350 - settings.BiomeHumidityRatio,  0.000),
-                        new Curve.ControlPoint(-0.345 - settings.BiomeHumidityRatio,  1.000),
-                        new Curve.ControlPoint(-0.320 - settings.BiomeHumidityRatio,  1.000),
-                        new Curve.ControlPoint(-0.315 - settings.BiomeHumidityRatio,  0.000),
-                        new Curve.ControlPoint( 0.315 - settings.BiomeHumidityRatio,  0.000),
-                        new Curve.ControlPoint( 0.320 - settings.BiomeHumidityRatio,  1.000),
-                        new Curve.ControlPoint( 0.345 - settings.BiomeHumidityRatio,  1.000),
-                        new Curve.ControlPoint( 0.350 - settings.BiomeHumidityRatio,  0.000),
-                        new Curve.ControlPoint( 3.000 - settings.BiomeHumidityRatio,  0.000),
-                    },
+                    ControlPoints = RiverControlPoints,
                     Source0 = Noise()
                 }
             };

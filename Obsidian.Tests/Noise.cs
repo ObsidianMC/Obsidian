@@ -20,7 +20,7 @@ namespace Obsidian.Tests
         public async void SameAsync()
         {
             OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = 1337;
+            generatorSettings.Seed = 13387;
             OverworldTerrain noiseGen = new OverworldTerrain(generatorSettings, true);
 
             var map = new NoiseMap();
@@ -41,7 +41,7 @@ namespace Obsidian.Tests
             renderer.BuildTerrainGradient();
 
             builder.SetBounds(-1024, 1024, -1024, 1024);
-            builder.SetDestSize(2048, 2048);
+            builder.SetDestSize(1024, 1024);
             builder.Build();
 
             renderer.Render();

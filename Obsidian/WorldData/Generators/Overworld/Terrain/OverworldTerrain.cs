@@ -38,9 +38,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             // Used to stretch or shrink the terrain horizontally.
             var scaled = new ScalePoint
             {
-                XScale = 1 / 28.103,
+                XScale = 1 / 140.103,
                 YScale = 1 / 80.5515,
-                ZScale = 1 / 28.103,
+                ZScale = 1 / 140.103,
                 Source0 = MergedLandOceanRivers()
             };
 
@@ -77,17 +77,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         XScale = 1 / (settings.ContinentSize * 1.01),
                         YScale = 1 / (settings.ContinentSize * 1.01),
                         ZScale = 1 / (settings.ContinentSize * 1.01),
-                        Source0 = new Curve
+                        Source0 = new ScaleBias
                         {
-                            // Flatten values and adjust for ocean/land ratio
-                            ControlPoints = new List<Curve.ControlPoint>
-                            {
-                                new Curve.ControlPoint(-1.0000 - settings.OceanLandRatio,  0.000),
-                                new Curve.ControlPoint(-0.300 - settings.OceanLandRatio,  0.000),
-                                new Curve.ControlPoint( 0.0000 - settings.OceanLandRatio,  0.500),
-                                new Curve.ControlPoint( 0.300 - settings.OceanLandRatio,  1.000),
-                                new Curve.ControlPoint( 1.0000 - settings.OceanLandRatio,  1.000),
-                            },
+                            Bias = 0.5 + settings.OceanLandRatio,
+                            Scale = 0.5,
                             // Actual noise for continents. Ocean < 0 < Land
                             Source0 = new Perlin
                             {
@@ -113,7 +106,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     Source0 = ocean.Result,
                     Source1 = TerrainSelect(),
                     Control = LandOceanSelector(),
-                    EdgeFalloff = 0.35,
+                    EdgeFalloff = 0.15,
                     LowerBound = 0.55,
                     UpperBound = 2.0
                 }
@@ -129,9 +122,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     Source0 = MergedLandOcean(),
                     Source1 = rivers.Result,
                     Control = MergedRivers(),
-                    LowerBound = 0.7,
+                    LowerBound = 0.5,
                     UpperBound = 2.0,
-                    EdgeFalloff = 0.015
+                    EdgeFalloff = 0.2
                 }
             };
         }
@@ -189,7 +182,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         }
                     },
                     Control = LandOceanSelector(),
-                    EdgeFalloff = 0.15,
+                    //EdgeFalloff = 0.15,
                     LowerBound = 0.6,
                     UpperBound = 2.0
                 }   
