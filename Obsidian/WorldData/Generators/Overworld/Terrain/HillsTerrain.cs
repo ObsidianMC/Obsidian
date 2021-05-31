@@ -22,10 +22,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         {
             this.Result = new Cache
             {
-                // Sanity check to force results b/w -1.0<y<1.0
                 Source0 = new Clamp
                 {
-                    Source0 = HillsRefined()
+                    UpperBound = 1.0,
+                    LowerBound = 0.0,
+                    Source0 = new ScalePoint
+                    {
+                        XScale = 1 / 10.0,
+                        YScale = 1 / 10.0,
+                        ZScale = 1 / 10.0,
+                        Source0 = HillsRefined()
+                    }
                 }
             };
         }
@@ -65,8 +72,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         // module, decreasing the heights of the hilltops.
                         Source0 = new ScaleBias
                         {
-                            Scale = 0.1, // terrain amplification
-                            Bias = 0, // 0 is sea level
+                            Scale = 0.5, // terrain amplification
+                            Bias = 0.1, // 0 is sea level
                             // [Mountains-and-valleys module]: This blender module merges the
                             // scaled-hills module and the scaled-river-valley module together.  It
                             // causes the low-lying areas of the terrain to become smooth, and causes

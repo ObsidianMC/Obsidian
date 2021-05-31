@@ -165,10 +165,54 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// </summary>
         public double TerrainVertStretch { get; set; }
 
+        /// <summary>
+        /// 0 for equal amounts land/ocean
+        /// 0 -> 0.5 for more land
+        /// -0.5 -> 0 for more ocean
+        /// </summary>
+        public double OceanLandRatio { get; set; } = 0.0;
+
+        /// <summary>
+        /// Size of Continents (and Oceans)
+        /// 4.0 is normal.
+        /// Increase for larger continents
+        /// Decrease for smaller
+        /// </summary>
+        public double ContinentSize { get; set; } = 1.0;
+
+        /// <summary>
+        /// 0 for equal amounts of wet/average/dry biomes
+        /// 0 -> 0.5 for more dry biomes
+        /// -0.5 -> 0 for more wet biomes
+        /// </summary>
+        public double BiomeHumidityRatio { get; set; } = 0.0;
+
+        /// <summary>
+        /// 0 for equal amounts of cold/average/hot biomes
+        /// 0 -> 0.5 for more hot biomes
+        /// -0.5 -> 0 for more cold biomes
+        /// </summary>
+        public double BiomeTemperatureRatio { get; set; } = 0.0;
+
+        /// <summary>
+        /// 0 for equal amounts of plain/hilly/mountainous biomes
+        /// 0 -> 0.5 for more mountains biomes
+        /// -0.5 -> 0 for more plains biomes
+        /// </summary>
+        public double BiomeTerrainRatio { get; set; } = 0.0;
+
+        /// <summary>
+        /// Size of Biomes
+        /// 8.0 is normal
+        /// Increase for larger biomes
+        /// Decrease for smaller biomes
+        /// </summary>
+        public double BiomeSize { get; set; } = 4.0;
+
 
         public OverworldTerrainSettings()
         {
-            Seed = 1337;
+            Seed = 133780085;
             MinElev = 40; // 0; // 40;
             MaxElev = 168; // 256; // 168;
             ContinentFrequency = 0.5;
@@ -201,6 +245,7 @@ namespace Obsidian.WorldData.Generators.Overworld
 
             TerrainHorizStretch = 0.00008; // 0.0008; // 
             TerrainVertStretch = 0.60; // 0.4; //
+
         }
     }
 }

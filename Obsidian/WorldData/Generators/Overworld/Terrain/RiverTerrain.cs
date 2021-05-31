@@ -8,17 +8,17 @@ using System.Threading.Tasks;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
-    public class PlainsTerrain : BaseTerrain
+    public class RiverTerrain : BaseTerrain
     {
         // Generates the plains terrain.
-        // Outputs will be between 0 and 1
-        public PlainsTerrain(OverworldTerrainSettings ots) : base(ots)
+        // Outputs will be between -0.3 and -0.1
+        public RiverTerrain(OverworldTerrainSettings ots) : base(ots)
         {
             this.Result = new Cache
             {
                 Source0 = new Clamp {
-                    UpperBound = 1.0,
-                    LowerBound = 0.0,
+                    UpperBound = 0.0,
+                    LowerBound = -0.4,
                     Source0 = new ScalePoint
                     {
                         XScale = 1 / 16.0,
@@ -32,8 +32,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             // module.
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.1, // Flatten -1 < y < 1 to -0.1 < y < 0.1
-                                Bias = 0.3, // move -1 < y < 1 up by 0.1
+                                Scale = 0.1,
+                                Bias = -0.2,
                                 // [Plains-basis-0 module]: This billow-noise module, along with the
                                 // plains-basis-1 module, produces the plains.
                                 Source0 = new Billow
