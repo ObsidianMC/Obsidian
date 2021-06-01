@@ -605,7 +605,7 @@ namespace Obsidian
 
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
-                
+
                 _ = Task.Run(() => World.ManageChunks());
             }
         }
@@ -632,8 +632,20 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
-                await other.client.RemovePlayerFromListAsync(e.Player);
+            var player = e.Player as Player;
+
+            this.World.RemovePlayer(player);
+
+            var destroy = new DestroyEntities
+            {
+                EntityIds = new() { player.EntityId }
+            };
+            foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
+            {
+                await other.client.RemovePlayerFromListAsync(player);
+                if (other.VisiblePlayers.Contains(player.EntityId))
+                    await other.client.QueuePacketAsync(destroy);
+            }
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }
