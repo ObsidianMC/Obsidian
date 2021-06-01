@@ -22,7 +22,7 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
-        internal HashSet<int> visiblePlayers = new();
+        internal HashSet<int> VisiblePlayers = new();
 
         public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
@@ -52,9 +52,6 @@ namespace Obsidian.Entities
         public IScoreboard CurrentScoreboard { get; set; }
 
         public bool Sleeping { get; set; }
-        public bool Sneaking { get; set; }
-        public bool Sprinting { get; set; }
-        public bool FlyingWithElytra { get; set; }
         public bool InHorseInventory { get; set; }
 
         public bool IsDragging { get; set; }
@@ -144,9 +141,9 @@ namespace Obsidian.Entities
         {
             foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
             {
-                if (!this.visiblePlayers.Contains(player.EntityId))
+                if (!this.VisiblePlayers.Contains(player.EntityId))
                 {
-                    this.visiblePlayers.Add(player.EntityId);
+                    this.VisiblePlayers.Add(player.EntityId);
 
                     await this.client.QueuePacketAsync(new SpawnPlayer
                     {
@@ -158,6 +155,8 @@ namespace Obsidian.Entities
                     });
                 }
             }
+
+            this.VisiblePlayers.RemoveWhere(x => server.GetPlayer(x) == null);
         }
 
         private async Task PickupNearbyItemsAsync(Server server, float distance = 0.5f)

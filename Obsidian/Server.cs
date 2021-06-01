@@ -182,6 +182,8 @@ namespace Obsidian
 
         public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
+        public IPlayer GetPlayer(int entityId) => this.OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
+
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
@@ -416,7 +418,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = droppedItem.GetItem().Id,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = loc
                         };
@@ -519,7 +521,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = itemId,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
@@ -603,7 +605,7 @@ namespace Obsidian
 
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
-                
+
                 _ = Task.Run(() => World.ManageChunks());
             }
         }
@@ -630,8 +632,20 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
-                await other.client.RemovePlayerFromListAsync(e.Player);
+            var player = e.Player as Player;
+
+            this.World.RemovePlayer(player);
+
+            var destroy = new DestroyEntities
+            {
+                EntityIds = new() { player.EntityId }
+            };
+            foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
+            {
+                await other.client.RemovePlayerFromListAsync(player);
+                if (other.VisiblePlayers.Contains(player.EntityId))
+                    await other.client.QueuePacketAsync(destroy);
+            }
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }

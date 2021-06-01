@@ -10,14 +10,22 @@ namespace Obsidian.API
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
         public int EntityId { get; }
-        public EntityBitMask EntityBitMask { get; set; }
+
         public Pose Pose { get; set; }
         public EntityType Type { get; }
         public int Air { get; set; }
+
         public bool CustomNameVisible { get; }
         public bool Silent { get; }
-        public bool NoGravity { get; set; }
-        public bool OnGround { get; set; }
+        public bool NoGravity { get; }
+        public bool OnGround { get; }
+        public bool Sneaking { get; }
+        public bool Sprinting { get; }
+        public bool Glowing { get; }
+        public bool Invisible { get; }
+        public bool Burning { get; }
+        public bool Swimming { get; }
+        public bool FlyingWithElytra { get; }
 
         public Task RemoveAsync();
         public Task TickAsync();
