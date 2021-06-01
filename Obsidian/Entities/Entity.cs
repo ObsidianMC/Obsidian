@@ -243,7 +243,7 @@ namespace Obsidian.Entities
             stream.WriteVarInt(Air);
 
             stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
-            stream.WriteBoolean(CustomName is not null)//;
+            stream.WriteBoolean(CustomName is not null);
             if (CustomName is not null)
                 stream.WriteChat(CustomName);
 
