@@ -182,6 +182,8 @@ namespace Obsidian
 
         public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
+        public IPlayer GetPlayer(int entityId) => this.OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
+
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
