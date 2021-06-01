@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Obsidian.Utilities
 {
@@ -14,41 +15,38 @@ namespace Obsidian.Utilities
             if (text is null)
                 throw new ArgumentNullException(nameof(text));
 
-            int hash = text.GetHashCode();
-
-            var i128 = new Int128
-            {
-                a = HashCode.Combine(hash, 0),
-                b = HashCode.Combine(hash, 256),
-                c = HashCode.Combine(hash, 65536),
-                d = HashCode.Combine(hash, 16777216)
-            };
-
-            return Unsafe.As<Int128, Guid>(ref i128);
-        }
-
-        public static Guid FromStringHashCryptographic(string text)
-        {
-            if (text is null)
-                throw new ArgumentNullException(nameof(text));
-
             var i128 = new Int128();
 
             hashAlgorithm ??= MD5.Create();
 
-            hashAlgorithm.TryComputeHash(text.AsByteSpan(), i128.AsSpan(), out _);
+            hashAlgorithm.TryComputeHash(Encoding.UTF8.GetBytes(text), i128.AsSpan(), out _);
+
+            i128.version = (byte)((i128.version & 0x0f) | 0x30);
+            i128.variant = (byte)((i128.variant & 0x3f) | 0x80);
 
             return Unsafe.As<Int128, Guid>(ref i128);
         }
 
-        private static ReadOnlySpan<byte> AsByteSpan(this string text)
+        public static int GetVersion(Guid guid)
         {
-            ref char charPtr = ref Unsafe.AsRef(text.GetPinnableReference());
-            ref byte ptr = ref Unsafe.As<char, byte>(ref charPtr);
-            return MemoryMarshal.CreateReadOnlySpan(ref ptr, text.Length * 2);
+            ref Int128 i128 = ref Unsafe.As<Guid, Int128>(ref guid);
+            return i128.version >> 4;
         }
 
-        [StructLayout(LayoutKind.Explicit)]
+        public static int GetVariant(Guid guid)
+        {
+            ref Int128 i128 = ref Unsafe.As<Guid, Int128>(ref guid);
+            return (i128.variant >> 4) switch
+            {
+                <= 0b0111 => 0,
+                <= 1011 => 1,
+                <= 1101 => 2,
+                1110 => 3,
+                _ => -1
+            };
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
         private struct Int128
         {
             [FieldOffset(0)]
@@ -63,6 +61,12 @@ namespace Obsidian.Utilities
             [FieldOffset(0)]
             private byte start;
 
+            [FieldOffset(7)]
+            public byte version;
+            [FieldOffset(8)]
+            public byte variant;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Span<byte> AsSpan()
             {
                 return MemoryMarshal.CreateSpan(ref start, 16);
