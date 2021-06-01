@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.AI;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -30,6 +31,8 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
+        public Guid Uuid { get; set; } = Guid.NewGuid();
+
         public Pose Pose { get; set; } = Pose.Standing;
 
         public EntityType Type { get; set; }
@@ -50,6 +53,13 @@ namespace Obsidian.Entities
         public bool Burning { get; set; }
         public bool Swimming { get; set; }
         public bool FlyingWithElytra { get; set; }
+        public INavigator Navigator { get; set; }
+        public IGoalController GoalController { get; set; }
+
+        public Entity()
+        {
+
+        }
 
         #region Update methods
         internal virtual Task UpdateAsync(Server server, VectorF position, bool onGround)

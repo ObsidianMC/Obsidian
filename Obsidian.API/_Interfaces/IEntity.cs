@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Obsidian.API.AI;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.API
@@ -6,6 +8,12 @@ namespace Obsidian.API
     public interface IEntity
     {
         public IWorld WorldLocation { get; }
+        public INavigator Navigator { get; set; }
+
+        public IGoalController GoalController { get; set; }
+
+        public Guid Uuid { get; set; }
+
         public VectorF Position { get; set; }
         public Angle Pitch { get; set; }
         public Angle Yaw { get; set; }
