@@ -29,8 +29,6 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
-
-
         public Pose Pose { get; set; } = Pose.Standing;
 
         public int Air { get; set; } = 300;
@@ -246,7 +244,7 @@ namespace Obsidian.Entities
             stream.WriteVarInt(Air);
 
             stream.WriteEntityMetadataType(2, EntityMetadataType.OptChat);
-            stream.WriteBoolean(CustomName is not null);
+            stream.WriteBoolean(CustomName is not null)//;
             if (CustomName is not null)
                 stream.WriteChat(CustomName);
 
