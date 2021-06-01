@@ -139,6 +139,7 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
+            this.Events.PlayerAttackEntity += this.PlayerAttack;
 
             if (this.Config.UDPBroadcast)
             {
@@ -630,6 +631,19 @@ namespace Obsidian
         }
 
         #region Events
+        private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+        {
+            var entity = e.Entity;
+            var attacker = e.Attacker;
+
+            if(entity is IPlayer player)
+            {
+                this.Logger.LogDebug($"{attacker.Username} Attacked {player.Username}");
+            }
+
+            return Task.CompletedTask;
+        }
+
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
             var player = e.Player as Player;

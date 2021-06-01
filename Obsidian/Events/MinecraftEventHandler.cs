@@ -18,6 +18,8 @@ namespace Obsidian.Events
         public AsyncEvent<BlockInteractEventArgs> BlockInteract;
         public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
         public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
+        public AsyncEvent<EntityInteractEventArgs> EntityInteract;
+        public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
         public AsyncEvent ServerTick;
 
         public MinecraftEventHandler()
@@ -36,6 +38,8 @@ namespace Obsidian.Events
             IncomingChatMessage = new("IncomingChatMessage", HandleException);
             PlayerTeleported = new("PlayerTeleported", HandleException);
             ServerStatusRequest = new("ServerStatusRequest", HandleException);
+            EntityInteract = new("EntityInteract", HandleException);
+            PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
         }
 
         private void HandleException(AsyncEvent e, Exception exception)
@@ -89,6 +93,18 @@ namespace Obsidian.Events
         internal async Task<PermissionRevokedEventArgs> InvokePermissionRevokedAsync(PermissionRevokedEventArgs eventArgs)
         {
             await this.PermissionRevoked.InvokeAsync(eventArgs);
+            return eventArgs;
+        }
+
+        internal async Task<EntityInteractEventArgs> InvokeEntityInteractAsync(EntityInteractEventArgs eventArgs)
+        {
+            await this.EntityInteract.InvokeAsync(eventArgs);
+            return eventArgs;
+        }
+
+        internal async Task<PlayerAttackEntityEventArgs> InvokePlayerAttackEntityAsync(PlayerAttackEntityEventArgs eventArgs)
+        {
+            await this.PlayerAttackEntity.InvokeAsync(eventArgs);
             return eventArgs;
         }
 

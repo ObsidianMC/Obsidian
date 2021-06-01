@@ -221,7 +221,11 @@ namespace Obsidian.WorldData
             if (region is null)
                 return new List<Entity>();
 
-            return region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance);
+            var selected = region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance).ToList();
+
+            selected.AddRange(this.Players.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance));
+
+            return selected;
         }
 
         public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);

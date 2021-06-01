@@ -1,13 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
-using System;
+using Obsidian.Serialization.Attributes;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    public class InteractEntity : IPacket
+    [ServerOnly]
+    public partial class InteractEntity : IServerboundPacket
     {
         public int EntityId { get; set; }
 
@@ -23,32 +25,49 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x0E;
 
-        public Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            var entity = player.GetEntitiesNear(3).FirstOrDefault(x => x.EntityId == this.EntityId);
+            var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == this.EntityId);//TODO check if the entity is within range and in vision/not being blocked by a wall
 
-            return Task.CompletedTask;
+            switch (this.Type)
+            {
+                case InteractionType.Interact:
+                    await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, this.Sneaking));
+                    break;
+                case InteractionType.Attack:
+                    await server.Events.InvokePlayerAttackEntityAsync(new PlayerAttackEntityEventArgs(player, entity, server, this.Sneaking));
+                    break;
+                case InteractionType.InteractAt:
+                    var pos = new VectorF(this.TargetX, this.TargetY, this.TargetZ);
+                    await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, this.Hand, pos, this.Sneaking));
+                    break;
+                default:
+                    break;
+            }
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public void Populate(byte[] data)
         {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.Type = (InteractionType)await stream.ReadVarIntAsync();
+            using var stream = new MinecraftStream(data);
+            Populate(stream);
+        }
 
-            if(this.Type == InteractionType.InteractAt)
+        public void Populate(MinecraftStream stream)
+        {
+            this.EntityId = stream.ReadVarInt();
+            this.Type = (InteractionType)stream.ReadVarInt();
+
+            if (this.Type == InteractionType.InteractAt)
             {
-                this.TargetX = await stream.ReadFloatAsync();
-                this.TargetY = await stream.ReadFloatAsync();
-                this.TargetZ = await stream.ReadFloatAsync();
-
-                this.Hand = (Hand)await stream.ReadVarIntAsync();
+                this.TargetX = stream.ReadFloat();
+                this.TargetY = stream.ReadFloat();
+                this.TargetZ = stream.ReadFloat();
             }
 
-            this.Sneaking = await stream.ReadBooleanAsync();
+            if (this.Type == InteractionType.Interact || this.Type == InteractionType.InteractAt)
+                this.Hand = (Hand)stream.ReadVarInt();
+
+            this.Sneaking = stream.ReadBoolean();
         }
-
-        public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
-
-        public Task WriteAsync(MinecraftStream stream) => throw new NotImplementedException();
     }
 }

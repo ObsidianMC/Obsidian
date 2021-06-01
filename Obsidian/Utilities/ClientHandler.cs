@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
@@ -100,6 +101,10 @@ namespace Obsidian
 
                 case 0x0B:
                     await HandleFromPoolAsync<PluginMessage>(data, client);
+                    break;
+
+                case 0x0E:
+                    await HandleFromPoolAsync<InteractEntity>(data, client);
                     break;
 
                 case 0x18:
