@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -10,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
+    //TODO detect when an entity is swimming
     public class Entity : IEquatable<Entity>, IEntity
     {
         public World World { get; set; }
@@ -29,7 +29,7 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
-        public EntityBitMask EntityBitMask { get; set; } = EntityBitMask.None;
+
 
         public Pose Pose { get; set; } = Pose.Standing;
 
@@ -41,8 +41,14 @@ namespace Obsidian.Entities
         public bool Silent { get; private set; }
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
-
+        public bool Sneaking { get; set; }
+        public bool Sprinting { get; set; }
         public bool CanBeSeen { get; set; }
+        public bool Glowing { get; set; }
+        public bool Invisible { get; set; }
+        public bool Burning { get; set; }
+        public bool Swimming { get; set; }
+        public bool FlyingWithElytra { get; set; }
 
         public Entity()
         {
@@ -76,7 +82,7 @@ namespace Obsidian.Entities
             return Task.CompletedTask;
         }
 
-        
+
         internal virtual Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             var isNewLocation = position != this.Position;
@@ -186,9 +192,39 @@ namespace Obsidian.Entities
 
         public Task RemoveAsync() => this.World.DestroyEntityAsync(this);
 
+        private EntityBitMask GenerateBitmask()
+        {
+            var mask = EntityBitMask.None;
+
+            if (this.Sneaking)
+            {
+                this.Pose = Pose.Sneaking;
+                mask |= EntityBitMask.Crouched;
+            }
+            else if (this.Swimming)
+            {
+                this.Pose = Pose.Swimming;
+                mask |= EntityBitMask.Swimming;
+            }
+            else if (!this.Sneaking && this.Pose == Pose.Sneaking || !this.Swimming && this.Pose == Pose.Swimming)
+                this.Pose = Pose.Standing;
+            else if (this.Sprinting)
+                mask |= EntityBitMask.Sprinting;
+            else if (this.Glowing)
+                mask |= EntityBitMask.Glowing;
+            else if (this.Invisible)
+                mask |= EntityBitMask.Invisible;
+            else if (this.Burning)
+                mask |= EntityBitMask.OnFire;
+            else if (this.FlyingWithElytra)
+                mask |= EntityBitMask.FlyingWithElytra;
+
+            return mask;
+        }
+
         public virtual async Task WriteAsync(MinecraftStream stream)
         {
-            await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)this.EntityBitMask);
+            await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)this.GenerateBitmask());
 
             await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, this.Air);
 
@@ -203,7 +239,8 @@ namespace Obsidian.Entities
         public virtual void Write(MinecraftStream stream)
         {
             stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
-            stream.WriteUnsignedByte((byte)EntityBitMask);
+
+            stream.WriteUnsignedByte((byte)this.GenerateBitmask());
 
             stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
             stream.WriteVarInt(Air);

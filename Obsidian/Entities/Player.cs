@@ -53,9 +53,6 @@ namespace Obsidian.Entities
         public IScoreboard CurrentScoreboard { get; set; }
 
         public bool Sleeping { get; set; }
-        public bool Sneaking { get; set; }
-        public bool Sprinting { get; set; }
-        public bool FlyingWithElytra { get; set; }
         public bool InHorseInventory { get; set; }
 
         public bool IsDragging { get; set; }

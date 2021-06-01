@@ -416,7 +416,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = droppedItem.GetItem().Id,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = loc
                         };
@@ -519,7 +519,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = itemId,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
