@@ -421,7 +421,8 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc
+                            Position = loc,
+                            Server = this
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -527,7 +528,8 @@ namespace Obsidian
                             Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f)
+                                (Globals.Random.NextSingle() * 0.5f) + 0.25f),
+                            Server = this
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -636,12 +638,10 @@ namespace Obsidian
             var entity = e.Entity;
             var attacker = e.Attacker;
 
-            if(entity is IPlayer player)
+            if (entity is IPlayer player)
             {
-                this.Logger.LogDebug($"{attacker.Username} Attacked {player.Username}");
+                await player.DamageAsync(attacker);
             }
-
-            return Task.CompletedTask;
         }
 
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)

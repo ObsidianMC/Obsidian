@@ -1,5 +1,6 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
@@ -8,6 +9,7 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Clientbound.GameState;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
@@ -24,7 +26,6 @@ namespace Obsidian.Entities
 
         internal HashSet<int> VisiblePlayers = new();
 
-        public IServer Server => client.Server;
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
@@ -42,8 +43,6 @@ namespace Obsidian.Entities
 
         public Block LastClickedBlock { get; internal set; }
 
-        public Guid Uuid { get; set; }
-
         public PlayerBitMask PlayerBitMask { get; set; }
         public Gamemode Gamemode { get; set; }
 
@@ -53,7 +52,6 @@ namespace Obsidian.Entities
 
         public bool Sleeping { get; set; }
         public bool InHorseInventory { get; set; }
-
         public bool IsDragging { get; set; }
 
         public short AttackTime { get; set; }
@@ -103,46 +101,48 @@ namespace Obsidian.Entities
             {
                 Owner = uuid
             };
-            this.Type = EntityType.Player; 
+            this.Server = client.Server;
+            this.Type = EntityType.Player;
 
             LoadPerms();
         }
 
-        internal override async Task UpdateAsync(Server server, VectorF position, bool onGround)
+        internal override async Task UpdateAsync(VectorF position, bool onGround)
         {
-            await base.UpdateAsync(server, position, onGround);
+            await base.UpdateAsync(position, onGround);
 
             this.HeadY = position.Y + 1.62f;
 
-            await this.TrySpawnPlayerAsync(position, server);
+            await this.TrySpawnPlayerAsync(position);
 
-            await this.PickupNearbyItemsAsync(server, 1);
+            await this.PickupNearbyItemsAsync(1);
         }
 
-        internal override async Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
-            await base.UpdateAsync(server, position, yaw, pitch, onGround);
+            await base.UpdateAsync(position, yaw, pitch, onGround);
 
             this.HeadY = position.Y + 1.62f;
 
-            await this.TrySpawnPlayerAsync(position, server);
+            await this.TrySpawnPlayerAsync(position);
 
-            await this.PickupNearbyItemsAsync(server, 0.8f);
+            await this.PickupNearbyItemsAsync(0.8f);
         }
 
-        internal override async Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        internal override async Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
         {
-            await base.UpdateAsync(server, yaw, pitch, onGround);
+            await base.UpdateAsync(yaw, pitch, onGround);
 
-            await this.PickupNearbyItemsAsync(server, 2);
+            await this.PickupNearbyItemsAsync(2);
         }
 
-        private async Task TrySpawnPlayerAsync(VectorF position, Server server)
+        private async Task TrySpawnPlayerAsync(VectorF position)
         {
             foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
             {
-                if (!this.VisiblePlayers.Contains(player.EntityId))
+                if (!this.VisiblePlayers.Contains(player.EntityId) && player.Alive)
                 {
+                    this.server.Logger.LogDebug($"Added back: {player.Username}");
                     this.VisiblePlayers.Add(player.EntityId);
 
                     await this.client.QueuePacketAsync(new SpawnPlayer
@@ -156,16 +156,16 @@ namespace Obsidian.Entities
                 }
             }
 
-            this.VisiblePlayers.RemoveWhere(x => server.GetPlayer(x) == null);
+            this.VisiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
         }
 
-        private async Task PickupNearbyItemsAsync(Server server, float distance = 0.5f)
+        private async Task PickupNearbyItemsAsync(float distance = 0.5f)
         {
             foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
             {
                 if (entity is ItemEntity item)
                 {
-                    server.BroadcastPacketWithoutQueue(new CollectItem
+                    this.server.BroadcastPacketWithoutQueue(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -342,6 +342,58 @@ namespace Obsidian.Entities
             return KickAsync(chatMessage);
         }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
+
+        public async Task RespawnAsync()
+        {
+            this.VisiblePlayers.Clear();
+
+            Registry.DefaultDimensions.TryGetValue(0, out var codec);
+
+            await this.client.QueuePacketAsync(new Respawn
+            {
+                Dimension = codec,
+                WorldName = "minecraft:world",
+                Gamemode = this.Gamemode,
+                PreviousGamemode = this.Gamemode,
+                HashedSeed = 0,
+                IsFlat = false,
+                IsDebug = false,
+                CopyMetadata = false
+            });
+
+            //Gotta send chunks again
+            await this.World.ResendBaseChunksAsync(this.client);
+
+            this.Position = this.server.World.Data.SpawnPosition;
+
+            await this.client.QueuePacketAsync(new PlayerPositionAndLook
+            {
+                Position = this.server.World.Data.SpawnPosition,
+                Yaw = 0,
+                Pitch = 0,
+                Flags = PositionFlags.None,
+                TeleportId = 0
+            });
+
+            if (!this.Alive)
+                this.Health = 20f;
+        }
+
+        public override async Task KillAsync(IEntity source, IChatMessage deathMessage)
+        {
+            await this.client.QueuePacketAsync(new PlayerDied
+            {
+                PlayerId = this.EntityId,
+                EntityId = source != null ? source.EntityId : -1,
+                Message = deathMessage as ChatMessage
+            });
+
+            await this.client.QueuePacketAsync(new EnableRespawnScreen(RespawnReason.EnableRespawnScreen));
+            await this.RemoveAsync();
+
+            if (source is Player attacker)
+                attacker.VisiblePlayers.Remove(this.EntityId);
+        }
 
         public override async Task WriteAsync(MinecraftStream stream)
         {

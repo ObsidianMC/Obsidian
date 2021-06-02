@@ -29,7 +29,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            await player.UpdateAsync(server, this.Position, this.OnGround);
+            await player.UpdateAsync(this.Position, this.OnGround);
             await player.World.UpdateClientChunksAsync(player.client);
         }
     }

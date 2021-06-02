@@ -24,7 +24,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            await player.UpdateAsync(server, Position, Yaw, Pitch, OnGround);
+            await player.UpdateAsync(Position, Yaw, Pitch, OnGround);
         }
     }
 }
