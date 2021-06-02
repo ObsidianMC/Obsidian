@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData
 {
-    public class Cube
+   /* public class Cube
     {
         private static bool initialized;
         private static Stack<short[]> cubesCache;
@@ -16,8 +16,7 @@ namespace Obsidian.WorldData
         private readonly byte offsetY;
         private readonly byte offsetZ;
 
-        internal const int width = 16;
-        internal const int height = 16;
+        
         private const int totalBlocks = width * width * height;
 
         private const int xMult = totalBlocks / width;
@@ -171,5 +170,5 @@ namespace Obsidian.WorldData
             }
             blocks = null;
         }
-    }
+    }*/
 }

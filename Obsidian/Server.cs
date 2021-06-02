@@ -253,7 +253,6 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
