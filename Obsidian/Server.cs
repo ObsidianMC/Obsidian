@@ -469,7 +469,7 @@ namespace Obsidian
                         player.Inventory.RemoveItem(player.CurrentSlot);
                         break;
                     }
-                case DiggingStatus.StartedDigging:
+                case DiggingStatus.StartedDigging://TODO display block break animation to nearby players
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
                         Position = digging.Position,
@@ -486,16 +486,16 @@ namespace Obsidian
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                    this.BroadcastPacketWithoutQueue(new BlockBreakAnimation
                     {
+                        EntityId = player,
                         Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                        DestroyStage = -1
+                    }, player.EntityId);
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
+                        this.Logger.LogDebug("Finished Digging");
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
