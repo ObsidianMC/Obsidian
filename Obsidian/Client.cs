@@ -317,7 +317,8 @@ namespace Obsidian
             this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
             this.State = ClientState.Play;
-            this.Player.Gamemode = Gamemode.Creative;
+            this.Player.Health = 20f;
+            this.Player.Gamemode = Gamemode.Survival;
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
@@ -327,7 +328,7 @@ namespace Obsidian
             {
                 EntityId = this.id,
 
-                Gamemode = Gamemode.Creative,
+                Gamemode = this.Player.Gamemode,
 
                 WorldNames = new List<string> { "minecraft:world" },
 
@@ -347,7 +348,7 @@ namespace Obsidian
 
                 EnableRespawnScreen = true,
 
-                Flat = true
+                Flat = false
             });
 
             await this.SendServerBrand();
@@ -382,17 +383,13 @@ namespace Obsidian
             await this.LoadChunksAsync();
 
             //TODO: check for last position
-            var spawnPosition = new VectorF(
-                Server.World.Data.SpawnX,
-                Server.World.Data.SpawnY,
-                Server.World.Data.SpawnZ);
 
-            var (chunkX, chunkZ) = spawnPosition.ToChunkCoord();
+            var (chunkX, chunkZ) = this.Server.World.Data.SpawnPosition.ToChunkCoord();
 
             await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
-            await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
+            await this.QueuePacketAsync(new SpawnPosition(this.Player.World.Data.SpawnPosition));
 
-            this.Player.Position = spawnPosition;
+            this.Player.Position = this.Server.World.Data.SpawnPosition;
 
             await this.QueuePacketAsync(new PlayerPositionAndLook
             {
@@ -402,8 +399,6 @@ namespace Obsidian
                 Flags = PositionFlags.None,
                 TeleportId = 0
             });
-            // TODO fix its sending chunks too fast
-            //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
 
         #region Packet sending
