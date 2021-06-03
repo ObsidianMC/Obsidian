@@ -4,7 +4,6 @@ using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Utilities;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace Obsidian.WorldData
 {
@@ -15,13 +14,11 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
-        private readonly Cube[] cubes = new Cube[cubesTotal];
-        private const int cubesTotal = cubesHorizontal * cubesHorizontal * cubesVertical;
-        private const int cubesHorizontal = 16 / Cube.width;
-        private const int cubesVertical = 256 / Cube.height;
-        private const int xMult = cubesTotal / cubesHorizontal;
-        private const int zMult = cubesTotal / (cubesHorizontal * cubesHorizontal);
-
+        private const int width = 16;
+        private const int height = 16;
+        private const int cubesHorizontal = 16 / width;
+        private const int cubesVertical = 256 / height;
+        
         public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
         public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
@@ -45,34 +42,22 @@ namespace Obsidian.WorldData
         {
             for (int i = 0; i < 16; i++)
                 this.Sections[i] = new ChunkSection(4, i);
-
-            int index = 0;
-            for (int x = 0; x < cubesHorizontal; x++)
-            {
-                for (int z = 0; z < cubesHorizontal; z++)
-                {
-                    for (int y = 0; y < cubesVertical; y++, index++)
-                    {
-                        cubes[index] = new Cube(x * Cube.width, y * Cube.height, z * Cube.width);
-                    }
-                }
-            }
         }
 
         public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
 
         public Block GetBlock(int x, int y, int z)
         {
-            short value = GetBlockStateId(x, y, z);
-            return new Block(value);
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
+
+            return Sections[y >> 4].GetBlock(x, y & 15, z);
         }
 
         public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block)
         {
-            SetBlockStateId(x, y, z, block.StateId);
-
             x = NumericsHelper.Modulo(x, 16);
             z = NumericsHelper.Modulo(z, 16);
 
@@ -105,13 +90,13 @@ namespace Obsidian.WorldData
         public void CalculateHeightmap()
         {
             Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
-            for (int x = 0; x < cubesHorizontal * Cube.width; x++)
+            for (int x = 0; x < cubesHorizontal * width; x++)
             {
-                for (int z = 0; z < cubesHorizontal * Cube.width; z++)
+                for (int z = 0; z < cubesHorizontal * width; z++)
                 {
-                    for (int y = cubesVertical * Cube.height - 1; y >= 0; y--)
+                    for (int y = cubesVertical * height - 1; y >= 0; y--)
                     {
-                        var block = new Block(GetBlockStateId(x, y, z));
+                        var block = this.GetBlock(x, y, z);
                         if (block.IsAir)
                             continue;
 
@@ -120,40 +105,6 @@ namespace Obsidian.WorldData
                     }
                 }
             }
-        }
-
-        public short GetBlockStateId(int x, int y, int z)
-        {
-            x %= 16;
-            z %= 16;
-            if (x < 0) x += 16;
-            if (z < 0) z += 16;
-
-            return cubes[ComputeIndex(x, y, z)][x, y, z];
-        }
-
-        public void SetBlockStateId(int x, int y, int z, short id)
-        {
-            x %= 16;
-            z %= 16;
-            if (x < 0) x += 16;
-            if (z < 0) z += 16;
-
-            cubes[ComputeIndex(x, y, z)][x, y, z] = id;
-        }
-
-        public void CheckHomogeneity()
-        {
-            for (int i = 0; i < cubesTotal; i++)
-            {
-                cubes[i].CheckHomogeneity();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeIndex(int x, int y, int z)
-        {
-            return x / Cube.width * xMult + z / Cube.width * zMult + y / cubesVertical;
         }
     }
 }
