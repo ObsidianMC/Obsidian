@@ -27,5 +27,7 @@ namespace Obsidian.API
 
         public Task RemoveAsync();
         public Task TickAsync();
+
+        public VectorF GetLookDirection();
     }
 }
