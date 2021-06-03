@@ -200,10 +200,12 @@ namespace Obsidian.WorldData
 
                 if (section.Palette is LinearBlockStatePalette linear)
                 {
-                    foreach (var block in linear.BlockStateArray)
+                    foreach (var stateId in linear.BlockStateArray)
                     {
-                        if (block.Id == 0)
+                        if (stateId == 0)
                             continue;
+
+                        var block = new Block(stateId);
 
                         palette.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
                             {
