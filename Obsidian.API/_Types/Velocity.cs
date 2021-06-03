@@ -63,19 +63,19 @@ namespace Obsidian.API
         /// <summary>
         /// Turns <see cref="Vector"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
         /// </summary>
-        /// <param name="position"><see cref="Vector"/> to be used for conversion.</param>
-        public static Velocity FromPosition(Vector position)
+        /// <param name="vector"><see cref="Vector"/> to be used for conversion.</param>
+        public static Velocity FromVector(Vector vector)
         {
-            return FromBlockPerSecond(position.X, position.Y, position.Z);
+            return FromBlockPerSecond(vector.X, vector.Y, vector.Z);
         }
 
         /// <summary>
         /// Turns <see cref="VectorF"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
         /// </summary>
-        /// <param name="position"><see cref="VectorF"/> to be used for conversion.</param>
-        public static Velocity FromPosition(VectorF position)
+        /// <param name="vector"><see cref="VectorF"/> to be used for conversion.</param>
+        public static Velocity FromVector(VectorF vector)
         {
-            return FromBlockPerSecond(position.X, position.Y, position.Z);
+            return FromBlockPerSecond(vector.X, vector.Y, vector.Z);
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace Obsidian.API
         /// <param name="to">Target position.</param>
         public static Velocity FromDirection(Vector from, Vector to)
         {
-            return FromPosition(to - from);
+            return FromVector(to - from);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Obsidian.API
         /// <param name="to">Target position.</param>
         public static Velocity FromDirection(VectorF from, VectorF to)
         {
-            return FromPosition(to - from);
+            return FromVector(to - from);
         }
     }
 }
