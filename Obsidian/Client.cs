@@ -321,7 +321,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
+            Registry.Dimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -333,8 +333,8 @@ namespace Obsidian
 
                 Codecs = new MixedCodec
                 {
-                    Dimensions = Registry.DefaultDimensions,
-                    Biomes = Registry.DefaultBiomes
+                    Dimensions = Registry.Dimensions,
+                    Biomes = Registry.Biomes
                 },
 
                 Dimension = codec,

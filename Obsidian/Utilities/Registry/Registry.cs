@@ -33,16 +33,14 @@ namespace Obsidian.Utilities.Registry
 
         public static readonly Dictionary<Material, Item> Items = new();
         public static readonly Dictionary<string, IRecipe> Recipes = new();
-        public static readonly string[] BlockNames = new string[763]; // 762 - block count
-
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
         public static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
+        public static readonly string[] BlockNames = new string[763]; // 762 - block count
         public static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
-        internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new("minecraft:dimension_type");
-
-        internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new("minecraft:worldgen/biome");
+        public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
+        public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
         private readonly static JsonSerializer recipeSerializer = new();
 
@@ -156,7 +154,7 @@ namespace Obsidian.Utilities.Registry
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
 
-                    DefaultBiomes.TryAdd(codec.Name, codec);
+                    Biomes.TryAdd(codec.Name, codec);
 
                     registered++;
                 }
@@ -186,7 +184,7 @@ namespace Obsidian.Utilities.Registry
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Globals.JsonSettings);
 
-                    DefaultDimensions.TryAdd(codec.Id, codec);
+                    Dimensions.TryAdd(codec.Id, codec);
 
                     Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
