@@ -188,6 +188,16 @@ namespace Obsidian.Entities
         }
         #endregion
 
+        public VectorF GetLookDirection()
+        {
+            const float DegreesToRadian = (1 / 255f) * 360f / (180f * MathF.PI);
+            float pitch = Pitch.Value * DegreesToRadian;
+            float yaw = Yaw.Value * DegreesToRadian;
+
+            float cosPitch = MathF.Cos(pitch);
+            return new(-cosPitch * MathF.Sin(yaw), -MathF.Sin(pitch), cosPitch * MathF.Cos(yaw));
+        }
+
         public Task RemoveAsync() => this.World.DestroyEntityAsync(this);
 
         private EntityBitMask GenerateBitmask()
