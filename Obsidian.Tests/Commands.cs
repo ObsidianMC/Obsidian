@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,16 +10,15 @@ namespace Obsidian.Tests
     public class Commands
     {
         [Fact]
-        public async Task TestTokenizing()
+        public void TestTokenizing()
         {
-            await Task.Yield();
             var message = "/test help help \"help help \\n\" help";
             var expected = new[] { "test", "help", "help", "help help \n", "help" };
 
             var cmd = new CommandParser("/");
 
-            cmd.IsCommandQualified(message, out string qualified);
-            var split = cmd.SplitQualifiedString(qualified);
+            cmd.IsCommandQualified(message, out ReadOnlyMemory<char> qualified);
+            var split = CommandParser.SplitQualifiedString(qualified);
             Assert.Equal(split, expected);
         }
 

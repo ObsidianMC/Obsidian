@@ -36,7 +36,6 @@ namespace Obsidian
                 new DefaultEnumConverter<Instruments>(),
                 new DefaultEnumConverter<Part>(),
                 new DefaultEnumConverter<Shape>(),
-                new DefaultEnumConverter<CustomDirection>(),
                 new DefaultEnumConverter<MinecraftType>(),
                 new DefaultEnumConverter<Attachment>(),
             }

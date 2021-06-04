@@ -71,7 +71,7 @@ namespace Obsidian.Utilities.Registry
                 {
                     var (blockName, token) = enumerator.Current;
 
-                    var name = blockName.Split(":")[1];
+                    var name = blockName.Substring(blockName.IndexOf(':') + 1);
 
                     var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
 
@@ -88,7 +88,7 @@ namespace Obsidian.Utilities.Registry
                     var baseId = (short)states.States.Min(state => state.Id);
                     NumericToBase[(int)material] = baseId;
 
-                    BlockNames[(int)material] = "minecraft:" + name;
+                    BlockNames[(int)material] = blockName;
 
                     foreach (var state in states.States)
                     {
@@ -222,11 +222,11 @@ namespace Obsidian.Utilities.Registry
                             tag.Entries.Add(block.Id);
                             break;
                         case "entity_types":
-                            Enum.TryParse<EntityType>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var type);
+                            Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
                             tag.Entries.Add((int)type);
                             break;
                         case "fluids":
-                            Enum.TryParse<Fluids>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var fluid);
+                            Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
                             tag.Entries.Add((int)fluid);
                             break;
                         default:
@@ -301,7 +301,7 @@ namespace Obsidian.Utilities.Registry
             {
                 var (name, element) = enu.Current;
 
-                var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
+                var type = element.Value<string>("type").TrimMinecraftTag();
 
                 if (Enum.TryParse<CraftingType>(type, true, out var result))
                 {

@@ -1,40 +1,42 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Obsidian.Commands.Framework
 {
     public class CommandParser
     {
-        private string _prefix;
+        public string Prefix { get; }
 
         public CommandParser(string prefix)
         {
-            this._prefix = prefix;
+            Prefix = prefix;
         }
 
-        public bool IsCommandQualified(string input, out string qualifiedcommand)
+        public bool IsCommandQualified(string input, out ReadOnlyMemory<char> qualifiedCommand)
         {
-            qualifiedcommand = null;
-            if (input.StartsWith(_prefix))
+            if (input.StartsWith(Prefix))
             {
-                qualifiedcommand = input.Substring(_prefix.Length);
+                qualifiedCommand = input.AsMemory(Prefix.Length);
                 return true;
             }
 
+            qualifiedCommand = null;
             return false;
         }
 
-        public string[] SplitQualifiedString(string input)
+        public static string[] SplitQualifiedString(ReadOnlyMemory<char> qualifiedString)
         {
-            List<string> tokens = new List<string>();
+            ReadOnlySpan<char> input = qualifiedString.Span;
+            var tokens = new List<string>();
 
-            StringBuilder buffer = new StringBuilder();
-            bool inquote = false;
+            var buffer = new StringBuilder();
+            bool inQuote = false;
             bool escape = false;
 
             for (int i = 0; i < input.Length; i++)
             {
-                if (input[i] == ' ' && !inquote)
+                if (input[i] == ' ' && !inQuote)
                 {
                     // flush buffer
                     tokens.Add(buffer.ToString());
@@ -73,7 +75,7 @@ namespace Obsidian.Commands.Framework
                 else if (input[i] == '"')
                 {
                     // toggle quotes
-                    inquote = !inquote;
+                    inQuote = !inQuote;
                 }
                 else
                 {
