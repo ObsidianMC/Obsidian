@@ -1,6 +1,4 @@
-﻿using DaanV2.UUID;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using Obsidian.API;
 using Obsidian.API.Events;
@@ -231,7 +229,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this)
+                                this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
                                 {
                                     World = this.Server.World
                                 };
