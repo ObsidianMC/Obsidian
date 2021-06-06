@@ -60,7 +60,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             Source1 = new ScaleBias
                             {
                                 Scale = 0.2,
-                                Bias = 0.5,
+                                Bias = 0.3,
                                 // [Plains-basis-1 module]: This billow-noise module, along with the
                                 // plains-basis-2 module, produces the plains.
                                 Source0 = new Billow

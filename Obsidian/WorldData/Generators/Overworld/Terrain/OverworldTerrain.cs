@@ -39,7 +39,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
             var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
-            //var scaled = GetScaledModuleOutput(ocean.Result);
+            //var scaled = GetScaledModuleOutput(mountains.Result);
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -163,9 +163,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             {
                 Source0 = new Turbulence
                 {
-                    Frequency = 14.4578,
+                    Frequency = 11.4578,
                     Power = 0.028,
-                    Roughness = 2,
+                    Roughness = 1,
                     Seed = settings.Seed,
                     Source0 = new Select
                     {
@@ -191,11 +191,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             {
                 Source0 = new Select
                 {
-                    Source0 = mountains.Result,
+                    Source0 = plains.Result,
                     Source1 = new Select
                     {
                         Source0 = hills.Result,
-                        Source1 = plains.Result,
+                        Source1 = mountains.Result,
                         Control = terrain.BiomeSelector,
                         LowerBound = 0,
                         UpperBound = 0.5,

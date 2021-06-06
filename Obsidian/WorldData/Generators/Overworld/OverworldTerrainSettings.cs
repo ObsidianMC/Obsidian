@@ -76,36 +76,36 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// Increase for larger continents
         /// Decrease for smaller
         /// </summary>
-        public double ContinentSize { get; set; } = 4.0;
+        public double ContinentSize { get; set; } = 2.0;
 
         /// <summary>
         /// 0 for equal amounts of wet/average/dry biomes
         /// 0 -> 0.5 for more dry biomes
         /// -0.5 -> 0 for more wet biomes
         /// </summary>
-        public double BiomeHumidityRatio { get; set; } = 0.0;
+        public double BiomeHumidityRatio { get; set; } = 0.1;
 
         /// <summary>
         /// 0 for equal amounts of cold/average/hot biomes
         /// 0 -> 0.5 for more hot biomes
         /// -0.5 -> 0 for more cold biomes
         /// </summary>
-        public double BiomeTemperatureRatio { get; set; } = 0.0;
+        public double BiomeTemperatureRatio { get; set; } = 0.1;
 
         /// <summary>
         /// 0 for equal amounts of plain/hilly/mountainous biomes
         /// 0 -> 0.5 for more mountains biomes
         /// -0.5 -> 0 for more plains biomes
         /// </summary>
-        public double BiomeTerrainRatio { get; set; } = 0.0;
+        public double BiomeTerrainRatio { get; set; } = -0.1;
 
         /// <summary>
         /// Size of Biomes
-        /// 8.0 is normal
+        /// 4.0 is normal
         /// Increase for larger biomes
         /// Decrease for smaller biomes
         /// </summary>
-        public double BiomeSize { get; set; } = 1.1;
+        public double BiomeSize { get; set; } = 3.1;
 
         public int WaterLevel { get; set; } = 64;
 

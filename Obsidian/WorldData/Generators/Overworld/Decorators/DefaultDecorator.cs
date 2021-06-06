@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate()
         {
-            if (pos.Y <= noise.settings.WaterLevel)
+            if (pos.Y < noise.settings.WaterLevel)
             {
                 FillWater();
                 return;

@@ -14,7 +14,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate()
         {
-            if (pos.Y <= noise.settings.WaterLevel)
+            if (pos.Y < noise.settings.WaterLevel)
             {
                 FillWater();
                 return;
@@ -23,7 +23,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
 
-            var grass = Registry.GetBlock(Material.GrassBlock);
+            var grass = Registry.GetBlock(9);
             var dirt = Registry.GetBlock(Material.Dirt);
 
             chunk.SetBlock(pos, grass);

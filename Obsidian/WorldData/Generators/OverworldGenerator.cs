@@ -16,7 +16,7 @@ namespace Obsidian.WorldData.Generators
         {
             var seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
             OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = 137;//seedHash;
+            generatorSettings.Seed = seedHash;
             terrainGen = new OverworldTerrain(generatorSettings);
         }
 
