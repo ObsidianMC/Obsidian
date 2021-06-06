@@ -1,15 +1,13 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class BlockAction : ISerializablePacket
+    public partial class BlockAction : IClientboundPacket
     {
         [Field(0)]
-        public Position Position { get; set; }
+        public Vector Position { get; set; }
 
         [Field(1)]
         public byte ActionId { get; set; }
@@ -21,11 +19,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int BlockType { get; set; }
 
         public int Id => 0x0A;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Obsidian.API;
-using Obsidian.Util.Collection;
+using Obsidian.Utilities.Collection;
 using Obsidian.WorldData;
 using System;
 
@@ -43,11 +43,11 @@ namespace Obsidian.ChunkData
             }
             else if (height - 1 == y)
             {
-                Position pos;
+                Vector pos;
 
                 for (int i = y - 1; i >= 0; --i)
                 {
-                    pos = new Position(x, i, z);
+                    pos = new Vector(x, i, z);
                     var otherBlock = this.chunk.GetBlock(pos);
 
                     if (this.Predicate(otherBlock))

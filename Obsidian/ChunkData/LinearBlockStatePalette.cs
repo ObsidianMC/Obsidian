@@ -1,5 +1,5 @@
 ﻿using Obsidian.Net;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;
 
@@ -7,21 +7,21 @@ namespace Obsidian.ChunkData
 {
     public class LinearBlockStatePalette : IBlockStatePalette
     {
-        public Block[] BlockStateArray { get; set; }
+        public short[] BlockStateArray { get; set; }
         public int BlockStateCount { get; set; }
 
         public bool IsFull => this.BlockStateArray.Length == this.BlockStateCount;
 
         public LinearBlockStatePalette(byte bitCount)
         {
-            this.BlockStateArray = new Block[1 << bitCount];
+            this.BlockStateArray = new short[1 << bitCount];
         }
 
         public int GetIdFromState(Block blockState)
         {
             for (int id = 0; id < BlockStateCount; id++)
             {
-                if (this.BlockStateArray[id].StateId == blockState.StateId)
+                if (this.BlockStateArray[id] == blockState.StateId)
                     return id;
             }
 
@@ -30,7 +30,7 @@ namespace Obsidian.ChunkData
 
             // Add to palette
             int newId = this.BlockStateCount;
-            this.BlockStateArray[newId] = blockState;
+            this.BlockStateArray[newId] = blockState.StateId;
             this.BlockStateCount++;
             return newId;
         }
@@ -40,7 +40,7 @@ namespace Obsidian.ChunkData
             if (index > this.BlockStateCount - 1 || index < 0)
                throw new IndexOutOfRangeException();
 
-            return this.BlockStateArray[index];
+            return new Block(this.BlockStateArray[index]);
         }
 
         public async Task WriteToAsync(MinecraftStream stream)
@@ -48,7 +48,7 @@ namespace Obsidian.ChunkData
             await stream.WriteVarIntAsync(this.BlockStateCount);
 
             for (int i = 0; i < this.BlockStateCount; i++)
-                await stream.WriteVarIntAsync(this.BlockStateArray[i].StateId);
+                await stream.WriteVarIntAsync(this.BlockStateArray[i]);
         }
 
         public async Task ReadFromAsync(MinecraftStream stream)
@@ -61,7 +61,7 @@ namespace Obsidian.ChunkData
 
                 Block blockState = Registry.GetBlock(stateId);
 
-                this.BlockStateArray[i] = blockState;
+                this.BlockStateArray[i] = blockState.StateId;
                 this.BlockStateCount++;
             }
         }

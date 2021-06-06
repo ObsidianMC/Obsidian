@@ -61,7 +61,7 @@ namespace Obsidian.API.Plugins.Services
         public string[] GetDirectoryFiles(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(securityExceptionMessage);
+                throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
             if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
@@ -78,7 +78,7 @@ namespace Obsidian.API.Plugins.Services
         public string[] GetSubdirectories(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(securityExceptionMessage);
+                throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
             if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);

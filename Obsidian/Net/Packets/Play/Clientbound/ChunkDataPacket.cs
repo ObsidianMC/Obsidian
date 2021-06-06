@@ -1,13 +1,11 @@
-﻿using Obsidian.Entities;
-using Obsidian.Nbt;
-using Obsidian.Util.Extensions;
+﻿using Obsidian.Nbt;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class ChunkDataPacket : ISerializablePacket
+    public partial class ChunkDataPacket : IClientboundPacket
     {
         public Chunk Chunk { get; set; }
 
@@ -19,10 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Chunk = chunk;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public void Serialize(MinecraftStream minecraftStream)
         {
@@ -51,9 +45,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Chunk.CalculateHeightmap();
             var writer = new NbtWriter(stream, string.Empty);
             foreach (var (type, heightmap) in Chunk.Heightmaps)
-                writer.WriteLongArray(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>().ToArray());
+                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
+
             writer.EndCompound();
-            writer.Finish();
 
             Chunk.BiomeContainer.WriteTo(stream);
 

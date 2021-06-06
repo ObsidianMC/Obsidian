@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class CraftRecipeRequest : IPacket
+    public partial class CraftRecipeRequest : IServerboundPacket
     {
         [Field(0)]
         public sbyte WindowId { get; set; }
@@ -19,14 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x19;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.WindowId = await stream.ReadByteAsync();
-            this.RecipeId = await stream.ReadStringAsync();
-            this.MakeAll = await stream.ReadBooleanAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.client.QueuePacketAsync(new CraftRecipeResponse(WindowId, RecipeId));
         }

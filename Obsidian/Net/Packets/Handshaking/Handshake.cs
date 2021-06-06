@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
-    public partial class Handshake : ISerializablePacket
+    public partial class Handshake : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public ProtocolVersion Version;
@@ -20,8 +20,6 @@ namespace Obsidian.Net.Packets.Handshaking
         public ClientState NextState;
 
         public int Id => 0x00;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }

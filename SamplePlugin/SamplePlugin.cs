@@ -50,7 +50,7 @@ namespace SamplePlugin
         [CommandInfo("woop dee doo this command is from within a plugin class!!")]
         public async Task PluginCommandAsync(CommandContext ctx)
         {
-            await ctx.Player.SendMessageAsync("Hello from plugin command implemented in Plugin class!");
+            await ctx.Sender.SendMessageAsync("Hello from plugin command implemented in Plugin class!");
         }
     }
 

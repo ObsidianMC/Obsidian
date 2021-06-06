@@ -12,6 +12,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             this.biome = biome;
         }
 
-        public abstract void Decorate(Chunk chunk, Position position, OverworldNoise noise);
+        public abstract void Decorate(Chunk chunk, Vector position, OverworldNoise noise);
     }
 }

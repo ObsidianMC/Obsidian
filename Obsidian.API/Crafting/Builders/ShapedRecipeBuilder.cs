@@ -6,17 +6,17 @@ namespace Obsidian.API.Crafting.Builders
 {
     public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
     {
-        public string Name { get; set; }
-        public string Group { get; set; }
-        public ItemStack Result { get; set; }
+        public string? Name { get; set; }
+        public string? Group { get; set; }
+        public ItemStack? Result { get; set; }
 
         public IReadOnlyList<string> Pattern { get; }
 
         public IReadOnlyDictionary<char, Ingredient> Key { get; }
 
-        private readonly List<string> pattern = new List<string>();
+        private readonly List<string> pattern = new();
 
-        private readonly Dictionary<char, Ingredient> key = new Dictionary<char, Ingredient>();
+        private readonly Dictionary<char, Ingredient> key = new();
 
         public ShapedRecipeBuilder()
         {

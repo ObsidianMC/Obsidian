@@ -5,7 +5,7 @@ using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
-using Obsidian.Commands.Framework.Exceptions;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -15,10 +15,9 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
-using Obsidian.Util;
-using Obsidian.Util.Debug;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities;
+using Obsidian.Utilities.Debug;
+using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System;
@@ -29,6 +28,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,6 +40,7 @@ namespace Obsidian
         private readonly ConcurrentQueue<PlayerBlockPlacement> placed;
         private readonly ConcurrentHashSet<Client> clients;
         private readonly TcpListener tcpListener;
+        private readonly UdpClient udpClient;
 
         internal readonly CancellationTokenSource cts;
 
@@ -92,16 +93,9 @@ namespace Obsidian
         /// </summary>
         /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
         public Server(Config config, string version, int serverId)
-        {   
+        {
             this.Config = config;
-            
-            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
-            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
-            // This stuff down here needs to be looked into
-            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
-            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
-            
+
             this.Port = config.Port;
             this.Version = version;
             this.Id = serverId;
@@ -119,6 +113,13 @@ namespace Obsidian
             this.Events = new MinecraftEventHandler();
 
             this.Operators = new OperatorList(this);
+
+            this.LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
+            this.Logger = this.LoggerProvider.CreateLogger($"Server/{this.Id}");
+            // This stuff down here needs to be looked into
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
+            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
@@ -138,6 +139,21 @@ namespace Obsidian
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
+
+            if (this.Config.UDPBroadcast)
+            {
+                this.udpClient = new UdpClient("224.0.2.60", 4445);
+                _ = Task.Run(async () =>
+                {
+                    while (!this.cts.IsCancellationRequested)
+                    {
+                        await Task.Delay(1500); // Official clients do this too.
+                        var str = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                        await this.udpClient.SendAsync(str, str.Length);
+                    }
+                });
+            }
+
         }
 
         public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
@@ -165,6 +181,8 @@ namespace Obsidian
         public IPlayer GetPlayer(string username) => this.OnlinePlayers.FirstOrDefault(player => player.Value.Username == username).Value;
 
         public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
+
+        public IPlayer GetPlayer(int entityId) => this.OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
 
         /// <summary>
         /// Sends a message to all players on the server.
@@ -235,7 +253,6 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
@@ -273,7 +290,6 @@ namespace Obsidian
 
             stopwatch.Stop();
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
-
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -291,7 +307,20 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
-        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Position location)
+        internal async Task ExecuteCommand(string input)
+        {
+            var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
+            try
+            {
+                await Commands.ProcessCommand(context);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, e.Message);
+            }
+        }
+
+        internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
@@ -316,45 +345,24 @@ namespace Obsidian
 
             // TODO command logging
             // TODO error handling for commands
-            var context = new CommandContext(message, source.Player, this);
+            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
             try
             {
                 await Commands.ProcessCommand(context);
             }
-            catch (CommandArgumentParsingException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Invalid arguments! Parsing failed." });
-            }
-            catch (CommandExecutionCheckException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}You can not execute this command." });
-            }
-            catch (CommandNotFoundException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such command was found." });
-            }
-            catch (NoSuchParserException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}The command you executed has a argument that has no matching parser." });
-            }
-            catch (InvalidCommandOverloadException)
-            {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}No such overload is available for this command." });
-            }
             catch (Exception e)
             {
-                await source.Player.SendMessageAsync(new ChatMessage() { Text = $"{ChatColor.Red}Critically failed executing command: {e.Message}" });
                 Logger.LogError(e, e.Message);
             }
         }
 
-        internal async Task BroadcastPacketAsync(ISerializablePacket packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal void BroadcastPacketWithoutQueue(ISerializablePacket packet, params int[] excluded)
+        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
@@ -402,14 +410,14 @@ namespace Obsidian
                         if (droppedItem is null || droppedItem.Type == Material.Air)
                             return;
 
-                        var loc = new PositionF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+                        var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = droppedItem.GetItem().Id,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = loc
                         };
@@ -459,19 +467,21 @@ namespace Obsidian
                         break;
                     }
                 case DiggingStatus.StartedDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                        this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        {
+                            Position = digging.Position,
+                            Block = block.Id,
+                            Status = digging.Status,
+                            Successful = true
+                        });
 
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+                        if (player.Gamemode == Gamemode.Creative)
+                        {
+                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Position, Block.Air);
+                            this.World.SetBlock(digging.Position, Block.Air);
+                        }
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
@@ -512,9 +522,9 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = itemId,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
-                            Position = digging.Position + new PositionF(
+                            Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f)
@@ -531,7 +541,7 @@ namespace Obsidian
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromPosition(digging.Position)
+                            Velocity = Velocity.FromVector(digging.Position)
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
@@ -558,7 +568,6 @@ namespace Obsidian
         {
             var keepAliveTicks = 0;
 
-            short itersPerSecond = 0;
             var stopWatch = Stopwatch.StartNew(); // for TPS measuring
 
             while (!this.cts.IsCancellationRequested)
@@ -584,7 +593,7 @@ namespace Obsidian
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                    } 
+                    }
                 }
 
                 while (chatMessages.TryDequeue(out QueueChat msg))
@@ -595,14 +604,9 @@ namespace Obsidian
                     }
                 }
 
-                // if Stopwatch elapsed time more than 1000 ms, reset counter, restart stopwatch, and set TPS property
-                itersPerSecond++;
-                if (stopWatch.ElapsedMilliseconds >= 1000L)
-                {
-                    TPS = itersPerSecond;
-                    itersPerSecond = 0;
-                    stopWatch.Restart();
-                }
+                TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
+                stopWatch.Restart();
+
                 _ = Task.Run(() => World.ManageChunks());
             }
         }
@@ -617,33 +621,6 @@ namespace Obsidian
             await this.RegisterAsync(new OverworldDebugGenerator(Config.Seed));
         }
 
-        private async Task SendSpawnPlayerAsync(IPlayer joined)
-        {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
-            {
-                var joinedPlayer = joined as Player;
-                //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
-                await player.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = joinedPlayer.EntityId,
-                    Uuid = joinedPlayer.Uuid,
-                    Position = joinedPlayer.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-
-                //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-            }
-        }
-
         public IEnumerable<IPlayer> Players => GetPlayers();
         private IEnumerable<IPlayer> GetPlayers()
         {
@@ -656,22 +633,35 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
-                await other.client.RemovePlayerFromListAsync(e.Player);
+            var player = e.Player as Player;
+
+            this.World.RemovePlayer(player);
+
+            var destroy = new DestroyEntities
+            {
+                EntityIds = new() { player.EntityId }
+            };
+            foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
+            {
+                await other.client.RemovePlayerFromListAsync(player);
+                if (other.VisiblePlayers.Contains(player.EntityId))
+                    await other.client.QueuePacketAsync(destroy);
+            }
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            var joined = e.Player;
+            var joined = e.Player as Player;
+
+            this.World.AddPlayer(joined);//TODO Gotta make sure we add the player to whatever world they were last in so this has to change
+
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
+            {
                 await other.client.AddPlayerToListAsync(joined);
-
-            // Need a delay here, otherwise players start flying
-            await Task.Delay(500);
-            await this.SendSpawnPlayerAsync(joined);
+            }
         }
         #endregion Events
 

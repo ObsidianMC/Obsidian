@@ -1,23 +1,19 @@
 ﻿using Newtonsoft.Json;
-
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
-using Obsidian.Nbt.Tags;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Extensions;
-using Obsidian.Util.Registry.Codecs.Dimensions;
-
+using Obsidian.Utilities;
+using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -37,7 +33,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Byte (0x{value.ToString("X")})");
 #endif
 
-            await this.WriteUnsignedByteAsync((byte)value);
+            await WriteUnsignedByteAsync((byte)value);
         }
 
         [WriteMethod]
@@ -52,13 +48,13 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Byte (0x{value.ToString("X")})");
 #endif
 
-            await this.WriteAsync(new[] { value });
+            await WriteAsync(new[] { value });
         }
 
         [WriteMethod]
         public void WriteBoolean(bool value)
         {
-            BaseStream.WriteByte(value ? 0x01 : 0x00);
+            BaseStream.WriteByte((byte)(value ? 0x01 : 0x00));
         }
 
         public async Task WriteBooleanAsync(bool value)
@@ -67,7 +63,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Boolean ({value})");
 #endif
 
-            await this.WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
+            await WriteByteAsync((sbyte)(value ? 0x01 : 0x00));
         }
 
         [WriteMethod]
@@ -93,7 +89,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -119,7 +115,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -145,7 +141,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -171,7 +167,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -197,7 +193,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -223,7 +219,7 @@ namespace Obsidian.Net
             {
                 Array.Reverse(write);
             }
-            await this.WriteAsync(write);
+            await WriteAsync(write);
         }
 
         [WriteMethod]
@@ -247,8 +243,8 @@ namespace Obsidian.Net
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
 
             var bytes = Encoding.UTF8.GetBytes(value);
-            await this.WriteVarIntAsync(bytes.Length);
-            await this.WriteAsync(bytes);
+            await WriteVarIntAsync(bytes.Length);
+            await WriteAsync(bytes);
         }
 
         [WriteMethod, VarLength]
@@ -284,7 +280,7 @@ namespace Obsidian.Net
                 if (unsigned != 0)
                     temp |= 128;
 
-                await this.WriteUnsignedByteAsync(temp);
+                await WriteUnsignedByteAsync(temp);
             }
             while (unsigned != 0);
         }
@@ -297,18 +293,18 @@ namespace Obsidian.Net
         /// <summary>
         /// Writes a "VarInt Enum" to the specified <paramref name="stream"/>.
         /// </summary>
-        public async Task WriteVarIntAsync(Enum value) => await this.WriteVarIntAsync(Convert.ToInt32(value));
+        public async Task WriteVarIntAsync(Enum value) => await WriteVarIntAsync(Convert.ToInt32(value));
 
         public async Task WriteLongArrayAsync(long[] values)
         {
             foreach (var value in values)
-                await this.WriteLongAsync(value);
+                await WriteLongAsync(value);
         }
 
         public async Task WriteLongArrayAsync(ulong[] values)
         {
             foreach (var value in values)
-                await this.WriteLongAsync((long)value);
+                await WriteLongAsync((long)value);
         }
 
         [WriteMethod, VarLength]
@@ -349,7 +345,7 @@ namespace Obsidian.Net
                     temp |= 128;
 
 
-                await this.WriteUnsignedByteAsync(temp);
+                await WriteUnsignedByteAsync(temp);
             }
             while (unsigned != 0);
         }
@@ -362,7 +358,7 @@ namespace Obsidian.Net
 
         public async Task WriteAngleAsync(Angle angle)
         {
-            await this.WriteByteAsync((sbyte)angle.Value);
+            await WriteByteAsync((sbyte)angle.Value);
             // await this.WriteUnsignedByteAsync((byte)(angle / Angle.MaxValue * byte.MaxValue));
         }
 
@@ -386,7 +382,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePosition(Position value)
+        public void WritePosition(Vector value)
         {
             var val = (long)(value.X & 0x3FFFFFF) << 38;
             val |= (long)(value.Z & 0x3FFFFFF) << 12;
@@ -396,7 +392,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod, Absolute]
-        public void WriteAbsolutePosition(Position value)
+        public void WriteAbsolutePosition(Vector value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
@@ -404,7 +400,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePositionF(PositionF value)
+        public void WritePositionF(VectorF value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
             val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
@@ -414,7 +410,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod, Absolute]
-        public void WriteAbsolutePositionF(PositionF value)
+        public void WriteAbsolutePositionF(VectorF value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
@@ -462,7 +458,7 @@ namespace Obsidian.Net
 
                 if (meta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", meta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(meta.Unbreakable ? 1 : 0));
 
                     if (meta.Durability > 0)
                         writer.WriteInt("Damage", meta.Durability);
@@ -472,7 +468,7 @@ namespace Obsidian.Net
 
                     if (meta.CanDestroy is not null)
                     {
-                        writer.BeginList("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
+                        writer.WriteListStart("CanDestroy", NbtTagType.String, meta.CanDestroy.Count);
 
                         foreach (var block in meta.CanDestroy)
                             writer.WriteString(block);
@@ -482,13 +478,13 @@ namespace Obsidian.Net
 
                     if (meta.Name is not null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
                         writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)meta.Name }));
 
                         if (meta.Lore is not null)
                         {
-                            writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+                            writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                             foreach (var lore in meta.Lore)
                                 writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -500,9 +496,9 @@ namespace Obsidian.Net
                     }
                     else if (meta.Lore is not null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
-                        writer.BeginList("Lore", NbtTagType.String, meta.Lore.Count);
+                        writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                         foreach (var lore in meta.Lore)
                             writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -517,7 +513,7 @@ namespace Obsidian.Net
                 writer.WriteByte("Count", (byte)value.Count);
 
                 writer.EndCompound();
-                writer.Finish();
+                writer.TryFinish();
             }
         }
 
@@ -545,51 +541,55 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteMixedCodec(MixedCodec value)
         {
-            var dimensions = new NbtCompound(value.Dimensions.Name)
-            {
-                new NbtString("type", value.Dimensions.Name)
-            };
+            var writer = new NbtWriter(this, "");
 
-            var list = new NbtList("value", NbtTagType.Compound);
+            var list = new NbtList(NbtTagType.Compound, "value");
 
             foreach (var (_, codec) in value.Dimensions)
             {
                 codec.Write(list);
             }
 
-            dimensions.Add(list);
-
-            #region biomes
-            var biomeCompound = new NbtCompound(value.Biomes.Name)
+            var dimensions = new NbtCompound(value.Dimensions.Name)
             {
-                new NbtString("type", value.Biomes.Name)
+                new NbtTag<string>("type", value.Dimensions.Name),
+
+                list
             };
 
-            var biomes = new NbtList("value", NbtTagType.Compound);
+            #region biomes
+
+            var biomes = new NbtList(NbtTagType.Compound, "value");
 
             foreach (var (_, biome) in value.Biomes)
             {
                 biome.Write(biomes);
             }
 
-            biomeCompound.Add(biomes);
+            var biomeCompound = new NbtCompound(value.Biomes.Name)
+            {
+                new NbtTag<string>("type", value.Biomes.Name),
+
+                biomes
+            };
             #endregion
 
-            var compound = new NbtCompound(string.Empty)
-            {
-                dimensions,
-                biomeCompound
-            };
-            var nbt = new NbtFile(compound);
+            writer.WriteTag(dimensions);
+            writer.WriteTag(biomeCompound);
 
-            nbt.SaveToStream(this, NbtCompression.None);
+            writer.EndCompound();
+            writer.TryFinish();
         }
 
         [WriteMethod]
         public void WriteDimensionCodec(DimensionCodec value)
         {
-            var nbt = new NbtFile(value.ToNbt());
-            nbt.SaveToStream(this, NbtCompression.None);
+            var writer = new NbtWriter(this, "");
+
+            value.TransferTags(writer);
+
+            writer.EndCompound();
+            writer.TryFinish();
         }
 
         [WriteMethod]
@@ -616,57 +616,57 @@ namespace Obsidian.Net
 
         public async Task WriteEntityMetdata(byte index, EntityMetadataType type, object value, bool optional = false)
         {
-            await this.WriteUnsignedByteAsync(index);
-            await this.WriteVarIntAsync((int)type);
+            await WriteUnsignedByteAsync(index);
+            await WriteVarIntAsync((int)type);
             switch (type)
             {
                 case EntityMetadataType.Byte:
-                    await this.WriteUnsignedByteAsync((byte)value);
+                    await WriteUnsignedByteAsync((byte)value);
                     break;
 
                 case EntityMetadataType.VarInt:
-                    await this.WriteVarIntAsync((int)value);
+                    await WriteVarIntAsync((int)value);
                     break;
 
                 case EntityMetadataType.Float:
-                    await this.WriteFloatAsync((float)value);
+                    await WriteFloatAsync((float)value);
                     break;
 
                 case EntityMetadataType.String:
-                    await this.WriteStringAsync((string)value);
+                    await WriteStringAsync((string)value);
                     break;
 
                 case EntityMetadataType.Chat:
-                    await this.WriteChatAsync((ChatMessage)value);
+                    await WriteChatAsync((ChatMessage)value);
                     break;
 
                 case EntityMetadataType.OptChat:
-                    await this.WriteBooleanAsync(optional);
+                    await WriteBooleanAsync(optional);
 
                     if (optional)
-                        await this.WriteChatAsync((ChatMessage)value);
+                        await WriteChatAsync((ChatMessage)value);
                     break;
 
                 case EntityMetadataType.Slot:
-                    await this.WriteSlotAsync((ItemStack)value);
+                    await WriteSlotAsync((ItemStack)value);
                     break;
 
                 case EntityMetadataType.Boolean:
-                    await this.WriteBooleanAsync((bool)value);
+                    await WriteBooleanAsync((bool)value);
                     break;
 
                 case EntityMetadataType.Rotation:
                     break;
 
                 case EntityMetadataType.Position:
-                    await this.WritePositionFAsync((PositionF)value);
+                    await WritePositionFAsync((VectorF)value);
                     break;
 
                 case EntityMetadataType.OptPosition:
-                    await this.WriteBooleanAsync(optional);
+                    await WriteBooleanAsync(optional);
 
                     if (optional)
-                        await this.WritePositionFAsync((PositionF)value);
+                        await WritePositionFAsync((VectorF)value);
 
                     break;
 
@@ -674,14 +674,14 @@ namespace Obsidian.Net
                     break;
 
                 case EntityMetadataType.OptUuid:
-                    await this.WriteBooleanAsync(optional);
+                    await WriteBooleanAsync(optional);
 
                     if (optional)
-                        await this.WriteUuidAsync((Guid)value);
+                        await WriteUuidAsync((Guid)value);
                     break;
 
                 case EntityMetadataType.OptBlockId:
-                    await this.WriteVarIntAsync((int)value);
+                    await WriteVarIntAsync((int)value);
                     break;
 
                 case EntityMetadataType.Nbt:
@@ -690,13 +690,13 @@ namespace Obsidian.Net
                 case EntityMetadataType.OptVarInt:
                     if (optional)
                     {
-                        await this.WriteVarIntAsync(0);
+                        await WriteVarIntAsync(0);
                         break;
                     }
-                    await this.WriteVarIntAsync(1 + (int)value);
+                    await WriteVarIntAsync(1 + (int)value);
                     break;
                 case EntityMetadataType.Pose:
-                    await this.WriteVarIntAsync((Pose)value);
+                    await WriteVarIntAsync((Pose)value);
                     break;
                 default:
                     break;
@@ -706,28 +706,28 @@ namespace Obsidian.Net
         public async Task WriteUuidAsync(Guid value)
         {
             //var arr = value.ToByteArray();
-            BigInteger uuid = BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            await this.WriteAsync(uuid.ToByteArray(false, true));
+            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
+            await WriteAsync(uuid.ToByteArray(false, true));
         }
 
-        public async Task WriteChatAsync(ChatMessage value) => await this.WriteStringAsync(value.ToString());
+        public async Task WriteChatAsync(ChatMessage value) => await WriteStringAsync(value.ToString());
 
-        public async Task WritePositionAsync(Position value)
+        public async Task WritePositionAsync(Vector value)
         {
             var val = (long)(value.X & 0x3FFFFFF) << 38;
             val |= (long)(value.Z & 0x3FFFFFF) << 12;
             val |= (long)(value.Y & 0xFFF);
 
-            await this.WriteLongAsync(val);
+            await WriteLongAsync(val);
         }
 
-        public async Task WritePositionFAsync(PositionF value)
+        public async Task WritePositionFAsync(VectorF value)
         {
             var val = (long)((int)value.X & 0x3FFFFFF) << 38;
             val |= (long)((int)value.Z & 0x3FFFFFF) << 12;
             val |= (long)((int)value.Y & 0xFFF);
 
-            await this.WriteLongAsync(val);
+            await WriteLongAsync(val);
         }
 
         public async Task WriteSlotAsync(ItemStack slot)
@@ -740,11 +740,11 @@ namespace Obsidian.Net
 
             var item = slot.GetItem();
 
-            await this.WriteBooleanAsync(slot.Present);
+            await WriteBooleanAsync(slot.Present);
             if (slot.Present)
             {
-                await this.WriteVarIntAsync(item.Id);
-                await this.WriteByteAsync((sbyte)slot.Count);
+                await WriteVarIntAsync(item.Id);
+                await WriteByteAsync((sbyte)slot.Count);
 
                 var writer = new NbtWriter(this, "");
 
@@ -753,7 +753,7 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", itemMeta.Unbreakable ? 1 : 0);
+                    writer.WriteByte("Unbreakable", (byte)(itemMeta.Unbreakable ? 1 : 0));
 
                     if (itemMeta.Durability > 0)
                         writer.WriteInt("Damage", itemMeta.Durability);
@@ -763,7 +763,7 @@ namespace Obsidian.Net
 
                     if (itemMeta.CanDestroy != null)
                     {
-                        writer.BeginList("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
+                        writer.WriteListStart("CanDestroy", NbtTagType.String, itemMeta.CanDestroy.Count);
 
                         foreach (var block in itemMeta.CanDestroy)
                             writer.WriteString(block);
@@ -773,13 +773,13 @@ namespace Obsidian.Net
 
                     if (itemMeta.Name != null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
                         writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
 
                         if (itemMeta.Lore != null)
                         {
-                            writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+                            writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
                                 writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -791,9 +791,9 @@ namespace Obsidian.Net
                     }
                     else if (itemMeta.Lore != null)
                     {
-                        writer.BeginCompound("display");
+                        writer.WriteCompoundStart("display");
 
-                        writer.BeginList("Lore", NbtTagType.String, itemMeta.Lore.Count);
+                        writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
                             writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
@@ -808,15 +808,15 @@ namespace Obsidian.Net
                 writer.WriteByte("Count", (byte)slot.Count);
 
                 writer.EndCompound();
-                writer.Finish();
+                writer.TryFinish();
             }
         }
 
         internal async Task WriteRecipeAsync(string name, IRecipe recipe)
         {
-            await this.WriteStringAsync(recipe.Type);
+            await WriteStringAsync(recipe.Type);
 
-            await this.WriteStringAsync(name);
+            await WriteStringAsync(name);
 
             if (recipe is ShapedRecipe shapedRecipe)
             {
@@ -824,10 +824,10 @@ namespace Obsidian.Net
 
                 int width = patterns[0].Length, height = patterns.Count;
 
-                await this.WriteVarIntAsync(width);
-                await this.WriteVarIntAsync(height);
+                await WriteVarIntAsync(width);
+                await WriteVarIntAsync(height);
 
-                await this.WriteStringAsync(shapedRecipe.Group ?? "");
+                await WriteStringAsync(shapedRecipe.Group ?? "");
 
                 var ingredients = new List<ItemStack>[width * height];
 
@@ -861,77 +861,77 @@ namespace Obsidian.Net
                 {
                     if (items == null)
                     {
-                        await this.WriteVarIntAsync(1);
-                        await this.WriteSlotAsync(ItemStack.Air);
+                        await WriteVarIntAsync(1);
+                        await WriteSlotAsync(ItemStack.Air);
                         continue;
                     }
 
-                    await this.WriteVarIntAsync(items.Count);
+                    await WriteVarIntAsync(items.Count);
 
                     foreach (var itemStack in items)
-                        await this.WriteSlotAsync(itemStack);
+                        await WriteSlotAsync(itemStack);
                 }
 
-                await this.WriteSlotAsync(shapedRecipe.Result.First());
+                await WriteSlotAsync(shapedRecipe.Result.First());
             }
             else if (recipe is ShapelessRecipe shapelessRecipe)
             {
                 var ingredients = shapelessRecipe.Ingredients;
 
-                await this.WriteStringAsync(shapelessRecipe.Group ?? "");
+                await WriteStringAsync(shapelessRecipe.Group ?? "");
 
-                await this.WriteVarIntAsync(ingredients.Count);
+                await WriteVarIntAsync(ingredients.Count);
                 foreach (var ingredient in ingredients)
                 {
-                    await this.WriteVarIntAsync(ingredient.Count);
+                    await WriteVarIntAsync(ingredient.Count);
                     foreach (var item in ingredient)
-                        await this.WriteSlotAsync(item);
+                        await WriteSlotAsync(item);
                 }
 
                 var result = shapelessRecipe.Result.First();
 
-                await this.WriteSlotAsync(result);
+                await WriteSlotAsync(result);
             }
             else if (recipe is SmeltingRecipe smeltingRecipe)
             {
-                await this.WriteStringAsync(smeltingRecipe.Group ?? "");
+                await WriteStringAsync(smeltingRecipe.Group ?? "");
 
 
-                await this.WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
+                await WriteVarIntAsync(smeltingRecipe.Ingredient.Count);
                 foreach (var i in smeltingRecipe.Ingredient)
-                    await this.WriteSlotAsync(i);
+                    await WriteSlotAsync(i);
 
-                await this.WriteSlotAsync(smeltingRecipe.Result.First());
+                await WriteSlotAsync(smeltingRecipe.Result.First());
 
-                await this.WriteFloatAsync(smeltingRecipe.Experience);
-                await this.WriteVarIntAsync(smeltingRecipe.Cookingtime);
+                await WriteFloatAsync(smeltingRecipe.Experience);
+                await WriteVarIntAsync(smeltingRecipe.Cookingtime);
             }
             else if (recipe is CuttingRecipe cuttingRecipe)
             {
-                await this.WriteStringAsync(cuttingRecipe.Group ?? "");
+                await WriteStringAsync(cuttingRecipe.Group ?? "");
 
-                await this.WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
+                await WriteVarIntAsync(cuttingRecipe.Ingredient.Count);
                 foreach (var item in cuttingRecipe.Ingredient)
-                    await this.WriteSlotAsync(item);
+                    await WriteSlotAsync(item);
 
 
                 var result = cuttingRecipe.Result.First();
 
                 result.Count = (short)cuttingRecipe.Count;
 
-                await this.WriteSlotAsync(result);
+                await WriteSlotAsync(result);
             }
             else if (recipe is SmithingRecipe smithingRecipe)
             {
-                await this.WriteVarIntAsync(smithingRecipe.Base.Count);
+                await WriteVarIntAsync(smithingRecipe.Base.Count);
                 foreach (var item in smithingRecipe.Base)
-                    await this.WriteSlotAsync(item);
+                    await WriteSlotAsync(item);
 
-                await this.WriteVarIntAsync(smithingRecipe.Addition.Count);
+                await WriteVarIntAsync(smithingRecipe.Addition.Count);
                 foreach (var item in smithingRecipe.Addition)
-                    await this.WriteSlotAsync(item);
+                    await WriteSlotAsync(item);
 
-                await this.WriteSlotAsync(smithingRecipe.Result.First());
+                await WriteSlotAsync(smithingRecipe.Result.First());
             }
         }
 
@@ -1067,11 +1067,25 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
+        public void WriteNbt(INbtTag nbt)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(nbt);
+        }
+
+        [WriteMethod]
+        public void WriteNbtCompound(NbtCompound compound)
+        {
+            using var writer = new NbtWriter(BaseStream);
+            writer.WriteTag(compound);
+        }
+
+        [WriteMethod]
         public void WriteParticleData(ParticleData value)
         {
             if (value is null || value == ParticleData.None)
                 return;
-            
+
             switch (value.ParticleType)
             {
                 case ParticleType.Block:

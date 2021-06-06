@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class PlayerPosition : IPacket
+    public partial class PlayerPosition : IServerboundPacket
     {
         [Field(0), Absolute]
-        public PositionF Position { get; set; }
+        public VectorF Position { get; set; }
 
         [Field(1)]
 
@@ -21,19 +21,13 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerPosition(PositionF pos, bool onground)
+        public PlayerPosition(VectorF pos, bool onground)
         {
             this.Position = pos;
             this.OnGround = onground;
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Position = await stream.ReadAbsolutePositionFAsync();
-            this.OnGround = await stream.ReadBooleanAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, this.Position, this.OnGround);
             await player.World.UpdateClientChunksAsync(player.client);

@@ -61,31 +61,21 @@ namespace Obsidian.API
         }
 
         /// <summary>
-        /// Turns <see cref="Position"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
+        /// Turns <see cref="Vector"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
         /// </summary>
-        /// <param name="position"><see cref="Position"/> to be used for conversion.</param>
-        public static Velocity FromPosition(Position position)
+        /// <param name="vector"><see cref="Vector"/> to be used for conversion.</param>
+        public static Velocity FromVector(Vector vector)
         {
-            return FromBlockPerSecond(position.X, position.Y, position.Z);
+            return FromBlockPerSecond(vector.X, vector.Y, vector.Z);
         }
 
         /// <summary>
-        /// Turns <see cref="PositionF"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
+        /// Turns <see cref="VectorF"/> into <see cref="Velocity"/>, using it's coordinates as to how many blocks can be travelled per second.
         /// </summary>
-        /// <param name="position"><see cref="PositionF"/> to be used for conversion.</param>
-        public static Velocity FromPosition(PositionF position)
+        /// <param name="vector"><see cref="VectorF"/> to be used for conversion.</param>
+        public static Velocity FromVector(VectorF vector)
         {
-            return FromBlockPerSecond(position.X, position.Y, position.Z);
-        }
-
-        /// <summary>
-        /// Returns such velocity, that can travel from <paramref name="from"/> to <paramref name="to"/> in a second.
-        /// </summary>
-        /// <param name="from">Starting position.</param>
-        /// <param name="to">Target position.</param>
-        public static Velocity FromDirection(Position from, Position to)
-        {
-            return FromPosition(to - from);
+            return FromBlockPerSecond(vector.X, vector.Y, vector.Z);
         }
 
         /// <summary>
@@ -93,9 +83,19 @@ namespace Obsidian.API
         /// </summary>
         /// <param name="from">Starting position.</param>
         /// <param name="to">Target position.</param>
-        public static Velocity FromDirection(PositionF from, PositionF to)
+        public static Velocity FromDirection(Vector from, Vector to)
         {
-            return FromPosition(to - from);
+            return FromVector(to - from);
+        }
+
+        /// <summary>
+        /// Returns such velocity, that can travel from <paramref name="from"/> to <paramref name="to"/> in a second.
+        /// </summary>
+        /// <param name="from">Starting position.</param>
+        /// <param name="to">Target position.</param>
+        public static Velocity FromDirection(VectorF from, VectorF to)
+        {
+            return FromVector(to - from);
         }
     }
 }

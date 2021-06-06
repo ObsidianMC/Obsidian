@@ -1,5 +1,5 @@
 ﻿using Obsidian.API;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators
 {

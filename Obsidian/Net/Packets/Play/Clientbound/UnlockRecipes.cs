@@ -1,12 +1,10 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class UnlockRecipes : ISerializablePacket
+    public partial class UnlockRecipes : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public UnlockRecipeAction Action { get; set; }
@@ -42,10 +40,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public List<string> SecondRecipeIds { get; set; }
 
         public int Id => 0x35;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 
     public enum UnlockRecipeAction : int

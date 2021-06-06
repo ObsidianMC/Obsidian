@@ -4,9 +4,9 @@ using System.Collections.Concurrent;
 
 namespace Obsidian.Logging
 {
-    public class LoggerProvider : ILoggerProvider
+    public sealed class LoggerProvider : ILoggerProvider
     {
-        private readonly ConcurrentDictionary<string, Logger> loggers = new ConcurrentDictionary<string, Logger>();
+        private ConcurrentDictionary<string, Logger> loggers = new();
 
         private LogLevel MinimumLevel { get; }
 
@@ -14,22 +14,21 @@ namespace Obsidian.Logging
 
         internal LoggerProvider(LogLevel minLevel = LogLevel.Information)
         {
-            this.MinimumLevel = minLevel;
+            MinimumLevel = minLevel;
         }
 
         public ILogger CreateLogger(string categoryName)
         {
-            if (this.disposed)
-                throw new InvalidOperationException("This logger provider is already disposed.");
+            if (disposed)
+                throw new ObjectDisposedException("This logger provider is already disposed.");
 
-
-            return this.loggers.GetOrAdd(categoryName, name => new Logger(name, this.MinimumLevel));
+            return loggers.GetOrAdd(categoryName, name => new Logger(name, MinimumLevel));
         }
 
         public void Dispose()
         {
-            this.loggers.Clear();
-            this.disposed = true;
+            loggers = null;
+            disposed = true;
         }
     }
 }

@@ -15,8 +15,6 @@ namespace Obsidian.Net.Packets.Login
 
         public int Id => 0x01;
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
         public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         /*protected override async Task ComposeAsync(MinecraftStream stream)

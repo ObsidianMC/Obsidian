@@ -4,20 +4,20 @@ using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class PlayerBlockPlacement : IPacket
+    public partial class PlayerBlockPlacement : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
 
         [Field(1)]
-        public Position Position { get; set; }
+        public Vector Position { get; set; }
 
         [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }
@@ -36,18 +36,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x2E;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Hand = (Hand)await stream.ReadVarIntAsync();
-            this.Position = await stream.ReadPositionAsync();
-            this.Face = (BlockFace)await stream.ReadVarIntAsync();
-            this.CursorX = await stream.ReadFloatAsync();
-            this.CursorY = await stream.ReadFloatAsync();
-            this.CursorZ = await stream.ReadFloatAsync();
-            this.InsideBlock = await stream.ReadBooleanAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             var currentItem = player.GetHeldItem();
 

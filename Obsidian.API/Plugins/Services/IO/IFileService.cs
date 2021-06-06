@@ -17,7 +17,7 @@ namespace Obsidian.API.Plugins.Services.IO
         public bool FileExists(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(securityExceptionMessage);
+                throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
             if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
@@ -34,7 +34,7 @@ namespace Obsidian.API.Plugins.Services.IO
         public bool DirectoryExists(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(securityExceptionMessage);
+                throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
             if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);

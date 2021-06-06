@@ -11,6 +11,7 @@ namespace Obsidian.Chat
 
         [JsonProperty("color", DefaultValueHandling = DefaultValueHandling.Ignore)]
         private string HexColor => Color.ToString();
+
         [JsonIgnore]
         public HexColor Color { get; set; }
 
@@ -43,8 +44,12 @@ namespace Obsidian.Chat
 
         [JsonIgnore]
         public IEnumerable<IChatMessage> Extras => GetExtras();
+
         public IEnumerable<IChatMessage> GetExtras()
         {
+            if (Extra == null)
+                yield break;
+
             foreach (var extra in Extra)
             {
                 yield return extra;
@@ -90,6 +95,7 @@ namespace Obsidian.Chat
         public static ChatMessage Empty => Simple(string.Empty);
 
         public static implicit operator ChatMessage(string text) => Simple(text);
+
         public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, Globals.JsonSettings);
 
         public string ToString(bool indented) => JsonConvert.SerializeObject(this, indented ? Formatting.Indented : Formatting.None, Globals.JsonSettings);

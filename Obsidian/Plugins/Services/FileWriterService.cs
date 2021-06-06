@@ -22,7 +22,7 @@ namespace Obsidian.Plugins.Services
         public void AppendText(string path, string value)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -37,7 +37,7 @@ namespace Obsidian.Plugins.Services
         public Task AppendTextAsync(string path, string value, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -52,7 +52,7 @@ namespace Obsidian.Plugins.Services
         public IStream OpenWrite(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -67,7 +67,7 @@ namespace Obsidian.Plugins.Services
         public void WriteAllBytes(string path, byte[] value)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -82,7 +82,7 @@ namespace Obsidian.Plugins.Services
         public Task WriteAllBytesAsync(string path, byte[] value, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -97,7 +97,7 @@ namespace Obsidian.Plugins.Services
         public void WriteAllLines(string path, string[] value)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -112,7 +112,7 @@ namespace Obsidian.Plugins.Services
         public Task WriteAllLinesAsync(string path, string[] value, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -127,7 +127,7 @@ namespace Obsidian.Plugins.Services
         public void WriteAllText(string path, string value)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -142,7 +142,7 @@ namespace Obsidian.Plugins.Services
         public Task WriteAllTextAsync(string path, string value, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileWriter.securityExceptionMessage);
+                throw new SecurityException(IFileWriter.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 

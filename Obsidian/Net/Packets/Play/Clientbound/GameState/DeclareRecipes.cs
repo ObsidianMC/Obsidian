@@ -1,14 +1,12 @@
 ﻿using Obsidian.API.Crafting;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Util.Registry;
+using Obsidian.Utilities.Registry;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class DeclareRecipes : ISerializablePacket
+    public partial class DeclareRecipes : IClientboundPacket
     {
         [Field(0)]
         public Dictionary<string, IRecipe> Recipes { get; }
@@ -21,11 +19,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Recipes = recipes;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        
     }
 }

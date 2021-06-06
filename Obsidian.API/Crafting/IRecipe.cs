@@ -6,7 +6,7 @@
 
         public string Type { get; set; }
 
-        public string Group { get; set; }
+        public string? Group { get; set; }
 
         public Ingredient Result { get; set; }
     }

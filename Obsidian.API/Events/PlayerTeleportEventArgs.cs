@@ -2,9 +2,10 @@
 {
     public class PlayerTeleportEventArgs : PlayerEventArgs
     {
-        public PositionF OldPosition { get; }
-        public PositionF NewPosition { get; }
-        public PlayerTeleportEventArgs(IPlayer player, PositionF oldPosition, PositionF newPosition) : base(player)
+        public VectorF OldPosition { get; }
+        public VectorF NewPosition { get; }
+
+        public PlayerTeleportEventArgs(IPlayer player, VectorF oldPosition, VectorF newPosition) : base(player)
         {
             OldPosition = oldPosition;
             NewPosition = newPosition;

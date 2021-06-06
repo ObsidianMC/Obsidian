@@ -1,15 +1,11 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class Statistics : ISerializablePacket
+    public partial class Statistics : IClientboundPacket
     {
         [Field(0), VarLength]
         public int Count { get => Stats.Count; }
@@ -27,10 +23,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         }
 
         public int Id => 0x06;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
     }
 
     public struct Statistic

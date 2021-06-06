@@ -2,16 +2,20 @@
 
 namespace Obsidian.API
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-    public class CommandInfoAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class CommandInfoAttribute : Attribute
     {
-        public string Description;
-        public string Usage;
+        public string Description { get; }
+        public string Usage { get; }
 
-        public CommandInfoAttribute(string description = "", string usage = "")
+        public CommandInfoAttribute(string description) : this(description, "")
         {
-            this.Description = description;
-            this.Usage = usage;
+        }
+
+        public CommandInfoAttribute(string description, string usage)
+        {
+            Description = description;
+            Usage = usage;
         }
     }
 }

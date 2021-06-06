@@ -2,16 +2,16 @@
 
 namespace Obsidian.API
 {
-    [AttributeUsage(AttributeTargets.Class)]
-    public class CommandGroupAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class CommandGroupAttribute : Attribute
     {
-        public string GroupName;
-        public string[] Aliases;
+        public string GroupName { get; }
+        public string[] Aliases { get; }
 
-        public CommandGroupAttribute(string groupname, params string[] aliases)
+        public CommandGroupAttribute(string groupName, params string[] aliases)
         {
-            this.GroupName = groupname;
-            this.Aliases = aliases;
+            GroupName = groupName;
+            Aliases = aliases;
         }
     }
 }

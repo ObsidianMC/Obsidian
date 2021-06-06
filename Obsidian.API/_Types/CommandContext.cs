@@ -1,27 +1,21 @@
-﻿using Obsidian.API;
-using Obsidian.API.Plugins;
-using System;
+﻿using Obsidian.API.Plugins;
 
 namespace Obsidian.API
 {
-    public class CommandContext
+    public sealed class CommandContext
     {
-        internal string Message;
-
-        public CommandContext(string message, IPlayer player, IServer server/*, IClient client*/)
-        {
-            this.Player = player;
-            this.Server = server;
-            this.Message = message;
-            //this.Client = client;
-        }
-
-        public IPlayer Player { get; private set; }
-
+        public IPlayer? Player { get; private set; }
         public IServer Server { get; private set; }
+        public ICommandSender Sender { get; }
+        public PluginBase? Plugin { get; internal set; }
+        internal string Message { get; }
 
-        public PluginBase Plugin { get; internal set; }
-
-        // public IClient Client { get; private set; }
+        public CommandContext(string message, ICommandSender commandSender, IPlayer player, IServer server)
+        {
+            Server = server;
+            Sender = commandSender;
+            Player = player;
+            Message = message;
+        }
     }
 }
