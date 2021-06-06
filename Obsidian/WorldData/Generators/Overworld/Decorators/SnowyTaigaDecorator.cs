@@ -1,21 +1,35 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
     public class SnowyTaigaDecorator : BaseDecorator
     {
-        public SnowyTaigaDecorator(Biomes biome) : base(biome)
+        public SnowyTaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
         }
 
-        public override void Decorate(Chunk chunk, Vector pos, OverworldNoise noise)
+        public override void Decorate()
         {
+            if (pos.Y < noise.settings.WaterLevel)
+            {
+                FillWater();
+                return;
+            }
+
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
-            
+
+            var grass = Registry.GetBlock(Material.Snow);
+            var dirt = Registry.GetBlock(Material.Dirt);
+
+            chunk.SetBlock(pos, grass);
+            for (int y = -1; y > -4; y--)
+                chunk.SetBlock(pos + (0, y, 0), dirt);
+
             var sand = Registry.GetBlock(Material.SnowBlock);
             var sandstone = Registry.GetBlock(Material.PackedIce);
             var deadbush = Registry.GetBlock(Material.Snow);

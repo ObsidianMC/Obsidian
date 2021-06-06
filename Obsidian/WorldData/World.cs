@@ -455,6 +455,8 @@ namespace Obsidian.WorldData
         internal void SetWorldSpawn()
         {
             if (Data.SpawnY != 0) { return; }
+            Data.SpawnX = Data.SpawnZ = 0;
+            Data.SpawnY = 128;
             foreach (var r in Regions.Values)
             {
                 foreach (var c in r.LoadedChunks)
