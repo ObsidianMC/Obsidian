@@ -467,19 +467,21 @@ namespace Obsidian
                         break;
                     }
                 case DiggingStatus.StartedDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                        this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        {
+                            Position = digging.Position,
+                            Block = block.Id,
+                            Status = digging.Status,
+                            Successful = true
+                        });
 
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+                        if (player.Gamemode == Gamemode.Creative)
+                        {
+                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Position, Block.Air);
+                            this.World.SetBlock(digging.Position, Block.Air);
+                        }
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
