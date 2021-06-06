@@ -20,6 +20,16 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
 
         protected List<ControlPoint> RiverControlPoints { get; private set; }
 
+        public double Decoration(double x, double y, double z)
+        {
+            return 0;
+        }
+
+        public double Terrain(double x, double z)
+        {
+            return 0;
+        }
+
         protected BaseBiomeNoise(OverworldTerrainSettings ots)
         {
             this.settings = ots;

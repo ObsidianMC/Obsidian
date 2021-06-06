@@ -1,4 +1,5 @@
 ﻿using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
+using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise;
 using SharpNoise.Modules;
 using System;
@@ -16,12 +17,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         private readonly BaseBiomeNoise humidity, temperature, terrain;
 
-        private readonly bool isUnitTest;
+        private readonly BaseCarver cave;
 
         public OverworldTerrain(OverworldTerrainSettings ots, bool isUnitTest = false)
         {
             settings = ots;
-            this.isUnitTest = isUnitTest;
 
             ocean = new OceanTerrain(ots);
             plains = new PlainsTerrain(ots);
@@ -34,9 +34,12 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             temperature = new TemperatureNoise(ots);
             terrain = new TerrainNoise(ots);
 
+            cave = new CavesCarver(ots);
+
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
             var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
+            //var scaled = GetScaledModuleOutput(plains.Result);
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -98,6 +101,12 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             return GetScaledModuleOutput(LandOceanSelector()).GetValue(x, y, z) < 0.5;
         }
 
+        public bool IsCave(double x, double y, double z)
+        {
+            var val = cave.Result.GetValue(x, y, z);
+            return val < 0.456789;
+        }
+
         private Module LandOceanSelector()
         {
             return new Cache
@@ -152,14 +161,21 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         {
             return new Cache
             {
-                Source0 = new Select
+                Source0 = new Turbulence
                 {
-                    Source0 = MergedLandOcean(),
-                    Source1 = rivers.Result,
-                    Control = MergedRivers(),
-                    LowerBound = 0.5,
-                    UpperBound = 2.0,
-                    EdgeFalloff = 0.2
+                    Frequency = 14.4578,
+                    Power = 0.028,
+                    Roughness = 2,
+                    Seed = settings.Seed,
+                    Source0 = new Select
+                    {
+                        Source0 = MergedLandOcean(),
+                        Source1 = rivers.Result,
+                        Control = MergedRivers(),
+                        LowerBound = 0.5,
+                        UpperBound = 2.0,
+                        EdgeFalloff = 0.2
+                    }
                 }
             };
         }

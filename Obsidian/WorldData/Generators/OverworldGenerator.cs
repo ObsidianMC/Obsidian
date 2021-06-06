@@ -16,7 +16,7 @@ namespace Obsidian.WorldData.Generators
         {
             var seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
             OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = seedHash;
+            generatorSettings.Seed = 137;//seedHash;
             terrainGen = new OverworldTerrain(generatorSettings);
         }
 
@@ -53,39 +53,11 @@ namespace Obsidian.WorldData.Generators
                 }
             }
 
+            ChunkBuilder.FillChunk(chunk, terrainHeightmap, bedrockHeightmap);
+            ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
 
-
-            ChunkBuilder.FillChunk(chunk, terrainHeightmap, rockHeightmap, bedrockHeightmap);
-            /*            for (int bx = 0; bx < 16; bx++)
-                        {
-                            for (int bz = 0; bz < 16; bz++)
-                            {
-                                if (noiseGen.isRiver(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 106, bz, Registry.GetBlock(Materials.LightBlueStainedGlass));
-
-                                if (noiseGen.isMountain(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 105, bz, Registry.GetBlock(Materials.BlackStainedGlass));
-
-                                if (noiseGen.isHills(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 103, bz, Registry.GetBlock(Materials.GreenStainedGlass));
-
-                                if (noiseGen.isBadlands(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 104, bz, Registry.GetBlock(Materials.RedStainedGlass));
-
-                                if (noiseGen.isPlains(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 102, bz, Registry.GetBlock(Materials.WhiteStainedGlass));
-
-                                if (noiseGen.isOcean(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 101, bz, Registry.GetBlock(Materials.BlueStainedGlass));
-
-                                if (noiseGen.isDeepOcean(bx + (cx * 16), bz + (cz * 16)))
-                                    chunk.SetBlock(bx, 101, bz, Registry.GetBlock(Materials.BlueStainedGlass));
-                            }
-                        }*/
-
-            //OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen);
+            OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen);
             //GenerateCoal(chunk, rockHeightmap);
-            //ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
 
 
             for (int bx = 0; bx < 16; bx++)

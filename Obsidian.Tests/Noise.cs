@@ -20,7 +20,7 @@ namespace Obsidian.Tests
         public async void SameAsync()
         {
             OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = 13387;
+            generatorSettings.Seed = 137;
             OverworldTerrain noiseGen = new OverworldTerrain(generatorSettings, true);
 
             var map = new NoiseMap();

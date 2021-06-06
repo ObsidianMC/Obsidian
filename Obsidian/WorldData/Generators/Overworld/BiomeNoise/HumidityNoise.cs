@@ -13,7 +13,6 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
             this.RiverSelector = Rivers();
         }
 
-
         private Module Rivers()
         {
             return new Cache

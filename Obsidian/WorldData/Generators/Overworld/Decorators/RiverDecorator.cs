@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
@@ -11,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
         }
 
-        public override void Decorate(Chunk chunk, Vector pos, OverworldNoise noise)
+        public override void Decorate(Chunk chunk, Vector pos, BaseBiomeNoise noise)
         {
             if (pos.Y < 65)
                 chunk.SetBlock(pos, Registry.GetBlock(Material.Gravel));
