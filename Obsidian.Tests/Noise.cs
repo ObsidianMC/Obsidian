@@ -1,15 +1,8 @@
-﻿using Obsidian.Net;
-using Obsidian.WorldData.Generators.Overworld;
+﻿using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise;
 using SharpNoise.Builders;
-using SharpNoise.Modules;
 using SharpNoise.Utilities.Imaging;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
 using Xunit;
 
 namespace Obsidian.Tests

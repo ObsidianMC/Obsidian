@@ -23,6 +23,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         protected bool IsKelp => noise.Decoration(pos.X, 9000, pos.Z) > 0.75;
 
+        protected bool IsMagma => noise.Decoration(pos.X / 2.0, 90000, pos.Z / 2.0) > 0.85;
+
         public OceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
             sand = Registry.GetBlock(Material.Sand);
@@ -48,7 +50,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 chunk.SetBlock(pos + (0, y, 0), dirt);
 
             // Add magma
-            if (hasMagma & noise.Decoration(pos.X / 2.0, 900, pos.Z / 2.0) > 0.85) { chunk.SetBlock(pos, magma); }
+            if (hasMagma & IsMagma) { chunk.SetBlock(pos, magma); }
 
             // Add sea grass
             if (hasSeaGrass & IsGrass) { chunk.SetBlock(pos + (0, 1, 0), seaGrass); }
