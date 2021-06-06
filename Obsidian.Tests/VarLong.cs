@@ -18,7 +18,7 @@ namespace Obsidian.Tests
 
             byte[] actualBytes = writer.Memory.ToArray();
 
-            Assert.InRange(input, 1, 10);
+            Assert.InRange(actualBytes.Length, 1, 10);
             Assert.Equal(expectedOutput, actualBytes);
         }
         
