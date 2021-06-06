@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace Obsidian.Utilities
 {
-    // This implements XorShift+.
     public struct XorshiftRandom
     {
         private const double Unit = 1.0 / (int.MaxValue + 1.0);
@@ -41,7 +40,7 @@ namespace Obsidian.Utilities
 
             if (exclusiveRange > 1)
             {
-                return minValue + (int)(Unit * NextInt32() * maxValue);
+                return minValue + (int)(Unit * NextInt32() * exclusiveRange);
             }
 
             return minValue;
