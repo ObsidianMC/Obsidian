@@ -1,9 +1,5 @@
 ﻿using SharpNoise.Modules;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static SharpNoise.Modules.Curve;
 
 namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
@@ -14,7 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
 
         public Module RiverSelector { get; protected set; }
 
-        protected readonly OverworldTerrainSettings settings;
+        public readonly OverworldTerrainSettings settings;
 
         protected readonly double biomeScale = 0.812;
 

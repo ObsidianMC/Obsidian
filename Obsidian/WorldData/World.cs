@@ -398,7 +398,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < Environment.ProcessorCount/3; a++)
+            for (int a = 0; a < 6; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);
@@ -455,6 +455,8 @@ namespace Obsidian.WorldData
         internal void SetWorldSpawn()
         {
             if (Data.SpawnY != 0) { return; }
+            Data.SpawnX = Data.SpawnZ = 0;
+            Data.SpawnY = 128;
             foreach (var r in Regions.Values)
             {
                 foreach (var c in r.LoadedChunks)

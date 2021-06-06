@@ -32,16 +32,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             Seed = ots.Seed,
                             Source0 = new Multiply
                             {
-                                // [Positive-plains-basis-0 module]: This scale/bias module makes the
-                                // output value from the plains-basis-0 module positive since this output
-                                // value will be multiplied together with the positive-plains-basis-1
-                                // module.
                                 Source0 = new ScaleBias
                                 {
-                                    Scale = 0.005, // Flatten -1 < y < 1 to -0.1 < y < 0.1
-                                    Bias = 0.3, // move -1 < y < 1 up by 0.1
-                                                // [Plains-basis-0 module]: This billow-noise module, along with the
-                                                // plains-basis-1 module, produces the plains.
+                                    Scale = 0.005, // Flatten
+                                    Bias = 0.3, // move elevation
                                     Source0 = new Billow
                                     {
                                         Seed = settings.Seed + 70,
@@ -52,16 +46,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                         Quality = NoiseQuality.Standard,
                                     }
                                 },
-                                // [Positive-plains-basis-1 module]: This scale/bias module makes the
-                                // output value from the plains-basis-1 module positive since this output
-                                // value will be multiplied together with the positive-plains-basis-0
-                                // module.
                                 Source1 = new ScaleBias
                                 {
                                     Scale = 0.2,
                                     Bias = 0.5,
-                                    // [Plains-basis-1 module]: This billow-noise module, along with the
-                                    // plains-basis-2 module, produces the plains.
                                     Source0 = new Billow
                                     {
                                         Seed = settings.Seed + 71,

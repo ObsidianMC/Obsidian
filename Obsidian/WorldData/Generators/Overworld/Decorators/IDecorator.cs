@@ -5,6 +5,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
     public interface IDecorator
     {
-        void Decorate(Chunk chunk, Vector position, BaseBiomeNoise noise);
+        void Decorate();
     }
 }

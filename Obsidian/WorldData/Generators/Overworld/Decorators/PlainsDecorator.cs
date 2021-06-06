@@ -8,12 +8,18 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
     public class PlainsDecorator : BaseDecorator
     {
-        public PlainsDecorator(Biomes biome) : base(biome)
+        public PlainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
         }
 
-        public override void Decorate(Chunk chunk, Vector pos, BaseBiomeNoise noise)
+        public override void Decorate()
         {
+            if (pos.Y <= noise.settings.WaterLevel)
+            {
+                FillWater();
+                return;
+            }
+
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
 

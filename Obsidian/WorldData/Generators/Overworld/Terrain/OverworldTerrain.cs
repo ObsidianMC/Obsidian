@@ -39,7 +39,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
             var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
-            //var scaled = GetScaledModuleOutput(plains.Result);
+            //var scaled = GetScaledModuleOutput(ocean.Result);
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
