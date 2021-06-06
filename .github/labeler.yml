@@ -28,3 +28,6 @@ source-generation:
 tests:
   - Obsidian.Tests/*
   - Obsidian.Tests/**/*
+
+world generation:
+  - Obsidian/WorldData/Generators
