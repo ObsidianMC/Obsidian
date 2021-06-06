@@ -9,7 +9,6 @@ using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
@@ -429,12 +428,6 @@ namespace Obsidian.Utilities.Registry
             [JsonProperty("protocol_id")]
             public int ProtocolId { get; set; }
         }
-    }
-
-    public class DomainTag
-    {
-        public string TagName { get; set; }
-        public string BaseTagName { get; set; }
     }
 
     [DebuggerDisplay("{@base}:{numeric}")]
