@@ -1,11 +1,12 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class EntityAction : IPacket
+    public partial class EntityAction : IServerboundPacket
     {
         [Field(0), VarLength]
         public int EntityId { get; set; }
@@ -18,14 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1C;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.Action = (EAction)await stream.ReadVarIntAsync();
-            this.JumpBoost = await stream.ReadVarIntAsync();
-        }
-
-        public Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             switch (this.Action)
             {
@@ -34,6 +28,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
                 case EAction.StopSneaking:
                     player.Sneaking = false;
+                    player.Pose = Pose.Standing;
                     break;
                 case EAction.LeaveBed:
                     player.Sleeping = false;
@@ -56,11 +51,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
-            return Task.CompletedTask;
+            await server.BroadcastPacketAsync(new EntityMetadata
+            {
+                EntityId = player.EntityId,
+                Entity = player
+            }, player.EntityId);
         }
     }
 
-    public enum EAction
+    public enum EAction : int
     {
         StartSneaking,
         StopSneaking,

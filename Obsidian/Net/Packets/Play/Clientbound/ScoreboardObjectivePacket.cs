@@ -1,12 +1,10 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Utilities;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ScoreboardObjectivePacket : ISerializablePacket
+    public class ScoreboardObjectivePacket : IClientboundPacket
     {
         public string ObjectiveName { get; set; }
 
@@ -17,10 +15,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public DisplayType Type { get; set; }
 
         public int Id => 0x4A;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public void Serialize(MinecraftStream stream)
         {

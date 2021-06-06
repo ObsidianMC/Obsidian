@@ -6,19 +6,14 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class CloseWindow : ISerializablePacket
+    public partial class CloseWindow : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
         public byte WindowId { get; set; }
 
         public int Id => 0x0A;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.WindowId = await stream.ReadUnsignedByteAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             if (this.WindowId == 0)
                 return;

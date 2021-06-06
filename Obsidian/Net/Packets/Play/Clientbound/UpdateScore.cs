@@ -1,10 +1,8 @@
-﻿using Obsidian.Entities;
-using Obsidian.Utilities;
-using System.Threading.Tasks;
+﻿using Obsidian.Utilities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class UpdateScore : ISerializablePacket
+    public class UpdateScore : IClientboundPacket
     {
         /// <summary>
         /// The entity whose score this is. For players, this is their username; for other entities, it is their UUID.
@@ -27,10 +25,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Value { get; set; }
 
         public int Id => 0x4D;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
 
         public void Serialize(MinecraftStream stream)
         {

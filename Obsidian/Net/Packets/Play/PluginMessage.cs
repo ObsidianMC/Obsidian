@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class PluginMessage : ISerializablePacket
+    public partial class PluginMessage : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
         public string Channel { get; private set; }
@@ -25,26 +25,26 @@ namespace Obsidian.Net.Packets.Play
             this.PluginData = data;
         }
 
-        public async ValueTask<PluginMessageStore> HandleAsync()
+        public PluginMessageStore Handle()
         {
-            using var stream = new MinecraftStream(this.PluginData);
+            using var stream = new MinecraftStream(PluginData);
 
-            var result = this.Channel switch
+            var result = Channel switch
             {
                 "minecraft:brand" => new PluginMessageStore
                 {
                     Type = PluginMessageType.Brand,
-                    Value = await stream.ReadStringAsync()
+                    Value = stream.ReadString()
                 },
                 "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
                 {
                     Type = PluginMessageType.Register,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
+                    Value = Encoding.UTF8.GetString(PluginData)
                 },
                 "minecraft:unregister" => new PluginMessageStore
                 {
                     Type = PluginMessageType.UnRegister,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
+                    Value = Encoding.UTF8.GetString(PluginData)
                 },
                 _ => null
             };
@@ -52,21 +52,24 @@ namespace Obsidian.Net.Packets.Play
             return result;
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public void Populate(byte[] data)
         {
-            this.Channel = await stream.ReadStringAsync();
-
-            var length = stream.Length - stream.Position;
-
-            this.PluginData = await stream.ReadUInt8ArrayAsync((int)length);
+            using var stream = new MinecraftStream(data);
+            Populate(stream);
         }
 
-        public async Task HandleAsync(Server server, Player player)
+        public void Populate(MinecraftStream stream)
         {
-            var result = await this.HandleAsync();
+            Channel = stream.ReadString();
+            PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
+        }
+
+        public ValueTask HandleAsync(Server server, Player player)
+        {
+            var result = Handle();
 
             if (result == null)
-                return;
+                return ValueTask.CompletedTask;
 
             switch (result.Type)
             {
@@ -96,6 +99,8 @@ namespace Obsidian.Net.Packets.Play
                 default:
                     break;
             }
+
+            return ValueTask.CompletedTask;
         }
     }
 

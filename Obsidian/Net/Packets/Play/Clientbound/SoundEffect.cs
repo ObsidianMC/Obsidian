@@ -1,12 +1,10 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public partial class SoundEffect : ISerializablePacket
+    public partial class SoundEffect : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public Sounds SoundId { get; }
@@ -33,9 +31,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Pitch = pitch;
             Volume = volume;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

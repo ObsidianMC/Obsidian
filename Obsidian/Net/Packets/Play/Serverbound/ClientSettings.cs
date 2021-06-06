@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class ClientSettings : IPacket
+    public partial class ClientSettings : IServerboundPacket
     {
         [Field(0)]
         public string Locale { get; private set; }
@@ -27,16 +27,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x05;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Locale = await stream.ReadStringAsync();
-            this.ViewDistance = await stream.ReadByteAsync();
-            this.ChatMode = await stream.ReadVarIntAsync();
-            this.ChatColors = await stream.ReadBooleanAsync();
-            this.SkinParts = await stream.ReadUnsignedByteAsync();
-            this.MainHand = await stream.ReadVarIntAsync();
-        }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

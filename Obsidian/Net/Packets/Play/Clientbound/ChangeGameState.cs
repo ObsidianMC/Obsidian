@@ -1,11 +1,9 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     [ClientOnly]
-    public abstract partial class ChangeGameState<T> : ISerializablePacket
+    public abstract partial class ChangeGameState<T> : IClientboundPacket
     {
         [Field(0), ActualType(typeof(byte))]
         public ChangeGameStateReason Reason { get; }
@@ -23,10 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         {
             Reason = reason;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 
     public enum ChangeGameStateReason : byte

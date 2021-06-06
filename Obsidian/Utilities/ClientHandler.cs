@@ -12,7 +12,7 @@ namespace Obsidian
 {
     public class ClientHandler
     {
-        private ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
+        private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
 
         public void RegisterHandlers()
         {
@@ -140,7 +140,7 @@ namespace Obsidian
 
                     try
                     {
-                        await packet.ReadAsync(new MinecraftStream(data));
+                        packet.Populate(data);
                         await packet.HandleAsync(client.Server, client.Player);
                     }
                     catch (Exception e)
@@ -152,13 +152,12 @@ namespace Obsidian
             }
         }
 
-        private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IPacket, new()
+        private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
         {
             var packet = ObjectPool<T>.Shared.Rent();
-            using var stream = new MinecraftStream(data);
             try
             {
-                await packet.ReadAsync(stream);
+                packet.Populate(data);
                 await packet.HandleAsync(client.Server, client.Player);
             }
             catch (Exception e)

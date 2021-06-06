@@ -182,6 +182,8 @@ namespace Obsidian
 
         public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
+        public IPlayer GetPlayer(int entityId) => this.OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
+
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
@@ -251,7 +253,6 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
@@ -355,13 +356,13 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(ISerializablePacket packet, params int[] excluded)
+        internal async Task BroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal void BroadcastPacketWithoutQueue(ISerializablePacket packet, params int[] excluded)
+        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet, params int[] excluded)
         {
             foreach (var (_, player) in this.OnlinePlayers.Where(x => !excluded.Contains(x.Value.EntityId)))
                 player.client.SendPacket(packet);
@@ -416,7 +417,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = droppedItem.GetItem().Id,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = loc
                         };
@@ -466,19 +467,21 @@ namespace Obsidian
                         break;
                     }
                 case DiggingStatus.StartedDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                        this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        {
+                            Position = digging.Position,
+                            Block = block.Id,
+                            Status = digging.Status,
+                            Successful = true
+                        });
 
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+                        if (player.Gamemode == Gamemode.Creative)
+                        {
+                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Position, Block.Air);
+                            this.World.SetBlock(digging.Position, Block.Air);
+                        }
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
@@ -519,7 +522,7 @@ namespace Obsidian
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
                             Id = itemId,
-                            EntityBitMask = EntityBitMask.Glowing,
+                            Glowing = true,
                             World = this.World,
                             Position = digging.Position + new VectorF(
                                 (Globals.Random.NextSingle() * 0.5f) + 0.25f,
@@ -538,7 +541,7 @@ namespace Obsidian
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromPosition(digging.Position)
+                            Velocity = Velocity.FromVector(digging.Position)
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
@@ -603,7 +606,7 @@ namespace Obsidian
 
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
-                
+
                 _ = Task.Run(() => World.ManageChunks());
             }
         }
@@ -618,33 +621,6 @@ namespace Obsidian
             await this.RegisterAsync(new OverworldDebugGenerator(Config.Seed));
         }
 
-        private async Task SendSpawnPlayerAsync(IPlayer joined)
-        {
-            foreach (var (_, player) in this.OnlinePlayers.Except(joined.Uuid))
-            {
-                var joinedPlayer = joined as Player;
-                //await player.client.QueuePacketAsync(new EntityMovement { EntityId = joined.EntityId });
-                await player.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = joinedPlayer.EntityId,
-                    Uuid = joinedPlayer.Uuid,
-                    Position = joinedPlayer.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-
-                //await joined.client.QueuePacketAsync(new EntityMovement { EntityId = player.EntityId });
-                await joinedPlayer.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = 0,
-                    Pitch = 0
-                });
-            }
-        }
-
         public IEnumerable<IPlayer> Players => GetPlayers();
         private IEnumerable<IPlayer> GetPlayers()
         {
@@ -657,22 +633,35 @@ namespace Obsidian
         #region Events
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
-            foreach (var (_, other) in this.OnlinePlayers.Except(e.Player.Uuid))
-                await other.client.RemovePlayerFromListAsync(e.Player);
+            var player = e.Player as Player;
+
+            this.World.RemovePlayer(player);
+
+            var destroy = new DestroyEntities
+            {
+                EntityIds = new() { player.EntityId }
+            };
+            foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
+            {
+                await other.client.RemovePlayerFromListAsync(player);
+                if (other.VisiblePlayers.Contains(player.EntityId))
+                    await other.client.QueuePacketAsync(destroy);
+            }
 
             await this.BroadcastAsync(string.Format(this.Config.LeaveMessage, e.Player.Username));
         }
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
-            var joined = e.Player;
+            var joined = e.Player as Player;
+
+            this.World.AddPlayer(joined);//TODO Gotta make sure we add the player to whatever world they were last in so this has to change
+
             await this.BroadcastAsync(string.Format(this.Config.JoinMessage, e.Player.Username));
             foreach (var (_, other) in this.OnlinePlayers)
+            {
                 await other.client.AddPlayerToListAsync(joined);
-
-            // Need a delay here, otherwise players start flying
-            await Task.Delay(500);
-            await this.SendSpawnPlayerAsync(joined);
+            }
         }
         #endregion Events
 

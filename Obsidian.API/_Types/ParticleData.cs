@@ -2,9 +2,9 @@
 
 namespace Obsidian.API
 {
-    public class ParticleData
+    public sealed class ParticleData
     {
-        public static readonly ParticleData None = new ParticleData();
+        public static readonly ParticleData None = new();
 
         private object data;
         internal ParticleType ParticleType { get; set; }
@@ -30,9 +30,9 @@ namespace Obsidian.API
             throw new InvalidOperationException();
         }
 
-        public static ParticleData ForBlock(int blockState) => new ParticleData(blockState, ParticleType.Block);
-        public static ParticleData ForDust(float red, float green, float blue, float scale) => new ParticleData((red, green, blue, scale), ParticleType.Dust);
-        public static ParticleData ForFallingDust(int blockState) => new ParticleData(blockState, ParticleType.FallingDust);
-        public static ParticleData ForItem(ItemStack item) => new ParticleData(item, ParticleType.Item);
+        public static ParticleData ForBlock(int blockState) => new(blockState, ParticleType.Block);
+        public static ParticleData ForDust(float red, float green, float blue, float scale) => new((red, green, blue, scale), ParticleType.Dust);
+        public static ParticleData ForFallingDust(int blockState) => new(blockState, ParticleType.FallingDust);
+        public static ParticleData ForItem(ItemStack item) => new(item, ParticleType.Item);
     }
 }

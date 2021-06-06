@@ -18,9 +18,6 @@ namespace Obsidian.API
         public PlayerBitMask PlayerBitMask { get; set; }
 
         public bool Sleeping { get; set; }
-        public bool Sneaking { get; set; }
-        public bool Sprinting { get; set; }
-        public bool FlyingWithElytra { get; set; }
         public bool InHorseInventory { get; set; }
 
         public short AttackTime { get; set; }

@@ -243,6 +243,13 @@ namespace Obsidian.API
         }
         #endregion
 
+        public void Deconstruct(out float x, out float y, out float z)
+        {
+            x = X;
+            y = Y;
+            z = Z;
+        }
+
         /// <inheritdoc/>
         public readonly override bool Equals(object obj)
         {

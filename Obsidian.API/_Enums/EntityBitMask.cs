@@ -16,6 +16,6 @@ namespace Obsidian.API
         Swimming = 0x10,
         Invisible = 0x20,
         Glowing = 0x40,
-        Flying = 0x80
+        FlyingWithElytra = 0x80
     }
 }

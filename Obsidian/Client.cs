@@ -1,6 +1,4 @@
-﻿using DaanV2.UUID;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using Obsidian.API;
 using Obsidian.API.Events;
@@ -26,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -39,7 +38,7 @@ namespace Obsidian
         private byte[] randomToken;
         private byte[] sharedKey;
 
-        private readonly BufferBlock<ISerializablePacket> packetQueue;
+        private readonly BufferBlock<IClientboundPacket> packetQueue;
 
         private readonly PacketCryptography packetCryptography;
 
@@ -93,8 +92,8 @@ namespace Obsidian
             this.minecraftStream = new MinecraftStream(parentStream);
 
             var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
-            packetQueue = new BufferBlock<ISerializablePacket>(blockOptions);
-            var sendPacketBlock = new ActionBlock<ISerializablePacket>(packet =>
+            packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
+            var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
             {
                 if (tcp.Connected)
                     SendPacket(packet);
@@ -230,7 +229,7 @@ namespace Obsidian
                                     break;
                                 }
 
-                                this.Player = new Player(UUIDFactory.CreateUUID(3, 1, $"OfflinePlayer:{username}"), username, this)
+                                this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
                                 {
                                     World = this.Server.World
                                 };
@@ -320,7 +319,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
+            Registry.Dimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -332,8 +331,8 @@ namespace Obsidian
 
                 Codecs = new MixedCodec
                 {
-                    Dimensions = Registry.DefaultDimensions,
-                    Biomes = Registry.DefaultBiomes
+                    Dimensions = Registry.Dimensions,
+                    Biomes = Registry.Biomes
                 },
 
                 Dimension = codec,
@@ -351,7 +350,6 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            // IG its fixed??
             await this.QueuePacketAsync(new TagsPacket
             {
                 Blocks = Registry.Tags["blocks"],
@@ -366,7 +364,6 @@ namespace Obsidian
             await this.DeclareRecipesAsync();
 
             await SendDeclareCommandsAsync();
-            this.Logger.LogDebug("Sent Declare Commands packet.");
 
             await this.QueuePacketAsync(new UnlockRecipes
             {
@@ -388,10 +385,10 @@ namespace Obsidian
                 Server.World.Data.SpawnY,
                 Server.World.Data.SpawnZ);
 
-            await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
-            this.Logger.LogDebug("Sent Spawn Position packet.");
+            var (chunkX, chunkZ) = spawnPosition.ToChunkCoord();
 
-            this.Logger.LogDebug("Sent Join Game packet.");
+            await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
+            await this.QueuePacketAsync(new SpawnPosition(spawnPosition));
 
             this.Player.Position = spawnPosition;
 
@@ -403,8 +400,6 @@ namespace Obsidian
                 Flags = PositionFlags.None,
                 TeleportId = 0
             });
-            this.Logger.LogDebug("Sent Position packet.");
-
             // TODO fix its sending chunks too fast
             //await Server.world.ResendBaseChunksAsync(4, 0, 0, 0, 0, this);
         }
@@ -503,7 +498,7 @@ namespace Obsidian
             await this.QueuePacketAsync(new PlayerInfo(0, list));
         }
 
-        internal void SendPacket(ISerializablePacket packet)
+        internal void SendPacket(IClientboundPacket packet)
         {
             try
             {
@@ -530,7 +525,7 @@ namespace Obsidian
             }
         }
 
-        internal async Task QueuePacketAsync(ISerializablePacket packet)
+        internal async Task QueuePacketAsync(IClientboundPacket packet)
         {
             var args = await this.Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
 
@@ -570,10 +565,9 @@ namespace Obsidian
 
         private async Task SendServerBrand()
         {
-            await using var stream = new MinecraftStream();
-            await stream.WriteStringAsync("obsidian");
+            var value = Encoding.UTF8.GetBytes("obsidian");
 
-            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", value));
             this.Logger.LogDebug("Sent server brand.");
         }
 

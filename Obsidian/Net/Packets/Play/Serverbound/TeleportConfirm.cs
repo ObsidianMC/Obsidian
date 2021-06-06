@@ -5,19 +5,14 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     [ServerOnly]
-    public partial class TeleportConfirm : IPacket
+    public partial class TeleportConfirm : IServerboundPacket
     {
         [Field(0), VarLength]
         public int TeleportId { get; set; }
 
         public int Id => 0x00;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.TeleportId = await stream.ReadVarIntAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             if (this.TeleportId == player.TeleportId)
                 return;

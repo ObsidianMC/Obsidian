@@ -2,7 +2,8 @@
 
 namespace Obsidian.API
 {
-    public class RemainingAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    public sealed class RemainingAttribute : Attribute
     {
     }
 }
