@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Obsidian.Utilities
@@ -7,13 +6,17 @@ namespace Obsidian.Utilities
     // This implements XorShift+.
     public struct XorshiftRandom
     {
-        private ulong state_a;
-        private ulong state_b;
+        private const double Unit = 1.0 / (int.MaxValue + 1.0);
+        private const float FloatUnit = 1f / uint.MaxValue;
+        private const double DoubleUnit = 1.0 / ulong.MaxValue;
+
+        private ulong stateA;
+        private ulong stateB;
 
         public XorshiftRandom(long seed)
         {
-            state_a = (ulong)seed;
-            state_b = (ulong)seed >> 32;
+            stateA = (ulong)seed;
+            stateB = (ulong)seed >> 32;
         }
 
         public int Next()
@@ -26,15 +29,7 @@ namespace Obsidian.Utilities
         {
             if (maxValue > 1)
             {
-                int bits = Log2Ceiling((uint)maxValue);
-                while (true)
-                {
-                    uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
-                    if (result < (uint)maxValue)
-                    {
-                        return (int)result;
-                    }
-                }
+                return (int)(Unit * NextInt32() * maxValue);
             }
 
             return 0;
@@ -46,16 +41,7 @@ namespace Obsidian.Utilities
 
             if (exclusiveRange > 1)
             {
-                int bits = Log2Ceiling(exclusiveRange);
-
-                while (true)
-                {
-                    uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
-                    if (result < exclusiveRange)
-                    {
-                        return (int)result + minValue;
-                    }
-                }
+                return minValue + (int)(Unit * NextInt32() * maxValue);
             }
 
             return minValue;
@@ -63,7 +49,7 @@ namespace Obsidian.Utilities
 
         public double NextDouble()
         {
-            return Convert.ToDouble(Step());
+            return DoubleUnit * Step();
         }
 
         public ulong NextUlong()
@@ -71,22 +57,29 @@ namespace Obsidian.Utilities
             return Step();
         }
 
-        public float NextSingle()
+        public float NextFloat()
         {
-            return Convert.ToSingle(Step());
+            return FloatUnit * NextUInt32();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int NextInt32()
+        {
+            ulong step = Step();
+            return Unsafe.As<ulong, int>(ref step) & int.MaxValue;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint NextUInt32()
         {
-            ulong value = Step();
-            return (uint)(value & 0xFFFFFFFF);
+            ulong step = Step();
+            return Unsafe.As<ulong, uint>(ref step);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static XorshiftRandom Create()
         {
-	        return new(Environment.TickCount64);
+	        return new(Environment.TickCount64 ^ long.MinValue);
         }
 
         /// <summary>
@@ -96,26 +89,15 @@ namespace Obsidian.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ulong Step()
         {
-            ulong t = state_a;
-            ulong s = state_b;
+            ulong t = stateA;
+            ulong s = stateB;
 
-            state_a = s;
+            stateA = s;
             t ^= t << 23;
             t ^= t >> 17;
             t ^= s ^ (s >> 26);
-            state_b = t;
+            stateB = t;
             return t + s;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int Log2Ceiling(uint value)
-        {
-            int result = BitOperations.Log2(value);
-            if (BitOperations.PopCount(value) != 1)
-            {
-                result++;
-            }
-            return result;
         }
     }
 }
