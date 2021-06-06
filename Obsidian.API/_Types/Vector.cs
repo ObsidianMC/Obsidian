@@ -216,7 +216,7 @@ namespace Obsidian.API
         }
 
         /// <inheritdoc/>
-        public readonly override bool Equals(object obj)
+        public readonly override bool Equals(object? obj)
         {
             return obj is Vector position && Equals(position);
         }

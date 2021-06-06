@@ -2,11 +2,11 @@
 {
     public interface IRecipeBuilder<TBuilder>
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        public string Group { get; set; }
+        public string? Group { get; set; }
 
-        public ItemStack Result { get; set; }
+        public ItemStack? Result { get; set; }
 
         public TBuilder WithName(string name);
 

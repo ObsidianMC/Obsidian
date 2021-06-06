@@ -75,7 +75,7 @@ namespace Obsidian.Plugins.Services
         public T LoadMethod<T>(string libraryPath, string name, Encoding stringEncoding) where T : Delegate
         {
             if (!IsUsable)
-                throw new SecurityException(INativeLoader.securityExceptionMessage);
+                throw new SecurityException(INativeLoader.SecurityExceptionMessage);
 
             if (stringEncoding == Encoding.Default)
                 stringEncoding = null;
@@ -124,7 +124,7 @@ namespace Obsidian.Plugins.Services
             il.Emit(OpCodes.Callvirt, getIsUsable);
             il.Emit(OpCodes.Brtrue_S, nativeCall);
 
-            il.Emit(OpCodes.Ldstr, INativeLoader.securityExceptionMessage);
+            il.Emit(OpCodes.Ldstr, INativeLoader.SecurityExceptionMessage);
             il.Emit(OpCodes.Newobj, exceptionConstructor);
             il.Emit(OpCodes.Throw);
 

@@ -56,6 +56,6 @@ namespace Obsidian.API
             "obsidian:player"
         };
 
-        public static bool IsValidMcType(string input) => mcTypes.Contains(input);
+        public static bool IsValidMcType(string? input) => mcTypes.Contains(input);
     }
 }

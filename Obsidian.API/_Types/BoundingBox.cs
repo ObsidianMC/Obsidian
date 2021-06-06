@@ -64,7 +64,7 @@ namespace Obsidian.API
         public static BoundingBox CreateFromPoints(IEnumerable<VectorF> points)
         {
             if (points == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(points));
 
             var empty = true;
             var pos2 = new VectorF(float.MaxValue);
@@ -100,7 +100,7 @@ namespace Obsidian.API
             };
         }
 
-        public override bool Equals(object obj) => (obj is BoundingBox box) && this.Equals(box);
+        public override bool Equals(object? obj) => (obj is BoundingBox box) && this.Equals(box);
 
         public override int GetHashCode() => Min.GetHashCode() + Max.GetHashCode();
 

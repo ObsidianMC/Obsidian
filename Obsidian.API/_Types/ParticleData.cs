@@ -9,11 +9,13 @@ namespace Obsidian.API
         private object data;
         internal ParticleType ParticleType { get; set; }
 
+#nullable disable
         private ParticleData()
         {
             data = null;
             ParticleType = (ParticleType)(-1);
         }
+#nullable restore
 
         private ParticleData(object data, ParticleType targetType)
         {

@@ -22,7 +22,7 @@ namespace Obsidian.Plugins.Services
         public IStream OpenRead(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -37,7 +37,7 @@ namespace Obsidian.Plugins.Services
         public byte[] ReadAllBytes(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -52,7 +52,7 @@ namespace Obsidian.Plugins.Services
         public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -67,7 +67,7 @@ namespace Obsidian.Plugins.Services
         public string[] ReadAllLines(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -82,7 +82,7 @@ namespace Obsidian.Plugins.Services
         public Task<string[]> ReadAllLinesAsync(string path, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
             
             workingDirectory ??= GetWorkingDirectory();
 
@@ -97,7 +97,7 @@ namespace Obsidian.Plugins.Services
         public string ReadAllText(string path)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 
@@ -112,7 +112,7 @@ namespace Obsidian.Plugins.Services
         public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
         {
             if (!IsUsable)
-                throw new SecurityException(IFileReader.securityExceptionMessage);
+                throw new SecurityException(IFileReader.SecurityExceptionMessage);
 
             workingDirectory ??= GetWorkingDirectory();
 

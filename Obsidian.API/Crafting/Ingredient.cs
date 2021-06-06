@@ -19,28 +19,22 @@ namespace Obsidian.API.Crafting
 
         public void Remove(ItemStack item) => this.items.Remove(item);
 
+        /// <inheritdoc/>
         public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
 
         IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 
         private class IngredientEnumerator : IEnumerator<ItemStack>
         {
-            private List<ItemStack> items;
-
             public int Position { get; set; } = -1;
+
+            private List<ItemStack> items;
 
             public ItemStack Current
             {
                 get
                 {
-                    try
-                    {
-                        return this.items[this.Position];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        throw new InvalidOperationException();
-                    }
+                    return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
                 }
             }
 
@@ -48,14 +42,7 @@ namespace Obsidian.API.Crafting
             {
                 get
                 {
-                    try
-                    {
-                        return this.items[this.Position];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        throw new InvalidOperationException();
-                    }
+                    return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
                 }
             }
 
@@ -64,19 +51,19 @@ namespace Obsidian.API.Crafting
                 this.items = items;
             }
 
-            public void Dispose()
-            {
-                this.items = null;
-            }
-
             public bool MoveNext()
             {
-                this.Position++;
-
-                return this.Position < this.items.Count;
+                return ++Position < items.Count;
             }
 
-            public void Reset() => this.Position = -1;
+            public void Reset()
+            {
+                throw new NotSupportedException();
+            }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

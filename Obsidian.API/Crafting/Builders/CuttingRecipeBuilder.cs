@@ -4,9 +4,9 @@ namespace Obsidian.API.Crafting.Builders
 {
     public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
     {
-        public string Name { get; set; }
-        public string Group { get; set; }
-        public ItemStack Result { get; set; }
+        public string? Name { get; set; }
+        public string? Group { get; set; }
+        public ItemStack? Result { get; set; }
 
         public Ingredient Ingredient { get; private set; } = new Ingredient();
 
