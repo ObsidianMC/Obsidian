@@ -5,7 +5,6 @@ using Obsidian.API;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
 using Obsidian.Utilities.Registry.Enums;
-using System;
 using System.Collections.Generic;
 using System.Net.Http;
 

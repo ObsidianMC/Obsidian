@@ -2,7 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace Obsidian.Util
+namespace Obsidian.Utilities
 {
     // This implements XorShift+.
     public struct XorshiftRandom
