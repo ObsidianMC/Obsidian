@@ -22,7 +22,18 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
 
         public double Decoration(double x, double y, double z)
         {
-            return 0;
+            var noise = new Multiply
+            {
+                Source0 = new Checkerboard(),
+                Source1 = new Perlin
+                {
+                    Frequency = 1.14,
+                    Lacunarity = 2.222,
+                    Seed = settings.Seed
+                }
+            };
+
+            return noise.GetValue(x, y, z);
         }
 
         public double Terrain(double x, double z)

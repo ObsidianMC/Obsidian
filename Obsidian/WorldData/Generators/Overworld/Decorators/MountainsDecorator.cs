@@ -17,6 +17,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
 
+            var grass = Registry.GetBlock(Material.Cobblestone);
+            var dirt = Registry.GetBlock(Material.Stone);
+
+            chunk.SetBlock(pos, grass);
+            for (int y = -1; y > -4; y--)
+                chunk.SetBlock(pos + (0, y, 0), dirt);
+
             // Flowers
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass

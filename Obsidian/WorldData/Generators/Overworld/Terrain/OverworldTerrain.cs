@@ -11,7 +11,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
     {
         public Module Result { get; set; }
 
-        private readonly OverworldTerrainSettings settings;
+        public readonly OverworldTerrainSettings settings;
 
         private readonly BaseTerrain ocean, badlands, plains, hills, mountains, rivers;
 

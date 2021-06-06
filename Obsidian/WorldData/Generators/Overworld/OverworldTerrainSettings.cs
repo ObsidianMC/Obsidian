@@ -207,7 +207,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// Increase for larger biomes
         /// Decrease for smaller biomes
         /// </summary>
-        public double BiomeSize { get; set; } = 4.0;
+        public double BiomeSize { get; set; } = 1.0;
 
 
         public OverworldTerrainSettings()

@@ -16,7 +16,14 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
-            
+
+            var grass = Registry.GetBlock(Material.Snow);
+            var dirt = Registry.GetBlock(Material.Dirt);
+
+            chunk.SetBlock(pos, grass);
+            for (int y = -1; y > -4; y--)
+                chunk.SetBlock(pos + (0, y, 0), dirt);
+
             var sand = Registry.GetBlock(Material.SnowBlock);
             var sandstone = Registry.GetBlock(Material.PackedIce);
             var deadbush = Registry.GetBlock(Material.Snow);
