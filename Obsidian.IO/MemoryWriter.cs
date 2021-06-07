@@ -32,8 +32,6 @@ namespace Obsidian.IO
         private byte[] buffer;
         private nint index;
 
-        private static readonly Encoding utf8 = Encoding.UTF8;
-
         /// <summary>
         /// Creates new <see cref="MemoryWriter"/> with buffer of specific length.
         /// </summary>
@@ -231,30 +229,31 @@ namespace Obsidian.IO
         /// <summary>
         /// Writes a <see cref="string"/> prefixed by VarInt.
         /// </summary>
-        public void WriteVarString(string value)
+        public void WriteVarString(string? value)
         {
-            if (value is null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 buffer[index++] = 0;
                 return;
             }
 
-            int byteLength = utf8.GetByteCount(value);
+            int byteLength = Encoding.UTF8.GetByteCount(value);
             WriteVarInt(byteLength);
-            utf8.GetBytes(value, 0, value.Length, buffer, (int)index);
+            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, (int)index);
             index += byteLength;
         }
 
-        public void WriteUShortString(string value)
+        public void WriteUShortString(string? value)
         {
-            if (value is null)
+            if (string.IsNullOrEmpty(value))
             {
                 WriteShort(0);
+                return;
             }
 
-            ushort byteLength = checked((ushort)utf8.GetByteCount(value));
+            ushort byteLength = checked((ushort)Encoding.UTF8.GetByteCount(value));
             WriteUShort(byteLength);
-            utf8.GetBytes(value, 0, value.Length, buffer, (int)index);
+            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, (int)index);
             index += byteLength;
         }
 
