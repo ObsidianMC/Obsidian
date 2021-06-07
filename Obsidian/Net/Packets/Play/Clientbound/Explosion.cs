@@ -22,16 +22,16 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3)]
         public float Strength;
 
-        [Field(4)]
+        [Field(5), CountType(typeof(int))]
         public ExplosionRecord[] Records;
 
-        [Field(5)]
+        [Field(6)]
         public float PlayerMotionX;
 
-        [Field(6)]
+        [Field(7)]
         public float PlayerMotionY;
 
-        [Field(7)]
+        [Field(8)]
         public float PlayerMotionZ;
 
         public int Id => 0x1B;
