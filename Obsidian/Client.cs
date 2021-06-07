@@ -551,6 +551,7 @@ namespace Obsidian
                 if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
                 {
                     await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+                    await this.QueuePacketAsync(new UpdateLight() { ChunkX = chunk.X, ChunkZ = chunk.Z });
                 }
             }
         }
