@@ -37,18 +37,24 @@ namespace Obsidian
 
         private static async Task<int> Main()
         {
-            Console.Title = $"Obsidian {Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0"}";
+            Console.Title = $"Obsidian {FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "1.0.0"}";
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
             Console.WriteLine(asciilogo);
             Console.ResetColor();
             Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
 
+            string asmpath = Assembly.GetExecutingAssembly().Location;
+            //This will strip just the working path name:
+            //C:\Program Files\MyApplication
+            string asmdir = Path.GetDirectoryName(asmpath);
+            Environment.CurrentDirectory = asmdir;
+
             var environment = Environment.GetEnvironmentVariable(DevEnvVar) ?? "Production";
 
             if (!File.Exists(GlobalConfigFile))
             {
-                File.WriteAllText(Path.Combine(Environment.CurrentDirectory, GlobalConfigFile), JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
+                await File.WriteAllTextAsync(Path.Combine(Environment.CurrentDirectory!, GlobalConfigFile), JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
             }
 
             try
@@ -116,9 +122,10 @@ namespace Obsidian
 
                     // Add other services
                     services
-                        .AddHostedService<ObsidianServer>()
-                        .AddHostedService<ConsoleService>();
-                })
+                        .AddSingleton<ServerRegistry>()
+                        .AddSingleton<ConsoleService>()
+                        .AddHostedService<ObsidianServer>();
+                }).
                 .UseConsoleLifetime();
 
                 using var host = hostBuilder.Build();

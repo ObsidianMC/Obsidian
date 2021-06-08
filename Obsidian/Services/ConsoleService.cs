@@ -8,18 +8,18 @@ using Obsidian.Utilities;
 
 namespace Obsidian.Services
 {
-    public class ConsoleService : BackgroundService
+    public class ConsoleService
     {
         private readonly IHostApplicationLifetime _lifetime;
-        private readonly Server _server;
+        private readonly ServerRegistry _serverRegistry;
 
-        public ConsoleService(IHostApplicationLifetime lifetime, Server server)
+        public ConsoleService(IHostApplicationLifetime lifetime, ServerRegistry serverRegistry)
         {
             _lifetime = lifetime;
-            _server = server;
+            _serverRegistry = serverRegistry;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public async Task Listen(CancellationToken stoppingToken = default)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -28,38 +28,8 @@ namespace Obsidian.Services
                 if (string.IsNullOrWhiteSpace(input))
                     continue;
 
-                if (input == "stop")
-                {
-                    _lifetime.StopApplication();
-                }
-                else
-                {
-                    await _server.ExecuteCommand(input);
-                }
-            }
-        }
+                Server currentServer = _serverRegistry[0];
 
-        public async Task Listen(IReadOnlyDictionary<int, Server> servers, CancellationToken cancellationToken = default)
-        {
-            var currentServer = servers.First().Value;
-
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var input = Console.ReadLine();
-
-                if (string.IsNullOrWhiteSpace(input))
-                    continue;
-
-                if (input == "stop")
-                {
-                    _lifetime.StopApplication();
-                }
-                else
-                {
-                    
-                }
-
-                /*
                 if (input.StartsWith('.'))
                 {
                     if (input.StartsWith(".switch"))
@@ -75,7 +45,7 @@ namespace Obsidian.Services
                             ConsoleIO.WriteLine("Invalid server id");
                             continue;
                         }
-                        if (!servers.TryGetValue(serverId, out var server))
+                        if (!_serverRegistry.TryGetServer(serverId, out var server))
                         {
                             ConsoleIO.WriteLine("No server with given id found");
                             continue;
@@ -97,7 +67,7 @@ namespace Obsidian.Services
                             ConsoleIO.WriteLine("Invalid server id");
                             continue;
                         }
-                        if (!servers.TryGetValue(serverId, out var server))
+                        if (!_serverRegistry.TryGetServer(serverId, out var server))
                         {
                             ConsoleIO.WriteLine("No server with given id found");
                             continue;
@@ -109,14 +79,20 @@ namespace Obsidian.Services
                 }
                 else
                 {
-                    await currentServer.ExecuteCommand(input);
+                    await currentServer!.ExecuteCommand(input);
                     if (input == "stop")
                     {
-                        // servers.Remove(currentServer.Id);
-                        currentServer = servers.FirstOrDefault().Value;
+                        _serverRegistry.RemoveServer(currentServer.Id, out _);
+
+                        if (!_serverRegistry.Any())
+                        {
+                            // If there are no servers running, stop.
+                            _lifetime.StopApplication();
+                            break;
+                        }
+                        currentServer = _serverRegistry.FirstOrDefault();
                     }
                 }
-                */
             }
         }
     }

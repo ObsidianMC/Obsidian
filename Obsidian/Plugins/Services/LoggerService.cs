@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using Microsoft.Extensions.Options;
+using Obsidian.Utilities;
 
 namespace Obsidian.Plugins.Services
 {
     public class LoggerService : Logging.Logger, API.Plugins.Services.ILogger
     {
-        public LoggerService(PluginContainer plugin) : base(plugin.Info.Name, Globals.Config.LogLevel)
+        public LoggerService(PluginContainer plugin, IOptions<GlobalConfig> options) : base(plugin.Info.Name, options.Value.LogLevel)
         {
         }
 
