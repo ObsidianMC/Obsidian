@@ -11,19 +11,20 @@ using System.Net.Http;
 
 namespace Obsidian
 {
-    [Obsolete("Use static locals in singleton services.")]
     public static class Globals
     {
         public static HttpClient HttpClient { get; } = new HttpClient();
         public static Random Random { get; } = new Random();
-        [Obsolete("Inject me instead.")]
+        [Obsolete("Inject IOptions<GlobalConfig> instead.")]
         public static GlobalConfig Config { get; set; }
         public static ILogger PacketLogger { get; set; }
+        [Obsolete]
         public static DefaultContractResolver ContractResolver { get; } = new DefaultContractResolver
         {
             NamingStrategy = new SnakeCaseNamingStrategy()
         };
 
+        [Obsolete("Inject IOptions<JsonSerializerSettings> instead.")]
         public static JsonSerializerSettings JsonSettings { get; } = new JsonSerializerSettings
         {
             ContractResolver = ContractResolver,

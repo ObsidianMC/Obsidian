@@ -14,11 +14,11 @@ using Obsidian.Utilities;
 
 namespace Obsidian
 {
-    public sealed class ObsidianServer : BackgroundService
+    public sealed class ObsidianCore : BackgroundService
     {
         private readonly GlobalConfig _config;
         private readonly ServerRegistry _serverRegistry;
-        private readonly ILogger<ObsidianServer> _logger;
+        private readonly ILogger<ObsidianCore> _logger;
         private readonly IServiceProvider _services;
         private readonly IHostApplicationLifetime _appLifetime;
         private readonly string _version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "1.0.0";
@@ -28,11 +28,11 @@ namespace Obsidian
         // private readonly Dictionary<int, Server> servers = new();
         private Server _server;
 
-        public ObsidianServer
+        public ObsidianCore
         (
             IOptions<GlobalConfig> config, 
             ServerRegistry serverRegistry, 
-            ILogger<ObsidianServer> logger,
+            ILogger<ObsidianCore> logger,
             IServiceProvider services,
             IHostApplicationLifetime appLifetime
         )

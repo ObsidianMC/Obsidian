@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Registry
 {
+    // TODO: Convert into singleton service
     public static partial class Registry
     {
         internal static ILogger Logger { get; set; }

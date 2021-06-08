@@ -115,7 +115,7 @@ namespace Obsidian
                     services
                         .AddSingleton<ServerRegistry>()
                         .AddSingleton<ConsoleService>()
-                        .AddHostedService<ObsidianServer>();
+                        .AddHostedService<ObsidianCore>();
                 })
                 .UseConsoleLifetime();
 
