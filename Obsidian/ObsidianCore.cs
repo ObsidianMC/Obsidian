@@ -24,10 +24,6 @@ namespace Obsidian
         private readonly string _version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "1.0.0";
         private IServiceScope _scope;
 
-        // Will implement multi-server functionality later
-        // private readonly Dictionary<int, Server> servers = new();
-        private Server _server;
-
         public ObsidianCore
         (
             IOptions<GlobalConfig> config, 
