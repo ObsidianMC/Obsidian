@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Obsidian.Data;
 using Obsidian.Utilities;
-using SQLitePCL;
 
 namespace Obsidian
 {
@@ -90,9 +84,7 @@ namespace Obsidian
                 OnStopping();
                 throw;
             }
-
             
-
             void OnStopping()
             {
                 _logger.LogInformation("Stopping background service.");
