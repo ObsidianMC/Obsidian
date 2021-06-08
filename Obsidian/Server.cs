@@ -420,8 +420,7 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc,
-                            Server = this
+                            Position = loc
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -468,8 +467,7 @@ namespace Obsidian
                         player.Inventory.RemoveItem(player.CurrentSlot);
                         break;
                     }
-                case DiggingStatus.StartedDigging://TODO display block break animation to nearby players
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                case DiggingStatus.StartedDigging:
                     {
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
@@ -488,16 +486,16 @@ namespace Obsidian
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
-                    this.BroadcastPacketWithoutQueue(new BlockBreakAnimation
+                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        EntityId = player,
                         Position = digging.Position,
-                        DestroyStage = -1
-                    }, player.EntityId);
+                        Block = block.Id,
+                        Status = digging.Status,
+                        Successful = true
+                    });
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
-                        this.Logger.LogDebug("Finished Digging");
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
