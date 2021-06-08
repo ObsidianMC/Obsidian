@@ -75,6 +75,11 @@ namespace Obsidian
                     var dbKind = context.Configuration.GetValue<DatabaseKind>("databaseKind");
                     var connectionString = context.Configuration.GetConnectionString(ConnectionString);
 
+                    if (dbKind != DatabaseKind.None && string.IsNullOrWhiteSpace(connectionString))
+                    {
+                        throw new InvalidOperationException("A value must be provided for \"connectionString\".");
+                    }
+
                     services.AddDbContext<ServerContext>(options =>
                     {
                         switch (dbKind)
@@ -113,6 +118,7 @@ namespace Obsidian
 
                     // Add other services
                     services
+                        .AddJsonSerialization()
                         .AddSingleton<ServerRegistry>()
                         .AddSingleton<ConsoleService>()
                         .AddHostedService<ObsidianCore>();
