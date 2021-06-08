@@ -11,10 +11,12 @@ namespace Obsidian.API.Plugins
     /// </summary>
     public abstract class PluginBase
     {
+#nullable disable
         public IPluginInfo Info { get; internal set; }
 
         internal Action<Action> registerSingleCommand;
         internal Action unload;
+#nullable restore
 
         private Type typeCache;
 
@@ -26,7 +28,7 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public object Invoke(string methodName, params object[] args)
+        public object? Invoke(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
             return method.Invoke(this, args);
@@ -75,25 +77,25 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public T Invoke<T>(string methodName, params object[] args)
+        public T? Invoke<T>(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
-            return (T)method.Invoke(this, args);
+            return (T?)method.Invoke(this, args);
         }
 
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// This method can be used on non-async methods too.
         /// </summary>
-        public Task<T> InvokeAsync<T>(string methodName, params object[] args)
+        public Task<T?> InvokeAsync<T>(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
             var result = method.Invoke(this, args);
-            if (result is Task<T> task)
+            if (result is Task<T?> task)
                 return task;
-            else if (result is ValueTask<T> valueTask)
+            else if (result is ValueTask<T?> valueTask)
                 return valueTask.AsTask();
-            return Task.FromResult((T)result);
+            return Task.FromResult((T?)result);
         }
 
         /// <summary>
@@ -128,7 +130,7 @@ namespace Obsidian.API.Plugins
             unload();
         }
 
-        internal object FriendlyInvoke(string methodName, params object[] args)
+        internal object? FriendlyInvoke(string methodName, params object[] args)
         {
             var (method, parameterCount) = GetFriendlyMethod(methodName, args);
             if (parameterCount != args.Length)
@@ -143,7 +145,7 @@ namespace Obsidian.API.Plugins
             }
         }
 
-        internal Exception SafeInvoke(string methodName, params object[] args)
+        internal Exception? SafeInvoke(string methodName, params object[] args)
         {
             try
             {
@@ -156,7 +158,7 @@ namespace Obsidian.API.Plugins
             }
         }
 
-        internal Exception SafeInvokeAsync(string methodName, params object[] args)
+        internal Exception? SafeInvokeAsync(string methodName, params object[] args)
         {
             try
             {
@@ -175,7 +177,7 @@ namespace Obsidian.API.Plugins
 
         private MethodInfo GetMethod(string methodName, object[] args)
         {
-            args ??= new object[0];
+            args ??= Array.Empty<object>();
             var types = new Type[args.Length];
             for (int i = 0; i < args.Length; i++)
             {
@@ -185,17 +187,17 @@ namespace Obsidian.API.Plugins
             return GetMethod(methodName, types);
         }
 
-        private MethodInfo GetMethod(string methodName, Type[] parameterTypes)
+        private MethodInfo? GetMethod(string methodName, Type[] parameterTypes)
         {
             typeCache ??= GetType();
             var method = typeCache.GetMethod(methodName, parameterTypes);
             return method;
         }
 
-        private (MethodInfo method, int parameterCount) GetFriendlyMethod(string methodName, object[] args)
+        private (MethodInfo? method, int parameterCount) GetFriendlyMethod(string methodName, object[] args)
         {
             typeCache ??= GetType();
-            args ??= new object[0];
+            args ??= Array.Empty<object>();
             IEnumerable<(MethodInfo method, ParameterInfo[] parameters)> methods = typeCache
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
                 .Where(method => method.Name == methodName)
@@ -203,7 +205,7 @@ namespace Obsidian.API.Plugins
                 .Where(m => m.parameters.Length <= args.Length)
                 .OrderByDescending(m => m.parameters.Length);
 
-            if (methods.Count() == 0)
+            if (!methods.Any())
                 return (null, -1);
 
             var types = new Type[args.Length];

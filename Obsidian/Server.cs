@@ -254,7 +254,6 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            Cube.Initialize();
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
@@ -472,17 +471,20 @@ namespace Obsidian
                 case DiggingStatus.StartedDigging://TODO display block break animation to nearby players
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                        this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        {
+                            Position = digging.Position,
+                            Block = block.Id,
+                            Status = digging.Status,
+                            Successful = true
+                        });
 
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+                        if (player.Gamemode == Gamemode.Creative)
+                        {
+                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Position, Block.Air);
+                            this.World.SetBlock(digging.Position, Block.Air);
+                        }
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
@@ -526,10 +528,9 @@ namespace Obsidian
                             Glowing = true,
                             World = this.World,
                             Position = digging.Position + new VectorF(
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f,
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f,
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f),
-                            Server = this
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f)
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -543,7 +544,7 @@ namespace Obsidian
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromPosition(digging.Position)
+                            Velocity = Velocity.FromVector(digging.Position)
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata

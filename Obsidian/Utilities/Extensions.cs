@@ -6,6 +6,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 #nullable enable
@@ -134,6 +136,18 @@ namespace Obsidian.Utilities
             {
                 return b.ToString("x").TrimStart('0');
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T MoveNext<T>(this ref T t) where T : struct
+        {
+            return ref Unsafe.Add(ref t, 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T GetRef<T>(this Span<T> span) where T : struct
+        {
+            return ref MemoryMarshal.GetReference(span);
         }
     }
 }

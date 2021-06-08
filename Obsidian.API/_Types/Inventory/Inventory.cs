@@ -24,7 +24,7 @@ namespace Obsidian.API
 
         public bool IsPlayerInventory { get; }
 
-        public ItemStack[] Items { get; }
+        public ItemStack?[] Items { get; }
 
         public Inventory(InventoryType type, int size = 0, bool isPlayerInventory = false)
         {
@@ -163,7 +163,7 @@ namespace Obsidian.API
             return 9;
         }
 
-        public void SetItem(int slot, ItemStack item)
+        public void SetItem(int slot, ItemStack? item)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");

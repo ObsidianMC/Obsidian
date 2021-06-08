@@ -102,7 +102,7 @@ namespace Obsidian.Commands.Framework.Entities
             // Create instance of declaring type to execute.
             var obj = this.ParentInstance;
             if (obj == null && this.ParentType != null)
-                obj = await this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
+                obj = this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
 
             // Get required params
             var methodparams = method.GetParameters().Skip(1).ToArray();

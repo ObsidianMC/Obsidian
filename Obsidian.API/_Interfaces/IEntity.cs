@@ -48,5 +48,7 @@ namespace Obsidian.API
         public Task KillAsync(IEntity source, IChatMessage message);
 
         public IEnumerable<IEntity> GetEntitiesNear(float distance);
+
+        public VectorF GetLookDirection();
     }
 }
