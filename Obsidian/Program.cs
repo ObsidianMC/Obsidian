@@ -1,18 +1,26 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Obsidian.Data;
+using Obsidian.Logging;
+using Obsidian.Services;
 
 namespace Obsidian
 {
-    public static class Program
+    public class Program
     {
         private static readonly Dictionary<int, Server> Servers = new();
         private static readonly TaskCompletionSource<bool> cancelKeyPress = new();
@@ -22,9 +30,123 @@ namespace Obsidian
         /// Event handler for Windows console events
         /// </summary>
         private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
-        private const string globalConfigFile = "global_config.json";
 
-        private static async Task Main()
+        private const string GlobalConfigFile = "global_config.json";
+        private const string DevEnvVar = "DOTNET_ENVIRONMENT";
+        private const string ConnectionString = "ServerConnectionStream";
+
+        private static async Task<int> Main()
+        {
+            Console.Title = $"Obsidian {Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0"}";
+            Console.BackgroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.Black;
+            Console.WriteLine(asciilogo);
+            Console.ResetColor();
+            Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
+
+            var environment = Environment.GetEnvironmentVariable(DevEnvVar) ?? "Production";
+
+            if (!File.Exists(GlobalConfigFile))
+            {
+                File.WriteAllText(Path.Combine(Environment.CurrentDirectory, GlobalConfigFile), JsonConvert.SerializeObject(new GlobalConfig(), Formatting.Indented));
+            }
+
+            try
+            {
+
+                var hostBuilder = new HostBuilder()
+                .UseEnvironment(environment)
+                .ConfigureAppConfiguration((context, builder) =>
+                {
+                    builder.AddEnvironmentVariables("Obsidian_");
+
+                    builder.AddJsonFile(GlobalConfigFile, true, true);
+
+                    if (context.HostingEnvironment.IsDevelopment())
+                    {
+                        builder.AddUserSecrets<Program>();
+                    }
+                })
+                .ConfigureLogging((context, builder) =>
+                {
+                    builder.AddProvider(new LoggerProvider(context.Configuration.GetValue<LogLevel>("logLevel")));
+                })
+                .ConfigureServices((context, services) =>
+                {
+                    services.Configure<GlobalConfig>(context.Configuration);
+
+                    var dbKind = context.Configuration.GetValue<DatabaseKind>("databaseKind");
+                    var connectionString = context.Configuration.GetConnectionString(ConnectionString);
+
+                    services.AddDbContext<ServerContext>(options =>
+                    {
+                        switch (dbKind)
+                        {
+                            case DatabaseKind.SQLite:
+                            {
+                                options.UseSqlite(connectionString);
+                                break;
+                            }
+                            case DatabaseKind.PostgreSQL:
+                            {
+                                options.UseNpgsql(connectionString);
+                                break;
+                            }
+                            case DatabaseKind.CockroachDB:
+                            {
+                                options.UseCockroachDB(connectionString);
+                                break;
+                            }
+                            case DatabaseKind.MySQL:
+                            {
+                                options.UseMySQL(connectionString);
+                                break;
+                            }
+                            case DatabaseKind.None:
+                            {
+                                // TODO: Provide some sort of dummy db context that informs consumers none is available.
+                                break;
+                            }
+                            default:
+                            {
+                                throw new InvalidOperationException("Unexpected value provided for \"databaseKind\".");
+                            }
+                        }
+                    });
+
+                    // Add other services
+                    services
+                        .AddHostedService<ObsidianServer>()
+                        .AddHostedService<ConsoleService>();
+                })
+                .UseConsoleLifetime();
+
+                using var host = hostBuilder.Build();
+
+                await host.StartAsync();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Host terminated unexpectedly." + Environment.NewLine + ex);
+
+                if (Debugger.IsAttached && Environment.UserInteractive)
+                {
+                    Console.WriteLine(Environment.NewLine + "Press any key to exit...");
+                    Console.ReadKey(true);
+                }
+
+                return ex.HResult;
+            }
+            finally
+            {
+                // Flush the logger, if needed
+            }
+        }
+
+        // TODO: To be removed. Kept for documentation reasons.
+        [Obsolete]
+        private static async Task MainAsync()
         {
 #if RELEASE
             string version = "0.1";
@@ -57,14 +179,14 @@ namespace Obsidian
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
             }
 
-            if (File.Exists(globalConfigFile))
+            if (File.Exists(GlobalConfigFile))
             {
-                Globals.Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(globalConfigFile));
+                Globals.Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(GlobalConfigFile));
             }
             else
             {
                 Globals.Config = new GlobalConfig();
-                File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
+                File.WriteAllText(GlobalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
                 Console.WriteLine("Created new global configuration file");
             }
 
@@ -105,6 +227,7 @@ namespace Obsidian
             }
         }
 
+        [Obsolete]
         private static void InitConsoleInput()
         {
             Task.Run(async () =>
@@ -164,6 +287,10 @@ namespace Obsidian
                             ConsoleIO.WriteLine($"Executing command on Server-{server.Id}");
                             await server.ExecuteCommand(string.Join(' ', parts.Skip(2)));
                         }
+                        else if (input.Equals(".clear", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            ConsoleIO.Reset();
+                        }
                     }
                     else
                     {
@@ -178,6 +305,7 @@ namespace Obsidian
             });
         }
 
+        [Obsolete]
         private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
@@ -185,6 +313,7 @@ namespace Obsidian
             cancelKeyPress.SetResult(true);
         }
 
+        [Obsolete]
         private static bool OnConsoleEvent(NativeMethods.CtrlType ctrlType)
         {
             Console.WriteLine("Received {0}", ctrlType);
@@ -195,6 +324,7 @@ namespace Obsidian
         /// <summary>
         /// Gracefully shuts sub-servers down and exits Obsidian.
         /// </summary>
+        [Obsolete]
         private static void StopProgram()
         {
             shutdownPending = true;

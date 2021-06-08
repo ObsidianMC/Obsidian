@@ -1,10 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Obsidian
 {
     /// <summary>
     /// Native methods for Windows
     /// </summary>
+    [Obsolete]
     internal static class NativeMethods
     {
         /// <summary>

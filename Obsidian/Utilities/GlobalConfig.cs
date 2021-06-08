@@ -21,5 +21,11 @@ namespace Obsidian.Utilities
 
         [JsonProperty("verboseExceptionLogging")]
         public bool VerboseLogging { get; set; } = false;
+
+        [JsonProperty("databaseKind")]
+        public DatabaseKind DatabaseKind { get; set; } = DatabaseKind.CockroachDB;
+
+        [JsonProperty("connectionString")]
+        public string ConnectionString { get; set; } = "";
     }
 }
