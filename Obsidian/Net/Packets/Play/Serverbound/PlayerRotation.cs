@@ -8,9 +8,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class PlayerRotation : IServerboundPacket
     {
         [Field(0)]
-        public float Yaw { get => yaw; set => yaw = (value % 360 + 360) % 360; }
+        public float Yaw { get => _yaw; set => _yaw = (value % 360 + 360) % 360; }
 
-        private float yaw;
+        private float _yaw;
 
         [Field(1)]
         public float Pitch { get; set; }

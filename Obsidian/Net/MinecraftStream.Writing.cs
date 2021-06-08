@@ -391,12 +391,28 @@ namespace Obsidian.Net
             WriteLong(val);
         }
 
-        [WriteMethod, Absolute]
+        [WriteMethod, VectorFormat(typeof(double))]
         public void WriteAbsolutePosition(Vector value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
             WriteDouble(value.Z);
+        }
+
+        [WriteMethod, VectorFormat(typeof(float))]
+        public void WriteAbsoluteFloatPosition(Vector value)
+        {
+            WriteFloat(value.X);
+            WriteFloat(value.Y);
+            WriteFloat(value.Z);
+        }
+
+        [WriteMethod, VectorFormat(typeof(short))]
+        public void WriteAbsoluteShortPosition(Vector value)
+        {
+            WriteShort((short)value.X);
+            WriteShort((short)value.Y);
+            WriteShort((short)value.Z);
         }
 
         [WriteMethod]
@@ -409,12 +425,20 @@ namespace Obsidian.Net
             WriteLong(val);
         }
 
-        [WriteMethod, Absolute]
+        [WriteMethod, VectorFormat(typeof(double))]
         public void WriteAbsolutePositionF(VectorF value)
         {
             WriteDouble(value.X);
             WriteDouble(value.Y);
             WriteDouble(value.Z);
+        }
+
+        [WriteMethod, VectorFormat(typeof(float))]
+        public void WriteAbsoluteFloatPositionF(VectorF value)
+        {
+            WriteFloat(value.X);
+            WriteFloat(value.Y);
+            WriteFloat(value.Z);
         }
 
         [WriteMethod]

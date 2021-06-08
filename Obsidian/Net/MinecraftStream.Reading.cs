@@ -417,7 +417,7 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod, Absolute]
+        [ReadMethod, VectorFormat(typeof(double))]
         public Vector ReadAbsolutePosition()
         {
             return new Vector
@@ -493,7 +493,7 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod, Absolute]
+        [ReadMethod, VectorFormat(typeof(double))]
         public VectorF ReadAbsolutePositionF()
         {
             return new VectorF
@@ -501,6 +501,17 @@ namespace Obsidian.Net
                 X = (float)ReadDouble(),
                 Y = (float)ReadDouble(),
                 Z = (float)ReadDouble()
+            };
+        }
+
+        [ReadMethod, VectorFormat(typeof(float))]
+        public VectorF ReadAbsoluteFloatPositionF()
+        {
+            return new VectorF
+            {
+                X = ReadFloat(),
+                Y = ReadFloat(),
+                Z = ReadFloat()
             };
         }
 

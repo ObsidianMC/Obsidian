@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2), ActualType(typeof(int)), VarLength]
         public EntityType Type { get; set; }
 
-        [Field(3), Absolute]
+        [Field(3), VectorFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(4)]

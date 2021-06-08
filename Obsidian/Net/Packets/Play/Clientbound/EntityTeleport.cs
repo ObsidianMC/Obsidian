@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1), Absolute]
+        [Field(1), VectorFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(2)]

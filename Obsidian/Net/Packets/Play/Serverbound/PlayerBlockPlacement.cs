@@ -22,14 +22,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }
 
-        [Field(3)]
-        public float CursorX { get; set; }
-
-        [Field(4)]
-        public float CursorY { get; set; }
-
-        [Field(5)]
-        public float CursorZ { get; set; }
+        [Field(3), VectorFormat(typeof(float))]
+        public VectorF Cursor { get; set; }
 
         [Field(6)]
         public bool InsideBlock { get; set; }

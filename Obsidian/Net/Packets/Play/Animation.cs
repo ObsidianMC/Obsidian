@@ -32,8 +32,6 @@ namespace Obsidian.Net.Packets.Play
                         Animation = EAnimation.SwingOffhand
                     }, player);
                     break;
-                default:
-                    break;
             }
         }
     }

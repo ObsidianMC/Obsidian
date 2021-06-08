@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +14,7 @@ namespace Obsidian.Generators.Packets
         private const string fieldAttribute = "Field";
         private const string readMethodAttribute = "ReadMethod";
         private const string writeMethodAttribute = "WriteMethod";
-        private const string absoluteAttribute = "Absolute";
+        private const string vectorFormatAttribute = "VectorFormat";
         private const string actualTypeAttribute = "ActualType";
         private const string fixedLengthAttribute = "FixedLength";
         private const string varLengthAttribute = "VarLength";
@@ -27,6 +28,18 @@ namespace Obsidian.Generators.Packets
         }
 
         public void Execute(GeneratorExecutionContext context)
+        {
+            try
+            {
+                DangerousExecute(context);
+            }
+            catch (Exception e)
+            {
+                DiagnosticHelper.ReportDiagnostic(context, DiagnosticSeverity.Error, $"Source generation error: {e.Message} {e.StackTrace}");
+            }
+        }
+
+        private void DangerousExecute(GeneratorExecutionContext context)
         {
             if (context.SyntaxReceiver is not SyntaxProvider syntaxProvider)
                 return;
@@ -63,7 +76,7 @@ namespace Obsidian.Generators.Packets
             {
                 var @class = group.Key;
                 var fields = group.ToList();
-                
+
                 if (@class.IsStatic || @class.DeclaredAccessibility != Accessibility.Public)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ContainingTypeNotViable, @class.Locations.First(), @class.Name));
@@ -72,7 +85,7 @@ namespace Obsidian.Generators.Packets
 
                 string classSource = ProcessClass(@class, fields, syntaxProvider);
                 context.AddSource($"{@class.Name}_Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
-            }    
+            }
         }
 
         private string ProcessClass(INamedTypeSymbol classSymbol, List<Field> fields, SyntaxProvider syntaxProvider)
@@ -220,8 +233,8 @@ namespace Obsidian.Generators.Packets
 
                     if (field.IsVarLength)
                         elementType += "_Var";
-                    if (field.IsAbsolute)
-                        elementType += "_Abs";
+                    if (field.VectorFormat is not null)
+                        elementType += $"_{field.VectorFormat}Format";
 
                     if (field.FixedLength < 0)
                     {
@@ -308,8 +321,8 @@ namespace Obsidian.Generators.Packets
 
                     if (field.IsVarLength)
                         elementType += "_Var";
-                    if (field.IsAbsolute)
-                        elementType += "_Abs";
+                    if (field.VectorFormat is not null)
+                        elementType += $"_{field.VectorFormat}Format";
 
                     string countValue;
                     if (field.FixedLength >= 0)
@@ -395,8 +408,8 @@ namespace Obsidian.Generators.Packets
 
                     if (field.IsVarLength)
                         elementType += "_Var";
-                    if (field.IsAbsolute)
-                        elementType += "_Abs";
+                    if (field.VectorFormat is not null)
+                        elementType += $"_{field.VectorFormat}Format";
 
                     string countValue;
                     if (field.FixedLength >= 0)
@@ -489,8 +502,12 @@ namespace Obsidian.Generators.Packets
                         string modifiers = string.Empty;
                         if (attributes.Any(attribute => attribute.Name.ToString() == varLengthAttribute))
                             modifiers += "_Var";
-                        if (attributes.Any(attribute => attribute.Name.ToString() == absoluteAttribute))
-                            modifiers += "_Abs";
+
+                        AttributeSyntax vectorFormat = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == vectorFormatAttribute);
+
+                        if (vectorFormat is not null)
+                            modifiers += $"_{vectorFormat.GetTypeArgument()}Format";
+
                         if (attribute.Name.ToString() == readMethodAttribute)
                         {
                             ReadMethods[methodDeclaration.ReturnType.GetText().ToString().Split('.').Last().TrimEnd() + modifiers] = methodName;
@@ -514,9 +531,9 @@ namespace Obsidian.Generators.Packets
             public string OriginalType { get; }
             public string ActualType { get; }
             public string CountType { get; }
+            public string VectorFormat { get; }
             public int Index { get; }
             public bool IsArray { get; }
-            public bool IsAbsolute { get; }
             public bool IsGeneric { get; }
             public bool IsVarLength { get; }
             public int FixedLength { get; }
@@ -536,7 +553,7 @@ namespace Obsidian.Generators.Packets
 
                 OriginalType = null;
                 CountType = null;
-                IsAbsolute = false;
+                VectorFormat = null;
                 IsVarLength = false;
                 FixedLength = -1;
                 IsGeneric = symbol.ContainingType.TypeParameters.Any(genericParameter => genericParameter.Name == typeName);
@@ -545,8 +562,8 @@ namespace Obsidian.Generators.Packets
                 {
                     switch (attribute.Name.GetText().ToString())
                     {
-                        case absoluteAttribute:
-                            IsAbsolute = true;
+                        case vectorFormatAttribute:
+                            VectorFormat = attribute.GetTypeArgument();
                             break;
 
                         case varLengthAttribute:
@@ -558,12 +575,12 @@ namespace Obsidian.Generators.Packets
                             break;
 
                         case actualTypeAttribute:
-                            TypeName = GetAttributeTypeArgument(attribute);
+                            TypeName = attribute.GetTypeArgument();
                             OriginalType = TypeName;
                             break;
 
                         case countType:
-                            CountType = GetAttributeTypeArgument(attribute);
+                            CountType = attribute.GetTypeArgument();
                             break;
                     }
                 }
@@ -572,15 +589,9 @@ namespace Obsidian.Generators.Packets
                 {
                     if (IsVarLength)
                         TypeName += "_Var";
-                    if (IsAbsolute)
-                        TypeName += "_Abs";
+                    if (VectorFormat is not null)
+                        TypeName += $"_{VectorFormat}Format";
                 }
-            }
-
-            private static string GetAttributeTypeArgument(AttributeSyntax attribute)
-            {
-                var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
-                return @typeof.Type.GetText().ToString().Split('.').Last();
             }
         }
     }
@@ -594,6 +605,12 @@ namespace Obsidian.Generators.Packets
                 syntaxNode = syntaxNode.Parent;
             }
             return syntaxNode;
+        }
+
+        public static string GetTypeArgument(this AttributeSyntax attribute)
+        {
+            var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
+            return @typeof.Type.GetText().ToString().Split('.').Last();
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public Guid Uuid { get; set; }
 
-        [Field(2), Absolute]
+        [Field(2), VectorFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(3)]

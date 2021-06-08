@@ -7,11 +7,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     [ClientOnly]
     public partial class Statistics : IClientboundPacket
     {
-        [Field(0), VarLength]
-        public int Count { get => Stats.Count; }
-
-        [Field(1)]
-        public List<Statistic> Stats { get; set; } = new List<Statistic>();
+        [Field(0)]
+        public List<Statistic> Stats { get; } = new();
 
         public Statistics()
         {
@@ -19,7 +16,12 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public void Add(Statistic stat)
         {
-            this.Stats.Add(stat);
+            Stats.Add(stat);
+        }
+
+        public void Clear()
+        {
+            Stats.Clear();
         }
 
         public int Id => 0x06;

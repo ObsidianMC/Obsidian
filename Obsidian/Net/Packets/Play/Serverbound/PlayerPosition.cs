@@ -8,12 +8,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     [ServerOnly]
     public partial class PlayerPosition : IServerboundPacket
     {
-        [Field(0), Absolute]
+        [Field(0), VectorFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(1)]
-
-        public bool OnGround { get; private set; }
+        public bool OnGround { get; set; }
 
         public int Id => 0x12;
 

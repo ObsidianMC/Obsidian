@@ -28,7 +28,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     Present = heldItem.Present
                 }
-            }, player); ;
+            },
+            excluded: player);
         }
     }
 }
