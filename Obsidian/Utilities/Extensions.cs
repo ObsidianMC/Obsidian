@@ -44,7 +44,7 @@ namespace Obsidian.Utilities
                 EntityType.SpawnerMinecart,
                 EntityType.TntMinecart,
                 EntityType.Painting,
-                EntityType.Tnt,
+                EntityType.PrimedTNT,
                 EntityType.ShulkerBullet,
                 EntityType.EnderPearl,
                 EntityType.Snowball,
