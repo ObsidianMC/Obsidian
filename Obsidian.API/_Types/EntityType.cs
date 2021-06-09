@@ -66,7 +66,7 @@
         PiglinBrute,
         Pillager,
         PolarBear,
-        Tnt,
+        PrimedTNT,
         Pufferfish,
         Rabbit,
         Ravager,
