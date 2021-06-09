@@ -172,10 +172,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.EntityId).Type, item.Count, item.ItemMeta)
-                    {
-                        Present = true
-                    });
+                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta));
 
                     this.client.SendPacket(new SetSlot
                     {
@@ -347,7 +344,7 @@ namespace Obsidian.Entities
         {
             this.VisiblePlayers.Clear();
 
-            Registry.DefaultDimensions.TryGetValue(0, out var codec);
+            Registry.Dimensions.TryGetValue(0, out var codec);
 
             await this.client.QueuePacketAsync(new Respawn
             {

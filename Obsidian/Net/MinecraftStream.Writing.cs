@@ -753,7 +753,7 @@ namespace Obsidian.Net
                 //TODO write enchants
                 if (itemMeta.HasTags())
                 {
-                    writer.WriteByte("Unbreakable", (byte)(itemMeta.Unbreakable ? 1 : 0));
+                    writer.WriteBool("Unbreakable", itemMeta.Unbreakable);
 
                     if (itemMeta.Durability > 0)
                         writer.WriteInt("Damage", itemMeta.Durability);

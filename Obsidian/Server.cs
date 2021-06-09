@@ -387,12 +387,7 @@ namespace Obsidian
             }
         }
 
-        private bool TryAddEntity(World world, Entity entity)
-        {
-            this.Logger.LogDebug($"{entity.EntityId} new ID");
-
-            return world.TryAddEntity(entity);
-        }
+        private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
         internal void BroadcastPlayerDig(PlayerDiggingStore store)
         {
@@ -420,28 +415,19 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc
+                            Position = loc 
                         };
 
                         this.TryAddEntity(player.World, item);
 
-                        var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
-                        var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
+                        var lookDir = player.GetLookDirection();
 
-                        var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
-                        var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
-
-                        var f5 = Globals.Random.NextDouble() * ((float)Math.PI * 2f);
-                        var f6 = 0.02f * Globals.Random.NextDouble();
-
-                        var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
-                            (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
-                            (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
+                        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
                         this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
-                            Uuid = Guid.NewGuid(),
+                            Uuid = item.Uuid,
                             Type = EntityType.Item,
                             Position = item.Position,
                             Pitch = 0,
@@ -486,13 +472,6 @@ namespace Obsidian
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
-                    {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
@@ -514,21 +493,19 @@ namespace Obsidian
 
                         this.World.SetBlock(digging.Position, Block.Air);
 
-                        var itemId = Registry.GetItem(block.Material).Id;
+                        var droppedItem = Registry.GetItem(block.Material);
 
-                        if (itemId == 0) { break; }
+                        if (droppedItem.Id == 0) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = itemId,
+                            Id = droppedItem.Id,
                             Glowing = true,
                             World = this.World,
-                            Position = digging.Position + new VectorF(
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f)
+                            Position = digging.Position,
+                            Server = this
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -536,13 +513,16 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
-                            Uuid = Guid.NewGuid(),
+                            Uuid = item.Uuid,
                             Type = EntityType.Item,
                             Position = item.Position,
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromVector(digging.Position)
+                            Velocity = Velocity.FromVector(digging.Position + new VectorF(
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f))
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
