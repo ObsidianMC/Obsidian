@@ -116,6 +116,8 @@ namespace Obsidian
                     });
 
                     // Add other services
+                    services.AddHttpClient<INetworkService, NetworkService>();
+
                     services
                         .AddJsonSerialization()
                         .AddSingleton<ServerRegistry>()

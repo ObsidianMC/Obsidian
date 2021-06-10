@@ -13,6 +13,7 @@ namespace Obsidian
 {
     public static class Globals
     {
+        [Obsolete("Inject HttpClient or HttpClientBuilder instead")]
         public static HttpClient HttpClient { get; } = new HttpClient();
         public static Random Random { get; } = new Random();
         [Obsolete("Inject IOptions<GlobalConfig> instead.")]
