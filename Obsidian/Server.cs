@@ -525,9 +525,9 @@ namespace Obsidian
                             Glowing = true,
                             World = this.World,
                             Position = digging.Position + new VectorF(
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f,
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f,
-                                (Globals.Random.NextSingle() * 0.5f) + 0.25f)
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f)
                         };
 
                         this.TryAddEntity(player.World, item);

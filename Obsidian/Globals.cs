@@ -5,7 +5,6 @@ using Obsidian.API;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
 using Obsidian.Utilities.Registry.Enums;
-using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
@@ -15,11 +14,14 @@ namespace Obsidian
     {
         [Obsolete("Inject HttpClient or HttpClientBuilder instead")]
         public static HttpClient HttpClient { get; } = new HttpClient();
-        public static Random Random { get; } = new Random();
+        public static XorshiftRandom Random { get; } = XorshiftRandom.Create();
+
         [Obsolete("Inject IOptions<GlobalConfig> instead.")]
         public static GlobalConfig Config { get; set; }
+        
         [Obsolete("Inject an ILogger<T> for the class, then using logger.BeginScope(\"Packets\")")]
         public static ILogger PacketLogger { get; set; }
+        
         [Obsolete]
         public static DefaultContractResolver ContractResolver { get; } = new DefaultContractResolver
         {
