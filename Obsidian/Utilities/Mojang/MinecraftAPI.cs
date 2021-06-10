@@ -4,16 +4,22 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using SharpNoise.Modules;
 
 namespace Obsidian.Utilities.Mojang
 {
     public class MinecraftAPI
     {
-        public static HttpClient Http = Globals.HttpClient;
+        private readonly HttpClient httpClient;
 
-        public static async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
+        public MinecraftAPI(IHttpClientFactory httpClientFactory)
         {
-            using (HttpResponseMessage response = await Http.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonConvert.SerializeObject(usernames), Encoding.UTF8, "application/json")))
+            httpClient = httpClientFactory.CreateClient(nameof(MinecraftAPI));
+        }
+
+        public async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
+        {
+            using (HttpResponseMessage response = await httpClient.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonConvert.SerializeObject(usernames), Encoding.UTF8, "application/json")))
             {
                 if (response.IsSuccessStatusCode)
                 {
@@ -24,19 +30,19 @@ namespace Obsidian.Utilities.Mojang
             return null;
         }
 
-        public static async Task<MojangUser> GetUserAsync(string username)
+        public async Task<MojangUser> GetUserAsync(string username)
         {
             var users = await GetUsersAsync(new[] { username });
 
-            if (users == null || users.Count <= 0)
+            if (users is not {Count: > 0})
                 return null;
 
             return users.FirstOrDefault();
         }
 
-        public static async Task<MojangUser> GetUserAndSkinAsync(string uuid)
+        public async Task<MojangUser> GetUserAndSkinAsync(string uuid)
         {
-            using (HttpResponseMessage response = await Http.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid))
+            using (HttpResponseMessage response = await httpClient.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid))
             {
                 if (response.IsSuccessStatusCode)
                 {
@@ -49,7 +55,7 @@ namespace Obsidian.Utilities.Mojang
 
         public static async Task<JoinedResponse> HasJoined(string username, string serverId)
         {
-            using (HttpResponseMessage response = await Http.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={username}&serverId={serverId}"))
+            using (HttpResponseMessage response = await httpClient.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={username}&serverId={serverId}"))
             {
                 if (response.IsSuccessStatusCode)
                 {

@@ -16,7 +16,7 @@ namespace Obsidian.Utilities
         private readonly Dictionary<int, Server> _serverList = new();
         private readonly HashSet<int> _ports = new();
 
-        public int Count { get; private set; } = 0;
+        public int Count => _serverList.Count;
 
         public ServerRegistry(ILogger<ServerRegistry> logger)
         {
@@ -34,7 +34,6 @@ namespace Obsidian.Utilities
 
             _serverList[server.Id] = server;
             _ports.Add(server.Port);
-            Count++;
             return true;
         }
 

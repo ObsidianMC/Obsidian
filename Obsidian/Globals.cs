@@ -17,6 +17,7 @@ namespace Obsidian
         public static Random Random { get; } = new Random();
         [Obsolete("Inject IOptions<GlobalConfig> instead.")]
         public static GlobalConfig Config { get; set; }
+        [Obsolete("Inject an ILogger<T> for the class, then using logger.BeginScope(\"Packets\")")]
         public static ILogger PacketLogger { get; set; }
         [Obsolete]
         public static DefaultContractResolver ContractResolver { get; } = new DefaultContractResolver

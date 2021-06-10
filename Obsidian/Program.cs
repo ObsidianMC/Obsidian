@@ -50,7 +50,6 @@ namespace Obsidian
 
             try
             {
-
                 var hostBuilder = new HostBuilder()
                 .UseEnvironment(environment)
                 .ConfigureAppConfiguration((context, builder) =>
