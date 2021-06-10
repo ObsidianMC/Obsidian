@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Obsidian.API;
@@ -14,6 +15,7 @@ namespace Obsidian
     {
         [Obsolete("Inject HttpClient or HttpClientBuilder instead")]
         public static HttpClient HttpClient { get; } = new HttpClient();
+        
         public static XorshiftRandom Random { get; } = XorshiftRandom.Create();
 
         [Obsolete("Inject IOptions<GlobalConfig> instead.")]
