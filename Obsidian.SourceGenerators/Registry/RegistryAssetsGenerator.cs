@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace Obsidian.Generators.Registry
+namespace Obsidian.SourceGenerators.Registry
 {
     [Generator]
     public sealed class RegistryAssetsGenerator : ISourceGenerator

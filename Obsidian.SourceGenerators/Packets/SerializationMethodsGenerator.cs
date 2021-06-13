@@ -1,30 +1,31 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Obsidian.SourceGenerators.Packets.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Obsidian.Generators.Packets
+namespace Obsidian.SourceGenerators.Packets
 {
     [Generator]
-    public class SerializationMethodsGenerator : ISourceGenerator
+    public partial class SerializationMethodsGenerator : ISourceGenerator
     {
-        private const string fieldAttribute = "Field";
-        private const string readMethodAttribute = "ReadMethod";
-        private const string writeMethodAttribute = "WriteMethod";
-        private const string vectorFormatAttribute = "VectorFormat";
-        private const string actualTypeAttribute = "ActualType";
-        private const string fixedLengthAttribute = "FixedLength";
-        private const string varLengthAttribute = "VarLength";
-        private const string clientOnly = "ClientOnlyAttribute";
-        private const string serverOnly = "ServerOnlyAttribute";
-        private const string countType = "CountType";
-
+        private static Property varInt;
+        
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxProvider());
+            varInt = new Property
+            {
+                Type = "int",
+                Attributes = new AttributeBehaviorBase[]
+                {
+                    new VarLengthBehavior(null)
+                },
+                Flags = AttributeFlags.Field | AttributeFlags.VarLength
+            };
         }
 
         public void Execute(GeneratorExecutionContext context)
@@ -47,35 +48,29 @@ namespace Obsidian.Generators.Packets
             Compilation compilation = context.Compilation;
 
             // Get all packet fields
-            var fieldSymbols = new List<Field>();
+            var properties = new List<Property>();
             foreach (MemberDeclarationSyntax member in syntaxProvider.WithContext(context).GetSyntaxNodes())
             {
-                // Get FieldAttribute
-                AttributeSyntax attribute = member.AttributeLists.SelectMany(list => list.Attributes).FirstOrDefault(attribute => attribute.Name.ToString() == fieldAttribute);
-                if (attribute is null)
-                    continue;
-
                 SemanticModel model = compilation.GetSemanticModel(member.SyntaxTree);
                 if (member is FieldDeclarationSyntax field)
                 {
                     foreach (VariableDeclaratorSyntax variable in field.Declaration.Variables)
                     {
                         ISymbol symbol = model.GetDeclaredSymbol(variable);
-                        fieldSymbols.Add(new Field(field.Declaration.Type, symbol, field, attribute));
+                        properties.Add(new Property(field, symbol));
                     }
                 }
                 else if (member is PropertyDeclarationSyntax property)
                 {
                     ISymbol symbol = model.GetDeclaredSymbol(member);
-                    fieldSymbols.Add(new Field(property.Type, symbol, property, attribute));
+                    properties.Add(new Property(property, symbol));
                 }
             }
 
             // Generate partial classes
-            foreach (var group in fieldSymbols.GroupBy(field => field.Symbol.ContainingType))
+            foreach (var group in properties.GroupBy(field => field.ContainingType))
             {
                 var @class = group.Key;
-                var fields = group.ToList();
 
                 if (@class.IsStatic || @class.DeclaredAccessibility != Accessibility.Public)
                 {
@@ -83,21 +78,22 @@ namespace Obsidian.Generators.Packets
                     continue;
                 }
 
+                var fields = group.ToList();
                 string classSource = ProcessClass(@class, fields, syntaxProvider);
-                context.AddSource($"{@class.Name}_Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
+                context.AddSource($"{@class.Name}.Serialization.cs", SourceText.From(classSource, Encoding.UTF8));
             }
         }
 
-        private string ProcessClass(INamedTypeSymbol classSymbol, List<Field> fields, SyntaxProvider syntaxProvider)
+        private string ProcessClass(INamedTypeSymbol classSymbol, List<Property> fields, SyntaxProvider syntaxProvider)
         {
-            fields.Sort((a, b) => a.Index.CompareTo(b.Index));
-            
+            fields.Sort((a, b) => a.Order.CompareTo(b.Order));
+
             string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
             string className = classSymbol.IsGenericType ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>" : classSymbol.Name;
 
             var attributes = classSymbol.GetAttributes();
-            bool isReadOnly = attributes.Any(attribute => attribute.AttributeClass.Name == serverOnly);
-            bool isWriteOnly = attributes.Any(attribute => attribute.AttributeClass.Name == clientOnly);
+            bool isReadOnly = attributes.Any(attribute => Vocabulary.AttributeNamesEqual(attribute.AttributeClass.Name, Vocabulary.ServerOnlyAttribute));
+            bool isWriteOnly = attributes.Any(attribute => Vocabulary.AttributeNamesEqual(attribute.AttributeClass.Name, Vocabulary.ClientOnlyAttribute));
 
             var methods = classSymbol.GetMembers().OfType<IMethodSymbol>();
 
@@ -111,6 +107,7 @@ namespace Obsidian.Generators.Packets
                     source.Append(usingDirective.GetText().ToString());
                 }
             }
+
             source.Using("Obsidian.Net");
             source.Using("Obsidian.Utilities");
             source.Using("System.Runtime.CompilerServices");
@@ -204,394 +201,250 @@ namespace Obsidian.Generators.Packets
 
             bodySource.Clear();
 
-            source.EndScope(); // EOF type
-            source.EndScope(); // EOF namespace
+            source.EndScope(); // End of type
+            source.EndScope(); // End of namespace
 
             return source.ToString();
         }
 
-        private bool TryCreateSerializationMethod(CodeBuilder builder, List<Field> fields, SyntaxProvider syntaxProvider)
+        private bool TryCreateSerializationMethod(CodeBuilder builder, List<Property> properties, SyntaxProvider syntaxProvider)
         {
-            builder.Line("using var packetStream = new MinecraftStream();");
-            foreach (var field in fields)
+            string streamName = "packetStream";
+
+            builder.Line($"using var {streamName} = new MinecraftStream();");
+            foreach (Property property in properties)
             {
-                string elementType = field.TypeName, elementName = field.Name;
-                if (field.IsArray)
+                if (property.IsCollection)
                 {
-                    elementName += "[i]";
-                    string lengthProperty;
-                    if (field.TypeName.EndsWith("[]"))
-                    {
-                        lengthProperty = "Length";
-                        elementType = field.TypeName.Substring(0, field.TypeName.Length - 2);
-                    }
-                    else
-                    {
-                        lengthProperty = "Count";
-                        elementType = field.TypeName.Substring(5, field.TypeName.Length - 6);
-                    }
-
-                    if (field.IsVarLength)
-                        elementType += "_Var";
-                    if (field.VectorFormat is not null)
-                        elementType += $"_{field.VectorFormat}Format";
-
-                    if (field.FixedLength < 0)
-                    {
-                        if (field.CountType is null)
-                        {
-                            builder.Line($"packetStream.WriteVarInt({field.Name}.{lengthProperty});");
-                        }
-                        else
-                        {
-                            if (!syntaxProvider.WriteMethods.TryGetValue(field.CountType, out string writeCountMethod))
-                            {
-                                // CountType has no write method
-                                syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with its count type", field.Declaration);
-                                return false;
-                            }
-
-                            builder.Line($"packetStream.{writeCountMethod}(({field.CountType}){field.Name}.{lengthProperty});");
-                        }
-                    }
-
-                    builder.Statement($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
-                }
-
-                if (field.OriginalType is not null)
-                {
-                    if (field.IsGeneric)
-                    {
-                        string tempName = $"temp{field.Name}";
-                        builder.Line($"var {tempName} = {elementName};");
-                        elementName = $"System.Runtime.CompilerServices.Unsafe.As<{field.ActualType}, {field.OriginalType}>(ref {tempName})";
-                    }
-                    else
-                    {
-                        elementName = $"({field.OriginalType}){elementName}";
-                    }
-                }
-
-                if (TryGetMethod(elementType, syntaxProvider.WriteMethods, out string methodName))
-                {
-                    builder.Line($"packetStream.{methodName}({elementName});");
+                    if (!TrySerializePropertyCollection(streamName, property, builder, syntaxProvider))
+                        return false;
                 }
                 else
                 {
-                    // Creating serialization method failed
-                    syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no serialization method associated with it", field.Declaration);
-                    return false;
-                }
-
-                if (field.IsArray)
-                {
-                    // End the for loop
-                    builder.EndScope();
+                    if (!TrySerializeProperty(streamName, property, builder, syntaxProvider))
+                        return false;
                 }
             }
             builder.Line("stream.Lock.Wait();");
-            builder.Line("stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);");
+            builder.Line($"stream.WriteVarInt(Id.GetVarIntLength() + (int){streamName}.Length);");
             builder.Line("stream.WriteVarInt(Id);");
-            builder.Line("packetStream.Position = 0;");
-            builder.Line("packetStream.CopyTo(stream);");
+            builder.Line($"{streamName}.Position = 0;");
+            builder.Line($"{streamName}.CopyTo(stream);");
             builder.Line("stream.Lock.Release();");
             return true;
         }
 
-        private bool TryCreateDeserializationMethod(CodeBuilder builder, string className, List<Field> fields, SyntaxProvider syntaxProvider)
+        private bool TrySerializePropertyCollection(string streamName, Property property, CodeBuilder builder, SyntaxProvider syntaxProvider)
+        {
+            // If there is a method for writing the whole collection, use it instead
+            if (syntaxProvider.Methods.TryGetWriteMethod(property, collection: true, out Method collectionWriteMethod))
+                return TrySerializeProperty(streamName, property, builder, syntaxProvider, collectionWriteMethod);
+
+            syntaxProvider.Methods.TryGetWriteMethod(varInt, out Method writeMethod);
+
+            var context = new MethodBuildingContext(streamName, property.Name, property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifyCollectionPrefixSerialization(context))
+                    goto LOOP;
+            }
+
+            // Default behavior
+            if (writeMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "serialization");
+                return false;
+            }
+            builder.Line($"{streamName}.{writeMethod}({property}.{property.Length});");
+
+        LOOP:
+            // Begin the for loop
+            builder.Statement($"for (int i = 0; i < {property}.{property.Length}; i++)");
+            syntaxProvider.Methods.TryGetWriteMethod(property, out writeMethod);
+            context = new MethodBuildingContext(streamName, property.Name + "[i]", property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifySerialization(context))
+                    goto END_LOOP;
+            }
+
+            // Default behavior
+            if (writeMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "serialization");
+                return false;
+            }
+            builder.Line($"{streamName}.{writeMethod}({property}[i]);");
+
+        END_LOOP:
+            builder.EndScope();
+
+            return true;
+        }
+
+        private bool TrySerializeProperty(string streamName, Property property, CodeBuilder builder, SyntaxProvider syntaxProvider, Method writeMethod = null)
+        {
+            if (writeMethod is null)
+                syntaxProvider.Methods.TryGetWriteMethod(property, out writeMethod);
+
+            var context = new MethodBuildingContext(streamName, property.Name, property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifySerialization(context))
+                    return true;
+            }
+
+            // Default behavior
+            if (writeMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "serialization");
+                return false;
+            }
+            builder.Line($"{streamName}.{writeMethod}({property});");
+            return true;
+        }
+
+        private bool TryCreateDeserializationMethod(CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
         {
             builder.Line($"var packet = new {className}();");
-            foreach (var field in fields)
-            {
-                string elementType = field.TypeName, elementName = field.Name;
-                if (field.IsArray)
-                {
-                    elementName += "[i]";
-                    string lengthProperty;
-                    if (field.TypeName.EndsWith("[]"))
-                    {
-                        lengthProperty = "Length";
-                        elementType = field.TypeName.Substring(0, field.TypeName.Length - 2);
-                    }
-                    else
-                    {
-                        lengthProperty = "Count";
-                        elementType = field.TypeName.Substring(5, field.TypeName.Length - 6);
-                    }
-
-                    if (field.IsVarLength)
-                        elementType += "_Var";
-                    if (field.VectorFormat is not null)
-                        elementType += $"_{field.VectorFormat}Format";
-
-                    string countValue;
-                    if (field.FixedLength >= 0)
-                    {
-                        countValue = field.FixedLength.ToString();
-                    }
-                    else if (field.CountType is not null)
-                    {
-                        if (!syntaxProvider.ReadMethods.TryGetValue(field.CountType, out string readCountMethod))
-                        {
-                            // CountType has no read method
-                            syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with its count type", field.Declaration);
-                            return false;
-                        }
-
-                        countValue = $"stream.{readCountMethod}();";
-                    }
-                    else
-                    {
-                        countValue = "stream.ReadVarInt()";
-                    }
-                    builder.Line(field.TypeName.EndsWith("[]") ? $"packet.{field.Name} = new {elementType}[{countValue}];" : $"packet.{field.Name} = new {field.TypeName}({countValue});");
-
-                    builder.Statement($"for (int i = 0; i < packet.{field.Name}.{lengthProperty}; i++)");
-                }
-
-                if (TryGetMethod(elementType, syntaxProvider.ReadMethods, out string methodName))
-                {
-                    methodName = $"stream.{methodName}()";
-                    
-                    if (field.OriginalType is not null)
-                    {
-                        if (field.IsGeneric)
-                        {
-                            string tempName = $"temp{field.Name}";
-                            builder.Line($"var {tempName} = {methodName};");
-                            methodName = $"System.Runtime.CompilerServices.Unsafe.As<{field.ActualType}, {field.OriginalType}>(ref {tempName})";
-                        }
-                        else
-                        {
-                            methodName = $"({field.ActualType}){methodName}";
-                        }
-                    }
-
-                    builder.Line($"packet.{elementName} = {methodName};");
-                }
-                else
-                {
-                    // Creating serialization method failed
-                    syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration);
-                    return false;
-                }
-
-                if (field.IsArray)
-                {
-                    // End the for loop
-                    builder.EndScope();
-                }
-            }
+            if (!TryCreateReadingMethod(dataPrefix: "packet.", builder, className, properties, syntaxProvider))
+                return false;
             builder.Line("return packet;");
             return true;
         }
 
-        private bool TryCreatePopulateMethod(CodeBuilder builder, string className, List<Field> fields, SyntaxProvider syntaxProvider)
+        private bool TryCreatePopulateMethod(CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
         {
-            foreach (var field in fields)
+            return TryCreateReadingMethod(dataPrefix: string.Empty, builder, className, properties, syntaxProvider);
+        }
+
+        private bool TryCreateReadingMethod(string dataPrefix, CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
+        {
+            string streamName = "stream";
+
+            foreach (Property property in properties)
             {
-                string elementType = field.TypeName, elementName = field.Name;
-                if (field.IsArray)
+                string dataName = string.IsNullOrEmpty(dataPrefix) ? property.Name : dataPrefix + property.Name;
+
+                if (property.IsCollection)
                 {
-                    elementName += "[i]";
-                    string lengthProperty;
-                    if (field.TypeName.EndsWith("[]"))
-                    {
-                        lengthProperty = "Length";
-                        elementType = field.TypeName.Substring(0, field.TypeName.Length - 2);
-                    }
-                    else
-                    {
-                        lengthProperty = "Count";
-                        elementType = field.TypeName.Substring(5, field.TypeName.Length - 6);
-                    }
-
-                    if (field.IsVarLength)
-                        elementType += "_Var";
-                    if (field.VectorFormat is not null)
-                        elementType += $"_{field.VectorFormat}Format";
-
-                    string countValue;
-                    if (field.FixedLength >= 0)
-                    {
-                        countValue = field.FixedLength.ToString();
-                    }
-                    else if (field.CountType is not null)
-                    {
-                        if (!syntaxProvider.ReadMethods.TryGetValue(field.CountType, out string readCountMethod))
-                        {
-                            // CountType has no read method
-                            syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with its count type", field.Declaration);
-                            return false;
-                        }
-
-                        countValue = $"stream.{readCountMethod}();";
-                    }
-                    else
-                    {
-                        countValue = "stream.ReadVarInt()";
-                    }
-                    builder.Line(field.TypeName.EndsWith("[]") ? $"{field.Name} = new {elementType}[{countValue}];" : $"{field.Name} = new {field.TypeName}({countValue});");
-
-                    builder.Statement($"for (int i = 0; i < {field.Name}.{lengthProperty}; i++)");
-                }
-
-                if (TryGetMethod(elementType, syntaxProvider.ReadMethods, out string methodName))
-                {
-                    methodName = $"stream.{methodName}()";
-
-                    if (field.OriginalType is not null)
-                    {
-                        if (field.IsGeneric)
-                        {
-                            string tempName = $"temp{field.Name}";
-                            builder.Line($"var {tempName} = {methodName};");
-                            methodName = $"System.Runtime.CompilerServices.Unsafe.As<{field.ActualType}, {field.OriginalType}>(ref {tempName})";
-                        }
-                        else
-                        {
-                            methodName = $"({field.ActualType}){methodName}";
-                        }
-                    }
-
-                    builder.Line($"{elementName} = {methodName};");
+                    if (!TryReadPropertyCollection(streamName, dataName, property, builder, className, syntaxProvider))
+                        return false;
                 }
                 else
                 {
-                    // Creating serialization method failed
-                    syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{field.Name} ({field.TypeName})({elementType}) has no deserialization method associated with it", field.Declaration);
-                    return false;
-                }
-
-                if (field.IsArray)
-                {
-                    // End the for loop
-                    builder.EndScope();
+                    if (!TryReadProperty(streamName, dataName, property, builder, className, syntaxProvider))
+                        return false;
                 }
             }
+            
             return true;
         }
 
-        private bool TryGetMethod(string typeName, Dictionary<string, string> methodCollection, out string methodName)
+        private bool TryReadPropertyCollection(string streamName, string dataName, Property property, CodeBuilder builder, string className, SyntaxProvider syntaxProvider)
         {
-            return methodCollection.TryGetValue(typeName, out methodName);
+            // If there is a method for writing the whole collection, use it instead
+            if (syntaxProvider.Methods.TryGetReadMethod(property, collection: true, out Method collectionReadMethod))
+                return TryReadProperty(streamName, dataName, property, builder, className, syntaxProvider, collectionReadMethod);
+
+            syntaxProvider.Methods.TryGetReadMethod(varInt, out Method readMethod);
+            var context = new MethodBuildingContext(streamName, dataName, property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifyCollectionPrefixDeserialization(context))
+                    goto LOOP;
+            }
+
+            // Default behavior
+            if (readMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "deserialization");
+                return false;
+            }
+            string getLength = $"{streamName}.{readMethod}()";
+            builder.Line($"{dataName} = {property.NewCollection(getLength)};");
+
+        LOOP:
+            builder.Statement($"for (int i = 0; i < {dataName}.{property.Length}; i++)");
+
+            context = new MethodBuildingContext(streamName, dataName + "[i]", property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifyDeserialization(context))
+                    goto END_LOOP;
+            }
+
+            // Default behavior
+            if (readMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "deserialization");
+                return false;
+            }
+            builder.Line($"{dataName}[i] = {streamName}.{readMethod}();");
+
+        END_LOOP:
+            builder.EndScope();
+            return true;
+        }
+
+        private bool TryReadProperty(string streamName, string dataName, Property property, CodeBuilder builder, string className, SyntaxProvider syntaxProvider, Method readMethod = null)
+        {
+            if (readMethod is null)
+                syntaxProvider.Methods.TryGetReadMethod(property, out readMethod);
+
+            var context = new MethodBuildingContext(streamName, dataName, property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            // Attributes behavior
+            for (int i = 0; i < property.Attributes.Length; i++)
+            {
+                if (property.Attributes[i].ModifyDeserialization(context))
+                    return true;
+            }
+
+            // Default behavior
+            if (readMethod is null)
+            {
+                ReportMissingMethod(syntaxProvider, property, "deserialization");
+                return false;
+            }
+            builder.Line($"{dataName} = {streamName}.{readMethod}();");
+            return true;
+        }
+
+        private void ReportMissingMethod(SyntaxProvider syntaxProvider, Property property, string process)
+        {
+            syntaxProvider.Context.ReportDiagnostic(DiagnosticSeverity.Warning, $"{property} ({property.Type};{property.CollectionType}) has no {process} method associated with its type", property.DeclarationSyntax);
         }
 
         private class SyntaxProvider : ExecutionSyntaxProvider<MemberDeclarationSyntax>
         {
-            public Dictionary<string, string> WriteMethods { get; } = new Dictionary<string, string>();
-            public Dictionary<string, string> ReadMethods { get; } = new Dictionary<string, string>();
+            public MethodsRegistry Methods { get; } = new();
 
-            public SyntaxProvider()
-            {
-            }
-
-            /// <summary>
-            /// Decides whether a certain syntax node should be returned by <see cref="ExecutionSyntaxProvider{T}.GetSyntaxNodes"/>.
-            /// </summary>
             protected override bool HandleNode(MemberDeclarationSyntax node)
             {
-                // Handle all Read and Write methods
                 if (node is MethodDeclarationSyntax methodDeclaration)
                 {
-                    var attributes = methodDeclaration.AttributeLists.SelectMany(list => list.Attributes);
-                    var attribute = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == readMethodAttribute || attribute.Name.ToString() == writeMethodAttribute);
-                    if (attribute is not null)
-                    {
-                        string methodName = methodDeclaration.Identifier.Text;
-                        string modifiers = string.Empty;
-                        if (attributes.Any(attribute => attribute.Name.ToString() == varLengthAttribute))
-                            modifiers += "_Var";
-
-                        AttributeSyntax vectorFormat = attributes.FirstOrDefault(attribute => attribute.Name.ToString() == vectorFormatAttribute);
-
-                        if (vectorFormat is not null)
-                            modifiers += $"_{vectorFormat.GetTypeArgument()}Format";
-
-                        if (attribute.Name.ToString() == readMethodAttribute)
-                        {
-                            ReadMethods[methodDeclaration.ReturnType.GetText().ToString().Split('.').Last().TrimEnd() + modifiers] = methodName;
-                        }
-                        else
-                        {
-                            WriteMethods[methodDeclaration.ParameterList.Parameters.First().Type.GetText().ToString().Split('.').Last().TrimEnd() + modifiers] = methodName;
-                        }
-                    }
+                    Methods.Offer(Context, methodDeclaration);
                 }
 
-                // Handle all fields and properties that may be packet fields
-                return (node is FieldDeclarationSyntax || node is PropertyDeclarationSyntax) && node.AttributeLists.Count > 0;
+                // Save all fields and properties marked with FieldAttribute
+                return (node is FieldDeclarationSyntax field && HasFieldAttribute(field.AttributeLists)) ||
+                       (node is PropertyDeclarationSyntax property && HasFieldAttribute(property.AttributeLists));
             }
-        }
 
-        private struct Field
-        {
-            public string Name { get; }
-            public string TypeName { get; }
-            public string OriginalType { get; }
-            public string ActualType { get; }
-            public string CountType { get; }
-            public string VectorFormat { get; }
-            public int Index { get; }
-            public bool IsArray { get; }
-            public bool IsGeneric { get; }
-            public bool IsVarLength { get; }
-            public int FixedLength { get; }
-            public ISymbol Symbol { get; }
-            public MemberDeclarationSyntax Declaration { get; }
-
-            public Field(TypeSyntax type, ISymbol symbol, MemberDeclarationSyntax declaration, AttributeSyntax fieldAttribute)
+            private static bool HasFieldAttribute(SyntaxList<AttributeListSyntax> attributeLists)
             {
-                string typeName = type.GetText().ToString().Split('.').Last().TrimEnd();
-                TypeName = typeName;
-                ActualType = typeName;
-                IsArray = TypeName.EndsWith("[]") || TypeName.StartsWith("List<");
-                Name = symbol.Name;
-                Symbol = symbol;
-                Declaration = declaration;
-                Index = int.Parse(fieldAttribute.ArgumentList.Arguments.First().GetText().ToString());
-
-                OriginalType = null;
-                CountType = null;
-                VectorFormat = null;
-                IsVarLength = false;
-                FixedLength = -1;
-                IsGeneric = symbol.ContainingType.TypeParameters.Any(genericParameter => genericParameter.Name == typeName);
-                var attributes = declaration.AttributeLists.SelectMany(list => list.Attributes);
-                foreach (var attribute in attributes)
-                {
-                    switch (attribute.Name.GetText().ToString())
-                    {
-                        case vectorFormatAttribute:
-                            VectorFormat = attribute.GetTypeArgument();
-                            break;
-
-                        case varLengthAttribute:
-                            IsVarLength = true;
-                            break;
-
-                        case fixedLengthAttribute:
-                            FixedLength = int.Parse(attribute.ArgumentList.Arguments.First().GetText().ToString());
-                            break;
-
-                        case actualTypeAttribute:
-                            TypeName = attribute.GetTypeArgument();
-                            OriginalType = TypeName;
-                            break;
-
-                        case countType:
-                            CountType = attribute.GetTypeArgument();
-                            break;
-                    }
-                }
-
-                if (!IsArray)
-                {
-                    if (IsVarLength)
-                        TypeName += "_Var";
-                    if (VectorFormat is not null)
-                        TypeName += $"_{VectorFormat}Format";
-                }
+                return attributeLists.SelectMany(list => list.Attributes).Any(attribute => Vocabulary.AttributeNamesEqual(attribute.Name.ToString(), Vocabulary.FieldAttribute));
             }
         }
     }
@@ -605,12 +458,6 @@ namespace Obsidian.Generators.Packets
                 syntaxNode = syntaxNode.Parent;
             }
             return syntaxNode;
-        }
-
-        public static string GetTypeArgument(this AttributeSyntax attribute)
-        {
-            var @typeof = attribute.DescendantNodes().FirstOrDefault(node => node is TypeOfExpressionSyntax) as TypeOfExpressionSyntax;
-            return @typeof.Type.GetText().ToString().Split('.').Last();
         }
     }
 }

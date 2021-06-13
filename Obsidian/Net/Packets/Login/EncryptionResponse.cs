@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Login
 {
     [ServerOnly]
-    public partial class EncryptionResponse : IPacket
+    public partial class EncryptionResponse : IServerboundPacket
     {
         [Field(0)]
         public byte[] SharedSecret { get; private set; }
@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Login
 
         public int Id => 0x01;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 
         /*protected override async Task ComposeAsync(MinecraftStream stream)
         {
