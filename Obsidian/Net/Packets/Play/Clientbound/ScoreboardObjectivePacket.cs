@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2), ActualType(typeof(ChatMessage)), Condition(nameof(ShouldWriteValue))]
         public IChatMessage Value { get; set; }
 
-        [Field(3), VarLength, ActualType(typeof(int)), Condition("!" + nameof(ShouldWriteValue))]
+        [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
         public DisplayType Type { get; set; }
 
         public int Id => 0x4A;
