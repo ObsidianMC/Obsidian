@@ -17,6 +17,7 @@ namespace Obsidian.SourceGenerators.Packets
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxProvider());
+
             varInt = new Property
             {
                 Type = "int",
@@ -173,7 +174,7 @@ namespace Obsidian.SourceGenerators.Packets
                 !isWriteOnly
                 && !classSymbol.IsAbstract
                 && !methods.Any(m => m.Name == "Populate" && m.Parameters.Length == 1 && m.Parameters[0].Type.Name is "byte[]" or "MinecraftStream")
-                && TryCreatePopulateMethod(bodySource, className, fields, syntaxProvider);
+                && TryCreatePopulateMethod(bodySource, fields, syntaxProvider);
             if (shouldPopulate)
             {
                 if (createDeserializationMethod)
@@ -216,12 +217,12 @@ namespace Obsidian.SourceGenerators.Packets
             {
                 if (property.IsCollection)
                 {
-                    if (!TrySerializePropertyCollection(streamName, property, builder, syntaxProvider))
+                    if (!TrySerializePropertyCollection(streamName, property, properties, builder, syntaxProvider))
                         return false;
                 }
                 else
                 {
-                    if (!TrySerializeProperty(streamName, property, builder, syntaxProvider))
+                    if (!TrySerializeProperty(streamName, property, properties, builder, syntaxProvider))
                         return false;
                 }
             }
@@ -234,15 +235,18 @@ namespace Obsidian.SourceGenerators.Packets
             return true;
         }
 
-        private bool TrySerializePropertyCollection(string streamName, Property property, CodeBuilder builder, SyntaxProvider syntaxProvider)
+        private bool TrySerializePropertyCollection(string streamName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider)
         {
             // If there is a method for writing the whole collection, use it instead
             if (syntaxProvider.Methods.TryGetWriteMethod(property, collection: true, out Method collectionWriteMethod))
-                return TrySerializeProperty(streamName, property, builder, syntaxProvider, collectionWriteMethod);
+                return TrySerializeProperty(streamName, property, properties, builder, syntaxProvider, collectionWriteMethod);
 
             syntaxProvider.Methods.TryGetWriteMethod(varInt, out Method writeMethod);
 
-            var context = new MethodBuildingContext(streamName, property.Name, property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            var context = new MethodBuildingContext(streamName, property.Name, property, properties, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            if (property.Writing.Execute(context))
+                return true;
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
@@ -260,10 +264,12 @@ namespace Obsidian.SourceGenerators.Packets
             builder.Line($"{streamName}.{writeMethod}({property}.{property.Length});");
 
         LOOP:
+            property.Written.Execute(context);
+
             // Begin the for loop
             builder.Statement($"for (int i = 0; i < {property}.{property.Length}; i++)");
             syntaxProvider.Methods.TryGetWriteMethod(property, out writeMethod);
-            context = new MethodBuildingContext(streamName, property.Name + "[i]", property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            context = new MethodBuildingContext(streamName, property.Name + "[i]", property, properties, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
@@ -283,21 +289,28 @@ namespace Obsidian.SourceGenerators.Packets
         END_LOOP:
             builder.EndScope();
 
+            property.Written.Execute(context);
             return true;
         }
 
-        private bool TrySerializeProperty(string streamName, Property property, CodeBuilder builder, SyntaxProvider syntaxProvider, Method writeMethod = null)
+        private bool TrySerializeProperty(string streamName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method writeMethod = null)
         {
             if (writeMethod is null)
                 syntaxProvider.Methods.TryGetWriteMethod(property, out writeMethod);
 
-            var context = new MethodBuildingContext(streamName, property.Name, property, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            var context = new MethodBuildingContext(streamName, property.Name, property, properties, builder, writeMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            if (property.Writing.Execute(context))
+                return true;
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
             {
                 if (property.Attributes[i].ModifySerialization(context))
+                {
+                    property.Written.Execute(context);
                     return true;
+                }
             }
 
             // Default behavior
@@ -307,24 +320,26 @@ namespace Obsidian.SourceGenerators.Packets
                 return false;
             }
             builder.Line($"{streamName}.{writeMethod}({property});");
+
+            property.Written.Execute(context);
             return true;
         }
 
         private bool TryCreateDeserializationMethod(CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
         {
             builder.Line($"var packet = new {className}();");
-            if (!TryCreateReadingMethod(dataPrefix: "packet.", builder, className, properties, syntaxProvider))
+            if (!TryCreateReadingMethod(dataPrefix: "packet.", builder, properties, syntaxProvider))
                 return false;
             builder.Line("return packet;");
             return true;
         }
 
-        private bool TryCreatePopulateMethod(CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
+        private bool TryCreatePopulateMethod(CodeBuilder builder, List<Property> properties, SyntaxProvider syntaxProvider)
         {
-            return TryCreateReadingMethod(dataPrefix: string.Empty, builder, className, properties, syntaxProvider);
+            return TryCreateReadingMethod(dataPrefix: string.Empty, builder, properties, syntaxProvider);
         }
 
-        private bool TryCreateReadingMethod(string dataPrefix, CodeBuilder builder, string className, List<Property> properties, SyntaxProvider syntaxProvider)
+        private bool TryCreateReadingMethod(string dataPrefix, CodeBuilder builder, List<Property> properties, SyntaxProvider syntaxProvider)
         {
             string streamName = "stream";
 
@@ -334,12 +349,12 @@ namespace Obsidian.SourceGenerators.Packets
 
                 if (property.IsCollection)
                 {
-                    if (!TryReadPropertyCollection(streamName, dataName, property, builder, className, syntaxProvider))
+                    if (!TryReadPropertyCollection(streamName, dataName, property, properties, builder, syntaxProvider))
                         return false;
                 }
                 else
                 {
-                    if (!TryReadProperty(streamName, dataName, property, builder, className, syntaxProvider))
+                    if (!TryReadProperty(streamName, dataName, property, properties, builder, syntaxProvider))
                         return false;
                 }
             }
@@ -347,14 +362,17 @@ namespace Obsidian.SourceGenerators.Packets
             return true;
         }
 
-        private bool TryReadPropertyCollection(string streamName, string dataName, Property property, CodeBuilder builder, string className, SyntaxProvider syntaxProvider)
+        private bool TryReadPropertyCollection(string streamName, string dataName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider)
         {
             // If there is a method for writing the whole collection, use it instead
             if (syntaxProvider.Methods.TryGetReadMethod(property, collection: true, out Method collectionReadMethod))
-                return TryReadProperty(streamName, dataName, property, builder, className, syntaxProvider, collectionReadMethod);
+                return TryReadProperty(streamName, dataName, property, properties, builder, syntaxProvider, collectionReadMethod);
 
             syntaxProvider.Methods.TryGetReadMethod(varInt, out Method readMethod);
-            var context = new MethodBuildingContext(streamName, dataName, property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            var context = new MethodBuildingContext(streamName, dataName, property, properties, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            if (property.Reading.Execute(context))
+                return true;
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
@@ -375,7 +393,7 @@ namespace Obsidian.SourceGenerators.Packets
         LOOP:
             builder.Statement($"for (int i = 0; i < {dataName}.{property.Length}; i++)");
 
-            context = new MethodBuildingContext(streamName, dataName + "[i]", property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            context = new MethodBuildingContext(streamName, dataName + "[i]", property, properties, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
@@ -394,21 +412,29 @@ namespace Obsidian.SourceGenerators.Packets
 
         END_LOOP:
             builder.EndScope();
+
+            property.Read.Execute(context);
             return true;
         }
 
-        private bool TryReadProperty(string streamName, string dataName, Property property, CodeBuilder builder, string className, SyntaxProvider syntaxProvider, Method readMethod = null)
+        private bool TryReadProperty(string streamName, string dataName, Property property, List<Property> properties, CodeBuilder builder, SyntaxProvider syntaxProvider, Method readMethod = null)
         {
             if (readMethod is null)
                 syntaxProvider.Methods.TryGetReadMethod(property, out readMethod);
 
-            var context = new MethodBuildingContext(streamName, dataName, property, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+            var context = new MethodBuildingContext(streamName, dataName, property, properties, builder, readMethod, syntaxProvider.Methods, syntaxProvider.Context);
+
+            if (property.Reading.Execute(context))
+                return true;
 
             // Attributes behavior
             for (int i = 0; i < property.Attributes.Length; i++)
             {
                 if (property.Attributes[i].ModifyDeserialization(context))
+                {
+                    property.Read.Execute(context);
                     return true;
+                }
             }
 
             // Default behavior
@@ -418,6 +444,8 @@ namespace Obsidian.SourceGenerators.Packets
                 return false;
             }
             builder.Line($"{dataName} = {streamName}.{readMethod}();");
+
+            property.Read.Execute(context);
             return true;
         }
 
@@ -458,6 +486,25 @@ namespace Obsidian.SourceGenerators.Packets
                 syntaxNode = syntaxNode.Parent;
             }
             return syntaxNode;
+        }
+
+        public static bool Execute(this PreactionCallback callback, MethodBuildingContext context)
+        {
+            if (callback is null)
+                return false;
+
+            foreach (PreactionCallback subcallback in callback.GetInvocationList())
+            {
+                if (subcallback(context))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static void Execute(this PostactionCallback callback, MethodBuildingContext context)
+        {
+            callback?.Invoke(context);
         }
     }
 }

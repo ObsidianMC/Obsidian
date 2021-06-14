@@ -14,6 +14,7 @@ namespace Obsidian.SourceGenerators.Packets
         public const string FixedLengthAttribute = "FixedLength";
         public const string VarLengthAttribute = "VarLength";
         public const string VectorFormatAttribute = "VectorFormat";
+        public const string ConditionAttribute = "Condition";
 
         public static bool AttributeNamesEqual(string attributeName1, string attributeName2)
         {

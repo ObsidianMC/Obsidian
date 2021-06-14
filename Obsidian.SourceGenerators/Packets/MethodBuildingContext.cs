@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 
 namespace Obsidian.SourceGenerators.Packets
 {
@@ -11,16 +12,18 @@ namespace Obsidian.SourceGenerators.Packets
         public MethodsRegistry MethodsRegistry { get; }
         public GeneratorExecutionContext GeneratorContext { get; }
         public Property Property { get; }
+        public IReadOnlyList<Property> AllProperties { get; }
 
-        public MethodBuildingContext(string streamName, string dataName, Property property, CodeBuilder codeBuilder, Method method, MethodsRegistry methodsRegistry, GeneratorExecutionContext context)
+        public MethodBuildingContext(string streamName, string dataName, Property property, IReadOnlyList<Property> allProperties, CodeBuilder codeBuilder, Method method, MethodsRegistry methodsRegistry, GeneratorExecutionContext context)
         {
             StreamName = streamName;
+            DataName = dataName;
+            Property = property;
+            AllProperties = allProperties;
             CodeBuilder = codeBuilder;
+            Method = method;
             MethodsRegistry = methodsRegistry;
             GeneratorContext = context;
-            DataName = dataName;
-            Method = method;
-            Property = property;
         }
     }
 }

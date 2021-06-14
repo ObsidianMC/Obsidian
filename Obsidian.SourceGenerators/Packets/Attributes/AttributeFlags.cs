@@ -7,10 +7,11 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
     {
         None = 0,
         Field = 1,
-        ActualType = 2,
-        CountType = 4,
-        FixedLength = 8,
-        VarLength = 16,
-        VectorFormat = 32
+        Condition = 2,
+        ActualType = 4,
+        CountType = 8,
+        FixedLength = 16,
+        VarLength = 32,
+        VectorFormat = 64
     }
 }

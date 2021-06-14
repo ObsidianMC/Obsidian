@@ -7,8 +7,16 @@ using System.Linq;
 
 namespace Obsidian.SourceGenerators.Packets
 {
+    internal delegate bool PreactionCallback(MethodBuildingContext context);
+    internal delegate void PostactionCallback(MethodBuildingContext context);
+
     internal sealed class Property : AttributeOwner
     {
+        public PreactionCallback Writing;
+        public PostactionCallback Written;
+        public PreactionCallback Reading;
+        public PostactionCallback Read;
+
         public string Name { get; private set; }
         public string Type { get; set; }
         public INamedTypeSymbol ContainingType { get; set; }

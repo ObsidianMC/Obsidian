@@ -1,43 +1,50 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Utilities;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public class ScoreboardObjectivePacket : IClientboundPacket
+    [ClientOnly]
+    public partial class ScoreboardObjectivePacket : IClientboundPacket
     {
+        [Field(0)]
         public string ObjectiveName { get; set; }
 
+        [Field(1), ActualType(typeof(sbyte))]
         public ScoreboardMode Mode { get; set; }
 
+        [Field(2), ActualType(typeof(ChatMessage)), Condition(nameof(ShouldWriteValue))]
         public IChatMessage Value { get; set; }
 
+        [Field(3), VarLength, ActualType(typeof(int)), Condition("!" + nameof(ShouldWriteValue))]
         public DisplayType Type { get; set; }
 
         public int Id => 0x4A;
 
-        public void Serialize(MinecraftStream stream)
-        {
-            using var packetStream = new MinecraftStream();
-            packetStream.WriteString(this.ObjectiveName);
-            packetStream.WriteByte((sbyte)this.Mode);
+        private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
 
-            if (this.Mode is ScoreboardMode.Create or ScoreboardMode.Update)
-            {
-                packetStream.WriteChat((ChatMessage)this.Value);
-                packetStream.WriteVarInt(this.Type);
-            }
+        //public void Serialize(MinecraftStream stream)
+        //{
+        //    using var packetStream = new MinecraftStream();
+        //    packetStream.WriteString(this.ObjectiveName);
+        //    packetStream.WriteByte((sbyte)this.Mode);
 
-            stream.Lock.Wait();
+        //    if (this.Mode is ScoreboardMode.Create or ScoreboardMode.Update)
+        //    {
+        //        packetStream.WriteChat((ChatMessage)this.Value);
+        //        packetStream.WriteVarInt(this.Type);
+        //    }
 
-            stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
-            stream.WriteVarInt(this.Id);
+        //    stream.Lock.Wait();
 
-            packetStream.Position = 0;
-            packetStream.CopyTo(stream);
+        //    stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
+        //    stream.WriteVarInt(this.Id);
 
-            stream.Lock.Release();
-        }
+        //    packetStream.Position = 0;
+        //    packetStream.CopyTo(stream);
+
+        //    stream.Lock.Release();
+        //}
     }
 
     public enum ScoreboardMode : sbyte

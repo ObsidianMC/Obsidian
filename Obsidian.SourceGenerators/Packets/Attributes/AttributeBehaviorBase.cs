@@ -109,7 +109,7 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
             {
                 // "text"
                 LiteralExpressionSyntax literal when literal.Kind() == SyntaxKind.StringLiteralExpression
-                    => literal.Token.Text,
+                    => literal.Token.ValueText,
 
                 // nameof(Identifier)
                 InvocationExpressionSyntax invocation when invocation.Expression.GetText().ToString() == "nameof"
@@ -143,7 +143,7 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
                 }
                 else if (content is InterpolatedStringTextSyntax textSyntax)
                 {
-                    builder.Append(textSyntax.TextToken.Text);
+                    builder.Append(textSyntax.TextToken.ValueText);
                 }
                 else
                 {
@@ -170,6 +170,7 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
                 Vocabulary.FixedLengthAttribute => new FixedLengthBehavior(attribute),
                 Vocabulary.VarLengthAttribute => new VarLengthBehavior(attribute),
                 Vocabulary.VectorFormatAttribute => new VectorFormatAttribute(attribute),
+                Vocabulary.ConditionAttribute => new ConditionBehavior(attribute),
                 _ => null
             };
 
