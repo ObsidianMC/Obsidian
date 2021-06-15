@@ -1,8 +1,8 @@
 ﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
+    [ClientOnly]
     public partial class UpdateScore : IClientboundPacket
     {
         /// <summary>
@@ -26,31 +26,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         /// <summary>
         /// The score to be displayed next to the entry. Only sent when Action does not equal 1.
         /// </summary>
-        [Field(4), VarLength]
+        [Field(4), VarLength, Condition(nameof(Action) + " != 1")]
         public int Value { get; set; }
 
         public int Id => 0x4D;
-
-        public void Serialize(MinecraftStream stream)
-        {
-            using var packetStream = new MinecraftStream();
-            packetStream.WriteString(this.EntityName, 40);
-            packetStream.WriteByte(this.Action);
-
-            packetStream.WriteString(this.ObjectiveName, 16);
-
-            if (this.Action == 0)
-                packetStream.WriteVarInt(this.Value);
-
-            stream.Lock.Wait();
-
-            stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
-            stream.WriteVarInt(this.Id);
-
-            packetStream.Position = 0;
-            packetStream.CopyTo(stream);
-
-            stream.Lock.Release();
-        }
     }
 }

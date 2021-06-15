@@ -1,6 +1,4 @@
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
@@ -10,7 +8,5 @@ namespace Obsidian.Net.Packets.Status
         public long Payload;
 
         public int Id => 0x01;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

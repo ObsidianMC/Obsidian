@@ -1,8 +1,6 @@
 using Newtonsoft.Json;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
@@ -26,7 +24,5 @@ namespace Obsidian.Net.Packets.Status
         {
             Json = JsonConvert.SerializeObject(status);
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

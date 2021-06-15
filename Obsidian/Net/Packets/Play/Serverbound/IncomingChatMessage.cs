@@ -13,12 +13,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x03;
 
-        public void Populate(byte[] data)
-        {
-            using var stream = new MinecraftStream(data);
-            Populate(stream);
-        }
-
         public void Populate(MinecraftStream stream)
         {
             Message = stream.ReadString();
