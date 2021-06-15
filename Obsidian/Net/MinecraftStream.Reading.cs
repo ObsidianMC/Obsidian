@@ -558,6 +558,9 @@ namespace Obsidian.Net
         [ReadMethod]
         public Angle ReadAngle() => new Angle(this.ReadUnsignedByte());
 
+        [ReadMethod, DataFormat(typeof(float))]
+        public Angle ReadFloatAngle() => ReadFloat();
+
         public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
 
         [ReadMethod]

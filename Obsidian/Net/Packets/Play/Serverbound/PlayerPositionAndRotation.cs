@@ -8,16 +8,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class PlayerPositionAndRotation : IServerboundPacket
     {
         [Field(0), DataFormat(typeof(double))]
-        public VectorF Position { get; set; }
+        public VectorF Position { get; private set; }
 
-        [Field(1)]
-        public float Yaw { get; set; }
+        [Field(1), DataFormat(typeof(float))]
+        public Angle Yaw { get; private set; }
 
-        [Field(2)]
-        public float Pitch { get; set; }
+        [Field(2), DataFormat(typeof(float))]
+        public Angle Pitch { get; private set; }
 
         [Field(3)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; private set; }
 
         public int Id => 0x34;
 

@@ -9,40 +9,40 @@ namespace Obsidian.Net.Packets.Play
     public partial class CloseWindow : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
-        public byte WindowId { get; set; }
+        public byte WindowId { get; private set; }
 
         public int Id => 0x0A;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            if (this.WindowId == 0)
+            if (WindowId == 0)
                 return;
 
-            var loc = player.OpenedInventory.BlockPosition;
+            var position = player.OpenedInventory.BlockPosition;
 
-            var block = server.World.GetBlock(loc);
+            var block = server.World.GetBlock(position);
 
             if (block.Is(Material.Chest))
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {
-                    Position = loc,
+                    Position = position,
                     ActionId = 1,
                     ActionParam = 0,
                     BlockType = block.Id
                 });
-                await player.SendSoundAsync(Sounds.BlockChestClose, loc.SoundPosition);
+                await player.SendSoundAsync(Sounds.BlockChestClose, position.SoundPosition);
             }
             else if (block.Is(Material.EnderChest))
             {
                 await player.client.QueuePacketAsync(new BlockAction
                 {
-                    Position = loc,
+                    Position = position,
                     ActionId = 1,
                     ActionParam = 0,
                     BlockType = block.Id
                 });
-                await player.SendSoundAsync(Sounds.BlockEnderChestClose, loc.SoundPosition);
+                await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
             }
 
             player.OpenedInventory = null;

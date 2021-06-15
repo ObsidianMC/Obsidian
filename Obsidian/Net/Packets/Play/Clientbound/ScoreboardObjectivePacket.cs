@@ -7,16 +7,16 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class ScoreboardObjectivePacket : IClientboundPacket
     {
         [Field(0)]
-        public string ObjectiveName { get; set; }
+        public string ObjectiveName { get; init; }
 
         [Field(1), ActualType(typeof(sbyte))]
-        public ScoreboardMode Mode { get; set; }
+        public ScoreboardMode Mode { get; init; }
 
         [Field(2), ActualType(typeof(ChatMessage)), Condition(nameof(ShouldWriteValue))]
-        public IChatMessage Value { get; set; }
+        public IChatMessage Value { get; init; }
 
         [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
-        public DisplayType Type { get; set; }
+        public DisplayType Type { get; init; }
 
         public int Id => 0x4A;
 
@@ -26,9 +26,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public enum ScoreboardMode : sbyte
     {
         Create,
-
         Remove,
-
         Update
     }
 }

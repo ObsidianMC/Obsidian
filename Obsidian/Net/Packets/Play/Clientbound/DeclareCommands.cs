@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public List<CommandNode> Nodes { get; } = new();
 
         [Field(1), VarLength]
-        public int RootIndex = 0;
+        public int RootIndex { get; }
 
         public int Id => 0x10;
 

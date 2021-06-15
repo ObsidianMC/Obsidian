@@ -7,17 +7,17 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class BossBar : IClientboundPacket
     {
         [Field(0)]
-        public Guid UUID { get; private set; }
+        public Guid UUID { get; }
 
         [Field(1)]
-        public BossBarAction Action { get; private set; }
+        public BossBarAction Action { get; }
 
         public int Id => 0x0C;
 
         public BossBar(Guid uuid, BossBarAction action)
         {
-            this.UUID = uuid;
-            this.Action = action ?? throw new ArgumentNullException(nameof(action));
+            UUID = uuid;
+            Action = action ?? throw new ArgumentNullException(nameof(action));
         }
     }
 }

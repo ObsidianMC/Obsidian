@@ -1,6 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
@@ -22,7 +20,5 @@ namespace Obsidian.Net.Packets.Login
             PublicKey = publicKey;
             VerifyToken = verifyToken;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

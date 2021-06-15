@@ -5,13 +5,13 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class CollectItem : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int CollectedEntityId { get; set; }
+        public int CollectedEntityId { get; init; }
 
         [Field(1), VarLength]
-        public int CollectorEntityId { get; set; }
+        public int CollectorEntityId { get; init; }
 
         [Field(2), VarLength]
-        public int PickupItemCount { get; set; }
+        public int PickupItemCount { get; init; }
 
         public int Id => 0x55;
     }

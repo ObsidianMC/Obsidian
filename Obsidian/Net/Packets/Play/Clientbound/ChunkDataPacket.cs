@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public partial class ChunkDataPacket : IClientboundPacket
     {
-        public Chunk Chunk { get; set; }
+        public Chunk Chunk { get; }
 
         public int Id => 0x20;
 

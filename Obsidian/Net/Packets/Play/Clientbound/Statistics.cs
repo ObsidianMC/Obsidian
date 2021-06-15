@@ -1,4 +1,5 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 
@@ -8,10 +9,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     {
         [Field(0)]
         public List<Statistic> Stats { get; } = new();
-
-        public Statistics()
-        {
-        }
 
         public void Add(Statistic stat)
         {
@@ -26,41 +23,41 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public int Id => 0x06;
     }
 
-    public struct Statistic
+    public readonly struct Statistic
     {
-        public CategoryIds CategoryId;
+        public CategoryIds CategoryId { get; }
 
         /// <summary>
         /// Can either be a block, item or entity id. For CategoryIds.Custom, use the <see cref="StatisticIds"/> enum casted to an integer.
         /// </summary>
-        public int StatisticId;
+        public int StatisticId { get; }
 
-        public int Value;
+        public int Value { get; }
 
         public Statistic(CategoryIds category, Block block, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = block.Id;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = block.Id;
+            Value = value;
         }
 
         public Statistic(CategoryIds category, StatisticIds statistic, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = (int)statistic;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = (int)statistic;
+            Value = value;
         }
-        public Statistic(CategoryIds category, Items.Item item, int value)
+        public Statistic(CategoryIds category, Item item, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = item.Id;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = item.Id;
+            Value = value;
         }
         public Statistic(CategoryIds category, Entity entity, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = entity.EntityId;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = entity.EntityId;
+            Value = value;
         }
     }
 
@@ -99,6 +96,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         Jump,
         Drop,
         DamageDealt,
-
     }
 }

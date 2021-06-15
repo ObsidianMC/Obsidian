@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class TimeUpdate : IClientboundPacket
     {
         [Field(0)]
-        public long WorldAge { get; set; }
+        public long WorldAge { get; }
 
         [Field(1)]
-        public long TimeOfDay { get; set; }
+        public long TimeOfDay { get; }
 
         public int Id => 0x4E;
 

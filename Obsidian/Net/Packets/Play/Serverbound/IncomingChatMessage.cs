@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public void Populate(byte[] data)
         {
             using var stream = new MinecraftStream(data);
-            Populate(data);
+            Populate(stream);
         }
 
         public void Populate(MinecraftStream stream)

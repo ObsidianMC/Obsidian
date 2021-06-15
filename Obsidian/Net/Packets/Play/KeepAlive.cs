@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play
     public partial class KeepAlive : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
-        public long KeepAliveId { get; set; }
+        public long KeepAliveId { get; private set; }
 
         public int Id => 0x1F;
 
@@ -23,8 +23,7 @@ namespace Obsidian.Net.Packets.Play
 
         public ValueTask HandleAsync(Server server, Player player)
         {
-            Globals.PacketLogger.LogDebug($"Successfully kept alive player {player.Username} with ka id " +
-                       $"{this.KeepAliveId} previously missed {player.client.missedKeepalives - 1} ka's"); // missed is 1 more bc we just handled one
+            Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
 
             player.client.missedKeepalives = 0;
 

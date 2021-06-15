@@ -9,14 +9,14 @@ namespace Obsidian.Net.Packets.Play
     public partial class Animation : IClientboundPacket, IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
-        public Hand Hand { get; set; }
+        public Hand Hand { get; private set; }
 
         public int Id => 0x2C;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            //TODO broadcast entity animation to nearby players
-            switch (this.Hand)
+            // TODO broadcast entity animation to nearby players
+            switch (Hand)
             {
                 case Hand.Right:
                     await server.BroadcastPacketAsync(new EntityAnimation
@@ -25,6 +25,7 @@ namespace Obsidian.Net.Packets.Play
                         Animation = EAnimation.SwingMainArm
                     }, player);
                     break;
+
                 case Hand.OffHand:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {

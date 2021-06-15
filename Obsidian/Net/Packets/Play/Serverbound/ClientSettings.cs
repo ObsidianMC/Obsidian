@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public bool ChatColors { get; private set; }
 
         [Field(4)]
-        public byte SkinParts { get; private set; } // skin parts that are displayed. might not be necessary to decode?
+        public byte SkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
 
         [Field(5)]
         public int MainHand { get; private set; }

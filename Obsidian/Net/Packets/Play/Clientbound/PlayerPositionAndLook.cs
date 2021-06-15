@@ -18,19 +18,19 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class PlayerPositionAndLook : IClientboundPacket
     {
         [Field(0), DataFormat(typeof(double))]
-        public VectorF Position { get; set; }
+        public VectorF Position { get; init; }
 
-        [Field(1)]
-        public float Yaw { get; set; }
+        [Field(1), DataFormat(typeof(float))]
+        public Angle Yaw { get; init; }
 
-        [Field(2)]
-        public float Pitch { get; set; }
+        [Field(2), DataFormat(typeof(float))]
+        public Angle Pitch { get; init; }
 
         [Field(3), ActualType(typeof(sbyte))]
-        public PositionFlags Flags { get; set; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+        public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
         [Field(4), VarLength]
-        public int TeleportId { get; set; }
+        public int TeleportId { get; init; }
 
         public int Id => 0x34;
     }

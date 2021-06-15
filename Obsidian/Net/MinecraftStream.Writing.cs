@@ -356,6 +356,12 @@ namespace Obsidian.Net
             BaseStream.WriteByte(angle.Value);
         }
 
+        [WriteMethod, DataFormat(typeof(float))]
+        public void WriteFloatAngle(Angle angle)
+        {
+            WriteFloat(angle.Degrees);
+        }
+
         public async Task WriteAngleAsync(Angle angle)
         {
             await WriteByteAsync((sbyte)angle.Value);
@@ -377,8 +383,16 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteUuid(Guid value)
         {
-            var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
-            Write(uuid.ToByteArray(false, true));
+            if (value == Guid.Empty)
+            {
+                WriteLong(0L);
+                WriteLong(0L);
+            }
+            else
+            {
+                var uuid = System.Numerics.BigInteger.Parse(value.ToString().Replace("-", ""), System.Globalization.NumberStyles.HexNumber);
+                Write(uuid.ToByteArray(false, true));
+            }
         }
 
         [WriteMethod]
@@ -960,7 +974,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WriteRecipes(Dictionary<string, IRecipe> recipes)
+        public void WriteRecipes(IDictionary<string, IRecipe> recipes)
         {
             WriteVarInt(recipes.Count);
             foreach (var (name, recipe) in recipes)

@@ -6,13 +6,13 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class EntityEquipment : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
-        public ESlot Slot { get; set; }
+        public ESlot Slot { get; init; }
 
         [Field(2)]
-        public ItemStack Item { get; set; }
+        public ItemStack Item { get; init; }
 
         public int Id => 0x47;
     }

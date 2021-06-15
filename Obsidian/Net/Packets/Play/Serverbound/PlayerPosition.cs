@@ -8,10 +8,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class PlayerPosition : IServerboundPacket
     {
         [Field(0), DataFormat(typeof(double))]
-        public VectorF Position { get; set; }
+        public VectorF Position { get; private set; }
 
         [Field(1)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; private set; }
 
         public int Id => 0x12;
 
@@ -19,15 +19,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerPosition(VectorF pos, bool onground)
+        public PlayerPosition(VectorF position, bool onGround)
         {
-            this.Position = pos;
-            this.OnGround = onground;
+            Position = position;
+            OnGround = onGround;
         }
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            await player.UpdateAsync(server, this.Position, this.OnGround);
+            await player.UpdateAsync(server, Position, OnGround);
             await player.World.UpdateClientChunksAsync(player.client);
         }
     }

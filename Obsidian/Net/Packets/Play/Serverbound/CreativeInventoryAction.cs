@@ -10,10 +10,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class CreativeInventoryAction : IServerboundPacket
     {
         [Field(0)]
-        public short ClickedSlot { get; set; }
+        public short ClickedSlot { get; private set; }
 
         [Field(1)]
-        public ItemStack ClickedItem { get; set; }
+        public ItemStack ClickedItem { get; private set; }
 
         public int Id => 0x29;
 
@@ -21,16 +21,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             var inventory = player.OpenedInventory ?? player.Inventory;
 
-            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
+            var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
 
-            if (forPlayer)
+            if (isForPlayer)
                 inventory = player.Inventory;
 
-            inventory.SetItem(value, this.ClickedItem);
+            inventory.SetItem(slot, ClickedItem);
 
-            player.LastClickedItem = this.ClickedItem;
+            player.LastClickedItem = ClickedItem;
 
-            if (player.CurrentSlot == this.ClickedSlot)
+            if (player.CurrentSlot == ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 

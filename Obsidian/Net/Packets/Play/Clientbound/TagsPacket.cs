@@ -6,30 +6,26 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class TagsPacket : IClientboundPacket
     {
         [Field(0)]
-        public List<Tag> Blocks { get; set; }
+        public List<Tag> Blocks { get; init; }
 
         [Field(1)]
-        public List<Tag> Items { get; set; }
+        public List<Tag> Items { get; init; }
 
         [Field(2)]
-        public List<Tag> Fluid { get; set; }
+        public List<Tag> Fluids { get; init; }
 
         [Field(3)]
-        public List<Tag> Entities { get; set; }
+        public List<Tag> Entities { get; init; }
 
         public int Id => 0x5B;
     }
 
     public class Tag
     {
-        public string Type { get; set; }
-
-        public string Name { get; set; }
-
-        public bool Replace { get; set; }
-
+        public string Name { get; init; }
+        public string Type { get; init; }
+        public bool Replace { get; init; }
+        public List<int> Entries { get; init; } = new();
         public int Count => Entries.Count;
-
-        public List<int> Entries { get; set; } = new();
     }
 }

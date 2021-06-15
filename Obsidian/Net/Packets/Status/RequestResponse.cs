@@ -7,13 +7,9 @@ namespace Obsidian.Net.Packets.Status
     public partial class RequestResponse : IClientboundPacket
     {
         [Field(0)]
-        public string Json;
+        public string Json { get; }
 
         public int Id => 0x00;
-
-        public RequestResponse()
-        {
-        }
 
         public RequestResponse(string json)
         {

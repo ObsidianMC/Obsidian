@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
@@ -6,16 +7,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 {
     public partial class PlayerRotation : IServerboundPacket
     {
-        [Field(0)]
-        public float Yaw { get => _yaw; set => _yaw = (value % 360 + 360) % 360; }
+        [Field(0), DataFormat(typeof(float))]
+        public Angle Yaw { get; private set; }
 
-        private float _yaw;
-
-        [Field(1)]
-        public float Pitch { get; set; }
+        [Field(1), DataFormat(typeof(float))]
+        public Angle Pitch { get; private set; }
 
         [Field(2)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; private set; }
 
         public int Id => 0x14;
 
@@ -23,11 +22,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerRotation(float yaw, float pitch, bool onground)
+        public PlayerRotation(float yaw, float pitch, bool onGround)
         {
             Yaw = yaw;
             Pitch = pitch;
-            OnGround = onground;
+            OnGround = onGround;
         }
 
         public async ValueTask HandleAsync(Server server, Player player)

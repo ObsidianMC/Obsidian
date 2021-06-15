@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Status
     public partial class PingPong : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
-        public long Payload;
+        public long Payload { get; private set; }
 
         public int Id => 0x01;
 

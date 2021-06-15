@@ -5,10 +5,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class EntityAnimation : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [Field(1), ActualType(typeof(byte))]
-        public EAnimation Animation { get; set; }
+        public EAnimation Animation { get; init; }
 
         public int Id => 0x05;
     }

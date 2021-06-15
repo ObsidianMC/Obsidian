@@ -6,16 +6,16 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class EntityRotation : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [Field(1)]
-        public Angle Yaw { get; set; }
+        public Angle Yaw { get; init; }
 
         [Field(2)]
-        public Angle Pitch { get; set; }
+        public Angle Pitch { get; init; }
 
         [Field(3)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; init; }
 
         public int Id => 0x29;
     }
