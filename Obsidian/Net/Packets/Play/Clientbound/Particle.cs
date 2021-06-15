@@ -15,10 +15,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public bool LongDistance { get; set; }
 
-        [Field(2), VectorFormat(typeof(double))]
+        [Field(2), DataFormat(typeof(double))]
         public VectorF Position { get; set; }
 
-        [Field(3), VectorFormat(typeof(float))]
+        [Field(3), DataFormat(typeof(float))]
         public VectorF Offset { get; set; }
 
         [Field(6)]

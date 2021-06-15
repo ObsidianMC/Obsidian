@@ -12,6 +12,6 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
         CountType = 8,
         FixedLength = 16,
         VarLength = 32,
-        VectorFormat = 64
+        DataFormat = 64
     }
 }

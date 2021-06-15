@@ -4,8 +4,8 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
 {
     internal sealed class VectorFormatAttribute : AttributeBehaviorBase
     {
-        public override string Name => Vocabulary.VectorFormatAttribute;
-        public override AttributeFlags Flag => AttributeFlags.VectorFormat;
+        public override string Name => Vocabulary.DataFormatAttribute;
+        public override AttributeFlags Flag => AttributeFlags.DataFormat;
 
         public string Type { get; }
 

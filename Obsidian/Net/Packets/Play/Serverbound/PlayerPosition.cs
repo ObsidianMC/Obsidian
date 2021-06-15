@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     [ServerOnly]
     public partial class PlayerPosition : IServerboundPacket
     {
-        [Field(0), VectorFormat(typeof(double))]
+        [Field(0), DataFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(1)]

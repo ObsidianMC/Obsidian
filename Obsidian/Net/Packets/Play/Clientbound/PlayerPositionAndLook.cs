@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     [ClientOnly]
     public partial class PlayerPositionAndLook : IClientboundPacket
     {
-        [Field(0), VectorFormat(typeof(double))]
+        [Field(0), DataFormat(typeof(double))]
         public VectorF Position { get; set; }
 
         [Field(1)]

@@ -169,7 +169,7 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
                 Vocabulary.CountTypeAttribute => new CountTypeBehavior(attribute),
                 Vocabulary.FixedLengthAttribute => new FixedLengthBehavior(attribute),
                 Vocabulary.VarLengthAttribute => new VarLengthBehavior(attribute),
-                Vocabulary.VectorFormatAttribute => new VectorFormatAttribute(attribute),
+                Vocabulary.DataFormatAttribute => new VectorFormatAttribute(attribute),
                 Vocabulary.ConditionAttribute => new ConditionBehavior(attribute),
                 _ => null
             };

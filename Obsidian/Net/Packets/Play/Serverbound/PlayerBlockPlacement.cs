@@ -22,7 +22,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2), ActualType(typeof(int)), VarLength]
         public BlockFace Face { get; set; }
 
-        [Field(3), VectorFormat(typeof(float))]
+        [Field(3), DataFormat(typeof(float))]
         public VectorF Cursor { get; set; }
 
         [Field(6)]

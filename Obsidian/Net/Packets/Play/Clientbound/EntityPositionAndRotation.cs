@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0), VarLength]
         public int EntityId { get; set; }
 
-        [Field(1), VectorFormat(typeof(short))]
+        [Field(1), DataFormat(typeof(short))]
         public Vector Delta { get; set; }
 
         [Field(2)]
