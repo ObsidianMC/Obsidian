@@ -52,6 +52,12 @@ namespace Obsidian.Net.Packets.Play
             return result;
         }
 
+        public void Populate(byte[] data)
+        {
+            using var stream = new MinecraftStream(data);
+            Populate(data);
+        }
+
         public void Populate(MinecraftStream stream)
         {
             Channel = stream.ReadString();
