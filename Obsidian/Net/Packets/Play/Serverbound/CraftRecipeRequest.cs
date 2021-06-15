@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class CraftRecipeRequest : IServerboundPacket
     {
         [Field(0)]

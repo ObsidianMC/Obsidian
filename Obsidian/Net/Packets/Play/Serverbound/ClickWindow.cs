@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
-    [ServerOnly]
     public partial class ClickWindow : IServerboundPacket
     {
         /// <summary>

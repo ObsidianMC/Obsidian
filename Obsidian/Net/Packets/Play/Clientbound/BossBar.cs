@@ -4,7 +4,6 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class BossBar : IClientboundPacket
     {
         [Field(0)]

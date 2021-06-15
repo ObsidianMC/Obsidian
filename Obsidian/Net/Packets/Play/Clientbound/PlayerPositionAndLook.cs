@@ -15,7 +15,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         None = 0x00
     }
 
-    [ClientOnly]
     public partial class PlayerPositionAndLook : IClientboundPacket
     {
         [Field(0), DataFormat(typeof(double))]

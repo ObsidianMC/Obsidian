@@ -3,7 +3,6 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class EntityEquipment : IClientboundPacket
     {
         [Field(0), VarLength]

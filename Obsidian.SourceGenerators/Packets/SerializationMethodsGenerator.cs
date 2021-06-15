@@ -92,9 +92,9 @@ namespace Obsidian.SourceGenerators.Packets
             string @namespace = classSymbol.ContainingNamespace.ToDisplayString();
             string className = classSymbol.IsGenericType ? $"{classSymbol.Name}<{string.Join(", ", classSymbol.TypeParameters.Select(parameter => parameter.Name))}>" : classSymbol.Name;
 
-            var attributes = classSymbol.GetAttributes();
-            bool isReadOnly = attributes.Any(attribute => Vocabulary.AttributeNamesEqual(attribute.AttributeClass.Name, Vocabulary.ServerOnlyAttribute));
-            bool isWriteOnly = attributes.Any(attribute => Vocabulary.AttributeNamesEqual(attribute.AttributeClass.Name, Vocabulary.ClientOnlyAttribute));
+            var interfaces = classSymbol.AllInterfaces;
+            bool clientbound = interfaces.Any(@interface => @interface.Name == Vocabulary.ClientboundInterface);
+            bool serverbound = interfaces.Any(@interface => @interface.Name == Vocabulary.ServerboundInterface);
 
             var methods = classSymbol.GetMembers().OfType<IMethodSymbol>();
 
@@ -121,7 +121,7 @@ namespace Obsidian.SourceGenerators.Packets
 
             // Serialize(MinecraftStream stream)
             bool createSerializationMethod =
-                !isReadOnly
+                clientbound
                 && !methods.Any(m => m.Name == "Serialize" && m.Parameters.Length == 1 && m.Parameters[0].Type.Name == "MinecraftStream")
                 && TryCreateSerializationMethod(bodySource, fields, syntaxProvider);
             if (createSerializationMethod)
@@ -137,7 +137,7 @@ namespace Obsidian.SourceGenerators.Packets
             bodySource = CodeBuilder.WithIndentationOf(source.Indentation + 1);
 
             bool createDeserializationMethod =
-                !isWriteOnly
+                serverbound
                 && !classSymbol.IsAbstract
                 && !methods.Any(m => m.Name == "Deserialize" && m.Parameters.Length == 1 && m.Parameters[0].Type.Name is "byte[]" or "MinecraftStream")
                 && TryCreateDeserializationMethod(bodySource, className, fields, syntaxProvider);
@@ -171,7 +171,7 @@ namespace Obsidian.SourceGenerators.Packets
             bodySource = CodeBuilder.WithIndentationOf(source.Indentation + 1);
 
             bool shouldPopulate =
-                !isWriteOnly
+                serverbound
                 && !classSymbol.IsAbstract
                 && !methods.Any(m => m.Name == "Populate" && m.Parameters.Length == 1 && m.Parameters[0].Type.Name is "byte[]" or "MinecraftStream")
                 && TryCreatePopulateMethod(bodySource, fields, syntaxProvider);

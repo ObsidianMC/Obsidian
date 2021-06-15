@@ -5,7 +5,6 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class SpawnEntity : IClientboundPacket
     {
         [Field(0), VarLength]

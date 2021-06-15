@@ -13,7 +13,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public CodecCollection<string, BiomeCodec> Biomes { get; set; }
     }
 
-    [ClientOnly]
     public partial class JoinGame : IClientboundPacket
     {
         [Field(0)]

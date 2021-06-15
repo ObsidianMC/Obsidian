@@ -5,7 +5,6 @@ using System.Collections.Generic;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
-    [ClientOnly]
     public partial class DeclareCommands : IClientboundPacket
     {
         [Field(0)]

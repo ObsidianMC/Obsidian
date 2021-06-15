@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PlayerPositionAndRotation : IServerboundPacket
     {
         [Field(0), DataFormat(typeof(double))]

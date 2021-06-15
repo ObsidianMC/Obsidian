@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class UnlockRecipes : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]

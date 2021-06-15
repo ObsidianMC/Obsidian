@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PlayerDigging : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]

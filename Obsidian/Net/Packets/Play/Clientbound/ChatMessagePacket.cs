@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class ChatMessagePacket : IClientboundPacket
     {
         [Field(0)]

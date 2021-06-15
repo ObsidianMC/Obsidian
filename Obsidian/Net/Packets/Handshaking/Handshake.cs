@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Handshaking
 {
-    public partial class Handshake : IClientboundPacket
+    public partial class Handshake : IClientboundPacket, IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public ProtocolVersion Version;
@@ -21,6 +21,6 @@ namespace Obsidian.Net.Packets.Handshaking
 
         public int Id => 0x00;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

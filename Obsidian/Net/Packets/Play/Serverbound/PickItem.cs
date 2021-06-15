@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PickItem : IServerboundPacket
     {
         [Field(0)]

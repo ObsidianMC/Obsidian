@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class TeleportConfirm : IServerboundPacket
     {
         [Field(0), VarLength]

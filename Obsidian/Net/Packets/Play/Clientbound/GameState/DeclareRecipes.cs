@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class DeclareRecipes : IClientboundPacket
     {
         [Field(0)]

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ClientOnly]
     public partial class LoginSuccess : IClientboundPacket
     {
         [Field(0)]

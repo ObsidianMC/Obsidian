@@ -3,7 +3,6 @@
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Update_View_Position
-    [ClientOnly]
     public partial class UpdateViewPosition : IClientboundPacket
     {
         [Field(0), VarLength]

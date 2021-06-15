@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class PlayerInfo : IClientboundPacket
     {
         [Field(0), VarLength]

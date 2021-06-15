@@ -2,7 +2,6 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public abstract partial class ChangeGameState<T> : IClientboundPacket
     {
         [Field(0), ActualType(typeof(byte))]

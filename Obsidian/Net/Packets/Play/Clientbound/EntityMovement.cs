@@ -2,7 +2,6 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class EntityMovement : IClientboundPacket
     {
         [Field(0), VarLength]

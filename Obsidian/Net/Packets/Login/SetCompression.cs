@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ClientOnly]
     public partial class SetCompression : IClientboundPacket
     {
         [Field(0)]

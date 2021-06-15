@@ -3,7 +3,6 @@ using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class ServerDifficulty : IClientboundPacket
     {
         [Field(0), ActualType(typeof(byte))]

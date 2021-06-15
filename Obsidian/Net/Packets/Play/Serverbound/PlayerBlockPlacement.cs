@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PlayerBlockPlacement : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]

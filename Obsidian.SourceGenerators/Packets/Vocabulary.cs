@@ -4,8 +4,8 @@ namespace Obsidian.SourceGenerators.Packets
 {
     internal static class Vocabulary
     {
-        public const string ClientOnlyAttribute = "ClientOnly";
-        public const string ServerOnlyAttribute = "ServerOnly";
+        public const string ClientboundInterface = "IClientboundPacket";
+        public const string ServerboundInterface = "IServerboundPacket";
         public const string WriteMethodAttribute = "WriteMethod";
         public const string ReadMethodAttribute = "ReadMethod";
         public const string FieldAttribute = "Field";

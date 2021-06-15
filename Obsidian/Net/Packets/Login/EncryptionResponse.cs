@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ServerOnly]
     public partial class EncryptionResponse : IServerboundPacket
     {
         [Field(0)]
