@@ -1,10 +1,7 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ClientOnly]
     public partial class SetCompression : IClientboundPacket
     {
         [Field(0)]
@@ -18,7 +15,5 @@ namespace Obsidian.Net.Packets.Login
         {
             Threshold = threshold;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

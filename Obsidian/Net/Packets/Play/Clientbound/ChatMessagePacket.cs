@@ -2,32 +2,31 @@
 using Obsidian.Chat;
 using Obsidian.Serialization.Attributes;
 using System;
-using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class ChatMessagePacket : IClientboundPacket
     {
         [Field(0)]
-        public ChatMessage Message { get; private set; }
+        public ChatMessage Message { get; }
 
-        [Field(1)]
-        public sbyte Position { get; private set; } // 0 = chatbox, 1 = system message, 2 = game info (actionbar)
+        [Field(1), ActualType(typeof(sbyte))]
+        public MessageType Type { get; }
 
-        [Field(2), FixedLength(2)]
-        public List<long> Sender { get; private set; } = new(2)
-        {
-            0, 0
-        };
+        [Field(2)]
+        public Guid Sender { get; }
 
         public int Id => 0x0E;
+
+        public ChatMessagePacket(ChatMessage message, MessageType type) : this(message, type, Guid.Empty)
+        {
+        }
 
         public ChatMessagePacket(ChatMessage message, MessageType type, Guid sender)
         {
             Message = message;
-            Position = (sbyte)type;
-            //Sender = sender;
+            Type = type;
+            Sender = sender;
         }
     }
 }

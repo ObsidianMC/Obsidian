@@ -42,15 +42,15 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
             this.settings = ots;
             RiverControlPoints = new List<ControlPoint> {
                 new Curve.ControlPoint(-3.000 - settings.BiomeHumidityRatio, 0.000),
-                new Curve.ControlPoint(-0.45 - settings.BiomeHumidityRatio, 0.000),
+                new Curve.ControlPoint(-0.336 - settings.BiomeHumidityRatio, 0.000),
                 new Curve.ControlPoint(-0.335 - settings.BiomeHumidityRatio, 1.000),
-                new Curve.ControlPoint(-0.320 - settings.BiomeHumidityRatio, 1.000),
-                new Curve.ControlPoint(-0.30 - settings.BiomeHumidityRatio, 0.000),
+                new Curve.ControlPoint(-0.331 - settings.BiomeHumidityRatio, 1.000),
+                new Curve.ControlPoint(-0.300 - settings.BiomeHumidityRatio, 0.000),
 
-                new Curve.ControlPoint(0.30 - settings.BiomeHumidityRatio, 0.000),
-                new Curve.ControlPoint(0.320 - settings.BiomeHumidityRatio, 1.000),
+                new Curve.ControlPoint(0.330 - settings.BiomeHumidityRatio, 0.000),
+                new Curve.ControlPoint(0.331 - settings.BiomeHumidityRatio, 1.000),
                 new Curve.ControlPoint(0.335 - settings.BiomeHumidityRatio, 1.000),
-                new Curve.ControlPoint(0.45 - settings.BiomeHumidityRatio, 0.000),
+                new Curve.ControlPoint(0.336 - settings.BiomeHumidityRatio, 0.000),
                 new Curve.ControlPoint(3.000 - settings.BiomeHumidityRatio, 0.000),
             };
         }

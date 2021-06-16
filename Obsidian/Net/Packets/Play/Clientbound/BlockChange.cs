@@ -3,14 +3,13 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class BlockChange : IClientboundPacket
     {
         [Field(0)]
-        public Vector Position { get; private set; }
+        public Vector Position { get; }
 
         [Field(1), VarLength]
-        public int BlockId { get; private set; }
+        public int BlockId { get; }
 
         public int Id => 0x0B;
 
