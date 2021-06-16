@@ -9,7 +9,6 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Clientbound.GameState;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
@@ -385,7 +384,7 @@ namespace Obsidian.Entities
                 Message = deathMessage as ChatMessage
             });
 
-            await this.client.QueuePacketAsync(new EnableRespawnScreen(RespawnReason.EnableRespawnScreen));
+            await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));
             await this.RemoveAsync();
 
             if (source is Player attacker)

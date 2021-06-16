@@ -1,36 +1,34 @@
 ﻿using Obsidian.API;
-using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class Respawn : IClientboundPacket
     {
         [Field(0)]
-        public DimensionCodec Dimension { get; set; }
+        public DimensionCodec Dimension { get; init; }
 
         [Field(1)]
-        public string WorldName { get; set; }
+        public string WorldName { get; init; }
 
         [Field(2)]
-        public long HashedSeed { get; set; }
+        public long HashedSeed { get; init; }
 
         [Field(3), ActualType(typeof(byte))]
-        public Gamemode Gamemode { get; set; }
+        public Gamemode Gamemode { get; init; }
 
         [Field(4), ActualType(typeof(byte))]
-        public Gamemode PreviousGamemode { get; set; }
+        public Gamemode PreviousGamemode { get; init; }
 
         [Field(5)]
-        public bool IsDebug { get; set; }
+        public bool IsDebug { get; init; }
 
         [Field(6)]
-        public bool IsFlat { get; set; }
+        public bool IsFlat { get; init; }
 
         [Field(7)]
-        public bool CopyMetadata { get; set; }
+        public bool CopyMetadata { get; init; }
 
         public int Id => 0x39;
     }

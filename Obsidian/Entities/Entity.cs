@@ -1,10 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.API.AI;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Clientbound.GameState;
 using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
@@ -77,7 +75,6 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-                this.server.BroadcastPacketWithoutQueue(new EntityPosition
                 Vector delta = (Vector)(position * 32 - Position * 32) * 128;
 
                 server.BroadcastPacketWithoutQueue(new EntityPosition
