@@ -75,7 +75,7 @@ namespace Obsidian.SourceGenerators.Packets
                     if (!TryGetWriteMethodType(context, method, out string type))
                         return;
 
-                    var attributeBehaviors = AttributeBehaviorBase.ParseValidAttributesSorted(attributes);
+                    var attributeBehaviors = AttributeFactory.ParseValidAttributesSorted(attributes);
 
                     writeMethods.Add(new Method(name, type, attributeBehaviors));
                     break;
@@ -85,7 +85,7 @@ namespace Obsidian.SourceGenerators.Packets
                     if (!TryGetReadMethodType(context, method, out string type))
                         return;
 
-                    var attributeBehaviors = AttributeBehaviorBase.ParseValidAttributesSorted(attributes);
+                    var attributeBehaviors = AttributeFactory.ParseValidAttributesSorted(attributes);
 
                     readMethods.Add(new Method(name, type, attributeBehaviors));
                     break;

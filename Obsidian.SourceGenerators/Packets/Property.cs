@@ -77,7 +77,7 @@ namespace Obsidian.SourceGenerators.Packets
 
         private void SetAttributes(IEnumerable<AttributeSyntax> attributes)
         {
-            Attributes = AttributeBehaviorBase.ParseValidAttributesSorted(attributes);
+            Attributes = AttributeFactory.ParseValidAttributesSorted(attributes);
 
             Flags = AttributeFlags.None;
             for (int i = 0; i < Attributes.Length; i++)

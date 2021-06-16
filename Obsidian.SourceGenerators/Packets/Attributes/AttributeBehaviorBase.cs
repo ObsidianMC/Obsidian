@@ -155,40 +155,5 @@ namespace Obsidian.SourceGenerators.Packets.Attributes
             result = builder.ToString();
             return true;
         }
-
-        public static bool TryParse(AttributeSyntax attribute, out AttributeBehaviorBase attributeBehaviorBase)
-        {
-            string attributeName = attribute.Name.ToString();
-            if (attributeName.EndsWith("Attribute"))
-                attributeName = attributeName.Substring(0, attributeName.Length - 9);
-
-            attributeBehaviorBase = attributeName switch
-            {
-                Vocabulary.FieldAttribute => new FieldBehavior(attribute),
-                Vocabulary.ActualTypeAttribute => new ActualTypeBehavior(attribute),
-                Vocabulary.CountTypeAttribute => new CountTypeBehavior(attribute),
-                Vocabulary.FixedLengthAttribute => new FixedLengthBehavior(attribute),
-                Vocabulary.VarLengthAttribute => new VarLengthBehavior(attribute),
-                Vocabulary.DataFormatAttribute => new VectorFormatAttribute(attribute),
-                Vocabulary.ConditionAttribute => new ConditionBehavior(attribute),
-                _ => null
-            };
-
-            return attributeBehaviorBase is not null;
-        }
-
-        public static AttributeBehaviorBase[] ParseValidAttributesSorted(IEnumerable<AttributeSyntax> attributes)
-        {
-            var result = new List<AttributeBehaviorBase>();
-
-            foreach (AttributeSyntax attribute in attributes)
-            {
-                if (TryParse(attribute, out var attributeBehavior))
-                    result.Add(attributeBehavior);
-            }
-
-            result.Sort((a, b) => a.Flag.CompareTo(b.Flag));
-            return result.ToArray();
-        }
     }
 }
