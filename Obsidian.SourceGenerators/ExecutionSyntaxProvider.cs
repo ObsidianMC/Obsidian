@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Obsidian.Generators
+namespace Obsidian.SourceGenerators
 {
     public abstract class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : SyntaxNode
     {

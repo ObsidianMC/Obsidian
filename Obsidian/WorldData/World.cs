@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
@@ -384,6 +385,9 @@ namespace Obsidian.WorldData
 
         public void ManageChunks()
         {
+            // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+
             // Load regions. Load no more than 2 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
             // this.Regions, but will be null.

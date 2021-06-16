@@ -322,11 +322,11 @@ namespace Obsidian.Entities
         public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
             client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
-        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) =>
-            client.QueuePacketAsync(new SoundEffect(soundId, position, category, pitch, volume));
+        public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+            client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));
 
-        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f) =>
-            client.QueuePacketAsync(new NamedSoundEffect(name, position, category, pitch, volume));
+        public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
+            client.QueuePacketAsync(new NamedSoundEffect(name, position, category, volume, pitch));
 
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
 
@@ -454,7 +454,7 @@ namespace Obsidian.Entities
             };
 
             await this.client.Server.BroadcastPacketAsync(new PlayerInfo(1, list));
-            await this.client.QueuePacketAsync(new Net.Packets.Play.Clientbound.GameState.ChangeGamemodeState(gamemode));
+            await this.client.QueuePacketAsync(new ChangeGameState(gamemode));
 
             this.Gamemode = gamemode;
         }

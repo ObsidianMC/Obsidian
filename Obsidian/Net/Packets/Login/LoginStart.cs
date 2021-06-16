@@ -4,14 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ServerOnly]
-    public partial class LoginStart : IPacket
+    public partial class LoginStart : IServerboundPacket
     {
         [Field(0)]
         public string Username { get; private set; }
 
         public int Id => 0x00;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

@@ -1,11 +1,8 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ClientOnly]
     public partial class LoginSuccess : IClientboundPacket
     {
         [Field(0)]
@@ -18,10 +15,8 @@ namespace Obsidian.Net.Packets.Login
 
         public LoginSuccess(Guid uuid, string username)
         {
-            Username = username;
             UUID = uuid;
+            Username = username;
         }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

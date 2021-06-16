@@ -2,17 +2,16 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class UpdateHealth : IClientboundPacket
     {
         [Field(0)]
-        public float Health { get; set; }
+        public float Health { get; }
 
         [Field(1), VarLength]
-        public int Food { get; set; }
+        public int Food { get; }
 
         [Field(2)]
-        public float FoodSaturation { get; set; }
+        public float FoodSaturation { get; }
 
         public int Id => 0x49;
 

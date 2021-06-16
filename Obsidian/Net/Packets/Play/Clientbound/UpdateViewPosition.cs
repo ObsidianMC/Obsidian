@@ -3,7 +3,6 @@
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Update_View_Position
-    [ClientOnly]
     public partial class UpdateViewPosition : IClientboundPacket
     {
         [Field(0), VarLength]
@@ -12,10 +11,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1), VarLength]
         public int ChunkZ { get; }
 
-        public UpdateViewPosition(int chunkx, int chunkz)
+        public UpdateViewPosition(int chunkX, int chunkZ)
         {
-            ChunkX = chunkx;
-            ChunkZ = chunkz;
+            ChunkX = chunkX;
+            ChunkZ = chunkZ;
         }
 
         public int Id => 0x40;

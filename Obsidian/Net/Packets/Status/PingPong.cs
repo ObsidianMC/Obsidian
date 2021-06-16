@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Status
 {
-    public partial class PingPong : IClientboundPacket
+    public partial class PingPong : IClientboundPacket, IServerboundPacket
     {
         [Field(0)]
-        public long Payload;
+        public long Payload { get; private set; }
 
         public int Id => 0x01;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

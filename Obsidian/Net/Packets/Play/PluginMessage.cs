@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public byte[] PluginData { get; private set; }
 
-        public int Id { get; set; } = 0x17;
+        public int Id => 0x17;
 
         public PluginMessage()
         {
@@ -21,8 +21,8 @@ namespace Obsidian.Net.Packets.Play
 
         public PluginMessage(string channel, byte[] data)
         {
-            this.Channel = channel;
-            this.PluginData = data;
+            Channel = channel;
+            PluginData = data;
         }
 
         public PluginMessageStore Handle()
@@ -36,14 +36,14 @@ namespace Obsidian.Net.Packets.Play
                     Type = PluginMessageType.Brand,
                     Value = stream.ReadString()
                 },
-                "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
+                "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
                 {
                     Type = PluginMessageType.Register,
                     Value = Encoding.UTF8.GetString(PluginData)
                 },
                 "minecraft:unregister" => new PluginMessageStore
                 {
-                    Type = PluginMessageType.UnRegister,
+                    Type = PluginMessageType.Unregister,
                     Value = Encoding.UTF8.GetString(PluginData)
                 },
                 _ => null
@@ -76,9 +76,10 @@ namespace Obsidian.Net.Packets.Play
                 case PluginMessageType.Brand:
                     player.client.Brand = result.Value.ToString();
                     break;
+
                 case PluginMessageType.Register:
                     {
-                        var list = result.Value.ToString().Split("/");//Unsure if this is the only separator that's used
+                        var list = result.Value.ToString().Split("/"); // Unsure if this is the only separator that's used
 
                         if (list.Length > 0)
                         {
@@ -90,13 +91,14 @@ namespace Obsidian.Net.Packets.Play
 
                         break;
                     }
-                case PluginMessageType.UnRegister:
-                    //TODO unregister registered channels 
+
+                case PluginMessageType.Unregister:
+                    // TODO unregister registered channels 
 
                     //server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
                     break;
-                case PluginMessageType.Custom://This can be ignored for now
-                default:
+
+                case PluginMessageType.Custom: // This can be ignored for now
                     break;
             }
 
@@ -108,14 +110,13 @@ namespace Obsidian.Net.Packets.Play
     {
         Brand,
         Register,
-        UnRegister,
+        Unregister,
         Custom
     }
 
     public class PluginMessageStore
     {
-        public PluginMessageType Type { get; set; }
-
-        public object Value { get; set; }
+        public PluginMessageType Type { get; init; }
+        public object Value { get; init; }
     }
 }

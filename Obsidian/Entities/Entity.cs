@@ -73,21 +73,18 @@ namespace Obsidian.Entities
         #region Update methods
         internal virtual Task UpdateAsync(VectorF position, bool onGround)
         {
-            short newX = (short)((position.X * 32 - this.Position.X * 32) * 128);
-            short newY = (short)((position.Y * 32 - this.Position.Y * 32) * 128);
-            short newZ = (short)((position.Z * 32 - this.Position.Z * 32) * 128);
-
             var isNewLocation = position != this.Position;
 
             if (isNewLocation)
             {
                 this.server.BroadcastPacketWithoutQueue(new EntityPosition
+                Vector delta = (Vector)(position * 32 - Position * 32) * 128;
+
+                server.BroadcastPacketWithoutQueue(new EntityPosition
                 {
                     EntityId = this.EntityId,
 
-                    DeltaX = newX,
-                    DeltaY = newY,
-                    DeltaZ = newZ,
+                    Delta = delta,
 
                     OnGround = onGround
                 }, this.EntityId);
@@ -106,9 +103,7 @@ namespace Obsidian.Entities
 
             if (isNewLocation)
             {
-                short newX = (short)((position.X * 32 - this.Position.X * 32) * 128);
-                short newY = (short)((position.Y * 32 - this.Position.Y * 32) * 128);
-                short newZ = (short)((position.Z * 32 - this.Position.Z * 32) * 128);
+                Vector delta = (Vector)(position * 32 - Position * 32) * 128;
 
                 if (isNewRotation)
                 {
@@ -116,9 +111,7 @@ namespace Obsidian.Entities
                     {
                         EntityId = this.EntityId,
 
-                        DeltaX = newX,
-                        DeltaY = newY,
-                        DeltaZ = newZ,
+                        Delta = delta,
 
                         Yaw = yaw,
                         Pitch = pitch,
@@ -138,9 +131,7 @@ namespace Obsidian.Entities
                     {
                         EntityId = this.EntityId,
 
-                        DeltaX = newX,
-                        DeltaY = newY,
-                        DeltaZ = newZ,
+                        Delta = delta,
 
                         OnGround = onGround
                     }, this.EntityId);

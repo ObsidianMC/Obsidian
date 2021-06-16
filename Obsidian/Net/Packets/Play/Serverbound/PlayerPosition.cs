@@ -5,14 +5,12 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PlayerPosition : IServerboundPacket
     {
-        [Field(0), Absolute]
-        public VectorF Position { get; set; }
+        [Field(0), DataFormat(typeof(double))]
+        public VectorF Position { get; private set; }
 
         [Field(1)]
-
         public bool OnGround { get; private set; }
 
         public int Id => 0x12;
@@ -21,10 +19,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerPosition(VectorF pos, bool onground)
+        public PlayerPosition(VectorF position, bool onGround)
         {
-            this.Position = pos;
-            this.OnGround = onground;
+            Position = position;
+            OnGround = onGround;
         }
 
         public async ValueTask HandleAsync(Server server, Player player)

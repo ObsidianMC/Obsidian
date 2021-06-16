@@ -104,7 +104,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         public bool IsCave(double x, double y, double z)
         {
             var val = cave.Result.GetValue(x, y, z);
-            return val < 0.456789;
+            return val > -0.5;
         }
 
         private Module LandOceanSelector()
@@ -161,21 +161,14 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         {
             return new Cache
             {
-                Source0 = new Turbulence
+                Source0 = new Select
                 {
-                    Frequency = 11.4578,
-                    Power = 0.028,
-                    Roughness = 1,
-                    Seed = settings.Seed,
-                    Source0 = new Select
-                    {
-                        Source0 = MergedLandOcean(),
-                        Source1 = rivers.Result,
-                        Control = MergedRivers(),
-                        LowerBound = 0.5,
-                        UpperBound = 2.0,
-                        EdgeFalloff = 0.2
-                    }
+                    Source0 = MergedLandOcean(),
+                    Source1 = rivers.Result,
+                    Control = MergedRivers(),
+                    LowerBound = 0.5,
+                    UpperBound = 2.0,
+                    EdgeFalloff = 0.4
                 }
             };
         }
@@ -222,10 +215,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     {
                         UpperBound = 1.0,
                         LowerBound = 0.0,
-                        Source0 = new Add
+                        Source0 = new Max
                         {
                             Source0 = humidity.RiverSelector,
-                            Source1 = new Add
+                            Source1 = new Max
                             {
                                 Source0 = temperature.RiverSelector,
                                 Source1 = terrain.RiverSelector

@@ -4,7 +4,6 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class NamedSoundEffect : IClientboundPacket
     {
         [Field(0)]
@@ -24,16 +23,16 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x18;
 
-        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume)
+        public NamedSoundEffect(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("message", nameof(name));
+                throw new ArgumentException("Name cannot be null or empty.", nameof(name));
             }
 
             Name = name;
+            Position = position;
             Category = category;
-            Position = location;
             Volume = volume;
             Pitch = pitch;
         }

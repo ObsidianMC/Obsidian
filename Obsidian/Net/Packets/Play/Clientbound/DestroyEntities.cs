@@ -3,11 +3,10 @@ using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class DestroyEntities : IClientboundPacket
     {
         [Field(0), VarLength]
-        public List<int> EntityIds { get; set; } = new();
+        public List<int> EntityIds { get; init; } = new();
 
         public int Id => 0x36;
 

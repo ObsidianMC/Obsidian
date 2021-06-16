@@ -357,7 +357,7 @@ namespace Obsidian
 
                 Items = Registry.Tags["items"],
 
-                Fluid = Registry.Tags["fluids"],
+                Fluids = Registry.Tags["fluids"],
 
                 Entities = Registry.Tags["entity_types"]
             });

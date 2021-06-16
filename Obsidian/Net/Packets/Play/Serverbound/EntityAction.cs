@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     public partial class EntityAction : IServerboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; private set; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
         public EAction Action { get; set; }
@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            switch (this.Action)
+            switch (Action)
             {
                 case EAction.StartSneaking:
                     player.Sneaking = true;

@@ -1,65 +1,63 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Items;
 using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class Statistics : IClientboundPacket
     {
-        [Field(0), VarLength]
-        public int Count { get => Stats.Count; }
-
-        [Field(1)]
-        public List<Statistic> Stats { get; set; } = new List<Statistic>();
-
-        public Statistics()
-        {
-        }
+        [Field(0)]
+        public List<Statistic> Stats { get; } = new();
 
         public void Add(Statistic stat)
         {
-            this.Stats.Add(stat);
+            Stats.Add(stat);
+        }
+
+        public void Clear()
+        {
+            Stats.Clear();
         }
 
         public int Id => 0x06;
     }
 
-    public struct Statistic
+    public readonly struct Statistic
     {
-        public CategoryIds CategoryId;
+        public CategoryIds CategoryId { get; }
 
         /// <summary>
         /// Can either be a block, item or entity id. For CategoryIds.Custom, use the <see cref="StatisticIds"/> enum casted to an integer.
         /// </summary>
-        public int StatisticId;
+        public int StatisticId { get; }
 
-        public int Value;
+        public int Value { get; }
 
         public Statistic(CategoryIds category, Block block, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = block.Id;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = block.Id;
+            Value = value;
         }
 
         public Statistic(CategoryIds category, StatisticIds statistic, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = (int)statistic;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = (int)statistic;
+            Value = value;
         }
-        public Statistic(CategoryIds category, Items.Item item, int value)
+        public Statistic(CategoryIds category, Item item, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = item.Id;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = item.Id;
+            Value = value;
         }
         public Statistic(CategoryIds category, Entity entity, int value)
         {
-            this.CategoryId = category;
-            this.StatisticId = entity.EntityId;
-            this.Value = value;
+            CategoryId = category;
+            StatisticId = entity.EntityId;
+            Value = value;
         }
     }
 
@@ -98,6 +96,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         Jump,
         Drop,
         DamageDealt,
-
     }
 }
