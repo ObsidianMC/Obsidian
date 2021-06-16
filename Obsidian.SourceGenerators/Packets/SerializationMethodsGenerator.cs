@@ -12,7 +12,7 @@ namespace Obsidian.SourceGenerators.Packets
     [Generator]
     public partial class SerializationMethodsGenerator : ISourceGenerator
     {
-        private static Property varInt;
+        private static Property varInt; // Used for default collection length prefix
         
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -100,18 +100,26 @@ namespace Obsidian.SourceGenerators.Packets
 
             var source = new CodeBuilder();
 
+            var usings = new HashSet<string>();
+
             foreach (SyntaxReference declaration in classSymbol.DeclaringSyntaxReferences)
             {
                 SyntaxNode root = declaration.GetSyntax().GetRoot();
-                foreach (SyntaxNode usingDirective in root.DescendantNodes().Where(node => node is UsingDirectiveSyntax))
+                foreach (var usingDirective in root.DescendantNodes().OfType<UsingDirectiveSyntax>())
                 {
-                    source.Append(usingDirective.GetText().ToString());
+                    usings.Add(usingDirective.Name.ToString());
                 }
             }
 
-            source.Using("Obsidian.Net");
-            source.Using("Obsidian.Utilities");
-            source.Using("System.Runtime.CompilerServices");
+            usings.Add("Obsidian.Net");
+            usings.Add("Obsidian.Utilities");
+            usings.Add("System.Runtime.CompilerServices");
+
+            foreach (string @using in usings.OrderBy(s => s))
+            {
+                source.Using(@using);
+            }
+
             source.Line();
 
             source.Namespace(@namespace);
