@@ -3,13 +3,12 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class SpawnExperienceOrb : IClientboundPacket
     {
         [Field(0), VarLength]
-        private const int entityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
+        private const int EntityId = 2; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
 
-        [Field(1), Absolute]
+        [Field(1), DataFormat(typeof(double))]
         public VectorF Position { get; }
 
         [Field(2)]

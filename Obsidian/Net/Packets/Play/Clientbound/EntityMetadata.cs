@@ -3,14 +3,13 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class EntityMetadata : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [Field(1)]
-        public Entity Entity { get; set; }
+        public Entity Entity { get; init; }
 
         public int Id => 0x44;
     }

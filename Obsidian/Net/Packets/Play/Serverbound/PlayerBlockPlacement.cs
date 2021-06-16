@@ -10,29 +10,22 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class PlayerBlockPlacement : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
-        public Hand Hand { get; set; } // hand it was placed from. 0 is main, 1 is off
+        public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
 
         [Field(1)]
-        public Vector Position { get; set; }
+        public Vector Position { get; private set; }
 
         [Field(2), ActualType(typeof(int)), VarLength]
-        public BlockFace Face { get; set; }
+        public BlockFace Face { get; private set; }
 
-        [Field(3)]
-        public float CursorX { get; set; }
-
-        [Field(4)]
-        public float CursorY { get; set; }
-
-        [Field(5)]
-        public float CursorZ { get; set; }
+        [Field(3), DataFormat(typeof(float))]
+        public VectorF Cursor { get; private set; }
 
         [Field(6)]
-        public bool InsideBlock { get; set; }
+        public bool InsideBlock { get; private set; }
 
         public int Id => 0x2E;
 
@@ -55,7 +48,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 player.LastClickedBlock = interactedBlock;
 
-                //TODO open chests/Crafting inventory ^ ^
+                // TODO open chests/Crafting inventory ^ ^
 
                 if (Server.LastInventoryId == byte.MaxValue)
                     Server.LastInventoryId = 1;
@@ -185,7 +178,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                     await player.OpenInventoryAsync(enchantmentTable);
                 }
-                else if (type == Material.Anvil || type == Material.SmithingTable)//TODO implement other anvil types
+                else if (type == Material.Anvil || type == Material.SmithingTable) // TODO implement other anvil types
                 {
                     var anvil = new Inventory(InventoryType.Anvil)
                     {
@@ -199,7 +192,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else if (type >= Material.ShulkerBox && type <= Material.BlackShulkerBox)
                 {
-                    var box = new Inventory(InventoryType.ShulkerBox)//TODO shulker box functionality
+                    var box = new Inventory(InventoryType.ShulkerBox) // TODO shulker box functionality
                     {
                         Owner = player.Uuid,
                         Title = IChatMessage.Simple("Shulker Box"),
@@ -316,7 +309,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (player.Gamemode != Gamemode.Creative)
                 player.Inventory.RemoveItem(player.CurrentSlot);
 
-            switch (this.Face) // TODO fix this for logs
+            switch (Face) // TODO fix this for logs
             {
                 case BlockFace.Bottom:
                     position.Y -= 1;
@@ -346,7 +339,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
-            //TODO calculate the block state
+            // TODO calculate the block state
             server.World.SetBlock(position, block);
 
             await server.BroadcastBlockPlacementAsync(player, block, position);

@@ -2,7 +2,6 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class ClientHeldItemChange : IClientboundPacket
     {
         [Field(0)]

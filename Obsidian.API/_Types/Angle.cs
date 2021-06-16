@@ -14,11 +14,16 @@
 
         public Angle(byte value) => this.Value = value;
 
-        public static implicit operator Angle(float degree) => new(NormalizeToByte(degree));
+        public static implicit operator Angle(float degree) => new(NormalizeToByte(ClampDegrees(degree)));
 
         public static implicit operator float(Angle angle) => angle.Degrees;
 
         public static byte NormalizeToByte(float value) => (byte)(value * 256f / 360f);
+
+        private static float ClampDegrees(float degrees)
+        {
+            float clamped = degrees % 360f;
+            return clamped < 0f ? clamped + 360f : clamped;
+        }
     }
 }
-

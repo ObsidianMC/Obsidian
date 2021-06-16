@@ -417,7 +417,7 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod, Absolute]
+        [ReadMethod, DataFormat(typeof(double))]
         public Vector ReadAbsolutePosition()
         {
             return new Vector
@@ -493,7 +493,7 @@ namespace Obsidian.Net
             };
         }
 
-        [ReadMethod, Absolute]
+        [ReadMethod, DataFormat(typeof(double))]
         public VectorF ReadAbsolutePositionF()
         {
             return new VectorF
@@ -501,6 +501,17 @@ namespace Obsidian.Net
                 X = (float)ReadDouble(),
                 Y = (float)ReadDouble(),
                 Z = (float)ReadDouble()
+            };
+        }
+
+        [ReadMethod, DataFormat(typeof(float))]
+        public VectorF ReadAbsoluteFloatPositionF()
+        {
+            return new VectorF
+            {
+                X = ReadFloat(),
+                Y = ReadFloat(),
+                Z = ReadFloat()
             };
         }
 
@@ -546,6 +557,9 @@ namespace Obsidian.Net
 
         [ReadMethod]
         public Angle ReadAngle() => new Angle(this.ReadUnsignedByte());
+
+        [ReadMethod, DataFormat(typeof(float))]
+        public Angle ReadFloatAngle() => ReadFloat();
 
         public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
 

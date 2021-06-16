@@ -4,11 +4,10 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class SpawnPainting : IClientboundPacket
     {
         [Field(0), VarLength]
-        private const int entityId = 9; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
+        private const int EntityId = 9; // Source: https://minecraft.gamepedia.com/Java_Edition_data_values/Pre-flattening/Entity_IDs
 
         [Field(1)]
         public Guid UUID { get; }
