@@ -68,7 +68,7 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// 0 -> 0.5 for more land
         /// -0.5 -> 0 for more ocean
         /// </summary>
-        public double OceanLandRatio { get; set; } = 0.0;
+        public double OceanLandRatio { get; set; } = 0.3;
 
         /// <summary>
         /// Size of Continents (and Oceans)

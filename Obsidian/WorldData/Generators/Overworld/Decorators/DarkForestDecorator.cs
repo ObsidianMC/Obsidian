@@ -88,7 +88,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = Vector.ChunkClamped(x, y, z);
+                            var loc = Vector.ChunkClamped(x, y + pos.Y, z);
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {
@@ -117,7 +117,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = Vector.ChunkClamped(x, y, z);
+                            var loc = Vector.ChunkClamped(x, y + pos.Y, z);
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {
@@ -146,7 +146,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = Vector.ChunkClamped(x, y, z);
+                            var loc = Vector.ChunkClamped(x, y + pos.Y, z);
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {
@@ -175,7 +175,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     {
                         for (int y = treeY + 1; y > treeY - 2; y--)
                         {
-                            var loc = Vector.ChunkClamped(x, y, z);
+                            var loc = Vector.ChunkClamped(x, y + pos.Y, z);
                             // Skip the top edges.
                             if (y == treeY + 1)
                             {

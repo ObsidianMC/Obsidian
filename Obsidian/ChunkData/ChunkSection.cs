@@ -13,7 +13,7 @@ namespace Obsidian.ChunkData
 
         public override IBlockStatePalette Palette { get; internal set; }
 
-        public ChunkSection(byte bitsPerBlock = 4, int? yBase = null)
+        public ChunkSection(byte bitsPerBlock = 6, int? yBase = null)
         {
             this.BitsPerBlock = bitsPerBlock;
 
