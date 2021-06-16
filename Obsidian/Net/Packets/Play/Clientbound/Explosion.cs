@@ -1,46 +1,29 @@
-﻿using Obsidian.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Obsidian.API;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class Explosion : IClientboundPacket
     {
-        [Field(0)]
-        public float X;
+        [Field(0), DataFormat(typeof(float))]
+        public VectorF Position { get; init; }
 
         [Field(1)]
-        public float Y;
+        public float Strength { get; init; }
 
-        [Field(2)]
-        public float Z;
+        [Field(2), CountType(typeof(int))]
+        public ExplosionRecord[] Records { get; init; }
 
-        [Field(3)]
-        public float Strength;
-
-        [Field(5), CountType(typeof(int))]
-        public ExplosionRecord[] Records;
-
-        [Field(6)]
-        public float PlayerMotionX;
-
-        [Field(7)]
-        public float PlayerMotionY;
-
-        [Field(8)]
-        public float PlayerMotionZ;
+        [Field(3), DataFormat(typeof(float))]
+        public VectorF PlayerMotion { get; init; }
 
         public int Id => 0x1B;
     }
 
-    public struct ExplosionRecord
+    public readonly struct ExplosionRecord
     {
-        public sbyte X;
-        public sbyte Y;
-        public sbyte Z;
+        public sbyte X { get; init; }
+        public sbyte Y { get; init; }
+        public sbyte Z { get; init; }
     }
 }

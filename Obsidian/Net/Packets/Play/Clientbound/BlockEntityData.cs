@@ -1,24 +1,19 @@
 ﻿using Obsidian.API;
+using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class BlockEntityData : IClientboundPacket
     {
         [Field(0)]
         public Vector Position;
 
         [Field(1), ActualType(typeof(byte))]
-        BlockEntityActionType Action;
+        private BlockEntityActionType Action;
 
         [Field(2)]
-        public Nbt.INbtTag NBTData;
+        public INbtTag NBTData;
 
         public int Id => 0x09;
     }
