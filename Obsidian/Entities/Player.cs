@@ -172,7 +172,7 @@ namespace Obsidian.Entities
                         PickupItemCount = item.Count
                     });
 
-                    var slot = this.Inventory.AddItem(new ItemStack(Registry.GetItem(item.Id).Type, item.Count, item.ItemMeta));
+                    var slot = this.Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
                     this.client.SendPacket(new SetSlot
                     {
