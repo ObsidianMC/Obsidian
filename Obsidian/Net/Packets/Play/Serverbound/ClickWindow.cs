@@ -9,88 +9,90 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
-    [ServerOnly]
     public partial class ClickWindow : IServerboundPacket
     {
         /// <summary>
         /// The ID of the window which was clicked. 0 for player inventory.
         /// </summary>
         [Field(0)]
-        public byte WindowId { get; set; }
+        public byte WindowId { get; private set; }
 
         /// <summary>
         /// The clicked slot number
         /// </summary>
         [Field(1)]
-        public short ClickedSlot { get; set; }
+        public short ClickedSlot { get; private set; }
 
         /// <summary>
         /// The button used in the click
         /// </summary>
         [Field(2)]
-        public sbyte Button { get; set; }
+        public sbyte Button { get; private set; }
 
         /// <summary>
         /// A unique number for the action
         /// </summary>
         [Field(3)]
-        public short ActionNumber { get; set; }
+        public short ActionNumber { get; private set; }
 
         /// <summary>
         /// Inventory operation mode
         /// </summary>
         [Field(4), ActualType(typeof(int)), VarLength]
-        public InventoryOperationMode Mode { get; set; }
+        public InventoryOperationMode Mode { get; private set; }
 
         /// <summary>
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
         /// </summary>
         [Field(5)]
-        public ItemStack Item { get; set; }
+        public ItemStack Item { get; private set; }
 
         public int Id => 0x09;
+
+        private const int Outsideinventory = -999;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
             var inventory = player.OpenedInventory;
 
-            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
+            var (value, forPlayer) = ClickedSlot.GetDifference(inventory.Size);
 
-            if (this.WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && this.ClickedSlot >= 27 && this.ClickedSlot <= 62 || forPlayer)
+            if (WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && ClickedSlot >= 27 && ClickedSlot <= 62 || forPlayer)
                 inventory = player.Inventory;
 
-            switch (this.Mode)
+            switch (Mode)
             {
                 case InventoryOperationMode.MouseClick:
-                    await this.HandleMouseClick(inventory, server, player, value);
+                    await HandleMouseClick(inventory, server, player, value);
                     break;
 
                 case InventoryOperationMode.ShiftMouseClick:
                     {
-                        if (this.Item == null)
+                        if (Item == null)
                             return;
 
                         inventory.RemoveItem(value);
-                        player.Inventory.AddItem(this.Item);
+                        player.Inventory.AddItem(Item);
                         break;
                     }
+
                 case InventoryOperationMode.NumberKeys:
                     {
-                        var localSlot = this.Button + 36;
+                        var localSlot = Button + 36;
 
                         var currentItem = player.Inventory.GetItem(localSlot);
 
-                        if (currentItem.IsAir() && this.Item != null)
+                        if (currentItem.IsAir() && Item != null)
                         {
                             inventory.RemoveItem(value);
 
-                            player.Inventory.SetItem(localSlot, this.Item);
+                            player.Inventory.SetItem(localSlot, Item);
                         }
-                        else if (!currentItem.IsAir() && this.Item != null)
+                        else if (!currentItem.IsAir() && Item != null)
                         {
                             inventory.SetItem(value, currentItem);
 
-                            player.Inventory.SetItem(localSlot, this.Item);
+                            player.Inventory.SetItem(localSlot, Item);
                         }
                         else
                         {
@@ -101,21 +103,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                         break;
                     }
+
                 case InventoryOperationMode.MiddleMouseClick:
-                    {
-                        if (this.Item == null)
-                            return;
+                    break;
 
-
-                        break;
-                    }
                 case InventoryOperationMode.Drop:
                     {
-                        //If clicked slot is -999 that means they clicked outside the inventory
-                        //TODO: drop actual item
-                        if (this.ClickedSlot != -999)
+                        // TODO drop actual item
+                        if (ClickedSlot != Outsideinventory)
                         {
-                            if (this.Button == 0)
+                            if (Button == 0)
                             {
                                 inventory.RemoveItem(value);
                             }
@@ -126,16 +123,17 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         }
                         break;
                     }
+
                 case InventoryOperationMode.MouseDrag:
-                    this.HandleDragClick(inventory, player, value);
+                    HandleDragClick(inventory, player, value);
                     break;
 
                 case InventoryOperationMode.DoubleClick:
                     {
-                        if (this.Item == null || this.Item.Count >= 64)
+                        if (Item == null || Item.Count >= 64)
                             return;
 
-                        var item = this.Item;
+                        var item = Item;
 
                         (ItemStack item, int index) selectedItem = (null, 0);
 
@@ -175,37 +173,35 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         inventory.SetItem((short)selectedItem.index, selectedItem.item);
                         break;
                     }
-                default:
-                    break;
             }
         }
 
         private async Task HandleMouseClick(Inventory inventory, Server server, Player player, int value)
         {
-            if (!this.Item.IsAir())
+            if (!Item.IsAir())
             {
-                var evt = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, this.Item)
+                var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, Item)
                 {
                     Slot = value
                 });
 
-                if (evt.Cancel)
+                if (@event.Cancel)
                     return;
 
-                player.LastClickedItem = this.Item;
+                player.LastClickedItem = Item;
 
                 inventory.SetItem(value, null);
             }
             else
             {
-                if (this.Button == 0)
+                if (Button == 0)
                 {
                     inventory.SetItem(value, player.LastClickedItem);
 
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                    player.LastClickedItem = this.Item;
+                    player.LastClickedItem = Item;
                 }
                 else
                 {
@@ -214,38 +210,37 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                    player.LastClickedItem = this.Item;
+                    player.LastClickedItem = Item;
                 }
             }
         }
 
         private void HandleDragClick(Inventory inventory, Player player, int value)
         {
-            if (this.ClickedSlot == -999)
+            if (ClickedSlot == Outsideinventory)
             {
-                if (this.Button == 0 || this.Button == 4 || this.Button == 8)
+                if (Button == 0 || Button == 4 || Button == 8)
                     player.IsDragging = true;
-                else if (this.Button == 2 || this.Button == 6 || this.Button == 10)
+                else if (Button == 2 || Button == 6 || Button == 10)
                     player.IsDragging = false;
-
             }
             else if (player.IsDragging)
             {
                 if (player.Gamemode == Gamemode.Creative)
                 {
-                    if (this.Button != 9)
+                    if (Button != 9)
                         return;
 
-                    inventory.SetItem(value, this.Item);
+                    inventory.SetItem(value, Item);
                 }
                 else
                 {
-                    //1 = left mouse
-                    //5 = right mouse
-                    if (this.Button != 1 || this.Button != 5)
+                    // 1 = left mouse
+                    // 5 = right mouse
+                    if (Button != 1 || Button != 5)
                         return;
 
-                    inventory.SetItem(value, this.Item);
+                    inventory.SetItem(value, Item);
                 }
             }
         }

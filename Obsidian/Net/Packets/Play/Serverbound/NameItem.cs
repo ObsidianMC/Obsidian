@@ -4,11 +4,10 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class NameItem : IServerboundPacket
     {
         [Field(0)]
-        public string ItemName { get; set; }
+        public string ItemName { get; private set; }
 
         public int Id => 0x20;
 

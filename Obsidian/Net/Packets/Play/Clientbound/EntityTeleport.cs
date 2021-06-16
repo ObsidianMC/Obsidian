@@ -3,23 +3,22 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
     public partial class EntityTeleport : IClientboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
-        [Field(1), Absolute]
-        public VectorF Position { get; set; }
+        [Field(1), DataFormat(typeof(double))]
+        public VectorF Position { get; init; }
 
         [Field(2)]
-        public Angle Yaw { get; set; }
+        public Angle Yaw { get; init; }
 
         [Field(3)]
-        public Angle Pitch { get; set; }
+        public Angle Pitch { get; init; }
 
         [Field(4)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; init; }
 
         public int Id => 0x56;
     }

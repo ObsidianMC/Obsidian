@@ -4,11 +4,10 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class SetDisplayedRecipe : IServerboundPacket
     {
         [Field(0)]
-        public string RecipeId { get; set; }
+        public string RecipeId { get; private set; }
 
         public int Id => 0x1E;
 

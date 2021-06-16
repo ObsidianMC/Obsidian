@@ -5,14 +5,13 @@ using System.Collections.Generic;
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
-    [ClientOnly]
     public partial class DeclareCommands : IClientboundPacket
     {
         [Field(0)]
         public List<CommandNode> Nodes { get; } = new();
 
         [Field(1), VarLength]
-        public int RootIndex = 0;
+        public int RootIndex { get; }
 
         public int Id => 0x10;
 

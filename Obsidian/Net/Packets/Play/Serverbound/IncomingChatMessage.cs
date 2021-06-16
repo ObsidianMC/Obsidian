@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
     public partial class IncomingChatMessage : IServerboundPacket
     {
         [Field(0)]
@@ -12,12 +11,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public string Format { get; private set; }
 
         public int Id => 0x03;
-
-        public void Populate(byte[] data)
-        {
-            using var stream = new MinecraftStream(data);
-            Populate(stream);
-        }
 
         public void Populate(MinecraftStream stream)
         {
