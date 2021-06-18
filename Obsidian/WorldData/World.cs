@@ -69,7 +69,7 @@ namespace Obsidian.WorldData
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-            int dist = c.ClientSettings?.ViewDistance ?? 8;
+            int dist = c.ClientSettings?.ViewDistance ?? 6;
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
                 for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
                     clientNeededChunks.Add((x, z));
@@ -138,80 +138,88 @@ namespace Obsidian.WorldData
 
         /// <summary>
         /// Gets a Chunk from a Region.
-        /// If the Chunk doesn't exist, it will be scheduled for generation.
+        /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
         /// </summary>
-        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
-        public Chunk GetChunk(int chunkX, int chunkZ)
+        /// <param name="scheduleGeneration">
+        /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
+        /// When set to false, a partial Chunk is returned.</param>
+        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
+        public Chunk GetChunk(int chunkX, int chunkZ, bool scheduleGeneration = true)
         {
             var region = this.GetRegionForChunk(chunkX, chunkZ);
 
-            // region hasn't been loaded yet
             if (region is null)
             {
+                // region hasn't been loaded yet
                 var regionCoords = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-                if (!RegionsToLoad.Contains(regionCoords))
-                    RegionsToLoad.Enqueue(regionCoords);
+                if (scheduleGeneration) 
+                {
+                    if (!RegionsToLoad.Contains(regionCoords))
+                        RegionsToLoad.Enqueue(regionCoords);
+                    return null;
+                }
+                // Can't wait for the region to be loaded b/c we want a partial chunk,
+                // so just load it now and hold up execution.
+                region = LoadRegion(regionCoords.Item1, regionCoords.Item2);
+                Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
+            }
+
+            var (indexX, indexZ) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
+            var chunk = region.LoadedChunks[indexX, indexZ];
+            
+            if (chunk is not null) 
+            { 
+                if (!chunk.isGenerated && scheduleGeneration)
+                {
+                    if (!ChunksToGen.Contains((chunkX, chunkZ)))
+                        ChunksToGen.Enqueue((chunkX, chunkZ));
+                    return null;
+                }
+
+                return chunk;
+            }
+
+            // Chunk hasn't been generated yet.
+            if (scheduleGeneration)
+            {
+                if (!ChunksToGen.Contains((chunkX, chunkZ))) 
+                    ChunksToGen.Enqueue((chunkX, chunkZ));
                 return null;
             }
 
-            var index = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
-            var chunk = region.LoadedChunks[index.Item1, index.Item2];
+            // Create a partial chunk.
+            chunk = new Chunk(chunkX, chunkZ)
+            {
+                isGenerated = false // Not necessary; just being explicit.
+            };
+            region.LoadedChunks[indexX, indexZ] = chunk;
 
-            // chunk hasn't been generated yet
-            if (chunk is null && !ChunksToGen.Contains((chunkX, chunkZ))) { ChunksToGen.Enqueue((chunkX, chunkZ)); }
             return chunk;
         }
 
         /// <summary>
         /// Gets a Chunk from a Region.
-        /// If the Chunk doesn't exist, it will be scheduled for generation.
+        /// If the Chunk doesn't exist, it will be scheduled for generation unless scheduleGeneration is false.
         /// </summary>
-        /// <param name="worldLocation">World location of the chunk.</param>
-        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the chunk.</returns>
-        public Chunk GetChunk(Vector worldLocation) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord());
+        /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
+        /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
+        public Chunk GetChunk(Vector worldLocation, bool scheduleGeneration = true) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
-        public Block GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
+        public Block? GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
 
-        public Block GetBlock(int x, int y, int z)
-        {
-            var chunk = this.GetChunk(x.ToChunkCoord(), z.ToChunkCoord());
-
-            return chunk is null ? Block.Air : chunk.GetBlock(x, y, z);
-        }
+        public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
         public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
 
-        public void SetBlock(int x, int y, int z, Block block)
-        {
-            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
-
-            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-
-            this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlock(x, y, z, block);
-            this.Regions[value].IsDirty = true;
-        }
-
-        public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
-        {
-            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
-
-            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-
-            this.Regions[value].LoadedChunks[chunkX, chunkZ].SetBlockMeta(x, y, z, meta);
-        }
+        public void SetBlock(int x, int y, int z, Block block) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+  
+        public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
 
         public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
 
-        public BlockMeta GetBlockMeta(int x, int y, int z)
-        {
-            int chunkX = x.ToChunkCoord(), chunkZ = z.ToChunkCoord();
+        public BlockMeta? GetBlockMeta(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord())?.GetBlockMeta(x, y, z);
 
-            long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-
-            return this.Regions[value].LoadedChunks[chunkX, chunkZ].GetBlockMeta(x, y, z);
-        }
-
-        public BlockMeta GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
+        public BlockMeta? GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
 
         public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
         {
@@ -384,7 +392,7 @@ namespace Obsidian.WorldData
         public void ManageChunks()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
-            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
             // Load regions. Load no more than 2 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
@@ -417,9 +425,17 @@ namespace Obsidian.WorldData
                     ChunksToGen.Enqueue((job.x, job.z));
                     return;
                 }
-                Chunk c = Generator.GenerateChunk(job.x, job.z);
-                var (x, z) = (NumericsHelper.Modulo(c.X, Region.cubicRegionSize), NumericsHelper.Modulo(c.Z, Region.cubicRegionSize));
-                region.LoadedChunks[x, z] = c;
+                var (rX, rZ) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
+                Chunk c = region.LoadedChunks[rX, rZ];
+                if (c is null)
+                {
+                    c = new Chunk(job.x, job.z)
+                    {
+                        isGenerated = false // Not necessary; just being explicit.
+                    };
+                    region.LoadedChunks[rX, rZ] = c;
+                }
+                Generator.GenerateChunk(job.x, job.z, this, c);
             });
         }
 

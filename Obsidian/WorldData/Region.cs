@@ -137,7 +137,10 @@ namespace Obsidian.WorldData
             int x = chunkCompound.GetInt("xPos");
             int z = chunkCompound.GetInt("zPos");
 
-            var chunk = new Chunk(x, z);
+            var chunk = new Chunk(x, z)
+            {
+                isGenerated = true
+            };
 
             foreach (var secCompound in chunkCompound["Sections"] as NbtList)
             {
