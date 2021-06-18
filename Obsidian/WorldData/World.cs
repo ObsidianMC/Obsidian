@@ -69,7 +69,7 @@ namespace Obsidian.WorldData
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-            int dist = c.ClientSettings?.ViewDistance ?? 8;
+            int dist = c.ClientSettings?.ViewDistance ?? 6;
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
                 for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
                     clientNeededChunks.Add((x, z));
@@ -392,7 +392,7 @@ namespace Obsidian.WorldData
         public void ManageChunks()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
-            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
             // Load regions. Load no more than 2 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
@@ -410,7 +410,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < 2; a++)
+            for (int a = 0; a < Environment.ProcessorCount; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);

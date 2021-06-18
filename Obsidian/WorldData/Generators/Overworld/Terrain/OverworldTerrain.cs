@@ -226,8 +226,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         }
                     },
                     Control = LandOceanSelector(),
-                    //EdgeFalloff = 0.15,
-                    LowerBound = 0.6,
+                    EdgeFalloff = 0.15,
+                    LowerBound = 0.65,
                     UpperBound = 2.0
                 }   
             };
