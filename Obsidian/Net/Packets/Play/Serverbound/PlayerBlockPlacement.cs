@@ -56,11 +56,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     Server.LastInventoryId = 1;
 
                 var maxId = Math.Max((byte)1, ++Server.LastInventoryId);
-                var bm = (BlockMeta)server.World.GetBlockMeta(position);
+                var meta = server.World.GetBlockMeta(position);
 
-                if (bm is BlockMeta meta && meta.InventoryId != Guid.Empty)
+                if (meta is not null && meta.Value.InventoryId != Guid.Empty)
                 {
-                    if (server.CachedWindows.TryGetValue(meta.InventoryId, out var inventory))
+                    if (server.CachedWindows.TryGetValue(meta.Value.InventoryId, out var inventory))
                     {
                         // Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
