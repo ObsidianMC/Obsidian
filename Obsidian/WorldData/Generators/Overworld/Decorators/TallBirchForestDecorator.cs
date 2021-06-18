@@ -11,6 +11,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public TallBirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));
         }
 
         public override void Decorate()

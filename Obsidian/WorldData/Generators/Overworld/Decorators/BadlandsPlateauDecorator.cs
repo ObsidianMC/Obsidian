@@ -2,7 +2,6 @@
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
-using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {

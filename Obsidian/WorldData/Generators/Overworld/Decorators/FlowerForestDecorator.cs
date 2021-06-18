@@ -10,6 +10,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public FlowerForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(OakTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(BirchTree)));
         }
 
         public override void Decorate()

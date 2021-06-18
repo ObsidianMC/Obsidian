@@ -150,8 +150,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     Source0 = ocean.Result,
                     Source1 = TerrainSelect(),
                     Control = LandOceanSelector(),
-                    EdgeFalloff = 0.15,
-                    LowerBound = 0.55,
+                    EdgeFalloff = 0.05,
+                    LowerBound = 0.49,
                     UpperBound = 2.0
                 }
             };

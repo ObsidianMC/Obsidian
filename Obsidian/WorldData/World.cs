@@ -160,7 +160,8 @@ namespace Obsidian.WorldData
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                region = LoadRegion(regionCoords.Item1, regionCoords.Item2);                    
+                region = LoadRegion(regionCoords.Item1, regionCoords.Item2);
+                Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
             }
 
             var (indexX, indexZ) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -206,7 +207,7 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
 
-        public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord())?.GetBlock(x, y, z);
+        public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
         public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
 
@@ -409,7 +410,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < Environment.ProcessorCount; a++)
+            for (int a = 0; a < 2; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);
@@ -426,8 +427,15 @@ namespace Obsidian.WorldData
                 }
                 var (rX, rZ) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
                 Chunk c = region.LoadedChunks[rX, rZ];
-                c = Generator.GenerateChunk(job.x, job.z, this, c);
-                region.LoadedChunks[rX, rZ] = c;
+                if (c is null)
+                {
+                    c = new Chunk(job.x, job.z)
+                    {
+                        isGenerated = false // Not necessary; just being explicit.
+                    };
+                    region.LoadedChunks[rX, rZ] = c;
+                }
+                Generator.GenerateChunk(job.x, job.z, this, c);
             });
         }
 

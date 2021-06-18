@@ -47,10 +47,10 @@ namespace Obsidian
             this.state = state;
         }
 
-        public Block(Material material)
+        public Block(Material material, short state = 0)
         {
             baseId = Registry.NumericToBase[(int)material];
-            state = 0;
+            this.state = state;
         }
 
         public override string ToString()

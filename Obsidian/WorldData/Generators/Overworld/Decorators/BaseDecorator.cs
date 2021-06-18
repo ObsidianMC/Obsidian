@@ -2,13 +2,13 @@
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
-using Obsidian.WorldData.Generators.Overworld.Features.Trees;
-using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
     public abstract class BaseDecorator : IDecorator
     {
+        public DecoratorFeatures Features { get; }
+
         protected Biomes biome;
 
         protected Chunk chunk;
@@ -23,6 +23,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             this.chunk = chunk;
             this.pos = pos;
             this.noise = noise;
+
+            Features = new DecoratorFeatures();
         }
 
         public abstract void Decorate();
@@ -31,8 +33,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         {
             if (chunk is null) { return; }
             var water = Registry.GetBlock(Material.Water);
+            var sand = Registry.GetBlock(Material.Sand);
             if (pos.Y <= noise.settings.WaterLevel)
             {
+                chunk.SetBlock(pos, sand);
                 for (int y = noise.settings.WaterLevel; y > pos.Y; y--)
                 {
                     chunk.SetBlock(pos.X, y, pos.Z, water);

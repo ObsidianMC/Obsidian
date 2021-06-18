@@ -10,6 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public WoodedMountainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(SpruceTree)));
         }
 
         public override void Decorate()

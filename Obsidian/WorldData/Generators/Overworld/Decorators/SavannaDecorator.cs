@@ -11,6 +11,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public SavannaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, typeof(AcaciaTree)));
         }
 
         public override void Decorate()

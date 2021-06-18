@@ -10,6 +10,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public DarkForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(5, typeof(DarkOakTree)));
         }
 
         public override void Decorate()

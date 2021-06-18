@@ -11,6 +11,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
     {
         public PlainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(AcaciaTree)));
         }
 
         public override void Decorate()

@@ -63,7 +63,7 @@ namespace Obsidian.WorldData.Generators
 
             ChunkBuilder.FillChunk(chunk, terrainHeightmap, bedrockHeightmap);
             ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
-            OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen);
+            OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen, world);
 
 
             for (int bx = 0; bx < 16; bx++)
