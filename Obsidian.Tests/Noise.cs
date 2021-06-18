@@ -31,9 +31,10 @@ namespace Obsidian.Tests
                 DestinationImage = image
             };
 
+            //renderer.BuildGrayscaleGradient();
             renderer.BuildTerrainGradient();
 
-            builder.SetBounds(-1024, 1024, -1024, 1024);
+            builder.SetBounds(-2024, 2024, -2024, 2024);
             builder.SetDestSize(1024, 1024);
             builder.Build();
 
