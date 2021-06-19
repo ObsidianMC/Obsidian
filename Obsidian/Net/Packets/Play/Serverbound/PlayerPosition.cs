@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -28,7 +29,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.UpdateAsync(server, Position, OnGround);
-            await player.World.UpdateClientChunksAsync(player.client);
+            if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
+            {
+                await player.World.UpdateClientChunksAsync(player.client);
+            }
+
+            player.LastPosition = player.Position;
         }
     }
 }
