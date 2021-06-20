@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace Obsidian.WorldData
         private readonly FileStream regionFileStream;
         private RegionFileHeaderTable locationTable, timestampTable;
         private bool disposedValue;
+        private readonly IMemoryOwner<byte> fileCache;
 
         public RegionFile(string filePath, int cubicRegionSize = 32) 
         {
@@ -23,6 +25,7 @@ namespace Obsidian.WorldData
             this.cubicRegionSize = cubicRegionSize;
             this.indexSize = cubicRegionSize * 4;
             regionFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            fileCache = MemoryPool<byte>.Shared.Rent();
         }
 
         public async Task InitializeAsync()
@@ -32,13 +35,15 @@ namespace Obsidian.WorldData
                 await InitializeNewFileAsync();
             }
 
-            locationTable = new RegionFileHeaderTable(regionFileStream, indexSize, 0);
-            timestampTable = new RegionFileHeaderTable(regionFileStream, indexSize, 1);
-            await locationTable.InitAsync();
-            await timestampTable.InitAsync();
+            // Load file into memory
+            await regionFileStream.ReadAsync(fileCache.Memory);
+            regionFileStream.Seek(0, SeekOrigin.Begin);
+
+            locationTable = new RegionFileHeaderTable(fileCache.Memory.Slice(0, indexSize));
+            timestampTable = new RegionFileHeaderTable(fileCache.Memory.Slice(indexSize, indexSize));
         }
 
-        private int GetChunkTableIndex(Vector relativeChunkCoord) => (relativeChunkCoord.X % cubicRegionSize) + (relativeChunkCoord.Z % cubicRegionSize * cubicRegionSize);
+        private int GetChunkTableLocation(Vector relativeChunkCoord) => ((relativeChunkCoord.X % cubicRegionSize) + (relativeChunkCoord.Z % cubicRegionSize * cubicRegionSize)) * 4;
 
         private async Task InitializeNewFileAsync()
         {
@@ -50,23 +55,28 @@ namespace Obsidian.WorldData
 
         private class RegionFileHeaderTable
         {
-            public Memory<byte> bytes;
-            private readonly int indexSize;
-            private readonly int origin;
-            private readonly FileStream fs;
-            public RegionFileHeaderTable(FileStream fileStream, int indexSize, int index)
+            private readonly Memory<byte> tableBytes;
+            public RegionFileHeaderTable(Memory<byte> rgn)
             {
-                this.indexSize = indexSize;
-                this.origin = index * indexSize;
-                fs = fileStream;
-                bytes = new byte[indexSize];
+                tableBytes = rgn;
             }
 
-            public async Task InitAsync()
+            public (int offset, int size) GetOffsetSizeAtLocation(int location)
             {
-                fs.Seek(origin, SeekOrigin.Begin);
-                await fs.ReadAsync(bytes);
-                fs.Seek(0, SeekOrigin.Begin);
+                // First 3 bytes are offset
+                var offset = BitConverter.ToInt32(tableBytes.Slice(location, 3).ToArray().Reverse().ToArray());
+                // Fourth byte is size
+                var size = (int)tableBytes.Span[location + 3];
+                return (offset << 12, size << 12);
+            }
+
+            public void SetOffsetSizeAtLocation(int location, int offset, int size)
+            {
+                byte[] offsetBytes = BitConverter.GetBytes(offset).ToArray().Reverse().ToArray();
+                offsetBytes.CopyTo(tableBytes.Slice(location, 3).Span);
+
+                // Add one to the size to effectively round up should the size not land on a 4096 boundary.
+                tableBytes.Span[location + 3] = (byte) ((size >> 12) + 1);
             }
         }
 
@@ -78,6 +88,7 @@ namespace Obsidian.WorldData
                 if (disposing)
                 {
                     regionFileStream.Flush();
+                    fileCache.Dispose();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
