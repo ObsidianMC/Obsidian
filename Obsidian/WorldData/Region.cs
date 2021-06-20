@@ -30,106 +30,46 @@ namespace Obsidian.WorldData
 
         public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
+        private readonly RegionFile regionFile;
+
         internal Region(int x, int z, string worldRegionsPath)
         {
             this.X = x;
             this.Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
-            var regionFile = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-            if (File.Exists(regionFile))
-            {
-                Load(regionFile);
-                IsDirty = false;
-            }
+            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mcr");
+            regionFile = new RegionFile(filePath, cubicRegionSize);
+
         }
+
+        internal async Task InitAsync()
+        {
+            await regionFile.InitializeAsync();
+        }
+
+        internal async Task<Chunk> GetChunkAsync((int X, int Z) relativePos) => await GetChunkAsync(relativePos.X, relativePos.Z);
+
+        internal async Task<Chunk> GetChunkAsync(Vector relativePosition)
+        {
+            var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
+            return null;
+        }
+
+        internal async Task<Chunk> GetChunkAsync(int relativeX, int relativeZ) => await GetChunkAsync(new Vector(relativeX, 0, relativeZ));
 
         internal async Task BeginTickAsync(CancellationToken cts)
         {
-            double flushTime = 0;
             while (!cts.IsCancellationRequested || cancel)
             {
                 await Task.Delay(20, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
-                flushTime++;
-
-                if (flushTime > 50 * 30) // Save every 30 seconds
-                {
-                    Flush();
-                    flushTime = 0;
-                }
             }
-            Flush();
         }
 
         internal void Cancel() => this.cancel = true;
-
-        //TODO: IO operations should be async :teyes:
-        public void Flush()
-        {
-            if (!IsDirty) { return; }
-
-            var path = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-
-            var regionFile = new FileInfo(path);
-            FileInfo backupRegionFile = null;
-
-            if (regionFile.Exists)
-                backupRegionFile = regionFile.CopyTo($"{path}.bak", true);
-
-            using var fileStream = regionFile.OpenWrite();
-
-            var writer = new NbtWriter(fileStream, NbtCompression.GZip);
-
-            writer.WriteTag(this.GetNbt());
-
-            writer.BaseStream.Flush();
-
-            writer.TryFinish();
-
-            backupRegionFile?.Delete();
-
-            regionFile = null;
-
-            GC.Collect();
-
-            IsDirty = false;
-        }
-
-        public void Load(string regionPath)
-        {
-            var regionFile = new FileInfo(regionPath);
-
-            if (!regionFile.Exists)
-            {
-                File.Move(regionPath + ".bak", regionPath);
-
-                regionFile = new FileInfo(regionPath + ".bak");
-            }
-
-            using var readStream = regionFile.OpenRead();
-
-            var reader = new NbtReader(readStream, NbtCompression.GZip);
-
-            var regionCompound = (NbtCompound)reader.ReadNextTag();
-
-            var chunksNbt = regionCompound["Chunks"] as NbtList;
-
-            foreach (var chunkNbt in chunksNbt)
-            {
-                var chunk = GetChunkFromNbt((NbtCompound)chunkNbt);
-                var index = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-                LoadedChunks[index.Item1, index.Item2] = chunk;
-            }
-
-            regionFile = null;
-            regionCompound = null;
-
-            GC.Collect();
-            IsDirty = false;
-        }
 
         #region File saving/loading
         public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)

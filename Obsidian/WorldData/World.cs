@@ -382,6 +382,7 @@ namespace Obsidian.WorldData
 
             this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
+            _ = Task.Run(() => region.InitAsync());
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
@@ -445,7 +446,7 @@ namespace Obsidian.WorldData
             Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
             GenerateWorld();
-            foreach (var r in this.Regions.Values) { r.Flush(); }
+            //foreach (var r in this.Regions.Values) { r.Flush(); }
             SetWorldSpawn();
         }
 

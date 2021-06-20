@@ -1,10 +1,9 @@
 ﻿using Obsidian.API;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
@@ -14,7 +13,7 @@ namespace Obsidian.WorldData
         private readonly string filePath;
         private readonly int cubicRegionSize;
         private readonly int indexSize;
-        private readonly FileStream regionFileStream;
+        private FileStream regionFileStream;
         private RegionFileHeaderTable locationTable, timestampTable;
         private bool disposedValue;
         private readonly IMemoryOwner<byte> fileCache;
@@ -24,7 +23,7 @@ namespace Obsidian.WorldData
             this.filePath = filePath;
             this.cubicRegionSize = cubicRegionSize;
             this.indexSize = cubicRegionSize * 4;
-            regionFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+
             fileCache = MemoryPool<byte>.Shared.Rent();
         }
 
@@ -35,6 +34,8 @@ namespace Obsidian.WorldData
                 await InitializeNewFileAsync();
             }
 
+            regionFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+
             // Load file into memory
             await regionFileStream.ReadAsync(fileCache.Memory);
             regionFileStream.Seek(0, SeekOrigin.Begin);
@@ -43,7 +44,51 @@ namespace Obsidian.WorldData
             timestampTable = new RegionFileHeaderTable(fileCache.Memory.Slice(indexSize, indexSize));
         }
 
-        private int GetChunkTableLocation(Vector relativeChunkCoord) => ((relativeChunkCoord.X % cubicRegionSize) + (relativeChunkCoord.Z % cubicRegionSize * cubicRegionSize)) * 4;
+        public DateTimeOffset GetChunkTimestamp(Vector relativeChunkLocation) => DateTimeOffset.FromUnixTimeSeconds(timestampTable.GetTimestampAtLocation(GetChunkTableLocation(relativeChunkLocation)));
+      
+        public byte[] GetChunkCompressedBytes(Vector relativeChunkLocation)
+        {
+            var chunkIndex = GetChunkTableLocation(relativeChunkLocation);
+            var (offset, size) = locationTable.GetOffsetSizeAtLocation(chunkIndex);
+            Memory<byte> chunkBytes = fileCache.Memory.Slice(offset, size);
+
+            // First 5 bytes are a header.
+            // First 4 are filesize.
+            // Last is compression scheme. We're always going to use gzip and probably just ignore this.
+            var filesize = BitConverter.ToInt32(chunkBytes.Slice(0, 4).ToArray());
+            // var compression = (int)chunkBytes.Span[4];
+            var nbtBytes = chunkBytes.Slice(5, filesize).ToArray();
+            return nbtBytes;
+        }
+
+        public void SetChunkCompressedBytes(Vector relativeChunkLocation, byte[] compressedNbtBytes)
+        {
+            var chunkIndex = GetChunkTableLocation(relativeChunkLocation);
+            var (currentOffset, currentSize) = locationTable.GetOffsetSizeAtLocation(chunkIndex);
+            var newSize = compressedNbtBytes.Length;
+            if (newSize <= currentSize && currentSize > 0)
+            {
+                // No need to resize the region file. New chunk will fit in place of the old one.
+                var chunkBytes = fileCache.Memory.Slice(currentOffset, currentSize);
+
+                // Update the chunk header with the new file size.
+                BitConverter.GetBytes(newSize).CopyTo(chunkBytes.Slice(0, 4));
+                compressedNbtBytes.CopyTo(chunkBytes.Slice(5, compressedNbtBytes.Length));
+
+                var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+                timestampTable.SetTimestampAtLocation(chunkIndex, timestamp);
+                return;
+            }
+
+            // New chunk doesn't fit within the previous 4096 boundary that it had, or it doesn't exist.
+            // Need to recreate the whole damn file now.
+
+        }
+
+
+
+
+        private int GetChunkTableLocation(Vector relativeChunkLoc) => ((relativeChunkLoc.X % cubicRegionSize) + (relativeChunkLoc.Z % cubicRegionSize * cubicRegionSize)) * 4;
 
         private async Task InitializeNewFileAsync()
         {
@@ -72,16 +117,16 @@ namespace Obsidian.WorldData
 
             public void SetOffsetSizeAtLocation(int location, int offset, int size)
             {
-                byte[] offsetBytes = BitConverter.GetBytes(offset >> 12).ToArray();
+                byte[] offsetBytes = BitConverter.GetBytes(offset >> 12);
                 offsetBytes.CopyTo(tableBytes.Slice(location, 3).Span);
 
                 // Add one to the size to effectively round up should the size not land on a 4096 boundary.
                 tableBytes.Span[location + 3] = (byte) ((size >> 12) + 1);
             }
 
-            public int GetTimestampAtLocation(int location) => BitConverter.ToInt32(tableBytes.Slice(location, 4).ToArray());
+            public long GetTimestampAtLocation(int location) => (long)BitConverter.ToUInt64(tableBytes.Slice(location, 4).ToArray());
 
-            public void SetTimestampAtLocation(int location, int timestamp) => BitConverter.GetBytes(timestamp).ToArray().CopyTo(tableBytes.Slice(location, 4).Span);
+            public void SetTimestampAtLocation(int location, long timestamp) => BitConverter.GetBytes(timestamp).CopyTo(tableBytes.Slice(location, 4).Span);
             
         }
 
