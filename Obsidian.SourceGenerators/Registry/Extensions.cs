@@ -26,7 +26,7 @@ namespace Obsidian.SourceGenerators.Registry
         {
             // Alternative implementation:
             // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
-            // return string.Join(snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
+            // return string.Join("", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
 
             int spaceCount = 0;
             for (int i = 0; i < snakeCase.Length; i++)
@@ -49,6 +49,33 @@ namespace Obsidian.SourceGenerators.Registry
                 }
                 else
                 {
+                    wordStart = true;
+                }
+            }
+
+            return new string(result);
+        }
+
+        public static string ToTitleCase(this string snakeCase)
+        {
+            // Alternative implementation:
+            // var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo;
+            // return string.Join(" ", snakeCase.Split('_').Select(s => textInfo.ToTitleCase(s)));
+
+            var result = new char[snakeCase.Length];
+
+            bool wordStart = true;
+            for (int i = 0; i < snakeCase.Length; i++)
+            {
+                char c = snakeCase[i];
+                if (char.IsLetterOrDigit(c))
+                {
+                    result[i] = wordStart ? char.ToUpper(c) : char.ToLower(c);
+                    wordStart = false;
+                }
+                else
+                {
+                    result[i] = ' ';
                     wordStart = true;
                 }
             }

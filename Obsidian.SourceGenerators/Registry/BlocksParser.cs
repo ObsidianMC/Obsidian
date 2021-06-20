@@ -130,6 +130,8 @@ namespace Obsidian.SourceGenerators.Registry
             private StringBuilder blockNames;
             private StringBuilder numericToBase;
 
+            private int numericId = 0;
+
             public RegistryBuilder()
             {
                 blockRegistry = new();
@@ -150,6 +152,28 @@ namespace Obsidian.SourceGenerators.Registry
 
             public override void HandleBlock(GeneratorExecutionContext context, JsonProperty block)
             {
+                string name = block.Name.RemoveNamespace().ToTitleCase();
+                blockNames.Append($"\"{name}\", ");
+
+                int baseId = int.MaxValue, idCount = 0;
+                foreach (JsonElement state in block.Value.GetProperty("states").EnumerateArray())
+                {
+                    int id = state.GetProperty("id").GetInt32();
+
+                    if (id < baseId)
+                        baseId = id;
+
+                    idCount++;
+                }
+
+                numericToBase.Append($"{baseId}, ");
+
+                for (int i = 0; i < idCount; i++)
+                {
+                    stateToMatch.Append($"new MatchTarget({baseId}, {numericId}), ");
+                }
+
+                numericId++;
             }
 
             public override void Complete(GeneratorExecutionContext context)
