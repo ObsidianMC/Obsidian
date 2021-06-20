@@ -64,7 +64,7 @@ namespace Obsidian.WorldData
             public (int offset, int size) GetOffsetSizeAtLocation(int location)
             {
                 // First 3 bytes are offset
-                var offset = BitConverter.ToInt32(tableBytes.Slice(location, 3).ToArray().Reverse().ToArray());
+                var offset = BitConverter.ToInt32(tableBytes.Slice(location, 3).ToArray());
                 // Fourth byte is size
                 var size = (int)tableBytes.Span[location + 3];
                 return (offset << 12, size << 12);
@@ -72,12 +72,17 @@ namespace Obsidian.WorldData
 
             public void SetOffsetSizeAtLocation(int location, int offset, int size)
             {
-                byte[] offsetBytes = BitConverter.GetBytes(offset).ToArray().Reverse().ToArray();
+                byte[] offsetBytes = BitConverter.GetBytes(offset >> 12).ToArray();
                 offsetBytes.CopyTo(tableBytes.Slice(location, 3).Span);
 
                 // Add one to the size to effectively round up should the size not land on a 4096 boundary.
                 tableBytes.Span[location + 3] = (byte) ((size >> 12) + 1);
             }
+
+            public int GetTimestampAtLocation(int location) => BitConverter.ToInt32(tableBytes.Slice(location, 4).ToArray());
+
+            public void SetTimestampAtLocation(int location, int timestamp) => BitConverter.GetBytes(timestamp).ToArray().CopyTo(tableBytes.Slice(location, 4).Span);
+            
         }
 
         #region IDisposable
