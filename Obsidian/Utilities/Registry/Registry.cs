@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -15,7 +16,6 @@ using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -34,9 +34,9 @@ namespace Obsidian.Utilities.Registry
         public static readonly Dictionary<string, IRecipe> Recipes = new();
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
-        public static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
-        public static readonly string[] BlockNames = new string[763]; // 762 - block count
-        public static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
+        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
+        internal static readonly string[] BlockNames = new string[763]; // 762 - block count
+        internal static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
@@ -427,19 +427,6 @@ namespace Obsidian.Utilities.Registry
         {
             [JsonProperty("protocol_id")]
             public int ProtocolId { get; set; }
-        }
-    }
-
-    [DebuggerDisplay("{@base}:{numeric}")]
-    public struct MatchTarget
-    {
-        public short @base;
-        public short numeric;
-
-        public MatchTarget(short @base, short numeric)
-        {
-            this.@base = @base;
-            this.numeric = numeric;
         }
     }
 }

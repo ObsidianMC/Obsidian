@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Events;
 using Obsidian.Chat;
 using Obsidian.Net;

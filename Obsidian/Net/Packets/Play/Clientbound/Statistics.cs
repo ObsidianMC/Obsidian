@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API.Blocks;
+using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;

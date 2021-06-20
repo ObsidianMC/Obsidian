@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;

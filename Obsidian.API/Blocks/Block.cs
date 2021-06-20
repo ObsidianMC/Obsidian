@@ -1,9 +1,7 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry;
-using System;
+﻿using System;
 using System.Diagnostics;
 
-namespace Obsidian
+namespace Obsidian.API.Blocks
 {
     [DebuggerDisplay("{Name,nq}:{Id}")]
     public readonly struct Block : IEquatable<Block>
@@ -13,13 +11,17 @@ namespace Obsidian
         private static short[] interactables;
         private static bool initialized = false;
 
-        public string UnlocalizedName => Registry.BlockNames[Id];
+        internal static string[] BlockNames;
+        internal static MatchTarget[] StateToMatch;
+        internal static short[] NumericToBase;
+
+        public string UnlocalizedName => BlockNames[Id];
         public string Name => Material.ToString();
-        public Material Material => (Material)Registry.StateToMatch[baseId].numeric;
+        public Material Material => (Material)StateToMatch[baseId].Numeric;
         public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public bool IsFluid => StateId > 33 && StateId < 66;
-        public int Id => Registry.StateToMatch[baseId].numeric;
+        public int Id => StateToMatch[baseId].Numeric;
         public short StateId => (short)(baseId + state);
         public int State => state;
         public short BaseId => baseId;
@@ -27,21 +29,21 @@ namespace Obsidian
         private readonly short baseId;
         private readonly short state;
 
-        public Block(int stateId) : this((short)stateId)
+        internal Block(int stateId) : this((short)stateId)
         {
         }
 
-        public Block(short stateId)
+        internal Block(short stateId)
         {
-            baseId = Registry.StateToMatch[stateId].@base;
+            baseId = StateToMatch[stateId].Base;
             state = (short)(stateId - baseId);
         }
 
-        public Block(int baseId, int state) : this((short)baseId, (short)state)
+        internal Block(int baseId, int state) : this((short)baseId, (short)state)
         {
         }
 
-        public Block(short baseId, short state)
+        internal Block(short baseId, short state)
         {
             this.baseId = baseId;
             this.state = state;
@@ -49,7 +51,7 @@ namespace Obsidian
 
         public Block(Material material, short state = 0)
         {
-            baseId = Registry.NumericToBase[(int)material];
+            baseId = NumericToBase[(int)material];
             this.state = state;
         }
 
@@ -65,7 +67,7 @@ namespace Obsidian
 
         public bool Is(Material material)
         {
-            return Registry.StateToMatch[baseId].numeric == (int)material;
+            return StateToMatch[baseId].Numeric == (int)material;
         }
 
         public override bool Equals(object obj)
@@ -96,20 +98,20 @@ namespace Obsidian
 
             interactables = new[]
             {
-                Registry.NumericToBase[(int)Material.Chest],
-                Registry.NumericToBase[(int)Material.CraftingTable],
-                Registry.NumericToBase[(int)Material.Furnace],
-                Registry.NumericToBase[(int)Material.BrewingStand],
-                Registry.NumericToBase[(int)Material.EnderChest],
-                Registry.NumericToBase[(int)Material.Anvil],
-                Registry.NumericToBase[(int)Material.ChippedAnvil],
-                Registry.NumericToBase[(int)Material.DamagedAnvil],
-                Registry.NumericToBase[(int)Material.TrappedChest],
-                Registry.NumericToBase[(int)Material.Hopper],
-                Registry.NumericToBase[(int)Material.Barrel],
-                Registry.NumericToBase[(int)Material.Smoker],
-                Registry.NumericToBase[(int)Material.BlastFurnace],
-                Registry.NumericToBase[(int)Material.Grindstone],
+                NumericToBase[(int)Material.Chest],
+                NumericToBase[(int)Material.CraftingTable],
+                NumericToBase[(int)Material.Furnace],
+                NumericToBase[(int)Material.BrewingStand],
+                NumericToBase[(int)Material.EnderChest],
+                NumericToBase[(int)Material.Anvil],
+                NumericToBase[(int)Material.ChippedAnvil],
+                NumericToBase[(int)Material.DamagedAnvil],
+                NumericToBase[(int)Material.TrappedChest],
+                NumericToBase[(int)Material.Hopper],
+                NumericToBase[(int)Material.Barrel],
+                NumericToBase[(int)Material.Smoker],
+                NumericToBase[(int)Material.BlastFurnace],
+                NumericToBase[(int)Material.Grindstone],
             };
         }
     }

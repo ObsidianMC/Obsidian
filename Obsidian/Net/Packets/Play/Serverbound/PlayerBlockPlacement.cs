@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -314,11 +315,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             switch (Face) // TODO fix this for logs
             {
-                case BlockFace.Bottom:
+                case BlockFace.Down:
                     position.Y -= 1;
                     break;
 
-                case BlockFace.Top:
+                case BlockFace.Up:
                     position.Y += 1;
                     break;
 

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;

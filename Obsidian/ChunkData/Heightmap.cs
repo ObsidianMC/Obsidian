@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.Utilities.Collection;
 using Obsidian.WorldData;
 using System;
