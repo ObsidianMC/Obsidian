@@ -164,8 +164,8 @@ namespace Obsidian.WorldData
                 Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
             }
 
-            var (indexX, indexZ) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
-            var chunk = region.LoadedChunks[indexX, indexZ];
+            (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
+            var chunk = region.GetChunk(chunkIndex);
             
             if (chunk is not null) 
             { 
@@ -192,7 +192,7 @@ namespace Obsidian.WorldData
             {
                 isGenerated = false // Not necessary; just being explicit.
             };
-            region.LoadedChunks[indexX, indexZ] = chunk;
+            region.SetChunk(chunk);
 
             return chunk;
         }
@@ -426,15 +426,15 @@ namespace Obsidian.WorldData
                     ChunksToGen.Enqueue((job.x, job.z));
                     return;
                 }
-                var (rX, rZ) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
-                Chunk c = region.LoadedChunks[rX, rZ];
+                (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
+                Chunk c = region.GetChunk(chunkIndex);
                 if (c is null)
                 {
                     c = new Chunk(job.x, job.z)
                     {
                         isGenerated = false // Not necessary; just being explicit.
                     };
-                    region.LoadedChunks[rX, rZ] = c;
+                    region.SetChunk(c);
                 }
                 Generator.GenerateChunk(job.x, job.z, this, c);
             });
@@ -480,7 +480,7 @@ namespace Obsidian.WorldData
             Data.SpawnY = 128;
             foreach (var r in Regions.Values)
             {
-                foreach (var c in r.LoadedChunks)
+                foreach (var c in r.GeneratedChunks())
                 {
                     for (int bx = 0; bx < 16; bx++)
                     {

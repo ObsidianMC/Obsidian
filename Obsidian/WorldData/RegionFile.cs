@@ -22,9 +22,10 @@ namespace Obsidian.WorldData
         {
             this.filePath = filePath;
             this.cubicRegionSize = cubicRegionSize;
-            this.indexSize = cubicRegionSize * 4;
+            this.indexSize = cubicRegionSize * cubicRegionSize * 4;
+            var minCacheSize = (indexSize * 2) + (cubicRegionSize * cubicRegionSize * (4096 + 4));
 
-            fileCache = MemoryPool<byte>.Shared.Rent();
+            fileCache = MemoryPool<byte>.Shared.Rent(minCacheSize);
         }
 
         public async Task InitializeAsync()
@@ -50,6 +51,7 @@ namespace Obsidian.WorldData
         {
             var chunkIndex = GetChunkTableLocation(relativeChunkLocation);
             var (offset, size) = locationTable.GetOffsetSizeAtLocation(chunkIndex);
+            if (size == 0) { return null; }
             Memory<byte> chunkBytes = fileCache.Memory.Slice(offset, size);
 
             // First 5 bytes are a header.
@@ -82,11 +84,19 @@ namespace Obsidian.WorldData
 
             // New chunk doesn't fit within the previous 4096 boundary that it had, or it doesn't exist.
             // Need to recreate the whole damn file now.
+            if (currentSize == 0)
+            {
+                // New chunk, append bytes to the end.
+                var newOffset = fileCache.Memory.Length;
+                locationTable.SetOffsetSizeAtLocation(chunkIndex, newOffset, compressedNbtBytes.Length);
+                for (int a = 0; a < compressedNbtBytes.Length; a++)
+                {
+                    // Leave 4 bytes for the chunk header.
+                    fileCache.Memory.Span[a + newOffset + 4] = compressedNbtBytes[a];
+                }
+            }
 
         }
-
-
-
 
         private int GetChunkTableLocation(Vector relativeChunkLoc) => ((relativeChunkLoc.X % cubicRegionSize) + (relativeChunkLoc.Z % cubicRegionSize * cubicRegionSize)) * 4;
 
@@ -108,25 +118,27 @@ namespace Obsidian.WorldData
 
             public (int offset, int size) GetOffsetSizeAtLocation(int location)
             {
-                // First 3 bytes are offset
-                var offset = BitConverter.ToInt32(tableBytes.Slice(location, 3).ToArray());
                 // Fourth byte is size
                 var size = (int)tableBytes.Span[location + 3];
+                if (size == 0) { return (0, 0); }
+                // First 3 bytes are offset
+                ReadOnlySpan<byte> offsetBytes = tableBytes.Slice(location, 3).Span;
+                var offset = BitConverter.ToInt32(offsetBytes);
                 return (offset << 12, size << 12);
             }
 
             public void SetOffsetSizeAtLocation(int location, int offset, int size)
             {
-                byte[] offsetBytes = BitConverter.GetBytes(offset >> 12);
+                byte[] offsetBytes = BitConverter.GetBytes(offset >> 12).Take(3).ToArray();
                 offsetBytes.CopyTo(tableBytes.Slice(location, 3).Span);
 
                 // Add one to the size to effectively round up should the size not land on a 4096 boundary.
                 tableBytes.Span[location + 3] = (byte) ((size >> 12) + 1);
             }
 
-            public long GetTimestampAtLocation(int location) => (long)BitConverter.ToUInt64(tableBytes.Slice(location, 4).ToArray());
+            public long GetTimestampAtLocation(int location) => (long)BitConverter.ToUInt64(tableBytes.Slice(location, 4).Span);
 
-            public void SetTimestampAtLocation(int location, long timestamp) => BitConverter.GetBytes(timestamp).CopyTo(tableBytes.Slice(location, 4).Span);
+            public void SetTimestampAtLocation(int location, long timestamp) => BitConverter.GetBytes(timestamp).Take(4).ToArray().CopyTo(tableBytes.Slice(location, 4).Span);
             
         }
 

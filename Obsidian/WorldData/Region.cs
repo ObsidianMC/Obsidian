@@ -5,7 +5,9 @@ using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -28,7 +30,7 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
 
-        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
+        private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
         private readonly RegionFile regionFile;
 
@@ -48,15 +50,54 @@ namespace Obsidian.WorldData
             await regionFile.InitializeAsync();
         }
 
-        internal async Task<Chunk> GetChunkAsync((int X, int Z) relativePos) => await GetChunkAsync(relativePos.X, relativePos.Z);
+        internal Chunk GetChunk((int X, int Z) relativePos) =>  GetChunk(relativePos.X, relativePos.Z);
 
-        internal async Task<Chunk> GetChunkAsync(Vector relativePosition)
+        internal Chunk GetChunk(int relativeX, int relativeZ) => GetChunk(new Vector(relativeX, 0, relativeZ));
+
+        internal Chunk GetChunk(Vector relativePosition)
         {
-            var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
-            return null;
+            var chunk = LoadedChunks[relativePosition.X, relativePosition.Z];
+            if (LoadedChunks[relativePosition.X, relativePosition.Z] is null)
+            {
+                chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
+                LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            }
+            return chunk;
         }
 
-        internal async Task<Chunk> GetChunkAsync(int relativeX, int relativeZ) => await GetChunkAsync(new Vector(relativeX, 0, relativeZ));
+        private Chunk GetChunkFromFile(Vector relativePosition)
+        {
+            var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
+            if (compressedBytes is null) { return null; }
+            using Stream strm = new MemoryStream(compressedBytes);
+            NbtReader reader = new(strm, NbtCompression.GZip);
+            NbtCompound chunkNbt = reader.ReadNextTag() as NbtCompound;
+            return GetChunkFromNbt(chunkNbt);
+        }
+
+        internal IEnumerable<Chunk> GeneratedChunks()
+        {
+            foreach(var c in LoadedChunks)
+            {
+                if (c is not null && c.isGenerated)
+                {
+                    yield return c;
+                }
+            }
+        }
+
+        internal void SetChunk(Chunk chunk)
+        {
+            if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
+            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+            LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            NbtCompound chunkNbt = GetNbtFromChunk(chunk);
+            using MemoryStream strm = new();
+            using NbtWriter writer = new(strm, NbtCompression.GZip);
+            writer.WriteTag(chunkNbt);
+            writer.TryFinish();
+            regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
+        }
 
         internal async Task BeginTickAsync(CancellationToken cts)
         {
