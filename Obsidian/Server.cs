@@ -275,7 +275,7 @@ namespace Obsidian
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
-                this.World.Init(gen);
+                await World.Init(gen);
                 this.World.Save();
             }
 
@@ -609,7 +609,7 @@ namespace Obsidian
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
 
-                _ = Task.Run(() => World.ManageChunks());
+                await World.ManageChunks();
             }
         }
 
