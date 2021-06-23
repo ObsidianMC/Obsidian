@@ -275,7 +275,7 @@ namespace Obsidian
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
-                this.World.Init(gen);
+                await World.Init(gen);
                 this.World.Save();
             }
 

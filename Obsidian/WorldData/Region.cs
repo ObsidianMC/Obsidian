@@ -50,6 +50,12 @@ namespace Obsidian.WorldData
             await regionFile.InitializeAsync();
         }
 
+        internal async Task FlushAsync()
+        {
+            foreach(Chunk c in LoadedChunks) { SerializeChunk(c); }
+            await regionFile.FlushToDiskAsync();
+        }
+
         internal Chunk GetChunk((int X, int Z) relativePos) =>  GetChunk(relativePos.X, relativePos.Z);
 
         internal Chunk GetChunk(int relativeX, int relativeZ) => GetChunk(new Vector(relativeX, 0, relativeZ));
@@ -57,7 +63,7 @@ namespace Obsidian.WorldData
         internal Chunk GetChunk(Vector relativePosition)
         {
             var chunk = LoadedChunks[relativePosition.X, relativePosition.Z];
-            if (LoadedChunks[relativePosition.X, relativePosition.Z] is null)
+            if (chunk is null)
             {
                 chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
                 LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
@@ -91,6 +97,11 @@ namespace Obsidian.WorldData
             if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
             var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
             LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+        }
+
+        internal void SerializeChunk(Chunk chunk)
+        {
+            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
             NbtCompound chunkNbt = GetNbtFromChunk(chunk);
             using MemoryStream strm = new();
             using NbtWriter writer = new(strm, NbtCompression.GZip);
@@ -103,11 +114,9 @@ namespace Obsidian.WorldData
         {
             while (!cts.IsCancellationRequested || cancel)
             {
-                await Task.Delay(2000, cts);
+                await Task.Delay(20, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
-
-                await regionFile.FlushToDiskAsync();
             }
             await regionFile.FlushToDiskAsync();
         }

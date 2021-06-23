@@ -151,20 +151,20 @@ namespace Obsidian.WorldData
             if (region is null)
             {
                 // region hasn't been loaded yet
-                var regionCoords = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+                var (rX, rZ) = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
                 if (scheduleGeneration) 
                 {
-                    if (!RegionsToLoad.Contains(regionCoords))
-                        RegionsToLoad.Enqueue(regionCoords);
+                    if (!RegionsToLoad.Contains((rX, rZ)))
+                        RegionsToLoad.Enqueue((rX, rZ));
                     return null;
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                var task = LoadRegion(regionCoords.Item1, regionCoords.Item2);
+                var task = LoadRegion(rX, rZ);
                 task.Start();
                 task.Wait();
                 region = task.Result;
-                Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
+                Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
             }
 
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -414,7 +414,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < 1; a++)
+            for (int a = 0; a < Environment.ProcessorCount; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);
@@ -443,19 +443,22 @@ namespace Obsidian.WorldData
                 Generator.GenerateChunk(job.x, job.z, this, c);
                 region.SetChunk(c);
             });
+
+            // We need better logic on when to do this. Maybe start another task that just flushes to disk or something idk.
+            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
         }
 
-        internal void Init(WorldGenerator gen)
+        internal async Task Init(WorldGenerator gen)
         {
             // Make world directory
             Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
-            GenerateWorld();
-            //foreach (var r in this.Regions.Values) { r.Flush(); }
+            await GenerateWorld();
+            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
             SetWorldSpawn();
         }
 
-        internal void GenerateWorld()
+        internal async Task GenerateWorld()
         {
             this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
             int pregenerationRange = Server.Config.PregenerateChunkRange;
@@ -473,7 +476,7 @@ namespace Obsidian.WorldData
             }
             while (!ChunksToGen.IsEmpty)
             {
-                ManageChunks();
+                await ManageChunks();
                 Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
             }
         }
