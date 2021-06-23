@@ -22,7 +22,7 @@ namespace Obsidian.WorldData
         /// <summary>
         /// Reference Material: https://wiki.vg/Region_Files#Structure
         /// </summary>
-        public RegionFile(string filePath, int cubicRegionSize = 32) 
+        public RegionFile(string filePath, int cubicRegionSize = 32)
         {
             this.filePath = filePath;
             this.cubicRegionSize = cubicRegionSize;
@@ -73,8 +73,8 @@ namespace Obsidian.WorldData
             regionFileStream.Seek(0, SeekOrigin.Begin);
         }
 
-        public DateTimeOffset GetChunkTimestamp(Vector relativeChunkLocation) => DateTimeOffset.FromUnixTimeSeconds(timestampTable.GetTimestampAtLocation(GetChunkTableIndex(relativeChunkLocation)));
-      
+        public DateTimeOffset GetChunkTimestamp(Vector relativeChunkLocation) => DateTimeOffset.FromUnixTimeSeconds(timestampTable.GetTimestampAtIndex(GetChunkTableIndex(relativeChunkLocation)));
+
         public byte[] GetChunkCompressedBytes(Vector relativeChunkLocation)
         {
             // Sanity check
@@ -85,8 +85,8 @@ namespace Obsidian.WorldData
             var chunkIndex = GetChunkTableIndex(relativeChunkLocation);
             var (offset, size) = locationTable.GetOffsetSizeAtIndex(chunkIndex);
             if (size == 0) { return null; }
-            Memory<byte> chunkBytes = fileCache.Memory.Slice(offset, size);
-            var chunkAllocation = new ChunkAllocation(chunkBytes);
+            Memory<byte> memAlloc = fileCache.Memory.Slice(offset, size);
+            var chunkAllocation = new ChunkAllocation(memAlloc);
 
             return chunkAllocation.GetChunkBytes();
         }
@@ -112,11 +112,11 @@ namespace Obsidian.WorldData
                 memAllocation = GetNewAllocation(newSize, tableIndex);
             }
 
-            var allocation = new ChunkAllocation(memAllocation);
-            allocation.SetChunkBytes(compressedNbtBytes);
+            var chunkAllocation = new ChunkAllocation(memAllocation);
+            chunkAllocation.SetChunkBytes(compressedNbtBytes);
 
             var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
-            timestampTable.SetTimestampAtLocation(tableIndex, timestamp);
+            timestampTable.SetTimestampAtIndex(tableIndex, timestamp);
         }
 
         private int GetChunkTableIndex(Vector relativeChunkLoc) => ((relativeChunkLoc.X % cubicRegionSize) + (relativeChunkLoc.Z % cubicRegionSize * cubicRegionSize)) * 4;
@@ -137,7 +137,7 @@ namespace Obsidian.WorldData
 
         private Memory<byte> GetNewAllocation(int payloadSize, int tableIndex)
         {
-            lock(this)
+            lock (this)
             {
                 var allocationSize = ChunkAllocation.GetAllocationSize(payloadSize);
                 var assignedOffset = nextAvailableOffset;
@@ -164,7 +164,7 @@ namespace Obsidian.WorldData
             {
                 this.memAllocation = memAllocation;
                 this.compression = compression;
-             }
+            }
 
             public static int GetAllocationSize(double payloadSize)
             {
@@ -195,11 +195,10 @@ namespace Obsidian.WorldData
         private class RegionFileHeaderTable
         {
             private readonly Memory<byte> tableBytes;
-            
+
             public RegionFileHeaderTable(Memory<byte> tblBytes)
             {
                 tableBytes = tblBytes;
-
             }
 
             public (int offset, int size) GetOffsetSizeAtIndex(int tableIndex)
@@ -219,12 +218,12 @@ namespace Obsidian.WorldData
                 byte[] offsetBytes = BitConverter.GetBytes(offset >> 12);
                 offsetBytes = offsetBytes.Take(3).ToArray();
                 offsetBytes.CopyTo(tableBytes.Slice(tableIndex, 3).Span);
-                tableBytes.Span[tableIndex + 3] = (byte) (size >> 12);
+                tableBytes.Span[tableIndex + 3] = (byte)(size >> 12);
             }
 
-            public long GetTimestampAtLocation(int location) => (long)BitConverter.ToUInt64(tableBytes.Slice(location, 4).Span);
+            public long GetTimestampAtIndex(int index) => (long)BitConverter.ToUInt64(tableBytes.Slice(index, 4).Span);
 
-            public void SetTimestampAtLocation(int location, long timestamp) => BitConverter.GetBytes(timestamp).Take(4).ToArray().CopyTo(tableBytes.Slice(location, 4).Span);
+            public void SetTimestampAtIndex(int index, long timestamp) => BitConverter.GetBytes(timestamp).Take(4).ToArray().CopyTo(tableBytes.Slice(index, 4).Span);
         }
 
         #region IDisposable
