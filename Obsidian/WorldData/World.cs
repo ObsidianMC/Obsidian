@@ -160,7 +160,10 @@ namespace Obsidian.WorldData
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                region = LoadRegion(regionCoords.Item1, regionCoords.Item2);
+                var task = LoadRegion(regionCoords.Item1, regionCoords.Item2);
+                task.Start();
+                task.Wait();
+                region = task.Result;
                 Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
             }
 
@@ -366,13 +369,13 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public Region LoadRegionByChunk(int chunkX, int chunkZ)
+        public async Task<Region> LoadRegionByChunk(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
-            return LoadRegion(regionX, regionZ);
+            return await LoadRegion(regionX, regionZ);
         }
 
-        public Region LoadRegion(int regionX, int regionZ)
+        public async Task<Region> LoadRegion(int regionX, int regionZ)
         {
             long value = NumericsHelper.IntsToLong(regionX, regionZ);
             this.Regions.TryAdd(value, null);
@@ -382,7 +385,7 @@ namespace Obsidian.WorldData
 
             this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
-            _ = Task.Run(() => region.InitAsync());
+            await region.InitAsync();
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
@@ -390,7 +393,7 @@ namespace Obsidian.WorldData
             return region;
         }
 
-        public void ManageChunks()
+        public async Task ManageChunks()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
@@ -403,7 +406,7 @@ namespace Obsidian.WorldData
                 if (RegionsToLoad.TryDequeue(out var job))
                 {
                     if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.Item1, job.Item2))) // Sanity check
-                        LoadRegion(job.Item1, job.Item2);
+                        await LoadRegion(job.Item1, job.Item2);
                 }
             }
 
@@ -411,7 +414,7 @@ namespace Obsidian.WorldData
 
             // Pull some jobs out of the queue
             var jobs = new List<(int x, int z)>();
-            for (int a = 0; a < Environment.ProcessorCount; a++)
+            for (int a = 0; a < 1; a++)
             {
                 if (ChunksToGen.TryDequeue(out var job))
                     jobs.Add(job);
@@ -434,9 +437,11 @@ namespace Obsidian.WorldData
                     {
                         isGenerated = false // Not necessary; just being explicit.
                     };
+                    // Set chunk now so that it no longer comes back as null. #threadlyfe
                     region.SetChunk(c);
                 }
                 Generator.GenerateChunk(job.x, job.z, this, c);
+                region.SetChunk(c);
             });
         }
 

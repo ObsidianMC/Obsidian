@@ -609,7 +609,7 @@ namespace Obsidian
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
 
-                _ = Task.Run(() => World.ManageChunks());
+                await World.ManageChunks();
             }
         }
 

@@ -65,6 +65,14 @@ namespace Obsidian.WorldData
             }
         }
 
+        public async Task FlushToDiskAsync()
+        {
+            regionFileStream.Seek(0, SeekOrigin.Begin);
+            await regionFileStream.WriteAsync(fileCache.Memory);
+            await regionFileStream.FlushAsync();
+            regionFileStream.Seek(0, SeekOrigin.Begin);
+        }
+
         public DateTimeOffset GetChunkTimestamp(Vector relativeChunkLocation) => DateTimeOffset.FromUnixTimeSeconds(timestampTable.GetTimestampAtLocation(GetChunkTableIndex(relativeChunkLocation)));
       
         public byte[] GetChunkCompressedBytes(Vector relativeChunkLocation)
@@ -78,14 +86,9 @@ namespace Obsidian.WorldData
             var (offset, size) = locationTable.GetOffsetSizeAtIndex(chunkIndex);
             if (size == 0) { return null; }
             Memory<byte> chunkBytes = fileCache.Memory.Slice(offset, size);
+            var chunkAllocation = new ChunkAllocation(chunkBytes);
 
-            // First 5 bytes are a header.
-            // First 4 are filesize.
-            // Last is compression scheme. We're always going to use gzip and probably just ignore this.
-            var filesize = BitConverter.ToInt32(chunkBytes.Slice(0, 4).ToArray());
-            // var compression = (int)chunkBytes.Span[4];
-            var nbtBytes = chunkBytes.Slice(5, filesize).ToArray();
-            return nbtBytes;
+            return chunkAllocation.GetChunkBytes();
         }
 
         public void SetChunkCompressedBytes(Vector relativeChunkLocation, byte[] compressedNbtBytes)
@@ -108,7 +111,6 @@ namespace Obsidian.WorldData
             {
                 memAllocation = GetNewAllocation(newSize, tableIndex);
             }
-
 
             var allocation = new ChunkAllocation(memAllocation);
             allocation.SetChunkBytes(compressedNbtBytes);
@@ -179,9 +181,14 @@ namespace Obsidian.WorldData
                 compressedNbtBytes.CopyTo(memAllocation.Slice(5, blobSize));
             }
 
-            public void LoadChunkAllocation((int offset, int size) loc, byte[] compressedNbtBytes)
+            public byte[] GetChunkBytes()
             {
-                //hvar slice = fileCache.
+                // First 5 bytes are a header.
+                // First 4 are filesize.
+                // Fifth is compression scheme. We're always going to use gzip and probably just ignore this.
+                var filesize = BitConverter.ToInt32(memAllocation.Slice(0, 4).ToArray());
+                // var compression = (int)chunkBytes.Span[4];
+                return memAllocation.Slice(5, filesize).ToArray();
             }
         }
 
@@ -218,7 +225,6 @@ namespace Obsidian.WorldData
             public long GetTimestampAtLocation(int location) => (long)BitConverter.ToUInt64(tableBytes.Slice(location, 4).Span);
 
             public void SetTimestampAtLocation(int location, long timestamp) => BitConverter.GetBytes(timestamp).Take(4).ToArray().CopyTo(tableBytes.Slice(location, 4).Span);
-            
         }
 
         #region IDisposable
@@ -228,8 +234,7 @@ namespace Obsidian.WorldData
             {
                 if (disposing)
                 {
-                    regionFileStream.Flush();
-                    fileCache.Dispose();
+                    FlushToDiskAsync();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer

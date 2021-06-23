@@ -17,7 +17,7 @@ namespace Obsidian.WorldData
 {
     public class Region
     {
-        public const int cubicRegionSizeShift = 1;
+        public const int cubicRegionSizeShift = 5;
         public const int cubicRegionSize = 1 << cubicRegionSizeShift;
 
         private bool cancel = false;
@@ -103,16 +103,18 @@ namespace Obsidian.WorldData
         {
             while (!cts.IsCancellationRequested || cancel)
             {
-                await Task.Delay(20, cts);
+                await Task.Delay(2000, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
+                await regionFile.FlushToDiskAsync();
             }
+            await regionFile.FlushToDiskAsync();
         }
 
         internal void Cancel() => this.cancel = true;
 
-        #region File saving/loading
+        #region NBT Ops
         public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
         {
             int x = chunkCompound.GetInt("xPos");
@@ -223,6 +225,6 @@ namespace Obsidian.WorldData
                 };
             return chunkCompound;
         }
-        #endregion File saving/loading
+        #endregion NBT Ops
     }
 }
