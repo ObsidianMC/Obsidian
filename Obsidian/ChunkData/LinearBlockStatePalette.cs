@@ -8,14 +8,14 @@ namespace Obsidian.ChunkData
 {
     public class LinearBlockStatePalette : IBlockStatePalette
     {
-        public short[] BlockStateArray { get; set; }
+        public ushort[] BlockStateArray { get; set; }
         public int BlockStateCount { get; set; }
 
         public bool IsFull => this.BlockStateArray.Length == this.BlockStateCount;
 
         public LinearBlockStatePalette(byte bitCount)
         {
-            this.BlockStateArray = new short[1 << bitCount];
+            this.BlockStateArray = new ushort[1 << bitCount];
         }
 
         public int GetIdFromState(Block blockState)

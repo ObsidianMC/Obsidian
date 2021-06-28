@@ -30,13 +30,8 @@ namespace Obsidian.Utilities.Registry
 
         public static DeclareCommands DeclareCommandsPacket = new();
 
-        public static readonly Dictionary<Material, Item> Items = new();
         public static readonly Dictionary<string, IRecipe> Recipes = new();
         public static readonly Dictionary<string, List<Tag>> Tags = new();
-
-        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
-        internal static readonly string[] BlockNames = new string[763]; // 762 - block count
-        internal static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
@@ -50,85 +45,6 @@ namespace Obsidian.Utilities.Registry
             recipeSerializer.Converters.Add(new IngredientConverter());
             recipeSerializer.Converters.Add(new IngredientsConverter());
             recipeSerializer.Converters.Add(new CraftingKeyConverter());
-        }
-
-        public static async Task RegisterBlocksAsync()
-        {
-            using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
-
-            using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-            string json = await read.ReadToEndAsync();
-
-            int registered = 0;
-
-            var type = JObject.Parse(json);
-
-            using (var enumerator = type.GetEnumerator())
-            {
-                while (enumerator.MoveNext())
-                {
-                    var (blockName, token) = enumerator.Current;
-
-                    var name = blockName.Substring(blockName.IndexOf(':') + 1);
-
-                    var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
-
-                    if (!Enum.TryParse(name.Replace("_", ""), true, out Material material))
-                        continue;
-
-                    if (states.States.Length <= 0)
-                        continue;
-
-                    int id = 0;
-                    foreach (var state in states.States)
-                        id = state.Default ? state.Id : states.States.First().Id;
-
-                    var baseId = (short)states.States.Min(state => state.Id);
-                    NumericToBase[(int)material] = baseId;
-
-                    BlockNames[(int)material] = blockName;
-
-                    foreach (var state in states.States)
-                    {
-                        StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
-                    }
-                    registered++;
-                }
-            }
-
-            Logger?.LogDebug($"Successfully registered {registered} blocks...");
-        }
-
-        public static async Task RegisterItemsAsync()
-        {
-            using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
-
-            using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-            var json = await read.ReadToEndAsync();
-
-            var type = JObject.Parse(json);
-
-            using var enumerator = type.GetEnumerator();
-            int registered = 0;
-
-            while (enumerator.MoveNext())
-            {
-                var (name, token) = enumerator.Current;
-
-                var itemName = name.Split(":")[1];
-
-                var item = JsonConvert.DeserializeObject<BaseRegistryJson>(token.ToString());
-
-                if (!Enum.TryParse(itemName.Replace("_", ""), true, out Material material))
-                    continue;
-
-                Items.Add(material, new Item((short)item.ProtocolId, name, material));
-                registered++;
-            }
-
-            Logger?.LogDebug($"Successfully registered {registered} items...");
         }
 
         public static async Task RegisterBiomesAsync()
@@ -218,7 +134,7 @@ namespace Obsidian.Utilities.Registry
                         case "blocks":
                             var block = GetBlock(value);
 
-                            tag.Entries.Add(block.Id);
+                            tag.Entries.Add((int)block.Id);
                             break;
                         case "entity_types":
                             Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
@@ -411,13 +327,12 @@ namespace Obsidian.Utilities.Registry
 
         public static Block GetBlock(int id) => new Block(id);
 
-        public static Block GetBlock(string unlocalizedName) =>
-            new Block(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
+        public static Block GetBlock(string unlocalizedName) => new Block((Material)Array.IndexOf(BlocksRegistry.Names, unlocalizedName));
 
-        public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
-        public static Item GetItem(Material mat) => Items.GetValueOrDefault(mat);
+        public static Item GetItem(int id) => ItemsRegistry.Items.Values.SingleOrDefault(x => x.Id == id);
+        public static Item GetItem(Material mat) => ItemsRegistry.Items.GetValueOrDefault(mat);
         public static Item GetItem(string unlocalizedName) =>
-            Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+            ItemsRegistry.Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
         public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
 

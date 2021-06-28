@@ -1,9 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 
 namespace Obsidian.SourceGenerators.Registry
@@ -73,7 +71,7 @@ namespace Obsidian.SourceGenerators.Registry
             builder.EndScope();
             builder.EndScope();
 
-            context.AddSource("Material.cs", SourceText.From(builder.ToString(), Encoding.UTF8));
+            context.AddSource("Material.cs", builder);
         }
     }
 }

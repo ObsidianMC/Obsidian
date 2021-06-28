@@ -134,6 +134,13 @@ namespace Obsidian.SourceGenerators
             return this;
         }
 
+        public CodeBuilder EndScope(bool semicolon)
+        {
+            indent--;
+            AppendLine(semicolon ? "};" : "}");
+            return this;
+        }
+
         public CodeBuilder XmlSummary(string summary)
         {
             return Xml("summary", summary, inline: false);

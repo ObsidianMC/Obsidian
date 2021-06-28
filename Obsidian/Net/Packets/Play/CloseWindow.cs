@@ -31,7 +31,7 @@ namespace Obsidian.Net.Packets.Play
                     Position = position,
                     ActionId = 1,
                     ActionParam = 0,
-                    BlockType = block.Id
+                    BlockType = (int)block.Id
                 });
                 await player.SendSoundAsync(Sounds.BlockChestClose, position.SoundPosition);
             }
@@ -42,7 +42,7 @@ namespace Obsidian.Net.Packets.Play
                     Position = position,
                     ActionId = 1,
                     ActionParam = 0,
-                    BlockType = block.Id
+                    BlockType = (int)block.Id
                 });
                 await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
             }

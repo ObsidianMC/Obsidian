@@ -83,6 +83,13 @@ namespace Obsidian.SourceGenerators.Registry
             return new string(result);
         }
 
+        public static string ToCamelCase(this string pascalCase)
+        {
+            char[] result = pascalCase.ToCharArray();
+            result[0] = char.ToLower(result[0]);
+            return new string(result);
+        }
+
         public static void Deconstruct<T, U>(this KeyValuePair<T, U> pair, out T t, out U u)
         {
             t = pair.Key;

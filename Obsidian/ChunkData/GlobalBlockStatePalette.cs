@@ -9,7 +9,7 @@ namespace Obsidian.ChunkData
     {
         public bool IsFull { get { return false; } }
 
-        public int GetIdFromState(Block block) => block.Id;
+        public int GetIdFromState(Block block) => (int)block.Id;
 
         public Block GetStateFromIndex(int index) => Registry.GetBlock(index);
 

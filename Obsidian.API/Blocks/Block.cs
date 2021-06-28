@@ -8,51 +8,60 @@ namespace Obsidian.API.Blocks
     {
         public static Block Air => new Block(0, 0);
 
-        private static short[] interactables;
+        private static ushort[] interactables;
         private static bool initialized = false;
 
-        internal static string[] BlockNames;
-        internal static MatchTarget[] StateToMatch;
-        internal static short[] NumericToBase;
+        internal static string[] Names;
+        internal static ushort[] StateToBase;
+        internal static ushort[] StateToNumeric;
+        internal static ushort[] NumericToBase;
 
-        public string UnlocalizedName => BlockNames[Id];
+        public string UnlocalizedName => Names[Id];
         public string Name => Material.ToString();
-        public Material Material => (Material)StateToMatch[baseId].Numeric;
+        public Material Material => (Material)StateToNumeric[baseId];
         public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public bool IsFluid => StateId > 33 && StateId < 66;
-        public int Id => StateToMatch[baseId].Numeric;
-        public short StateId => (short)(baseId + state);
-        public int State => state;
-        public short BaseId => baseId;
+        public uint Id => StateToNumeric[baseId];
+        public ushort StateId => (ushort)(baseId + state);
+        public uint State => state;
+        public ushort BaseId => baseId;
 
-        private readonly short baseId;
-        private readonly short state;
+        private readonly ushort baseId;
+        private readonly ushort state;
 
-        internal Block(int stateId) : this((short)stateId)
+        internal Block(int stateId) : this((ushort)stateId)
         {
         }
 
-        internal Block(short stateId)
-        {
-            baseId = StateToMatch[stateId].Base;
-            state = (short)(stateId - baseId);
-        }
-
-        internal Block(int baseId, int state) : this((short)baseId, (short)state)
+        internal Block(uint stateId) : this((ushort)stateId)
         {
         }
 
-        internal Block(short baseId, short state)
+        internal Block(ushort stateId)
+        {
+            baseId = StateToBase[stateId];
+            state = (ushort)(stateId - baseId);
+        }
+
+        internal Block(int baseId, int state) : this((ushort)baseId, (ushort)state)
+        {
+        }
+
+        internal Block(uint baseId, uint state) : this((ushort)baseId, (ushort)state)
+        {
+        }
+
+        internal Block(ushort baseId, ushort state)
         {
             this.baseId = baseId;
             this.state = state;
         }
 
-        public Block(Material material, short state = 0)
+        public Block(Material material)
         {
-            baseId = NumericToBase[(int)material];
-            this.state = state;
+            baseId = NumericToBase[(uint)material];
+            state = 0;
         }
 
         public override string ToString()
@@ -67,7 +76,7 @@ namespace Obsidian.API.Blocks
 
         public bool Is(Material material)
         {
-            return StateToMatch[baseId].Numeric == (int)material;
+            return StateToNumeric[baseId] == (uint)material;
         }
 
         public override bool Equals(object obj)
@@ -98,20 +107,20 @@ namespace Obsidian.API.Blocks
 
             interactables = new[]
             {
-                NumericToBase[(int)Material.Chest],
-                NumericToBase[(int)Material.CraftingTable],
-                NumericToBase[(int)Material.Furnace],
-                NumericToBase[(int)Material.BrewingStand],
-                NumericToBase[(int)Material.EnderChest],
-                NumericToBase[(int)Material.Anvil],
-                NumericToBase[(int)Material.ChippedAnvil],
-                NumericToBase[(int)Material.DamagedAnvil],
-                NumericToBase[(int)Material.TrappedChest],
-                NumericToBase[(int)Material.Hopper],
-                NumericToBase[(int)Material.Barrel],
-                NumericToBase[(int)Material.Smoker],
-                NumericToBase[(int)Material.BlastFurnace],
-                NumericToBase[(int)Material.Grindstone],
+                NumericToBase[(uint)Material.Chest],
+                NumericToBase[(uint)Material.CraftingTable],
+                NumericToBase[(uint)Material.Furnace],
+                NumericToBase[(uint)Material.BrewingStand],
+                NumericToBase[(uint)Material.EnderChest],
+                NumericToBase[(uint)Material.Anvil],
+                NumericToBase[(uint)Material.ChippedAnvil],
+                NumericToBase[(uint)Material.DamagedAnvil],
+                NumericToBase[(uint)Material.TrappedChest],
+                NumericToBase[(uint)Material.Hopper],
+                NumericToBase[(uint)Material.Barrel],
+                NumericToBase[(uint)Material.Smoker],
+                NumericToBase[(uint)Material.BlastFurnace],
+                NumericToBase[(uint)Material.Grindstone],
             };
         }
     }

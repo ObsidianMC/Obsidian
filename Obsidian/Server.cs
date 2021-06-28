@@ -246,15 +246,13 @@ namespace Obsidian
                 return;
             }
 
-            await Task.WhenAll(Registry.RegisterBlocksAsync(),
-                               Registry.RegisterItemsAsync(),
-                               Registry.RegisterBiomesAsync(),
+            ServerImplementationRegistry.RegisterServerImplementations();
+            Block.Initialize();
+
+            await Task.WhenAll(Registry.RegisterBiomesAsync(),
                                Registry.RegisterDimensionsAsync(),
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
-
-            Block.Initialize();
-            ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
             await (this.Operators as OperatorList).InitializeAsync();
@@ -327,7 +325,7 @@ namespace Obsidian
             {
                 var client = other.client;
 
-                await client.QueuePacketAsync(new BlockChange(location, block.Id));
+                await client.QueuePacketAsync(new BlockChange(location, (int)block.Id));
             }
         }
 
@@ -474,7 +472,7 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = (int)block.Id,
                             Status = digging.Status,
                             Successful = true
                         });
@@ -491,7 +489,7 @@ namespace Obsidian
                     this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                     {
                         Position = digging.Position,
-                        Block = block.Id,
+                        Block = (int)block.Id,
                         Status = digging.Status,
                         Successful = true
                     });
@@ -501,7 +499,7 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = (int)block.Id,
                             Status = digging.Status,
                             Successful = true
                         });

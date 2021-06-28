@@ -67,7 +67,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
             int topY = trunkHeight + heightOffset;
             for (int y = topY; y > 0; y--)
             {
-                world.SetBlock(origin + (0, y, 0), new Block(trunk, 1));
+                world.SetBlock(origin + (0, y, 0), new Block(trunk));
             }
             world.SetBlock(origin, new Block(Material.Dirt));
         }

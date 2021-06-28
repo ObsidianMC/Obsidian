@@ -69,18 +69,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Remove="Assets\blocks.json" />
     <EmbeddedResource Remove="Assets\default_dimensions.xaml" />
-    <EmbeddedResource Remove="Assets\items.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Assets\blocks.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </AdditionalFiles>
-    <AdditionalFiles Include="Assets\items.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </AdditionalFiles>
+    <AdditionalFiles Include="..\Obsidian.API\Assets\blocks.json" Link="Assets\blocks.json" />
+    <AdditionalFiles Include="..\Obsidian.API\Assets\items.json" Link="Assets\items.json" />
   </ItemGroup>
 
   <ItemGroup>

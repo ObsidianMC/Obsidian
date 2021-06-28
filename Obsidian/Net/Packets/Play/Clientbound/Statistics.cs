@@ -38,7 +38,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public Statistic(CategoryIds category, Block block, int value)
         {
             CategoryId = category;
-            StatisticId = block.Id;
+            StatisticId = (int)block.Id;
             Value = value;
         }
 

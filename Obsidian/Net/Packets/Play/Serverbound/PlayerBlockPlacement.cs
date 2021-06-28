@@ -71,7 +71,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                             Position = position,
                             ActionId = 1,
                             ActionParam = 1,
-                            BlockType = interactedBlock.Id
+                            BlockType = (int)interactedBlock.Id
                         });
                         await player.SendSoundAsync(Sounds.BlockChestOpen, position.SoundPosition, SoundCategory.Blocks);
 
@@ -99,7 +99,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         Position = position,
                         ActionId = 1,
                         ActionParam = 1,
-                        BlockType = interactedBlock.Id
+                        BlockType = (int)interactedBlock.Id
                     });
                     await player.SendSoundAsync(Sounds.BlockChestOpen, position.SoundPosition, SoundCategory.Blocks);
 
@@ -138,7 +138,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         Position = position,
                         ActionId = 1,
                         ActionParam = 1,
-                        BlockType = interactedBlock.Id
+                        BlockType = (int)interactedBlock.Id
                     });
                     await player.SendSoundAsync(Sounds.BlockEnderChestOpen, position.SoundPosition, SoundCategory.Blocks);
                 }

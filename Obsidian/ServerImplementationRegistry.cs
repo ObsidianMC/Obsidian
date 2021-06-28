@@ -19,9 +19,10 @@ namespace Obsidian
             IClickComponent.createNew = () => new ClickComponent();
             IHoverComponent.createNew = () => new HoverComponent();
 
-            Block.BlockNames = BlocksRegistry.Names;
+            Block.Names = BlocksRegistry.Names;
             Block.NumericToBase = BlocksRegistry.NumericToBase;
-            Block.StateToMatch = BlocksRegistry.StateToMatch;
+            Block.StateToBase = BlocksRegistry.StateToBase;
+            Block.StateToNumeric = BlocksRegistry.StateToNumeric;
         }
     }
 }
