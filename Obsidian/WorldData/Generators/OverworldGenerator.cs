@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld;
+﻿using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using System;
@@ -11,18 +9,28 @@ namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
-        private OverworldTerrain terrainGen;
+        private readonly OverworldTerrain terrainGen;
         public OverworldGenerator(string seed) : base("overworld")
         {
-            var seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+            // If the seed provided is numeric, just use it.
+            // Naam asked me to do this a long time ago and I
+            // bet he thought that I forgot - Jonpro03
+            if (!int.TryParse(seed, out int seedHash)) 
+            {
+                seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+            }
             OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
             generatorSettings.Seed = seedHash;
             terrainGen = new OverworldTerrain(generatorSettings);
         }
 
-        public override Chunk GenerateChunk(int cx, int cz)
+        public override Chunk GenerateChunk(int cx, int cz, World world, Chunk chunk = null)
         {
-            var chunk = new Chunk(cx, cz);
+            if (chunk is null)
+                chunk = new Chunk(cx, cz);
+            // Sanity check
+            if (chunk.isGenerated)
+                return chunk;
 
             // Build terrain map for this chunk
             var terrainHeightmap = new double[16, 16];
@@ -55,9 +63,7 @@ namespace Obsidian.WorldData.Generators
 
             ChunkBuilder.FillChunk(chunk, terrainHeightmap, bedrockHeightmap);
             ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
-
-            OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen);
-            //GenerateCoal(chunk, rockHeightmap);
+            OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen, world);
 
 
             for (int bx = 0; bx < 16; bx++)
@@ -67,31 +73,8 @@ namespace Obsidian.WorldData.Generators
                     chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                 }
             }
+            chunk.isGenerated = true;
             return chunk;
         }
-
-
-
-        /*private void GenerateCoal(Chunk chunk, double[,] rockHeighmap)
-        {
-            for (int bx = 0; bx < 16; bx++)
-            {
-                for (int bz = 0; bz < 16; bz++)
-                {
-                    var worldX = (chunk.X * 16) + bx;
-                    var worldZ = (chunk.Z * 16) + bz;
-                    var rockY = (int)rockHeighmap[bx, bz];
-
-                    for (int by = 24; by < rockY; by++)
-                    {
-                        bool isCoal = terrainGen.Coal(worldX, by, worldZ);
-                        if (isCoal)
-                        {
-                            chunk.SetBlock(bx, by, bz, Registry.GetBlock(Material.CoalOre));
-                        }
-                    }
-                }
-            }
-        }*/
     }
 }

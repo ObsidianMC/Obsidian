@@ -24,15 +24,15 @@ namespace Obsidian.WorldData.Generators.Overworld
         {
             Temp t;
             double temperature = noiseGen.GetBiomeTemp(worldX, worldZ);
-            if (temperature > 0.33) { t = Temp.hot; }
+            if (temperature > 0.66) { t = Temp.hot; }
             else if (temperature > 0.0) { t = Temp.warm; }
-            else if (temperature > -0.25) { t = Temp.cold; }
+            else if (temperature > -0.5) { t = Temp.cold; }
             else { t = Temp.freezing; }
 
             Humidity h;
             double humidity = noiseGen.GetBiomeHumidity(worldX, worldZ);
-            if (humidity > 0.33) { h = Humidity.dry; }
-            else if (humidity > -0.33) { h = Humidity.neutral; }
+            if (humidity > 0.66) { h = Humidity.dry; }
+            else if (humidity > 0) { h = Humidity.neutral; }
             else { h = Humidity.wet; }
 
             Biomes b = Biomes.Nether;

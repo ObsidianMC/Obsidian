@@ -20,8 +20,9 @@ namespace Obsidian.Net.Packets.Play
 
             var position = player.OpenedInventory.BlockPosition;
 
-            var block = server.World.GetBlock(position);
-
+            var b = server.World.GetBlock(position);
+            if (b is null) { return; }
+            var block = (Block)b;
             if (block.Is(Material.Chest))
             {
                 await player.client.QueuePacketAsync(new BlockAction

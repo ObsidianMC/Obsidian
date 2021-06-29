@@ -35,7 +35,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                 Source0 = new ScaleBias
                                 {
                                     Scale = 0.005, // Flatten
-                                    Bias = 0.3, // move elevation
+                                    Bias = 0.4, // move elevation
                                     Source0 = new Billow
                                     {
                                         Seed = settings.Seed + 70,

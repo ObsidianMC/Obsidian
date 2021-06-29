@@ -2,8 +2,6 @@
 using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise;
 using SharpNoise.Modules;
-using System;
-using System.Collections.Generic;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
@@ -39,7 +37,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
             var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
-            //var scaled = GetScaledModuleOutput(mountains.Result);
+            //var scaled = GetScaledModuleOutput(LandOceanSelector());
+            //var scaled = GetScaledModuleOutput(temperature.RiverSelector);
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -119,8 +118,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     {
                         // Scale horizontally to make Continents larger/smaller
                         XScale = 1 / (settings.ContinentSize * 1.01),
-                        YScale = 1 / (settings.ContinentSize * 1.01),
                         ZScale = 1 / (settings.ContinentSize * 1.01),
+                        // Values are now Ocean < 0.5 < Land
                         Source0 = new ScaleBias
                         {
                             Bias = 0.5 + settings.OceanLandRatio,
@@ -128,11 +127,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                             // Actual noise for continents. Ocean < 0 < Land
                             Source0 = new Perlin
                             {
-                                Seed = settings.Seed + 0,
-                                Frequency = 0.5 * 0.25,
+                                Seed = settings.Seed,
+                                Frequency = 0.125,
                                 Persistence = 0.5,
-                                Lacunarity = 2.508984375,
-                                OctaveCount = 4,
+                                Lacunarity = 1.508984375,
+                                OctaveCount = 3,
                                 Quality = NoiseQuality.Best,
                             }
                         }
@@ -150,8 +149,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     Source0 = ocean.Result,
                     Source1 = TerrainSelect(),
                     Control = LandOceanSelector(),
-                    EdgeFalloff = 0.15,
-                    LowerBound = 0.55,
+                    EdgeFalloff = 0.05,
+                    LowerBound = 0.49,
                     UpperBound = 2.0
                 }
             };
@@ -184,20 +183,20 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             {
                 Source0 = new Select
                 {
-                    Source0 = plains.Result,
-                    Source1 = new Select
+                    Source1 = mountains.Result,
+                    Source0 = new Select
                     {
                         Source0 = hills.Result,
-                        Source1 = mountains.Result,
+                        Source1 = plains.Result,
                         Control = terrain.BiomeSelector,
-                        LowerBound = 0,
-                        UpperBound = 0.5,
+                        LowerBound = -2.0,
+                        UpperBound = -0,
                         EdgeFalloff = 0.1
                     },
                     Control = terrain.BiomeSelector,
-                    LowerBound = 0.3,
-                    UpperBound = 0.7,
-                    EdgeFalloff = 0.25
+                    LowerBound = 0.66,
+                    UpperBound = 2.0,
+                    EdgeFalloff = 0.1
                 }
             };
         }
@@ -226,8 +225,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         }
                     },
                     Control = LandOceanSelector(),
-                    //EdgeFalloff = 0.15,
-                    LowerBound = 0.6,
+                    EdgeFalloff = 0.15,
+                    LowerBound = 0.65,
                     UpperBound = 2.0
                 }   
             };

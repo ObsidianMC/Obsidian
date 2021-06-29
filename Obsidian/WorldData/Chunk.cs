@@ -14,6 +14,8 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
+        public bool isGenerated = false;
+
         private const int width = 16;
         private const int height = 16;
         private const int cubesHorizontal = 16 / width;
