@@ -76,7 +76,8 @@ namespace Obsidian.API.Blocks
 
         public bool Is(Material material)
         {
-            return StateToNumeric[baseId] == (uint)material;
+            // Cannot be reduced to only baseId because of block conjunctions
+            return StateToNumeric[baseId + state] == (uint)material;
         }
 
         public override bool Equals(object obj)

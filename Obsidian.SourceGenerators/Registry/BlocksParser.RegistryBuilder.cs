@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -13,6 +14,8 @@ namespace Obsidian.SourceGenerators.Registry
             private StringBuilder stateToNumeric;
             private StringBuilder blockNames;
             private StringBuilder numericToBase;
+
+            private Dictionary<Conjunction, (int, int)> conjunctedIds = new();
 
             private int numericId = 0;
 
@@ -41,16 +44,7 @@ namespace Obsidian.SourceGenerators.Registry
             {
                 blockNames.Append($"\"{block.Name}\", ");
 
-                int baseId = int.MaxValue, idCount = 0;
-                foreach (JsonElement state in block.Value.GetProperty("states").EnumerateArray())
-                {
-                    int id = state.GetProperty("id").GetInt32();
-
-                    if (id < baseId)
-                        baseId = id;
-
-                    idCount++;
-                }
+                (int baseId, int idCount) = GetIds(block);
 
                 numericToBase.Append($"{baseId}, ");
 
@@ -81,6 +75,51 @@ namespace Obsidian.SourceGenerators.Registry
                 blockRegistry.EndScope();
 
                 context.AddSource("BlocksRegistry.cs", blockRegistry);
+            }
+
+            private (int baseId, int idCount) GetIds(JsonProperty block)
+            {
+                string tag = block.Name.RemoveNamespace();
+                for (int i = 0; i < Conjunctions.Length; i++)
+                {
+                    for (int j = 0; j < Conjunctions[i].Targets.Length; j++)
+                    {
+                        if (tag == Conjunctions[i].Targets[j])
+                        {
+                            return GetConjunctionIds(Conjunctions[i], block);
+                        }
+                    }
+                }
+
+                return GetUniqueIds(block);
+            }
+
+            private (int baseId, int idCount) GetUniqueIds(JsonProperty block)
+            {
+                int baseId = int.MaxValue, idCount = 0;
+                foreach (JsonElement state in block.Value.GetProperty("states").EnumerateArray())
+                {
+                    int id = state.GetProperty("id").GetInt32();
+
+                    if (id < baseId)
+                        baseId = id;
+
+                    idCount++;
+                }
+
+                return (baseId, idCount);
+            }
+
+            private (int baseId, int idCount) GetConjunctionIds(Conjunction conjunction, JsonProperty block)
+            {
+                if (conjunctedIds.TryGetValue(conjunction, out var ids))
+                {
+                    return ids;
+                }
+
+                ids = GetUniqueIds(block);
+                conjunctedIds.Add(conjunction, ids);
+                return ids;
             }
         }
     }
