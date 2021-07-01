@@ -151,21 +151,24 @@ namespace Obsidian.WorldData
             if (region is null)
             {
                 // region hasn't been loaded yet
-                var regionCoords = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+                var (rX, rZ) = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
                 if (scheduleGeneration) 
                 {
-                    if (!RegionsToLoad.Contains(regionCoords))
-                        RegionsToLoad.Enqueue(regionCoords);
+                    if (!RegionsToLoad.Contains((rX, rZ)))
+                        RegionsToLoad.Enqueue((rX, rZ));
                     return null;
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                region = LoadRegion(regionCoords.Item1, regionCoords.Item2);
-                Regions[NumericsHelper.IntsToLong(regionCoords.Item1, regionCoords.Item2)] = region;
+                var task = LoadRegion(rX, rZ);
+                task.Start();
+                task.Wait();
+                region = task.Result;
+                Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
             }
 
-            var (indexX, indexZ) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
-            var chunk = region.LoadedChunks[indexX, indexZ];
+            (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
+            var chunk = region.GetChunk(chunkIndex);
             
             if (chunk is not null) 
             { 
@@ -192,7 +195,7 @@ namespace Obsidian.WorldData
             {
                 isGenerated = false // Not necessary; just being explicit.
             };
-            region.LoadedChunks[indexX, indexZ] = chunk;
+            region.SetChunk(chunk);
 
             return chunk;
         }
@@ -368,13 +371,13 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public Region LoadRegionByChunk(int chunkX, int chunkZ)
+        public async Task<Region> LoadRegionByChunk(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
-            return LoadRegion(regionX, regionZ);
+            return await LoadRegion(regionX, regionZ);
         }
 
-        public Region LoadRegion(int regionX, int regionZ)
+        public async Task<Region> LoadRegion(int regionX, int regionZ)
         {
             long value = NumericsHelper.IntsToLong(regionX, regionZ);
             this.Regions.TryAdd(value, null);
@@ -384,6 +387,7 @@ namespace Obsidian.WorldData
 
             this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
+            await region.InitAsync();
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
@@ -391,7 +395,7 @@ namespace Obsidian.WorldData
             return region;
         }
 
-        public void ManageChunks()
+        public async Task ManageChunks()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
@@ -404,7 +408,7 @@ namespace Obsidian.WorldData
                 if (RegionsToLoad.TryDequeue(out var job))
                 {
                     if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.Item1, job.Item2))) // Sanity check
-                        LoadRegion(job.Item1, job.Item2);
+                        await LoadRegion(job.Item1, job.Item2);
                 }
             }
 
@@ -427,18 +431,23 @@ namespace Obsidian.WorldData
                     ChunksToGen.Enqueue((job.x, job.z));
                     return;
                 }
-                var (rX, rZ) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
-                Chunk c = region.LoadedChunks[rX, rZ];
+                (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
+                Chunk c = region.GetChunk(chunkIndex);
                 if (c is null)
                 {
                     c = new Chunk(job.x, job.z)
                     {
                         isGenerated = false // Not necessary; just being explicit.
                     };
-                    region.LoadedChunks[rX, rZ] = c;
+                    // Set chunk now so that it no longer comes back as null. #threadlyfe
+                    region.SetChunk(c);
                 }
                 Generator.GenerateChunk(job.x, job.z, this, c);
+                region.SetChunk(c);
             });
+
+            // We need better logic on when to do this. Maybe start another task that just flushes to disk or something idk.
+            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
         }
 
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
@@ -506,17 +515,17 @@ namespace Obsidian.WorldData
             return entity;
         }
 
-        internal void Init(WorldGenerator gen)
+        internal async Task Init(WorldGenerator gen)
         {
             // Make world directory
             Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
-            GenerateWorld();
-            foreach (var r in this.Regions.Values) { r.Flush(); }
+            await GenerateWorld();
+            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
             SetWorldSpawn();
         }
 
-        internal void GenerateWorld()
+        internal async Task GenerateWorld()
         {
             this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
             int pregenerationRange = Server.Config.PregenerateChunkRange;
@@ -534,7 +543,7 @@ namespace Obsidian.WorldData
             }
             while (!ChunksToGen.IsEmpty)
             {
-                ManageChunks();
+                await ManageChunks();
                 Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
             }
         }
@@ -545,7 +554,7 @@ namespace Obsidian.WorldData
 
             foreach (var r in Regions.Values)
             {
-                foreach (var c in r.LoadedChunks)
+                foreach (var c in r.GeneratedChunks())
                 {
                     for (int bx = 0; bx < 16; bx++)
                     {
