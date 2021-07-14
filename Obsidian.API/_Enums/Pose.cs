@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API
 {
-    public enum Pose
+    public enum Pose : int
     {
         Standing,
 
