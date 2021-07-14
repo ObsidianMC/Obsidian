@@ -233,7 +233,11 @@ namespace Obsidian.WorldData
             if (region is null)
                 return new List<Entity>();
 
-            return region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance);
+            var selected = region.Entities.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance).ToList();
+
+            selected.AddRange(this.Players.Select(x => x.Value).Where(x => VectorF.Distance(location, x.Position) <= distance));
+
+            return selected;
         }
 
         public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
@@ -262,9 +266,7 @@ namespace Obsidian.WorldData
                 GameType = (Gamemode)levelcompound.GetInt("GameType"),
                 GeneratorVersion = levelcompound.GetInt("generatorVersion"),
                 RainTime = levelcompound.GetInt("rainTime"),
-                SpawnX = levelcompound.GetInt("SpawnX"),
-                SpawnY = levelcompound.GetInt("SpawnY"),
-                SpawnZ = levelcompound.GetInt("SpawnZ"),
+                SpawnPosition = new VectorF(levelcompound.GetInt("SpawnX"), levelcompound.GetInt("SpawnY"), levelcompound.GetInt("SpawnZ")),
                 ThunderTime = levelcompound.GetInt("thunderTime"),
                 Version = levelcompound.GetInt("version"),
                 LastPlayed = levelcompound.GetLong("LastPlayed"),
@@ -283,9 +285,9 @@ namespace Obsidian.WorldData
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
             // spawn chunks are radius 12 from spawn. That's a lot for us... so let's do 4 instead.
             var radius = 4;
-            (int X, int Z) spawnChunk = (this.Data.SpawnX.ToChunkCoord(), this.Data.SpawnZ.ToChunkCoord());
-            for (var cx = spawnChunk.X - radius; cx < spawnChunk.X + radius; cx++)
-                for (var cz = spawnChunk.Z - radius; cz < spawnChunk.Z + radius; cz++)
+            var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
+            for (var cx = x - radius; cx < x + radius; cx++)
+                for (var cz = z - radius; cz < z + radius; cz++)
                     GetChunk(cx, cz);
 
             this.Generator = value;
@@ -309,9 +311,9 @@ namespace Obsidian.WorldData
             writer.WriteInt("GameType", (int)Gamemode.Creative);
             writer.WriteInt("generatorVersion", 1);
             writer.WriteInt("rainTime", 0);
-            writer.WriteInt("SpawnX", Data.SpawnX);
-            writer.WriteInt("SpawnY", Data.SpawnY);
-            writer.WriteInt("SpawnZ", Data.SpawnZ);
+            writer.WriteInt("SpawnX", (int)Data.SpawnPosition.X);//Why aren't these floats :eyes:
+            writer.WriteInt("SpawnY", (int)Data.SpawnPosition.Y);
+            writer.WriteInt("SpawnZ", (int)Data.SpawnPosition.Z);
             writer.WriteInt("thunderTime", 0);
             writer.WriteInt("version", 19133);
 
@@ -448,6 +450,71 @@ namespace Obsidian.WorldData
             foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
         }
 
+        public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
+        {
+            // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
+            // FireworkRocket, FallingBlock, Item, ItemFrame, Fireball, LeashKnot, LightningBolt,
+            // LlamaSpit, Minecart, ChestMinecart, CommandBlockMinecart, FurnaceMinecart, HopperMinecart
+            // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
+            // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
+
+            Entity entity;
+            if (type.IsLiving())
+            {
+                entity = new Entity
+                {
+                    Type = type,
+                    Position = position,
+                    EntityId = this.TotalLoadedEntities() + 1,
+                    Server = this.Server
+                };
+
+                if (type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
+                {
+                    //TODO
+                }
+                else
+                {
+                    await this.Server.BroadcastPacketAsync(new SpawnEntity
+                    {
+                        EntityId = entity.EntityId,
+                        Uuid = entity.Uuid,
+                        Type = type,
+                        Position = position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 0,
+                        Velocity = new Velocity(0, 0, 0)
+                    });
+                }
+            }
+            else
+            {
+                entity = new Living
+                {
+                    Position = position,
+                    EntityId = this.TotalLoadedEntities() + 1,
+                    Type = type
+                };
+
+                await this.Server.BroadcastPacketAsync(new SpawnLivingEntity
+                {
+                    EntityId = entity.EntityId,
+                    Uuid = entity.Uuid,
+                    Type = type,
+                    Position = position,
+                    Pitch = 0,
+                    Yaw = 0,
+                    HeadPitch = 0,
+                    Velocity = new Velocity(0, 0, 0)
+                });
+            }
+
+            this.TryAddEntity(entity);
+
+            return entity;
+        }
+
         internal async Task Init(WorldGenerator gen)
         {
             // Make world directory
@@ -483,9 +550,8 @@ namespace Obsidian.WorldData
 
         internal void SetWorldSpawn()
         {
-            if (Data.SpawnY != 0) { return; }
-            Data.SpawnX = Data.SpawnZ = 0;
-            Data.SpawnY = 128;
+            if (Data.SpawnPosition.Y != 0) { return; }
+
             foreach (var r in Regions.Values)
             {
                 foreach (var c in r.GeneratedChunks())
@@ -498,9 +564,7 @@ namespace Obsidian.WorldData
                             Block block = c.GetBlock(bx, by, bz);
                             if (by > 58 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
                             {
-                                Data.SpawnX = bx;
-                                Data.SpawnY = by + 2;
-                                Data.SpawnZ = bz;
+                                this.Data.SpawnPosition = new VectorF(bx, by + 2, bz);
                                 this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
                                 return;
                             }

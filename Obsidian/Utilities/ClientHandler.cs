@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -77,7 +76,9 @@ namespace Obsidian
                 case 0x03:
                     await HandleFromPoolAsync<IncomingChatMessage>(data, client);
                     break;
-
+                case 0x04:
+                    await HandleFromPoolAsync<ClientStatus>(data, client);
+                    break;
                 case 0x05:
                     await HandleFromPoolAsync<ClientSettings>(data, client);
                     break;
@@ -100,6 +101,10 @@ namespace Obsidian
 
                 case 0x0B:
                     await HandleFromPoolAsync<PluginMessage>(data, client);
+                    break;
+
+                case 0x0E:
+                    await HandleFromPoolAsync<InteractEntity>(data, client);
                     break;
 
                 case 0x18:

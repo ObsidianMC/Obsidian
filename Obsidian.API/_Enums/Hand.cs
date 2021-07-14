@@ -2,7 +2,7 @@
 {
     public enum Hand : int
     {
-        Right = 0,
+        MainHand = 0,
         OffHand = 1
     }
 }

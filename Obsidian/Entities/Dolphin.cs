@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.Entities
 {
-    public class Dolphin : Insentient
+    public class Dolphin : Mob
     {
     }
 }

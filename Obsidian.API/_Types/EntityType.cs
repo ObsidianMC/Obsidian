@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.API
 {
     public enum EntityType : int
     {
@@ -66,7 +66,7 @@
         PiglinBrute,
         Pillager,
         PolarBear,
-        Tnt,
+        PrimedTNT,
         Pufferfish,
         Rabbit,
         Ravager,

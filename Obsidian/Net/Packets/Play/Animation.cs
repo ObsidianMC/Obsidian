@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play
             // TODO broadcast entity animation to nearby players
             switch (Hand)
             {
-                case Hand.Right:
+                case Hand.MainHand:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,

@@ -26,6 +26,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 Player = player.Uuid,
                 Packet = this
             });
+
             return ValueTask.CompletedTask;
         }
     }

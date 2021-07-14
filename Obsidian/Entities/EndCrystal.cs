@@ -2,7 +2,7 @@
 
 namespace Obsidian.Entities
 {
-    public class EnderCrystal : Entity
+    public class EndCrystal : Entity
     {
         public VectorF BeamTarget { get; private set; }
 

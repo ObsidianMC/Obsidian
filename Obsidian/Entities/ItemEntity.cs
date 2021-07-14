@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
-    // TODO item entity has to have a MaterialType prop
     public class ItemEntity : Entity
     {
-        public short Id { get; set; }
+        public int Id { get; set; }
+
+        public Material Material => Registry.GetItem(this.Id).Type;
 
         public sbyte Count { get; set; }
 
@@ -19,14 +20,21 @@ namespace Obsidian.Entities
 
         public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
 
+        public ItemEntity() => this.Type = EntityType.Item;
+
         public override async Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(Registry.GetItem(this.Id).Type, this.Count, this.ItemMeta)
-            {
-                Present = true
-            });
+            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
+        }
+
+        public override void Write(MinecraftStream stream)
+        {
+            base.Write(stream);
+
+            stream.WriteEntityMetadataType(7, EntityMetadataType.Slot);
+            stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
         }
 
         public override async Task TickAsync()

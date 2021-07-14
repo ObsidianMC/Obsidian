@@ -9,6 +9,7 @@
         public uint ActiveEffectColor { get; }
 
         public bool AmbientPotionEffect { get; set; }
+        public bool Alive { get; }
 
         public int AbsorbedArrows { get; set; }
 
