@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.API.Events
 {
+    //TODO check if player crits and calculate damage
     public class PlayerAttackEntityEventArgs : EntityEventArgs
     {
         /// <summary>

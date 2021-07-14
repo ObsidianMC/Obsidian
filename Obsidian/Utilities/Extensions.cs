@@ -16,11 +16,7 @@ namespace Obsidian.Utilities
 {
     public static partial class Extensions
     {
-        public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
-
-        internal static bool IsLiving(this EntityType type)
-        {
-            return new[] { EntityType.Arrow,
+        internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
                 EntityType.DragonFireball,
@@ -54,8 +50,11 @@ namespace Obsidian.Utilities
                 EntityType.Potion,
                 EntityType.Trident,
                 EntityType.FishingBobber,
-                EntityType.EyeOfEnder}.Contains(type);
-        }
+                EntityType.EyeOfEnder};
+
+        public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
+
+        internal static bool IsLiving(this EntityType type) => nonLiving.Contains(type);
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
