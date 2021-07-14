@@ -28,7 +28,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            await player.UpdateAsync(server, Position, OnGround);
+            await player.UpdateAsync(Position, OnGround);
             if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
             {
                 await player.World.UpdateClientChunksAsync(player.client);
