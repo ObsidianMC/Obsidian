@@ -33,7 +33,22 @@ namespace Obsidian.API.AI
             Vector.Forwards,
             Vector.Backwards,
             Vector.Up,
-            Vector.Down
+            Vector.Down,
+
+            Vector.Left + Vector.Forwards,
+            Vector.Left + Vector.Backwards,
+            Vector.Right + Vector.Forwards,
+            Vector.Right + Vector.Backwards,
+
+            Vector.Forwards + Vector.Up,
+            Vector.Backwards + Vector.Up,
+            Vector.Left + Vector.Up,
+            Vector.Right + Vector.Up,
+
+            Vector.Forwards + Vector.Down,
+            Vector.Backwards + Vector.Down,
+            Vector.Left + Vector.Down,
+            Vector.Right + Vector.Down,
         };
 
         public AStarPath(IWorld world)
@@ -54,7 +69,6 @@ namespace Obsidian.API.AI
             while (openList.Count > 0)
             {
                 var currentNode = openList[0];
-                var currentIndex = 0;
 
                 for (var index = 0; index < openList.Count; index++)
                 {
@@ -62,12 +76,11 @@ namespace Obsidian.API.AI
                     if (item.f < currentNode.f)
                     {
                         currentNode = item;
-                        currentIndex = index;
                     }
                 }
 
                 openList.Remove(currentNode);
-                closedList.Append(currentNode);
+                closedList.Add(currentNode);
                 
                 // Made it!
                 if (currentNode == endNode)
@@ -77,7 +90,7 @@ namespace Obsidian.API.AI
 
                     while (current is not null)
                     {
-                        result.Append(current.Position);
+                        result.Add(current.Position);
                         current = current.Parent;
                     }
 
@@ -90,11 +103,11 @@ namespace Obsidian.API.AI
                 {
                     var nodePosition = currentNode.Position + newPosition;
 
-                    if (!IsValidMove(nodePosition))
+                    if (!IsValidMove(currentNode.Position, nodePosition))
                         continue;
 
                     var newNode = new Node(currentNode, nodePosition);
-                    children.Append(newNode);
+                    children.Add(newNode);
                 }
 
                 foreach (var child in children)
@@ -110,37 +123,42 @@ namespace Obsidian.API.AI
 
                     child.f = child.g + child.h;
 
-                    foreach (var openNode in openList)
-                    {
-                        if (child == openNode && child.g > openNode.g)
-                        {
-                            continue;
-                        }
-                    }
+                    if (openList.Any(openNode => openNode == child && child.g > openNode.g))
+                        continue;
 
-                    openList.Append(child);
+                    openList.Add(child);
                 }
             }
 
             return new List<Vector>();
         }
 
-        private bool IsValidMove(Vector nextPos)
+        private bool IsValidMove(Vector curPos, Vector nextPos)
         {
             //var surfaceBlock =  world.GetBlock(nextPos);
             
             // Does the entity fit?
+            for (int y = curPos.Y; y < Math.Max(curPos.Y, nextPos.Y) + EntityHeight; y++)
+            {
+                /*var b = world.GetBlock(nextPos.X, y, nextPos.Z);
+                if (b.IsMotionBlocking)
+                {
+                    return false;
+                }*/
+            }
 
             // Would the fall kill the entity?
 
             // Can the entity jump/climb high enough?
 
+            // Can the entity swim?
+
             return true;
         }
 
-        private class Node
+        private class Node : IEquatable<Node>
         {
-            public Node Parent { get; }
+            public Node? Parent { get; }
 
             public Vector Position { get; }
 
@@ -151,13 +169,24 @@ namespace Obsidian.API.AI
             public double h = 0;
 
 
-            public Node(Node parent, Vector position)
+            public Node(Node? parent, Vector position)
             {
                 Parent = parent;
                 Position = position;
             }
 
-            public bool IsEqual(Node other) => other.Position == this.Position;
+            public bool Equals(Node? other) => other?.Position == Position;
+
+            public override bool Equals(object? obj)
+            {
+                return Equals(obj as Node);
+            }
+
+            public static bool operator ==(Node? left, Node? right) { return left?.Position == right?.Position; }
+
+            public static bool operator !=(Node? left, Node? right) { return !(left == right); }
+
+            public override int GetHashCode() => Position.GetHashCode();
         }
     }
 }
