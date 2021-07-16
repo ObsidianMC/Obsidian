@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.API.AI
 {
@@ -60,6 +58,15 @@ namespace Obsidian.API.AI
         {
             var startNode = new Node(null, startPos);
             var endNode = new Node(null, targetPos);
+
+            // Out of range?
+            var dist = Math.Pow(targetPos.X - startPos.X, 2);
+            dist += Math.Pow(targetPos.Y - startPos.Y, 2);
+            dist += Math.Pow(targetPos.Z - startPos.Z, 2);
+            dist = Math.Sqrt(dist);
+            if (dist > MaxRange)
+                return new List<Vector>();
+
 
             List<Node> openList = new();
             List<Node> closedList = new();
@@ -135,23 +142,39 @@ namespace Obsidian.API.AI
 
         private bool IsValidMove(Vector curPos, Vector nextPos)
         {
-            //var surfaceBlock =  world.GetBlock(nextPos);
-            
             // Does the entity fit?
-            for (int y = curPos.Y; y < Math.Max(curPos.Y, nextPos.Y) + EntityHeight; y++)
+            /*for (int y = curPos.Y; y < Math.Max(curPos.Y, nextPos.Y) + EntityHeight; y++)
             {
-                /*var b = world.GetBlock(nextPos.X, y, nextPos.Z);
+                var b = world.GetBlock(nextPos.X, y, nextPos.Z);
                 if (b.IsMotionBlocking)
                 {
                     return false;
-                }*/
+                }
             }
 
             // Would the fall kill the entity?
+            bool allAir = true;
+            for (int y = nextPos.Y; y >= nextPos.Y - MaxFallHeight; y--)
+            {
+                var b = world.GetBlock(nextPos.X, y, nextPos.Z);
+                if (!b.isAir)
+                {
+                    allAir = false;
+                    break;
+                }
+            }
+
+            if (allAir) 
+                return false;
 
             // Can the entity jump/climb high enough?
+            int height = nextPos.Y - curPos.Y;
+            if (height > MaxClimbHeight)
+                return false;
 
             // Can the entity swim?
+            if (world.GetBlock(nextPos).isLiquid && !EntityCanSwim)
+                return false;*/
 
             return true;
         }
