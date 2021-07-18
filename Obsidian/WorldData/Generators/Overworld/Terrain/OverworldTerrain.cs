@@ -44,7 +44,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             var landLockedFix = new Func<Module, double, double, double, double>((Module source0, double x, double y, double z) =>
             {
-                return source0.GetValue(x, y, z);
                 // If all neighbors are land, become land.
                 return source0.GetValue(x - 1, y, z) > 0 &&
                     source0.GetValue(x + 1, y, z) > 0 &&
@@ -52,19 +51,21 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     source0.GetValue(x, y, z + 1) > 0 ? 1 : source0.GetValue(x, y, z);
             });
 
-            var largeLandMass = new Polariaze
-            {
-                Source0 = new ScaleBias
+            var largeLandMass = new Cache {
+                Source0 = new Polariaze
                 {
-                    Bias = 0.25, // Shift up for more land than sea
-                    Source0 = new Cache
+                    Source0 = new ScaleBias
                     {
-                        Source0 = new White
+                        Bias = 0.25, // Shift up for more land than sea
+                        Source0 = new Cache
                         {
-                            Seed = ots.Seed
+                            Source0 = new White
+                            {
+                                Seed = ots.Seed
+                            }
                         }
-                    }
 
+                    }
                 }
             };
 
