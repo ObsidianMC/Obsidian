@@ -11,7 +11,7 @@ namespace Obsidian.API.Noise
     /// SharpNoise extension that enables a delegate to determine whether
     /// to utilize one of two input modules.
     /// </summary>
-    public class Conditional : Module
+    public class FuncSelector : Module
     {
         public Module Source0 { get; set; }
 
@@ -26,7 +26,7 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// Ctor.
         /// </summary>
-        public Conditional() : base(2)
+        public FuncSelector() : base(2)
         {
 
         }

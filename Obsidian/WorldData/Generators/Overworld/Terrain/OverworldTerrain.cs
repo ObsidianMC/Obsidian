@@ -1,7 +1,9 @@
-﻿using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
+﻿using Obsidian.API.Noise;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise;
 using SharpNoise.Modules;
+using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
@@ -36,9 +38,52 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             // Scale Point multiplies input values by the scaling factors.
             // Used to stretch or shrink the terrain horizontally.
-            var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
+            //var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
             //var scaled = GetScaledModuleOutput(LandOceanSelector());
             //var scaled = GetScaledModuleOutput(temperature.RiverSelector);
+
+            var landLockedFix = new Func<Module, double, double, double, double>((Module source0, double x, double y, double z) =>
+            {
+                return source0.GetValue(x, y, z);
+                // If all neighbors are land, become land.
+                return source0.GetValue(x - 1, y, z) > 0 &&
+                    source0.GetValue(x + 1, y, z) > 0 &&
+                    source0.GetValue(x, y, z - 1) > 0 &&
+                    source0.GetValue(x, y, z + 1) > 0 ? 1 : source0.GetValue(x, y, z);
+            });
+
+            var largeLandMass = new Polariaze
+            {
+                Source0 = new ScaleBias
+                {
+                    Bias = 0.25, // Shift up for more land than sea
+                    Source0 = new Cache
+                    {
+                        Source0 = new White
+                        {
+                            Seed = ots.Seed
+                        }
+                    }
+
+                }
+            };
+
+            var scaled = new BitShiftInput
+            {
+                Amount = 8,
+                Left = false,
+                Source0 = new FuncRunner
+                {
+                    Source0 = largeLandMass,
+                    ConditionFunction = landLockedFix
+                }
+            };
+
+            /*var scaled = new Zoom
+            {
+                Amount = 1 << 16,
+                Source0 = largeLandMass
+            };*/
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -46,7 +91,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             var biased = new ScaleBias
             {
                 Scale = (settings.MaxElev - settings.MinElev) / 2.0,
-                Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0) -44,
+                Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0) - 44,
                 Source0 = scaled
             };
 
@@ -228,7 +273,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     EdgeFalloff = 0.15,
                     LowerBound = 0.65,
                     UpperBound = 2.0
-                }   
+                }
             };
         }
 
