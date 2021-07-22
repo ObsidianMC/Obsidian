@@ -1,22 +1,20 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class PlayerRotation : IPacket
+    public partial class PlayerRotation : IServerboundPacket
     {
-        [Field(0)]
-        public float Yaw { get => this.yaw; set => this.yaw = (value % 360 + 360) % 360; }
+        [Field(0), DataFormat(typeof(float))]
+        public Angle Yaw { get; private set; }
 
-        private float yaw;
-
-        [Field(1)]
-        public float Pitch { get; set; }
+        [Field(1), DataFormat(typeof(float))]
+        public Angle Pitch { get; private set; }
 
         [Field(2)]
-        public bool OnGround { get; set; }
+        public bool OnGround { get; private set; }
 
         public int Id => 0x14;
 
@@ -24,23 +22,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerRotation(float yaw, float pitch, bool onground)
+        public PlayerRotation(float yaw, float pitch, bool onGround)
         {
-            this.Yaw = yaw;
-            this.Pitch = pitch;
-            this.OnGround = onground;
+            Yaw = yaw;
+            Pitch = pitch;
+            OnGround = onGround;
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            this.Yaw = await stream.ReadFloatAsync();
-            this.Pitch = await stream.ReadFloatAsync();
-            this.OnGround = await stream.ReadBooleanAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
-        {
-            await player.UpdateAsync(server, this.Yaw, this.Pitch, this.OnGround);
+            await player.UpdateAsync(Yaw, Pitch, OnGround);
         }
     }
 }

@@ -1,42 +1,33 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
-    public partial class Particle : ISerializablePacket
+    public partial class Particle : IClientboundPacket
     {
         [Field(0), ActualType(typeof(int))]
-        public ParticleType Type { get; set; }
+        public ParticleType Type { get; init; }
 
         /// <summary>
         /// If true, particle distance increases from 256 to 65536.
         /// </summary>
         [Field(1)]
-        public bool LongDistance { get; set; }
+        public bool LongDistance { get; init; }
 
-        [Field(2), Absolute]
-        public VectorF Position { get; set; }
+        [Field(2), DataFormat(typeof(double))]
+        public VectorF Position { get; init; }
 
-        [Field(3)]
-        public float OffsetX { get; set; }
-
-        [Field(4)]
-        public float OffsetY { get; set; }
-
-        [Field(5)]
-        public float OffsetZ { get; set; }
+        [Field(3), DataFormat(typeof(float))]
+        public VectorF Offset { get; init; }
 
         [Field(6)]
-        public float ParticleData { get; set; }
+        public float ParticleData { get; init; }
 
         [Field(7)]
-        public int ParticleCount { get; set; }
+        public int ParticleCount { get; init; }
 
         [Field(8)]
-        public ParticleData Data { get; set; }
+        public ParticleData Data { get; init; }
 
         public int Id => 0x22;
 
@@ -46,9 +37,5 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Position = position;
             ParticleCount = particleCount;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

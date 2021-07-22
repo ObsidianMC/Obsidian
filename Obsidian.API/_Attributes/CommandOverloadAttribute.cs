@@ -2,7 +2,8 @@
 
 namespace Obsidian.API
 {
-    public class CommandOverloadAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class CommandOverloadAttribute : Attribute
     {
     }
 }

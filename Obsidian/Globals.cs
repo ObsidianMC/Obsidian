@@ -5,7 +5,6 @@ using Obsidian.API;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
 using Obsidian.Utilities.Registry.Enums;
-using System;
 using System.Collections.Generic;
 using System.Net.Http;
 
@@ -14,7 +13,7 @@ namespace Obsidian
     public static class Globals
     {
         public static HttpClient HttpClient { get; } = new HttpClient();
-        public static Random Random { get; } = new Random();
+        public static XorshiftRandom Random { get; } = XorshiftRandom.Create();
         public static GlobalConfig Config { get; set; }
         public static ILogger PacketLogger { get; set; }
         public static DefaultContractResolver ContractResolver { get; } = new DefaultContractResolver
@@ -36,7 +35,6 @@ namespace Obsidian
                 new DefaultEnumConverter<Instruments>(),
                 new DefaultEnumConverter<Part>(),
                 new DefaultEnumConverter<Shape>(),
-                new DefaultEnumConverter<CustomDirection>(),
                 new DefaultEnumConverter<MinecraftType>(),
                 new DefaultEnumConverter<Attachment>(),
             }

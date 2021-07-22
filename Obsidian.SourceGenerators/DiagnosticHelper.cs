@@ -2,7 +2,7 @@
 
 #nullable enable
 
-namespace Obsidian.Generators
+namespace Obsidian.SourceGenerators
 {
     public static class DiagnosticHelper
     {

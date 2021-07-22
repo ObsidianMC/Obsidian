@@ -34,7 +34,7 @@ namespace Obsidian.API
             return item;
         }
 
-        public static bool operator ==(ItemStack left, ItemStack right)
+        public static bool operator ==(ItemStack? left, ItemStack? right)
         {
             if (ReferenceEquals(left, right))
                 return true;
@@ -45,7 +45,7 @@ namespace Obsidian.API
             return left.Equals(right);
         }
 
-        public static bool operator !=(ItemStack left, ItemStack right) => !(left == right);
+        public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
         public static ItemStack operator +(ItemStack item, int value)
         {
@@ -59,7 +59,7 @@ namespace Obsidian.API
 
         public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
 
-        public override bool Equals(object obj) => obj is ItemStack itemStack && Equals(itemStack);
+        public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
         public override int GetHashCode() =>
             (this.Present, this.Count, this.ItemMeta).GetHashCode();

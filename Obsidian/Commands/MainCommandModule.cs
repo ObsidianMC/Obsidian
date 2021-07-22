@@ -1,9 +1,9 @@
-using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;
@@ -11,9 +11,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
-using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.WorldData;
 
 namespace Obsidian.Commands
 {
@@ -30,17 +27,17 @@ namespace Obsidian.Commands
         {
             var sender = Context.Sender;
             var server = (Server)Context.Server;
-            var commandhandler = server.Commands;
-            var allcommands = commandhandler.GetAllCommands();
-            var availablecommands = new List<Command>();
+            var commandHandler = server.Commands;
+            var allCommands = commandHandler.GetAllCommands();
+            var availableCommands = new List<Command>();
 
             // filter available commands
-            foreach (var cmd in allcommands)
+            foreach (var command in allCommands)
             {
                 var success = true;
                 // check commands
                 // only list commands the user may execute.
-                foreach (var check in cmd.ExecutionChecks)
+                foreach (var check in command.ExecutionChecks)
                 {
                     if (!await check.RunChecksAsync(Context))
                     {
@@ -48,13 +45,13 @@ namespace Obsidian.Commands
                     }
                 }
                 if (success)
-                    availablecommands.Add(cmd);
+                    availableCommands.Add(command);
             }
 
-            int commandcount = availablecommands.Count;
+            int commandCount = availableCommands.Count;
 
-            var remainder = commandcount % CommandsPerPage;
-            int pagecount = (commandcount - remainder) / CommandsPerPage; // all commands / page commands - remainder
+            var remainder = commandCount % CommandsPerPage;
+            int pagecount = (commandCount - remainder) / CommandsPerPage; // all commands / page commands - remainder
             if (remainder > 0)
                 pagecount++; // if remainder, extra page
 
@@ -64,7 +61,7 @@ namespace Obsidian.Commands
                 return;
             }
 
-            var cmdsection = availablecommands.Skip((page - 1) * CommandsPerPage).Take(CommandsPerPage);
+            var commandSection = availableCommands.Skip((page - 1) * CommandsPerPage).Take(CommandsPerPage);
 
             var commands = ChatMessage.Simple("\n");
             var header = new ChatMessage()
@@ -73,16 +70,16 @@ namespace Obsidian.Commands
                 Text = $"List of available commands ({page}/{pagecount}):"
             };
             commands.AddExtra(header);
-            foreach (var cmd in cmdsection.Where(x => x.Parent == null))
+            foreach (var cmd in commandSection.Where(x => x.Parent is null))
             {
-
+                string usage = cmd.Usage.IsEmpty() ? $"/{cmd.Name}" : cmd.Usage;
                 var commandName = new ChatMessage
                 {
-                    Text = $"\n{ChatColor.Gold}{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage)}",
+                    Text = $"\n{ChatColor.Gold}{usage}",
                     ClickEvent = new ClickComponent
                     {
                         Action = EClickAction.SuggestCommand,
-                        Value = $"{(cmd.Usage == "" ? $"/{cmd.Name}" : cmd.Usage.Contains(" ") ? $"{cmd.Usage.Split(" ")[0]} " : cmd.Usage)}"
+                        Value = usage.Contains(' ') ? $"{usage.Substring(0, usage.IndexOf(' '))} " : usage
                     },
                     HoverEvent = new HoverComponent
                     {
@@ -92,12 +89,13 @@ namespace Obsidian.Commands
                 };
                 commands.AddExtra(commandName);
 
-                var commandInfo = new ChatMessage
+                if (!cmd.Description.IsNullOrEmpty())
                 {
-                    Text = $"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}"
-                };
-                commands.AddExtra(commandInfo);
-
+                    commands.AddExtra(new ChatMessage
+                    {
+                        Text = $"{ChatColor.Gray}:{ChatColor.Reset} {cmd.Description}"
+                    });
+                }
             }
             await sender.SendMessageAsync(commands);
         }
@@ -353,6 +351,22 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
         #endregion
+
+        [Command("spawnentity")]
+        [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
+        public async Task SpawnEntityAsync(CommandContext context, string entityType)
+        {
+            var player = context.Player;
+            if (Enum.TryParse<EntityType>(entityType, true, out var type))
+            {
+                await player.WorldLocation.SpawnEntityAsync(player.Position, type);
+                await player.SendMessageAsync($"Spawning: {type}");
+            }
+            else
+            {
+                await player.SendMessageAsync("&4Invalid entity type");
+            }
+        }
 
         #region stop
         [Command("stop")]

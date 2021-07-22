@@ -19,7 +19,7 @@ namespace Obsidian.Plugins.Services
         public IProcess GetProcess()
         {
             if (!IsUsable)
-                throw new SecurityException(IDiagnoser.securityExceptionMessage);
+                throw new SecurityException(IDiagnoser.SecurityExceptionMessage);
 
             return new ProcessService(Process.GetCurrentProcess(), this);
         }
@@ -27,7 +27,7 @@ namespace Obsidian.Plugins.Services
         public IProcess[] GetProcesses()
         {
             if (!IsUsable)
-                throw new SecurityException(IDiagnoser.securityExceptionMessage);
+                throw new SecurityException(IDiagnoser.SecurityExceptionMessage);
 
             return Process.GetProcesses().Select(process => new ProcessService(process, this)).ToArray();
         }
@@ -35,7 +35,7 @@ namespace Obsidian.Plugins.Services
         public IProcess StartProcess(string fileName, string arguments = null, bool createWindow = true, bool useShell = false)
         {
             if (!IsUsable)
-                throw new SecurityException(IDiagnoser.securityExceptionMessage);
+                throw new SecurityException(IDiagnoser.SecurityExceptionMessage);
 
             var processInfo = new ProcessStartInfo
             {

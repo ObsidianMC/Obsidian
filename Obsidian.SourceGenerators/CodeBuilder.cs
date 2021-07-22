@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Text;
 
-namespace Obsidian.Generators
+namespace Obsidian.SourceGenerators
 {
     public class CodeBuilder
     {

@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ServerOnly]
-    public partial class EncryptionResponse : IPacket
+    public partial class EncryptionResponse : IServerboundPacket
     {
         [Field(0)]
         public byte[] SharedSecret { get; private set; }
@@ -15,26 +14,6 @@ namespace Obsidian.Net.Packets.Login
 
         public int Id => 0x01;
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        /*protected override async Task ComposeAsync(MinecraftStream stream)
-        {
-            await stream.WriteVarIntAsync(this.SharedSecret.Length);
-            await stream.WriteAsync(this.SharedSecret);
-
-            await stream.WriteVarIntAsync(this.VerifyToken.Length);
-            await stream.WriteAsync(this.VerifyToken);
-        }
-
-        protected override async Task PopulateAsync(MinecraftStream stream)
-        {
-            var secretLength = await stream.ReadVarIntAsync();
-            this.SharedSecret = await stream.ReadUInt8ArrayAsync(secretLength);
-
-            var tokenLength = await stream.ReadVarIntAsync();
-            this.VerifyToken = await stream.ReadUInt8ArrayAsync(tokenLength);
-        }*/
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

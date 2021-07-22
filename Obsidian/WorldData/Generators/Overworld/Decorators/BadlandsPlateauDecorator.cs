@@ -1,17 +1,24 @@
 ﻿using Obsidian.API;
 using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
     public class BadlandsPlateauDecorator : BaseDecorator
     {
-        public BadlandsPlateauDecorator(Biomes biome) : base(biome)
+        public BadlandsPlateauDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
         }
 
-        public override void Decorate(Chunk chunk, Vector pos, OverworldNoise noise)
+        public override void Decorate()
         {
+            if (pos.Y < noise.settings.WaterLevel)
+            {
+                FillWater();
+                return;
+            }
+
             int worldX = (chunk.X << 4) + pos.X;
             int worldZ = (chunk.Z << 4) + pos.Z;
             

@@ -1,14 +1,11 @@
 ﻿using Obsidian.API;
 using Obsidian.Chat;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    [ClientOnly]
-    public partial class OpenWindow : ISerializablePacket
+    public partial class OpenWindow : IClientboundPacket
     {
         [Field(0), VarLength]
         public int WindowId { get; }
@@ -32,10 +29,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
             WindowId = inventory.Id;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
 
         public override string ToString() => $"{this.WindowId}:{this.Type}";
     }

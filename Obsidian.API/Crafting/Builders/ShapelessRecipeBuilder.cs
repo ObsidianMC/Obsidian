@@ -1,5 +1,4 @@
-﻿using Obsidian.Items;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -7,13 +6,13 @@ namespace Obsidian.API.Crafting.Builders
 {
     public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
     {
-        public string Name { get; set; }
-        public string Group { get; set; }
-        public ItemStack Result { get; set; }
+        public string? Name { get; set; }
+        public string? Group { get; set; }
+        public ItemStack? Result { get; set; }
 
         public IReadOnlyList<Ingredient> Ingredients { get; }
 
-        private readonly List<Ingredient> ingredients = new List<Ingredient>();
+        private readonly List<Ingredient> ingredients = new();
 
         public ShapelessRecipeBuilder()
         {

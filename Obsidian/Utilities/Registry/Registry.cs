@@ -9,7 +9,6 @@ using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
@@ -33,16 +32,14 @@ namespace Obsidian.Utilities.Registry
 
         public static readonly Dictionary<Material, Item> Items = new();
         public static readonly Dictionary<string, IRecipe> Recipes = new();
-        public static readonly string[] BlockNames = new string[763]; // 762 - block count
-
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
         public static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
+        public static readonly string[] BlockNames = new string[763]; // 762 - block count
         public static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
-        internal static CodecCollection<int, DimensionCodec> DefaultDimensions { get; } = new("minecraft:dimension_type");
-
-        internal static CodecCollection<string, BiomeCodec> DefaultBiomes { get; } = new("minecraft:worldgen/biome");
+        public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
+        public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
         private readonly static JsonSerializer recipeSerializer = new();
 
@@ -73,7 +70,7 @@ namespace Obsidian.Utilities.Registry
                 {
                     var (blockName, token) = enumerator.Current;
 
-                    var name = blockName.Split(":")[1];
+                    var name = blockName.Substring(blockName.IndexOf(':') + 1);
 
                     var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
 
@@ -90,7 +87,7 @@ namespace Obsidian.Utilities.Registry
                     var baseId = (short)states.States.Min(state => state.Id);
                     NumericToBase[(int)material] = baseId;
 
-                    BlockNames[(int)material] = "minecraft:" + name;
+                    BlockNames[(int)material] = blockName;
 
                     foreach (var state in states.States)
                     {
@@ -156,7 +153,7 @@ namespace Obsidian.Utilities.Registry
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
 
-                    DefaultBiomes.TryAdd(codec.Name, codec);
+                    Biomes.TryAdd(codec.Name, codec);
 
                     registered++;
                 }
@@ -186,7 +183,7 @@ namespace Obsidian.Utilities.Registry
                     var val = obj.ToString();
                     var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Globals.JsonSettings);
 
-                    DefaultDimensions.TryAdd(codec.Id, codec);
+                    Dimensions.TryAdd(codec.Id, codec);
 
                     Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
@@ -224,11 +221,11 @@ namespace Obsidian.Utilities.Registry
                             tag.Entries.Add(block.Id);
                             break;
                         case "entity_types":
-                            Enum.TryParse<EntityType>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var type);
+                            Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
                             tag.Entries.Add((int)type);
                             break;
                         case "fluids":
-                            Enum.TryParse<Fluids>(value.Replace("minecraft:", "").ToCamelCase().ToLower(), true, out var fluid);
+                            Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
                             tag.Entries.Add((int)fluid);
                             break;
                         default:
@@ -303,7 +300,7 @@ namespace Obsidian.Utilities.Registry
             {
                 var (name, element) = enu.Current;
 
-                var type = element.Value<string>("type").Replace("minecraft:", "").ToCamelCase().ToLower();
+                var type = element.Value<string>("type").TrimMinecraftTag();
 
                 if (Enum.TryParse<CraftingType>(type, true, out var result))
                 {
@@ -431,12 +428,6 @@ namespace Obsidian.Utilities.Registry
             [JsonProperty("protocol_id")]
             public int ProtocolId { get; set; }
         }
-    }
-
-    public class DomainTag
-    {
-        public string TagName { get; set; }
-        public string BaseTagName { get; set; }
     }
 
     [DebuggerDisplay("{@base}:{numeric}")]

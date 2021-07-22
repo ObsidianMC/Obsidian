@@ -90,7 +90,10 @@ namespace Obsidian.Commands.Framework.Entities
             if (!this.Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
             {
-                throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+                //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
+                await context.Player.SendMessageAsync($"&4Correct usage: {this.Usage}");
+
+                return;
             }
 
             var method = this.Overloads.First(x => x.GetParameters().Length - 1 == args.Length
@@ -99,7 +102,7 @@ namespace Obsidian.Commands.Framework.Entities
             // Create instance of declaring type to execute.
             var obj = this.ParentInstance;
             if (obj == null && this.ParentType != null)
-                obj = await this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
+                obj = this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
 
             // Get required params
             var methodparams = method.GetParameters().Skip(1).ToArray();

@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class PlayerDigging : IPacket
+    public partial class PlayerDigging : IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
         public DiggingStatus Status { get; private set; }
@@ -20,28 +19,22 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1B;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Status = (DiggingStatus)await stream.ReadVarIntAsync();
-            this.Position = await stream.ReadPositionAsync();
-            this.Face = (BlockFace)await stream.ReadByteAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public ValueTask HandleAsync(Server server, Player player)
         {
             server.BroadcastPlayerDig(new PlayerDiggingStore
             {
                 Player = player.Uuid,
                 Packet = this
             });
-            await Task.CompletedTask;
+
+            return ValueTask.CompletedTask;
         }
     }
 
     public class PlayerDiggingStore
     {
-        public Guid Player { get; set; }
-        public PlayerDigging Packet { get; set; }
+        public Guid Player { get; init; }
+        public PlayerDigging Packet { get; init; }
     }
 
     public enum DiggingStatus : int

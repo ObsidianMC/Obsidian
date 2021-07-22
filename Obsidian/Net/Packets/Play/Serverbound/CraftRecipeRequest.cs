@@ -5,28 +5,20 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class CraftRecipeRequest : IPacket
+    public partial class CraftRecipeRequest : IServerboundPacket
     {
         [Field(0)]
-        public sbyte WindowId { get; set; }
+        public sbyte WindowId { get; private set; }
 
         [Field(1)]
-        public string RecipeId { get; set; }
+        public string RecipeId { get; private set; }
 
         [Field(2)]
-        public bool MakeAll { get; set; }
+        public bool MakeAll { get; private set; }
 
         public int Id => 0x19;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.WindowId = await stream.ReadByteAsync();
-            this.RecipeId = await stream.ReadStringAsync();
-            this.MakeAll = await stream.ReadBooleanAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             await player.client.QueuePacketAsync(new CraftRecipeResponse(WindowId, RecipeId));
         }

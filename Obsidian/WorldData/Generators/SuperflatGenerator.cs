@@ -7,9 +7,9 @@ namespace Obsidian.WorldData.Generators
     {
         public SuperflatGenerator() : base("superflat") { }
 
-        public override Chunk GenerateChunk(int x, int z)
+        public override Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null)
         {
-            var chunk = new Chunk(x, z);
+            chunk = new Chunk(x, z);
             for (var x1 = 0; x1 < 16; x1++)
             {
                 for (var z1 = 0; z1 < 16; z1++)

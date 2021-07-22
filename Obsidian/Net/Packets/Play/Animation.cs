@@ -6,38 +6,32 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class Animation : ISerializablePacket
+    public partial class Animation : IClientboundPacket, IServerboundPacket
     {
         [Field(0), ActualType(typeof(int)), VarLength]
-        public Hand Hand { get; set; }
+        public Hand Hand { get; private set; }
 
         public int Id => 0x2C;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            this.Hand = (Hand)await stream.ReadVarIntAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
-        {
-            //TODO broadcast entity animation to nearby players
-            switch (this.Hand)
+            // TODO broadcast entity animation to nearby players
+            switch (Hand)
             {
-                case Hand.Right:
+                case Hand.MainHand:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,
                         Animation = EAnimation.SwingMainArm
                     }, player);
                     break;
+
                 case Hand.OffHand:
                     await server.BroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,
                         Animation = EAnimation.SwingOffhand
                     }, player);
-                    break;
-                default:
                     break;
             }
         }

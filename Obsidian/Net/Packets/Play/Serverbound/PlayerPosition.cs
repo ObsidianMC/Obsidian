@@ -1,18 +1,17 @@
 ﻿using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class PlayerPosition : IPacket
+    public partial class PlayerPosition : IServerboundPacket
     {
-        [Field(0), Absolute]
-        public VectorF Position { get; set; }
+        [Field(0), DataFormat(typeof(double))]
+        public VectorF Position { get; private set; }
 
         [Field(1)]
-
         public bool OnGround { get; private set; }
 
         public int Id => 0x12;
@@ -21,22 +20,21 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
         }
 
-        public PlayerPosition(VectorF pos, bool onground)
+        public PlayerPosition(VectorF position, bool onGround)
         {
-            this.Position = pos;
-            this.OnGround = onground;
+            Position = position;
+            OnGround = onGround;
         }
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            this.Position = await stream.ReadAbsolutePositionFAsync();
-            this.OnGround = await stream.ReadBooleanAsync();
-        }
+            await player.UpdateAsync(Position, OnGround);
+            if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
+            {
+                await player.World.UpdateClientChunksAsync(player.client);
+            }
 
-        public async Task HandleAsync(Server server, Player player)
-        {
-            await player.UpdateAsync(server, this.Position, this.OnGround);
-            await player.World.UpdateClientChunksAsync(player.client);
+            player.LastPosition = player.Position;
         }
     }
 }

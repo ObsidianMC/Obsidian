@@ -6,22 +6,16 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class ServerHeldItemChange : IPacket
+    public partial class ServerHeldItemChange : IServerboundPacket
     {
         [Field(0)]
-        public short Slot { get; set; }
+        public short Slot { get; private set; }
 
         public int Id => 0x25;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            this.Slot = await stream.ReadShortAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
-        {
-            player.CurrentSlot = (short)(this.Slot + 36);
+            player.CurrentSlot = (short)(Slot + 36);
 
             var heldItem = player.GetHeldItem();
 
@@ -33,7 +27,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     Present = heldItem.Present
                 }
-            }, player); ;
+            },
+            excluded: player);
         }
     }
 }

@@ -1,73 +1,66 @@
 ﻿using Obsidian.API;
-using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public class MixedCodec
     {
-        public CodecCollection<int, DimensionCodec> Dimensions { get; set; }
-        public CodecCollection<string, BiomeCodec> Biomes { get; set; }
+        public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
+        public CodecCollection<string, BiomeCodec> Biomes { get; init; }
     }
 
-    [ClientOnly]
-    public partial class JoinGame : ISerializablePacket
+    public partial class JoinGame : IClientboundPacket
     {
         [Field(0)]
-        public int EntityId { get; set; }
+        public int EntityId { get; init; }
 
         [Field(1)]
-        public bool Hardcore { get; set; } = false;
+        public bool Hardcore { get; init; } = false;
 
         [Field(2), ActualType(typeof(byte))]
-        public Gamemode Gamemode { get; set; } = Gamemode.Survival;
+        public Gamemode Gamemode { get; init; } = Gamemode.Survival;
 
         [Field(3)]
-        public sbyte PreviousGamemode { get; set; } = 0;
+        public sbyte PreviousGamemode { get; init; } = 0;
 
         [Field(5)]
-        public List<string> WorldNames { get; set; }
+        public List<string> WorldNames { get; init; }
 
         [Field(6)]
-        public MixedCodec Codecs { get; set; }
+        public MixedCodec Codecs { get; init; }
 
         [Field(7)]
-        public DimensionCodec Dimension { get; set; }
+        public DimensionCodec Dimension { get; init; }
 
         [Field(8)]
-        public string DimensionName { get; set; }
+        public string DimensionName { get; init; }
 
         [Field(9)]
-        public long HashedSeed { get; set; }
+        public long HashedSeed { get; init; }
 
         [Field(10), VarLength]
-        private int MaxPlayers { get; } = 0;
+        private const int MaxPlayers = 0;
 
         [Field(11), VarLength]
-        public int ViewDistance { get; set; } = 8;
+        public int ViewDistance { get; init; } = 8;
 
         [Field(12)]
-        public bool ReducedDebugInfo { get; set; } = false;
+        public bool ReducedDebugInfo { get; init; } = false;
 
         [Field(13)]
-        public bool EnableRespawnScreen { get; set; } = true;
+        public bool EnableRespawnScreen { get; init; } = true;
 
         [Field(14)]
-        public bool Debug { get; set; } = false;
+        public bool Debug { get; init; } = false;
 
         [Field(15)]
-        public bool Flat { get; set; } = false;
+        public bool Flat { get; init; } = false;
 
         public int Id => 0x24;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 
     public enum LevelType

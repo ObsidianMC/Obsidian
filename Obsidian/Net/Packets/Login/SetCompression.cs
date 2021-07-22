@@ -1,11 +1,8 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Login
 {
-    [ClientOnly]
-    public partial class SetCompression : ISerializablePacket
+    public partial class SetCompression : IClientboundPacket
     {
         [Field(0)]
         public int Threshold { get; }
@@ -18,9 +15,5 @@ namespace Obsidian.Net.Packets.Login
         {
             Threshold = threshold;
         }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
     }
 }

@@ -1,12 +1,14 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +17,7 @@ namespace Obsidian.WorldData
 {
     public class Region
     {
-        public const int cubicRegionSizeShift = 3;
+        public const int cubicRegionSizeShift = 5;
         public const int cubicRegionSize = 1 << cubicRegionSizeShift;
 
         private bool cancel = false;
@@ -26,9 +28,11 @@ namespace Obsidian.WorldData
 
         public string RegionFolder { get; }
 
-        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new ConcurrentDictionary<int, Entity>();
+        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
 
-        public DenseCollection<Chunk> LoadedChunks { get; private set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
+        private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
+
+        private readonly RegionFile regionFile;
 
         internal Region(int x, int z, string worldRegionsPath)
         {
@@ -36,106 +40,99 @@ namespace Obsidian.WorldData
             this.Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
-            var regionFile = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-            if (File.Exists(regionFile))
+            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mcr");
+            regionFile = new RegionFile(filePath, cubicRegionSize);
+
+        }
+
+        internal async Task InitAsync()
+        {
+            await regionFile.InitializeAsync();
+        }
+
+        internal async Task FlushAsync()
+        {
+            foreach(Chunk c in LoadedChunks) { SerializeChunk(c); }
+            await regionFile.FlushToDiskAsync();
+        }
+
+        internal Chunk GetChunk((int X, int Z) relativePos) =>  GetChunk(relativePos.X, relativePos.Z);
+
+        internal Chunk GetChunk(int relativeX, int relativeZ) => GetChunk(new Vector(relativeX, 0, relativeZ));
+
+        internal Chunk GetChunk(Vector relativePosition)
+        {
+            var chunk = LoadedChunks[relativePosition.X, relativePosition.Z];
+            if (chunk is null)
             {
-                Load(regionFile);
-                IsDirty = false;
+                chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
+                LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
             }
+            return chunk;
+        }
+
+        private Chunk GetChunkFromFile(Vector relativePosition)
+        {
+            var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
+            if (compressedBytes is null) { return null; }
+            using Stream strm = new MemoryStream(compressedBytes);
+            NbtReader reader = new(strm, NbtCompression.GZip);
+            NbtCompound chunkNbt = reader.ReadNextTag() as NbtCompound;
+            return GetChunkFromNbt(chunkNbt);
+        }
+
+        internal IEnumerable<Chunk> GeneratedChunks()
+        {
+            foreach(var c in LoadedChunks)
+            {
+                if (c is not null && c.isGenerated)
+                {
+                    yield return c;
+                }
+            }
+        }
+
+        internal void SetChunk(Chunk chunk)
+        {
+            if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
+            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+            LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+        }
+
+        internal void SerializeChunk(Chunk chunk)
+        {
+            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+            NbtCompound chunkNbt = GetNbtFromChunk(chunk);
+            using MemoryStream strm = new();
+            using NbtWriter writer = new(strm, NbtCompression.GZip);
+            writer.WriteTag(chunkNbt);
+            writer.TryFinish();
+            regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
         }
 
         internal async Task BeginTickAsync(CancellationToken cts)
         {
-            double flushTime = 0;
             while (!cts.IsCancellationRequested || cancel)
             {
                 await Task.Delay(20, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
-
-                flushTime++;
-
-                if (flushTime > 50 * 30) // Save every 30 seconds
-                {
-                    Flush();
-                    flushTime = 0;
-                }
             }
-            Flush();
+            await regionFile.FlushToDiskAsync();
         }
 
         internal void Cancel() => this.cancel = true;
 
-        //TODO: IO operations should be async :teyes:
-        public void Flush()
-        {
-            if (!IsDirty) { return; }
-
-            var path = Path.Join(RegionFolder, $"{X}.{Z}.rgn");
-
-            var regionFile = new FileInfo(path);
-            FileInfo backupRegionFile = null;
-
-            if (regionFile.Exists)
-                backupRegionFile = regionFile.CopyTo($"{path}.bak", true);
-
-            using var fileStream = regionFile.OpenWrite();
-
-            var writer = new NbtWriter(fileStream, NbtCompression.GZip, "");
-
-            writer.WriteTag(this.GetNbt());
-
-            writer.BaseStream.Flush();
-
-            backupRegionFile?.Delete();
-
-            regionFile = null;
-
-            GC.Collect();
-
-            IsDirty = false;
-        }
-
-        public void Load(string regionPath)
-        {
-            var regionFile = new FileInfo(regionPath);
-
-            if (!regionFile.Exists)
-            {
-                File.Move(regionPath + ".bak", regionPath);
-
-                regionFile = new FileInfo(regionPath + ".bak");
-            }
-
-            using var readStream = regionFile.OpenRead();
-
-            var reader = new NbtReader(readStream, NbtCompression.GZip);
-
-            var regionCompound = (NbtCompound)reader.ReadNextTag();
-
-            var chunksNbt = regionCompound["Chunks"] as NbtList;
-
-            foreach (var chunkNbt in chunksNbt)
-            {
-                var chunk = GetChunkFromNbt((NbtCompound)chunkNbt);
-                var index = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-                LoadedChunks[index.Item1, index.Item2] = chunk;
-            }
-
-            regionFile = null;
-            regionCompound = null;
-
-            GC.Collect();
-            IsDirty = false;
-        }
-
-        #region File saving/loading
+        #region NBT Ops
         public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
         {
             int x = chunkCompound.GetInt("xPos");
             int z = chunkCompound.GetInt("zPos");
 
-            var chunk = new Chunk(x, z);
+            var chunk = new Chunk(x, z)
+            {
+                isGenerated = true
+            };
 
             foreach (var secCompound in chunkCompound["Sections"] as NbtList)
             {
@@ -198,10 +195,12 @@ namespace Obsidian.WorldData
 
                 if (section.Palette is LinearBlockStatePalette linear)
                 {
-                    foreach (var block in linear.BlockStateArray)
+                    foreach (var stateId in linear.BlockStateArray)
                     {
-                        if (block.Id == 0)
+                        if (stateId == 0)
                             continue;
+
+                        var block = new Block(stateId);
 
                         palette.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
                             {
@@ -235,6 +234,6 @@ namespace Obsidian.WorldData
                 };
             return chunkCompound;
         }
-        #endregion File saving/loading
+        #endregion NBT Ops
     }
 }

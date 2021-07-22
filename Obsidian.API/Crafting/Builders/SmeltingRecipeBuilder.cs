@@ -1,13 +1,12 @@
-﻿using Obsidian.Items;
-using System;
+﻿using System;
 
 namespace Obsidian.API.Crafting.Builders
 {
     public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
     {
-        public string Name { get; set; }
-        public string Group { get; set; }
-        public ItemStack Result { get; set; }
+        public string? Name { get; set; }
+        public string? Group { get; set; }
+        public ItemStack? Result { get; set; }
 
         public SmeltingType Type { get; private set; }
 
@@ -74,25 +73,13 @@ namespace Obsidian.API.Crafting.Builders
 
         public IRecipe Build()
         {
-            var type = "";
-
-            switch (this.Type)
+            string type = Type switch
             {
-                case SmeltingType.Default:
-                    type = "minecraft:smelting";
-                    break;
-                case SmeltingType.Blasting:
-                    type = "minecraft:blasting";
-                    break;
-                case SmeltingType.Smoking:
-                    type = "minecraft:smoking";
-                    break;
-                case SmeltingType.CampfireCooking:
-                    type = "minecraft:campfire_cooking";
-                    break;
-                default:
-                    break;
-            }
+                SmeltingType.Default => "minecraft:smelting",
+                SmeltingType.Blasting => "minecraft:blasting",
+                SmeltingType.Smoking => "minecraft:smoking",
+                SmeltingType.CampfireCooking => "minecraft:campfire_cooking"
+            };
 
             if (this.Ingredient.Count <= 0)
                 throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");

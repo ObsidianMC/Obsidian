@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
-    public class RequirePermissionAttribute : BaseExecutionCheckAttribute
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
     {
         private string[] permissions;
         private PermissionCheckType checkType;
@@ -15,13 +17,13 @@ namespace Obsidian.API
             this.op = op;
         }
 
-        public override async Task<bool> RunChecksAsync(CommandContext ctx)
+        public override async Task<bool> RunChecksAsync(CommandContext context)
         {
-            if (this.op && ctx.Player.IsOperator)
+            if (this.op && context.Player.IsOperator)
                 return true;
 
             if (this.permissions.Length > 0)
-                return checkType == PermissionCheckType.All ? await ctx.Player.HasAllPermissions(permissions) : await ctx.Player.HasAnyPermission(permissions);
+                return checkType == PermissionCheckType.All ? await context.Player.HasAllPermissions(permissions) : await context.Player.HasAnyPermission(permissions);
 
             return false;
         }

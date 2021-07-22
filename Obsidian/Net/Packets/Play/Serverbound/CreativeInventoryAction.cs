@@ -7,37 +7,30 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class CreativeInventoryAction : IPacket
+    public partial class CreativeInventoryAction : IServerboundPacket
     {
         [Field(0)]
-        public short ClickedSlot { get; set; }
+        public short ClickedSlot { get; private set; }
 
         [Field(1)]
-        public ItemStack ClickedItem { get; set; }
+        public ItemStack ClickedItem { get; private set; }
 
         public int Id => 0x29;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.ClickedSlot = await stream.ReadShortAsync();
-            this.ClickedItem = await stream.ReadSlotAsync();
-        }
-
-        public async Task HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             var inventory = player.OpenedInventory ?? player.Inventory;
 
-            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
+            var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
 
-            if (forPlayer)
+            if (isForPlayer)
                 inventory = player.Inventory;
 
-            inventory.SetItem(value, this.ClickedItem);
+            inventory.SetItem(slot, ClickedItem);
 
-            player.LastClickedItem = this.ClickedItem;
+            player.LastClickedItem = ClickedItem;
 
-            if (player.CurrentSlot == this.ClickedSlot)
+            if (player.CurrentSlot == ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 

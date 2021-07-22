@@ -4,23 +4,16 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class ClickWindowButton : IPacket
+    public partial class ClickWindowButton : IServerboundPacket
     {
         [Field(0)]
-        public sbyte WindowId { get; set; }
+        public sbyte WindowId { get; private set; }
 
         [Field(1)]
-        public sbyte ButtonId { get; set; }
+        public sbyte ButtonId { get; private set; }
 
         public int Id => 0x08;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.WindowId = await stream.ReadByteAsync();
-            this.ButtonId = await stream.ReadByteAsync();
-        }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
 }

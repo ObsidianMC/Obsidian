@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -12,7 +11,7 @@ namespace Obsidian
 {
     public class ClientHandler
     {
-        private ConcurrentDictionary<int, IPacket> Packets { get; } = new ConcurrentDictionary<int, IPacket>();
+        private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
 
         public void RegisterHandlers()
         {
@@ -77,7 +76,9 @@ namespace Obsidian
                 case 0x03:
                     await HandleFromPoolAsync<IncomingChatMessage>(data, client);
                     break;
-
+                case 0x04:
+                    await HandleFromPoolAsync<ClientStatus>(data, client);
+                    break;
                 case 0x05:
                     await HandleFromPoolAsync<ClientSettings>(data, client);
                     break;
@@ -100,6 +101,10 @@ namespace Obsidian
 
                 case 0x0B:
                     await HandleFromPoolAsync<PluginMessage>(data, client);
+                    break;
+
+                case 0x0E:
+                    await HandleFromPoolAsync<InteractEntity>(data, client);
                     break;
 
                 case 0x18:
@@ -140,7 +145,7 @@ namespace Obsidian
 
                     try
                     {
-                        await packet.ReadAsync(new MinecraftStream(data));
+                        packet.Populate(data);
                         await packet.HandleAsync(client.Server, client.Player);
                     }
                     catch (Exception e)
@@ -152,13 +157,12 @@ namespace Obsidian
             }
         }
 
-        private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IPacket, new()
+        private static async Task HandleFromPoolAsync<T>(byte[] data, Client client) where T : IServerboundPacket, new()
         {
             var packet = ObjectPool<T>.Shared.Rent();
-            using var stream = new MinecraftStream(data);
             try
             {
-                await packet.ReadAsync(stream);
+                packet.Populate(data);
                 await packet.HandleAsync(client.Server, client.Player);
             }
             catch (Exception e)

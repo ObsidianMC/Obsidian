@@ -2,16 +2,16 @@
 
 namespace Obsidian.API
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public class CommandAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class CommandAttribute : Attribute
     {
-        public string CommandName;
-        public string[] Aliases;
+        public string CommandName { get; }
+        public string[] Aliases { get; }
 
-        public CommandAttribute(string commandname, params string[] aliases)
+        public CommandAttribute(string commandName, params string[] aliases)
         {
-            this.CommandName = commandname;
-            this.Aliases = aliases;
+            CommandName = commandName;
+            Aliases = aliases;
         }
     }
 }

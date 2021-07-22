@@ -162,9 +162,7 @@ namespace Obsidian.WorldData
         /// </summary>
         public long RandomSeed { get; set; }
 
-        public int SpawnX { get; set; }
-        public int SpawnY { get; set; }
-        public int SpawnZ { get; set; }
+        public VectorF SpawnPosition { get; set; }
 
         /// <summary>
         /// true if the rain/snow/cloud cover is a lightning storm and dark enough for mobs to spawn under the sky.

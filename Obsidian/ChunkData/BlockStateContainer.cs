@@ -12,14 +12,16 @@ namespace Obsidian.ChunkData
 
         public abstract IBlockStatePalette Palette { get; internal set; }
 
-        protected void Set(int x, int y, int z, Block blockState)
+        protected bool Set(int x, int y, int z, Block blockState)
         {
             y %= 16;
             var blockIndex = GetIndex(x, y, z);
 
             int paletteIndex = this.Palette.GetIdFromState(blockState);
+            if (paletteIndex == -1) { return false; }
 
             this.BlockStorage[blockIndex] = paletteIndex;
+            return true;
         }
 
         protected Block Get(int x, int y, int z)

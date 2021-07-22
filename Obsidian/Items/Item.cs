@@ -16,5 +16,12 @@ namespace Obsidian.Items
             this.UnlocalizedName = unlocalizedName;
             this.Type = type;
         }
+
+        public Item(Item item)
+        {
+            this.Id = item.Id;
+            this.UnlocalizedName = item.UnlocalizedName;
+            this.Type = item.Type;
+        }
     }
 }

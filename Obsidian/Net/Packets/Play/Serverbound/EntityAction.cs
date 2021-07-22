@@ -1,14 +1,16 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
-    [ServerOnly]
-    public partial class EntityAction : IPacket
+    public partial class EntityAction : IServerboundPacket
     {
         [Field(0), VarLength]
-        public int EntityId { get; set; }
+        public int EntityId { get; private set; }
 
         [Field(1), ActualType(typeof(int)), VarLength]
         public EAction Action { get; set; }
@@ -18,30 +20,32 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1C;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.Action = (EAction)await stream.ReadVarIntAsync();
-            this.JumpBoost = await stream.ReadVarIntAsync();
-        }
+            var block = player.World.GetBlock((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
-        public Task HandleAsync(Server server, Player player)
-        {
-            switch (this.Action)
+            switch (Action)
             {
                 case EAction.StartSneaking:
                     player.Sneaking = true;
                     break;
                 case EAction.StopSneaking:
                     player.Sneaking = false;
+                    player.Pose = Pose.Standing;
                     break;
                 case EAction.LeaveBed:
                     player.Sleeping = false;
                     break;
                 case EAction.StartSprinting:
+                    if ((bool)(block?.IsFluid))
+                        player.Swimming = true;
+
                     player.Sprinting = true;
                     break;
                 case EAction.StopSprinting:
+                    if (player.Swimming)
+                        player.Swimming = false;
+
                     player.Sprinting = false;
                     break;
                 case EAction.StartJumpWithHorse:
@@ -56,11 +60,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
-            return Task.CompletedTask;
+            await server.BroadcastPacketAsync(new EntityMetadata
+            {
+                EntityId = player.EntityId,
+                Entity = player
+            }, player.EntityId);
         }
     }
 
-    public enum EAction
+    public enum EAction : int
     {
         StartSneaking,
         StopSneaking,
