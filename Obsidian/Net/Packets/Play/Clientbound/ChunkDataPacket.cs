@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     {
         public Chunk Chunk { get; }
 
-        public int Id => 0x20;
+        public int Id => 0x22;
 
         public int changedSectionFilter = 65535; // 0b1111111111111111;
 
@@ -26,7 +26,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.WriteInt(Chunk.X);
             stream.WriteInt(Chunk.Z);
 
-            stream.WriteBoolean(true); // full chunk
+            stream.WriteVarInt(32);
 
             int chunkSectionY = 0, mask = 0;
             foreach (var section in Chunk.Sections)

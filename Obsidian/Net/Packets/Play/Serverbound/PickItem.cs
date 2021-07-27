@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(0)]
         public int SlotToUse { get; private set; }
 
-        public int Id => 0x18;
+        public int Id => 0x17;
 
         public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }

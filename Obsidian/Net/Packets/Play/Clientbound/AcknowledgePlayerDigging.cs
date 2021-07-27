@@ -18,6 +18,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3)]
         public bool Successful { get; set; }
 
-        public int Id => 0x07;
+        public int Id => 0x08;
     }
 }

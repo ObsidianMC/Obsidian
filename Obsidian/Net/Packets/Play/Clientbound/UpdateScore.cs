@@ -28,6 +28,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(4), VarLength, Condition(nameof(Action) + " != 1")]
         public int Value { get; init; }
 
-        public int Id => 0x4D;
+        public int Id => 0x56;
     }
 }

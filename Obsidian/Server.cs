@@ -46,7 +46,7 @@ namespace Obsidian
 
         internal static byte LastInventoryId;
 
-        public const ProtocolVersion protocol = ProtocolVersion.v1_16_5;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
         public ProtocolVersion Protocol => protocol;
 
         public short TPS { get; private set; }
@@ -630,10 +630,8 @@ namespace Obsidian
 
             this.World.RemovePlayer(player);
 
-            var destroy = new DestroyEntities
-            {
-                EntityIds = new() { player.EntityId }
-            };
+            var destroy = new DestroyEntities(player.EntityId);
+
             foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
             {
                 await other.client.RemovePlayerFromListAsync(player);

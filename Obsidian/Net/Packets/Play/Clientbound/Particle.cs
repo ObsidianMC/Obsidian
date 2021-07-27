@@ -29,7 +29,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(8)]
         public ParticleData Data { get; init; }
 
-        public int Id => 0x22;
+        public int Id => 0x24;
 
         public Particle(ParticleType type, VectorF position, int particleCount)
         {

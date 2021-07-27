@@ -6,12 +6,15 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class DestroyEntities : IClientboundPacket
     {
         [Field(0), VarLength]
-        public List<int> EntityIds { get; init; } = new();
+        public int EntityId { get; private set; } = new();
 
-        public int Id => 0x36;
+        public int Id => 0x3A;
 
-        public void AddEntity(int entity) => EntityIds.Add(entity);
+        public DestroyEntities(int EntityId)
+        {
+            this.EntityId = EntityId;
+        }
 
-        public void AddEntityRange(params int[] entities) => EntityIds.AddRange(entities);
+        public void SetEntity(int entity) => EntityId = entity;
     }
 }

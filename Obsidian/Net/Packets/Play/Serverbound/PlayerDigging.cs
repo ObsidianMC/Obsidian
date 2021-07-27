@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2), ActualType(typeof(sbyte))]
         public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
 
-        public int Id => 0x1B;
+        public int Id => 0x1A;
 
         public ValueTask HandleAsync(Server server, Player player)
         {

@@ -1,22 +1,26 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
-    public partial class KeepAlive : IClientboundPacket, IServerboundPacket
+    public partial class ServerboundKeepAlive : IServerboundPacket
     {
         [Field(0)]
         public long KeepAliveId { get; private set; }
 
-        public int Id => 0x1F;
+        public int Id => 0x0F;
 
-        public KeepAlive()
+        public ServerboundKeepAlive()
         {
         }
 
-        public KeepAlive(long id)
+        public ServerboundKeepAlive(long id)
         {
             KeepAliveId = id;
         }

@@ -24,6 +24,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(5)]
         public int MainHand { get; private set; }
 
+        [Field(6)]
+        public bool DisableTextFiltering { get; private set;  }
+
         public int Id => 0x05;
 
         public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;

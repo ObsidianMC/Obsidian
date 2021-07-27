@@ -30,6 +30,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(7)]
         public bool CopyMetadata { get; init; }
 
-        public int Id => 0x39;
+        public int Id => 0x3D; // wow 3D it's jsut like real lifeeeee
     }
 }

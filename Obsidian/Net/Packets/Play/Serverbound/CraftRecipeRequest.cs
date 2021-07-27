@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2)]
         public bool MakeAll { get; private set; }
 
-        public int Id => 0x19;
+        public int Id => 0x18;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

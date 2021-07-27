@@ -377,12 +377,13 @@ namespace Obsidian.Entities
 
         public override async Task KillAsync(IEntity source, IChatMessage deathMessage)
         {
-            await this.client.QueuePacketAsync(new PlayerDied
-            {
-                PlayerId = this.EntityId,
-                EntityId = source != null ? source.EntityId : -1,
-                Message = deathMessage as ChatMessage
-            });
+            //await this.client.QueuePacketAsync(new PlayerDied
+            //{
+            //    PlayerId = this.EntityId,
+            //    EntityId = source != null ? source.EntityId : -1,
+            //    Message = deathMessage as ChatMessage
+            //});
+            // TODO implement new death packets
 
             await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));
             await this.RemoveAsync();

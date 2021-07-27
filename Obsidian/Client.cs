@@ -405,7 +405,7 @@ namespace Obsidian
         internal void ProcessKeepAlive(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
-            this.SendPacket(new KeepAlive(id));
+            this.SendPacket(new ClientboundKeepAlive(id));
             this.missedKeepalives++; // This will be decreased after an answer is received.
 
             if (this.missedKeepalives > this.config.MaxMissedKeepAlives)

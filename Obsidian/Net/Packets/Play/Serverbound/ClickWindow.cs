@@ -47,7 +47,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(5)]
         public ItemStack Item { get; private set; }
 
-        public int Id => 0x09;
+        public int Id => 0x08;
 
         private const int Outsideinventory = -999;
 

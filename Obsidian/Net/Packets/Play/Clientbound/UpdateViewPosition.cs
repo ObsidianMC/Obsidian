@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             ChunkZ = chunkZ;
         }
 
-        public int Id => 0x40;
+        public int Id => 0x49;
     }
 }

@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3)]
         public List<Tag> Entities { get; init; }
 
-        public int Id => 0x5B;
+        public int Id => 0x66;
     }
 
     public class Tag

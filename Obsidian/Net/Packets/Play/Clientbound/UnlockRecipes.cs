@@ -38,7 +38,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(10)]
         public List<string> SecondRecipeIds { get; init; }
 
-        public int Id => 0x35;
+        public int Id => 0x39;
     }
 
     public enum UnlockRecipeAction : int

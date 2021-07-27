@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(1)]
         public bool OnGround { get; private set; }
 
-        public int Id => 0x12;
+        public int Id => 0x11;
 
         public PlayerPosition()
         {

@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public BossBarAction Action { get; }
 
-        public int Id => 0x0C;
+        public int Id => 0x0D;
 
         public BossBar(Guid uuid, BossBarAction action)
         {

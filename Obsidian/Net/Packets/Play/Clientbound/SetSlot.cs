@@ -21,6 +21,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public ItemStack SlotData { get; init; }
 
-        public int Id => 0x15;
+        public int Id => 0x16;
     }
 }

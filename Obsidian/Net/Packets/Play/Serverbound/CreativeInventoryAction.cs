@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(1)]
         public ItemStack ClickedItem { get; private set; }
 
-        public int Id => 0x29;
+        public int Id => 0x28;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

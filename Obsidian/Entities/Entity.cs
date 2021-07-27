@@ -39,6 +39,8 @@ namespace Obsidian.Entities
 
         public Pose Pose { get; set; } = Pose.Standing;
 
+        public int PowderedSnowTicks { get; set; } = 0;
+
         public EntityType Type { get; set; }
 
         public int Air { get; set; } = 300;
@@ -248,6 +250,7 @@ namespace Obsidian.Entities
             await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, this.Silent);
             await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, this.NoGravity);
             await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
+            await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, this.PowderedSnowTicks);
         }
 
         public virtual void Write(MinecraftStream stream)
@@ -275,6 +278,9 @@ namespace Obsidian.Entities
 
             stream.WriteEntityMetadataType(6, EntityMetadataType.Pose);
             stream.WriteVarInt((int)Pose);
+
+            stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
+            stream.WriteVarInt(this.PowderedSnowTicks);
         }
 
         public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance);

@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1), VarLength]
         public int BlockId { get; }
 
-        public int Id => 0x0B;
+        public int Id => 0x0C;
 
         public BlockChange(Vector position, int block)
         {

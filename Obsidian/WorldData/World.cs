@@ -109,8 +109,7 @@ namespace Obsidian.WorldData
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
         {
-            var destroyed = new DestroyEntities();
-            destroyed.AddEntity(entity);
+            var destroyed = new DestroyEntities(entity);
 
             await this.Server.BroadcastPacketAsync(destroyed);
 

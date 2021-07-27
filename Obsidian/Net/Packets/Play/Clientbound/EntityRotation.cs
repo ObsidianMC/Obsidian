@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3)]
         public bool OnGround { get; init; }
 
-        public int Id => 0x29;
+        public int Id => 0x2B;
     }
 }

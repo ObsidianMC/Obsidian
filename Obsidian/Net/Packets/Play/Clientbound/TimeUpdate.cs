@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public long TimeOfDay { get; }
 
-        public int Id => 0x4E;
+        public int Id => 0x58;
 
         public TimeUpdate(long worldAge, long timeOfDay)
         {

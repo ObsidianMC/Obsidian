@@ -66,6 +66,16 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
         public bool HasRaids { get; set; }
 
         /// <summary>
+        /// Minimum Y level.
+        /// </summary>
+        public int MinY { get; set; } = 0;
+
+        /// <summary>
+        /// Maximum Height.
+        /// </summary>
+        public int Height { get; set; } = 512;
+
+        /// <summary>
         /// The maximum height to which chorus fruits and nether portals can bring players within this dimension.
         /// </summary>
         public int LogicalHeight { get; set; }

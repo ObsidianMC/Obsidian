@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public ChatMessage Footer { get; }
 
-        public int Id => 0x53;
+        public int Id => 0x5E;
 
         public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer)
         {

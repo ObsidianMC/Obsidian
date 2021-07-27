@@ -11,6 +11,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public Entity Entity { get; init; }
 
-        public int Id => 0x44;
+        public int Id => 0x4D; // wow magic 4D you can feel the craft
     }
 }

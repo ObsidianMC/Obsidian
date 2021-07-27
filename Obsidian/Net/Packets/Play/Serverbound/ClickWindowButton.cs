@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(1)]
         public sbyte ButtonId { get; private set; }
 
-        public int Id => 0x08;
+        public int Id => 0x07;
 
         public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
     }
