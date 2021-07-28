@@ -2,8 +2,8 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.IO
@@ -12,12 +12,9 @@ namespace Obsidian.IO
     /// Utility struct for writing data to a <see cref="byte"/>[] buffer.
     /// </summary>
     /// <remarks>
-    /// Instances of this struct should be obtained with <see cref="WithBuffer(int)"/> or <see cref="WithBuffer(byte[])"/>,
-    /// where <see cref="byte"/>[] belongs to <see cref="ArrayPool{byte}.Shared"/>. When you are done writing, call
+    /// Instances of this struct should be obtained with <see cref="WithBuffer(int)"/> or <see cref="WithBuffer(byte[])"/>.
+    /// When you are done writing, call
     /// <see cref="Dispose"/> to release the buffer back to the pool. <br />
-    /// <see cref="ProtocolWriter"/> does <b>NOT</b> do array bounds checks before writing to it. You must make sure that
-    /// the buffer is large enough, or do the bound checks yourself. You can use <see cref="HasCapacity(int)"/> and
-    /// <see cref="Expand"/>. You can use <see cref="MemoryMeasure"/> to measure data length.
     /// </remarks>
     /// <seealso cref="ArrayPool{T}"/>
     /// <seealso cref="MemoryMeasure"/>
@@ -25,22 +22,34 @@ namespace Obsidian.IO
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     public struct ProtocolWriter : IDisposable
     {
-        public ReadOnlyMemory<byte> Memory => new(buffer, 0, (int)index);
+        /// <summary>
+        /// Returns a <see cref="ReadOnlyMemory{T}"/> representing the writer's buffer content
+        /// </summary>
+        /// <remarks>
+        /// When this property is in use, writing is discouraged as it may required renting a new buffer
+        /// </remarks>
+        public ReadOnlyMemory<byte> Memory => new(buffer, 0, index);
+        
+        /// <summary>
+        /// Returns the buffer being used by the writer
+        /// </summary>
         public byte[] Buffer => buffer;
-        public long BytesWritten => index;
+        public int BytesWritten => index;
 
+        private ArrayPool<byte>? pool;
         private byte[] buffer;
-        private nint index;
+        private int index;
 
         /// <summary>
-        /// Creates new <see cref="ProtocolWriter"/> with buffer of specific length.
+        /// Creates new <see cref="ProtocolWriter"/> with buffer of specific length using the <see cref="ArrayPool{T}.Shared"/> <see cref="ArrayPool{T}"/>.
         /// </summary>
         /// <param name="minimumLength">Minimum length of the buffer.</param>
         public static ProtocolWriter WithBuffer(int minimumLength)
         {
             return new ProtocolWriter
             {
-                buffer = ArrayPool<byte>.Shared.Rent(minimumLength),
+                pool = ArrayPool<byte>.Shared,
+                buffer =  ArrayPool<byte>.Shared.Rent(minimumLength),
                 index = 0
             };
         }
@@ -73,15 +82,31 @@ namespace Obsidian.IO
         }
 
         /// <summary>
+        /// Creates a new <see cref="ProtocolWriter"/> using the specified <see cref="ArrayPool{T}"/> to rent buffers
+        /// </summary>
+        /// <param name="pool"></param>
+        /// <returns></returns>
+        public static ProtocolWriter WithPool(ArrayPool<byte> pool)
+        {
+            return new ProtocolWriter()
+            {
+                pool = pool,
+                buffer = pool.Rent(128),
+                index = 0
+            };
+        }
+
+        /// <summary>
         /// Releases buffer back to the array pool.
         /// </summary>
+        [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse", Justification = "Can be null if the writer was not instantiated correctly")]
         public void Dispose()
         {
-            if (buffer is not null)
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-                buffer = null;
-            }
+            if (buffer is null || pool is null) return;
+            ArrayPool<byte>.Shared.Return(buffer);
+#pragma warning disable 8625
+            buffer = null;
+#pragma warning restore 8625
         }
 
         #region Buffer management
@@ -91,11 +116,30 @@ namespace Obsidian.IO
             return index + neededCapacity < buffer.Length;
         }
 
-        public void Expand()
+        public void EnsureCapacity(int neededCapacity)
         {
-            var newBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length * 2);
-            System.Buffer.BlockCopy(buffer, 0, newBuffer, 0, (int)index);
-            ArrayPool<byte>.Shared.Return(buffer);
+            if (!HasCapacity(neededCapacity))
+                Resize(neededCapacity);
+        }
+        
+        public unsafe void Resize(int minimum)
+        {
+            if (pool is null)
+                throw new NullReferenceException("This writer does not have a pool assigned");
+            
+            var newLength = buffer.Length < minimum
+                ? (buffer.Length + (minimum - buffer.Length)) * 2
+                : buffer.Length * 2;
+
+            var newBuffer = pool.Rent(newLength);
+            fixed (byte* ptrSrc = buffer)
+            {
+                fixed (byte* ptrDest = newBuffer)
+                {
+                    System.Buffer.MemoryCopy(ptrSrc, ptrDest, newBuffer.Length, index);
+                }
+            }
+            pool.Return(buffer);
             buffer = newBuffer;
         }
         #endregion
@@ -104,124 +148,79 @@ namespace Obsidian.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteByte(byte value)
         {
-            GetRef() = value;
-            index++;
+            EnsureCapacity(1);
+            buffer[index++] = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteSByte(sbyte value)
+        public void WriteSByte(sbyte value) => WriteByte((byte) value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteBool(bool value) => WriteByte((byte) (value ? 0x01 : 0x00));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt16(short value)
         {
-            GetRef<sbyte>() = value;
-            index++;
+
+            Span<byte> span = stackalloc byte[sizeof(short)];
+            BinaryPrimitives.WriteInt16BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteBool(bool value)
+        public void WriteUInt16(ushort value)
         {
-            GetRef<bool>() = value;
-            index++;
+            Span<byte> span = stackalloc byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteShort(short value)
+        public void WriteInt32(int value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<short>() = value;
-
-            index += sizeof(short);
+            Span<byte> span = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUShort(ushort value)
+        public void WriteUInt32(uint value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<ushort>() = value;
-
-            index += sizeof(ushort);
+            Span<byte> span = stackalloc byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt(int value)
+        public void WriteInt64(long value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<int>() = value;
-
-            index += sizeof(int);
+            Span<byte> span = stackalloc byte[sizeof(long)];
+            BinaryPrimitives.WriteInt64BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt(uint value)
+        public void WriteUInt64(ulong value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<uint>() = value;
-
-            index += sizeof(uint);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteLong(long value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<long>() = value;
-
-            index += sizeof(long);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteULong(ulong value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-            GetRef<ulong>() = value;
-
-            index += sizeof(ulong);
+            Span<byte> span = stackalloc byte[sizeof(ulong)];
+            BinaryPrimitives.WriteUInt64BigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteFloat(float value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                GetRef<int>() = BinaryPrimitives.ReverseEndianness(Unsafe.As<float, int>(ref value));
-            }
-            else
-            {
-                GetRef<int>() = Unsafe.As<float, int>(ref value);
-            }
-
-            index += sizeof(int);
+            Span<byte> span = stackalloc byte[sizeof(float)];
+            BinaryPrimitives.WriteSingleBigEndian(span, value);
+            WriteSpan(span);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDouble(double value)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                GetRef<long>() = BinaryPrimitives.ReverseEndianness(Unsafe.As<double, long>(ref value));
-            }
-            else
-            {
-                GetRef<long>() = Unsafe.As<double, long>(ref value);
-            }
-
-            index += sizeof(long);
+            Span<byte> span = stackalloc byte[sizeof(double)];
+            BinaryPrimitives.WriteDoubleBigEndian(span, value);
+            WriteSpan(span);
         }
         #endregion
 
@@ -239,54 +238,73 @@ namespace Obsidian.IO
 
             int byteLength = Encoding.UTF8.GetByteCount(value);
             WriteVarInt(byteLength);
-            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, (int)index);
-            index += byteLength;
+            if (byteLength <= 1024)
+            {
+                Span<byte> span = stackalloc byte[byteLength];
+                Encoding.UTF8.GetBytes(value, span);
+                WriteSpan(span);
+            }
+            else
+            {
+                EnsureCapacity(byteLength);
+                Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+            }
         }
-
+        
+        /// <summary>
+        /// Writes a <see cref="string"/> prefixed by <see cref="ushort"/>.
+        /// </summary>
         public void WriteUShortString(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
-                WriteShort(0);
+                WriteInt16(0);
                 return;
             }
-
-            ushort byteLength = checked((ushort)Encoding.UTF8.GetByteCount(value));
-            WriteUShort(byteLength);
-            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, (int)index);
-            index += byteLength;
+            
+            var byteLength = checked((ushort)Encoding.UTF8.GetByteCount(value));
+            WriteUInt16(byteLength);
+            if (byteLength <= 1024)
+            {
+                Span<byte> span = stackalloc byte[byteLength];
+                Encoding.UTF8.GetBytes(value, span);
+                WriteSpan(span);
+            }
+            else
+            {
+                EnsureCapacity(byteLength);
+                Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+            }
         }
 
         public void WriteGuid(Guid value)
         {
-            BigEndianGuid.Write(ref GetRef(), ref value);
-            index += 16;
+            Span<byte> span = stackalloc byte[16];
+            value.TryWriteBytes(span); // Guid's binary representation is always big endian
+            WriteSpan(span);
+            
         }
         #endregion
 
         #region Writing arrays
-        public void WriteByteArray(byte[] array)
+        public unsafe void WriteSpan(ReadOnlySpan<byte> span)
         {
-            System.Buffer.BlockCopy(array, 0, buffer, (int)index, array.Length);
-            index += array.Length;
+            EnsureCapacity(span.Length);
+            fixed (byte* spanPtr = span)
+            {
+                fixed (byte* arrPtr = buffer)
+                {
+                    System.Buffer.MemoryCopy(spanPtr, arrPtr + index, buffer.Length - index, span.Length);
+                }
+            }
+            index += span.Length;
         }
 
-        public void WriteLongArray(long[] array)
+        public void WriteInt64Span(ReadOnlySpan<long> value)
         {
-            ref long target = ref GetRef<long>();
-            for (int i = 0; i < array.Length; i++)
-            {
-                long value = array[i];
 
-                if (!BitConverter.IsLittleEndian)
-                {
-                    value = BinaryPrimitives.ReverseEndianness(value);
-                }
-
-                target = value;
-                target = ref Unsafe.Add(ref target, 1);
-            }
-            index += array.Length * sizeof(long);
+            for (var i = 0; i < value.Length; i++)
+                WriteInt64(value[i]);
         }
         #endregion
 
@@ -297,60 +315,63 @@ namespace Obsidian.IO
             WriteVarInt(Unsafe.As<T, int>(ref value));
         }
 
-        public void WriteVarInt(int value)
+        public unsafe void WriteVarInt(int value)
         {
-            ref byte source = ref GetRef();
-            ref byte target = ref source;
+            var ptr = stackalloc byte[5];
 
-            uint unsigned = (uint)value;
-
-        WRITE_BYTE:
-            target = (byte)(unsigned & 127);
-            unsigned >>= 7;
-
-            if (unsigned != 0)
+            var unsigned = (uint)value;
+            byte size = 0;
+            do
             {
-                target |= 128;
-                target = ref Unsafe.Add(ref target, 1);
-                goto WRITE_BYTE;
-            }
+                var temp = (byte) (unsigned & 127);
+                unsigned >>= 7;
 
-            index += Unsafe.ByteOffset(ref source, ref target) + 1;
+                if (unsigned != 0)
+                    temp |= 128;
+
+                ptr[size++] = temp;
+            } while (unsigned != 0);
+            
+            WriteSpan(new ReadOnlySpan<byte>(ptr, size));
         }
 
-        public void WriteVarLong(long value)
+        public unsafe void WriteVarLong(long value)
         {
-            ref byte source = ref GetRef();
-            ref byte target = ref source;
+            var ptr = stackalloc byte[10];
 
-            ulong unsigned = (ulong)value;
-
-        WRITE_BYTE:
-            target = (byte)(unsigned & 127);
-            unsigned >>= 7;
-
-            if (unsigned != 0)
+            var unsigned = (ulong)value;
+            byte size = 0;
+            do
             {
-                target |= 128;
-                target = ref Unsafe.Add(ref target, 1);
-                goto WRITE_BYTE;
-            }
+                var temp = (byte) (unsigned & 127);
+                unsigned >>= 7;
 
-            index += Unsafe.ByteOffset(ref source, ref target) + 1;
+                if (unsigned != 0)
+                    temp |= 128;
+
+                ptr[size++] = temp;
+            } while (unsigned != 0);
+            
+            WriteSpan(new ReadOnlySpan<byte>(ptr, size));
         }
         #endregion
 
         #region Utilities
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref byte GetRef()
-        {
-            return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index);
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref T GetRef<T>() where T : struct
+        public unsafe bool TryCopyTo(Span<byte> span)
         {
-            return ref Unsafe.As<byte, T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index));
+            if (span.Length < index)
+                return false;
+
+            fixed (byte* spanPtr = span)
+            {
+                fixed (byte* arrPtr = buffer)
+                {
+                    System.Buffer.MemoryCopy(arrPtr, spanPtr, span.Length, index);
+                }
+            }
+
+            return true;
         }
 
         private readonly string GetDebuggerDisplay()
