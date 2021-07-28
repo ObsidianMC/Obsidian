@@ -1,18 +1,6 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Obsidian.API;
-using Obsidian.API.Crafting;
-using Obsidian.Items;
-using Obsidian.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using static Obsidian.Utilities.Registry.Registry;
-
-namespace Obsidian.Utilities.Converters
+﻿namespace Obsidian.Utilities.Converters
 {
-    public class IngredientsConverter : JsonConverter
+    /*public class IngredientsConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType) => objectType is IReadOnlyList<Ingredient>;
 
@@ -88,5 +76,5 @@ namespace Obsidian.Utilities.Converters
         {
             throw new NotImplementedException();
         }
-    }
+    }*/
 }
