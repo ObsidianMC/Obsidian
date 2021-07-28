@@ -66,7 +66,7 @@ namespace Obsidian.Commands
             var commands = ChatMessage.Simple("\n");
             var header = new ChatMessage()
             {
-                Underline = true,
+                Underlined = true,
                 Text = $"List of available commands ({page}/{pagecount}):"
             };
             commands.AddExtra(header);
