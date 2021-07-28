@@ -59,7 +59,7 @@ namespace Obsidian.API.Crafting.Builders
             return new CuttingRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Name must not be null"),
-                Type = "minecraft:stonecutting",
+                Type = CraftingType.Stonecutting,
                 Group = this.Group,
                 Ingredient = this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
                 Count = this.Count,

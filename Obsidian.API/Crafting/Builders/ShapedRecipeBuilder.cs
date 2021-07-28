@@ -58,7 +58,7 @@ namespace Obsidian.API.Crafting.Builders
             return new ShapedRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = "minecraft:crafting_shaped",
+                Type = CraftingType.CraftingShaped,
                 Group = this.Group,
                 Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
                 Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
