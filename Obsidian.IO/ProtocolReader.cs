@@ -11,6 +11,7 @@ namespace Obsidian.IO
     /// Utility struct for reading data from a <see cref="System.Memory{T}"/>
     /// </summary>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
+    [SkipLocalsInit]
     public struct ProtocolReader
     {
         /// <summary>

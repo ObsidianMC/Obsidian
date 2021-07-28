@@ -20,6 +20,7 @@ namespace Obsidian.IO
     /// <seealso cref="MemoryMeasure"/>
     /// <seealso cref="IDisposable"/>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
+    [SkipLocalsInit]
     public struct ProtocolWriter : IDisposable
     {
         /// <summary>
