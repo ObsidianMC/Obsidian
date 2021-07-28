@@ -358,6 +358,18 @@ namespace Obsidian.IO
 
         #region Utilities
 
+
+        /// <summary>
+        /// Copies the writer's content to a new <see cref="byte"/>[]
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToArray()
+        {
+            var arr = new byte[index];
+            Memory.CopyTo(arr);
+            return arr;
+        }
+        
         public unsafe bool TryCopyTo(Span<byte> span)
         {
             if (span.Length < index)
