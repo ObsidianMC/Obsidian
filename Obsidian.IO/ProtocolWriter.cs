@@ -247,7 +247,8 @@ namespace Obsidian.IO
             else
             {
                 EnsureCapacity(byteLength);
-                Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+                var written = Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+                index += written;
             }
         }
         
@@ -273,7 +274,8 @@ namespace Obsidian.IO
             else
             {
                 EnsureCapacity(byteLength);
-                Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+                var written = Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+                index += written;
             }
         }
 
