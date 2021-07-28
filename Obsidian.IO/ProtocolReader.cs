@@ -51,7 +51,7 @@ namespace Obsidian.IO
             if (Memory.Length - index < span.Length)
                 throw new IndexOutOfRangeException("Cannot read past memory end");
             
-            CurrentSpan.CopyTo(span);
+            Memory.Span[index..span.Length].CopyTo(span);
             index += span.Length;
         }
 
