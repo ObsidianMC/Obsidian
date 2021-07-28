@@ -15,7 +15,7 @@ namespace Obsidian.IO
     /// Instances of this struct should be obtained with <see cref="WithBuffer(int)"/> or <see cref="WithBuffer(byte[])"/>,
     /// where <see cref="byte"/>[] belongs to <see cref="ArrayPool{byte}.Shared"/>. When you are done writing, call
     /// <see cref="Dispose"/> to release the buffer back to the pool. <br />
-    /// <see cref="MemoryWriter"/> does <b>NOT</b> do array bounds checks before writing to it. You must make sure that
+    /// <see cref="ProtocolWriter"/> does <b>NOT</b> do array bounds checks before writing to it. You must make sure that
     /// the buffer is large enough, or do the bound checks yourself. You can use <see cref="HasCapacity(int)"/> and
     /// <see cref="Expand"/>. You can use <see cref="MemoryMeasure"/> to measure data length.
     /// </remarks>
@@ -23,7 +23,7 @@ namespace Obsidian.IO
     /// <seealso cref="MemoryMeasure"/>
     /// <seealso cref="IDisposable"/>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
-    public struct MemoryWriter : IDisposable
+    public struct ProtocolWriter : IDisposable
     {
         public ReadOnlyMemory<byte> Memory => new(buffer, 0, (int)index);
         public byte[] Buffer => buffer;
@@ -33,12 +33,12 @@ namespace Obsidian.IO
         private nint index;
 
         /// <summary>
-        /// Creates new <see cref="MemoryWriter"/> with buffer of specific length.
+        /// Creates new <see cref="ProtocolWriter"/> with buffer of specific length.
         /// </summary>
         /// <param name="minimumLength">Minimum length of the buffer.</param>
-        public static MemoryWriter WithBuffer(int minimumLength)
+        public static ProtocolWriter WithBuffer(int minimumLength)
         {
-            return new MemoryWriter
+            return new ProtocolWriter
             {
                 buffer = ArrayPool<byte>.Shared.Rent(minimumLength),
                 index = 0
@@ -46,12 +46,12 @@ namespace Obsidian.IO
         }
 
         /// <summary>
-        /// Creates new <see cref="MemoryWriter"/> with specific buffer.
+        /// Creates new <see cref="ProtocolWriter"/> with specific buffer.
         /// </summary>
         /// <param name="buffer">Rented buffer to be used for writing.</param>
-        public static MemoryWriter WithBuffer(byte[] buffer)
+        public static ProtocolWriter WithBuffer(byte[] buffer)
         {
-            return new MemoryWriter
+            return new ProtocolWriter
             {
                 buffer = buffer,
                 index = 0
@@ -59,13 +59,13 @@ namespace Obsidian.IO
         }
 
         /// <summary>
-        /// Creates new <see cref="MemoryWriter"/> with specific buffer.
+        /// Creates new <see cref="ProtocolWriter"/> with specific buffer.
         /// </summary>
         /// <param name="buffer">Rented buffer to be used for writing.</param>
         /// <param name="offset">Starting point for writing.</param>
-        public static MemoryWriter WithBuffer(byte[] buffer, int offset)
+        public static ProtocolWriter WithBuffer(byte[] buffer, int offset)
         {
-            return new MemoryWriter
+            return new ProtocolWriter
             {
                 buffer = buffer,
                 index = offset

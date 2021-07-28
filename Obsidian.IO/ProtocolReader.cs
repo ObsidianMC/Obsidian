@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.IO
 {
-    public struct MemoryReader
+    public struct ProtocolReader
     {
         private byte[] buffer;
         private nint index;
