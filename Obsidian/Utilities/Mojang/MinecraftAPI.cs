@@ -1,63 +1,42 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Mojang
 {
     public class MinecraftAPI
     {
-        public static HttpClient Http = Globals.HttpClient;
+        private static readonly HttpClient Http = Globals.HttpClient;
 
         public static async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
         {
-            using (HttpResponseMessage response = await Http.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonConvert.SerializeObject(usernames), Encoding.UTF8, "application/json")))
-            {
-                if (response.IsSuccessStatusCode)
-                {
-                    return JsonConvert.DeserializeObject<List<MojangUser>>(await response.Content.ReadAsStringAsync());
-                }
-            }
+            using HttpResponseMessage response = await Http.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonSerializer.Serialize(usernames), Encoding.UTF8, "application/json"));
 
-            return null;
+            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<List<MojangUser>>() : null;
         }
 
         public static async Task<MojangUser> GetUserAsync(string username)
         {
             var users = await GetUsersAsync(new[] { username });
 
-            if (users == null || users.Count <= 0)
-                return null;
-
-            return users.FirstOrDefault();
+            return (users == null || users.Count <= 0) ? null : users.FirstOrDefault();
         }
 
         public static async Task<MojangUser> GetUserAndSkinAsync(string uuid)
         {
-            using (HttpResponseMessage response = await Http.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid))
-            {
-                if (response.IsSuccessStatusCode)
-                {
-                    return JsonConvert.DeserializeObject<MojangUser>(await response.Content.ReadAsStringAsync());
-                }
-            }
+            using HttpResponseMessage response = await Http.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
 
-            return null;
+            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<MojangUser>() : null;
         }
 
         public static async Task<JoinedResponse> HasJoined(string username, string serverId)
         {
-            using (HttpResponseMessage response = await Http.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={username}&serverId={serverId}"))
-            {
-                if (response.IsSuccessStatusCode)
-                {
-                    return JsonConvert.DeserializeObject<JoinedResponse>(await response.Content.ReadAsStringAsync());
-                }
-            }
+            using HttpResponseMessage response = await Http.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={username}&serverId={serverId}");
 
-            return null;
+            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<JoinedResponse>() : null;
         }
     }
 }

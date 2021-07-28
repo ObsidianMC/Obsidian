@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Chat;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
@@ -9,6 +8,7 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
@@ -505,11 +505,7 @@ namespace Obsidian.Net
         public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
 
         [ReadMethod]
-        public ChatMessage ReadChat()
-        {
-            string value = ReadString();
-            return JsonConvert.DeserializeObject<ChatMessage>(value);
-        }
+        public ChatMessage ReadChat() => this.ReadString().FromJson<ChatMessage>();
 
         [ReadMethod]
         public byte[] ReadByteArray()
@@ -619,7 +615,7 @@ namespace Obsidian.Net
                                                 var loreTag = (NbtList)displayTag;
 
                                                 foreach (NbtTag<string> lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
+                                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
                                             }
                                         }
                                         break;
@@ -721,7 +717,7 @@ namespace Obsidian.Net
                                         {
                                             if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                                             {
-                                                var messages = JsonConvert.DeserializeObject<ChatMessage[]>(stringTag.Value);
+                                                var messages = stringTag.Value.FromJson<ChatMessage[]>();
                                                 itemMetaBuilder.WithName(messages[0]);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
@@ -729,7 +725,7 @@ namespace Obsidian.Net
                                                 var loreTag = (NbtList)displayTag;
 
                                                 foreach (NbtTag<string> lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
+                                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
                                             }
                                         }
                                         break;

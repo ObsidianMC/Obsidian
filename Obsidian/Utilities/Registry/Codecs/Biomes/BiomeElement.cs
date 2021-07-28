@@ -1,7 +1,6 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {
@@ -21,7 +20,7 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
         [JsonConverter(typeof(DefaultObjectConverter))]
         public float Downfall { get; set; }
 
-        [JsonConverter(typeof(DefaultObjectConverter))]
+
         public string Category { get; set; }
 
         public string Precipitation { get; set; }//TODO turn into enum

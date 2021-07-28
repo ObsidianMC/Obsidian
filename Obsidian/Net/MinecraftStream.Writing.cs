@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Chat;
 using Obsidian.Commands;
@@ -477,14 +476,14 @@ namespace Obsidian.Net
                     {
                         writer.WriteCompoundStart("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)meta.Name }));
+                        writer.WriteString("Name", new List<ChatMessage> { (ChatMessage)meta.Name }.ToJson());
 
                         if (meta.Lore is not null)
                         {
                             writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                             foreach (var lore in meta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                                writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                             writer.EndList();
                         }
@@ -498,7 +497,7 @@ namespace Obsidian.Net
                         writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                         foreach (var lore in meta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                            writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                         writer.EndList();
 
@@ -772,14 +771,14 @@ namespace Obsidian.Net
                     {
                         writer.WriteCompoundStart("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
+                        writer.WriteString("Name", new List<ChatMessage> { (ChatMessage)itemMeta.Name }.ToJson());
 
                         if (itemMeta.Lore != null)
                         {
                             writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                                writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                             writer.EndList();
                         }
@@ -793,7 +792,7 @@ namespace Obsidian.Net
                         writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                            writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                         writer.EndList();
 
@@ -811,7 +810,7 @@ namespace Obsidian.Net
 
         internal async Task WriteRecipeAsync(string name, IRecipe recipe)
         {
-            await WriteStringAsync(recipe.Type);
+            await WriteStringAsync($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
 
             await WriteStringAsync(name);
 
@@ -942,7 +941,7 @@ namespace Obsidian.Net
 
         public void WriteRecipe(string name, IRecipe recipe)
         {
-            WriteString(recipe.Type);
+            WriteString($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
 
             WriteString(name);
 

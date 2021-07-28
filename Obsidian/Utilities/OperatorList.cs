@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Obsidian.API;
 using System;
 using System.Collections.Generic;
@@ -26,15 +25,17 @@ namespace Obsidian.Utilities
         public async Task InitializeAsync()
         {
             var fi = new FileInfo(this.Path);
+
             if (fi.Exists)
             {
-                this.ops = JsonConvert.DeserializeObject<List<Operator>>(File.ReadAllText(Path));
+                using var fs = fi.OpenRead();
+                this.ops = await fs.FromJsonAsync<List<Operator>>();
             }
             else
             {
-                using var sw = fi.CreateText();
+                using var fs = fi.Create();
 
-                await sw.WriteAsync(JsonConvert.SerializeObject(this.ops, Formatting.Indented));
+                await this.ops.ToJsonAsync(fs);
             }
         }
 
@@ -103,15 +104,13 @@ namespace Obsidian.Utilities
 
         private void UpdateList()
         {
-            File.WriteAllText(Path, JsonConvert.SerializeObject(ops, Formatting.Indented));
+            File.WriteAllText(Path, ops.ToJson());
         }
 
         private class Operator
         {
-            [JsonProperty("username")]
             public string Username { get; set; }
 
-            [JsonProperty("uuid")]
             public Guid Uuid { get; set; }
         }
 
