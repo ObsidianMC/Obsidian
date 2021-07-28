@@ -26,7 +26,7 @@ namespace Obsidian.IO
         /// Returns a <see cref="ReadOnlyMemory{T}"/> representing the writer's buffer content
         /// </summary>
         /// <remarks>
-        /// When this property is in use, writing is discouraged as it may required renting a new buffer
+        /// When this property is in use, writing is discouraged as it may require renting a new buffer
         /// </remarks>
         public ReadOnlyMemory<byte> Memory => new(buffer, 0, index);
         
@@ -376,7 +376,7 @@ namespace Obsidian.IO
 
         private readonly string GetDebuggerDisplay()
         {
-            return $"MemoryWriter [{index}/{buffer.Length}]";
+            return $"ProtocolWriter [{index.ToString()}/{buffer.Length.ToString()}]";
         }
         #endregion
     }
