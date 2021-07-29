@@ -153,7 +153,7 @@ namespace Obsidian.IO
         public void WriteByte(byte value)
         {
             EnsureCapacity(1);
-            Unsafe.WriteUnaligned(ref buffer[0], value);
+            Unsafe.WriteUnaligned(ref buffer[index], value);
             index++;
         }
 
