@@ -153,7 +153,7 @@ namespace Obsidian.IO
         public void WriteByte(byte value)
         {
             EnsureCapacity(1);
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index++;
         }
 
@@ -170,7 +170,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(short);
         }
 
@@ -181,7 +181,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(ushort);
         }
 
@@ -192,7 +192,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(int);
         }
 
@@ -203,7 +203,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(uint);
         }
 
@@ -214,7 +214,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(long);
         }
 
@@ -225,7 +225,7 @@ namespace Obsidian.IO
             if (BitConverter.IsLittleEndian)
                 value = BinaryPrimitives.ReverseEndianness(value);
             
-            Unsafe.WriteUnaligned(ref buffer[index], value);
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(ulong);
         }
 
@@ -234,8 +234,8 @@ namespace Obsidian.IO
         {
             EnsureCapacity(sizeof(float));
             if (BitConverter.IsLittleEndian)
-                Unsafe.WriteUnaligned(ref buffer[index], BinaryPrimitives.ReverseEndianness(Unsafe.As<float, int>(ref value)));
-            else Unsafe.WriteUnaligned(ref buffer[index], value);
+                Unsafe.WriteUnaligned(ref GetBufferRef(), BinaryPrimitives.ReverseEndianness(Unsafe.As<float, int>(ref value)));
+            else Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(float);
         }
 
@@ -244,8 +244,8 @@ namespace Obsidian.IO
         {
             EnsureCapacity(sizeof(double));
             if (BitConverter.IsLittleEndian)
-                Unsafe.WriteUnaligned(ref buffer[index], BinaryPrimitives.ReverseEndianness(Unsafe.As<double, long>(ref value)));
-            else Unsafe.WriteUnaligned(ref buffer[index], value);
+                Unsafe.WriteUnaligned(ref GetBufferRef(), BinaryPrimitives.ReverseEndianness(Unsafe.As<double, long>(ref value)));
+            else Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += sizeof(double);
         }
         #endregion
@@ -333,7 +333,7 @@ namespace Obsidian.IO
             var ptr = stackalloc byte[5];
 
             var unsigned = (uint)value;
-            byte size = 0;
+            var size = 0;
             do
             {
                 var temp = (byte) (unsigned & 127);
@@ -345,7 +345,9 @@ namespace Obsidian.IO
                 ptr[size++] = temp;
             } while (unsigned != 0);
             
-            WriteSpan(new ReadOnlySpan<byte>(ptr, size));
+            fixed (byte* bptr = buffer)
+                System.Buffer.MemoryCopy(ptr, bptr, buffer.Length, size);
+            index += size;
         }
 
         public unsafe void WriteVarLong(long value)
@@ -353,7 +355,7 @@ namespace Obsidian.IO
             var ptr = stackalloc byte[10];
 
             var unsigned = (ulong)value;
-            byte size = 0;
+            var size = 0;
             do
             {
                 var temp = (byte) (unsigned & 127);
@@ -365,7 +367,9 @@ namespace Obsidian.IO
                 ptr[size++] = temp;
             } while (unsigned != 0);
             
-            WriteSpan(new ReadOnlySpan<byte>(ptr, size));
+            fixed (byte* bptr = buffer)
+                System.Buffer.MemoryCopy(ptr, bptr, buffer.Length, size);
+            index += size;
         }
         
         
@@ -400,6 +404,10 @@ namespace Obsidian.IO
 
             return true;
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref byte GetBufferRef() => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index);
 
         private readonly string GetDebuggerDisplay()
         {
