@@ -1,9 +1,11 @@
 ﻿using Obsidian.API;
+using Obsidian.API.AI;
 using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
@@ -12,6 +14,10 @@ namespace Obsidian.Entities
     //TODO detect when an entity is swimming
     public class Entity : IEquatable<Entity>, IEntity
     {
+        public IServer Server { get; set; }
+
+        protected Server server => this.Server as Server;
+
         public World World { get; set; }
         public IWorld WorldLocation => World;
 
@@ -29,9 +35,15 @@ namespace Obsidian.Entities
 
         public int EntityId { get; internal set; }
 
+        public Guid Uuid { get; set; } = Guid.NewGuid();
+
         public Pose Pose { get; set; } = Pose.Standing;
 
+        public EntityType Type { get; set; }
+
         public int Air { get; set; } = 300;
+
+        public float Health { get; set; }
 
         public ChatMessage CustomName { get; private set; }
 
@@ -48,12 +60,16 @@ namespace Obsidian.Entities
         public bool Swimming { get; set; }
         public bool FlyingWithElytra { get; set; }
 
+        public INavigator Navigator { get; set; }
+        public IGoalController GoalController { get; set; }
+
         public Entity()
         {
+
         }
 
         #region Update methods
-        internal virtual Task UpdateAsync(Server server, VectorF position, bool onGround)
+        internal virtual Task UpdateAsync(VectorF position, bool onGround)
         {
             var isNewLocation = position != this.Position;
 
@@ -77,7 +93,7 @@ namespace Obsidian.Entities
         }
 
 
-        internal virtual Task UpdateAsync(Server server, VectorF position, Angle yaw, Angle pitch, bool onGround)
+        internal virtual Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             var isNewLocation = position != this.Position;
             var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
@@ -88,7 +104,7 @@ namespace Obsidian.Entities
 
                 if (isNewRotation)
                 {
-                    server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
+                    this.server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
                     {
                         EntityId = this.EntityId,
 
@@ -100,7 +116,7 @@ namespace Obsidian.Entities
                         OnGround = onGround
                     }, this.EntityId);
 
-                    server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                    this.server.BroadcastPacketWithoutQueue(new EntityHeadLook
                     {
                         EntityId = this.EntityId,
                         HeadYaw = yaw
@@ -108,7 +124,7 @@ namespace Obsidian.Entities
                 }
                 else
                 {
-                    server.BroadcastPacketWithoutQueue(new EntityPosition
+                    this.server.BroadcastPacketWithoutQueue(new EntityPosition
                     {
                         EntityId = this.EntityId,
 
@@ -125,13 +141,13 @@ namespace Obsidian.Entities
         }
 
 
-        internal virtual Task UpdateAsync(Server server, Angle yaw, Angle pitch, bool onGround)
+        internal virtual Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
         {
             var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
 
             if (isNewRotation)
             {
-                server.BroadcastPacketWithoutQueue(new EntityRotation
+                this.server.BroadcastPacketWithoutQueue(new EntityRotation
                 {
                     EntityId = this.EntityId,
                     OnGround = onGround,
@@ -139,7 +155,7 @@ namespace Obsidian.Entities
                     Pitch = pitch
                 }, this.EntityId);
 
-                server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                this.server.BroadcastPacketWithoutQueue(new EntityHeadLook
                 {
                     EntityId = this.EntityId,
                     HeadYaw = yaw
@@ -261,7 +277,38 @@ namespace Obsidian.Entities
             stream.WriteVarInt((int)Pose);
         }
 
+        public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance);
+
         public virtual Task TickAsync() => Task.CompletedTask;
+
+
+        //TODO check for other entities and handle accordingly 
+        public async Task DamageAsync(IEntity source, float amount = 1.0f)
+        {
+            this.Health -= amount;
+
+            if (this is ILiving living)
+            {
+                await this.server.BroadcastPacketAsync(new EntityAnimation
+                {
+                    EntityId = this.EntityId,
+                    Animation = EAnimation.TakeDamage
+                });
+
+                if (living is IPlayer iplayer)
+                {
+                    var player = iplayer as Player;
+
+                    await player.client.QueuePacketAsync(new UpdateHealth(this.Health, 20, 5));
+
+                    if (!player.Alive)
+                        await player.KillAsync(source, ChatMessage.Simple("You died xd"));
+                }
+            }
+        }
+
+        public virtual Task KillAsync(IEntity source) => Task.CompletedTask;
+        public virtual Task KillAsync(IEntity source, IChatMessage message) => Task.CompletedTask;
 
         public bool Equals([AllowNull] Entity other)
         {

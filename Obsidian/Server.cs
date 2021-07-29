@@ -133,12 +133,12 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
-
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
+            this.Events.PlayerAttackEntity += this.PlayerAttack;
 
             if (this.Config.UDPBroadcast)
             {
@@ -247,8 +247,7 @@ namespace Obsidian
 
             await Task.WhenAll(Registry.RegisterBlocksAsync(),
                                Registry.RegisterItemsAsync(),
-                               Registry.RegisterBiomesAsync(),
-                               Registry.RegisterDimensionsAsync(),
+                               Registry.RegisterCodecsAsync(),
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
@@ -256,16 +255,19 @@ namespace Obsidian
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
+
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.ScoreboardManager = new ScoreboardManager(this);
-
             this.Logger.LogInformation("Loading plugins...");
+
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.
+
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             this.World = new World("world1", this);
@@ -273,9 +275,10 @@ namespace Obsidian
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
-                this.World.Init(gen);
+                await World.Init(gen);
                 this.World.Save();
             }
 
@@ -289,7 +292,9 @@ namespace Obsidian
             this.Logger.LogInformation($"Listening for new clients...");
 
             stopwatch.Stop();
+
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
+
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -299,6 +304,7 @@ namespace Obsidian
 
                 var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
                 this.clients.Add(client);
+
                 client.Disconnected += client => clients.TryRemove(client);
 
                 _ = Task.Run(client.StartConnectionAsync);
@@ -386,18 +392,15 @@ namespace Obsidian
             }
         }
 
-        private bool TryAddEntity(World world, Entity entity)
-        {
-            this.Logger.LogDebug($"{entity.EntityId} new ID");
-
-            return world.TryAddEntity(entity);
-        }
+        private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
         internal void BroadcastPlayerDig(PlayerDiggingStore store)
         {
             var digging = store.Packet;
 
-            var block = this.World.GetBlock(digging.Position);
+            var b = this.World.GetBlock(digging.Position);
+            if (b is null) { return; }
+            var block = (Block)b;
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
@@ -419,28 +422,19 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc
+                            Position = loc 
                         };
 
                         this.TryAddEntity(player.World, item);
 
-                        var f8 = Math.Sin(player.Pitch.Degrees * ((float)Math.PI / 180f));
-                        var f2 = Math.Cos(player.Pitch.Degrees * ((float)Math.PI / 180f));
+                        var lookDir = player.GetLookDirection();
 
-                        var f3 = Math.Sin(player.Yaw.Degrees * ((float)Math.PI / 180f));
-                        var f4 = Math.Cos(player.Yaw.Degrees * ((float)Math.PI / 180f));
-
-                        var f5 = Globals.Random.NextDouble() * ((float)Math.PI * 2f);
-                        var f6 = 0.02f * Globals.Random.NextDouble();
-
-                        var vel = new Velocity((short)((double)(-f3 * f2 * 0.3F) + Math.Cos((double)f5) * (double)f6),
-                            (short)((double)(-f8 * 0.3F + 0.1F + (Globals.Random.NextDouble() - Globals.Random.NextDouble()) * 0.1F)),
-                            (short)((double)(f4 * f2 * 0.3F) + Math.Sin((double)f5) * (double)f6));
+                        var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
                         this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
-                            Uuid = Guid.NewGuid(),
+                            Uuid = item.Uuid,
                             Type = EntityType.Item,
                             Position = item.Position,
                             Pitch = 0,
@@ -485,13 +479,6 @@ namespace Obsidian
                     }
                     break;
                 case DiggingStatus.CancelledDigging:
-                    this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
-                    {
-                        Position = digging.Position,
-                        Block = block.Id,
-                        Status = digging.Status,
-                        Successful = true
-                    });
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
@@ -513,21 +500,19 @@ namespace Obsidian
 
                         this.World.SetBlock(digging.Position, Block.Air);
 
-                        var itemId = Registry.GetItem(block.Material).Id;
+                        var droppedItem = Registry.GetItem(block.Material);
 
-                        if (itemId == 0) { break; }
+                        if (droppedItem.Id == 0) { break; }
 
                         var item = new ItemEntity
                         {
                             EntityId = player + this.World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = itemId,
+                            Id = droppedItem.Id,
                             Glowing = true,
                             World = this.World,
-                            Position = digging.Position + new VectorF(
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f)
+                            Position = digging.Position,
+                            Server = this
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -535,13 +520,16 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new SpawnEntity
                         {
                             EntityId = item.EntityId,
-                            Uuid = Guid.NewGuid(),
+                            Uuid = item.Uuid,
                             Type = EntityType.Item,
                             Position = item.Position,
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromVector(digging.Position)
+                            Velocity = Velocity.FromVector(digging.Position + new VectorF(
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                (Globals.Random.NextFloat() * 0.5f) + 0.25f))
                         });
 
                         this.BroadcastPacketWithoutQueue(new EntityMetadata
@@ -607,7 +595,7 @@ namespace Obsidian
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
 
-                _ = Task.Run(() => World.ManageChunks());
+                await World.ManageChunks();
             }
         }
 
@@ -618,7 +606,6 @@ namespace Obsidian
         {
             await this.RegisterAsync(new SuperflatGenerator());
             await this.RegisterAsync(new OverworldGenerator(Config.Seed));
-            await this.RegisterAsync(new OverworldDebugGenerator(Config.Seed));
         }
 
         public IEnumerable<IPlayer> Players => GetPlayers();
@@ -631,6 +618,17 @@ namespace Obsidian
         }
 
         #region Events
+        private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+        {
+            var entity = e.Entity;
+            var attacker = e.Attacker;
+
+            if (entity is IPlayer player)
+            {
+                await player.DamageAsync(attacker);
+            }
+        }
+
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
             var player = e.Player as Player;

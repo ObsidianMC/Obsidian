@@ -37,7 +37,7 @@ namespace Obsidian.API.Crafting.Builders
             return new ShapelessRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = "minecraft:crafting_shapeless",
+                Type = CraftingType.CraftingShapeless,
                 Group = this.Group,
                 Ingredients = new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients)),
                 Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")

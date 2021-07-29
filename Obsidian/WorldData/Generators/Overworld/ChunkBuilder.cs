@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.ChunkData;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using System;
@@ -10,7 +9,6 @@ namespace Obsidian.WorldData.Generators.Overworld
     {
         public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] bedrockHeightmap)
         {
-            var air = Registry.GetBlock(Material.Air);
             var bedrock = Registry.GetBlock(Material.Bedrock);
             var stone = Registry.GetBlock(Material.Stone);
 
@@ -18,14 +16,16 @@ namespace Obsidian.WorldData.Generators.Overworld
             {
                 for (int bz = 0; bz < 16; bz++)
                 {
-                    double terrainY = terrainHeightmap[bx, bz];
                     for (int by = 0; by < 256; by++)
                     {
-                        var b = stone;
-                        if (by > terrainY) { b = air; }
-                        else if (by < bedrockHeightmap[bx, bz]) { b = bedrock; }
-
-                        chunk.SetBlock(bx, by, bz, b);
+                        if (by <= bedrockHeightmap[bx, bz]) 
+                        {
+                            chunk.SetBlock(bx, by, bz, bedrock);
+                        }
+                        else if (by <= terrainHeightmap[bx, bz]) 
+                        {
+                            chunk.SetBlock(bx, by, bz, stone);
+                        }
                     }
                 }
             }

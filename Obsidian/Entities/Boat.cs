@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities
+﻿using Obsidian.API;
+
+namespace Obsidian.Entities
 {
     public class Boat : Entity
     {
@@ -7,7 +9,7 @@
 
         public float DamageTaken { get; private set; }
 
-        public BoatType Type { get; private set; }
+        public BoatType BoatType { get; private set; }
 
         public bool LeftPadleTurning { get; private set; }
         public bool RightPaddleTurning { get; private set; }

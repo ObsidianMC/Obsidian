@@ -10,7 +10,6 @@ namespace Obsidian.API
         public string DisplayName { get; }
 
         public Guid Uuid { get; }
-        public IServer Server { get; }
         public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
@@ -49,7 +48,6 @@ namespace Obsidian.API
         public Task KickAsync(IChatMessage reason);
         public Task KickAsync(string reason);
         public Task OpenInventoryAsync(Inventory inventory);
-
         public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
 
         public Task<bool> GrantPermission(string permission);

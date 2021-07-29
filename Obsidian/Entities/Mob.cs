@@ -14,7 +14,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, this.MobBitMask);
         }
-
+        
         public override void Write(MinecraftStream stream)
         {
             base.Write(stream);

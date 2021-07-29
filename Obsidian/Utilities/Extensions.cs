@@ -4,11 +4,15 @@ using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -16,7 +20,45 @@ namespace Obsidian.Utilities
 {
     public static partial class Extensions
     {
+        internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
+                EntityType.SpectralArrow,
+                EntityType.Boat,
+                EntityType.DragonFireball,
+                EntityType.AreaEffectCloud,
+                EntityType.EndCrystal,
+                EntityType.EvokerFangs,
+                EntityType.ExperienceOrb,
+                EntityType.FireworkRocket,
+                EntityType.FallingBlock,
+                EntityType.Item,
+                EntityType.ItemFrame,
+                EntityType.Fireball,
+                EntityType.LeashKnot,
+                EntityType.LightningBolt,
+                EntityType.LlamaSpit,
+                EntityType.Minecart,
+                EntityType.ChestMinecart,
+                EntityType.CommandBlockMinecart,
+                EntityType.FurnaceMinecart,
+                EntityType.HopperMinecart,
+                EntityType.SpawnerMinecart,
+                EntityType.TntMinecart,
+                EntityType.Painting,
+                EntityType.PrimedTNT,
+                EntityType.ShulkerBullet,
+                EntityType.EnderPearl,
+                EntityType.Snowball,
+                EntityType.SmallFireball,
+                EntityType.Egg,
+                EntityType.ExperienceBottle,
+                EntityType.Potion,
+                EntityType.Trident,
+                EntityType.FishingBobber,
+                EntityType.EyeOfEnder};
+
         public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
+
+        internal static bool IsLiving(this EntityType type) => nonLiving.Contains(type);
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
@@ -110,5 +152,11 @@ namespace Obsidian.Utilities
         {
             return ref MemoryMarshal.GetReference(span);
         }
+
+        public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
+        public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
+
+        public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
+        public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) => JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
     }
 }

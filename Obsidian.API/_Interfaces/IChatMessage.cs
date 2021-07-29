@@ -16,7 +16,7 @@ namespace Obsidian.API
         public HexColor Color { get; set; }
         public bool Bold { get; set; }
         public bool Italic { get; set; }
-        public bool Underline { get; set; }
+        public bool Underlined { get; set; }
         public bool Strikethrough { get; set; }
         public bool Obfuscated { get; set; }
         public string Insertion { get; set; }

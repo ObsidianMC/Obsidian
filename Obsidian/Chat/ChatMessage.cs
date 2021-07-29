@@ -1,45 +1,36 @@
-using Newtonsoft.Json;
 using Obsidian.API;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.Chat
 {
     public class ChatMessage : IChatMessage
     {
-        [JsonProperty("text", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Text { get; set; }
 
-        [JsonProperty("color", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonPropertyName("color")]
         private string HexColor => Color.ToString();
 
         [JsonIgnore]
         public HexColor Color { get; set; }
 
-        [JsonProperty("bold", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool Bold { get; set; }
 
-        [JsonProperty("italic", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool Italic { get; set; }
 
-        [JsonProperty("underlined", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool Underline { get; set; }
+        public bool Underlined { get; set; }
 
-        [JsonProperty("strikethrough", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool Strikethrough { get; set; }
 
-        [JsonProperty("obfuscated", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool Obfuscated { get; set; }
 
-        [JsonProperty("insertion", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string Insertion { get; set; }
 
-        [JsonProperty("clickEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public IClickComponent ClickEvent { get; set; }
 
-        [JsonProperty("hoverEvent", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public IHoverComponent HoverEvent { get; set; }
 
-        [JsonProperty("extra", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public List<ChatMessage> Extra { get; set; }
 
         [JsonIgnore]
@@ -96,8 +87,6 @@ namespace Obsidian.Chat
 
         public static implicit operator ChatMessage(string text) => Simple(text);
 
-        public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, Globals.JsonSettings);
-
-        public string ToString(bool indented) => JsonConvert.SerializeObject(this, indented ? Formatting.Indented : Formatting.None, Globals.JsonSettings);
+        public override string ToString() => JsonSerializer.Serialize(this, Globals.JsonOptions);
     }
 }

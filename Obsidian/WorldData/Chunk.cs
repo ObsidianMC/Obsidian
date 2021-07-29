@@ -14,6 +14,8 @@ namespace Obsidian.WorldData
 
         public BiomeContainer BiomeContainer { get; private set; } = new BiomeContainer();
 
+        public bool isGenerated = false;
+
         private const int width = 16;
         private const int height = 16;
         private const int cubesHorizontal = 16 / width;
@@ -60,8 +62,32 @@ namespace Obsidian.WorldData
         {
             x = NumericsHelper.Modulo(x, 16);
             z = NumericsHelper.Modulo(z, 16);
+            var sectionIndex = y >> 4;
 
-            Sections[y >> 4].SetBlock(x, y & 15, z, block);
+            var success = Sections[sectionIndex].SetBlock(x, y & 15, z, block);
+
+            // Palette dynamic sizing
+            if (!success)
+            {
+                var oldSection = Sections[sectionIndex];
+                var bpb = oldSection.BitsPerBlock;
+                bpb += 1;
+                var newSection = new ChunkSection(bpb, sectionIndex);
+                for (int sx = 0; sx < 16; sx++)
+                {
+                    for (int sy = 0; sy < 16; sy++)
+                    {
+                        for (int sz = 0; sz < 16; sz++)
+                        {
+                            // Seems to be the safest way to do this. A bit expensive, though...
+                            newSection.SetBlock(sx, sy, sz, oldSection.GetBlock(sx, sy, sz));
+                        }
+                    }
+                }
+
+                Sections[sectionIndex] = newSection;
+                SetBlock(x, y, z, block);
+            }
         }
 
 

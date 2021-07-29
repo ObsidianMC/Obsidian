@@ -14,6 +14,6 @@ namespace Obsidian.WorldData
             this.Id = id;
         }
 
-        public abstract Chunk GenerateChunk(int x, int z);
+        public abstract Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null);
     }
 }

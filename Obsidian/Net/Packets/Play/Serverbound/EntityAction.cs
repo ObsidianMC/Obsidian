@@ -2,6 +2,7 @@
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -21,6 +22,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
+            var block = player.World.GetBlock((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
+
             switch (Action)
             {
                 case EAction.StartSneaking:
@@ -34,9 +37,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     player.Sleeping = false;
                     break;
                 case EAction.StartSprinting:
+                    if ((bool)(block?.IsFluid))
+                        player.Swimming = true;
+
                     player.Sprinting = true;
                     break;
                 case EAction.StopSprinting:
+                    if (player.Swimming)
+                        player.Swimming = false;
+
                     player.Sprinting = false;
                     break;
                 case EAction.StartJumpWithHorse:

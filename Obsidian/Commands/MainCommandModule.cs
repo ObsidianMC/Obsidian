@@ -66,7 +66,7 @@ namespace Obsidian.Commands
             var commands = ChatMessage.Simple("\n");
             var header = new ChatMessage()
             {
-                Underline = true,
+                Underlined = true,
                 Text = $"List of available commands ({page}/{pagecount}):"
             };
             commands.AddExtra(header);
@@ -351,6 +351,22 @@ namespace Obsidian.Commands
             await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
         #endregion
+
+        [Command("spawnentity")]
+        [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
+        public async Task SpawnEntityAsync(CommandContext context, string entityType)
+        {
+            var player = context.Player;
+            if (Enum.TryParse<EntityType>(entityType, true, out var type))
+            {
+                await player.WorldLocation.SpawnEntityAsync(player.Position, type);
+                await player.SendMessageAsync($"Spawning: {type}");
+            }
+            else
+            {
+                await player.SendMessageAsync("&4Invalid entity type");
+            }
+        }
 
         #region stop
         [Command("stop")]

@@ -8,8 +8,6 @@ namespace Obsidian.Entities
     {
         public LivingBitMask LivingBitMask { get; set; }
 
-        public float Health { get; set; } = 1.0f;
-
         public uint ActiveEffectColor { get; private set; }
 
         public bool AmbientPotionEffect { get; set; }
@@ -19,6 +17,7 @@ namespace Obsidian.Entities
         public int AbsorbtionAmount { get; set; }
 
         public Vector BedBlockPosition { get; set; }
+        public bool Alive => this.Health > 0f;
 
         public override async Task WriteAsync(MinecraftStream stream)
         {
