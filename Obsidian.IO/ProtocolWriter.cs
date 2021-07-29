@@ -152,7 +152,7 @@ namespace Obsidian.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteByte(byte value)
         {
-            EnsureCapacity(1);
+            EnsureCapacity(sizeof(byte));
             Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index++;
         }
@@ -258,7 +258,7 @@ namespace Obsidian.IO
         {
             if (string.IsNullOrEmpty(value))
             {
-                buffer[index++] = 0;
+                WriteByte(0);
                 return;
             }
 
@@ -276,7 +276,7 @@ namespace Obsidian.IO
         {
             if (string.IsNullOrEmpty(value))
             {
-                buffer[index++] = 0;
+                WriteByte(0);
                 return;
             }
 
@@ -289,14 +289,10 @@ namespace Obsidian.IO
             index += byteLength;
         }
 
-        public unsafe void WriteGuid(Guid value)
+        public void WriteGuid(Guid value)
         {
             EnsureCapacity(16);
-            var ptr = (byte*)&value;
-            fixed (byte* bptr = buffer)
-            {
-                System.Buffer.MemoryCopy(ptr, bptr + index, buffer.Length, 16);
-            }
+            Unsafe.WriteUnaligned(ref GetBufferRef(), value);
             index += 16;
         }
         #endregion
@@ -328,48 +324,46 @@ namespace Obsidian.IO
             WriteVarInt(Unsafe.As<T, int>(ref value));
         }
 
-        public unsafe void WriteVarInt(int value)
+        public void WriteVarInt(int value)
         {
-            var ptr = stackalloc byte[5];
+            ref var source = ref GetBufferRef();
+            ref var target = ref source;
 
             var unsigned = (uint)value;
-            var size = 0;
-            do
+
+            WRITE_BYTE:
+            target = (byte)(unsigned & 127);
+            unsigned >>= 7;
+
+            if (unsigned != 0)
             {
-                var temp = (byte) (unsigned & 127);
-                unsigned >>= 7;
+                target |= 128;
+                target = ref Unsafe.Add(ref target, 1);
+                goto WRITE_BYTE;
+            }
 
-                if (unsigned != 0)
-                    temp |= 128;
-
-                ptr[size++] = temp;
-            } while (unsigned != 0);
-            
-            fixed (byte* bptr = buffer)
-                System.Buffer.MemoryCopy(ptr, bptr, buffer.Length, size);
-            index += size;
+            index += (Unsafe.ByteOffset(ref source, ref target) + 1).ToInt32();
         }
 
         public unsafe void WriteVarLong(long value)
         {
-            var ptr = stackalloc byte[10];
+            ref var source = ref GetBufferRef();
+            ref var target = ref source;
 
             var unsigned = (ulong)value;
-            var size = 0;
-            do
+
+            WRITE_BYTE:
+            target = (byte)(unsigned & 127);
+            unsigned >>= 7;
+
+            if (unsigned != 0)
             {
-                var temp = (byte) (unsigned & 127);
-                unsigned >>= 7;
+                target |= 128;
+                target = ref Unsafe.Add(ref target, 1);
+                goto WRITE_BYTE;
+            }
 
-                if (unsigned != 0)
-                    temp |= 128;
-
-                ptr[size++] = temp;
-            } while (unsigned != 0);
-            
-            fixed (byte* bptr = buffer)
-                System.Buffer.MemoryCopy(ptr, bptr, buffer.Length, size);
-            index += size;
+            index += (Unsafe.ByteOffset(ref source, ref target) + 1).ToInt32();
         }
         
         

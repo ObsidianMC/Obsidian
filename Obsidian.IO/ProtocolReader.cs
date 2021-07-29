@@ -35,6 +35,11 @@ namespace Obsidian.IO
             set => index = value;
         }
 
+        /// <summary>
+        /// The buffer's length
+        /// </summary>
+        public int Length => length;
+
         private readonly byte[] buffer;
         private readonly int length;
         private int index;
