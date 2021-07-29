@@ -15,11 +15,15 @@ namespace Obsidian.Tests
         public void Byte()
         {
             var value = (byte)random.Next(byte.MinValue, byte.MaxValue);
+            var value2 = (byte)random.Next(byte.MinValue, byte.MaxValue);
             using var writer = ProtocolWriter.WithPool(ArrayPool<byte>.Shared);
             writer.WriteByte(value);
+            writer.WriteByte(value2);
             var reader = new ProtocolReader(writer.Memory);
             var rode = reader.ReadByte();
+            var rode2 = reader.ReadByte();
             Assert.Equal(value, rode);
+            Assert.Equal(value2, rode2);
         }
         
         [Fact]
