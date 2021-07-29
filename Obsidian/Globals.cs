@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities.Registry.Enums;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -22,7 +19,7 @@ namespace Obsidian
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             NumberHandling = JsonNumberHandling.AllowReadingFromString,
             Converters =

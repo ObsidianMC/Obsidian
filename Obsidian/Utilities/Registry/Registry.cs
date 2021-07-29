@@ -17,9 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Registry
@@ -41,12 +39,10 @@ namespace Obsidian.Utilities.Registry
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
-        private readonly static string mainDomain = "Obsidian.Assets";
+        private static readonly string mainDomain = "Obsidian.Assets";
 
-        private static readonly JsonSerializerOptions blockJsonOptions = new()
+        private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
         {
-            PropertyNameCaseInsensitive = true,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
             Converters =
             {
                 new StringToBoolConverter(),
@@ -63,7 +59,11 @@ namespace Obsidian.Utilities.Registry
                 new DefaultEnumConverter<Attachment>(),
                 new DefaultEnumConverter<Mode>(),
             },
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        };
+
+        private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
+        {
+            PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
         };
 
         public static async Task RegisterBlocksAsync()
@@ -122,18 +122,11 @@ namespace Obsidian.Utilities.Registry
             Logger?.LogDebug($"Successfully registered {registered} items...");
         }
 
-        public class BaseCodec<T>
+        public static async Task RegisterCodecsAsync()
         {
-            public string Type { get; set; }
+            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
 
-            public List<T> Value { get; set; }
-        }
-
-        public static async Task RegisterBiomesAsync()
-        {
-            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
-
-            var baseCodec = await cfs.FromJsonAsync<BaseCodec<BiomeCodec>>();
+            var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
             int registered = 0;
             foreach (var codec in baseCodec.Value)
@@ -143,16 +136,13 @@ namespace Obsidian.Utilities.Registry
                 registered++;
             }
 
-            Logger?.LogDebug($"Successfully registered {registered} codec biomes...");
-        }
+            Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
-        public static async Task RegisterDimensionsAsync()
-        {
-            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
+            using Stream dimensions = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
-            var dict = await cfs.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>();
+            var dict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
 
-            int registered = 0;
+            registered = 0;
             foreach (var (_, values) in dict)
             {
                 foreach (var codec in values)
@@ -163,7 +153,7 @@ namespace Obsidian.Utilities.Registry
                     registered++;
                 }
             }
-            Logger?.LogDebug($"Successfully registered {registered} codec dimensions...");
+            Logger?.LogDebug($"Successfully registered {registered} dimensions...");
         }
 
         public static async Task RegisterTagsAsync()
@@ -386,6 +376,13 @@ namespace Obsidian.Utilities.Registry
         private class BaseRegistryJson
         {
             public int ProtocolId { get; set; }
+        }
+
+        private class BaseCodec<T>
+        {
+            public string Type { get; set; }
+
+            public List<T> Value { get; set; }
         }
     }
 

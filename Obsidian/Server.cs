@@ -133,7 +133,6 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
-
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 
@@ -248,8 +247,7 @@ namespace Obsidian
 
             await Task.WhenAll(Registry.RegisterBlocksAsync(),
                                Registry.RegisterItemsAsync(),
-                               Registry.RegisterBiomesAsync(),
-                               Registry.RegisterDimensionsAsync(),
+                               Registry.RegisterCodecsAsync(),
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
@@ -257,16 +255,19 @@ namespace Obsidian
             ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
+
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.ScoreboardManager = new ScoreboardManager(this);
-
             this.Logger.LogInformation("Loading plugins...");
+
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.
+
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             this.World = new World("world1", this);
@@ -274,6 +275,7 @@ namespace Obsidian
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
                 await World.Init(gen);
@@ -290,7 +292,9 @@ namespace Obsidian
             this.Logger.LogInformation($"Listening for new clients...");
 
             stopwatch.Stop();
+
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
+
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -300,6 +304,7 @@ namespace Obsidian
 
                 var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
                 this.clients.Add(client);
+
                 client.Disconnected += client => clients.TryRemove(client);
 
                 _ = Task.Run(client.StartConnectionAsync);
