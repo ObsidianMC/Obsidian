@@ -52,20 +52,19 @@ namespace Obsidian.IO
 
             
             buffer = segment.Array!;
-            length = memory.Length;
-            index = 0;
+            length = segment.Count;
+            index = segment.Offset;
         }
 
         /// <summary>
-        /// Creates a <see cref="ProtocolReader"/> using the provided <see cref="buffer"/> and <see cref="length"/>
+        /// Creates a <see cref="ProtocolReader"/> using the provided <see cref="ArraySegment{T}"/>
         /// </summary>
-        /// <param name="buffer">Buffer to read from</param>
-        /// <param name="length"><see cref="buffer"/>'s length</param>
-        public ProtocolReader(byte[] buffer, int? length = null)
+        /// <param name="segment">Buffer to read from</param>
+        public ProtocolReader(ArraySegment<byte> segment)
         {
-            this.buffer = buffer;
-            this.length = length ?? buffer.Length;
-            index = 0;
+            buffer = segment.Array!;
+            length = segment.Count;
+            index = segment.Offset;
         }
 
         /// <summary>
