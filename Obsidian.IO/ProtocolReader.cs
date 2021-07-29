@@ -16,14 +16,14 @@ namespace Obsidian.IO
     public struct ProtocolReader
     {
         /// <summary>
-        /// Returns the <see cref="ReadOnlySpan{T}"/> being read from
+        /// Returns the <see cref="byte"/>[] being read from
         /// </summary>
-
-        public unsafe ReadOnlySpan<byte> Span => new(buffer, length);
+        public byte[] Buffer => buffer;
+        
         /// <summary>
         /// Returns a <see cref="ReadOnlySpan{T}"/> starting at the current <see cref="Position"/>
         /// </summary>
-        public unsafe ReadOnlySpan<byte> CurrentSpan => new(buffer + index, length - index);
+        public ReadOnlySpan<byte> CurrentSpan => new(buffer, index, length - index);
         
         
         /// <summary>
@@ -35,35 +35,36 @@ namespace Obsidian.IO
             set => index = value;
         }
 
-        private readonly unsafe byte* buffer;
+        private readonly byte[] buffer;
         private readonly int length;
         private int index;
+        
 
-        public unsafe ProtocolReader(byte* buffer, int length)
+        /// <summary>
+        /// Creates a <see cref="ProtocolReader"/> using the underlying array of the <see cref="ReadOnlyMemory{T}"/>
+        /// </summary>
+        /// <param name="memory"><see cref="ReadOnlyMemory{T}"/> created using an array</param>
+        /// <exception cref="InvalidOperationException">The provided <see cref="ReadOnlyMemory{T}"/> was not created from an array</exception>
+        public ProtocolReader(ReadOnlyMemory<byte> memory)
+        {
+            if (!MemoryMarshal.TryGetArray(memory, out var segment))
+                throw new InvalidOperationException("Cannot get an array from the ReadOnlyMemory");
+
+            
+            buffer = segment.Array!;
+            length = memory.Length;
+            index = 0;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="ProtocolReader"/> using the provided <see cref="buffer"/> and <see cref="length"/>
+        /// </summary>
+        /// <param name="buffer">Buffer to read from</param>
+        /// <param name="length"><see cref="buffer"/>'s length</param>
+        public ProtocolReader(byte[] buffer, int? length = null)
         {
             this.buffer = buffer;
-            this.length = length;
-            index = 0;
-        }
-
-        public ProtocolReader(ReadOnlyMemory<byte> memory) : this(memory.Span)
-        {
-            
-        }
-
-        public unsafe ProtocolReader(byte[] buffer)
-        {
-            this.buffer = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer));
-            length = buffer.Length;
-            index = 0;
-        }
-
-        public unsafe ProtocolReader(ReadOnlySpan<byte> span)
-        {
-
-            fixed (byte* ptr = span)
-                buffer = ptr;
-            length = span.Length;
+            this.length = length ?? buffer.Length;
             index = 0;
         }
 
@@ -73,22 +74,32 @@ namespace Obsidian.IO
         /// <param name="span">The <see cref="Span{T}"/> to write to</param>
         /// <exception cref="IndexOutOfRangeException">There is not enough data in the reader's <see cref="Span"/></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ReadSpan(Span<byte> span)
+        public unsafe void ReadSpan(Span<byte> span)
         {
-            if (length - index < span.Length)
-                throw new IndexOutOfRangeException("Cannot read past memory end");
-            
-            Span.Slice(index, span.Length).CopyTo(span);
+            EnsureSize(span.Length);
+
+            fixed (byte* sptr = span)
+            {
+                fixed (byte* bptr = buffer)
+                {
+                    System.Buffer.MemoryCopy(bptr + index, sptr, span.Length, span.Length);
+                }
+            }
             index += span.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureSize(int required)
+        {
+            if (index + required > length)
+                throw new IndexOutOfRangeException("Cannot read past buffer's end");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte ReadByte()
         {
-            if (index >= length)
-                throw new IndexOutOfRangeException("Cannot read past memory end");
-
-            return Span[index++];
+            EnsureSize(1);
+            return Unsafe.ReadUnaligned<byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index++));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,9 +109,9 @@ namespace Obsidian.IO
         public bool ReadBool() => ReadByte() > 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe short ReadInt16()
+        public short ReadInt16()
         {
-            var v = Unsafe.ReadUnaligned<short>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<short>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -109,9 +120,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ushort ReadUInt16()
+        public ushort ReadUInt16()
         {
-            var v = Unsafe.ReadUnaligned<ushort>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<ushort>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -120,9 +131,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe int ReadInt32()
+        public int ReadInt32()
         {
-            var v = Unsafe.ReadUnaligned<int>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<int>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -131,9 +142,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe uint ReadUInt32()
+        public uint ReadUInt32()
         {
-            var v = Unsafe.ReadUnaligned<uint>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<uint>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -142,9 +153,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe long ReadInt64()
+        public long ReadInt64()
         {
-            var v = Unsafe.ReadUnaligned<long>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<long>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -153,9 +164,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe ulong ReadUInt64()
+        public ulong ReadUInt64()
         {
-            var v = Unsafe.ReadUnaligned<ulong>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<ulong>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -164,9 +175,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe float ReadFloat()
+        public float ReadFloat()
         {
-            var v = Unsafe.ReadUnaligned<int>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<int>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -175,9 +186,9 @@ namespace Obsidian.IO
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe double ReadDouble()
+        public double ReadDouble()
         {
-            var v = Unsafe.ReadUnaligned<long>(ref buffer[index]);
+            var v = Unsafe.ReadUnaligned<long>(ref GetBufferRef());
             if (BitConverter.IsLittleEndian)
                 v = BinaryPrimitives.ReverseEndianness(v);
 
@@ -186,6 +197,7 @@ namespace Obsidian.IO
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadVarInt()
         {
             var numRead = 0;
@@ -208,6 +220,7 @@ namespace Obsidian.IO
             return result;
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public long ReadVarLong()
         {
             var numRead = 0;
@@ -231,11 +244,13 @@ namespace Obsidian.IO
         }
 
 
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string ReadVarString() => ReadString(ReadVarInt());
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string ReadUShortString() => ReadString(ReadUInt16());
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string ReadString(int count)
         {
             if (count == 0) return string.Empty;
@@ -248,7 +263,7 @@ namespace Obsidian.IO
             }
             
             var pool = ArrayPool<byte>.Shared;
-            var arr = pool.Rent(length);
+            var arr = pool.Rent(count);
 
             var arrSpan = arr.AsSpan(0, count);
             ReadSpan(arrSpan);
@@ -258,19 +273,24 @@ namespace Obsidian.IO
             return str;
         }
 
-        public unsafe Guid ReadGuid()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Guid ReadGuid()
         {
-            var id = *(Guid*)(buffer + index);
+            var id = Unsafe.ReadUnaligned<Guid>(ref GetBufferRef());
             index += 16;
             return id;
         }
 
-        public void ReadInt64Span(Span<long> span)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReadInt64Array(Span<long> span)
         {
             for (var i = 0; i < span.Length; i++)
                 span[i] = ReadInt64();
         }
 
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref byte GetBufferRef() => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index);
 
         private readonly string GetDebuggerDisplay()
         {
