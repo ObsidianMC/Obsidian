@@ -28,4 +28,12 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public List<int> Entries { get; init; } = new();
         public int Count => Entries.Count;
     }
+
+    public class RawTag
+    {
+        public string Name { get; init; }
+        public string Type { get; init; }
+        public bool Replace { get; init; }
+        public List<string> Values { get; set; }
+    }
 }

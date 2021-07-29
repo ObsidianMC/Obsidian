@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -7,31 +6,22 @@ namespace Obsidian.Utilities.Mojang
 {
     public class MojangUser
     {
-        [JsonProperty("id")]
         public string Id { get; set; }
 
-        [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("legacy")]
         public bool Legacy { get; set; }
 
-        [JsonProperty("demo")]
         public bool Demo { get; set; }
 
-        [JsonProperty("properties")]
         public List<SkinProperties> Properties { get; set; }
     }
 
     public class SkinProperties
     {
-        [JsonProperty("name")]
         public string Name { get; set; }
 
-        [JsonProperty("value")]
         public string Value { get; set; }
-
-        [JsonProperty("signature")]
         public string Signature { get; set; }
 
         public async Task<byte[]> ToArrayAsync()

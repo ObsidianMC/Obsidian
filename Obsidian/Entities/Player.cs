@@ -1,7 +1,6 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Chat;
@@ -103,7 +102,7 @@ namespace Obsidian.Entities
             this.Server = client.Server;
             this.Type = EntityType.Player;
 
-            LoadPerms();
+            _ = Task.Run(this.LoadPermsAsync);
         }
 
         internal override async Task UpdateAsync(VectorF position, bool onGround)
@@ -197,7 +196,7 @@ namespace Obsidian.Entities
 
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
-        public void LoadPerms()
+        public async Task LoadPermsAsync()
         {
             // Load a JSON file that contains all permissions
             var server = (Server)this.Server;
@@ -206,23 +205,26 @@ namespace Obsidian.Entities
             var file = Path.Combine(dir, $"{user}.json");
 
             if (File.Exists(file))
-                this.PlayerPermissions = JsonConvert.DeserializeObject<Permission>(File.ReadAllText(file));
+            {
+                using var fs = new FileStream(file, FileMode.Open);
+                
+                this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
+            }
         }
 
-        public void SavePerms()
+        public async Task SavePermsAsync()
         {
             // Save permissions to JSON file
-            var server = (Server)this.Server;
-            var dir = Path.Combine($"Server-{server.Id}", "permissions");
-            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
+            var dir = Path.Combine($"Server-{this.server.Id}", "permissions");
+            var user = this.server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
             var file = Path.Combine(dir, $"{user}.json");
 
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-            if (!File.Exists(file))
-                File.Create(file).Close();
 
-            File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
+            using var fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write);
+
+            await this.PlayerPermissions.ToJsonAsync(fs);
         }
 
         public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
@@ -503,7 +505,7 @@ namespace Obsidian.Entities
                 parent = parent.Children.First(x => x.Name == i);
             }
 
-            this.SavePerms();
+            await this.SavePermsAsync();
 
             if (result)
                 await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
@@ -539,7 +541,7 @@ namespace Obsidian.Entities
             if (result)
             {
                 parent.Children.Remove(childToRemove);
-                this.SavePerms();
+                await this.SavePermsAsync();
                 await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
             }
             return result;

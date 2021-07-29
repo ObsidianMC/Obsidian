@@ -64,7 +64,7 @@ namespace Obsidian.API.Crafting.Builders
             return new SmithingRecipe
             {
                 Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = "minecraft:smithing",
+                Type = CraftingType.Smithing,
                 Group = this.Group,
                 Base = this.Base,
                 Addition = this.Addition,
