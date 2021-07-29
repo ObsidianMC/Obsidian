@@ -72,7 +72,7 @@ namespace Obsidian.IO
         /// Reads a <see cref="Span{T}"/> to the target <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The <see cref="Span{T}"/> to write to</param>
-        /// <exception cref="IndexOutOfRangeException">There is not enough data in the reader's <see cref="Span"/></exception>
+        /// <exception cref="IndexOutOfRangeException">There is not enough data in the reader's <see cref="Buffer"/></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ReadSpan(Span<byte> span)
         {
