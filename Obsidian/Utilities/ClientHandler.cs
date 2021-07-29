@@ -150,7 +150,7 @@ namespace Obsidian
                     }
                     catch (Exception e)
                     {
-                        if (Globals.Config.VerboseLogging)
+                        if (Globals.Config.VerboseExceptionLogging)
                             Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                     }
                     break;
@@ -167,7 +167,7 @@ namespace Obsidian
             }
             catch (Exception e)
             {
-                if (Globals.Config.VerboseLogging)
+                if (Globals.Config.VerboseExceptionLogging)
                     Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
             }
             ObjectPool<T>.Shared.Return(packet);

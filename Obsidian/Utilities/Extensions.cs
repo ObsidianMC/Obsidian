@@ -4,11 +4,15 @@ using Obsidian.Items;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -148,5 +152,11 @@ namespace Obsidian.Utilities
         {
             return ref MemoryMarshal.GetReference(span);
         }
+
+        public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
+        public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
+
+        public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
+        public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) => JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
     }
 }

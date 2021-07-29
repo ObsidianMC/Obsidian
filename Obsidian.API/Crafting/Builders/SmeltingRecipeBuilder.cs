@@ -73,12 +73,12 @@ namespace Obsidian.API.Crafting.Builders
 
         public IRecipe Build()
         {
-            string type = Type switch
+            CraftingType type = Type switch
             {
-                SmeltingType.Default => "minecraft:smelting",
-                SmeltingType.Blasting => "minecraft:blasting",
-                SmeltingType.Smoking => "minecraft:smoking",
-                SmeltingType.CampfireCooking => "minecraft:campfire_cooking"
+                SmeltingType.Default => CraftingType.Smelting,
+                SmeltingType.Blasting => CraftingType.Blasting,
+                SmeltingType.Smoking => CraftingType.Smoking,
+                SmeltingType.CampfireCooking => CraftingType.CampfireCooking
             };
 
             if (this.Ingredient.Count <= 0)

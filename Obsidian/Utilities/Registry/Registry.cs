@@ -1,11 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
-using Obsidian.Entities;
 using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
@@ -20,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Registry
@@ -41,60 +39,64 @@ namespace Obsidian.Utilities.Registry
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
-        private readonly static JsonSerializer recipeSerializer = new();
+        private static readonly string mainDomain = "Obsidian.Assets";
 
-        private readonly static string mainDomain = "Obsidian.Assets";
-
-        static Registry()
+        private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
         {
-            recipeSerializer.Converters.Add(new IngredientConverter());
-            recipeSerializer.Converters.Add(new IngredientsConverter());
-            recipeSerializer.Converters.Add(new CraftingKeyConverter());
-        }
+            Converters =
+            {
+                new StringToBoolConverter(),
+                new DefaultEnumConverter<CustomDirection>(),
+                new DefaultEnumConverter<Axis>(),
+                new DefaultEnumConverter<Face>(),
+                new DefaultEnumConverter<BlockFace>(),
+                new DefaultEnumConverter<EHalf>(),
+                new DefaultEnumConverter<Hinge>(),
+                new DefaultEnumConverter<Instruments>(),
+                new DefaultEnumConverter<Part>(),
+                new DefaultEnumConverter<Shape>(),
+                new DefaultEnumConverter<MinecraftType>(),
+                new DefaultEnumConverter<Attachment>(),
+                new DefaultEnumConverter<Mode>(),
+            },
+        };
+
+        private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
+        {
+            PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
+        };
 
         public static async Task RegisterBlocksAsync()
         {
             using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
 
-            using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-            string json = await read.ReadToEndAsync();
+            var dict = await fs.FromJsonAsync<Dictionary<string, BlockJson>>(blockJsonOptions);
 
             int registered = 0;
-
-            var type = JObject.Parse(json);
-
-            using (var enumerator = type.GetEnumerator())
+            foreach (var (blockName, value) in dict)
             {
-                while (enumerator.MoveNext())
+                var name = blockName[(blockName.IndexOf(':') + 1)..];
+
+                if (!Enum.TryParse(name.Replace("_", ""), true, out Material material))
+                    continue;
+
+                if (value.States.Length <= 0)
+                    continue;
+
+                int id = 0;
+                foreach (var state in value.States)
+                    id = state.Default ? state.Id : value.States.First().Id;
+
+                var baseId = (short)value.States.Min(state => state.Id);
+                NumericToBase[(int)material] = baseId;
+
+                BlockNames[(int)material] = blockName;
+
+                foreach (var state in value.States)
                 {
-                    var (blockName, token) = enumerator.Current;
-
-                    var name = blockName.Substring(blockName.IndexOf(':') + 1);
-
-                    var states = JsonConvert.DeserializeObject<BlockJson>(token.ToString(), Globals.JsonSettings);
-
-                    if (!Enum.TryParse(name.Replace("_", ""), true, out Material material))
-                        continue;
-
-                    if (states.States.Length <= 0)
-                        continue;
-
-                    int id = 0;
-                    foreach (var state in states.States)
-                        id = state.Default ? state.Id : states.States.First().Id;
-
-                    var baseId = (short)states.States.Min(state => state.Id);
-                    NumericToBase[(int)material] = baseId;
-
-                    BlockNames[(int)material] = blockName;
-
-                    foreach (var state in states.States)
-                    {
-                        StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
-                    }
-                    registered++;
+                    StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
                 }
+                registered++;
             }
 
             Logger?.LogDebug($"Successfully registered {registered} blocks...");
@@ -104,23 +106,12 @@ namespace Obsidian.Utilities.Registry
         {
             using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
-            using var read = new StreamReader(fs, new UTF8Encoding(false));
-
-            var json = await read.ReadToEndAsync();
-
-            var type = JObject.Parse(json);
-
-            using var enumerator = type.GetEnumerator();
+            var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>();
             int registered = 0;
 
-            while (enumerator.MoveNext())
+            foreach (var (name, item) in dict)
             {
-                var (name, token) = enumerator.Current;
-
                 var itemName = name.Split(":")[1];
-
-                var item = JsonConvert.DeserializeObject<BaseRegistryJson>(token.ToString());
-
                 if (!Enum.TryParse(itemName.Replace("_", ""), true, out Material material))
                     continue;
 
@@ -131,65 +122,38 @@ namespace Obsidian.Utilities.Registry
             Logger?.LogDebug($"Successfully registered {registered} items...");
         }
 
-        public static async Task RegisterBiomesAsync()
+        public static async Task RegisterCodecsAsync()
         {
-            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
+            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
 
-            using var cread = new StreamReader(cfs, new UTF8Encoding(false));
-
-            var json = await cread.ReadToEndAsync();
-
-            var type = JObject.Parse(json);
-
-            using var cenumerator = type.GetEnumerator();
+            var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
             int registered = 0;
-            while (cenumerator.MoveNext())
+            foreach (var codec in baseCodec.Value)
             {
-                var (name, token) = cenumerator.Current;
+                Biomes.TryAdd(codec.Name, codec);
 
-                foreach (var obj in token)
-                {
-                    var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<BiomeCodec>(val, Globals.JsonSettings);
-
-                    Biomes.TryAdd(codec.Name, codec);
-
-                    registered++;
-                }
+                registered++;
             }
-            Logger?.LogDebug($"Successfully registered {registered} codec biomes...");
-        }
 
-        public static async Task RegisterDimensionsAsync()
-        {
-            using Stream cfs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
+            Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
-            using var cread = new StreamReader(cfs, new UTF8Encoding(false));
+            using Stream dimensions = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
-            var json = await cread.ReadToEndAsync();
+            var dict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
 
-            var type = JObject.Parse(json);
-
-            using var cenumerator = type.GetEnumerator();
-
-            int registered = 0;
-            while (cenumerator.MoveNext())
+            registered = 0;
+            foreach (var (_, values) in dict)
             {
-                var (name, token) = cenumerator.Current;
-
-                foreach (var obj in token)
+                foreach (var codec in values)
                 {
-                    var val = obj.ToString();
-                    var codec = JsonConvert.DeserializeObject<DimensionCodec>(val, Globals.JsonSettings);
-
                     Dimensions.TryAdd(codec.Id, codec);
 
                     Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;
                 }
             }
-            Logger?.LogDebug($"Successfully registered {registered} codec dimensions...");
+            Logger?.LogDebug($"Successfully registered {registered} dimensions...");
         }
 
         public static async Task RegisterTagsAsync()
@@ -198,11 +162,7 @@ namespace Obsidian.Utilities.Registry
 
             using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.tags.json");
 
-            using var reader = new StreamReader(stream, new UTF8Encoding(false));
-
-            var element = JObject.Parse(await reader.ReadToEndAsync());
-
-            using var enu = element.GetEnumerator();
+            var dict = await stream.FromJsonAsync<Dictionary<string, RawTag>>();
 
             static void addValues(string tagBase, Tag tag, List<string> values)
             {
@@ -234,10 +194,8 @@ namespace Obsidian.Utilities.Registry
                 }
             }
 
-            while (enu.MoveNext())
+            foreach (var (name, rawTag) in dict)
             {
-                var (name, token) = enu.Current;
-
                 var split = name.Split('/');
 
                 var tagBase = split[0];
@@ -250,11 +208,7 @@ namespace Obsidian.Utilities.Registry
                         Type = tagBase,
                         Name = tagName
                     };
-
-                    var array = token.Value<JArray>("values");
-                    var values = array.ToObject<List<string>>();
-
-                    addValues(tagBase, tag, values);
+                    addValues(tagBase, tag, rawTag.Values);
 
                     Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 
@@ -268,10 +222,7 @@ namespace Obsidian.Utilities.Registry
                         Name = tagName
                     };
 
-                    var array = token.Value<JArray>("values");
-                    var values = array.ToObject<List<string>>();
-
-                    addValues(tagBase, tag, values);
+                    addValues(tagBase, tag, rawTag.Values);
 
                     Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 
@@ -290,57 +241,56 @@ namespace Obsidian.Utilities.Registry
 
             using var sw = new StreamReader(fs, new UTF8Encoding(false));
 
-            var json = await sw.ReadToEndAsync();
+            var dict = await fs.FromJsonAsync<Dictionary<string, JsonElement>>();
 
-            var jObject = JObject.Parse(json);
-
-            var enu = jObject.GetEnumerator();
-
-            while (enu.MoveNext())
+            foreach (var (name, element) in dict)
             {
-                var (name, element) = enu.Current;
+                if (!element.TryGetProperty("type", out JsonElement value))
+                    throw new InvalidOperationException("Unable to find json property 'type'");
 
-                var type = element.Value<string>("type").TrimMinecraftTag();
+                var type = value.GetString();
 
-                if (Enum.TryParse<CraftingType>(type, true, out var result))
+                if (!Enum.TryParse<CraftingType>(type.TrimMinecraftTag(), true, out var result))
+                    throw new InvalidOperationException("Failed to parse recipe crafting type.");
+
+                var json = element.ToString();
+
+                switch (result)
                 {
-                    switch (result)
-                    {
-                        case CraftingType.CraftingShaped:
-                            Recipes.Add(name, element.ToObject<ShapedRecipe>(recipeSerializer));
-                            break;
-                        case CraftingType.CraftingShapeless:
-                            Recipes.Add(name, element.ToObject<ShapelessRecipe>(recipeSerializer));
-                            break;
-                        case CraftingType.CraftingSpecialArmordye:
-                        case CraftingType.CraftingSpecialBookcloning:
-                        case CraftingType.CraftingSpecialMapcloning:
-                        case CraftingType.CraftingSpecialMapextending:
-                        case CraftingType.CraftingSpecialFireworkRocket:
-                        case CraftingType.CraftingSpecialFireworkStar:
-                        case CraftingType.CraftingSpecialFireworkStarFade:
-                        case CraftingType.CraftingSpecialTippedarrow:
-                        case CraftingType.CraftingSpecialBannerduplicate:
-                        case CraftingType.CraftingSpecialShielddecoration:
-                        case CraftingType.CraftingSpecialShulkerboxcoloring:
-                        case CraftingType.CraftingSpecialSuspiciousstew:
-                        case CraftingType.CraftingSpecialRepairitem:
-                            break;
-                        case CraftingType.Smelting:
-                        case CraftingType.Blasting:
-                        case CraftingType.Smoking:
-                        case CraftingType.CampfireCooking:
-                            Recipes.Add(name, element.ToObject<SmeltingRecipe>(recipeSerializer));
-                            break;
-                        case CraftingType.Stonecutting:
-                            Recipes.Add(name, element.ToObject<CuttingRecipe>(recipeSerializer));
-                            break;
-                        case CraftingType.Smithing:
-                            Recipes.Add(name, element.ToObject<SmithingRecipe>(recipeSerializer));
-                            break;
-                        default:
-                            break;
-                    }
+                    case CraftingType.CraftingShaped:
+                        Recipes.Add(name, json.FromJson<ShapedRecipe>());
+                        break;
+                    case CraftingType.CraftingShapeless:
+                        Recipes.Add(name, json.FromJson<ShapelessRecipe>());
+                        break;
+                    case CraftingType.CraftingSpecialArmordye:
+                    case CraftingType.CraftingSpecialBookcloning:
+                    case CraftingType.CraftingSpecialMapcloning:
+                    case CraftingType.CraftingSpecialMapextending:
+                    case CraftingType.CraftingSpecialFireworkRocket:
+                    case CraftingType.CraftingSpecialFireworkStar:
+                    case CraftingType.CraftingSpecialFireworkStarFade:
+                    case CraftingType.CraftingSpecialTippedarrow:
+                    case CraftingType.CraftingSpecialBannerduplicate:
+                    case CraftingType.CraftingSpecialShielddecoration:
+                    case CraftingType.CraftingSpecialShulkerboxcoloring:
+                    case CraftingType.CraftingSpecialSuspiciousstew:
+                    case CraftingType.CraftingSpecialRepairitem:
+                        break;
+                    case CraftingType.Smelting:
+                    case CraftingType.Blasting:
+                    case CraftingType.Smoking:
+                    case CraftingType.CampfireCooking:
+                        Recipes.Add(name, json.FromJson<SmeltingRecipe>());
+                        break;
+                    case CraftingType.Stonecutting:
+                        Recipes.Add(name, json.FromJson<CuttingRecipe>());
+                        break;
+                    case CraftingType.Smithing:
+                        Recipes.Add(name, json.FromJson<SmithingRecipe>());
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -425,8 +375,14 @@ namespace Obsidian.Utilities.Registry
 
         private class BaseRegistryJson
         {
-            [JsonProperty("protocol_id")]
             public int ProtocolId { get; set; }
+        }
+
+        private class BaseCodec<T>
+        {
+            public string Type { get; set; }
+
+            public List<T> Value { get; set; }
         }
     }
 

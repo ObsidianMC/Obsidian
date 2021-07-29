@@ -1,87 +1,65 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.Items;
-using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using static Obsidian.Utilities.Registry.Registry;
 
 namespace Obsidian.Utilities.Converters
 {
+    //TODO: re-do this class
     public class IngredientConverter : JsonConverter<Ingredient>
     {
-        public override Ingredient ReadJson(JsonReader reader, Type objectType, [AllowNull] Ingredient existingValue, bool hasExistingValue, JsonSerializer serializer)
+        public override Ingredient Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var token = serializer.Deserialize<JToken>(reader);
+            var element = JsonDocument.ParseValue(ref reader).RootElement;
 
-            if (token.Type == JTokenType.Array)
+            if (element.ValueKind == JsonValueKind.Array)
             {
-                var items = token.ToObject<List<RecipeItem>>();
+                var rawRecipeItems = element.ToString().FromJson<List<RawRecipeItem>>();
 
                 var ingredient = new Ingredient();
-
-                foreach (var recipeItem in items)
+                foreach (var rawRecipe in rawRecipeItems)
                 {
-                    if (recipeItem.Item == null && recipeItem.Tag != null)
+                    if (rawRecipe.Item == null && rawRecipe.Tag != null)
                     {
-                        var tag = Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(recipeItem.Tag.Replace("minecraft:", "")));
+                        var tag = Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
                         foreach (var id in tag.Entries)
                         {
                             var item = GetItem(id);
 
-                            ingredient.Add(new ItemStack(item.Type, (short)recipeItem.Count));
+                            ingredient.Add(new ItemStack(item.Type, (short)rawRecipe.Count));
                         }
                     }
                     else
                     {
-                        var i = GetItem(recipeItem.Item);
+                        var i = GetItem(rawRecipe.Item);
 
-                        ingredient.Add(new ItemStack(i.Type, (short)recipeItem.Count));
+                        ingredient.Add(new ItemStack(i.Type, (short)rawRecipe.Count));
                     }
                 }
 
                 return ingredient;
-            }
-            else if (token.Type == JTokenType.String)
-            {
-                var recipeItem = token.ToObject<string>();
-
-                return new Ingredient { GetSingleItem(recipeItem) }; ;
             }
             else
             {
-                var recipeItem = token.ToObject<RecipeItem>();
+                var ingredient = element.ValueKind == JsonValueKind.String ? new RawRecipeItem { Item = element.ToString() } : element.ToString().FromJson<RawRecipeItem>(); ;
 
-                var ingredient = new Ingredient();
-
-                if (recipeItem.Item == null && recipeItem.Tag != null)
-                {
-                    var tag = Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(recipeItem.Tag.Replace("minecraft:", "")));
-                    foreach (var id in tag.Entries)
-                    {
-                        var item = GetItem(id);
-
-                        ingredient.Add(new ItemStack(item.Type, (short)recipeItem.Count));
-                    }
-                }
-                else
-                {
-                    var i = GetItem(recipeItem.Item);
-
-                    ingredient.Add(new ItemStack(i.Type, (short)recipeItem.Count));
-                }
-
-                return ingredient;
+                return new Ingredient { GetSingleItem(ingredient.Item) };
             }
         }
 
-        public override void WriteJson(JsonWriter writer, [AllowNull] Ingredient value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Ingredient value, JsonSerializerOptions options) => throw new NotImplementedException();
+
+        private class RawRecipeItem
         {
-            throw new NotImplementedException();
+            public string Item { get; set; }
+
+            public string Tag { get; set; }
+
+            public int Count { get; set; }
         }
     }
 }
