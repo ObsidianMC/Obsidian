@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.IO
@@ -30,6 +31,8 @@ namespace Obsidian.IO
         /// When this property is in use, writing is discouraged as it may require renting a new buffer
         /// </remarks>
         public ReadOnlyMemory<byte> Memory => new(buffer, 0, index);
+
+        public Span<byte> Span => new(buffer, 0, index);
         
         /// <summary>
         /// Returns the buffer being used by the writer
@@ -150,7 +153,8 @@ namespace Obsidian.IO
         public void WriteByte(byte value)
         {
             EnsureCapacity(1);
-            buffer[index++] = value;
+            Unsafe.WriteUnaligned(ref buffer[0], value);
+            index++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -162,66 +166,87 @@ namespace Obsidian.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteInt16(short value)
         {
-
-            Span<byte> span = stackalloc byte[sizeof(short)];
-            BinaryPrimitives.WriteInt16BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(short));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(short);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt16(ushort value)
         {
-            Span<byte> span = stackalloc byte[sizeof(ushort)];
-            BinaryPrimitives.WriteUInt16BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(ushort));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(ushort);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteInt32(int value)
         {
-            Span<byte> span = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(int));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(int);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt32(uint value)
         {
-            Span<byte> span = stackalloc byte[sizeof(uint)];
-            BinaryPrimitives.WriteUInt32BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(uint));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(uint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteInt64(long value)
         {
-            Span<byte> span = stackalloc byte[sizeof(long)];
-            BinaryPrimitives.WriteInt64BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(long));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(long);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt64(ulong value)
         {
-            Span<byte> span = stackalloc byte[sizeof(ulong)];
-            BinaryPrimitives.WriteUInt64BigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(ulong));
+            if (BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            
+            Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(ulong);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteFloat(float value)
         {
-            Span<byte> span = stackalloc byte[sizeof(float)];
-            BinaryPrimitives.WriteSingleBigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(float));
+            if (BitConverter.IsLittleEndian)
+                Unsafe.WriteUnaligned(ref buffer[index], BinaryPrimitives.ReverseEndianness(Unsafe.As<float, int>(ref value)));
+            else Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(float);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDouble(double value)
         {
-            Span<byte> span = stackalloc byte[sizeof(double)];
-            BinaryPrimitives.WriteDoubleBigEndian(span, value);
-            WriteSpan(span);
+            EnsureCapacity(sizeof(double));
+            if (BitConverter.IsLittleEndian)
+                Unsafe.WriteUnaligned(ref buffer[index], BinaryPrimitives.ReverseEndianness(Unsafe.As<double, long>(ref value)));
+            else Unsafe.WriteUnaligned(ref buffer[index], value);
+            index += sizeof(double);
         }
         #endregion
 
@@ -237,20 +262,11 @@ namespace Obsidian.IO
                 return;
             }
 
-            int byteLength = Encoding.UTF8.GetByteCount(value);
+            var byteLength = Encoding.UTF8.GetByteCount(value);
             WriteVarInt(byteLength);
-            if (byteLength <= 1024)
-            {
-                Span<byte> span = stackalloc byte[byteLength];
-                Encoding.UTF8.GetBytes(value, span);
-                WriteSpan(span);
-            }
-            else
-            {
-                EnsureCapacity(byteLength);
-                var written = Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
-                index += written;
-            }
+            EnsureCapacity(byteLength);
+            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+            index += byteLength;
         }
         
         /// <summary>
@@ -260,32 +276,28 @@ namespace Obsidian.IO
         {
             if (string.IsNullOrEmpty(value))
             {
-                WriteInt16(0);
+                buffer[index++] = 0;
                 return;
             }
-            
-            var byteLength = checked((ushort)Encoding.UTF8.GetByteCount(value));
-            WriteUInt16(byteLength);
-            if (byteLength <= 1024)
-            {
-                Span<byte> span = stackalloc byte[byteLength];
-                Encoding.UTF8.GetBytes(value, span);
-                WriteSpan(span);
-            }
-            else
-            {
-                EnsureCapacity(byteLength);
-                var written = Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
-                index += written;
-            }
+
+            var byteLength = Encoding.UTF8.GetByteCount(value);
+            if (byteLength > ushort.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(value), "String is too big");
+            WriteUInt16((ushort) byteLength);
+            EnsureCapacity(byteLength);
+            Encoding.UTF8.GetBytes(value, 0, value.Length, buffer, index);
+            index += byteLength;
         }
 
-        public void WriteGuid(Guid value)
+        public unsafe void WriteGuid(Guid value)
         {
-            Span<byte> span = stackalloc byte[16];
-            value.TryWriteBytes(span); // Guid's binary representation is always big endian
-            WriteSpan(span);
-            
+            EnsureCapacity(16);
+            var ptr = (byte*)&value;
+            fixed (byte* bptr = buffer)
+            {
+                System.Buffer.MemoryCopy(ptr, bptr + index, buffer.Length, 16);
+            }
+            index += 16;
         }
         #endregion
 
@@ -305,9 +317,7 @@ namespace Obsidian.IO
 
         public void WriteInt64Span(ReadOnlySpan<long> value)
         {
-
-            for (var i = 0; i < value.Length; i++)
-                WriteInt64(value[i]);
+            WriteSpan(MemoryMarshal.AsBytes(value));
         }
         #endregion
 
@@ -357,6 +367,8 @@ namespace Obsidian.IO
             
             WriteSpan(new ReadOnlySpan<byte>(ptr, size));
         }
+        
+        
         #endregion
 
         #region Utilities

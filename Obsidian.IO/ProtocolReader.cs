@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.IO
@@ -15,14 +16,15 @@ namespace Obsidian.IO
     public struct ProtocolReader
     {
         /// <summary>
-        /// Returns the <see cref="ReadOnlyMemory{T}"/> being read from
+        /// Returns the <see cref="ReadOnlySpan{T}"/> being read from
         /// </summary>
-        public readonly ReadOnlyMemory<byte> Memory;
 
+        public unsafe ReadOnlySpan<byte> Span => new(buffer, length);
         /// <summary>
         /// Returns a <see cref="ReadOnlySpan{T}"/> starting at the current <see cref="Position"/>
         /// </summary>
-        public ReadOnlySpan<byte> CurrentSpan => Memory.Span[index..];
+        public unsafe ReadOnlySpan<byte> CurrentSpan => new(buffer + index, length - index);
+        
         
         /// <summary>
         /// The reader's current position
@@ -32,12 +34,36 @@ namespace Obsidian.IO
             get => index;
             set => index = value;
         }
-        
+
+        private readonly unsafe byte* buffer;
+        private readonly int length;
         private int index;
 
-        public ProtocolReader(ReadOnlyMemory<byte> memory)
+        public unsafe ProtocolReader(byte* buffer, int length)
         {
-            Memory = memory;
+            this.buffer = buffer;
+            this.length = length;
+            index = 0;
+        }
+
+        public ProtocolReader(ReadOnlyMemory<byte> memory) : this(memory.Span)
+        {
+            
+        }
+
+        public unsafe ProtocolReader(byte[] buffer)
+        {
+            this.buffer = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer));
+            length = buffer.Length;
+            index = 0;
+        }
+
+        public unsafe ProtocolReader(ReadOnlySpan<byte> span)
+        {
+
+            fixed (byte* ptr = span)
+                buffer = ptr;
+            length = span.Length;
             index = 0;
         }
 
@@ -45,24 +71,24 @@ namespace Obsidian.IO
         /// Reads a <see cref="Span{T}"/> to the target <see cref="Span{T}"/>
         /// </summary>
         /// <param name="span">The <see cref="Span{T}"/> to write to</param>
-        /// <exception cref="IndexOutOfRangeException">There is not enough data in the reader's <see cref="Memory"/></exception>
+        /// <exception cref="IndexOutOfRangeException">There is not enough data in the reader's <see cref="Span"/></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReadSpan(Span<byte> span)
         {
-            if (Memory.Length - index < span.Length)
+            if (length - index < span.Length)
                 throw new IndexOutOfRangeException("Cannot read past memory end");
             
-            Memory.Span.Slice(index, span.Length).CopyTo(span);
+            Span.Slice(index, span.Length).CopyTo(span);
             index += span.Length;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte ReadByte()
         {
-            if (index >= Memory.Length)
+            if (index >= length)
                 throw new IndexOutOfRangeException("Cannot read past memory end");
 
-            return Memory.Span[index++];
+            return Span[index++];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,67 +98,91 @@ namespace Obsidian.IO
         public bool ReadBool() => ReadByte() > 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public short ReadInt16()
+        public unsafe short ReadInt16()
         {
-            Span<byte> span = stackalloc byte[sizeof(short)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadInt16BigEndian(span);
+            var v = Unsafe.ReadUnaligned<short>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(short);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ushort ReadUInt16()
+        public unsafe ushort ReadUInt16()
         {
-            Span<byte> span = stackalloc byte[sizeof(ushort)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadUInt16BigEndian(span);
+            var v = Unsafe.ReadUnaligned<ushort>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(ushort);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ReadInt32()
+        public unsafe int ReadInt32()
         {
-            Span<byte> span = stackalloc byte[sizeof(int)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadInt32BigEndian(span);
+            var v = Unsafe.ReadUnaligned<int>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(int);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public uint ReadUInt32()
+        public unsafe uint ReadUInt32()
         {
-            Span<byte> span = stackalloc byte[sizeof(uint)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadUInt32BigEndian(span);
+            var v = Unsafe.ReadUnaligned<uint>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(uint);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public long ReadInt64()
+        public unsafe long ReadInt64()
         {
-            Span<byte> span = stackalloc byte[sizeof(long)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadInt64BigEndian(span);
+            var v = Unsafe.ReadUnaligned<long>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(long);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ulong ReadUInt64()
+        public unsafe ulong ReadUInt64()
         {
-            Span<byte> span = stackalloc byte[sizeof(ulong)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadUInt64BigEndian(span);
+            var v = Unsafe.ReadUnaligned<ulong>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(ulong);
+            return v;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float ReadFloat()
+        public unsafe float ReadFloat()
         {
-            Span<byte> span = stackalloc byte[sizeof(float)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadSingleBigEndian(span);
+            var v = Unsafe.ReadUnaligned<int>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(float);
+            return Unsafe.As<int, float>(ref v);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public double ReadDouble()
+        public unsafe double ReadDouble()
         {
-            Span<byte> span = stackalloc byte[sizeof(double)];
-            ReadSpan(span);
-            return BinaryPrimitives.ReadDoubleBigEndian(span);
+            var v = Unsafe.ReadUnaligned<long>(ref buffer[index]);
+            if (BitConverter.IsLittleEndian)
+                v = BinaryPrimitives.ReverseEndianness(v);
+
+            index += sizeof(long);
+            return Unsafe.As<long, double>(ref v);
         }
 
 
@@ -186,13 +236,13 @@ namespace Obsidian.IO
 
         public string ReadUShortString() => ReadString(ReadUInt16());
 
-        public string ReadString(int length)
+        public string ReadString(int count)
         {
-            if (length == 0) return string.Empty;
+            if (count == 0) return string.Empty;
 
-            if (length <= 1024)
+            if (count <= 1024)
             {
-                Span<byte> span = stackalloc byte[length];
+                Span<byte> span = stackalloc byte[count];
                 ReadSpan(span);
                 return Encoding.UTF8.GetString(span);
             }
@@ -200,7 +250,7 @@ namespace Obsidian.IO
             var pool = ArrayPool<byte>.Shared;
             var arr = pool.Rent(length);
 
-            var arrSpan = arr.AsSpan(0, length);
+            var arrSpan = arr.AsSpan(0, count);
             ReadSpan(arrSpan);
             
             var str = Encoding.UTF8.GetString(arrSpan);
@@ -208,11 +258,11 @@ namespace Obsidian.IO
             return str;
         }
 
-        public Guid ReadGuid()
+        public unsafe Guid ReadGuid()
         {
-            Span<byte> span = stackalloc byte[16];
-            ReadSpan(span);
-            return new Guid(span);
+            var id = *(Guid*)(buffer + index);
+            index += 16;
+            return id;
         }
 
         public void ReadInt64Span(Span<long> span)
@@ -224,7 +274,7 @@ namespace Obsidian.IO
 
         private readonly string GetDebuggerDisplay()
         {
-            return $"ProtocolReader [{index.ToString()}/{Memory.Length.ToString()}]";
+            return $"ProtocolReader [{index.ToString()}/{length.ToString()}]";
         }
     }
 }
