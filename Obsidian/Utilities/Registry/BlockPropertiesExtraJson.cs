@@ -1,67 +1,67 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Registry
 {
     public class BlockPropertiesExtraJson
     {
-        [JsonProperty("level")]
+        [JsonPropertyName("level")]
         public int[] Levels { get; set; }
 
-        [JsonProperty("note")]
+        [JsonPropertyName("note")]
         public int[] Notes { get; set; }
 
-        [JsonProperty("age")]
+        [JsonPropertyName("age")]
         public int[] Ages { get; set; }
 
-        [JsonProperty("power")]
+        [JsonPropertyName("power")]
         public int[] PowerStates { get; set; }
 
-        [JsonProperty("moisture")]
+        [JsonPropertyName("moisture")]
         public int[] MoistureStates { get; set; }
 
-        [JsonProperty("rotation")]
+        [JsonPropertyName("rotation")]
         public int[] RotationStates { get; set; }
 
-        [JsonProperty("layers")]
+        [JsonPropertyName("layers")]
         public int[] Layers { get; set; }
 
-        [JsonProperty("bites")]
+        [JsonPropertyName("bites")]
         public int[] BiteStates { get; set; }
 
-        [JsonProperty("delay")]
+        [JsonPropertyName("delay")]
         public int[] DelayStates { get; set; }
 
-        [JsonProperty("honey_level")]
+        [JsonPropertyName("honey_level")]
         public int[] HoneyLevels { get; set; }
 
-        [JsonProperty("axis")]
+        [JsonPropertyName("axis")]
         public string[] Axis { get; set; }
 
-        [JsonProperty("facing")]
+        [JsonPropertyName("facing")]
         public string[] Faces { get; set; }
 
-        [JsonProperty("instrument")]
+        [JsonPropertyName("instrument")]
         public string[] Instruments { get; set; }
 
-        [JsonProperty("part")]
+        [JsonPropertyName("part")]
         public string[] Parts { get; set; }
 
-        [JsonProperty("shape")]
+        [JsonPropertyName("shape")]
         public string[] Shapes { get; set; }
 
-        [JsonProperty("half")]
+        [JsonPropertyName("half")]
         public string[] HalfStates { get; set; }
 
-        [JsonProperty("type")]
+        [JsonPropertyName("type")]
         public string[] Types { get; set; }
 
-        [JsonProperty("hinge")]
+        [JsonPropertyName("hinge")]
         public string[] Hinges { get; set; }
 
-        [JsonProperty("mode")]
+        [JsonPropertyName("mode")]
         public string[] Mode { get; set; }
 
-        [JsonProperty("attachment")]
+        [JsonPropertyName("attachment")]
         public string[] Attachments { get; set; }
     }
 

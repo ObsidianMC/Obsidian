@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Utilities.Converters;
+﻿using Obsidian.Utilities.Converters;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Registry.Codecs.Dimensions
 {

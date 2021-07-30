@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 
@@ -18,7 +17,7 @@ namespace Obsidian.Net.Packets.Status
 
         public RequestResponse(ServerStatus status)
         {
-            Json = JsonConvert.SerializeObject(status);
+            Json = status.ToJson();
         }
     }
 }
