@@ -1070,6 +1070,14 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
+        public void WriteExplosionRecord(ExplosionRecord record)
+        {
+            WriteByte(record.X);
+            WriteByte(record.Y);
+            WriteByte(record.Z);
+        }
+
+        [WriteMethod]
         public void WriteNbtCompound(NbtCompound compound)
         {
             using var writer = new NbtWriter(BaseStream);

@@ -457,6 +457,23 @@ namespace Obsidian.Commands
             Debugger.Break();
         }
         #endregion
+
+        #region boom
+        [Command("kaboom")]
+        [CommandInfo("The big bang.")]
+        public async Task KaboomAsync(CommandContext Context)
+        {
+            var server = (Server)Context.Server;
+            var player = Context.Player;
+            await server.BroadcastPacketAsync(new Explosion()
+            {
+                Position = player.Position + (10, 0, 0),
+                Strength = 2.0f,
+                Records = new ExplosionRecord[1] { new ExplosionRecord() { X = 0, Y = 0, Z = 0 } },
+                PlayerMotion = new VectorF(-10f, 0f, 0f)
+            });
+        }
+        #endregion
 #endif
 
         #region Render command usage
