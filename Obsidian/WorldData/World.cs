@@ -27,9 +27,9 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<long, Region> Regions { get; private set; } = new();
 
-        public ConcurrentQueue<(int, int)> ChunksToGen { get; private set; } = new();
+        public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-        public ConcurrentQueue<(int, int)> RegionsToLoad { get; private set; } = new();
+        public ConcurrentQueue<(int X, int Z)> RegionsToLoad { get; private set; } = new();
 
         public string Name { get; }
         public bool Loaded { get; private set; }
@@ -56,20 +56,20 @@ namespace Obsidian.WorldData
         {
             if (unloadAll)
             {
-                foreach (var chunkLoc in c.LoadedChunks)
+                foreach (var (X, Z) in c.LoadedChunks)
                 {
-                    await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                    await c.UnloadChunkAsync(X, Z);
                 }
                 c.LoadedChunks = new List<(int, int)>();
             }
 
-            List<(int, int)> clientNeededChunks = new List<(int, int)>();
-            List<(int, int)> clientUnneededChunks = new List<(int, int)>(c.LoadedChunks);
+            List<(int X, int Z)> clientNeededChunks = new();
+            List<(int X, int Z)> clientUnneededChunks = new(c.LoadedChunks);
 
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-            int dist = c.ClientSettings?.ViewDistance ?? 6;
+            int dist = c.ClientSettings?.ViewDistance ?? 16;
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
                 for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
                     clientNeededChunks.Add((x, z));
@@ -78,15 +78,15 @@ namespace Obsidian.WorldData
             clientNeededChunks = clientNeededChunks.Except(c.LoadedChunks).ToList();
             clientNeededChunks.Sort((chunk1, chunk2) =>
             {
-                return Math.Abs(playerChunkX - chunk1.Item1) +
-                Math.Abs(playerChunkZ - chunk1.Item2) <
-                Math.Abs(playerChunkX - chunk2.Item1) +
-                Math.Abs(playerChunkZ - chunk2.Item2) ? -1 : 1;
+                return Math.Abs(playerChunkX - chunk1.X) +
+                Math.Abs(playerChunkZ - chunk1.Z) <
+                Math.Abs(playerChunkX - chunk2.X) +
+                Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
             });
 
             clientNeededChunks.ForEach(async chunkLoc =>
             {
-                var chunk = this.GetChunk(chunkLoc.Item1, chunkLoc.Item2);
+                var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
                 if (chunk is not null)
                 {
                     await c.SendChunkAsync(chunk);
@@ -96,7 +96,7 @@ namespace Obsidian.WorldData
 
             clientUnneededChunks.ForEach(async chunkLoc =>
             {
-                await c.UnloadChunkAsync(chunkLoc.Item1, chunkLoc.Item2);
+                await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
                 c.LoadedChunks.Remove(chunkLoc);
             });
 
@@ -160,7 +160,7 @@ namespace Obsidian.WorldData
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                var task = LoadRegion(rX, rZ);
+                var task = LoadRegionAsync(rX, rZ);
                 task.Start();
                 task.Wait();
                 region = task.Result;
@@ -371,13 +371,13 @@ namespace Obsidian.WorldData
         }
         #endregion
 
-        public async Task<Region> LoadRegionByChunk(int chunkX, int chunkZ)
+        public async Task<Region> LoadRegionByChunkAsync(int chunkX, int chunkZ)
         {
             int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
-            return await LoadRegion(regionX, regionZ);
+            return await LoadRegionAsync(regionX, regionZ);
         }
 
-        public async Task<Region> LoadRegion(int regionX, int regionZ)
+        public async Task<Region> LoadRegionAsync(int regionX, int regionZ)
         {
             long value = NumericsHelper.IntsToLong(regionX, regionZ);
             this.Regions.TryAdd(value, null);
@@ -395,20 +395,27 @@ namespace Obsidian.WorldData
             return region;
         }
 
-        public async Task ManageChunks()
+        public async Task UnloadRegionAsync(int regionX, int regionZ)
+        {
+            long value = NumericsHelper.IntsToLong(regionX, regionZ);
+            if (Regions.TryRemove(value, out var r))
+                await r.FlushAsync();
+        }
+
+        public async Task ManageChunksAsync()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
-            Thread.CurrentThread.Priority = ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
 
-            // Load regions. Load no more than 2 at a time b/c it's an expensive operation.
+            // Load regions. Load no more than 4 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
             // this.Regions, but will be null.
-            if (!RegionsToLoad.IsEmpty && Regions.Values.Count(r => r is null) < 2)
+            if (!RegionsToLoad.IsEmpty && Regions.Values.Count(r => r is null) < 4)
             {
                 if (RegionsToLoad.TryDequeue(out var job))
                 {
-                    if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.Item1, job.Item2))) // Sanity check
-                        await LoadRegion(job.Item1, job.Item2);
+                    if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.X, job.Z))) // Sanity check
+                        await LoadRegionAsync(job.X, job.Z);
                 }
             }
 
@@ -445,9 +452,13 @@ namespace Obsidian.WorldData
                 Generator.GenerateChunk(job.x, job.z, this, c);
                 region.SetChunk(c);
             });
+        }
 
-            // We need better logic on when to do this. Maybe start another task that just flushes to disk or something idk.
+        public async Task FlushRegionsAsync()
+        {
+            await Server.BroadcastAsync("Saving to disk...");
             foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
+            await Server.BroadcastAsync("Save complete.");
         }
 
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
@@ -521,7 +532,6 @@ namespace Obsidian.WorldData
             Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
             this.Generator = gen;
             await GenerateWorld();
-            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
             SetWorldSpawn();
         }
 
@@ -543,9 +553,23 @@ namespace Obsidian.WorldData
             }
             while (!ChunksToGen.IsEmpty)
             {
-                await ManageChunks();
-                Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
+                await ManageChunksAsync();
+
+                // Figure out how many chunks are loaded
+                var cl = 0;
+                foreach (var r in Regions.Values) { cl += r.LoadedChunkCount; }
+
+                var oldPos = Console.GetCursorPosition();
+                var curWidth = Console.WindowWidth;
+                var curHeight = Console.WindowHeight;
+                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 1);
+                Console.Write($"c:{ChunksToGen.Count}/{cl}");
+                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 2);
+                Console.Write($"r:{RegionsToLoad.Count}/{Regions.Count}");
+                Console.SetCursorPosition(oldPos.Left, oldPos.Top);
+                //Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
             }
+            await FlushRegionsAsync();
         }
 
         internal void SetWorldSpawn()

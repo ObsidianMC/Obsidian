@@ -287,6 +287,8 @@ namespace Obsidian
 
             _ = Task.Run(this.ServerLoop);
 
+            _ = Task.Run(this.ServerSave);
+
             this.Logger.LogInformation($"Listening for new clients...");
 
             stopwatch.Stop();
@@ -417,7 +419,7 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc 
+                            Position = loc
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -547,6 +549,15 @@ namespace Obsidian
                 client.Disconnect();
         }
 
+        private async Task ServerSave()
+        {
+            while (!this.cts.IsCancellationRequested)
+            {
+                await Task.Delay(1000 * 60 * 5); // 5 minutes
+                await World.FlushRegionsAsync();
+            }
+        }
+
         private async Task ServerLoop()
         {
             var keepAliveTicks = 0;
@@ -590,8 +601,9 @@ namespace Obsidian
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
 
-                await World.ManageChunks();
+                await World.ManageChunksAsync();
             }
+            await World.FlushRegionsAsync();
         }
 
         /// <summary>

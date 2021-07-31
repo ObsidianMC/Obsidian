@@ -9,6 +9,8 @@ namespace Obsidian.API.Noise
 
         public Func<Module, double, double, double, double> ConditionFunction { get; set; }
 
+        public int Utility { get; set; } = 0;
+
         public FuncRunner() : base(1)
         {
 

@@ -76,7 +76,7 @@ namespace Obsidian
 
         public ILogger Logger => this.Server.Logger;
 
-        public List<(int, int)> LoadedChunks { get; internal set; }
+        public List<(int X, int Z)> LoadedChunks { get; internal set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {

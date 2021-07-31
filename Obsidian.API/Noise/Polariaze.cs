@@ -6,6 +6,8 @@ namespace Obsidian.API.Noise
     {
         public Module Source0 { get; set; }
 
+        public double Center { get; set; } = 0;
+
         public Polariaze() : base(1)
         {
 
@@ -13,7 +15,7 @@ namespace Obsidian.API.Noise
 
         public override double GetValue(double x, double y, double z)
         {
-            return Source0.GetValue(x, y, z) > 0 ? 1 : -1;
+            return Source0.GetValue(x, y, z) > Center ? 1 : -1;
         }
     }
 }
