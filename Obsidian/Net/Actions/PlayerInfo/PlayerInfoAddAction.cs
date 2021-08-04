@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-using Obsidian.Chat;
+﻿using Obsidian.API;
 using Obsidian.Utilities.Mojang;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {

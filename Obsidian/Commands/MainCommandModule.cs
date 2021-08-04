@@ -1,5 +1,4 @@
 using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;

@@ -9,7 +9,7 @@ namespace Obsidian.API
 
         internal int CustomModelData { get; set; }
 
-        public IChatMessage Name { get; internal set; }
+        public ChatMessage Name { get; internal set; }
 
         public int RepairAmount { get; internal set; }
 
@@ -22,7 +22,7 @@ namespace Obsidian.API
 
         public IReadOnlyList<string> CanDestroy { get; internal set; }
 
-        public IReadOnlyList<IChatMessage> Lore { get; internal set; }
+        public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
         public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
 

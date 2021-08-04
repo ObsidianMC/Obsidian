@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
-using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -187,7 +186,7 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat)
+        public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat)
         {
             this.chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
             this.Logger.LogInformation(message.Text);
@@ -197,7 +196,7 @@ namespace Obsidian
 
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat)
         {
-            this.chatMessages.Enqueue(new QueueChat() { Message = IChatMessage.Simple(message), Type = type });
+            this.chatMessages.Enqueue(new QueueChat() { Message = ChatMessage.Simple(message), Type = type });
             this.Logger.LogInformation(message);
 
             return Task.CompletedTask;
@@ -252,7 +251,7 @@ namespace Obsidian
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            ServerImplementationRegistry.RegisterServerImplementations();
+            //ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
 
@@ -665,7 +664,7 @@ namespace Obsidian
 
         private struct QueueChat
         {
-            public IChatMessage Message;
+            public ChatMessage Message;
             public MessageType Type;
         }
     }

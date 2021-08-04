@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Serialization.Attributes;
 using System;
 

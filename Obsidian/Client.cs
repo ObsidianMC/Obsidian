@@ -2,7 +2,6 @@
 
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Chat;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
