@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Newtonsoft.Json;
 using Obsidian.Utilities;
 using System;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian
@@ -60,12 +60,17 @@ namespace Obsidian
 
             if (File.Exists(globalConfigFile))
             {
-                Globals.Config = JsonConvert.DeserializeObject<GlobalConfig>(File.ReadAllText(globalConfigFile));
+                using var fs = new FileStream(globalConfigFile, FileMode.Open);
+                Globals.Config = await JsonSerializer.DeserializeAsync<GlobalConfig>(fs);
             }
             else
             {
                 Globals.Config = new GlobalConfig();
-                File.WriteAllText(globalConfigFile, JsonConvert.SerializeObject(Globals.Config, Formatting.Indented));
+
+                using var fs = new FileStream(globalConfigFile, FileMode.CreateNew);
+
+                await JsonSerializer.SerializeAsync(fs, Globals.Config, Globals.JsonOptions);
+
                 Console.WriteLine("Created new global configuration file");
             }
 
@@ -80,12 +85,18 @@ namespace Obsidian
 
                 if (File.Exists(configPath))
                 {
-                    config = JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+                    using var fs = new FileStream(configPath, FileMode.Open, FileAccess.Read);
+
+                    config = await fs.FromJsonAsync<Config>();
                 }
                 else
                 {
                     config = new Config();
-                    File.WriteAllText(configPath, JsonConvert.SerializeObject(config, Formatting.Indented));
+
+                    using var fs = new FileStream(configPath, FileMode.CreateNew);
+
+                    await config.ToJsonAsync(fs);
+
                     Console.WriteLine($"Created new configuration file for Server-{i}");
                 }
 

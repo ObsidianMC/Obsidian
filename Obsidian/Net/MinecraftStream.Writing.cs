@@ -1,7 +1,5 @@
-﻿using Newtonsoft.Json;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -12,6 +10,7 @@ using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -70,11 +69,7 @@ namespace Obsidian.Net
         public void WriteUnsignedShort(ushort value)
         {
             Span<byte> span = stackalloc byte[2];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteUInt16BigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -84,11 +79,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16BigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -96,11 +88,7 @@ namespace Obsidian.Net
         public void WriteShort(short value)
         {
             Span<byte> span = stackalloc byte[2];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteInt16BigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -110,11 +98,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Short ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(short)];
+            BinaryPrimitives.WriteInt16BigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -122,11 +107,7 @@ namespace Obsidian.Net
         public void WriteInt(int value)
         {
             Span<byte> span = stackalloc byte[4];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteInt32BigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -136,11 +117,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Int ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -148,11 +126,7 @@ namespace Obsidian.Net
         public void WriteLong(long value)
         {
             Span<byte> span = stackalloc byte[8];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteInt64BigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -162,11 +136,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Long ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(long)];
+            BinaryPrimitives.WriteInt64BigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -174,11 +145,7 @@ namespace Obsidian.Net
         public void WriteFloat(float value)
         {
             Span<byte> span = stackalloc byte[4];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteSingleBigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -188,11 +155,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Float ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(float)];
+            BinaryPrimitives.WriteSingleBigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -200,11 +164,7 @@ namespace Obsidian.Net
         public void WriteDouble(double value)
         {
             Span<byte> span = stackalloc byte[8];
-            BitConverter.TryWriteBytes(span, value);
-            if (BitConverter.IsLittleEndian)
-            {
-                span.Reverse();
-            }
+            BinaryPrimitives.WriteDoubleBigEndian(span, value);
             BaseStream.Write(span);
         }
 
@@ -214,11 +174,8 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Double ({value})");
 #endif
 
-            var write = BitConverter.GetBytes(value);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(write);
-            }
+            var write = new byte[sizeof(double)];
+            BinaryPrimitives.WriteDoubleBigEndian(write, value);
             await WriteAsync(write);
         }
 
@@ -371,7 +328,7 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteChat(ChatMessage chatMessage)
         {
-            WriteString(chatMessage.ToString());
+            WriteString(chatMessage.ToString(Globals.JsonOptions));
         }
 
         [WriteMethod]
@@ -518,14 +475,14 @@ namespace Obsidian.Net
                     {
                         writer.WriteCompoundStart("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)meta.Name }));
+                        writer.WriteString("Name", new List<ChatMessage> { (ChatMessage)meta.Name }.ToJson());
 
                         if (meta.Lore is not null)
                         {
                             writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                             foreach (var lore in meta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                                writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                             writer.EndList();
                         }
@@ -539,7 +496,7 @@ namespace Obsidian.Net
                         writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                         foreach (var lore in meta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                            writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                         writer.EndList();
 
@@ -748,7 +705,7 @@ namespace Obsidian.Net
             await WriteAsync(uuid.ToByteArray(false, true));
         }
 
-        public async Task WriteChatAsync(ChatMessage value) => await WriteStringAsync(value.ToString());
+        public async Task WriteChatAsync(ChatMessage value) => await WriteStringAsync(value.ToString(Globals.JsonOptions));
 
         public async Task WritePositionAsync(Vector value)
         {
@@ -813,14 +770,14 @@ namespace Obsidian.Net
                     {
                         writer.WriteCompoundStart("display");
 
-                        writer.WriteString("Name", JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)itemMeta.Name }));
+                        writer.WriteString("Name", new List<ChatMessage> { (ChatMessage)itemMeta.Name }.ToJson());
 
                         if (itemMeta.Lore != null)
                         {
                             writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                             foreach (var lore in itemMeta.Lore)
-                                writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                                writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                             writer.EndList();
                         }
@@ -834,7 +791,7 @@ namespace Obsidian.Net
                         writer.WriteListStart("Lore", NbtTagType.String, itemMeta.Lore.Count);
 
                         foreach (var lore in itemMeta.Lore)
-                            writer.WriteString(JsonConvert.SerializeObject(new List<ChatMessage> { (ChatMessage)lore }));
+                            writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
 
                         writer.EndList();
 
@@ -852,7 +809,7 @@ namespace Obsidian.Net
 
         internal async Task WriteRecipeAsync(string name, IRecipe recipe)
         {
-            await WriteStringAsync(recipe.Type);
+            await WriteStringAsync($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
 
             await WriteStringAsync(name);
 
@@ -983,7 +940,7 @@ namespace Obsidian.Net
 
         public void WriteRecipe(string name, IRecipe recipe)
         {
-            WriteString(recipe.Type);
+            WriteString($"minecraft:{recipe.Type.ToString().ToSnakeCase()}");
 
             WriteString(name);
 
@@ -1109,6 +1066,14 @@ namespace Obsidian.Net
         {
             using var writer = new NbtWriter(BaseStream);
             writer.WriteTag(nbt);
+        }
+
+        [WriteMethod]
+        public void WriteExplosionRecord(ExplosionRecord record)
+        {
+            WriteByte(record.X);
+            WriteByte(record.Y);
+            WriteByte(record.Z);
         }
 
         [WriteMethod]

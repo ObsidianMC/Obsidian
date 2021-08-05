@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
-using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -134,7 +133,6 @@ namespace Obsidian
             this.Commands.AddArgumentParser(new LocationTypeParser());
             this.Commands.AddArgumentParser(new PlayerTypeParser());
 
-
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 
@@ -189,7 +187,7 @@ namespace Obsidian
         /// <summary>
         /// Sends a message to all players on the server.
         /// </summary>
-        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat)
+        public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat)
         {
             this.chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
             this.Logger.LogInformation(message.Text);
@@ -199,7 +197,7 @@ namespace Obsidian
 
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat)
         {
-            this.chatMessages.Enqueue(new QueueChat() { Message = IChatMessage.Simple(message), Type = type });
+            this.chatMessages.Enqueue(new QueueChat() { Message = ChatMessage.Simple(message), Type = type });
             this.Logger.LogInformation(message);
 
             return Task.CompletedTask;
@@ -249,25 +247,27 @@ namespace Obsidian
 
             await Task.WhenAll(Registry.RegisterBlocksAsync(),
                                Registry.RegisterItemsAsync(),
-                               Registry.RegisterBiomesAsync(),
-                               Registry.RegisterDimensionsAsync(),
+                               Registry.RegisterCodecsAsync(),
                                Registry.RegisterTagsAsync(),
                                Registry.RegisterRecipesAsync());
 
             Block.Initialize();
-            ServerImplementationRegistry.RegisterServerImplementations();
+            //ServerImplementationRegistry.RegisterServerImplementations();
 
             this.Logger.LogInformation($"Loading properties...");
+
             await (this.Operators as OperatorList).InitializeAsync();
             await this.RegisterDefaultAsync();
 
             this.ScoreboardManager = new ScoreboardManager(this);
-
             this.Logger.LogInformation("Loading plugins...");
+
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins")); // Creates if doesn't exist.
+
             this.PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             this.PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
             this.PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             this.World = new World("world1", this);
@@ -275,6 +275,7 @@ namespace Obsidian
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
+
                 var gen = value ?? new SuperflatGenerator();
                 this.Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
                 await World.Init(gen);
@@ -293,7 +294,9 @@ namespace Obsidian
             this.Logger.LogInformation($"Listening for new clients...");
 
             stopwatch.Stop();
+
             Logger.LogInformation($"Server-{Id} loaded in {stopwatch.Elapsed}");
+
             this.tcpListener.Start();
 
             while (!this.cts.IsCancellationRequested)
@@ -303,6 +306,7 @@ namespace Obsidian
 
                 var client = new Client(tcp, this.Config, Math.Max(0, this.clients.Count + this.World.TotalLoadedEntities()), this);
                 this.clients.Add(client);
+
                 client.Disconnected += client => clients.TryRemove(client);
 
                 _ = Task.Run(client.StartConnectionAsync);
@@ -706,7 +710,7 @@ namespace Obsidian
 
         private struct QueueChat
         {
-            public IChatMessage Message;
+            public ChatMessage Message;
             public MessageType Type;
         }
     }

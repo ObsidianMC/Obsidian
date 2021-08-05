@@ -45,7 +45,7 @@ namespace Obsidian.API
         public Task DamageAsync(IEntity source, float amount = 1.0f);
 
         public Task KillAsync(IEntity source);
-        public Task KillAsync(IEntity source, IChatMessage message);
+        public Task KillAsync(IEntity source, ChatMessage message);
 
         public IEnumerable<IEntity> GetEntitiesNear(float distance);
 

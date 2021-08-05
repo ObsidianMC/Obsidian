@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.API.AI;
-using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -308,7 +307,7 @@ namespace Obsidian.Entities
         }
 
         public virtual Task KillAsync(IEntity source) => Task.CompletedTask;
-        public virtual Task KillAsync(IEntity source, IChatMessage message) => Task.CompletedTask;
+        public virtual Task KillAsync(IEntity source, ChatMessage message) => Task.CompletedTask;
 
         public bool Equals([AllowNull] Entity other)
         {

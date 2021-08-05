@@ -1,11 +1,10 @@
-﻿using Newtonsoft.Json;
-using Obsidian.API;
-using Obsidian.Chat;
+﻿using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -63,22 +62,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[2];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToUInt16(buffer);
+            return BinaryPrimitives.ReadUInt16BigEndian(buffer);
         }
 
         public async Task<ushort> ReadUnsignedShortAsync()
         {
             var buffer = new byte[2];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt16(buffer);
+            return BinaryPrimitives.ReadUInt16BigEndian(buffer);
         }
 
         [ReadMethod]
@@ -86,22 +77,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[2];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToInt16(buffer);
+            return BinaryPrimitives.ReadInt16BigEndian(buffer);
         }
 
         public async Task<short> ReadShortAsync()
         {
             var buffer = new byte[2];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt16(buffer);
+            return BinaryPrimitives.ReadInt16BigEndian(buffer);
         }
 
         [ReadMethod]
@@ -109,22 +92,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[4];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToInt32(buffer);
+            return BinaryPrimitives.ReadInt32BigEndian(buffer);
         }
 
         public async Task<int> ReadIntAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt32(buffer);
+            return BinaryPrimitives.ReadInt32BigEndian(buffer);
         }
 
         [ReadMethod]
@@ -132,22 +107,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToInt64(buffer);
+            return BinaryPrimitives.ReadInt64BigEndian(buffer);
         }
 
         public async Task<long> ReadLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToInt64(buffer);
+            return BinaryPrimitives.ReadInt64BigEndian(buffer);
         }
 
         [ReadMethod]
@@ -155,22 +122,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToUInt64(buffer);
+            return BinaryPrimitives.ReadUInt64BigEndian(buffer);
         }
 
         public async Task<ulong> ReadUnsignedLongAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToUInt64(buffer);
+            return BinaryPrimitives.ReadUInt64BigEndian(buffer);
         }
 
         [ReadMethod]
@@ -178,22 +137,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[4];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToSingle(buffer);
+            return BinaryPrimitives.ReadSingleBigEndian(buffer);
         }
 
         public async Task<float> ReadFloatAsync()
         {
             var buffer = new byte[4];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToSingle(buffer);
+            return BinaryPrimitives.ReadSingleBigEndian(buffer);
         }
 
         [ReadMethod]
@@ -201,22 +152,14 @@ namespace Obsidian.Net
         {
             Span<byte> buffer = stackalloc byte[8];
             this.Read(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                buffer.Reverse();
-            }
-            return BitConverter.ToDouble(buffer);
+            return BinaryPrimitives.ReadDoubleBigEndian(buffer);
         }
 
         public async Task<double> ReadDoubleAsync()
         {
             var buffer = new byte[8];
             await this.ReadAsync(buffer);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
-            return BitConverter.ToDouble(buffer);
+            return BinaryPrimitives.ReadDoubleBigEndian(buffer);
         }
 
         [ReadMethod]
@@ -224,10 +167,6 @@ namespace Obsidian.Net
         {
             var length = ReadVarInt();
             var buffer = new byte[length];
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(buffer);
-            }
             this.Read(buffer, 0, length);
 
             var value = Encoding.UTF8.GetString(buffer);
@@ -564,11 +503,7 @@ namespace Obsidian.Net
         public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
 
         [ReadMethod]
-        public ChatMessage ReadChat()
-        {
-            string value = ReadString();
-            return JsonConvert.DeserializeObject<ChatMessage>(value);
-        }
+        public ChatMessage ReadChat() => this.ReadString().FromJson<ChatMessage>();
 
         [ReadMethod]
         public byte[] ReadByteArray()
@@ -678,7 +613,7 @@ namespace Obsidian.Net
                                                 var loreTag = (NbtList)displayTag;
 
                                                 foreach (NbtTag<string> lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
+                                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
                                             }
                                         }
                                         break;
@@ -780,7 +715,7 @@ namespace Obsidian.Net
                                         {
                                             if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                                             {
-                                                var messages = JsonConvert.DeserializeObject<ChatMessage[]>(stringTag.Value);
+                                                var messages = stringTag.Value.FromJson<ChatMessage[]>();
                                                 itemMetaBuilder.WithName(messages[0]);
                                             }
                                             else if (displayTag.Name.EqualsIgnoreCase("lore"))
@@ -788,7 +723,7 @@ namespace Obsidian.Net
                                                 var loreTag = (NbtList)displayTag;
 
                                                 foreach (NbtTag<string> lore in loreTag)
-                                                    itemMetaBuilder.AddLore(JsonConvert.DeserializeObject<ChatMessage>(lore.Value));
+                                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
                                             }
                                         }
                                         break;

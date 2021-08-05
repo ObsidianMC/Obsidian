@@ -1,10 +1,8 @@
 ﻿// This would be saved in a file called [playeruuid].dat which holds a bunch of NBT data.
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -103,7 +101,7 @@ namespace Obsidian.Entities
             this.Server = client.Server;
             this.Type = EntityType.Player;
 
-            LoadPerms();
+            _ = Task.Run(this.LoadPermsAsync);
         }
 
         internal override async Task UpdateAsync(VectorF position, bool onGround)
@@ -197,7 +195,7 @@ namespace Obsidian.Entities
 
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
 
-        public void LoadPerms()
+        public async Task LoadPermsAsync()
         {
             // Load a JSON file that contains all permissions
             var server = (Server)this.Server;
@@ -206,23 +204,26 @@ namespace Obsidian.Entities
             var file = Path.Combine(dir, $"{user}.json");
 
             if (File.Exists(file))
-                this.PlayerPermissions = JsonConvert.DeserializeObject<Permission>(File.ReadAllText(file));
+            {
+                using var fs = new FileStream(file, FileMode.Open);
+                
+                this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
+            }
         }
 
-        public void SavePerms()
+        public async Task SavePermsAsync()
         {
             // Save permissions to JSON file
-            var server = (Server)this.Server;
-            var dir = Path.Combine($"Server-{server.Id}", "permissions");
-            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
+            var dir = Path.Combine($"Server-{this.server.Id}", "permissions");
+            var user = this.server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
             var file = Path.Combine(dir, $"{user}.json");
 
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-            if (!File.Exists(file))
-                File.Create(file).Close();
 
-            File.WriteAllText(file, JsonConvert.SerializeObject(this.PlayerPermissions, Formatting.Indented));
+            using var fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write);
+
+            await this.PlayerPermissions.ToJsonAsync(fs);
         }
 
         public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
@@ -308,18 +309,9 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
-        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
-        {
-            if (message is not ChatMessage chatMessage)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            return this.SendMessageAsync(chatMessage, type, sender);
-        }
-
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
-            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));
@@ -330,14 +322,13 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
-        public Task KickAsync(IChatMessage reason)
+        public Task KickAsync(ChatMessage reason)
         {
             if (reason is not ChatMessage chatMessage)
                 return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
 
             return KickAsync(chatMessage);
         }
-        public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public async Task RespawnAsync()
         {
@@ -375,7 +366,7 @@ namespace Obsidian.Entities
                 this.Health = 20f;
         }
 
-        public override async Task KillAsync(IEntity source, IChatMessage deathMessage)
+        public override async Task KillAsync(IEntity source, ChatMessage deathMessage)
         {
             await this.client.QueuePacketAsync(new PlayerDied
             {
@@ -502,7 +493,7 @@ namespace Obsidian.Entities
                 parent = parent.Children.First(x => x.Name == i);
             }
 
-            this.SavePerms();
+            await this.SavePermsAsync();
 
             if (result)
                 await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
@@ -538,7 +529,7 @@ namespace Obsidian.Entities
             if (result)
             {
                 parent.Children.Remove(childToRemove);
-                this.SavePerms();
+                await this.SavePermsAsync();
                 await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
             }
             return result;

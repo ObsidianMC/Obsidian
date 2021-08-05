@@ -1,5 +1,4 @@
 using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -66,7 +65,7 @@ namespace Obsidian.Commands
             var commands = ChatMessage.Simple("\n");
             var header = new ChatMessage()
             {
-                Underline = true,
+                Underlined = true,
                 Text = $"List of available commands ({page}/{pagecount}):"
             };
             commands.AddExtra(header);
@@ -467,6 +466,23 @@ namespace Obsidian.Commands
             await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);
             Debugger.Break();
+        }
+        #endregion
+
+        #region boom
+        [Command("kaboom")]
+        [CommandInfo("The big bang.")]
+        public async Task KaboomAsync(CommandContext Context)
+        {
+            var server = (Server)Context.Server;
+            var player = Context.Player;
+            await server.BroadcastPacketAsync(new Explosion()
+            {
+                Position = player.Position + (10, 0, 0),
+                Strength = 2.0f,
+                Records = new ExplosionRecord[1] { new ExplosionRecord() { X = 0, Y = 0, Z = 0 } },
+                PlayerMotion = new VectorF(-10f, 0f, 0f)
+            });
         }
         #endregion
 #endif

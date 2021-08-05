@@ -6,7 +6,7 @@ namespace Obsidian.API
     {
         public Task RemoveObjectiveAsync();
 
-        public Task CreateOrUpdateObjectiveAsync(IChatMessage title, DisplayType displayType = DisplayType.Integer);
+        public Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer);
 
         public Task CreateOrUpdateObjectiveAsync(string title, DisplayType displayType = DisplayType.Integer);
 
