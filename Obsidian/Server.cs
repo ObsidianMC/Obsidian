@@ -679,33 +679,14 @@ namespace Obsidian
 
         internal void UpdateStatusConsole()
         {
-            lock (consoleLock)
+            var cl = 0;
+            foreach (var r in World.Regions.Values)
             {
-                // Update server stats on console
-                var oldPos = Console.GetCursorPosition();
-                var curWidth = Console.WindowWidth;
-                var curHeight = Console.WindowHeight;
-
-                var cl = 0;
-                foreach (var r in World.Regions.Values)
-                {
-                    cl += r.LoadedChunkCount;
-                }
-
-                Console.SetCursorPosition(0, Math.Max(oldPos.Top - curHeight, 0) + 1);
-                Console.Write(new String(' ', Console.BufferWidth)); // clear the line
-
-                Console.SetCursorPosition(curWidth - 30, Math.Max(oldPos.Top - curHeight, 0) + 1);
-                Console.Write($"tps:{TPS}");
-
-                Console.SetCursorPosition(curWidth - 20, Math.Max(oldPos.Top - curHeight, 0) + 1);
-                Console.Write($"c:{World.ChunksToGen.Count}/{cl}");
-
-                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 1);
-                Console.Write($"r:{World.RegionsToLoad.Count}/{World.Regions.Count}");
-
-                Console.SetCursorPosition(oldPos.Left, oldPos.Top);
+                cl += r.LoadedChunkCount;
             }
+
+            var status = $"tps:{TPS} c:{World.ChunksToGen.Count}/{cl} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+            ConsoleIO.UpdateStatusLine(status);
         }
 
         private struct QueueChat
