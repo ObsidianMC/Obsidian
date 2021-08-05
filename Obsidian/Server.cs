@@ -41,6 +41,7 @@ namespace Obsidian
         private readonly ConcurrentHashSet<Client> clients;
         private readonly TcpListener tcpListener;
         private readonly UdpClient udpClient;
+        private readonly object consoleLock = new object();
 
         internal readonly CancellationTokenSource cts;
 
@@ -270,7 +271,7 @@ namespace Obsidian
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             this.World = new World("world1", this);
-            if (!this.World.Load())
+            if (!await this.World.LoadAsync())
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
@@ -287,7 +288,7 @@ namespace Obsidian
 
             _ = Task.Run(this.ServerLoop);
 
-            _ = Task.Run(this.ServerSave);
+            _ = Task.Run(this.ServerSaveAsync);
 
             this.Logger.LogInformation($"Listening for new clients...");
 
@@ -549,7 +550,7 @@ namespace Obsidian
                 client.Disconnect();
         }
 
-        private async Task ServerSave()
+        private async Task ServerSaveAsync()
         {
             while (!this.cts.IsCancellationRequested)
             {
@@ -602,6 +603,8 @@ namespace Obsidian
                 stopWatch.Restart();
 
                 await World.ManageChunksAsync();
+
+                UpdateStatusConsole();
             }
             await World.FlushRegionsAsync();
         }
@@ -669,6 +672,37 @@ namespace Obsidian
             }
         }
         #endregion Events
+
+        internal void UpdateStatusConsole()
+        {
+            lock (consoleLock)
+            {
+                // Update server stats on console
+                var oldPos = Console.GetCursorPosition();
+                var curWidth = Console.WindowWidth;
+                var curHeight = Console.WindowHeight;
+
+                var cl = 0;
+                foreach (var r in World.Regions.Values)
+                {
+                    cl += r.LoadedChunkCount;
+                }
+
+                Console.SetCursorPosition(0, Math.Max(oldPos.Top - curHeight, 0) + 1);
+                Console.Write(new String(' ', Console.BufferWidth)); // clear the line
+
+                Console.SetCursorPosition(curWidth - 30, Math.Max(oldPos.Top - curHeight, 0) + 1);
+                Console.Write($"tps:{TPS}");
+
+                Console.SetCursorPosition(curWidth - 20, Math.Max(oldPos.Top - curHeight, 0) + 1);
+                Console.Write($"c:{World.ChunksToGen.Count}/{cl}");
+
+                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 1);
+                Console.Write($"r:{World.RegionsToLoad.Count}/{World.Regions.Count}");
+
+                Console.SetCursorPosition(oldPos.Left, oldPos.Top);
+            }
+        }
 
         private struct QueueChat
         {

@@ -31,6 +31,8 @@ namespace Obsidian.WorldData
 
         public ConcurrentQueue<(int X, int Z)> RegionsToLoad { get; private set; } = new();
 
+        public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
+
         public string Name { get; }
         public bool Loaded { get; private set; }
 
@@ -246,7 +248,7 @@ namespace Obsidian.WorldData
 
         #region world loading/saving
         //TODO
-        public bool Load()
+        public async Task<bool> LoadAsync()
         {
             var dataPath = Path.Join(Server.ServerFolderPath, Name, "level.dat");
 
@@ -281,16 +283,29 @@ namespace Obsidian.WorldData
                 Server.Logger.LogWarning($"Unknown generator type {this.Data.GeneratorName}");
                 return false;
             }
+            this.Generator = value;
 
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            // spawn chunks are radius 12 from spawn. That's a lot for us... so let's do 4 instead.
-            var radius = 4;
+            for(int rx = -1; rx < 1; rx++)
+                for(int rz = -1; rz < 1; rz++)
+                    _ = await LoadRegionAsync(rx, rz);
+
+            // spawn chunks are radius 12 from spawn.
+            var radius = 12;
             var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
             for (var cx = x - radius; cx < x + radius; cx++)
                 for (var cz = z - radius; cz < z + radius; cz++)
-                    GetChunk(cx, cz);
+                    SpawnChunks.Add((cx, cz));
 
-            this.Generator = value;
+            Parallel.ForEach(SpawnChunks, (c) => {
+                GetChunk(c.X, c.Z);
+                // Update status occasionally 
+                if (c.X % 5 == 0)
+                    Server.UpdateStatusConsole();
+                });
+
+
+
             this.Loaded = true;
             return true;
         }
@@ -385,7 +400,6 @@ namespace Obsidian.WorldData
                 if (this.Regions[value] is not null)
                     return this.Regions[value];
 
-            this.Server.Logger.LogInformation($"Loading region {regionX}, {regionZ}");
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
             await region.InitAsync();
 
@@ -554,20 +568,6 @@ namespace Obsidian.WorldData
             while (!ChunksToGen.IsEmpty)
             {
                 await ManageChunksAsync();
-
-                // Figure out how many chunks are loaded
-                var cl = 0;
-                foreach (var r in Regions.Values) { cl += r.LoadedChunkCount; }
-
-                var oldPos = Console.GetCursorPosition();
-                var curWidth = Console.WindowWidth;
-                var curHeight = Console.WindowHeight;
-                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 1);
-                Console.Write($"c:{ChunksToGen.Count}/{cl}");
-                Console.SetCursorPosition(curWidth - 10, Math.Max(oldPos.Top - curHeight, 0) + 2);
-                Console.Write($"r:{RegionsToLoad.Count}/{Regions.Count}");
-                Console.SetCursorPosition(oldPos.Left, oldPos.Top);
-                //Server.Logger.LogInformation($"Chunk Queue length: {ChunksToGen.Count}");
             }
             await FlushRegionsAsync();
         }
