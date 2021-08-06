@@ -30,6 +30,8 @@ namespace Obsidian.WorldData
 
         public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
 
+        public int LoadedChunkCount => LoadedChunks.Count;
+
         private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
         private readonly RegionFile regionFile;

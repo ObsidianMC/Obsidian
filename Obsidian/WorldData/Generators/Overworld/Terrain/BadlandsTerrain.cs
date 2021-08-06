@@ -23,20 +23,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             this.Result = new Cache
             {
                 // Sanity check to force results b/w -1.0<y<1.0
-                Source0 = new Clamp
+                Source0 = new ScalePoint
                 {
-                    Source0 = new Max
+                    XScale = 1 / 190.103,
+                    YScale = 1 / 140.103,
+                    ZScale = 1 / 190.103,
+                    Source0 = new Clamp
                     {
-                        Source0 = BadlandsCliffs(),
-                        // [Scaled-sand-dunes module]: This scale/bias module considerably
-                        // flattens the output value from the badlands-sands subgroup and lowers
-                        // this value to near -1.0.
-                        Source1 = new ScaleBias
+                        Source0 = new Max
                         {
-                            Scale = 0.01,
-                            Bias = 0,
-                            Source0 = BadlandsSands(),
-                        },
+                            Source0 = BadlandsCliffs(),
+                            // [Scaled-sand-dunes module]: This scale/bias module considerably
+                            // flattens the output value from the badlands-sands subgroup and lowers
+                            // this value to near -1.0.
+                            Source1 = new ScaleBias
+                            {
+                                Scale = 0.02,
+                                Bias = 0.04,
+                                Source0 = BadlandsSands(),
+                            },
+                        }
                     }
                 }
             };
@@ -63,7 +69,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         Source0 = new RidgedMulti
                         {
                             Seed = settings.Seed + 80,
-                            Frequency = 6.13,
+                            Frequency = 9.13,
                             Lacunarity = settings.BadlandsLacunarity,
                             Quality = NoiseQuality.Fast,
                             OctaveCount = 1,
@@ -84,7 +90,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         Source0 = new Cell
                         {
                             Seed = settings.Seed + 81,
-                            Frequency = 7.1,
+                            Frequency = 11.1,
                             Displacement = 0,
                             EnableDistance = true,
                         },

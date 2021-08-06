@@ -42,6 +42,7 @@ namespace Obsidian
             Console.Title = $"Obsidian {version}";
             Console.BackgroundColor = ConsoleColor.White;
             Console.ForegroundColor = ConsoleColor.Black;
+            Console.CursorVisible = false;
             Console.WriteLine(asciilogo);
             Console.ResetColor();
             Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
@@ -105,7 +106,7 @@ namespace Obsidian
             if (Servers.GroupBy(entry => entry.Value.Port).Any(group => group.Count() > 1))
                 throw new InvalidOperationException("Multiple servers cannot be bound to the same port");
 
-            var serverTasks = Servers.Select(entry => entry.Value.StartServerAsync());
+            var serverTasks = Servers.Select(async entry => await entry.Value.StartServerAsync());
             InitConsoleInput();
             await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
 

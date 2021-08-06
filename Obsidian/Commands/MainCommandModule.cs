@@ -167,6 +167,18 @@ namespace Obsidian.Commands
         }
         #endregion
 
+        #region save
+        [Command("save")]
+        [CommandInfo("Save World", "/save")]
+        [IssuerScope(CommandIssuers.Any)]
+        public async Task SaveAsync(CommandContext Context)
+        {
+            var server = (Server)Context.Server;
+            var world = server.World;
+            await world.FlushRegionsAsync();
+        }
+        #endregion
+
         #region forcechunkreload
         [Command("forcechunkreload")]
         [CommandInfo("Force chunk reload", "/forcechunkreload")]

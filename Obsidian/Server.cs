@@ -270,7 +270,7 @@ namespace Obsidian
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             this.World = new World("world1", this);
-            if (!this.World.Load())
+            if (!await this.World.LoadAsync())
             {
                 if (!this.WorldGenerators.TryGetValue(this.Config.Generator, out WorldGenerator value))
                     this.Logger.LogWarning($"Unknown generator type {this.Config.Generator}");
@@ -287,6 +287,8 @@ namespace Obsidian
             Registry.RegisterCommands(this);
 
             _ = Task.Run(this.ServerLoop);
+
+            _ = Task.Run(this.ServerSaveAsync);
 
             this.Logger.LogInformation($"Listening for new clients...");
 
@@ -421,7 +423,7 @@ namespace Obsidian
                             Id = droppedItem.GetItem().Id,
                             Glowing = true,
                             World = this.World,
-                            Position = loc 
+                            Position = loc
                         };
 
                         this.TryAddEntity(player.World, item);
@@ -551,6 +553,15 @@ namespace Obsidian
                 client.Disconnect();
         }
 
+        private async Task ServerSaveAsync()
+        {
+            while (!this.cts.IsCancellationRequested)
+            {
+                await Task.Delay(1000 * 60 * 5); // 5 minutes
+                await World.FlushRegionsAsync();
+            }
+        }
+
         private async Task ServerLoop()
         {
             var keepAliveTicks = 0;
@@ -594,8 +605,11 @@ namespace Obsidian
                 TPS = (short)(1.0 / stopWatch.Elapsed.TotalSeconds);
                 stopWatch.Restart();
 
-                await World.ManageChunks();
+                await World.ManageChunksAsync();
+                UpdateStatusConsole();
+
             }
+            await World.FlushRegionsAsync();
         }
 
         /// <summary>
@@ -661,6 +675,14 @@ namespace Obsidian
             }
         }
         #endregion Events
+
+        internal void UpdateStatusConsole()
+        {
+            var cl = 0;
+            foreach (var r in World.Regions.Values) { cl += r.LoadedChunkCount; }
+            var status = $"    tps:{TPS} c:{World.ChunksToGen.Count}/{cl} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+            ConsoleIO.UpdateStatusLine(status);
+        }
 
         private struct QueueChat
         {

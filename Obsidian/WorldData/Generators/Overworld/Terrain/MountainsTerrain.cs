@@ -25,16 +25,22 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 // Sanity check to force results b/w -1.0<y<1.0
                 Source0 = new ScalePoint
                 {
-                    XScale = 1 / 0.9,
-                    YScale = 1 / 16.0,
-                    ZScale = 1 / 0.9,
-                    Source0 = new Clamp
+                    XScale = 1 / 140.103,
+                    YScale = 1 / 140.103,
+                    ZScale = 1 / 140.103,
+                    Source0 = new ScalePoint
                     {
-                        Source0 = new ScaleBias
+                        XScale = 1 / 0.9,
+                        YScale = 1 / 16.0,
+                        ZScale = 1 / 0.9,
+                        Source0 = new Clamp
                         {
-                            Scale = 0.25, // Amplification of terrain
-                            Bias = 0.33, // lowest level is above sea level (0)
-                            Source0 = MountainsBase()
+                            Source0 = new ScaleBias
+                            {
+                                Scale = 0.25, // Amplification of terrain
+                                Bias = 0.33, // lowest level is above sea level (0)
+                                Source0 = MountainsBase()
+                            }
                         }
                     }
                 }
