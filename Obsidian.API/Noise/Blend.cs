@@ -10,6 +10,9 @@ namespace Obsidian.API.Noise
         /// </summary>
         public Module Source0 { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public int Distance { get; set; } = 1;
 
         /// <summary>

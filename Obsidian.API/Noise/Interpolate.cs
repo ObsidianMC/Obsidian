@@ -25,7 +25,7 @@ namespace Obsidian.API.Noise
 
             var center = shifted.GetValue(x, y, z);
             // We can bail now if this is already positive
-            if (center > 0) { return center; }
+            //if (center > 0) { return center; }
 
             bool isRight = Math.Abs(x) % 2 != 0; // This is b/c C# doesn't modulo negatives correctly.
             bool isTop = Math.Abs(z) % 2 != 0;
@@ -36,7 +36,7 @@ namespace Obsidian.API.Noise
             var left = shifted.GetValue(x - 1, y, z);
 
             // If this is the top right, and above and to the right are positive, make this corner positive too.
-            if (isTop && isRight && ((top > 0 && right > 0) || (top <= 0 && right <= 0))) { return 1; }
+            if (isTop && isRight && ((top > 0 && right > 0) || (top <= 0 && right <= 0))) { return center; }
 
             // Repeat for other corners
             if (isRight && !isTop && right > 0 && bottom > 0) { return 1; }

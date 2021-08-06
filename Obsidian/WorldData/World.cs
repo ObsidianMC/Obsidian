@@ -71,7 +71,7 @@ namespace Obsidian.WorldData
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-            int dist = c.ClientSettings?.ViewDistance ?? 16;
+            int dist = c.ClientSettings?.ViewDistance ?? 10;
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
                 for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
                     clientNeededChunks.Add((x, z));
@@ -101,11 +101,6 @@ namespace Obsidian.WorldData
                 await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
                 c.LoadedChunks.Remove(chunkLoc);
             });
-
-            if (!(playerChunkX == lastPlayerChunkX && playerChunkZ == lastPlayerChunkZ))
-            {
-                c.SendPacket(new UpdateViewPosition(playerChunkX, playerChunkZ));
-            }
         }
         public Task ResendBaseChunksAsync(Client c) => UpdateClientChunksAsync(c, true);
 
@@ -290,8 +285,10 @@ namespace Obsidian.WorldData
                 for(int rz = -1; rz < 1; rz++)
                     _ = await LoadRegionAsync(rx, rz);
 
-            // spawn chunks are radius 12 from spawn.
-            var radius = 12;
+            // spawn chunks are radius 12 from spawn,
+            // but we want to preload radius 16 so that
+            // we're prepared for the first client to join
+            var radius = 16;
             var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
             for (var cx = x - radius; cx < x + radius; cx++)
                 for (var cz = z - radius; cz < z + radius; cz++)
@@ -299,14 +296,12 @@ namespace Obsidian.WorldData
 
             Parallel.ForEach(SpawnChunks, (c) => {
                 GetChunk(c.X, c.Z);
-                // Update status occasionally 
+                // Update status occasionally so we're not destroying consoleio
                 if (c.X % 5 == 0)
                     Server.UpdateStatusConsole();
                 });
 
-
-
-            this.Loaded = true;
+            Loaded = true;
             return true;
         }
 
@@ -568,6 +563,7 @@ namespace Obsidian.WorldData
             while (!ChunksToGen.IsEmpty)
             {
                 await ManageChunksAsync();
+                Server.UpdateStatusConsole();
             }
             await FlushRegionsAsync();
         }

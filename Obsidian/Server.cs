@@ -40,7 +40,6 @@ namespace Obsidian
         private readonly ConcurrentHashSet<Client> clients;
         private readonly TcpListener tcpListener;
         private readonly UdpClient udpClient;
-        private readonly object consoleLock = new object();
 
         internal readonly CancellationTokenSource cts;
 
@@ -607,8 +606,8 @@ namespace Obsidian
                 stopWatch.Restart();
 
                 await World.ManageChunksAsync();
-
                 UpdateStatusConsole();
+
             }
             await World.FlushRegionsAsync();
         }
@@ -680,12 +679,8 @@ namespace Obsidian
         internal void UpdateStatusConsole()
         {
             var cl = 0;
-            foreach (var r in World.Regions.Values)
-            {
-                cl += r.LoadedChunkCount;
-            }
-
-            var status = $"tps:{TPS} c:{World.ChunksToGen.Count}/{cl} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+            foreach (var r in World.Regions.Values) { cl += r.LoadedChunkCount; }
+            var status = $"    tps:{TPS} c:{World.ChunksToGen.Count}/{cl} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
             ConsoleIO.UpdateStatusLine(status);
         }
 
