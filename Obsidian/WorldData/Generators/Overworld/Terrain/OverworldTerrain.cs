@@ -1,10 +1,6 @@
 ﻿using Obsidian.API.Noise;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
-using static Obsidian.Utilities.NumericsHelper;
-using SharpNoise;
 using SharpNoise.Modules;
-using System;
 using Blend = Obsidian.API.Noise.Blend;
 using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
@@ -18,8 +14,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         public readonly OverworldTerrainSettings settings;
 
         private readonly BaseTerrain ocean, badlands, plains, hills, mountains, rivers;
-
-        private readonly BaseBiomeNoise humidity, temperature, terrain;
 
         private readonly BaseCarver cave;
 
@@ -35,11 +29,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             badlands = new BadlandsTerrain(ots);
             mountains = new MountainsTerrain(ots);
             rivers = new RiverTerrain(ots);
-
-            humidity = new HumidityNoise(ots);
-            temperature = new TemperatureNoise(ots);
-            terrain = new TerrainNoise(ots);
-
             cave = new CavesCarver(ots);
 
             Dictionary<BiomeNoiseValue, Module> biomeMap = new()
@@ -83,54 +72,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 { BiomeNoiseValue.SnowCappedPeaks, mountains.Result },
                 { BiomeNoiseValue.MushroomFields, plains.Result },
             };
-
-            // Scale Point multiplies input values by the scaling factors.
-            // Used to stretch or shrink the terrain horizontally.
-            //var scaled = GetScaledModuleOutput(MergedLandOceanRivers());
-            //var scaled = GetScaledModuleOutput(LandOceanSelector());
-            //var scaled = GetScaledModuleOutput(temperature.RiverSelector);
-            /*
-                        var landLockedFix = new Func<Module, double, double, double, double>((Module source0, double x, double y, double z) =>
-                        {
-                            double center = source0.GetValue(x, y, z);
-                            if (center > 0) { return center; } // Only applies to ocean
-                            int neighborOceanAreas = 0;
-                            neighborOceanAreas += source0.GetValue(x - 1, y, z) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x + 1, y, z) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x + 1, y, z - 1) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x + 1, y, z + 1) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x, y, z - 1) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x, y, z + 1) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x - 1, y, z + 1) < 0 ? 1 : 0;
-                            neighborOceanAreas += source0.GetValue(x + 1, y, z + 1) < 0 ? 1 : 0;
-
-                            return neighborOceanAreas < 6 ? Math.Abs(center) : center;
-
-                            if (neighborOceanAreas < 2)
-                            {
-                                return 1;
-                            }
-                            else
-                            {
-                                return -1;
-                            }
-
-                            // If all neighbors are land, become land.
-                            if (source0.GetValue(x - 1, y, z) > 0 &&
-                                source0.GetValue(x + 1, y, z) > 0 &&
-                                source0.GetValue(x, y, z - 1) > 0 &&
-                                source0.GetValue(x, y, z + 1) > 0)
-                            {
-                                return 1;
-                            }
-                            // If the only land is 
-
-                            return source0.GetValue(x - 1, y, z) > 0 &&
-                                source0.GetValue(x + 1, y, z) > 0 &&
-                                source0.GetValue(x, y, z - 1) > 0 &&
-                                source0.GetValue(x, y, z + 1) > 0 ? 1 : source0.GetValue(x, y, z);
-                        });
-            */
 
             var pass1 = new Cache
             {
@@ -196,12 +137,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
-            /*var scaled = new ScaleBias
-            {
-                Source0 = biomeTransitionSelector,
-                Scale = 1/28.0
-            };*/
-
             var scaled = new Blend
             {
                 Distance = 2,
@@ -212,10 +147,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     TerrainModules = biomeMap,
                 }
             };
-
-            //var scaled = plains.Result;
-
-            //var scaled = biomeTransitionSel2;
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -241,173 +172,10 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             return Result.GetValue(x, y, z);
         }
 
-        public bool IsRiver(double x, double z, double y = 0)
-        {
-            return GetScaledModuleOutput(MergedRivers()).GetValue(x, y, z) > 0.5;
-        }
-
-        public bool IsMountain(double x, double z, double y = 0)
-        {
-            return GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z) > 0.75;
-        }
-
-        public bool IsHills(double x, double z, double y = 0)
-        {
-            var val = GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z);
-            return val >= 0.25 && val <= 0.75;
-        }
-
-        public bool IsPlains(double x, double z, double y = 0)
-        {
-            return GetScaledModuleOutput(terrain.BiomeSelector).GetValue(x, y, z) < 0.25;
-        }
-
-        public bool IsOcean(double x, double z, double y = 0)
-        {
-            return GetScaledModuleOutput(LandOceanSelector()).GetValue(x, y, z) < 0.5;
-        }
-
         public bool IsCave(double x, double y, double z)
         {
             var val = cave.Result.GetValue(x, y, z);
             return val > -0.5;
-        }
-
-        private Module LandOceanSelector()
-        {
-            return new Cache
-            {
-                Source0 = new Clamp
-                {
-                    LowerBound = 0.0,
-                    UpperBound = 1.0,
-                    Source0 = new ScalePoint
-                    {
-                        // Scale horizontally to make Continents larger/smaller
-                        XScale = 1 / (settings.ContinentSize * 1.01),
-                        ZScale = 1 / (settings.ContinentSize * 1.01),
-                        // Values are now Ocean < 0.5 < Land
-                        Source0 = new ScaleBias
-                        {
-                            Bias = 0.5 + settings.OceanLandRatio,
-                            Scale = 0.5,
-                            // Actual noise for continents. Ocean < 0 < Land
-                            Source0 = new Perlin
-                            {
-                                Seed = settings.Seed,
-                                Frequency = 0.125,
-                                Persistence = 0.5,
-                                Lacunarity = 1.508984375,
-                                OctaveCount = 3,
-                                Quality = NoiseQuality.Best,
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        private Module MergedLandOcean()
-        {
-            return new Cache
-            {
-                Source0 = new Select
-                {
-                    Source0 = ocean.Result,
-                    Source1 = TerrainSelect(),
-                    Control = LandOceanSelector(),
-                    EdgeFalloff = 0.05,
-                    LowerBound = 0.49,
-                    UpperBound = 2.0
-                }
-            };
-        }
-
-        private Module MergedLandOceanRivers()
-        {
-            return new Cache
-            {
-                Source0 = new Select
-                {
-                    Source0 = MergedLandOcean(),
-                    Source1 = rivers.Result,
-                    Control = MergedRivers(),
-                    LowerBound = 0.5,
-                    UpperBound = 2.0,
-                    EdgeFalloff = 0.4
-                }
-            };
-        }
-
-        /// <summary>
-        /// Determine whether to return plains, hills or mountains
-        /// and blend them into each other
-        /// </summary>
-        /// <returns>A Cached result.</returns>
-        private Module TerrainSelect()
-        {
-            return new Cache
-            {
-                Source0 = new Select
-                {
-                    Source1 = mountains.Result,
-                    Source0 = new Select
-                    {
-                        Source0 = hills.Result,
-                        Source1 = plains.Result,
-                        Control = terrain.BiomeSelector,
-                        LowerBound = -2.0,
-                        UpperBound = -0,
-                        EdgeFalloff = 0.1
-                    },
-                    Control = terrain.BiomeSelector,
-                    LowerBound = 0.66,
-                    UpperBound = 2.0,
-                    EdgeFalloff = 0.1
-                }
-            };
-        }
-
-        private Module MergedRivers()
-        {
-            return new Cache
-            {
-                // Use Select to isolate rivers to only land masses
-                Source0 = new Select
-                {
-                    Source0 = new Constant { ConstantValue = 0 },
-                    // Just add em all together then clamp it
-                    Source1 = new Clamp
-                    {
-                        UpperBound = 1.0,
-                        LowerBound = 0.0,
-                        Source0 = new Max
-                        {
-                            Source0 = humidity.RiverSelector,
-                            Source1 = new Max
-                            {
-                                Source0 = temperature.RiverSelector,
-                                Source1 = terrain.RiverSelector
-                            }
-                        }
-                    },
-                    Control = LandOceanSelector(),
-                    EdgeFalloff = 0.15,
-                    LowerBound = 0.65,
-                    UpperBound = 2.0
-                }
-            };
-        }
-
-        private Module GetScaledModuleOutput(Module input)
-        {
-            return new ScalePoint
-            {
-                XScale = 1,
-                YScale = 1,
-                ZScale = 1,
-                Source0 = input
-            };
         }
     }
 }
