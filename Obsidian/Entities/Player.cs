@@ -366,7 +366,7 @@ namespace Obsidian.Entities
             {
                 PlayerId = this.EntityId,
                 EntityId = source != null ? source.EntityId : -1,
-                Message = deathMessage as ChatMessage
+                Message = deathMessage
             });
 
             await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));

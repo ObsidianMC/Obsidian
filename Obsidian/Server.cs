@@ -490,6 +490,7 @@ namespace Obsidian
                             Status = digging.Status,
                             Successful = true
                         });
+
                         this.BroadcastPacketWithoutQueue(new BlockBreakAnimation
                         {
                             EntityId = player,

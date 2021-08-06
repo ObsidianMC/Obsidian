@@ -42,7 +42,7 @@ namespace Obsidian.Utilities.Registry
         private static readonly string mainDomain = "Obsidian.Assets";
 
         private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
-        {
+        {   
             Converters =
             {
                 new StringToBoolConverter(),
@@ -106,7 +106,7 @@ namespace Obsidian.Utilities.Registry
         {
             using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
-            var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>();
+            var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>(codecJsonOptions);
             int registered = 0;
 
             foreach (var (name, item) in dict)
