@@ -1,5 +1,6 @@
 ﻿using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
+using static Obsidian.API.Noise.VoronoiBiomes;
 
 namespace Obsidian.WorldData.Generators.Overworld
 {
@@ -22,174 +23,90 @@ namespace Obsidian.WorldData.Generators.Overworld
     {
         public static Biomes GetBiome(int worldX, int worldZ, OverworldTerrain noiseGen)
         {
-            Temp t;
-            double temperature = noiseGen.GetBiomeTemp(worldX, worldZ);
-            if (temperature > 0.66) { t = Temp.hot; }
-            else if (temperature > 0.0) { t = Temp.warm; }
-            else if (temperature > -0.5) { t = Temp.cold; }
-            else { t = Temp.freezing; }
+            BiomeNoiseValue bn = noiseGen.GetBiome(worldX, worldZ);
 
-            Humidity h;
-            double humidity = noiseGen.GetBiomeHumidity(worldX, worldZ);
-            if (humidity > 0.66) { h = Humidity.dry; }
-            else if (humidity > 0) { h = Humidity.neutral; }
-            else { h = Humidity.wet; }
+            switch (bn)
+            {
+                case BiomeNoiseValue.DeepOcean:
+                    return Biomes.DeepOcean;
+                case BiomeNoiseValue.DeepFrozenOcean:
+                    return Biomes.DeepFrozenOcean;
+                case BiomeNoiseValue.FrozenOcean:
+                    return Biomes.FrozenOcean;
+                case BiomeNoiseValue.DeepColdOcean:
+                    return Biomes.DeepColdOcean;
+                case BiomeNoiseValue.ColdOcean:
+                    return Biomes.ColdOcean;
+                case BiomeNoiseValue.DeepLukewarmOcean:
+                    return Biomes.DeepLukewarmOcean;
+                case BiomeNoiseValue.LukewarmOcean:
+                    return Biomes.LukewarmOcean;
+                case BiomeNoiseValue.DeepWarmOcean:
+                    return Biomes.DeepWarmOcean;
+                case BiomeNoiseValue.WarmOcean:
+                    return Biomes.WarmOcean;
+                case BiomeNoiseValue.Beach:
+                    return Biomes.Beach;
+                case BiomeNoiseValue.River:
+                    return Biomes.River;
+                case BiomeNoiseValue.Badlands:
+                    return Biomes.Badlands;
+                case BiomeNoiseValue.Desert:
+                    return Biomes.Desert;
+                case BiomeNoiseValue.Savanna:
+                    return Biomes.Savanna;
+                case BiomeNoiseValue.ShatteredSavanna:
+                    return Biomes.ShatteredSavanna;
+                case BiomeNoiseValue.SavannaPlateau:
+                    return Biomes.SavannaPlateau;
+                case BiomeNoiseValue.ShatteredSavannaPlateau:
+                    return Biomes.ShatteredSavannaPlateau;
+                case BiomeNoiseValue.Jungle:
+                    return Biomes.Jungle;
+                case BiomeNoiseValue.MushroomFields:
+                    return Biomes.MushroomFields;
+                case BiomeNoiseValue.Plains:
+                    return Biomes.Plains;
+                case BiomeNoiseValue.Swamp:
+                    return Biomes.Swamp;
+                case BiomeNoiseValue.DarkForest:
+                    return Biomes.DarkForest;
+                case BiomeNoiseValue.Forest:
+                    return Biomes.Forest;
+                case BiomeNoiseValue.TallBirchForest:
+                    return Biomes.TallBirchForest;
+                case BiomeNoiseValue.BirchForest:
+                    return Biomes.BirchForest;
+                case BiomeNoiseValue.GiantTreeTaiga:
+                    return Biomes.GiantTreeTaiga;
+                case BiomeNoiseValue.GiantSpruceTaiga:
+                    return Biomes.GiantSpruceTaiga;
+                case BiomeNoiseValue.Taiga:
+                    return Biomes.Taiga;
+                case BiomeNoiseValue.StoneShore:
+                    return Biomes.StoneShore;
+                case BiomeNoiseValue.ExtremeHills:
+                    return Biomes.Mountains;
+                case BiomeNoiseValue.SnowyBeach:
+                    return Biomes.SnowyBeach;
+                case BiomeNoiseValue.SnowyTundra:
+                    return Biomes.SnowyTundra;
+                case BiomeNoiseValue.SnowyTaiga:
+                    return Biomes.SnowyTaiga;
+                case BiomeNoiseValue.MountainGrove:
+                    return Biomes.EndBarrens; //1.17 todo
+                case BiomeNoiseValue.SnowySlopes:
+                    return Biomes.EndBarrens; // 1.17 todo
+                case BiomeNoiseValue.MountainMeadow:
+                    return Biomes.EndBarrens; //1.17 todo
+                case BiomeNoiseValue.LoftyPeaks:
+                    return Biomes.EndBarrens; // 1.17 todo
+                case BiomeNoiseValue.SnowCappedPeaks:
+                    return Biomes.EndBarrens; // 1.17 todo
 
-            Biomes b = Biomes.Nether;
-            // River
-            if (noiseGen.IsRiver(worldX, worldZ))
-            {
-                b = t switch
-                {
-                    Temp.hot => Biomes.River,
-                    Temp.warm => Biomes.River,
-                    Temp.cold => Biomes.River,
-                    Temp.freezing => Biomes.FrozenRiver,
-                    _ => throw new System.NotImplementedException()
-                };
+                default:
+                    return Biomes.Nether; // Return something obvious
             }
-            // Ocean
-            else if (noiseGen.IsOcean(worldX, worldZ))
-            {
-                switch (t)
-                {
-                    case Temp.hot:
-                        b = Biomes.WarmOcean;
-                        break;
-                    case Temp.warm:
-                        b = Biomes.LukewarmOcean;
-                        break;
-                    case Temp.cold:
-                        b = Biomes.ColdOcean;
-                        break;
-                    case Temp.freezing:
-                        b = Biomes.FrozenOcean;
-                        break;
-                }
-            }
-            // Mountain
-            else if (noiseGen.IsMountain(worldX, worldZ))
-            {
-                switch (t)
-                {
-                    case Temp.hot:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.DesertHills,
-                            Humidity.neutral => Biomes.Mountains,
-                            Humidity.dry => Biomes.ErodedBadlands,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.warm:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.TallBirchHills,
-                            Humidity.neutral => Biomes.Mountains,
-                            Humidity.dry => Biomes.WoodedBadlandsPlateau,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.cold:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.SnowyTaigaMountains,
-                            Humidity.neutral => Biomes.WoodedMountains,
-                            Humidity.dry => Biomes.Mountains,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.freezing:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.SnowyTaigaMountains,
-                            Humidity.neutral => Biomes.SnowyMountains,
-                            Humidity.dry => Biomes.GravellyMountains,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                }
-            }
-            // Hills
-            else if (noiseGen.IsHills(worldX, worldZ))
-            {
-                switch (t)
-                {
-                    case Temp.hot:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.Jungle,
-                            Humidity.neutral => Biomes.BadlandsPlateau,
-                            Humidity.dry => Biomes.DesertHills,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.warm:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.TallBirchForest,
-                            Humidity.neutral => Biomes.DarkForest,
-                            Humidity.dry => Biomes.GiantSpruceTaiga,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.cold:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.GiantSpruceTaiga,
-                            Humidity.neutral => Biomes.FlowerForest,
-                            Humidity.dry => Biomes.Forest,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.freezing:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.SnowyTaigaMountains,
-                            Humidity.neutral => Biomes.SnowyMountains,
-                            Humidity.dry => Biomes.GravellyMountains,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                }
-            }
-            //Plains
-            else if (noiseGen.IsPlains(worldX, worldZ))
-            {
-                switch (t)
-                {
-                    case Temp.hot:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.Swamp,
-                            Humidity.neutral => Biomes.Badlands,
-                            Humidity.dry => Biomes.Desert,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.warm:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.BirchForest,
-                            Humidity.neutral => Biomes.Plains,
-                            Humidity.dry => Biomes.Savanna,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.cold:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.GiantSpruceTaiga,
-                            Humidity.neutral => Biomes.SnowyTaiga,
-                            Humidity.dry => Biomes.Plains,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                    case Temp.freezing:
-                        b = h switch
-                        {
-                            Humidity.wet => Biomes.IceSpikes,
-                            Humidity.neutral => Biomes.SnowyTundra,
-                            Humidity.dry => Biomes.SnowyBeach,
-                            _ => throw new System.NotImplementedException()
-                        }; break;
-                }
-            }
-            
-            else
-            {
-                b = Biomes.Plains;
-            }
-            return b;
         }
     }
 }

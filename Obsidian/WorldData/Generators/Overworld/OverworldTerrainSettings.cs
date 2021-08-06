@@ -12,12 +12,12 @@ namespace Obsidian.WorldData.Generators.Overworld
         /// <summary>
         /// Minimum elevation on the planet, in meters.  This value is approximate.
         /// </summary>
-        public double MinElev { get; set; } = 40;
+        public double MinElev { get; set; } = 0;
 
         /// <summary>
         /// Maximum elevation on the planet, in meters.  This value is approximate.
         /// </summary>
-        public double MaxElev { get; set; } = 168;
+        public double MaxElev { get; set; } = 128;
 
         /// <summary>
         /// Frequency of the planet's continents.  Higher frequency produces smaller,
