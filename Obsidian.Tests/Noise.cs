@@ -34,8 +34,8 @@ namespace Obsidian.Tests
             //renderer.BuildGrayscaleGradient();
             renderer.BuildTerrainGradient();
 
-            builder.SetBounds(-200, 200, -0, 400);
-            builder.SetDestSize(400, 400);
+            builder.SetBounds(-2000, 2000, -0, 4000);
+            builder.SetDestSize(4000, 4000);
             builder.Build();
 
             renderer.Render();

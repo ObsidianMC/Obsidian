@@ -71,7 +71,8 @@ namespace Obsidian.WorldData
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-            int dist = c.ClientSettings?.ViewDistance ?? 10;
+            int dist = c.ClientSettings?.ViewDistance ?? 12;
+            dist -= 2; // I dunno... client gets upset w/o this?
             for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
                 for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
                     clientNeededChunks.Add((x, z));
@@ -158,7 +159,7 @@ namespace Obsidian.WorldData
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
                 var task = LoadRegionAsync(rX, rZ);
-                task.Start();
+                task.RunSynchronously();
                 task.Wait();
                 region = task.Result;
                 Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;

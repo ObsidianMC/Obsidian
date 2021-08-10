@@ -1,18 +1,13 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
-    public class PlainsTerrain : BaseTerrain
+    public class DeepOceanTerrain : BaseTerrain
     {
-        // Generates the plains terrain.
-        // Outputs will be between 0 and 1
-        public PlainsTerrain(OverworldTerrainSettings ots) : base(ots)
+        // Generates the Ocean terrain.
+        // Outputs will be between -0.02 and -0.5
+        public DeepOceanTerrain(OverworldTerrainSettings ots) : base(ots)
         {
             this.Result = new Cache
             {
@@ -23,25 +18,25 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     ZScale = 1 / 140.103,
                     Source0 = new Clamp
                     {
-                        UpperBound = 1.0,
-                        LowerBound = 0.0,
+                        UpperBound = 0.0,
+                        LowerBound = -1.0,
                         Source0 = new ScalePoint
                         {
-                            XScale = 1 / 5.20,
+                            XScale = 1 / 12.20,
                             YScale = 1 / 1.0,
-                            ZScale = 1 / 5.20,
+                            ZScale = 1 / 12.20,
                             Source0 = new Turbulence
                             {
-                                Frequency = 33.4578,
-                                Power = 0.028,
+                                Frequency = 39.4578,
+                                Power = 0.078,
                                 Roughness = 3,
-                                Seed = ots.Seed,
+                                Seed = ots.Seed + 72,
                                 Source0 = new Multiply
                                 {
                                     Source0 = new ScaleBias
                                     {
                                         Scale = 0.005, // Flatten
-                                        Bias = 0.2, // move elevation
+                                        Bias = -0.8, // move elevation
                                         Source0 = new Billow
                                         {
                                             Seed = settings.Seed + 70,
@@ -55,7 +50,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                     Source1 = new ScaleBias
                                     {
                                         Scale = 0.2,
-                                        Bias = 0.3,
+                                        Bias = 0.5,
                                         Source0 = new Billow
                                         {
                                             Seed = settings.Seed + 71,

@@ -46,7 +46,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         private const int MaxPlayers = 0;
 
         [Field(11), VarLength]
-        public int ViewDistance { get; init; } = 8;
+        public int ViewDistance { get; init; } = 32;
 
         [Field(12)]
         public bool ReducedDebugInfo { get; init; } = false;

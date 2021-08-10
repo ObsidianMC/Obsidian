@@ -6,12 +6,13 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class TaigaDecorator : BaseDecorator
+    public class ForestDecorator : BaseDecorator
     {
-        public TaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+        public ForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
-            Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(SpruceTree)));
-            Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(LargeSpruceTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(OakTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(BirchTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(LargeOakTree)));
         }
 
         public override void Decorate()
@@ -39,17 +40,37 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             if (grassNoise > 0 && grassNoise < 0.1) 
                 chunk.SetBlock(pos + (0, 1, 0), grass);
 
+            if (noise.Decoration(worldX * 0.03, 10, worldZ * 0.03) > 0.8)
+            {
+                chunk.SetBlock(pos, dirt);
+            }
+
             var dandelion = Registry.GetBlock(Material.Dandelion);
             var dandelionNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
             if (dandelionNoise > 0 && dandelionNoise < 0.05) 
             {
                 chunk.SetBlock(pos + (0, 1, 0), dandelion);
+                return;
             }
 
-            var coarseDirt = new Block(Material.CoarseDirt, 0);
-            if (noise.Decoration(worldX * 0.03, 10, worldZ * 0.03) > 1)
+            var peony0 = new Block(Material.Peony);
+            var peony1 = new Block(Material.Peony, 1);
+            var peonyNoise = noise.Decoration(worldX * 0.1, 2, worldZ * 0.1);
+            if (peonyNoise > 0.65 && peonyNoise < 0.665)
             {
-                chunk.SetBlock(pos, coarseDirt);
+                chunk.SetBlock(pos + (0, 1, 0), peony1);
+                chunk.SetBlock(pos + (0, 2, 0), peony0);
+                return;
+            }
+
+            var rose0 = new Block(Material.RoseBush, 0);
+            var rose1 = new Block(Material.RoseBush, 1);
+            var roseNoise = noise.Decoration(worldX * 0.1, 3, worldZ * 0.1);
+            if (roseNoise > 0.17 && roseNoise < 0.185)
+            {
+                chunk.SetBlock(pos + (0, 1, 0), rose1);
+                chunk.SetBlock(pos + (0, 2, 0), rose0);
+                return;
             }
 
             var berries = new Block(Material.SweetBerryBush, 2);

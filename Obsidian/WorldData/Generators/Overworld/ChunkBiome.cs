@@ -49,6 +49,8 @@ namespace Obsidian.WorldData.Generators.Overworld
                     return Biomes.Beach;
                 case BiomeNoiseValue.River:
                     return Biomes.River;
+                case BiomeNoiseValue.FrozenRiver:
+                    return Biomes.FrozenRiver;
                 case BiomeNoiseValue.Badlands:
                     return Biomes.Badlands;
                 case BiomeNoiseValue.Desert:

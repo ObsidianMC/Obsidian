@@ -12,49 +12,67 @@ namespace Obsidian.API.Noise
 
         public double Frequency { get; set; }
 
-        public double BorderSize { get; set; } = 0.07;
+        public double RiverSize { get; set; } = 0.07;
+
+        public double BeachSize { get; set; } = 0.15;
 
         public enum BiomeNoiseValue : int
         {
-            DeepOcean = -10,
-            DeepFrozenOcean = -9,
-            FrozenOcean = -8,
+            DeepOcean = -9,
+            DeepFrozenOcean = -8,
             DeepColdOcean = -7,
-            ColdOcean = -6,
-            DeepLukewarmOcean = -5,
-            LukewarmOcean = -4,
-            DeepWarmOcean = -3,
-            WarmOcean = -2,
-            Beach = -1,
-            River = 0,
-            Badlands,
-            Desert,
-            Savanna,
-            ShatteredSavanna,
+            DeepLukewarmOcean = -6,
+            DeepWarmOcean = -5,
+            FrozenOcean = -4,
+            ColdOcean = -3,
+            LukewarmOcean = -2,
+            WarmOcean = -1,
+            Plains = 0, // Start common
+            Forest = 1,
+            Desert = 2,
+            Jungle = 3,
+            BirchForest = 4,
+            Swamp = 5,
+            Savanna = 6,
+            DarkForest = 7,
+            Badlands = 8,
+            Taiga = 9, 
+            SnowyTundra = 10, // End common
             SavannaPlateau,
             ShatteredSavannaPlateau,
-            Jungle,
-            Plains,
-            Swamp,
-            DarkForest,
+            ShatteredSavanna,
             ExtremeHills,
-            Forest,
-            TallBirchForest,
-            BirchForest,
             MountainMeadow,
             GiantTreeTaiga,
             GiantSpruceTaiga,
-            Taiga,
+            TallBirchForest,
             StoneShore,
             SnowyBeach,
-            SnowyTundra,
             SnowyTaiga,
+            Beach,
+            River,
             MountainGrove,
             SnowySlopes,
             LoftyPeaks,
             SnowCappedPeaks,
             MushroomFields,
+            FrozenRiver
         }
+
+        public readonly List<BiomeNoiseValue> BiomesWithRivers = new()
+        {
+            BiomeNoiseValue.Badlands,
+            BiomeNoiseValue.Desert,
+            BiomeNoiseValue.Forest,
+            BiomeNoiseValue.GiantSpruceTaiga,
+            BiomeNoiseValue.GiantTreeTaiga,
+            BiomeNoiseValue.Jungle,
+            BiomeNoiseValue.Plains,
+            BiomeNoiseValue.Savanna,
+            BiomeNoiseValue.SavannaPlateau,
+            BiomeNoiseValue.TallBirchForest,
+            BiomeNoiseValue.Taiga
+        };
 
         public VoronoiBiomes() : base(0)
         {
@@ -94,50 +112,51 @@ namespace Obsidian.API.Noise
 
             cells = cells.OrderBy(a => a.DistanceToPoint).ToList();
             var center = cells.First();
-            var noiseVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(center.Point.x), 0, (int)Math.Floor(center.Point.z));
-            var returnVal = noiseVal > 0 ? Math.Floor(noiseVal * (int)BiomeNoiseValue.SnowyTaiga) : Math.Floor(noiseVal * 10);
-            if (returnVal == (double)BiomeNoiseValue.River)
+            cells.Remove(center);
+
+            var noiseVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(center.Point.x), 0, (int)Math.Floor(center.Point.z)) + 0.2;
+
+            // Scale the output that's normally -1 => 1 to -10 => 10 for common biomes
+            var returnVal = ScaleNoise(noiseVal);
+            
+            var neighbor1 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[0].Point.x), 0, (int)Math.Floor(cells[0].Point.z)));
+            var neighbor2 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[1].Point.x), 0, (int)Math.Floor(cells[1].Point.z)));
+            var neighbor3 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[2].Point.x), 0, (int)Math.Floor(cells[2].Point.z)));
+            var neighbor4 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[3].Point.x), 0, (int)Math.Floor(cells[3].Point.z)));
+            
+            // Tweak random outputs to be more worldlike
+            if (returnVal <= 0) // if ocean
             {
-                returnVal = (double)BiomeNoiseValue.WarmOcean;
-            }
-            else if (returnVal == (double)BiomeNoiseValue.Beach)
-            {
-                returnVal = (double)BiomeNoiseValue.ColdOcean;
+                if (neighbor1 == returnVal) // If nearest neighbors are land, convert this to land
+                {
+                    returnVal = (BiomeNoiseValue)((int)returnVal - 4); // deep varient
+
+                }
             }
 
             if (returnVal > 0) // if land
             {
-                var bs = BorderSize;
-                cells.Remove(center);
                 var nearest = cells.First();
-                if (nearest.DistanceToPoint - center.DistanceToPoint <= bs)
+                // IF border with an ocean
+                if (neighbor1 < 0 && nearest.DistanceToPoint - center.DistanceToPoint <= RiverSize)
                 {
-                    var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(nearest.Point.x), 0, (int)Math.Floor(nearest.Point.z));
-                    if (nearestVal < 0) // IF border with an ocean
-                    {
-                        returnVal = (Enum.GetName(typeof(BiomeNoiseValue), (int)returnVal) ?? "howdishapn").Contains("Snow") ?
-                            (double)BiomeNoiseValue.SnowyBeach :
-                            (double)BiomeNoiseValue.Beach;
-                    }
+                    returnVal = (Enum.GetName(typeof(BiomeNoiseValue), returnVal) ?? "howdishapn").Contains("Snow") ?
+                        BiomeNoiseValue.SnowyBeach :
+                        BiomeNoiseValue.Beach;
+                }
+                if (BiomesWithRivers.Contains(returnVal) && nearest.DistanceToPoint - center.DistanceToPoint <= BeachSize)
+                {
+                    returnVal = (Enum.GetName(typeof(BiomeNoiseValue), (int)returnVal) ?? "lolwut").Contains("Snow") ?
+                            BiomeNoiseValue.FrozenRiver :
+                            BiomeNoiseValue.River;
                 }
             }
-            else // if ocean
-            {
+            return (double)returnVal;
+        }
 
-            }
-
-            // Less than 0 will be ocean. Search for any land with ocean on all sides.
-/*            voronois.TryGetValue((center.x + 1, center.z), out var east);
-            voronois.TryGetValue((center.x - 1, center.z), out var west);
-            voronois.TryGetValue((center.x, center.z + 1), out var north);
-            voronois.TryGetValue((center.x, center.z - 1), out var south);
-
-            if (east < 0 && west < 0 && north < 0 && south < 0)
-            {
-                returnVal = -1;
-            }*/
-
-            return returnVal;
+        private BiomeNoiseValue ScaleNoise(double noise)
+        {
+            return (BiomeNoiseValue)Math.Floor(noise > 0 ? noise * 10.0 : noise * 4.0);
         }
 
         public class VoronoiCell

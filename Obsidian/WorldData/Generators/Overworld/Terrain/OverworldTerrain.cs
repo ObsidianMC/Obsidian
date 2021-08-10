@@ -13,7 +13,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         public readonly OverworldTerrainSettings settings;
 
-        private readonly BaseTerrain ocean, badlands, plains, hills, mountains, rivers;
+        private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
         private readonly BaseCarver cave;
 
@@ -24,6 +24,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
             settings = ots;
 
             ocean = new OceanTerrain(ots);
+            deepocean = new DeepOceanTerrain(ots);
             plains = new PlainsTerrain(ots);
             hills = new HillsTerrain(ots);
             badlands = new BadlandsTerrain(ots);
@@ -33,17 +34,18 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             Dictionary<BiomeNoiseValue, Module> biomeMap = new()
             {
-                { BiomeNoiseValue.DeepOcean, ocean.Result },
-                { BiomeNoiseValue.DeepFrozenOcean, ocean.Result },
+                { BiomeNoiseValue.DeepOcean, deepocean.Result },
+                { BiomeNoiseValue.DeepFrozenOcean, deepocean.Result },
                 { BiomeNoiseValue.FrozenOcean, ocean.Result },
-                { BiomeNoiseValue.DeepColdOcean, ocean.Result },
+                { BiomeNoiseValue.DeepColdOcean, deepocean.Result },
                 { BiomeNoiseValue.ColdOcean, ocean.Result },
-                { BiomeNoiseValue.DeepLukewarmOcean, ocean.Result },
+                { BiomeNoiseValue.DeepLukewarmOcean, deepocean.Result },
                 { BiomeNoiseValue.LukewarmOcean, ocean.Result },
-                { BiomeNoiseValue.DeepWarmOcean, ocean.Result },
+                { BiomeNoiseValue.DeepWarmOcean, deepocean.Result },
                 { BiomeNoiseValue.WarmOcean, ocean.Result },
                 { BiomeNoiseValue.Beach, new Constant { ConstantValue = 0.025 } },
                 { BiomeNoiseValue.River, rivers.Result },
+                { BiomeNoiseValue.FrozenRiver, rivers.Result },
                 { BiomeNoiseValue.Badlands, badlands.Result },
                 { BiomeNoiseValue.Desert, plains.Result },
                 { BiomeNoiseValue.Savanna, hills.Result},
@@ -63,7 +65,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 { BiomeNoiseValue.GiantSpruceTaiga, hills.Result },
                 { BiomeNoiseValue.Taiga, plains.Result },
                 { BiomeNoiseValue.StoneShore, plains.Result },
-                { BiomeNoiseValue.SnowyBeach, plains.Result },
+                { BiomeNoiseValue.SnowyBeach, new Constant { ConstantValue = 0.025 } },
                 { BiomeNoiseValue.SnowyTundra, plains.Result },
                 { BiomeNoiseValue.SnowyTaiga, plains.Result },
                 { BiomeNoiseValue.MountainGrove, mountains.Result },
@@ -83,11 +85,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     Seed = ots.Seed + 123,
                     Source0 = new BitShiftInput
                     {
-                        Amount = 2,
+                        Amount = 3,
                         Left = false,
                         Source0 = new VoronoiBiomes
                         {
-                            BorderSize = 0.07,
+                            RiverSize = 0.05,
                             Frequency = 0.014159,
                             Seed = ots.Seed
                         }
@@ -137,7 +139,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
-            var scaled = new Blend
+            Module scaled = new Blend
             {
                 Distance = 2,
                 Source0 = new TerrainSelect
@@ -147,6 +149,15 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                     TerrainModules = biomeMap,
                 }
             };
+
+            if (isUnitTest)
+            {
+                scaled = new ScaleBias
+                {
+                    Source0 = FinalBiomes,
+                    Scale = 1 / 10.0
+                };
+            }
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
