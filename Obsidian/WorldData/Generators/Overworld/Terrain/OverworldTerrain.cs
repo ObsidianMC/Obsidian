@@ -4,6 +4,7 @@ using SharpNoise.Modules;
 using Blend = Obsidian.API.Noise.Blend;
 using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
@@ -19,18 +20,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         private Module FinalBiomes;
 
-        public OverworldTerrain(OverworldTerrainSettings ots, bool isUnitTest = false)
+        public OverworldTerrain(bool isUnitTest = false)
         {
-            settings = ots;
-
-            ocean = new OceanTerrain(ots);
-            deepocean = new DeepOceanTerrain(ots);
-            plains = new PlainsTerrain(ots);
-            hills = new HillsTerrain(ots);
-            badlands = new BadlandsTerrain(ots);
-            mountains = new MountainsTerrain(ots);
-            rivers = new RiverTerrain(ots);
-            cave = new CavesCarver(ots);
+            settings = OverworldGenerator.GeneratorSettings;
+            ocean = new OceanTerrain();
+            deepocean = new DeepOceanTerrain();
+            plains = new PlainsTerrain();
+            hills = new HillsTerrain();
+            badlands = new BadlandsTerrain();
+            mountains = new MountainsTerrain();
+            rivers = new RiverTerrain();
+            cave = new CavesCarver();
 
             Dictionary<BiomeNoiseValue, Module> biomeMap = new()
             {
@@ -75,60 +75,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 { BiomeNoiseValue.MushroomFields, plains.Result },
             };
 
-            var pass1 = new Cache
-            {
-                Source0 = new Turbulence
-                {
-                    Frequency = 0.007519,
-                    Power = 16,
-                    Roughness = 3,
-                    Seed = ots.Seed + 123,
-                    Source0 = new BitShiftInput
-                    {
-                        Amount = 3,
-                        Left = false,
-                        Source0 = new VoronoiBiomes
-                        {
-                            RiverSize = 0.05,
-                            Frequency = 0.014159,
-                            Seed = ots.Seed
-                        }
-                    }
-                }
-            };
-
-            var addMooshroom = new Select
-            {
-                Control = pass1,
-                LowerBound = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean - 0.01,
-                UpperBound = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean + 0.01,
-                Source0 = pass1,
-                Source1 = new Select
-                {
-                    LowerBound = 0.95, // They're rare
-                    UpperBound = 0.96,
-                    Source0 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean },
-                    Source1 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.MushroomFields },
-                    Control = new Turbulence
-                    {
-                        Seed = ots.Seed + 11,
-                        Power = 11,
-                        Roughness = 2,
-                        Frequency = 0.0564,
-                        Source0 = new Cell
-                        {
-                            Seed = ots.Seed + 9,
-                            Frequency = 0.0102345,
-                            Type = Cell.CellType.Voronoi
-                        },
-                    }
-                }
-            };
-            
-            FinalBiomes = new Cache
-            {
-                Source0 = addMooshroom
-            };
+            FinalBiomes = VoronoiBiomeNoise.Instance.result;
 
             var biomeTransitionSel2 = new Cache
             {
@@ -173,9 +120,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         }
 
-        public VoronoiBiomes.BiomeNoiseValue GetBiome(double x, double z, double y = 0)
+        public BiomeNoiseValue GetBiome(double x, double z, double y = 0)
         {
-            return (VoronoiBiomes.BiomeNoiseValue)FinalBiomes.GetValue(x, y, z);
+            return (BiomeNoiseValue)FinalBiomes.GetValue(x, y, z);
         }
 
         public double GetValue(double x, double z, double y = 0)

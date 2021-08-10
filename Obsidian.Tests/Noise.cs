@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData.Generators.Overworld;
+﻿using Obsidian.WorldData.Generators;
+using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise;
 using SharpNoise.Builders;
@@ -12,9 +13,8 @@ namespace Obsidian.Tests
         [Fact(DisplayName = "WorldGen", Timeout = 100)]
         public async void SameAsync()
         {
-            OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = 137;
-            OverworldTerrain noiseGen = new OverworldTerrain(generatorSettings, true);
+            OverworldGenerator og = new OverworldGenerator("seed");
+            OverworldTerrain noiseGen = new OverworldTerrain(true);
 
             var map = new NoiseMap();
 

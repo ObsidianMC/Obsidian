@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
     {
         // Generates the plains terrain.
         // Outputs will be between 0 and 1
-        public PlainsTerrain(OverworldTerrainSettings ots) : base(ots)
+        public PlainsTerrain() : base()
         {
             this.Result = new Cache
             {
@@ -35,7 +35,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                 Frequency = 33.4578,
                                 Power = 0.028,
                                 Roughness = 3,
-                                Seed = ots.Seed,
+                                Seed = settings.Seed,
                                 Source0 = new Multiply
                                 {
                                     Source0 = new ScaleBias

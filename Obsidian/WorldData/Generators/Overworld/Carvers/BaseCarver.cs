@@ -9,9 +9,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Carvers
 
         protected readonly OverworldTerrainSettings settings;
 
-        protected BaseCarver(OverworldTerrainSettings ots)
+        protected BaseCarver()
         {
-            this.settings = ots;
+            this.settings = OverworldGenerator.GeneratorSettings;
         }
     }
 }

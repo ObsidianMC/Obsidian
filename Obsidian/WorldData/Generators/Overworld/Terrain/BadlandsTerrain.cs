@@ -18,7 +18,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         // [Hilly-terrain group]: Caches the output value from the warped-hilly-
         // terrain module.  This is the output value for the entire hilly-
         // terrain group.
-        public BadlandsTerrain(OverworldTerrainSettings ots) : base(ots)
+        public BadlandsTerrain() : base()
         {
             this.Result = new Cache
             {

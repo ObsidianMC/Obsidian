@@ -2,6 +2,7 @@
 
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -23,7 +24,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -75,7 +75,7 @@ namespace Obsidian
 
         public ILogger Logger => this.Server.Logger;
 
-        public List<(int X, int Z)> LoadedChunks { get; internal set; }
+        public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -84,7 +84,7 @@ namespace Obsidian
             this.id = playerId;
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
-            this.LoadedChunks = new List<(int cx, int cz)>();
+            this.LoadedChunks = new();
             this.handler = new ClientHandler();
 
             Stream parentStream = this.tcp.GetStream();
@@ -542,10 +542,7 @@ namespace Obsidian
         {
             if (chunk != null)
             {
-                if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
-                {
-                    await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-                }
+                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
             }
         }
 

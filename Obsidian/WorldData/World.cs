@@ -36,6 +36,8 @@ namespace Obsidian.WorldData
         public string Name { get; }
         public bool Loaded { get; private set; }
 
+        private bool saveLock = false;
+
         public long Time => Data.Time;
         public Gamemode GameType => Data.GameType;
 
@@ -62,7 +64,7 @@ namespace Obsidian.WorldData
                 {
                     await c.UnloadChunkAsync(X, Z);
                 }
-                c.LoadedChunks = new List<(int, int)>();
+                c.LoadedChunks.Clear();
             }
 
             List<(int X, int Z)> clientNeededChunks = new();
@@ -71,14 +73,9 @@ namespace Obsidian.WorldData
             (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
             (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
 
-<<<<<<< HEAD
-            int dist = c.ClientSettings?.ViewDistance ?? 12;
-            dist -= 2; // I dunno... client gets upset w/o this?
-=======
-            int dist = c.ClientSettings?.ViewDistance ?? 10;
->>>>>>> origin
-            for (int x = playerChunkX - dist; x < playerChunkX + dist; x++)
-                for (int z = playerChunkZ - dist; z < playerChunkZ + dist; z++)
+            int dist = (c.ClientSettings?.ViewDistance ?? 14) - 2;
+            for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+                for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                     clientNeededChunks.Add((x, z));
 
             clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
@@ -91,7 +88,13 @@ namespace Obsidian.WorldData
                 Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
             });
 
-            clientNeededChunks.ForEach(async chunkLoc =>
+            Parallel.ForEach(clientUnneededChunks, async chunkLoc =>
+            {
+                await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+                c.LoadedChunks.TryRemove(chunkLoc);
+            });
+            
+            Parallel.ForEach(clientNeededChunks, async chunkLoc =>
             {
                 var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
                 if (chunk is not null)
@@ -100,13 +103,8 @@ namespace Obsidian.WorldData
                     c.LoadedChunks.Add((chunk.X, chunk.Z));
                 }
             });
-
-            clientUnneededChunks.ForEach(async chunkLoc =>
-            {
-                await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
-                c.LoadedChunks.Remove(chunkLoc);
-            });
         }
+
         public Task ResendBaseChunksAsync(Client c) => UpdateClientChunksAsync(c, true);
 
         public async Task<bool> DestroyEntityAsync(Entity entity)
@@ -163,11 +161,6 @@ namespace Obsidian.WorldData
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
                 var task = LoadRegionAsync(rX, rZ);
-<<<<<<< HEAD
-                task.RunSynchronously();
-=======
-                task.Start();
->>>>>>> origin
                 task.Wait();
                 region = task.Result;
                 Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
@@ -399,10 +392,14 @@ namespace Obsidian.WorldData
         public async Task<Region> LoadRegionAsync(int regionX, int regionZ)
         {
             long value = NumericsHelper.IntsToLong(regionX, regionZ);
-            this.Regions.TryAdd(value, null);
-            if (this.Regions.ContainsKey(value))
+
+            if (!this.Regions.TryAdd(value, null))
+            {
                 if (this.Regions[value] is not null)
+                {
                     return this.Regions[value];
+                }
+            }
 
             var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
             await region.InitAsync();
@@ -410,6 +407,7 @@ namespace Obsidian.WorldData
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
             this.Regions[value] = region;
+            
             return region;
         }
 
@@ -474,9 +472,14 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            await Server.BroadcastAsync("Saving to disk...");
-            foreach (var r in this.Regions.Values) { await r.FlushAsync(); }
-            await Server.BroadcastAsync("Save complete.");
+            if (!saveLock)
+            {
+                saveLock = true;
+                await Server.BroadcastAsync("Saving to disk...");
+                Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
+                await Server.BroadcastAsync("Save complete.");
+                saveLock = false;
+            }
         }
 
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
@@ -558,22 +561,36 @@ namespace Obsidian.WorldData
             this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
             int pregenerationRange = Server.Config.PregenerateChunkRange;
 
+            int regionPregenRange = (pregenerationRange >> Region.cubicRegionSizeShift) + 1;
+
+            Parallel.For(-regionPregenRange, regionPregenRange, async x =>
+            {
+                for (int z = -regionPregenRange; z < regionPregenRange; z++)
+                {
+                    await LoadRegionAsync(x, z);
+                };
+            });
+
+            // I don't know why we still have null regions when we get here ¯\_(ツ)_/¯
+            while (Regions.Any(r => r.Value is null))
+            {
+                await Task.Delay(100);
+            }
+
             for (int x = -pregenerationRange; x < pregenerationRange; x++)
             {
                 for (int z = -pregenerationRange; z < pregenerationRange; z++)
                 {
-                    if (!ChunksToGen.Contains((x, z)))
-                        ChunksToGen.Enqueue((x, z));
-                    var regionCoords = (x >> Region.cubicRegionSizeShift, z >> Region.cubicRegionSizeShift);
-                    if (!RegionsToLoad.Contains(regionCoords))
-                        RegionsToLoad.Enqueue(regionCoords);
+                    ChunksToGen.Enqueue((x, z));
                 }
             }
+
             while (!ChunksToGen.IsEmpty)
             {
                 await ManageChunksAsync();
                 Server.UpdateStatusConsole();
             }
+
             await FlushRegionsAsync();
         }
 
@@ -591,11 +608,26 @@ namespace Obsidian.WorldData
                         {
                             var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bx, bz);
                             Block block = c.GetBlock(bx, by, bz);
-                            if (by > 58 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
+                            if (by > 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
                             {
-                                this.Data.SpawnPosition = new VectorF(bx, by + 2, bz);
-                                this.Server.Logger.LogInformation($"World Spawn set to {bx} {by} {bz}");
-                                return;
+                                if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
+                                {
+                                    var worldPos = new VectorF(bx + (c.X << Region.cubicRegionSizeShift), by + 2, bz + (c.Z << Region.cubicRegionSizeShift));
+                                    this.Data.SpawnPosition = worldPos;
+                                    this.Server.Logger.LogInformation($"World Spawn set to {worldPos}");
+
+                                    // Should spawn be far from (0,0), queue up chunks in generation range.
+                                    // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
+                                    for (int x = c.X - Server.Config.PregenerateChunkRange; x < c.X + Server.Config.PregenerateChunkRange; x++)
+                                    {
+                                        for (int z = c.Z - Server.Config.PregenerateChunkRange; z < c.Z + Server.Config.PregenerateChunkRange; z++)
+                                        {
+                                            GetChunk(x, z);
+                                        }
+                                    }
+
+                                    return;
+                                }
                             }
                         }
                     }

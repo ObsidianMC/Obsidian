@@ -6,7 +6,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Carvers
 {
     public class CavesCarver : BaseCarver
     {
-        public CavesCarver(OverworldTerrainSettings ots) : base(ots)
+        public CavesCarver() : base()
         {
             var thing = new Curve
             {
@@ -20,7 +20,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Carvers
                 Source0 = new Billow
                 {
                     Frequency = 18.12345,
-                    Seed = ots.Seed + 1,
+                    Seed = settings.Seed + 1,
                     Quality = SharpNoise.NoiseQuality.Fast,
                     OctaveCount = 6,
                     Lacunarity = 1.2234,

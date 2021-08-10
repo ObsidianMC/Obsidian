@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
     {
         // Generates the Ocean terrain.
         // Outputs will be between -0.02 and -0.5
-        public DeepOceanTerrain(OverworldTerrainSettings ots) : base(ots)
+        public DeepOceanTerrain() : base()
         {
             this.Result = new Cache
             {
@@ -30,7 +30,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                 Frequency = 39.4578,
                                 Power = 0.078,
                                 Roughness = 3,
-                                Seed = ots.Seed + 72,
+                                Seed = settings.Seed + 72,
                                 Source0 = new Multiply
                                 {
                                     Source0 = new ScaleBias

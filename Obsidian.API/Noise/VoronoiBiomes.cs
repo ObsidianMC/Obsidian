@@ -88,8 +88,9 @@ namespace Obsidian.API.Noise
             var xint = (x > 0D) ? (int)x : (int)x - 1;
             var zint = (z > 0D) ? (int)z : (int)z - 1;
 
-            var cells = new List<VoronoiCell>();
+            Span<VoronoiCell> cells = stackalloc VoronoiCell[25];
 
+            int index = 0;
             for (var zCur = zint - 2; zCur <= zint + 2; zCur++)
             {
                 for (var xCur = xint - 2; xCur <= xint + 2; xCur++)
@@ -106,23 +107,24 @@ namespace Obsidian.API.Noise
                         Point = (xPos, zPos)
                     };
 
-                    cells.Add(cell);
+                    cells[index++] = cell;
                 }
             }
 
-            cells = cells.OrderBy(a => a.DistanceToPoint).ToList();
-            var center = cells.First();
-            cells.Remove(center);
+            //cells = cells.OrderBy(a => a.DistanceToPoint).ToList();
+            //cells.Sort((a, b) => a.DistanceToPoint > b.DistanceToPoint ? 1 : -1);
+            MemoryExtensions.Sort(cells, (a, b) => { return a.DistanceToPoint > b.DistanceToPoint ? 1 : -1; });
+            var center = cells[0];
 
             var noiseVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(center.Point.x), 0, (int)Math.Floor(center.Point.z)) + 0.2;
 
             // Scale the output that's normally -1 => 1 to -10 => 10 for common biomes
             var returnVal = ScaleNoise(noiseVal);
             
-            var neighbor1 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[0].Point.x), 0, (int)Math.Floor(cells[0].Point.z)));
-            var neighbor2 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[1].Point.x), 0, (int)Math.Floor(cells[1].Point.z)));
-            var neighbor3 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[2].Point.x), 0, (int)Math.Floor(cells[2].Point.z)));
-            var neighbor4 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[3].Point.x), 0, (int)Math.Floor(cells[3].Point.z)));
+            var neighbor1 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[1].Point.x), 0, (int)Math.Floor(cells[1].Point.z)));
+            //var neighbor2 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[2].Point.x), 0, (int)Math.Floor(cells[2].Point.z)));
+            //var neighbor3 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[3].Point.x), 0, (int)Math.Floor(cells[3].Point.z)));
+            //var neighbor4 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[4].Point.x), 0, (int)Math.Floor(cells[4].Point.z)));
             
             // Tweak random outputs to be more worldlike
             if (returnVal <= 0) // if ocean
@@ -136,7 +138,7 @@ namespace Obsidian.API.Noise
 
             if (returnVal > 0) // if land
             {
-                var nearest = cells.First();
+                var nearest = cells[0];
                 // IF border with an ocean
                 if (neighbor1 < 0 && nearest.DistanceToPoint - center.DistanceToPoint <= RiverSize)
                 {
@@ -159,7 +161,7 @@ namespace Obsidian.API.Noise
             return (BiomeNoiseValue)Math.Floor(noise > 0 ? noise * 10.0 : noise * 4.0);
         }
 
-        public class VoronoiCell
+        public struct VoronoiCell
         {
             public (int x, int z) Index { get; set; }
 
