@@ -559,9 +559,11 @@ namespace Obsidian
 
         private async Task SendServerBrand()
         {
-            var value = Encoding.UTF8.GetBytes("obsidian");
+            using var stream = new MinecraftStream();
 
-            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", value));
+            await stream.WriteStringAsync("obsidian");
+
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
             this.Logger.LogDebug("Sent server brand.");
         }
 

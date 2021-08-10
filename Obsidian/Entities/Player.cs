@@ -322,13 +322,7 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
-        public Task KickAsync(ChatMessage reason)
-        {
-            if (reason is not ChatMessage chatMessage)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            return KickAsync(chatMessage);
-        }
+        public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public async Task RespawnAsync()
         {
@@ -372,7 +366,7 @@ namespace Obsidian.Entities
             {
                 PlayerId = this.EntityId,
                 EntityId = source != null ? source.EntityId : -1,
-                Message = deathMessage as ChatMessage
+                Message = deathMessage
             });
 
             await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));
