@@ -24,24 +24,40 @@ namespace Obsidian.API.Noise
             };
 
             var center = shifted.GetValue(x, y, z);
-            // We can bail now if this is already positive
-            //if (center > 0) { return center; }
 
             bool isRight = Math.Abs(x) % 2 != 0; // This is b/c C# doesn't modulo negatives correctly.
             bool isTop = Math.Abs(z) % 2 != 0;
 
-            var top = shifted.GetValue(x, y, z + 1);
-            var bottom = shifted.GetValue(x, y, z - 1);
-            var right = shifted.GetValue(x + 1, y, z);
-            var left = shifted.GetValue(x - 1, y, z);
+            // If this is the top right, and above and to the right are different but match each other, time to smooth
+            if (isTop && isRight)
+            {
+                var top = shifted.GetValue(x, y, z + 1);
+                var right = shifted.GetValue(x + 1, y, z);
+                return top != center && top == right ? top : center;
+            }
 
-            // If this is the top right, and above and to the right are positive, make this corner positive too.
-            if (isTop && isRight && ((top > 0 && right > 0) || (top <= 0 && right <= 0))) { return center; }
+            if (!isTop && isRight)
+            {
+                var bottom = shifted.GetValue(x, y, z - 1);
+                var right = shifted.GetValue(x + 1, y, z);
+                return bottom != center && bottom == right ? bottom : center;
+            }
 
-            // Repeat for other corners
-            if (isRight && !isTop && right > 0 && bottom > 0) { return 1; }
-            if (!isTop && !isRight && bottom > 0 && left > 0) { return 1; }
-            if (!isRight && isTop && left > 0 && top > 0) { return 1; }
+            if (!isTop && !isRight)
+            {
+                var bottom = shifted.GetValue(x, y, z - 1);
+                var left = shifted.GetValue(x - 1, y, z);
+                return bottom != center && bottom == left ? bottom : center;
+            }
+
+            if (isTop && !isRight)
+            {
+                var top = shifted.GetValue(x, y, z + 1);
+                var left = shifted.GetValue(x - 1, y, z);
+                return top != center && top == left ? top : center;
+            }
+
+            // okay compiler, sure...
             return center;
         }
     }

@@ -36,7 +36,7 @@ namespace Obsidian.WorldData
         public string Name { get; }
         public bool Loaded { get; private set; }
 
-        private bool saveLock = false;
+        private object saveLock;
 
         public long Time => Data.Time;
         public Gamemode GameType => Data.GameType;
@@ -244,7 +244,7 @@ namespace Obsidian.WorldData
         public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
         #region world loading/saving
-        //TODO
+
         public async Task<bool> LoadAsync()
         {
             var dataPath = Path.Join(Server.ServerFolderPath, Name, "level.dat");
@@ -472,14 +472,12 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            if (!saveLock)
+            await Server.BroadcastAsync("Saving to disk...");
+            lock(saveLock)
             {
-                saveLock = true;
-                await Server.BroadcastAsync("Saving to disk...");
                 Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-                await Server.BroadcastAsync("Save complete.");
-                saveLock = false;
             }
+            await Server.BroadcastAsync("Save complete.");
         }
 
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)

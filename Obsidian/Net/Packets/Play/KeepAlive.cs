@@ -23,7 +23,8 @@ namespace Obsidian.Net.Packets.Play
 
         public ValueTask HandleAsync(Server server, Player player)
         {
-            Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
+            if (player.client.missedKeepalives > 1)
+                Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
 
             player.client.missedKeepalives = 0;
 

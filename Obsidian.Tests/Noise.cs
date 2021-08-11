@@ -13,7 +13,7 @@ namespace Obsidian.Tests
         [Fact(DisplayName = "WorldGen", Timeout = 100)]
         public async void SameAsync()
         {
-            OverworldGenerator og = new OverworldGenerator("seed");
+            OverworldGenerator og = new OverworldGenerator("1");
             OverworldTerrain noiseGen = new OverworldTerrain(true);
 
             var map = new NoiseMap();
@@ -34,7 +34,7 @@ namespace Obsidian.Tests
             //renderer.BuildGrayscaleGradient();
             renderer.BuildTerrainGradient();
 
-            builder.SetBounds(-2000, 2000, -0, 4000);
+            builder.SetBounds(-2000, 2000, -2000, 2000);
             builder.SetDestSize(4000, 4000);
             builder.Build();
 

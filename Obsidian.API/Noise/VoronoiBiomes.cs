@@ -2,6 +2,7 @@
 using SharpNoise.Modules;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Obsidian.API.Noise
@@ -12,9 +13,9 @@ namespace Obsidian.API.Noise
 
         public double Frequency { get; set; }
 
-        public double RiverSize { get; set; } = 0.07;
+        public double RiverSize { get; set; } = 0.0;
 
-        public double BeachSize { get; set; } = 0.15;
+        public double BeachSize { get; set; } = 0.0;
 
         public enum BiomeNoiseValue : int
         {
@@ -110,11 +111,17 @@ namespace Obsidian.API.Noise
                     cells[index++] = cell;
                 }
             }
+            
 
-            //cells = cells.OrderBy(a => a.DistanceToPoint).ToList();
-            //cells.Sort((a, b) => a.DistanceToPoint > b.DistanceToPoint ? 1 : -1);
             MemoryExtensions.Sort(cells, (a, b) => { return a.DistanceToPoint > b.DistanceToPoint ? 1 : -1; });
             var center = cells[0];
+            var nearest = cells[1];
+
+            double averageDistance = (center.DistanceToPoint + nearest.DistanceToPoint) / 2.0;
+
+            var bs = BeachSize * averageDistance;
+            var rs = RiverSize * averageDistance;
+
 
             var noiseVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(center.Point.x), 0, (int)Math.Floor(center.Point.z)) + 0.2;
 
@@ -127,26 +134,27 @@ namespace Obsidian.API.Noise
             //var neighbor4 = ScaleNoise(NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[4].Point.x), 0, (int)Math.Floor(cells[4].Point.z)));
             
             // Tweak random outputs to be more worldlike
-            if (returnVal <= 0) // if ocean
+            if ((int)returnVal <= -1) // if ocean
             {
-                if (neighbor1 == returnVal) // If nearest neighbors are land, convert this to land
+                if (neighbor1 == returnVal)
                 {
                     returnVal = (BiomeNoiseValue)((int)returnVal - 4); // deep varient
 
                 }
             }
 
-            if (returnVal > 0) // if land
+            if ((int)returnVal >= 0) // if land
             {
-                var nearest = cells[0];
+                
                 // IF border with an ocean
-                if (neighbor1 < 0 && nearest.DistanceToPoint - center.DistanceToPoint <= RiverSize)
+                if (neighbor1 <= BiomeNoiseValue.WarmOcean && nearest.DistanceToPoint - center.DistanceToPoint <= bs)
                 {
                     returnVal = (Enum.GetName(typeof(BiomeNoiseValue), returnVal) ?? "howdishapn").Contains("Snow") ?
                         BiomeNoiseValue.SnowyBeach :
                         BiomeNoiseValue.Beach;
                 }
-                if (BiomesWithRivers.Contains(returnVal) && nearest.DistanceToPoint - center.DistanceToPoint <= BeachSize)
+
+                if (BiomesWithRivers.Contains(returnVal) && nearest.DistanceToPoint - center.DistanceToPoint <= rs)
                 {
                     returnVal = (Enum.GetName(typeof(BiomeNoiseValue), (int)returnVal) ?? "lolwut").Contains("Snow") ?
                             BiomeNoiseValue.FrozenRiver :
