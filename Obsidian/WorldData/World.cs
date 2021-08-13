@@ -34,11 +34,11 @@ namespace Obsidian.WorldData
         public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
 
         public string Name { get; }
+
         public bool Loaded { get; private set; }
 
-        private object saveLock;
-
         public long Time => Data.Time;
+
         public Gamemode GameType => Data.GameType;
 
         internal World(string name, Server server)
@@ -160,10 +160,17 @@ namespace Obsidian.WorldData
                 }
                 // Can't wait for the region to be loaded b/c we want a partial chunk,
                 // so just load it now and hold up execution.
-                var task = LoadRegionAsync(rX, rZ);
-                task.Wait();
-                region = task.Result;
-                Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
+                try
+                {
+                    var task = LoadRegionAsync(rX, rZ);
+                    region = task.Result;
+                    Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
+                }
+                catch (Exception e)
+                {
+                    Server.Logger.LogError(e.Message);
+                    return null;
+                }
             }
 
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -473,10 +480,7 @@ namespace Obsidian.WorldData
         public async Task FlushRegionsAsync()
         {
             await Server.BroadcastAsync("Saving to disk...");
-            lock(saveLock)
-            {
-                Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-            }
+            Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
             await Server.BroadcastAsync("Save complete.");
         }
 

@@ -15,8 +15,6 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
 
         internal readonly Module result;
 
-        private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
-
         internal VoronoiBiomeNoise()
         {
             seed = OverworldGenerator.GeneratorSettings.Seed;
@@ -24,67 +22,22 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
             var pass1 = new Turbulence
             {
                 Frequency = 0.007519,
-                Power = 60,
+                Power = 45,
                 Roughness = 3,
                 Seed = seed + 123,
-                Source0 = new BitShiftInput
+                Source0 = new Cache
                 {
-                    Amount = 0,
-                    Left = false,
-                    Source0 = new Cache
+                    Source0 = new VoronoiBiomes
                     {
-                        Source0 = new VoronoiBiomes
-                        {
-                            RiverSize = 0.03,
-                            BeachSize = 0.02,
-                            Frequency = 0.0014159,
-                            Seed = seed
-                        }
-                    }
-                }
-
-            };
-
-            var pass2 = new Interpolate
-            {
-                Source0 = pass1
-            };
-
-            // This pass adds Mooshroom Biomes
-            var pass3 = new Select
-            {
-                Control = pass1,
-                LowerBound = (double)VoronoiBiomes.BiomeNoiseValue.DeepWarmOcean - 0.01,
-                UpperBound = (double)VoronoiBiomes.BiomeNoiseValue.DeepWarmOcean + 0.01,
-                Source0 = pass1,
-                Source1 = new Select
-                {
-                    LowerBound = 0.95, // They're rare
-                    UpperBound = 0.96,
-                    Source0 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.DeepWarmOcean },
-                    Source1 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.MushroomFields },
-                    Control = new Turbulence
-                    {
-                        Seed = seed + 11,
-                        Power = 11,
-                        Roughness = 2,
-                        Frequency = 0.0564,
-                        Source0 = new Cell
-                        {
-                            Seed = seed + 9,
-                            Frequency = 0.0102345,
-                            Type = Cell.CellType.Voronoi
-                        },
+                        Frequency = 0.0014159,
+                        Seed = seed
                     }
                 }
             };
-
-
 
             result = new Cache
             {
-                
-                Source0 = pass3
+                Source0 = pass1
             };
         }
     }
