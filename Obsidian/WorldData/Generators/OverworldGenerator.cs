@@ -48,7 +48,7 @@ namespace Obsidian.WorldData.Generators
                     int worldZ = bz + (cz << 4);
                     terrainHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ);
                     chunk.Heightmaps[ChunkData.HeightmapType.WorldSurface].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
-                    //chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, noiseGen.OceanFloor(bx, bz));
+                    chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                     rockHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ) - 5;
                     bedrockHeightmap[bx, bz] = 3; // noiseGen.Bedrock(worldX, worldZ) + 1;
 

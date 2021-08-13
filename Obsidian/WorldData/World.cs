@@ -169,7 +169,7 @@ namespace Obsidian.WorldData
                 catch (Exception e)
                 {
                     Server.Logger.LogError(e.Message);
-                    return null;
+                    GetChunk(chunkX, chunkZ, scheduleGeneration);
                 }
             }
 

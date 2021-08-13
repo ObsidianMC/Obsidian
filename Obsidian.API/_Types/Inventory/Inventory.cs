@@ -109,9 +109,10 @@ namespace Obsidian.API
                     }
 
                     if (invItem == null)
+                    {
                         this.Items[i] = item;
-
-                    return i;
+                        return i;
+                    }
                 }
 
                 for (int i = 9; i < 36; i++)
