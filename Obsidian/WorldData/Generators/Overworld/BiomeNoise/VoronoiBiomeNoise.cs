@@ -23,13 +23,13 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
             {
                 Frequency = 0.007519,
                 Power = 45,
-                Roughness = 3,
+                Roughness = 5,
                 Seed = seed + 123,
                 Source0 = new Cache
                 {
                     Source0 = new VoronoiBiomes
                     {
-                        Frequency = 0.0014159,
+                        Frequency = 0.0024159,
                         Seed = seed
                     }
                 }

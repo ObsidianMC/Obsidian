@@ -110,13 +110,13 @@ namespace Obsidian.API.Noise
                 }
 
                 // 5% chance that a warm ocean has a mooshroom island.
-                if (me.BaseBiome == BaseBiome.DeepWarmOcean && me.Variant < 5)
+                if (me.BaseBiome == BaseBiome.DeepWarmOcean && me.Variant > 5 && me.Variant < 10)
                 {
-                    if (me.DistanceToPoint < averageDistance * 0.05)
+                    if (me.DistanceToPoint < averageDistance * 0.15)
                     {
                         return 14; // Biomes.MushroomFields
                     }
-                    else if (me.DistanceToPoint < averageDistance * 0.07)
+                    else if (me.DistanceToPoint < averageDistance * 0.19)
                     {
                         return 15; // Biomes.MushroomFieldShore
                     }

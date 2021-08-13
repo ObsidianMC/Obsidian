@@ -136,7 +136,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 {
                     Source0 = FinalBiomes,
                     Scale = 1 / 85.0,
-                    Bias = -1
+                    //Bias = -1
                 };
             }
 

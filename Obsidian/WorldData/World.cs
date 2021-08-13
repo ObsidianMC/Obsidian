@@ -614,7 +614,7 @@ namespace Obsidian.WorldData
                             {
                                 if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
                                 {
-                                    var worldPos = new VectorF(bx + (c.X << Region.cubicRegionSizeShift), by + 2, bz + (c.Z << Region.cubicRegionSizeShift));
+                                    var worldPos = new VectorF(bx + (c.X << Region.cubicRegionSizeShift), by + 8, bz + (c.Z << Region.cubicRegionSizeShift));
                                     this.Data.SpawnPosition = worldPos;
                                     this.Server.Logger.LogInformation($"World Spawn set to {worldPos}");
 

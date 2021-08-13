@@ -376,6 +376,7 @@ namespace Obsidian
             await this.SendPlayerListDecoration();
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+            this.Player.Position = this.Server.World.Data.SpawnPosition;
 
             await this.LoadChunksAsync();
 
@@ -385,8 +386,6 @@ namespace Obsidian
 
             await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
             await this.QueuePacketAsync(new SpawnPosition(this.Player.World.Data.SpawnPosition));
-
-            this.Player.Position = this.Server.World.Data.SpawnPosition;
 
             await this.QueuePacketAsync(new PlayerPositionAndLook
             {
