@@ -2,7 +2,7 @@
 
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Chat;
+using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
 using Obsidian.Net;
@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -76,7 +75,7 @@ namespace Obsidian
 
         public ILogger Logger => this.Server.Logger;
 
-        public List<(int, int)> LoadedChunks { get; internal set; }
+        public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
         public Client(TcpClient tcp, Config config, int playerId, Server originServer)
         {
@@ -85,7 +84,7 @@ namespace Obsidian
             this.id = playerId;
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
-            this.LoadedChunks = new List<(int cx, int cz)>();
+            this.LoadedChunks = new();
             this.handler = new ClientHandler();
 
             Stream parentStream = this.tcp.GetStream();
@@ -377,6 +376,7 @@ namespace Obsidian
             await this.SendPlayerListDecoration();
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+            this.Player.Position = this.Server.World.Data.SpawnPosition;
 
             await this.LoadChunksAsync();
 
@@ -386,8 +386,6 @@ namespace Obsidian
 
             await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
             await this.QueuePacketAsync(new SpawnPosition(this.Player.World.Data.SpawnPosition));
-
-            this.Player.Position = this.Server.World.Data.SpawnPosition;
 
             await this.QueuePacketAsync(new PlayerPositionAndLook
             {
@@ -543,10 +541,7 @@ namespace Obsidian
         {
             if (chunk != null)
             {
-                if (!this.LoadedChunks.Contains((chunk.X, chunk.Z)))
-                {
-                    await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-                }
+                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
             }
         }
 
@@ -560,9 +555,11 @@ namespace Obsidian
 
         private async Task SendServerBrand()
         {
-            var value = Encoding.UTF8.GetBytes("obsidian");
+            using var stream = new MinecraftStream();
 
-            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", value));
+            await stream.WriteStringAsync("obsidian");
+
+            await this.QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
             this.Logger.LogDebug("Sent server brand.");
         }
 

@@ -51,14 +51,14 @@
 
     public class SignedLongArgumentParser : BaseArgumentParser<long>
     {
-        public SignedLongArgumentParser() : base("brigadier:integer") { }
+        public SignedLongArgumentParser() : base("brigadier:long") { }
         public override bool TryParseArgument(string input, CommandContext ctx, out long result)
             => long.TryParse(input, out result);
     }
 
     public class UnsignedLongArgumentParser : BaseArgumentParser<ulong>
     {
-        public UnsignedLongArgumentParser() : base("brigadier:integer") { }
+        public UnsignedLongArgumentParser() : base("brigadier:long") { }
         public override bool TryParseArgument(string input, CommandContext ctx, out ulong result)
             => ulong.TryParse(input, out result);
     }

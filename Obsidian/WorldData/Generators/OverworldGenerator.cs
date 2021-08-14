@@ -9,7 +9,10 @@ namespace Obsidian.WorldData.Generators
 {
     public class OverworldGenerator : WorldGenerator
     {
+        public static OverworldTerrainSettings GeneratorSettings { get; private set; }
+
         private readonly OverworldTerrain terrainGen;
+
         public OverworldGenerator(string seed) : base("overworld")
         {
             // If the seed provided is numeric, just use it.
@@ -19,9 +22,9 @@ namespace Obsidian.WorldData.Generators
             {
                 seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
             }
-            OverworldTerrainSettings generatorSettings = new OverworldTerrainSettings();
-            generatorSettings.Seed = seedHash;
-            terrainGen = new OverworldTerrain(generatorSettings);
+            GeneratorSettings = new();
+            GeneratorSettings.Seed = seedHash;
+            terrainGen = new OverworldTerrain();
         }
 
         public override Chunk GenerateChunk(int cx, int cz, World world, Chunk chunk = null)
@@ -45,7 +48,7 @@ namespace Obsidian.WorldData.Generators
                     int worldZ = bz + (cz << 4);
                     terrainHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ);
                     chunk.Heightmaps[ChunkData.HeightmapType.WorldSurface].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
-                    //chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, noiseGen.OceanFloor(bx, bz));
+                    chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                     rockHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ) - 5;
                     bedrockHeightmap[bx, bz] = 3; // noiseGen.Bedrock(worldX, worldZ) + 1;
 
@@ -73,6 +76,7 @@ namespace Obsidian.WorldData.Generators
                     chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                 }
             }
+
             chunk.isGenerated = true;
             return chunk;
         }

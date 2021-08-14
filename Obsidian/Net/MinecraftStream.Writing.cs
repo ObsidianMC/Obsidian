@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Crafting;
-using Obsidian.Chat;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -329,7 +328,7 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteChat(ChatMessage chatMessage)
         {
-            WriteString(chatMessage.ToString());
+            WriteString(chatMessage.ToString(Globals.JsonOptions));
         }
 
         [WriteMethod]
@@ -706,7 +705,7 @@ namespace Obsidian.Net
             await WriteAsync(uuid.ToByteArray(false, true));
         }
 
-        public async Task WriteChatAsync(ChatMessage value) => await WriteStringAsync(value.ToString());
+        public async Task WriteChatAsync(ChatMessage value) => await WriteStringAsync(value.ToString(Globals.JsonOptions));
 
         public async Task WritePositionAsync(Vector value)
         {
@@ -1067,6 +1066,14 @@ namespace Obsidian.Net
         {
             using var writer = new NbtWriter(BaseStream);
             writer.WriteTag(nbt);
+        }
+
+        [WriteMethod]
+        public void WriteExplosionRecord(ExplosionRecord record)
+        {
+            WriteByte(record.X);
+            WriteByte(record.Y);
+            WriteByte(record.Z);
         }
 
         [WriteMethod]

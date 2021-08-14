@@ -7,6 +7,8 @@ namespace Obsidian.Utilities.Converters
 {
     public class DefaultEnumConverter<T> : JsonConverter<T>
     {
+        public override bool CanConvert(Type typeToConvert) => typeToConvert.IsEnum && typeToConvert == typeof(T);
+
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var value = reader.GetString();

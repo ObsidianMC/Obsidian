@@ -3,7 +3,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
-using Obsidian.Chat;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -310,18 +309,9 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(ChatMessage.Simple(message), type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
-        public Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
-        {
-            if (message is not ChatMessage chatMessage)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            return this.SendMessageAsync(chatMessage, type, sender);
-        }
-
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
-            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));
@@ -332,13 +322,6 @@ namespace Obsidian.Entities
         public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
 
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
-        public Task KickAsync(IChatMessage reason)
-        {
-            if (reason is not ChatMessage chatMessage)
-                return Task.FromException(new Exception("Message was of the wrong type or null. Expected instance supplied by IChatMessage.CreateNew."));
-
-            return KickAsync(chatMessage);
-        }
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public async Task RespawnAsync()
@@ -377,13 +360,13 @@ namespace Obsidian.Entities
                 this.Health = 20f;
         }
 
-        public override async Task KillAsync(IEntity source, IChatMessage deathMessage)
+        public override async Task KillAsync(IEntity source, ChatMessage deathMessage)
         {
             await this.client.QueuePacketAsync(new PlayerDied
             {
                 PlayerId = this.EntityId,
                 EntityId = source != null ? source.EntityId : -1,
-                Message = deathMessage as ChatMessage
+                Message = deathMessage
             });
 
             await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));

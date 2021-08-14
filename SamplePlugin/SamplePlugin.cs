@@ -43,7 +43,7 @@ namespace SamplePlugin
         {
             var player = playerJoinEvent.Player;
 
-            await player.SendMessageAsync(IChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
+            await player.SendMessageAsync(ChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
         }
 
         [Command("plugincommand")]

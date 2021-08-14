@@ -12,6 +12,7 @@ namespace Obsidian.API
             "brigadier:double",
             "brigadier:float",
             "brigadier:integer",
+            "brigadier:long",
             "brigadier:string",
             "minecraft:entity",
             "minecraft:game_profile",

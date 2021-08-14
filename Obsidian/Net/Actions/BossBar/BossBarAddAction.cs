@@ -1,7 +1,6 @@
-﻿using System.Threading.Tasks;
-
+﻿using Obsidian.API;
 using Obsidian.BossBar;
-using Obsidian.Chat;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.BossBar
 {

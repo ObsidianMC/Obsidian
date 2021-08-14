@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
@@ -8,7 +7,6 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net

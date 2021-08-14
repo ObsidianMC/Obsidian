@@ -18,7 +18,7 @@ namespace Obsidian.Commands.Framework.Entities
             Logger = logger;
         }
 
-        public async Task SendMessageAsync(IChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
+        public async Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
         {
             if (Issuer == CommandIssuers.Client)
             {
@@ -35,9 +35,6 @@ namespace Obsidian.Commands.Framework.Entities
             Logger.LogInformation(messageString);
         }
 
-        public async Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null)
-        {
-            await SendMessageAsync(IChatMessage.Simple(message), type, sender);
-        }
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => SendMessageAsync(ChatMessage.Simple(message), type, sender);
     }
 }

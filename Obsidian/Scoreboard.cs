@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +22,7 @@ namespace Obsidian
             this.server = server;
         }
 
-        public async Task CreateOrUpdateObjectiveAsync(IChatMessage title, DisplayType displayType = DisplayType.Integer)
+        public async Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer)
         {
             var packet = new ScoreboardObjectivePacket
             {

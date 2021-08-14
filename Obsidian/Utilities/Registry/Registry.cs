@@ -42,7 +42,7 @@ namespace Obsidian.Utilities.Registry
         private static readonly string mainDomain = "Obsidian.Assets";
 
         private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
-        {
+        {   
             Converters =
             {
                 new StringToBoolConverter(),
@@ -106,7 +106,7 @@ namespace Obsidian.Utilities.Registry
         {
             using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
 
-            var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>();
+            var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>(codecJsonOptions);
             int registered = 0;
 
             foreach (var (name, item) in dict)
@@ -342,6 +342,10 @@ namespace Obsidian.Utilities.Registry
                         {
                             "brigadier:string" => new StringCommandParser(arg.CustomAttributes.Any(x => x.AttributeType == typeof(RemainingAttribute)) ? StringType.GreedyPhrase : StringType.QuotablePhrase),
                             "obsidian:player" => new EntityCommandParser(EntityCommadBitMask.OnlyPlayers),// this is a custom type used by obsidian meaning "only player entities".
+                            "brigadier:double" => new DoubleCommandParser(),
+                            "brigadier:float" => new FloatCommandParser(),
+                            "brigadier:integer" => new IntCommandParser(),
+                            "brigadier:long" => new LongCommandParser(),
                             _ => new CommandParser(mctype),
                         };
 
