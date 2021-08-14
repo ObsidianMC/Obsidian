@@ -31,16 +31,18 @@ namespace Obsidian.API.Noise
         public override double GetValue(double x, double y, double z)
         {
             var self = Source0.GetValue(x, y, z);
+            double strength = 1.5;
+            if (self <= 0) { strength = 0.5; }
             var values = new double[8]
             {
-                Source0.GetValue(x, y, z + Distance) == self ? -1 : 2,
-                Source0.GetValue(x, y, z - Distance) == self ? -1 : 2,
-                Source0.GetValue(x + Distance, y, z) == self ? -1 : 2,
-                Source0.GetValue(x - Distance, y, z) == self ? -1 : 2,
-                Source0.GetValue(x + Distance, y, z + Distance) == self ? -1 : 1,
-                Source0.GetValue(x - Distance, y, z - Distance) == self ? -1 : 1,
-                Source0.GetValue(x + Distance, y, z - Distance) == self ? -1 : 1,
-                Source0.GetValue(x - Distance, y, z + Distance) == self ? -1 : 1,
+                Source0.GetValue(x, y, z + Distance) == self ? -1 : strength,
+                Source0.GetValue(x, y, z - Distance) == self ? -1 : strength,
+                Source0.GetValue(x + Distance, y, z) == self ? -1 : strength,
+                Source0.GetValue(x - Distance, y, z) == self ? -1 : strength,
+                Source0.GetValue(x + Distance, y, z + Distance) == self ? -1 : (strength * 0.75),
+                Source0.GetValue(x - Distance, y, z - Distance) == self ? -1 : (strength * 0.75),
+                Source0.GetValue(x + Distance, y, z - Distance) == self ? -1 : (strength * 0.75),
+                Source0.GetValue(x - Distance, y, z + Distance) == self ? -1 : (strength * 0.75),
             };
 
             return values.Average();

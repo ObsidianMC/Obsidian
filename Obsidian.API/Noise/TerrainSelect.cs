@@ -1,12 +1,11 @@
 ﻿using SharpNoise.Modules;
 using System.Collections.Generic;
-using static Obsidian.API.Noise.VoronoiBiomes;
 
 namespace Obsidian.API.Noise
 {
     public class TerrainSelect : SharpNoise.Modules.Blend
     {
-        public Dictionary<BiomeNoiseValue, Module> TerrainModules { get; set; } = new();
+        internal Dictionary<int, Module> TerrainModules { get; set; } = new();
 
         public Module BiomeSelector { get; set; }
 
@@ -17,7 +16,7 @@ namespace Obsidian.API.Noise
 
         public override double GetValue(double x, double y, double z)
         {
-            var b = (BiomeNoiseValue)BiomeSelector.GetValue(x, y, z);
+            var b = (int)BiomeSelector.GetValue(x, y, z);
             Source0 = TerrainModules[b];
             return base.GetValue(x, y, z);
         }

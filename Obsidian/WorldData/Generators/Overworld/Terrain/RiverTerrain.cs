@@ -12,7 +12,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
     {
         // Generates the plains terrain.
         // Outputs will be between -0.3 and -0.1
-        public RiverTerrain(OverworldTerrainSettings ots) : base(ots)
+        public RiverTerrain() : base()
         {
             this.Result = new Cache
             {

@@ -3,11 +3,11 @@ using SharpNoise.Modules;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
-    public class OceanTerrain : BaseTerrain
+    public class DeepOceanTerrain : BaseTerrain
     {
         // Generates the Ocean terrain.
         // Outputs will be between -0.02 and -0.5
-        public OceanTerrain() : base()
+        public DeepOceanTerrain() : base()
         {
             this.Result = new Cache
             {
@@ -36,7 +36,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                                     Source0 = new ScaleBias
                                     {
                                         Scale = 0.005, // Flatten
-                                        Bias = -0.4, // move elevation
+                                        Bias = -0.8, // move elevation
                                         Source0 = new Billow
                                         {
                                             Seed = settings.Seed + 70,

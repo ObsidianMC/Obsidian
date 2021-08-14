@@ -6,12 +6,12 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class TaigaDecorator : BaseDecorator
+    public class GiantTreeTaigaDecorator : BaseDecorator
     {
-        public TaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+        public GiantTreeTaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
-            Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(SpruceTree)));
-            Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(LargeSpruceTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(SpruceTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(LargeSpruceTree)));
         }
 
         public override void Decorate()
@@ -27,6 +27,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
             var grassblock = new Block(Material.GrassBlock, 1);
             var dirt = Registry.GetBlock(Material.Dirt);
+            var podzol = new Block(Material.Podzol, 1);
 
             chunk.SetBlock(pos, grassblock);
             for (int y = -1; y > -4; y--)
@@ -47,9 +48,14 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             }
 
             var coarseDirt = new Block(Material.CoarseDirt, 0);
-            if (noise.Decoration(worldX * 0.03, 10, worldZ * 0.03) > 1)
+            if (noise.Decoration(worldX * 0.003, 10, worldZ * 0.003) > 0.5)
             {
                 chunk.SetBlock(pos, coarseDirt);
+            }
+            
+            if (noise.Decoration(worldX * 0.003, 18, worldZ * 0.003) > 0.5)
+            {
+                chunk.SetBlock(pos, podzol);
             }
 
             var berries = new Block(Material.SweetBerryBush, 2);

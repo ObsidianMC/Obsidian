@@ -4,6 +4,7 @@ using SharpNoise.Modules;
 using Blend = Obsidian.API.Noise.Blend;
 using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
@@ -13,120 +14,101 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         public readonly OverworldTerrainSettings settings;
 
-        private readonly BaseTerrain ocean, badlands, plains, hills, mountains, rivers;
+        private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
         private readonly BaseCarver cave;
 
         private Module FinalBiomes;
 
-        public OverworldTerrain(OverworldTerrainSettings ots, bool isUnitTest = false)
+        
+
+        public OverworldTerrain(bool isUnitTest = false)
         {
-            settings = ots;
+            settings = OverworldGenerator.GeneratorSettings;
+            ocean = new OceanTerrain();
+            deepocean = new DeepOceanTerrain();
+            plains = new PlainsTerrain();
+            hills = new HillsTerrain();
+            badlands = new BadlandsTerrain();
+            mountains = new MountainsTerrain();
+            rivers = new RiverTerrain();
+            cave = new CavesCarver();
 
-            ocean = new OceanTerrain(ots);
-            plains = new PlainsTerrain(ots);
-            hills = new HillsTerrain(ots);
-            badlands = new BadlandsTerrain(ots);
-            mountains = new MountainsTerrain(ots);
-            rivers = new RiverTerrain(ots);
-            cave = new CavesCarver(ots);
-
-            Dictionary<BiomeNoiseValue, Module> biomeMap = new()
+            Dictionary<int, Module> biomesMap = new Dictionary<int, Module>()
             {
-                { BiomeNoiseValue.DeepOcean, ocean.Result },
-                { BiomeNoiseValue.DeepFrozenOcean, ocean.Result },
-                { BiomeNoiseValue.FrozenOcean, ocean.Result },
-                { BiomeNoiseValue.DeepColdOcean, ocean.Result },
-                { BiomeNoiseValue.ColdOcean, ocean.Result },
-                { BiomeNoiseValue.DeepLukewarmOcean, ocean.Result },
-                { BiomeNoiseValue.LukewarmOcean, ocean.Result },
-                { BiomeNoiseValue.DeepWarmOcean, ocean.Result },
-                { BiomeNoiseValue.WarmOcean, ocean.Result },
-                { BiomeNoiseValue.Beach, new Constant { ConstantValue = 0.025 } },
-                { BiomeNoiseValue.River, rivers.Result },
-                { BiomeNoiseValue.Badlands, badlands.Result },
-                { BiomeNoiseValue.Desert, plains.Result },
-                { BiomeNoiseValue.Savanna, hills.Result},
-                { BiomeNoiseValue.ShatteredSavanna, mountains.Result },
-                { BiomeNoiseValue.SavannaPlateau, hills.Result },
-                { BiomeNoiseValue.ShatteredSavannaPlateau, mountains.Result },
-                { BiomeNoiseValue.Jungle, plains.Result },
-                { BiomeNoiseValue.Plains, plains.Result },
-                { BiomeNoiseValue.Swamp, plains.Result },
-                { BiomeNoiseValue.DarkForest, plains.Result },
-                { BiomeNoiseValue.ExtremeHills, mountains.Result },
-                { BiomeNoiseValue.Forest, plains.Result },
-                { BiomeNoiseValue.TallBirchForest, plains.Result },
-                { BiomeNoiseValue.BirchForest, plains.Result },
-                { BiomeNoiseValue.MountainMeadow, hills.Result },
-                { BiomeNoiseValue.GiantTreeTaiga, hills.Result },
-                { BiomeNoiseValue.GiantSpruceTaiga, hills.Result },
-                { BiomeNoiseValue.Taiga, plains.Result },
-                { BiomeNoiseValue.StoneShore, plains.Result },
-                { BiomeNoiseValue.SnowyBeach, plains.Result },
-                { BiomeNoiseValue.SnowyTundra, plains.Result },
-                { BiomeNoiseValue.SnowyTaiga, plains.Result },
-                { BiomeNoiseValue.MountainGrove, mountains.Result },
-                { BiomeNoiseValue.SnowySlopes, mountains.Result },
-                { BiomeNoiseValue.LoftyPeaks, mountains.Result },
-                { BiomeNoiseValue.SnowCappedPeaks, mountains.Result },
-                { BiomeNoiseValue.MushroomFields, plains.Result },
+                { 0, ocean.Result },
+                { 1, plains.Result },
+                { 2, plains.Result },
+                { 3, mountains.Result },
+                { 4, plains.Result },
+                { 5, plains.Result },
+                { 6, plains.Result },
+                { 7, rivers.Result },
+                { 10, ocean.Result },
+                { 11, rivers.Result },
+                { 12, hills.Result },
+                { 13, mountains.Result },
+                { 14, plains.Result },
+                { 15, new Constant { ConstantValue = 0.0 } },
+                { 16, new Constant { ConstantValue = 0.0 } },
+                { 17, hills.Result },
+                { 18, hills.Result },
+                { 19, hills.Result },
+                { 20, hills.Result },
+                { 21, plains.Result },
+                { 22, hills.Result },
+                { 23, new Constant { ConstantValue = 0.0 } },
+                { 24, deepocean.Result },
+                { 25, new Constant { ConstantValue = 0.0 } },
+                { 26, new Constant { ConstantValue = 0.0 } },
+                { 27, plains.Result },
+                { 28, hills.Result },
+                { 29, plains.Result },
+                { 30, plains.Result },
+                { 31, hills.Result },
+                { 32, plains.Result },
+                { 33, hills.Result },
+                { 34, mountains.Result },
+                { 35, plains.Result },
+                { 36, hills.Result },
+                { 37, plains.Result },
+                { 38, hills.Result },
+                { 39, hills.Result },
+                { 44, ocean.Result },
+                { 45, ocean.Result },
+                { 46, ocean.Result },
+                { 47, deepocean.Result },
+                { 48, deepocean.Result },
+                { 49, deepocean.Result },
+                { 50, deepocean.Result },
+                { 129, plains.Result },
+                { 130, plains.Result },
+                { 131, mountains.Result },
+                { 132, plains.Result },
+                { 133, mountains.Result },
+                { 134, hills.Result },
+                { 140, hills.Result },
+                { 149, hills.Result },
+                { 151, plains.Result },
+                { 155, plains.Result },
+                { 156, hills.Result },
+                { 157, hills.Result },
+                { 158, mountains.Result },
+                { 160, plains.Result },
+                { 161, hills.Result },
+                { 162, mountains.Result },
+                { 163, plains.Result },
+                { 164, hills.Result },
+                { 165, hills.Result },
+                { 166, mountains.Result },
+                { 167, mountains.Result },
+                { 168, plains.Result },
+                { 169, hills.Result },
             };
 
-            var pass1 = new Cache
-            {
-                Source0 = new Turbulence
-                {
-                    Frequency = 0.007519,
-                    Power = 16,
-                    Roughness = 3,
-                    Seed = ots.Seed + 123,
-                    Source0 = new BitShiftInput
-                    {
-                        Amount = 2,
-                        Left = false,
-                        Source0 = new VoronoiBiomes
-                        {
-                            BorderSize = 0.07,
-                            Frequency = 0.014159,
-                            Seed = ots.Seed
-                        }
-                    }
-                }
-            };
 
-            var addMooshroom = new Select
-            {
-                Control = pass1,
-                LowerBound = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean - 0.01,
-                UpperBound = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean + 0.01,
-                Source0 = pass1,
-                Source1 = new Select
-                {
-                    LowerBound = 0.95, // They're rare
-                    UpperBound = 0.96,
-                    Source0 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.WarmOcean },
-                    Source1 = new Constant { ConstantValue = (double)VoronoiBiomes.BiomeNoiseValue.MushroomFields },
-                    Control = new Turbulence
-                    {
-                        Seed = ots.Seed + 11,
-                        Power = 11,
-                        Roughness = 2,
-                        Frequency = 0.0564,
-                        Source0 = new Cell
-                        {
-                            Seed = ots.Seed + 9,
-                            Frequency = 0.0102345,
-                            Type = Cell.CellType.Voronoi
-                        },
-                    }
-                }
-            };
-            
-            FinalBiomes = new Cache
-            {
-                Source0 = addMooshroom
-            };
+
+            FinalBiomes = VoronoiBiomeNoise.Instance.result;
 
             var biomeTransitionSel2 = new Cache
             {
@@ -137,16 +119,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
-            var scaled = new Blend
+            Module scaled = new Blend
             {
                 Distance = 2,
                 Source0 = new TerrainSelect
                 {
                     BiomeSelector = FinalBiomes,
                     Control = biomeTransitionSel2,
-                    TerrainModules = biomeMap,
+                    TerrainModules = biomesMap,
                 }
             };
+
+            if (isUnitTest)
+            {
+                scaled = new ScaleBias
+                {
+                    Source0 = FinalBiomes,
+                    Scale = 1 / 85.0,
+                    //Bias = -1
+                };
+            }
 
             // Scale bias scales the verical output (usually -1.0 to +1.0) to
             // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
@@ -162,9 +154,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         }
 
-        public VoronoiBiomes.BiomeNoiseValue GetBiome(double x, double z, double y = 0)
+        internal BaseBiome GetBiome(double x, double z, double y = 0)
         {
-            return (VoronoiBiomes.BiomeNoiseValue)FinalBiomes.GetValue(x, y, z);
+            return (BaseBiome)FinalBiomes.GetValue(x, y, z);
         }
 
         public double GetValue(double x, double z, double y = 0)
