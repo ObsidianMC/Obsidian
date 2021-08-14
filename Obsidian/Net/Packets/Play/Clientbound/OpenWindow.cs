@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Serialization.Attributes;
 using System;
 
@@ -20,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public OpenWindow(Inventory inventory)
         {
-            Title = (ChatMessage)inventory.Title;
+            Title = inventory.Title;
 
             if (Enum.TryParse<WindowType>(inventory.Type.ToString(), true, out var type))
                 Type = type;

@@ -8,7 +8,7 @@ namespace Obsidian.API
         internal byte Slot { get; set; }
 
         internal int CustomModelData { get; set; }
-        public IChatMessage Name { get; internal set; }
+        public ChatMessage Name { get; internal set; }
 
         public int Durability { get; internal set; }
 
@@ -19,14 +19,14 @@ namespace Obsidian.API
 
         public IReadOnlyList<string> CanDestroy { get; }
 
-        public IReadOnlyList<IChatMessage> Lore { get; }
+        public IReadOnlyList<ChatMessage> Lore { get; }
 
         private readonly Dictionary<EnchantmentType, Enchantment> enchantments = new Dictionary<EnchantmentType, Enchantment>();
         private readonly Dictionary<EnchantmentType, Enchantment> storedEnchantments = new Dictionary<EnchantmentType, Enchantment>();
 
         private readonly List<string> canDestroy = new List<string>();
 
-        private readonly List<IChatMessage> lore = new List<IChatMessage>();
+        private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
         public ItemMetaBuilder()
         {
@@ -35,7 +35,7 @@ namespace Obsidian.API
 
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
 
-            this.Lore = new ReadOnlyCollection<IChatMessage>(this.lore);
+            this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
         }
 
         internal ItemMetaBuilder WithSlot(byte slot)
@@ -68,12 +68,12 @@ namespace Obsidian.API
 
         public ItemMetaBuilder WithName(string name)
         {
-            this.Name = IChatMessage.Simple(name);
+            this.Name = ChatMessage.Simple(name);
 
             return this;
         }
 
-        public ItemMetaBuilder WithName(IChatMessage name)
+        public ItemMetaBuilder WithName(ChatMessage name)
         {
             this.Name = name;
 
@@ -82,12 +82,12 @@ namespace Obsidian.API
 
         public ItemMetaBuilder AddLore(string lore)
         {
-            this.lore.Add(IChatMessage.Simple(lore));
+            this.lore.Add(ChatMessage.Simple(lore));
 
             return this;
         }
 
-        public ItemMetaBuilder AddLore(IChatMessage lore)
+        public ItemMetaBuilder AddLore(ChatMessage lore)
         {
             this.lore.Add(lore);
 

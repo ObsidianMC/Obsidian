@@ -13,9 +13,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         protected readonly OverworldTerrainSettings settings;
 
-        protected BaseTerrain(OverworldTerrainSettings ots)
+        protected BaseTerrain()
         {
-            this.settings = ots;
+            this.settings = OverworldGenerator.GeneratorSettings;
         }
     }
 }

@@ -4,7 +4,7 @@
     {
         public string ObjectiveName { get; internal set; }
 
-        public IChatMessage Value { get; internal set; }
+        public ChatMessage Value { get; internal set; }
 
         public DisplayType DisplayType { get; internal set; }
     }

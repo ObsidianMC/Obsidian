@@ -1,9 +1,8 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 
 namespace Obsidian
 {
-    public static class ServerImplementationRegistry
+    /*public static class ServerImplementationRegistry
     {
         private static bool registered = false;
 
@@ -17,5 +16,5 @@ namespace Obsidian
             IClickComponent.createNew = () => new ClickComponent();
             IHoverComponent.createNew = () => new HoverComponent();
         }
-    }
+    }*/
 }

@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.Chat;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -13,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public ScoreboardMode Mode { get; init; }
 
         [Field(2), ActualType(typeof(ChatMessage)), Condition(nameof(ShouldWriteValue))]
-        public IChatMessage Value { get; init; }
+        public ChatMessage Value { get; init; }
 
         [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
         public DisplayType Type { get; init; }

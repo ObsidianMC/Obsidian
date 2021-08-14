@@ -29,6 +29,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x05;
 
-        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+        public ValueTask HandleAsync(Server server, Player player)
+        {
+            player.client.ClientSettings = this;
+            return ValueTask.CompletedTask;
+        }
     }
 }

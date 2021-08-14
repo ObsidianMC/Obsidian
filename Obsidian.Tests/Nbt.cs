@@ -163,7 +163,7 @@ namespace Obsidian.Tests
                 return;
             isSetup = true;
 
-            ServerImplementationRegistry.RegisterServerImplementations();
+            //ServerImplementationRegistry.RegisterServerImplementations();
             await Registry.RegisterBlocksAsync();
             await Registry.RegisterItemsAsync();
         }

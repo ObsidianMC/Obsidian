@@ -22,7 +22,7 @@ namespace Obsidian.API
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
-        public Task BroadcastAsync(IChatMessage message, MessageType type = MessageType.Chat);
+        public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer? GetPlayer(string username);
         public IPlayer? GetPlayer(Guid uuid);
         public IPlayer? GetPlayer(int entityId);

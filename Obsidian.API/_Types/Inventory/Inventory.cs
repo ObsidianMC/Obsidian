@@ -16,7 +16,7 @@ namespace Obsidian.API
 
         public Guid Owner { get; set; }
 
-        public IChatMessage Title { get; set; } = IChatMessage.Empty;
+        public ChatMessage Title { get; set; } = ChatMessage.Empty;
 
         public InventoryType Type { get; }
 
@@ -109,9 +109,10 @@ namespace Obsidian.API
                     }
 
                     if (invItem == null)
+                    {
                         this.Items[i] = item;
-
-                    return i;
+                        return i;
+                    }
                 }
 
                 for (int i = 9; i < 36; i++)

@@ -87,7 +87,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var inventory = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
-                        Title = IChatMessage.Simple("Chest"),
+                        Title = ChatMessage.Simple("Chest"),
                         Id = maxId,
                         BlockPosition = position
                     };
@@ -117,7 +117,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var enderChest = new Inventory(InventoryType.Generic)
                     {
                         Owner = player.Uuid,
-                        Title = IChatMessage.Simple("Ender Chest"),
+                        Title = ChatMessage.Simple("Ender Chest"),
                         Id = maxId
                     };
 
@@ -145,7 +145,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     var crafting = new Inventory(InventoryType.Crafting)
                     {
-                        Title = IChatMessage.Simple("Crafting Table"),
+                        Title = ChatMessage.Simple("Crafting Table"),
                         Id = maxId,
                         BlockPosition = position
                     };
@@ -198,7 +198,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var box = new Inventory(InventoryType.ShulkerBox) // TODO shulker box functionality
                     {
                         Owner = player.Uuid,
-                        Title = IChatMessage.Simple("Shulker Box"),
+                        Title = ChatMessage.Simple("Shulker Box"),
                         Id = maxId,
                         BlockPosition = position
                     };
@@ -224,7 +224,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     var box = new Inventory(InventoryType.Generic)
                     {
                         //Owner = player.Uuid,
-                        Title = IChatMessage.Simple("Barrel"),
+                        Title = ChatMessage.Simple("Barrel"),
                         Id = maxId,
                         BlockPosition = position
                     };

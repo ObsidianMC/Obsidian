@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
 using System.Net.Http;
@@ -26,6 +27,9 @@ namespace Obsidian
             {
                 new CraftingTypeConverter(),
                 new IngredientConverter(),
+                new DefaultEnumConverter<EHoverAction>(),
+                new DefaultEnumConverter<EClickAction>(),
+                new HexColorConverter()
             },
             Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         };

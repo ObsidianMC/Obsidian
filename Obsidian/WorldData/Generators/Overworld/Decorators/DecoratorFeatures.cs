@@ -31,5 +31,15 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 TreeType = treeType;
             }
         }
+
+        public class FloraInfo
+        {
+            public int Frequency { get; set; } = 0;
+
+            public Type BottomFloraType { get; set; }
+
+            public Type TopFloraType { get; set; } = null;
+        }
+
     }
 }

@@ -19,6 +19,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                     var b = ChunkBiome.GetBiome((chunk.X << 4) + x, (chunk.Z << 4) + z, ot);
                     var blockPos = new Vector(x, (int)terrainHeightMap[x, z], z);
                     IDecorator decorator = DecoratorFactory.GetDecorator(b, chunk, blockPos, noise);
+
                     decorator.Decorate();
                     GenerateTrees(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
                 }

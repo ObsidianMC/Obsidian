@@ -1,18 +1,13 @@
-using Obsidian.API;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Obsidian.Chat
+namespace Obsidian.API
 {
-    public class ChatMessage : IChatMessage
+    public class ChatMessage
     {
         public string Text { get; set; }
 
-        [JsonPropertyName("color")]
-        private string HexColor => Color.ToString();
-
-        [JsonIgnore]
         public HexColor Color { get; set; }
 
         public bool Bold { get; set; }
@@ -27,16 +22,16 @@ namespace Obsidian.Chat
 
         public string Insertion { get; set; }
 
-        public IClickComponent ClickEvent { get; set; }
+        public ClickComponent ClickEvent { get; set; }
 
-        public IHoverComponent HoverEvent { get; set; }
+        public HoverComponent HoverEvent { get; set; }
 
-        public List<ChatMessage> Extra { get; set; }
+        public List<ChatMessage> Extra { get; private set; }
 
         [JsonIgnore]
-        public IEnumerable<IChatMessage> Extras => GetExtras();
+        public IEnumerable<ChatMessage> Extras => GetExtras();
 
-        public IEnumerable<IChatMessage> GetExtras()
+        public IEnumerable<ChatMessage> GetExtras()
         {
             if (Extra == null)
                 yield break;
@@ -50,7 +45,8 @@ namespace Obsidian.Chat
         /// <summary>
         /// Creates a new <see cref="ChatMessage"/> object with plain text.
         /// </summary>
-        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text.Replace('&', '�') };
+        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text.Replace('&', '§') };
+        public static ChatMessage Simple(string text, ChatColor color) => new ChatMessage() { Text = $"{color}{text}" };
 
         public ChatMessage AddExtra(ChatMessage message)
         {
@@ -68,12 +64,7 @@ namespace Obsidian.Chat
             return this;
         }
 
-        public IChatMessage AddExtra(IChatMessage message)
-        {
-            return AddExtra(message as ChatMessage);
-        }
-
-        public IChatMessage AddExtra(IEnumerable<IChatMessage> messages)
+        public ChatMessage AddExtra(IEnumerable<ChatMessage> messages)
         {
             foreach (var message in messages)
             {
@@ -83,10 +74,36 @@ namespace Obsidian.Chat
             return this;
         }
 
+        public ChatMessage AppendText(string text)
+        {
+            if (Text is null)
+            {
+                Text = text;
+            }
+            else
+            {
+                Text += text;
+            }
+            return this;
+        }
+
+        public ChatMessage AppendText(string text, ChatColor color)
+        {
+            if (Text is null)
+            {
+                Text = $"{color}{text}";
+            }
+            else
+            {
+                Text += $"{color}{text}";
+            }
+            return this;
+        }
+
         public static ChatMessage Empty => Simple(string.Empty);
 
         public static implicit operator ChatMessage(string text) => Simple(text);
 
-        public override string ToString() => JsonSerializer.Serialize(this, Globals.JsonOptions);
+        public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
     }
 }
