@@ -50,11 +50,11 @@ namespace Obsidian.API
         public Task OpenInventoryAsync(Inventory inventory);
         public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
 
-        public Task<bool> GrantPermission(string permission);
-        public Task<bool> RevokePermission(string permission);
-        public Task<bool> HasPermission(string permission);
-        public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
-        public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
+        public Task<bool> GrantPermissionAsync(string permission);
+        public Task<bool> RevokePermissionAsync(string permission);
+        public bool HasPermission(string permission);
+        public bool HasAnyPermission(IEnumerable<string> permissions);
+        public bool HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
 
         public Task UpdateDisplayNameAsync(string newDisplayName);

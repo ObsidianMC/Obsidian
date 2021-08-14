@@ -41,6 +41,8 @@ namespace Obsidian
         private readonly TcpListener tcpListener;
         private readonly UdpClient udpClient;
 
+        internal string PermissionPath => Path.Combine(this.ServerFolderPath, "permissions");
+
         internal readonly CancellationTokenSource cts;
 
         internal static byte LastInventoryId;
@@ -138,6 +140,9 @@ namespace Obsidian
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
             this.Events.PlayerAttackEntity += this.PlayerAttack;
+
+            if (!Directory.Exists(this.PermissionPath))
+                Directory.CreateDirectory(this.PermissionPath);
 
             if (this.Config.UDPBroadcast)
             {
