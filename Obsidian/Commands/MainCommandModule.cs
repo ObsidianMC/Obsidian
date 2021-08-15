@@ -419,7 +419,7 @@ namespace Obsidian.Commands
             [GroupCommand]
             public async Task CheckPermission(CommandContext ctx, string permission)
             {
-                if (await ctx.Player.HasPermission(permission))
+                if (ctx.Player.HasPermission(permission))
                 {
                     await ctx.Player.SendMessageAsync($"You have {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
                 }
