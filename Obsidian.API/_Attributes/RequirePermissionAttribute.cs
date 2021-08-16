@@ -17,15 +17,15 @@ namespace Obsidian.API
             this.op = op;
         }
 
-        public override async Task<bool> RunChecksAsync(CommandContext context)
+        public override Task<bool> RunChecksAsync(CommandContext context)
         {
             if (this.op && context.Player.IsOperator)
-                return true;
+                return Task.FromResult(true);
 
             if (this.permissions.Length > 0)
-                return checkType == PermissionCheckType.All ? await context.Player.HasAllPermissions(permissions) : await context.Player.HasAnyPermission(permissions);
+                return Task.FromResult(checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(permissions) : context.Player.HasAnyPermission(permissions));
 
-            return false;
+            return Task.FromResult(false);
         }
     }
 }

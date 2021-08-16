@@ -52,6 +52,10 @@ namespace Obsidian.WorldData
 
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
+
+            var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
+            if (!Directory.Exists(playerDataPath))
+                Directory.CreateDirectory(playerDataPath);
         }
 
         public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -93,7 +97,7 @@ namespace Obsidian.WorldData
                 await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
                 c.LoadedChunks.TryRemove(chunkLoc);
             });
-            
+
             Parallel.ForEach(clientNeededChunks, async chunkLoc =>
             {
                 var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
@@ -152,7 +156,7 @@ namespace Obsidian.WorldData
             {
                 // region hasn't been loaded yet
                 var (rX, rZ) = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-                if (scheduleGeneration) 
+                if (scheduleGeneration)
                 {
                     if (!RegionsToLoad.Contains((rX, rZ)))
                         RegionsToLoad.Enqueue((rX, rZ));
@@ -175,9 +179,9 @@ namespace Obsidian.WorldData
 
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
             var chunk = region.GetChunk(chunkIndex);
-            
-            if (chunk is not null) 
-            { 
+
+            if (chunk is not null)
+            {
                 if (!chunk.isGenerated && scheduleGeneration)
                 {
                     if (!ChunksToGen.Contains((chunkX, chunkZ)))
@@ -191,7 +195,7 @@ namespace Obsidian.WorldData
             // Chunk hasn't been generated yet.
             if (scheduleGeneration)
             {
-                if (!ChunksToGen.Contains((chunkX, chunkZ))) 
+                if (!ChunksToGen.Contains((chunkX, chunkZ)))
                     ChunksToGen.Enqueue((chunkX, chunkZ));
                 return null;
             }
@@ -221,7 +225,7 @@ namespace Obsidian.WorldData
         public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
 
         public void SetBlock(int x, int y, int z, Block block) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
-  
+
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
 
         public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
@@ -290,8 +294,8 @@ namespace Obsidian.WorldData
             this.Generator = value;
 
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            for(int rx = -1; rx < 1; rx++)
-                for(int rz = -1; rz < 1; rz++)
+            for (int rx = -1; rx < 1; rx++)
+                for (int rz = -1; rz < 1; rz++)
                     _ = await LoadRegionAsync(rx, rz);
 
             // spawn chunks are radius 12 from spawn,
@@ -303,12 +307,13 @@ namespace Obsidian.WorldData
                 for (var cz = z - radius; cz < z + radius; cz++)
                     SpawnChunks.Add((cx, cz));
 
-            Parallel.ForEach(SpawnChunks, (c) => {
+            Parallel.ForEach(SpawnChunks, (c) =>
+            {
                 GetChunk(c.X, c.Z);
                 // Update status occasionally so we're not destroying consoleio
                 if (c.X % 5 == 0)
                     Server.UpdateStatusConsole();
-                });
+            });
 
             Loaded = true;
             return true;
@@ -348,45 +353,12 @@ namespace Obsidian.WorldData
             writer.TryFinish();
         }
 
-        public void LoadPlayer(Guid uuid)
-        {
-            var path = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
-            var playerFile = new FileInfo(path);
-
-            var pfile = new NbtReader(playerFile.OpenRead(), NbtCompression.GZip);
-
-            var playercompound = pfile.ReadNextTag() as NbtCompound;
-            // filenames are player UUIDs. ???
-            var player = new Player(uuid, Path.GetFileNameWithoutExtension(path), null)//TODO: changes
-            {
-                OnGround = playercompound.GetBool("OnGround"),
-                Sleeping = playercompound.GetBool("Sleeping"),
-                Air = playercompound.GetShort("Air"),
-                AttackTime = playercompound.GetShort("AttackTime"),
-                DeathTime = playercompound.GetShort("DeathTime"),
-                //Fire = playercompound["Fire"].ShortValue,
-                Health = playercompound.GetShort("Health"),
-                HurtTime = playercompound.GetShort("HurtTime"),
-                SleepTimer = playercompound.GetShort("SleepTimer"),
-                Dimension = playercompound.GetInt("Dimension"),
-                FoodLevel = playercompound.GetInt("foodLevel"),
-                FoodTickTimer = playercompound.GetInt("foodTickTimer"),
-                Gamemode = (Gamemode)playercompound.GetInt("playerGameType"),
-                XpLevel = playercompound.GetInt("XpLevel"),
-                XpTotal = playercompound.GetInt("XpTotal"),
-                FallDistance = playercompound.GetFloat("FallDistance"),
-                FoodExhastionLevel = playercompound.GetFloat("foodExhastionLevel"),
-                FoodSaturationLevel = playercompound.GetFloat("foodSaturationLevel"),
-                Score = playercompound.GetInt("XpP")
-                // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
-            };
-            this.Players.TryAdd(uuid, player);
-        }
-
-        public void UnloadPlayer(Guid uuid)
+        public async Task UnloadPlayerAsync(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
-            this.Players.TryRemove(uuid, out _);
+            this.Players.TryRemove(uuid, out var player);
+
+            await player.SaveAsync();
         }
         #endregion
 
@@ -414,7 +386,7 @@ namespace Obsidian.WorldData
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
             this.Regions[value] = region;
-            
+
             return region;
         }
 

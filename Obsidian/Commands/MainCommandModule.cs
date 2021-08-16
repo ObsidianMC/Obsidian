@@ -419,7 +419,7 @@ namespace Obsidian.Commands
             [GroupCommand]
             public async Task CheckPermission(CommandContext ctx, string permission)
             {
-                if (await ctx.Player.HasPermission(permission))
+                if (ctx.Player.HasPermission(permission))
                 {
                     await ctx.Player.SendMessageAsync($"You have {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
                 }
@@ -432,7 +432,7 @@ namespace Obsidian.Commands
             [Command("grant")]
             public async Task GrantPermission(CommandContext ctx, string permission)
             {
-                if (await ctx.Player.GrantPermission(permission))
+                if (await ctx.Player.GrantPermissionAsync(permission))
                 {
                     await ctx.Player.SendMessageAsync($"Sucessfully granted {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
                 }
@@ -444,7 +444,7 @@ namespace Obsidian.Commands
             [Command("revoke")]
             public async Task RevokePermission(CommandContext ctx, string permission)
             {
-                if (await ctx.Player.RevokePermission(permission))
+                if (await ctx.Player.RevokePermissionAsync(permission))
                 {
                     await ctx.Player.SendMessageAsync($"Sucessfully revoked {ChatColor.BrightGreen}{permission}{ChatColor.Reset}.");
                 }

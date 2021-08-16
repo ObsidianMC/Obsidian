@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -198,15 +199,12 @@ namespace Obsidian.Entities
         public async Task LoadPermsAsync()
         {
             // Load a JSON file that contains all permissions
-            var server = (Server)this.Server;
-            var dir = Path.Combine($"Server-{server.Id}", "permissions");
-            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (File.Exists(file))
+            if (file.Exists)
             {
-                using var fs = new FileStream(file, FileMode.Open);
-                
+                using var fs = file.OpenRead();
+
                 this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
             }
         }
@@ -214,14 +212,9 @@ namespace Obsidian.Entities
         public async Task SavePermsAsync()
         {
             // Save permissions to JSON file
-            var dir = Path.Combine($"Server-{this.server.Id}", "permissions");
-            var user = this.server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            using var fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write);
+            using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             await this.PlayerPermissions.ToJsonAsync(fs);
         }
@@ -424,8 +417,6 @@ namespace Obsidian.Entities
             }
         }
 
-        public override string ToString() => this.Username;
-
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
             var list = new List<PlayerInfoAction>()
@@ -459,7 +450,97 @@ namespace Obsidian.Entities
             this.DisplayName = newDisplayName;
         }
 
-        public async Task<bool> GrantPermission(string permission)
+        public async Task SaveAsync()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+
+            using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+
+            writer.WriteInt("DataVersion", 2724);
+            writer.WriteInt("playerGameType", (int)this.Gamemode);
+            writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
+            writer.WriteInt("Score", 0);
+            writer.WriteInt("SelectedItemSlot", this.CurrentSlot);
+            writer.WriteInt("foodLevel", this.FoodLevel);
+            writer.WriteInt("foodTickTimer", this.FoodTickTimer);
+            writer.WriteInt("XpLevel", this.XpLevel);
+            writer.WriteInt("XpTotal", this.XpTotal);
+
+            writer.WriteFloat("foodExhaustionLevel", this.FoodExhastionLevel);
+            writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
+
+            writer.WriteListStart("Pos", NbtTagType.Double, 3);
+
+            writer.WriteDouble(this.Position.X);
+            writer.WriteDouble(this.Position.Y);
+            writer.WriteDouble(this.Position.Z);
+
+            writer.EndList();
+
+            writer.WriteString("Dimension", "minecraft:overworld");
+
+            writer.EndCompound();
+
+            await writer.TryFinishAsync();
+        }
+
+        public void Load()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            if (!playerFile.Exists)
+            {
+                this.Position = this.World.Data.SpawnPosition;
+                return;
+            }
+
+            using var playerFileStream = playerFile.OpenRead();
+
+            var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+
+            var compound = reader.ReadNextTag() as NbtCompound;
+
+            this.OnGround = compound.GetBool("OnGround");
+            this.Sleeping = compound.GetBool("Sleeping");
+            this.Air = compound.GetShort("Air");
+            this.AttackTime = compound.GetShort("AttackTime");
+            this.DeathTime = compound.GetShort("DeathTime");
+            this.Health = compound.GetShort("Health");
+            this.HurtTime = compound.GetShort("HurtTime");
+            this.SleepTimer = compound.GetShort("SleepTimer");
+
+            var dim = Registry.Dimensions.First(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
+            this.Dimension = dim.Key;
+
+            this.FoodLevel = compound.GetInt("foodLevel");
+            this.FoodTickTimer = compound.GetInt("foodTickTimer");
+            this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
+            this.XpLevel = compound.GetInt("XpLevel");
+            this.XpTotal = compound.GetInt("XpTotal");
+            this.FallDistance = compound.GetFloat("FallDistance");
+            this.FoodExhastionLevel = compound.GetFloat("foodExhastionLevel");
+            this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
+            this.Score = compound.GetInt("XpP");
+
+            float x = 0, y = 0, z = 0;
+
+            if (compound.TryGetTag("Pos", out var tag))
+            {
+                var list = tag as NbtList;
+
+                var pos = list.Select(x => x as NbtTag<double>).ToList();
+
+                x = (float)pos[0].Value;
+                y = (float)pos[1].Value;
+                z = (float)pos[2].Value;
+            }
+
+            this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
+        }
+
+        public async Task<bool> GrantPermissionAsync(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
@@ -494,7 +575,7 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public async Task<bool> RevokePermission(string permission)
+        public async Task<bool> RevokePermissionAsync(string permission)
         {
             // trim and split permission string
 
@@ -529,17 +610,15 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public Task<bool> HasPermission(string permission)
+        public bool HasPermission(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
-
             // Set root node and whether we created a new permission (still false)
             var result = false;
             var parent = this.PlayerPermissions;
-
 
             foreach (var i in split)
             {
@@ -562,25 +641,29 @@ namespace Obsidian.Entities
                 }
             }
 
-            return Task.FromResult(result);
+            return result;
         }
 
-        public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
+        public bool HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (await HasPermission(perm)) return true;
+                if (HasPermission(perm)) return true;
             }
+
             return false;
         }
 
-        public async Task<bool> HasAllPermissions(IEnumerable<string> permissions)
+        public bool HasAllPermissions(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (!await HasPermission(perm)) return false;
+                if (!HasPermission(perm)) return false;
             }
+
             return true;
         }
+
+        public override string ToString() => this.Username;
     }
 }
