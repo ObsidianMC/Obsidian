@@ -58,7 +58,7 @@ namespace Obsidian.Utilities
 
         public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
 
-        internal static bool IsLiving(this EntityType type) => nonLiving.Contains(type);
+        internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value

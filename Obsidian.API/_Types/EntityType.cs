@@ -71,6 +71,7 @@
         Rabbit,
         Ravager,
         Salmon,
+        Sand,
         Sheep,
         Shulker,
         ShulkerBullet,

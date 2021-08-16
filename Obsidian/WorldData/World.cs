@@ -493,15 +493,29 @@ namespace Obsidian.WorldData
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
 
             Entity entity;
-            if (type.IsLiving())
+            if (type.IsNonLiving())
             {
-                entity = new Entity
+                if (type is EntityType.FallingBlock)
                 {
-                    Type = type,
-                    Position = position,
-                    EntityId = this.TotalLoadedEntities() + 1,
-                    Server = this.Server
-                };
+                    entity = new FallingBlock()
+                    {
+                        Type = EntityType.FallingBlock,
+                        Position = position,
+                        EntityId = this.TotalLoadedEntities() + 1,
+                        Server = this.Server,
+                        BlockMaterial = Material.Sand
+                    };
+                }
+                else
+                {
+                    entity = new Entity
+                    {
+                        Type = type,
+                        Position = position,
+                        EntityId = this.TotalLoadedEntities() + 1,
+                        Server = this.Server
+                    };
+                }
 
                 if (type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
                 {
@@ -513,7 +527,7 @@ namespace Obsidian.WorldData
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
-                        Type = type,
+                        Type = entity.Type,
                         Position = position,
                         Pitch = 0,
                         Yaw = 0,
