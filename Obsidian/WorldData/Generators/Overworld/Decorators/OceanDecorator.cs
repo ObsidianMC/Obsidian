@@ -13,17 +13,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         protected bool hasSeaGrass, hasKelp, hasMagma = true;
 
-        protected bool IsSurface2 => noise.Decoration(pos.X + (chunk.X * 16) / 12.0, 9, pos.Z + (chunk.X * 16) / 12.0) > 0.666;
+        protected bool IsSurface2 => noise.Decoration(pos.X + (chunk.X * 16) / 12.0, 9, pos.Z + (chunk.Z * 16) / 12.0) > 0.666;
 
-        protected bool isSurface3 => noise.Decoration(pos.X + (chunk.X * 16) / 12.0, 90, pos.Z + (chunk.X * 16) / 12.0) < -0.666;
+        protected bool isSurface3 => noise.Decoration(pos.X + (chunk.X * 16) / 12.0, 90, pos.Z + (chunk.Z * 16) / 12.0) < -0.666;
 
-        protected bool IsGrass => noise.Decoration(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.X * 16)) > 0.4;
+        protected bool IsGrass => noise.Decoration(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.Z * 16)) > 0.4;
 
-        protected bool IsTallGrass => noise.Decoration(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.X * 16)) < -0.4;
+        protected bool IsTallGrass => noise.Decoration(pos.X + (chunk.X * 16), 900, pos.Z + (chunk.Z * 16)) < -0.4;
 
-        protected bool IsKelp => noise.Decoration(pos.X + (chunk.X * 16), -900, pos.Z + (chunk.X * 16)) > 0.75;
+        protected bool IsKelp => noise.Decoration(pos.X + (chunk.X * 16), -900, pos.Z + (chunk.Z * 16)) > 0.75;
 
-        protected bool IsMagma => noise.Decoration(pos.X + (chunk.X * 16) / 2.0, -90, pos.Z + (chunk.X * 16) / 2.0) > 0.85;
+        protected bool IsMagma => noise.Decoration(pos.X + (chunk.X * 16) / 2.0, -90, pos.Z + (chunk.Z * 16) / 2.0) > 0.85;
 
         public OceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {

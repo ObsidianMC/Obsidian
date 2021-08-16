@@ -198,15 +198,12 @@ namespace Obsidian.Entities
         public async Task LoadPermsAsync()
         {
             // Load a JSON file that contains all permissions
-            var server = (Server)this.Server;
-            var dir = Path.Combine($"Server-{server.Id}", "permissions");
-            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (File.Exists(file))
+            if (file.Exists)
             {
-                using var fs = new FileStream(file, FileMode.Open);
-                
+                using var fs = file.OpenRead();
+
                 this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
             }
         }
@@ -214,14 +211,9 @@ namespace Obsidian.Entities
         public async Task SavePermsAsync()
         {
             // Save permissions to JSON file
-            var dir = Path.Combine($"Server-{this.server.Id}", "permissions");
-            var user = this.server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            using var fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write);
+            using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             await this.PlayerPermissions.ToJsonAsync(fs);
         }
@@ -424,8 +416,6 @@ namespace Obsidian.Entities
             }
         }
 
-        public override string ToString() => this.Username;
-
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
             var list = new List<PlayerInfoAction>()
@@ -459,7 +449,7 @@ namespace Obsidian.Entities
             this.DisplayName = newDisplayName;
         }
 
-        public async Task<bool> GrantPermission(string permission)
+        public async Task<bool> GrantPermissionAsync(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
@@ -494,7 +484,7 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public async Task<bool> RevokePermission(string permission)
+        public async Task<bool> RevokePermissionAsync(string permission)
         {
             // trim and split permission string
 
@@ -529,17 +519,15 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public Task<bool> HasPermission(string permission)
+        public bool HasPermission(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
-
             // Set root node and whether we created a new permission (still false)
             var result = false;
             var parent = this.PlayerPermissions;
-
 
             foreach (var i in split)
             {
@@ -562,25 +550,29 @@ namespace Obsidian.Entities
                 }
             }
 
-            return Task.FromResult(result);
+            return result;
         }
 
-        public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
+        public bool HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (await HasPermission(perm)) return true;
+                if (HasPermission(perm)) return true;
             }
+
             return false;
         }
 
-        public async Task<bool> HasAllPermissions(IEnumerable<string> permissions)
+        public bool HasAllPermissions(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (!await HasPermission(perm)) return false;
+                if (!HasPermission(perm)) return false;
             }
+
             return true;
         }
+
+        public override string ToString() => this.Username;
     }
 }
