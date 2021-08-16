@@ -454,7 +454,7 @@ namespace Obsidian.Entities
         {
             var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
 
-            using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+            await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
 
             using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
 
@@ -473,9 +473,9 @@ namespace Obsidian.Entities
 
             writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
-            writer.WriteDouble("", this.Position.X);
-            writer.WriteDouble("", this.Position.Y);
-            writer.WriteDouble("", this.Position.Z);
+            writer.WriteDouble(this.Position.X);
+            writer.WriteDouble(this.Position.Y);
+            writer.WriteDouble(this.Position.Z);
 
             writer.EndList();
 
@@ -510,7 +510,10 @@ namespace Obsidian.Entities
             this.Health = compound.GetShort("Health");
             this.HurtTime = compound.GetShort("HurtTime");
             this.SleepTimer = compound.GetShort("SleepTimer");
-            this.Dimension = compound.GetInt("Dimension");
+
+            var dim = Registry.Dimensions.First(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
+            this.Dimension = dim.Key;
+
             this.FoodLevel = compound.GetInt("foodLevel");
             this.FoodTickTimer = compound.GetInt("foodTickTimer");
             this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
@@ -522,33 +525,16 @@ namespace Obsidian.Entities
             this.Score = compound.GetInt("XpP");
 
             float x = 0, y = 0, z = 0;
+
             if (compound.TryGetTag("Pos", out var tag))
             {
-                Console.WriteLine("Pos");
-                if (tag is NbtList list)
-                {
-                    var count = 0;
+                var list = tag as NbtList;
 
-                    foreach (var pos in list)
-                    {
-                        if (pos is NbtTag<double> doubleTag)
-                        {
-                            count++;
-                            switch (count)
-                            {
-                                case 1:
-                                    x = (float)doubleTag.Value;
-                                    break;
-                                case 2:
-                                    y = (float)doubleTag.Value;
-                                    break;
-                                case 3:
-                                    z = (float)doubleTag.Value;
-                                    break;
-                            }
-                        }
-                    }
-                }
+                var pos = list.Select(x => x as NbtTag<double>).ToList();
+
+                x = (float)pos[0].Value;
+                y = (float)pos[1].Value;
+                z = (float)pos[2].Value;
             }
 
             this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
