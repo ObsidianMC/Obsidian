@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -447,6 +448,96 @@ namespace Obsidian.Entities
             await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
 
             this.DisplayName = newDisplayName;
+        }
+
+        public async Task SaveAsync()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+
+            using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+
+            writer.WriteInt("DataVersion", 2724);
+            writer.WriteInt("playerGameType", (int)this.Gamemode);
+            writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
+            writer.WriteInt("Score", 0);
+            writer.WriteInt("SelectedItemSlot", this.CurrentSlot);
+            writer.WriteInt("foodLevel", this.FoodLevel);
+            writer.WriteInt("foodTickTimer", this.FoodTickTimer);
+            writer.WriteInt("XpLevel", this.XpLevel);
+            writer.WriteInt("XpTotal", this.XpTotal);
+
+            writer.WriteFloat("foodExhaustionLevel", this.FoodExhastionLevel);
+            writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
+
+            writer.WriteListStart("Pos", NbtTagType.Double, 3);
+
+            writer.WriteDouble(this.Position.X);
+            writer.WriteDouble(this.Position.Y);
+            writer.WriteDouble(this.Position.Z);
+
+            writer.EndList();
+
+            writer.WriteString("Dimension", "minecraft:overworld");
+
+            writer.EndCompound();
+
+            await writer.TryFinishAsync();
+        }
+
+        public void Load()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            if (!playerFile.Exists)
+            {
+                this.Position = this.World.Data.SpawnPosition;
+                return;
+            }
+
+            using var playerFileStream = playerFile.OpenRead();
+
+            var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+
+            var compound = reader.ReadNextTag() as NbtCompound;
+
+            this.OnGround = compound.GetBool("OnGround");
+            this.Sleeping = compound.GetBool("Sleeping");
+            this.Air = compound.GetShort("Air");
+            this.AttackTime = compound.GetShort("AttackTime");
+            this.DeathTime = compound.GetShort("DeathTime");
+            this.Health = compound.GetShort("Health");
+            this.HurtTime = compound.GetShort("HurtTime");
+            this.SleepTimer = compound.GetShort("SleepTimer");
+
+            var dim = Registry.Dimensions.First(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
+            this.Dimension = dim.Key;
+
+            this.FoodLevel = compound.GetInt("foodLevel");
+            this.FoodTickTimer = compound.GetInt("foodTickTimer");
+            this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
+            this.XpLevel = compound.GetInt("XpLevel");
+            this.XpTotal = compound.GetInt("XpTotal");
+            this.FallDistance = compound.GetFloat("FallDistance");
+            this.FoodExhastionLevel = compound.GetFloat("foodExhastionLevel");
+            this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
+            this.Score = compound.GetInt("XpP");
+
+            float x = 0, y = 0, z = 0;
+
+            if (compound.TryGetTag("Pos", out var tag))
+            {
+                var list = tag as NbtList;
+
+                var pos = list.Select(x => x as NbtTag<double>).ToList();
+
+                x = (float)pos[0].Value;
+                y = (float)pos[1].Value;
+                z = (float)pos[2].Value;
+            }
+
+            this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
         }
 
         public async Task<bool> GrantPermissionAsync(string permission)

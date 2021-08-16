@@ -30,7 +30,7 @@ namespace Obsidian.Nbt
             this.BaseStream = outstream;
 
             this.Write(NbtTagType.Compound);
-            this.WriteString(name);
+            this.WriteStringInternal(name);
 
             this.AddRootTag(new Node { Type = NbtTagType.Compound });
         }
@@ -41,7 +41,7 @@ namespace Obsidian.Nbt
             this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
 
             this.Write(NbtTagType.Compound);
-            this.WriteString(name);
+            this.WriteStringInternal(name);
 
             this.AddRootTag(new Node { Type = NbtTagType.Compound });
         }
@@ -70,7 +70,7 @@ namespace Obsidian.Nbt
             this.AddRootTag(new Node { Type = NbtTagType.Compound });
 
             this.Write(NbtTagType.Compound);
-            this.WriteString(name);
+            this.WriteStringInternal(name);
         }
 
         public void WriteListStart(string name, NbtTagType listType, int length)
@@ -83,9 +83,9 @@ namespace Obsidian.Nbt
             this.expectedListType = listType;
 
             this.Write(NbtTagType.List);
-            this.WriteString(name);
+            this.WriteStringInternal(name);
             this.Write(listType);
-            this.WriteInt(length);
+            this.WriteIntInternal(length);
         }
 
         public void EndList()
@@ -207,30 +207,36 @@ namespace Obsidian.Nbt
             if (array is NbtArray<int> intArray)
             {
                 this.Write(NbtTagType.IntArray);
-                this.WriteString(array.Name);
-                this.WriteInt(intArray.Count);
+                this.WriteStringInternal(array.Name);
+                this.WriteIntInternal(intArray.Count);
 
                 for (int i = 0; i < intArray.Count; i++)
-                    this.WriteInt(intArray[i]);
+                    this.WriteIntInternal(intArray[i]);
             }
             else if (array is NbtArray<long> longArray)
             {
                 this.Write(NbtTagType.LongArray);
-                this.WriteString(array.Name);
-                this.WriteInt(longArray.Count);
+                this.WriteStringInternal(array.Name);
+                this.WriteIntInternal(longArray.Count);
 
                 for (int i = 0; i < longArray.Count; i++)
-                    this.WriteLong(longArray[i]);
+                    this.WriteLongInternal(longArray[i]);
             }
             else if (array is NbtArray<byte> byteArray)
             {
                 this.Write(NbtTagType.ByteArray);
-                this.WriteString(array.Name);
-                this.WriteInt(byteArray.Count);
+                this.WriteStringInternal(array.Name);
+                this.WriteIntInternal(byteArray.Count);
 
                 for (int i = 0; i < byteArray.Count; i++)
                     this.BaseStream.Write(byteArray.GetArray());
             }
+        }
+
+        public void WriteString(string value)
+        {
+            this.Validate(null, NbtTagType.Double);
+            this.WriteStringInternal(value);
         }
 
         public void WriteString(string name, string value)
@@ -238,8 +244,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.String);
 
             this.Write(NbtTagType.String);
-            this.WriteString(name);
-            this.WriteString(value);
+            this.WriteStringInternal(name);
+            this.WriteStringInternal(value);
+        }
+
+        public void WriteByte(byte value)
+        {
+            this.Validate(null, NbtTagType.Byte);
+            this.WriteByteInternal(value);
         }
 
         public void WriteByte(string name, byte value)
@@ -247,8 +259,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Byte);
 
             this.Write(NbtTagType.Byte);
-            this.WriteString(name);
-            this.WriteByte(value);
+            this.WriteStringInternal(name);
+            this.WriteByteInternal(value);
+        }
+
+        public void WriteBool(bool value)
+        {
+            this.Validate(null, NbtTagType.Byte);
+            this.WriteByteInternal((byte)(value ? 1 : 0));
         }
 
         public void WriteBool(string name, bool value)
@@ -256,8 +274,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Byte);
 
             this.Write(NbtTagType.Byte);
-            this.WriteString(name);
-            this.WriteByte((byte)(value ? 1 : 0));
+            this.WriteStringInternal(name);
+            this.WriteByteInternal((byte)(value ? 1 : 0));
+        }
+
+        public void WriteShort(short value)
+        {
+            this.Validate(null, NbtTagType.Short);
+            this.WriteShortInternal(value);
         }
 
         public void WriteShort(string name, short value)
@@ -265,8 +289,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Short);
 
             this.Write(NbtTagType.Short);
-            this.WriteString(name);
-            this.WriteShort(value);
+            this.WriteStringInternal(name);
+            this.WriteShortInternal(value);
+        }
+
+        public void WriteInt(int value)
+        {
+            this.Validate(null, NbtTagType.Int);
+            this.WriteIntInternal(value);
         }
 
         public void WriteInt(string name, int value)
@@ -274,8 +304,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Int);
 
             this.Write(NbtTagType.Int);
-            this.WriteString(name);
-            this.WriteInt(value);
+            this.WriteStringInternal(name);
+            this.WriteIntInternal(value);
+        }
+
+        public void WriteLong(long value)
+        {
+            this.Validate(null, NbtTagType.Long);
+            this.WriteLongInternal(value);
         }
 
         public void WriteLong(string name, long value)
@@ -283,8 +319,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Long);
 
             this.Write(NbtTagType.Long);
-            this.WriteString(name);
-            this.WriteLong(value);
+            this.WriteStringInternal(name);
+            this.WriteLongInternal(value);
+        }
+
+        public void WriteFloat(float value)
+        {
+            this.Validate(null, NbtTagType.Float);
+            this.WriteFloatInternal(value);
         }
 
         public void WriteFloat(string name, float value)
@@ -292,8 +334,14 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Float);
 
             this.Write(NbtTagType.Float);
-            this.WriteString(name);
-            this.WriteFloat(value);
+            this.WriteStringInternal(name);
+            this.WriteFloatInternal(value);
+        }
+
+        public void WriteDouble(double value)
+        {
+            this.Validate(null, NbtTagType.Double);
+            this.WriteDoubleInternal(value);
         }
 
         public void WriteDouble(string name, double value)
@@ -301,17 +349,18 @@ namespace Obsidian.Nbt
             this.Validate(name, NbtTagType.Double);
 
             this.Write(NbtTagType.Double);
-            this.WriteString(name);
-            this.WriteDouble(value);
+            this.WriteStringInternal(name);
+
+            this.WriteDoubleInternal(value);
         }
 
         public void Validate(string name, NbtTagType type)
         {
-            if (string.IsNullOrEmpty(name) && this.RootType == NbtTagType.Compound)
-                throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
-
             if (this.RootType == NbtTagType.List)
             {
+                if (!string.IsNullOrWhiteSpace(name))
+                    throw new InvalidOperationException($"Use the Write{type}({type.ToString().ToLower()} value) method when writing to lists");
+
                 if (this.expectedListType != type)
                     throw new InvalidOperationException($"Expected list type: {this.expectedListType}. Got: {type}");
                 else if (!string.IsNullOrEmpty(name))
@@ -321,6 +370,8 @@ namespace Obsidian.Nbt
 
                 this.listIndex++;
             }
+            else if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException($"Tags inside a compound tag must have a name. Tag({type})");
         }
 
         public void TryFinish()
@@ -329,6 +380,14 @@ namespace Obsidian.Nbt
                 throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
 
             this.BaseStream.Flush();
+        }
+
+        public async Task TryFinishAsync()
+        {
+            if (this.rootNodes.Count > 0)
+                throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
+
+            await this.BaseStream.FlushAsync();
         }
 
         public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
