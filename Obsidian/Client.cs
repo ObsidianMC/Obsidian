@@ -315,7 +315,8 @@ namespace Obsidian
 
             this.State = ClientState.Play;
             this.Player.Health = 20f;
-            this.Player.Gamemode = Gamemode.Survival;
+
+            this.Player.Load();
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
@@ -376,8 +377,6 @@ namespace Obsidian
             await this.SendPlayerListDecoration();
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-
-            this.Player.Load();
 
             await this.LoadChunksAsync();
 
