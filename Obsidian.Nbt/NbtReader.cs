@@ -162,8 +162,6 @@ namespace Obsidian.Nbt
 
                     var length = this.ReadInt32();
 
-                    Console.WriteLine("Got list");
-
                     if (length < 0)
                         throw new InvalidOperationException("Got negative list length.");
 

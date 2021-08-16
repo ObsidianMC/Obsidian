@@ -652,6 +652,8 @@ namespace Obsidian
         {
             var player = e.Player as Player;
 
+            await player.SaveAsync();
+
             this.World.RemovePlayer(player);
 
             var destroy = new DestroyEntities

@@ -331,6 +331,14 @@ namespace Obsidian.Nbt
             this.BaseStream.Flush();
         }
 
+        public async Task TryFinishAsync()
+        {
+            if (this.rootNodes.Count > 0)
+                throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
+
+            await this.BaseStream.FlushAsync();
+        }
+
         public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
         public void Dispose() => this.BaseStream.Dispose();
 

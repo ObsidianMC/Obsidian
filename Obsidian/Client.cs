@@ -376,7 +376,8 @@ namespace Obsidian
             await this.SendPlayerListDecoration();
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-            this.Player.Position = this.Server.World.Data.SpawnPosition;
+
+            this.Player.Load();
 
             await this.LoadChunksAsync();
 
