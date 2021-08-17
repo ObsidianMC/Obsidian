@@ -204,7 +204,7 @@ namespace Obsidian.WorldData
 
                         var block = new Block(stateId);
 
-                        palette.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
+                        palette.Add(new NbtCompound()//TODO redstone etc... has a lit metadata added when creating the palette
                             {
                                 new NbtTag<string>("Name", block.UnlocalizedName),
                                 new NbtTag<int>("Id", block.StateId)
@@ -221,7 +221,7 @@ namespace Obsidian.WorldData
                 sectionsCompound.Add(sec);
             }
 
-            var chunkCompound = new NbtCompound()
+            var chunkCompound = new NbtCompound("something")
                 {
                     new NbtTag<int>("xPos", chunk.X),
                     new NbtTag<int>("zPos", chunk.Z),
