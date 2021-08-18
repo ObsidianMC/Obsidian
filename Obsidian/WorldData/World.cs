@@ -5,6 +5,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -456,6 +457,35 @@ namespace Obsidian.WorldData
             await Server.BroadcastAsync("Save complete.");
         }
 
+        public IEntity SpawnFallingBlock(VectorF position, Material mat)
+        {
+            FallingBlock entity = new()
+            {
+                Type = EntityType.FallingBlock,
+                Position = position,
+                EntityId = TotalLoadedEntities() + 1,
+                Server = Server,
+                BlockMaterial = mat,
+                Velocity = new Velocity(0, -1, 0)
+            };
+
+            Server.BroadcastPacketWithoutQueue(new SpawnEntity
+            {
+                EntityId = entity.EntityId,
+                Uuid = entity.Uuid,
+                Type = entity.Type,
+                Position = entity.Position,
+                Pitch = 0,
+                Yaw = 0,
+                Data = new Block(mat).StateId,
+                Velocity = entity.Velocity // Ignored, but we'll set it anyway.
+            });
+
+            TryAddEntity(entity);
+
+            return entity;
+        }
+
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
         {
             // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
@@ -467,27 +497,13 @@ namespace Obsidian.WorldData
             Entity entity;
             if (type.IsNonLiving())
             {
-                if (type is EntityType.FallingBlock)
+                entity = new Entity
                 {
-                    entity = new FallingBlock()
-                    {
-                        Type = EntityType.FallingBlock,
-                        Position = position,
-                        EntityId = this.TotalLoadedEntities() + 1,
-                        Server = this.Server,
-                        BlockMaterial = Material.Sand
-                    };
-                }
-                else
-                {
-                    entity = new Entity
-                    {
-                        Type = type,
-                        Position = position,
-                        EntityId = this.TotalLoadedEntities() + 1,
-                        Server = this.Server
-                    };
-                }
+                    Type = type,
+                    Position = position,
+                    EntityId = this.TotalLoadedEntities() + 1,
+                    Server = this.Server
+                };
 
                 if (type == EntityType.ExperienceOrb || type == EntityType.ExperienceBottle)
                 {
@@ -495,7 +511,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    await this.Server.BroadcastPacketAsync(new SpawnEntity
+                    this.Server.BroadcastPacketWithoutQueue(new SpawnEntity
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
