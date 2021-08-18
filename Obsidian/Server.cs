@@ -332,13 +332,22 @@ namespace Obsidian
             }
         }
 
+        internal List<Player> PlayersInRange(Vector worldPosition)
+        {
+            var chunkCoord = (worldPosition.X.ToChunkCoord(), worldPosition.Z.ToChunkCoord());
+            return World.Players.Values.Where(p => p.client.LoadedChunks.Contains(chunkCoord)).ToList();
+        }
+
+        internal async Task BroadcastBlockPlacementToPlayerAsync(Player player, Block block, Vector location)
+        {
+            await player.client.QueuePacketAsync(new BlockChange(location, block.BaseId));
+        }
+
         internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
-                var client = other.client;
-
-                await client.QueuePacketAsync(new BlockChange(location, block.Id));
+                await BroadcastBlockPlacementToPlayerAsync(other, block, location);
             }
         }
 

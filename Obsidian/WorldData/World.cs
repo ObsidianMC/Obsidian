@@ -465,8 +465,7 @@ namespace Obsidian.WorldData
                 Position = position,
                 EntityId = TotalLoadedEntities() + 1,
                 Server = Server,
-                BlockMaterial = mat,
-                Velocity = new Velocity(0, -1, 0)
+                BlockMaterial = mat
             };
 
             Server.BroadcastPacketWithoutQueue(new SpawnEntity
@@ -477,8 +476,7 @@ namespace Obsidian.WorldData
                 Position = entity.Position,
                 Pitch = 0,
                 Yaw = 0,
-                Data = new Block(mat).StateId,
-                Velocity = entity.Velocity // Ignored, but we'll set it anyway.
+                Data = new Block(mat).StateId
             });
 
             TryAddEntity(entity);
@@ -493,6 +491,11 @@ namespace Obsidian.WorldData
             // LlamaSpit, Minecart, ChestMinecart, CommandBlockMinecart, FurnaceMinecart, HopperMinecart
             // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
+
+            if (type == EntityType.FallingBlock)
+            {
+                return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            }
 
             Entity entity;
             if (type.IsNonLiving())
