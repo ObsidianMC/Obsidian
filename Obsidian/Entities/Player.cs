@@ -520,7 +520,7 @@ namespace Obsidian.Entities
             this.XpLevel = compound.GetInt("XpLevel");
             this.XpTotal = compound.GetInt("XpTotal");
             this.FallDistance = compound.GetFloat("FallDistance");
-            this.FoodExhaustionLevel = compound.GetFloat("foodExhastionLevel");
+            this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
             this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
             this.Score = compound.GetInt("XpP");
 
