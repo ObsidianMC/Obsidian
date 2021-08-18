@@ -46,21 +46,6 @@ namespace Obsidian.Entities
             if (convertToBlock) { await ConvertToBlock(upcomingBlockPos + (0, 1, 0)); }
         }
 
-        public override async Task WriteAsync(MinecraftStream stream)
-        {
-            await base.WriteAsync(stream);
-
-            //await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, SpawnPosition);
-        }
-
-        public override void Write(MinecraftStream stream)
-        {
-            base.Write(stream);
-
-/*            stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
-            stream.WriteVarInt(SpawnPosition);*/
-        }
-
         private async Task ConvertToBlock(Vector loc)
         {
             var block = new Block(BlockMaterial);

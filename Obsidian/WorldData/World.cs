@@ -514,7 +514,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    this.Server.BroadcastPacketWithoutQueue(new SpawnEntity
+                    await this.Server.BroadcastPacketAsync(new SpawnEntity
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
