@@ -69,7 +69,7 @@ namespace Obsidian.Entities
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
+        public float FoodExhaustionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
         public int Score { get; set; } = 0; // idfk, xp points?
 
@@ -468,7 +468,7 @@ namespace Obsidian.Entities
             writer.WriteInt("XpLevel", this.XpLevel);
             writer.WriteInt("XpTotal", this.XpTotal);
 
-            writer.WriteFloat("foodExhaustionLevel", this.FoodExhastionLevel);
+            writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
             writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
             writer.WriteListStart("Pos", NbtTagType.Double, 3);
@@ -520,7 +520,7 @@ namespace Obsidian.Entities
             this.XpLevel = compound.GetInt("XpLevel");
             this.XpTotal = compound.GetInt("XpTotal");
             this.FallDistance = compound.GetFloat("FallDistance");
-            this.FoodExhastionLevel = compound.GetFloat("foodExhastionLevel");
+            this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
             this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
             this.Score = compound.GetInt("XpP");
 

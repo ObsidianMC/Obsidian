@@ -36,7 +36,7 @@ namespace Obsidian.API
 
         public float AdditionalHearts { get; set; }
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; }
+        public float FoodExhaustionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
         public Task TeleportAsync(VectorF position);
