@@ -130,13 +130,8 @@ namespace Obsidian.WorldData
         internal void Cancel() => this.cancel = true;
 
         #region NBT Ops
-        public static Chunk GetChunkFromNbt(NbtCompound compound)
+        public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
         {
-            if (!compound.TryGetTag("Level", out var tag))
-                throw new InvalidOperationException("Chunk compound incorrectly serialized");
-
-            var chunkCompound = tag as NbtCompound;
-
             int x = chunkCompound.GetInt("xPos");
             int z = chunkCompound.GetInt("zPos");
 
