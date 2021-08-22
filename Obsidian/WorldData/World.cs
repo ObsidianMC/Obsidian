@@ -425,23 +425,18 @@ namespace Obsidian.WorldData
                     return true;
                 }
             }
+
             return false;
         }
 
         internal void BlockUpdateNeighbors(Vector worldLoc)
         {
-            var north = worldLoc + Vector.Forwards;
-            ScheduleBlockUpdate(north);
-            var south = worldLoc + Vector.Backwards;
-            ScheduleBlockUpdate(south);
-            var west = worldLoc + Vector.Left;
-            ScheduleBlockUpdate(west);
-            var east = worldLoc + Vector.Right;
-            ScheduleBlockUpdate(east);
-            var up = worldLoc + Vector.Up;
-            ScheduleBlockUpdate(up);
-            var down = worldLoc + Vector.Down;
-            ScheduleBlockUpdate(down);
+            ScheduleBlockUpdate(worldLoc + Vector.Forwards);
+            ScheduleBlockUpdate(worldLoc + Vector.Backwards);
+            ScheduleBlockUpdate(worldLoc + Vector.Left);
+            ScheduleBlockUpdate(worldLoc + Vector.Right);
+            ScheduleBlockUpdate(worldLoc + Vector.Up);
+            ScheduleBlockUpdate(worldLoc + Vector.Down);
         }
 
         public async Task ManageChunksAsync()

@@ -1,6 +1,6 @@
 ﻿using Obsidian.API;
-using Obsidian.Net;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
@@ -18,6 +18,8 @@ namespace Obsidian.Entities
         private readonly VectorF gravity = new VectorF(0F, -0.02F, 0F);
         
         private readonly float windResFactor = 0.98F;
+
+        private HashSet<Vector> checkedBlocks = new();
 
         public FallingBlock() : base()
         {
@@ -41,16 +43,30 @@ namespace Obsidian.Entities
                 (int)Math.Floor(Position.X),
                 (int)Math.Floor(Position.Y - 1),
                 (int)Math.Floor(Position.Z));
+            
+            if (!checkedBlocks.Contains(upcomingBlockPos))
+            {
+                checkedBlocks.Add(upcomingBlockPos);
+                var upcomingBlock = server.World.GetBlock(upcomingBlockPos);
 
-            bool convertToBlock = !server.World.GetBlock(upcomingBlockPos)?.IsAir ?? false;
-            if (convertToBlock) { await ConvertToBlock(upcomingBlockPos + (0, 1, 0)); }
+                if (upcomingBlock is Block block && 
+                    !block.IsAir &&
+                    !block.IsFluid &&
+                    block.Material != Material.Grass &&
+                    block.Material != Material.DeadBush &&
+                    block.Material != Material.Snow
+                    )
+                {
+                    await ConvertToBlock(upcomingBlockPos + (0, 1, 0));
+                }
+            }
         }
 
         private async Task ConvertToBlock(Vector loc)
         {
             var block = new Block(BlockMaterial);
             server.World.SetBlock(loc, block);
-            //
+
             foreach (var p in server.PlayersInRange(loc))
             {
                 await server.BroadcastBlockPlacementToPlayerAsync(p, block, loc);

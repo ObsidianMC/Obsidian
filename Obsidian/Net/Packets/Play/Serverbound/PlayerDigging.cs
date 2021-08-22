@@ -30,7 +30,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             if (Status == DiggingStatus.FinishedDigging)
             {
-                server.World.ScheduleBlockUpdate(Position);
+                server.World.BlockUpdateNeighbors(Position);
             }
         }
     }
