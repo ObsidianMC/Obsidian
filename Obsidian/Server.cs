@@ -490,7 +490,6 @@ namespace Obsidian
                             this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
                             this.World.SetBlock(digging.Position, Block.Air);
-                            
                         }
                     }
                     break;
