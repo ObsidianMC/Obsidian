@@ -398,6 +398,52 @@ namespace Obsidian.WorldData
                 await r.FlushAsync();
         }
 
+        public void ScheduleBlockUpdate(Vector worldLoc)
+        {
+            var r = GetRegionForChunk(worldLoc.X.ToChunkCoord(), worldLoc.Z.ToChunkCoord());
+            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="worldLoc"></param>
+        /// <returns>Whether to update neighbor blocks.</returns>
+        internal async Task<bool> HandleBlockUpdate(Vector worldLoc)
+        {
+            if (GetBlock(worldLoc) is Block block && Block.GravityAffected.Contains(block.Material)) // Todo: this better
+            {
+                if (GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
+                {
+                    await Task.Delay(40);
+                    SetBlock(worldLoc, new Block(Material.Air));
+                    foreach(var p in Server.PlayersInRange(worldLoc))
+                    {
+                        await Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
+                    }
+                    SpawnFallingBlock(worldLoc, block.Material);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal void BlockUpdateNeighbors(Vector worldLoc)
+        {
+            var north = worldLoc + Vector.Forwards;
+            ScheduleBlockUpdate(north);
+            var south = worldLoc + Vector.Backwards;
+            ScheduleBlockUpdate(south);
+            var west = worldLoc + Vector.Left;
+            ScheduleBlockUpdate(west);
+            var east = worldLoc + Vector.Right;
+            ScheduleBlockUpdate(east);
+            var up = worldLoc + Vector.Up;
+            ScheduleBlockUpdate(up);
+            var down = worldLoc + Vector.Down;
+            ScheduleBlockUpdate(down);
+        }
+
         public async Task ManageChunksAsync()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
@@ -459,6 +505,9 @@ namespace Obsidian.WorldData
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)
         {
+            // offset position so it spawns in the right spot
+            position.X += 0.5f;
+            position.Z += 0.5f;
             FallingBlock entity = new()
             {
                 Type = EntityType.FallingBlock,

@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
@@ -19,7 +20,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1B;
 
-        public ValueTask HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
             server.BroadcastPlayerDig(new PlayerDiggingStore
             {
@@ -27,7 +28,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 Packet = this
             });
 
-            return ValueTask.CompletedTask;
+            if (Status == DiggingStatus.FinishedDigging)
+            {
+                server.World.ScheduleBlockUpdate(Position);
+            }
         }
     }
 

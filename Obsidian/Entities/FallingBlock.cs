@@ -15,7 +15,7 @@ namespace Obsidian.Entities
 
         private VectorF DeltaPosition { get; set; }
 
-        private readonly VectorF gravity = new VectorF(0F, -0.004F, 0F);
+        private readonly VectorF gravity = new VectorF(0F, -0.02F, 0F);
         
         private readonly float windResFactor = 0.98F;
 
@@ -38,9 +38,9 @@ namespace Obsidian.Entities
 
             // Check below to see if we're about to hit a solid block.
             var upcomingBlockPos = new Vector(
-                (int)Math.Round(Position.X),
-                (int)Math.Round(Position.Y) - 1,
-                (int)Math.Round(Position.Z));
+                (int)Math.Floor(Position.X),
+                (int)Math.Floor(Position.Y - 1),
+                (int)Math.Floor(Position.Z));
 
             bool convertToBlock = !server.World.GetBlock(upcomingBlockPos)?.IsAir ?? false;
             if (convertToBlock) { await ConvertToBlock(upcomingBlockPos + (0, 1, 0)); }
@@ -50,7 +50,7 @@ namespace Obsidian.Entities
         {
             var block = new Block(BlockMaterial);
             server.World.SetBlock(loc, block);
-
+            //
             foreach (var p in server.PlayersInRange(loc))
             {
                 await server.BroadcastBlockPlacementToPlayerAsync(p, block, loc);
