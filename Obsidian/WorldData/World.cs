@@ -5,6 +5,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -397,6 +398,47 @@ namespace Obsidian.WorldData
                 await r.FlushAsync();
         }
 
+        public void ScheduleBlockUpdate(Vector worldLoc)
+        {
+            var r = GetRegionForChunk(worldLoc.X.ToChunkCoord(), worldLoc.Z.ToChunkCoord());
+            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="worldLoc"></param>
+        /// <returns>Whether to update neighbor blocks.</returns>
+        internal async Task<bool> HandleBlockUpdate(Vector worldLoc)
+        {
+            if (GetBlock(worldLoc) is Block block && Block.GravityAffected.Contains(block.Material)) // Todo: this better
+            {
+                if (GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
+                {
+                    await Task.Delay(40);
+                    SetBlock(worldLoc, new Block(Material.Air));
+                    foreach(var p in Server.PlayersInRange(worldLoc))
+                    {
+                        await Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
+                    }
+                    SpawnFallingBlock(worldLoc, block.Material);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal void BlockUpdateNeighbors(Vector worldLoc)
+        {
+            ScheduleBlockUpdate(worldLoc + Vector.Forwards);
+            ScheduleBlockUpdate(worldLoc + Vector.Backwards);
+            ScheduleBlockUpdate(worldLoc + Vector.Left);
+            ScheduleBlockUpdate(worldLoc + Vector.Right);
+            ScheduleBlockUpdate(worldLoc + Vector.Up);
+            ScheduleBlockUpdate(worldLoc + Vector.Down);
+        }
+
         public async Task ManageChunksAsync()
         {
             // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
@@ -456,6 +498,36 @@ namespace Obsidian.WorldData
             await Server.BroadcastAsync("Save complete.");
         }
 
+        public IEntity SpawnFallingBlock(VectorF position, Material mat)
+        {
+            // offset position so it spawns in the right spot
+            position.X += 0.5f;
+            position.Z += 0.5f;
+            FallingBlock entity = new()
+            {
+                Type = EntityType.FallingBlock,
+                Position = position,
+                EntityId = TotalLoadedEntities() + 1,
+                Server = Server,
+                BlockMaterial = mat
+            };
+
+            Server.BroadcastPacketWithoutQueue(new SpawnEntity
+            {
+                EntityId = entity.EntityId,
+                Uuid = entity.Uuid,
+                Type = entity.Type,
+                Position = entity.Position,
+                Pitch = 0,
+                Yaw = 0,
+                Data = new Block(mat).StateId
+            });
+
+            TryAddEntity(entity);
+
+            return entity;
+        }
+
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
         {
             // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
@@ -464,8 +536,13 @@ namespace Obsidian.WorldData
             // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
 
+            if (type == EntityType.FallingBlock)
+            {
+                return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            }
+
             Entity entity;
-            if (type.IsLiving())
+            if (type.IsNonLiving())
             {
                 entity = new Entity
                 {
@@ -485,7 +562,7 @@ namespace Obsidian.WorldData
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
-                        Type = type,
+                        Type = entity.Type,
                         Position = position,
                         Pitch = 0,
                         Yaw = 0,

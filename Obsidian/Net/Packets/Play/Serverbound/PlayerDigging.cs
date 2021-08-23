@@ -27,6 +27,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 Packet = this
             });
 
+            if (Status == DiggingStatus.FinishedDigging)
+            {
+                server.World.BlockUpdateNeighbors(Position);
+            }
+
             return ValueTask.CompletedTask;
         }
     }

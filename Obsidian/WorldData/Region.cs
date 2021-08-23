@@ -34,6 +34,9 @@ namespace Obsidian.WorldData
 
         private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
 
+        internal ConcurrentBag<BlockUpdate> BlockUpdates { get; set; } = new();
+        private ConcurrentBag<BlockUpdate> NeighborUpdates { get; set; } = new();
+
         private readonly RegionFile regionFile;
 
         internal Region(int x, int z, string worldRegionsPath)
@@ -123,8 +126,22 @@ namespace Obsidian.WorldData
                 await Task.Delay(20, cts);
 
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+                while (!NeighborUpdates.IsEmpty)
+                {
+                    if (NeighborUpdates.TryTake(out var bu))
+                    {
+                        bu.world.BlockUpdateNeighbors(bu.position);
+                    }
+                }
+                while (!BlockUpdates.IsEmpty)
+                {
+                    if (BlockUpdates.TryTake(out var bu))
+                    {
+                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu.position);
+                        if (updateNeighbor) { NeighborUpdates.Add(bu); }
+                    }
+                }
             }
-            await regionFile.FlushToDiskAsync();
         }
 
         internal void Cancel() => this.cancel = true;

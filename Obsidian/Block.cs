@@ -1,6 +1,8 @@
 ﻿using Obsidian.API;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Obsidian
@@ -26,6 +28,33 @@ namespace Obsidian
 
         private readonly short baseId;
         private readonly short state;
+
+        internal static readonly List<Material> GravityAffected = new()
+        {
+            Material.Anvil,
+            Material.ChippedAnvil,
+            Material.DamagedAnvil,
+            Material.WhiteConcretePowder,
+            Material.OrangeConcretePowder,
+            Material.MagentaConcretePowder,
+            Material.LightBlueConcretePowder,
+            Material.YellowConcretePowder,
+            Material.LimeConcretePowder,
+            Material.PinkConcretePowder,
+            Material.GrayConcretePowder,
+            Material.LightGrayConcretePowder,
+            Material.CyanConcretePowder,
+            Material.PurpleConcretePowder,
+            Material.BlueConcretePowder,
+            Material.BrownConcretePowder,
+            Material.GreenConcretePowder,
+            Material.RedConcretePowder,
+            Material.BlackConcretePowder,
+            Material.DragonEgg,
+            Material.RedSand,
+            Material.Sand,
+            Material.Scaffolding
+        };
 
         public Block(int stateId) : this((short)stateId)
         {
@@ -111,6 +140,18 @@ namespace Obsidian
                 Registry.NumericToBase[(int)Material.BlastFurnace],
                 Registry.NumericToBase[(int)Material.Grindstone],
             };
+        }
+    }
+
+    internal struct BlockUpdate
+    {
+        internal readonly World world;
+        internal readonly Vector position;
+
+        public BlockUpdate(World w, Vector pos)
+        {
+            world = w;
+            position = pos;
         }
     }
 }

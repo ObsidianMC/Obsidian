@@ -344,7 +344,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             // TODO calculate the block state
             server.World.SetBlock(position, block);
-
+            server.World.ScheduleBlockUpdate(position);
             await server.BroadcastBlockPlacementAsync(player, block, position);
         }
     }
