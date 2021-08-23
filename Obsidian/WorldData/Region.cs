@@ -45,7 +45,7 @@ namespace Obsidian.WorldData
             this.Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
-            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mcr");
+            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
             regionFile = new RegionFile(filePath, cubicRegionSize);
 
         }
@@ -108,9 +108,13 @@ namespace Obsidian.WorldData
         {
             var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
             NbtCompound chunkNbt = GetNbtFromChunk(chunk);
+
             using MemoryStream strm = new();
             using NbtWriter writer = new(strm, NbtCompression.GZip);
+
             writer.WriteTag(chunkNbt);
+            writer.WriteInt("DataVersion", 2724);//HArdcoded version try to get data version through minecraft data and use data correctly
+
             writer.TryFinish();
             regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
         }
@@ -153,12 +157,12 @@ namespace Obsidian.WorldData
                 isGenerated = true
             };
 
-            foreach (var secCompound in chunkCompound["Sections"] as NbtList)
+            foreach (var child in chunkCompound["Sections"] as NbtList)
             {
-                var compound = secCompound as NbtCompound;
-                var secY = (int)compound.GetByte("Y");
-                var states = compound["BlockStates"] as NbtArray<long>;//TODO
-                var palettes = compound["Palette"] as NbtList;
+                var sectionCompound = child as NbtCompound;
+                var secY = (int)sectionCompound.GetByte("Y");
+                var states = sectionCompound["BlockStates"] as NbtArray<long>;//TODO
+                var palettes = sectionCompound["Palette"] as NbtList;
 
                 chunk.Sections[secY].BlockStorage.Storage = states.GetArray();
 
@@ -180,27 +184,6 @@ namespace Obsidian.WorldData
             }
 
             return chunk;
-        }
-
-        public NbtCompound GetNbt()
-        {
-            // var entitiesCompound = new NbtList("Entities"); //TODO: this
-
-            var chunksCompound = new NbtList(NbtTagType.Compound, "Chunks");
-            foreach (var chunk in LoadedChunks)
-            {
-                var chunkNbt = GetNbtFromChunk(chunk);
-                chunksCompound.Add(chunkNbt);
-            };
-
-            var regionCompound = new NbtCompound("Data")
-            {
-                new NbtTag<int>("xPos", this.X),
-                new NbtTag<int>("zPos", this.Z),
-                chunksCompound
-            };
-
-            return regionCompound;
         }
 
         public static NbtCompound GetNbtFromChunk(Chunk chunk)
@@ -238,7 +221,7 @@ namespace Obsidian.WorldData
                 sectionsCompound.Add(sec);
             }
 
-            var chunkCompound = new NbtCompound("something")
+            var chunkCompound = new NbtCompound($"Level")
                 {
                     new NbtTag<int>("xPos", chunk.X),
                     new NbtTag<int>("zPos", chunk.Z),

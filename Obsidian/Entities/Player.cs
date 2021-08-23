@@ -24,6 +24,9 @@ namespace Obsidian.Entities
 
         internal HashSet<int> VisiblePlayers = new();
 
+        //TODO: better name??
+        internal short inventorySlot = 36;
+
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
@@ -56,7 +59,17 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; } = 36;
+
+        public short CurrentSlot
+        {
+            get => (short)(this.inventorySlot - 36);
+            internal set {
+                if (value < 0 || value > 8)
+                    throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
+
+                this.inventorySlot = (short)(value + 36);
+            }
+        }
 
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
@@ -69,7 +82,7 @@ namespace Obsidian.Entities
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
+        public float FoodExhaustionLevel { get; set; } // not a type, it's in docs like this
         public float FoodSaturationLevel { get; set; }
         public int Score { get; set; } = 0; // idfk, xp points?
 
@@ -97,6 +110,7 @@ namespace Obsidian.Entities
             this.EntityId = client.id;
             this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
             {
+                Id = 0,
                 Owner = uuid
             };
             this.Server = client.Server;
@@ -194,7 +208,7 @@ namespace Obsidian.Entities
                 await this.client.QueuePacketAsync(scorePacket);
         }
 
-        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
 
         public async Task LoadPermsAsync()
         {
@@ -462,13 +476,13 @@ namespace Obsidian.Entities
             writer.WriteInt("playerGameType", (int)this.Gamemode);
             writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
             writer.WriteInt("Score", 0);
-            writer.WriteInt("SelectedItemSlot", this.CurrentSlot);
+            writer.WriteInt("SelectedItemSlot", this.inventorySlot);
             writer.WriteInt("foodLevel", this.FoodLevel);
             writer.WriteInt("foodTickTimer", this.FoodTickTimer);
             writer.WriteInt("XpLevel", this.XpLevel);
             writer.WriteInt("XpTotal", this.XpTotal);
 
-            writer.WriteFloat("foodExhaustionLevel", this.FoodExhastionLevel);
+            writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
             writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
             writer.WriteListStart("Pos", NbtTagType.Double, 3);
@@ -476,6 +490,44 @@ namespace Obsidian.Entities
             writer.WriteDouble(this.Position.X);
             writer.WriteDouble(this.Position.Y);
             writer.WriteDouble(this.Position.Z);
+
+            writer.EndList();
+
+            var items =  this.Inventory.Items.Select((item, slot) => (item, slot));
+
+            var nonNullItems = items.Where(x => x.item != null);
+
+            writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
+
+            if(nonNullItems.Count() > 0)
+            {
+                foreach(var (item, slot) in items)
+                {
+                    if (item is null)
+                        continue;
+
+                    writer.WriteCompoundStart();
+
+                    writer.WriteByte("Count", (byte)item.Count);
+                    writer.WriteByte("Slot", (byte)slot);
+
+                    writer.WriteString("id", item.GetItem().UnlocalizedName);
+
+                    writer.WriteCompoundStart("tag");
+
+                    writer.WriteInt("Damage", item.ItemMeta.Durability);
+                    writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+
+                    //TODO: item attributes
+
+                    writer.EndCompound();
+                    writer.EndCompound();
+                }
+            }
+            else
+            {
+                writer.Write(NbtTagType.End);
+            }
 
             writer.EndList();
 
@@ -520,15 +572,15 @@ namespace Obsidian.Entities
             this.XpLevel = compound.GetInt("XpLevel");
             this.XpTotal = compound.GetInt("XpTotal");
             this.FallDistance = compound.GetFloat("FallDistance");
-            this.FoodExhastionLevel = compound.GetFloat("foodExhastionLevel");
+            this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
             this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
             this.Score = compound.GetInt("XpP");
 
             float x = 0, y = 0, z = 0;
 
-            if (compound.TryGetTag("Pos", out var tag))
+            if (compound.TryGetTag("Pos", out var posTag))
             {
-                var list = tag as NbtList;
+                var list = posTag as NbtList;
 
                 var pos = list.Select(x => x as NbtTag<double>).ToList();
 
@@ -538,6 +590,33 @@ namespace Obsidian.Entities
             }
 
             this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
+
+            if (compound.TryGetTag("Inventory", out var rawTag))
+            {
+                var inventory = rawTag as NbtList;
+
+                foreach (var rawItemTag in inventory)
+                {
+                    if (rawItemTag.Type == NbtTagType.End)
+                        break;
+
+                    var itemCompound = rawItemTag as NbtCompound;
+
+                    var slot = itemCompound.GetByte("Slot");
+
+                    var itemMetaBuilder = new ItemMetaBuilder()
+                        .WithDurability(itemCompound.GetInt("Damage"))
+                        .IsUnbreakable(itemCompound.GetBool("Unbreakable"))
+                        .WithSlot(slot);
+
+                    var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                    item.Count = itemCompound.GetByte("Count");
+
+                    this.Inventory.SetItem(slot, item);
+
+                    Console.WriteLine($"Set slot({slot}) to {item.Type}");
+                }
+            }
         }
 
         public async Task<bool> GrantPermissionAsync(string permission)

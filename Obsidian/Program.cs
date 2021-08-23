@@ -58,18 +58,21 @@ namespace Obsidian
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
             }
 
-            if (File.Exists(globalConfigFile))
+            var globalConfigFile = new FileInfo(Program.globalConfigFile);
+
+            if (globalConfigFile.Exists)
             {
-                using var fs = new FileStream(globalConfigFile, FileMode.Open);
-                Globals.Config = await JsonSerializer.DeserializeAsync<GlobalConfig>(fs);
+                using var fs = globalConfigFile.OpenRead();
+               
+                Globals.Config = await fs.FromJsonAsync<GlobalConfig>();
             }
             else
             {
                 Globals.Config = new GlobalConfig();
 
-                using var fs = new FileStream(globalConfigFile, FileMode.CreateNew);
+                using var fs = globalConfigFile.Create();
 
-                await JsonSerializer.SerializeAsync(fs, Globals.Config, Globals.JsonOptions);
+                await Globals.Config.ToJsonAsync(fs);
 
                 Console.WriteLine("Created new global configuration file");
             }
@@ -83,9 +86,11 @@ namespace Obsidian
                 string configPath = Path.Combine(serverDir, "config.json");
                 Config config;
 
-                if (File.Exists(configPath))
+                var configFile = new FileInfo(configPath);
+
+                if (configFile.Exists)
                 {
-                    using var fs = new FileStream(configPath, FileMode.Open, FileAccess.Read);
+                    using var fs = configFile.OpenRead();
 
                     config = await fs.FromJsonAsync<Config>();
                 }
@@ -93,7 +98,7 @@ namespace Obsidian
                 {
                     config = new Config();
 
-                    using var fs = new FileStream(configPath, FileMode.CreateNew);
+                    using var fs = configFile.Create();
 
                     await config.ToJsonAsync(fs);
 

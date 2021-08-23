@@ -33,7 +33,7 @@ namespace Obsidian
     public class Client : IDisposable
     {
         public event Action<Client> Disconnected;
-        
+
         private byte[] randomToken;
         private byte[] sharedKey;
 
@@ -395,6 +395,9 @@ namespace Obsidian
                 Flags = PositionFlags.None,
                 TeleportId = 0
             });
+
+            //Initialize inventory
+            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
         }
 
         #region Packet sending

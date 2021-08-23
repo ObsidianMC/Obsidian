@@ -23,7 +23,7 @@ namespace Obsidian.API
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; }
 
         public int Ping { get; }
         public int Dimension { get; set; }
@@ -36,7 +36,7 @@ namespace Obsidian.API
 
         public float AdditionalHearts { get; set; }
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; }
+        public float FoodExhaustionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
         public Task TeleportAsync(VectorF position);
