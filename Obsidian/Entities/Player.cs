@@ -64,7 +64,7 @@ namespace Obsidian.Entities
         {
             get => (short)(this.inventorySlot - 36);
             internal set {
-                if (value < 0 || value > 8 )
+                if (value < 0 || value > 8)
                     throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
 
                 this.inventorySlot = (short)(value + 36);
@@ -110,6 +110,7 @@ namespace Obsidian.Entities
             this.EntityId = client.id;
             this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
             {
+                Id = 0,
                 Owner = uuid
             };
             this.Server = client.Server;
@@ -492,6 +493,42 @@ namespace Obsidian.Entities
 
             writer.EndList();
 
+            var items =  this.Inventory.Items.Select((item, slot) => (item, slot));
+
+            writer.WriteListStart("Inventory", NbtTagType.Compound, items.Where(x => x.item != null).Count());
+
+            if(items.Count() > 0)
+            {
+                foreach(var (item, slot) in items)
+                {
+                    if (item is null)
+                        continue;
+
+                    writer.WriteCompoundStart();
+
+                    writer.WriteByte("Count", (byte)item.Count);
+                    writer.WriteByte("Slot", (byte)slot);
+
+                    writer.WriteString("id", item.GetItem().UnlocalizedName);
+
+                    writer.WriteCompoundStart("tag");
+
+                    writer.WriteInt("Damage", item.ItemMeta.Durability);
+                    writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+
+                    //TODO: item attributes
+
+                    writer.EndCompound();
+                    writer.EndCompound();
+                }
+            }
+            else
+            {
+                writer.Write(NbtTagType.End);
+            }
+
+            writer.EndList();
+
             writer.WriteString("Dimension", "minecraft:overworld");
 
             writer.EndCompound();
@@ -539,9 +576,9 @@ namespace Obsidian.Entities
 
             float x = 0, y = 0, z = 0;
 
-            if (compound.TryGetTag("Pos", out var tag))
+            if (compound.TryGetTag("Pos", out var posTag))
             {
-                var list = tag as NbtList;
+                var list = posTag as NbtList;
 
                 var pos = list.Select(x => x as NbtTag<double>).ToList();
 
@@ -551,6 +588,33 @@ namespace Obsidian.Entities
             }
 
             this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
+
+            if (compound.TryGetTag("Inventory", out var rawTag))
+            {
+                var inventory = rawTag as NbtList;
+
+                foreach (var rawItemTag in inventory)
+                {
+                    if (rawItemTag.Type == NbtTagType.End)
+                        break;
+
+                    var itemCompound = rawItemTag as NbtCompound;
+
+                    var slot = itemCompound.GetByte("Slot");
+
+                    var itemMetaBuilder = new ItemMetaBuilder()
+                        .WithDurability(itemCompound.GetInt("Damage"))
+                        .IsUnbreakable(itemCompound.GetBool("Unbreakable"))
+                        .WithSlot(slot);
+
+                    var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                    item.Count = itemCompound.GetByte("Count");
+
+                    this.Inventory.SetItem(slot, item);
+
+                    Console.WriteLine($"Set slot({slot}) to {item.Type}");
+                }
+            }
         }
 
         public async Task<bool> GrantPermissionAsync(string permission)
