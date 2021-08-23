@@ -495,9 +495,11 @@ namespace Obsidian.Entities
 
             var items =  this.Inventory.Items.Select((item, slot) => (item, slot));
 
-            writer.WriteListStart("Inventory", NbtTagType.Compound, items.Where(x => x.item != null).Count());
+            var nonNullItems = items.Where(x => x.item != null);
 
-            if(items.Count() > 0)
+            writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
+
+            if(nonNullItems.Count() > 0)
             {
                 foreach(var (item, slot) in items)
                 {
