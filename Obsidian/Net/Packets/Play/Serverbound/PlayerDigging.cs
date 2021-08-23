@@ -31,6 +31,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             {
                 server.World.BlockUpdateNeighbors(Position);
             }
+
+            return ValueTask.CompletedTask;
         }
     }
 
