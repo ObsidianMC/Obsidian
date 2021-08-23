@@ -475,14 +475,14 @@ namespace Obsidian.Net
                     {
                         writer.WriteCompoundStart("display");
 
-                        writer.WriteString("Name", new List<ChatMessage> { (ChatMessage)meta.Name }.ToJson());
+                        writer.WriteString("Name", new List<ChatMessage> { meta.Name }.ToJson());
 
                         if (meta.Lore is not null)
                         {
                             writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                             foreach (var lore in meta.Lore)
-                                writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
+                                writer.WriteString(new List<ChatMessage> { lore }.ToJson());
 
                             writer.EndList();
                         }
@@ -496,7 +496,7 @@ namespace Obsidian.Net
                         writer.WriteListStart("Lore", NbtTagType.String, meta.Lore.Count);
 
                         foreach (var lore in meta.Lore)
-                            writer.WriteString(new List<ChatMessage> { (ChatMessage)lore }.ToJson());
+                            writer.WriteString(new List<ChatMessage> { lore }.ToJson());
 
                         writer.EndList();
 
