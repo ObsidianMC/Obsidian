@@ -456,14 +456,14 @@ namespace Obsidian
 
                         player.client.SendPacket(new SetSlot
                         {
-                            Slot = player.CurrentSlot,
+                            Slot = player.inventorySlot,
 
                             WindowId = 0,
 
-                            SlotData = player.Inventory.GetItem(player.CurrentSlot) - 1
+                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1
                         });
 
-                        player.Inventory.RemoveItem(player.CurrentSlot);
+                        player.Inventory.RemoveItem(player.inventorySlot);
                         break;
                     }
                 case DiggingStatus.StartedDigging:

@@ -24,6 +24,9 @@ namespace Obsidian.Entities
 
         internal HashSet<int> VisiblePlayers = new();
 
+        //TODO: better name??
+        internal short inventorySlot = 36;
+
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
@@ -56,7 +59,17 @@ namespace Obsidian.Entities
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; } = 36;
+
+        public short CurrentSlot
+        {
+            get => (short)(this.inventorySlot - 36);
+            internal set {
+                if (value < 0 || value > 8 )
+                    throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
+
+                this.inventorySlot = (short)(value + 36);
+            }
+        }
 
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
@@ -194,7 +207,7 @@ namespace Obsidian.Entities
                 await this.client.QueuePacketAsync(scorePacket);
         }
 
-        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
 
         public async Task LoadPermsAsync()
         {
@@ -462,7 +475,7 @@ namespace Obsidian.Entities
             writer.WriteInt("playerGameType", (int)this.Gamemode);
             writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
             writer.WriteInt("Score", 0);
-            writer.WriteInt("SelectedItemSlot", this.CurrentSlot);
+            writer.WriteInt("SelectedItemSlot", this.inventorySlot);
             writer.WriteInt("foodLevel", this.FoodLevel);
             writer.WriteInt("foodTickTimer", this.FoodTickTimer);
             writer.WriteInt("XpLevel", this.XpLevel);

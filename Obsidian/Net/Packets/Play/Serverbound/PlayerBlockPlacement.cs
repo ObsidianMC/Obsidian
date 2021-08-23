@@ -310,7 +310,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             if (player.Gamemode != Gamemode.Creative)
-                player.Inventory.RemoveItem(player.CurrentSlot);
+                player.Inventory.RemoveItem(player.inventorySlot);
 
             switch (Face) // TODO fix this for logs
             {

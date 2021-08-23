@@ -23,7 +23,7 @@ namespace Obsidian.API
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; }
 
         public int Ping { get; }
         public int Dimension { get; set; }
