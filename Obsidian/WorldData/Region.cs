@@ -137,7 +137,7 @@ namespace Obsidian.WorldData
                 {
                     if (BlockUpdates.TryTake(out var bu))
                     {
-                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu.position);
+                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu.position, bu.block);
                         if (updateNeighbor) { NeighborUpdates.Add(bu); }
                     }
                 }

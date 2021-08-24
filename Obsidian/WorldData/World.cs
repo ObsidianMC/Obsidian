@@ -398,10 +398,10 @@ namespace Obsidian.WorldData
                 await r.FlushAsync();
         }
 
-        public void ScheduleBlockUpdate(Vector worldLoc)
+        public void ScheduleBlockUpdate(Vector worldLoc, Block? block = null)
         {
             var r = GetRegionForChunk(worldLoc.X.ToChunkCoord(), worldLoc.Z.ToChunkCoord());
-            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc));
+            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc, block));
         }
 
         /// <summary>
@@ -409,19 +409,21 @@ namespace Obsidian.WorldData
         /// </summary>
         /// <param name="worldLoc"></param>
         /// <returns>Whether to update neighbor blocks.</returns>
-        internal async Task<bool> HandleBlockUpdate(Vector worldLoc)
+        internal async Task<bool> HandleBlockUpdate(Vector worldLoc, Block? block = null)
         {
-            if (GetBlock(worldLoc) is Block block && Block.GravityAffected.Contains(block.Material)) // Todo: this better
+            block ??= GetBlock(worldLoc);
+            if (block is Block b)
             {
-                if (GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
+                // Todo: this better
+                if (Block.GravityAffected.Contains(b.Material))
                 {
-                    await Task.Delay(40);
-                    SetBlock(worldLoc, new Block(Material.Air));
-                    foreach(var p in Server.PlayersInRange(worldLoc))
-                    {
-                        await Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
-                    }
-                    SpawnFallingBlock(worldLoc, block.Material);
+                    await BlockUpdates.HandleFallingBlock(this, worldLoc, b.Material);
+                    return true;
+                }
+
+                if (b.IsFluid)
+                {
+                    await BlockUpdates.HandleLiquidPhysics(this, worldLoc, b);
                     return true;
                 }
             }

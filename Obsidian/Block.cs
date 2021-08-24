@@ -147,11 +147,14 @@ namespace Obsidian
     {
         internal readonly World world;
         internal readonly Vector position;
+        internal readonly Block? block;
 
-        public BlockUpdate(World w, Vector pos)
+
+        public BlockUpdate(World w, Vector pos, Block? blk = null)
         {
             world = w;
             position = pos;
+            block = blk;
         }
     }
 }

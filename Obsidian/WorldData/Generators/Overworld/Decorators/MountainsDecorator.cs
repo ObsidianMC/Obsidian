@@ -36,7 +36,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
             var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Material.CoarseDirt));
+                chunk.SetBlock(pos, new Block(Material.Water, 1));
 
             var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
             if (dandyNoise > 1)
