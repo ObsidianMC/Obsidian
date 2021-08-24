@@ -5,7 +5,7 @@ namespace Obsidian.WorldData
 {
     internal static class BlockUpdates
     {
-        internal static async Task HandleFallingBlock(World w, Vector worldLoc, Material mat)
+        internal static async Task<bool> HandleFallingBlock(World w, Vector worldLoc, Material mat)
         {
             if (w.GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
             {
@@ -16,14 +16,18 @@ namespace Obsidian.WorldData
                     await w.Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
                 }
                 w.SpawnFallingBlock(worldLoc, mat);
+                return true;
             }
+            return false;
         }
 
-        internal static async Task HandleLiquidPhysics(World w, Vector worldLoc, Block b)
+        internal static async Task<bool> HandleLiquidPhysics(World w, Vector worldLoc, Block b)
         {
+            bool returnval = false;
             int state = b.State;
             if (state < 7)
             {
+                await Task.Delay(20);
                 var fw = worldLoc + Vector.Forwards;
                 if (w.GetBlock(fw) is Block front && front.IsAir)
                 {
@@ -33,6 +37,7 @@ namespace Obsidian.WorldData
                     {
                         await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, fw);
                     }
+                    returnval = true;
                 }
 
 
@@ -45,6 +50,7 @@ namespace Obsidian.WorldData
                     {
                         await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, bw);
                     }
+                    returnval = true;
                 }
 
 
@@ -57,6 +63,7 @@ namespace Obsidian.WorldData
                     {
                         await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, lt);
                     }
+                    returnval = true;
                 }
 
 
@@ -69,6 +76,7 @@ namespace Obsidian.WorldData
                     {
                         await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, rt);
                     }
+                    returnval = true;
                 }
 
 
@@ -78,6 +86,8 @@ namespace Obsidian.WorldData
             {
 
             }
+
+            return returnval;
 
         }
     }

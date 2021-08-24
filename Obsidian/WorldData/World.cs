@@ -417,14 +417,12 @@ namespace Obsidian.WorldData
                 // Todo: this better
                 if (Block.GravityAffected.Contains(b.Material))
                 {
-                    await BlockUpdates.HandleFallingBlock(this, worldLoc, b.Material);
-                    return true;
+                    return await BlockUpdates.HandleFallingBlock(this, worldLoc, b.Material);
                 }
 
                 if (b.IsFluid)
                 {
-                    await BlockUpdates.HandleLiquidPhysics(this, worldLoc, b);
-                    return true;
+                    return await BlockUpdates.HandleLiquidPhysics(this, worldLoc, b);
                 }
             }
 
