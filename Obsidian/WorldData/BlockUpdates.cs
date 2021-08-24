@@ -27,7 +27,7 @@ namespace Obsidian.WorldData
             int state = b.State;
             if (state < 7)
             {
-                await Task.Delay(20);
+                await Task.Delay(40);
                 var fw = worldLoc + Vector.Forwards;
                 if (w.GetBlock(fw) is Block front && front.IsAir)
                 {

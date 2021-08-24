@@ -340,7 +340,7 @@ namespace Obsidian
 
         internal async Task BroadcastBlockPlacementToPlayerAsync(Player player, Block block, Vector location)
         {
-            await player.client.QueuePacketAsync(new BlockChange(location, block.BaseId));
+            await player.client.QueuePacketAsync(new BlockChange(location, block.StateId));
         }
 
         internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
