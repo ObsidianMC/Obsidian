@@ -5,11 +5,14 @@ namespace Obsidian.WorldData
 {
     internal static class BlockUpdates
     {
-        internal static async Task<bool> HandleFallingBlock(World w, Vector worldLoc, Material mat)
+        internal static async Task<bool> HandleFallingBlock(BlockUpdate bu)
         {
+            if (bu.block is null) { return false; }
+            var w = bu.world;
+            var worldLoc = bu.position;
+            var mat = bu.block.Value.Material;
             if (w.GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
             {
-                await Task.Delay(40);
                 w.SetBlock(worldLoc, new Block(Material.Air));
                 foreach (var p in w.Server.PlayersInRange(worldLoc))
                 {
@@ -21,17 +24,58 @@ namespace Obsidian.WorldData
             return false;
         }
 
-        internal static async Task<bool> HandleLiquidPhysics(World w, Vector worldLoc, Block b)
+        internal static async Task<bool> HandleLiquidPhysics(BlockUpdate bu)
         {
+            if (bu.block is null) { return false; }
+            var b = bu.block.Value;
+            var w = bu.world;
+            var worldLoc = bu.position;
             bool returnval = false;
             int state = b.State;
+            Vector bl = worldLoc + Vector.Down;
+            if (state >= 8) // Falling water
+            {
+                if (w.GetBlock(bl) is Block below && below.IsAir)
+                {
+                    var nb = new Block(b.BaseId, state);
+                    w.SetBlock(bl, nb);
+                    foreach (var p in w.Server.PlayersInRange(bl))
+                    {
+                        await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, bl);
+                    }
+                    returnval = true;
+                }
+                else
+                {
+                    state -= 8;
+                }
+            }
+
             if (state < 7)
             {
-                await Task.Delay(40);
+                if (w.GetBlock(bl) is Block below)
+                {
+                    if (below.IsAir)
+                    {
+                        var nb = new Block(b.BaseId, state + 8);
+                        w.SetBlock(bl, nb);
+                        foreach (var p in w.Server.PlayersInRange(bl))
+                        {
+                            await w.Server.BroadcastBlockPlacementToPlayerAsync(p, nb, bl);
+                        }
+                        return true;
+                    }
+                    else if (below.IsFluid && below.State > 7)
+                    {
+                        return false;
+                    }
+                    
+                }
+                
                 var fw = worldLoc + Vector.Forwards;
                 if (w.GetBlock(fw) is Block front && front.IsAir)
                 {
-                    var nb = new Block((int)b.BaseId, state + 1);                    
+                    var nb = new Block(b.BaseId, state + 1);                    
                     w.SetBlock(fw, nb);
                     foreach (var p in w.Server.PlayersInRange(fw))
                     {
@@ -78,13 +122,6 @@ namespace Obsidian.WorldData
                     }
                     returnval = true;
                 }
-
-
-            }
-
-            if (w.GetBlock(worldLoc + Vector.Down) is Block below && below.IsAir)
-            {
-
             }
 
             return returnval;

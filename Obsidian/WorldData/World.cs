@@ -398,10 +398,28 @@ namespace Obsidian.WorldData
                 await r.FlushAsync();
         }
 
-        public void ScheduleBlockUpdate(Vector worldLoc, Block? block = null)
+        public void ScheduleBlockUpdate(BlockUpdate bu)
         {
-            var r = GetRegionForChunk(worldLoc.X.ToChunkCoord(), worldLoc.Z.ToChunkCoord());
-            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc, block));
+            var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
+            
+            // I don't know where to put this. Maybe it goes in region?
+            if (bu.block is Block b)
+            {
+                if (Block.GravityAffected.Contains(b.Material))
+                {
+                    bu.delay = 2; // 2 ticks b/w block falling
+                }
+                else if (b.Material == Material.Lava)
+                {
+                    bu.delay = 20;
+                }
+                else if (b.Material == Material.Water)
+                {
+                    bu.delay = 60;
+                }
+            }
+
+            r.BlockUpdates.Add(bu);
         }
 
         /// <summary>
@@ -409,34 +427,53 @@ namespace Obsidian.WorldData
         /// </summary>
         /// <param name="worldLoc"></param>
         /// <returns>Whether to update neighbor blocks.</returns>
-        internal async Task<bool> HandleBlockUpdate(Vector worldLoc, Block? block = null)
+        internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
         {
-            block ??= GetBlock(worldLoc);
-            if (block is Block b)
-            {
-                // Todo: this better
-                if (Block.GravityAffected.Contains(b.Material))
-                {
-                    return await BlockUpdates.HandleFallingBlock(this, worldLoc, b.Material);
-                }
+            bu.block ??= GetBlock(bu.position);
 
-                if (b.IsFluid)
-                {
-                    return await BlockUpdates.HandleLiquidPhysics(this, worldLoc, b);
-                }
+            if (bu.block is null) { return false; }
+
+                // Todo: this better
+            if (Block.GravityAffected.Contains(bu.block.Value.Material))
+            {
+                return await BlockUpdates.HandleFallingBlock(bu);
+            }
+
+            if (bu.block.Value.IsFluid)
+            {
+                return await BlockUpdates.HandleLiquidPhysics(bu);
             }
 
             return false;
         }
 
-        internal void BlockUpdateNeighbors(Vector worldLoc)
+        internal void BlockUpdateNeighbors(BlockUpdate bu)
         {
-            ScheduleBlockUpdate(worldLoc + Vector.Forwards);
-            ScheduleBlockUpdate(worldLoc + Vector.Backwards);
-            ScheduleBlockUpdate(worldLoc + Vector.Left);
-            ScheduleBlockUpdate(worldLoc + Vector.Right);
-            ScheduleBlockUpdate(worldLoc + Vector.Up);
-            ScheduleBlockUpdate(worldLoc + Vector.Down);
+            bu.block = null;
+            var north = bu;
+            north.position += Vector.Forwards;
+
+            var south = bu;
+            south.position += Vector.Backwards;
+
+            var west = bu;
+            west.position += Vector.Left;
+
+            var east = bu;
+            east.position += Vector.Right;
+
+            var up = bu;
+            up.position += Vector.Up;
+
+            var down = bu;
+            down.position += Vector.Down;
+
+            ScheduleBlockUpdate(north);
+            ScheduleBlockUpdate(south);
+            ScheduleBlockUpdate(west);
+            ScheduleBlockUpdate(east);
+            ScheduleBlockUpdate(up);
+            ScheduleBlockUpdate(down);
         }
 
         public async Task ManageChunksAsync()

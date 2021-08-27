@@ -143,18 +143,21 @@ namespace Obsidian
         }
     }
 
-    internal struct BlockUpdate
+    public struct BlockUpdate
     {
         internal readonly World world;
-        internal readonly Vector position;
-        internal readonly Block? block;
+        internal Vector position;
+        internal Block? block;
+        internal int delay;
+        internal int delayCounter;
 
-
-        public BlockUpdate(World w, Vector pos, Block? blk = null)
+        public BlockUpdate(World w, Vector pos, int delayTicks, Block? blk = null)
         {
             world = w;
             position = pos;
             block = blk;
+            delay = delayTicks;
+            delayCounter = delay;
         }
     }
 }

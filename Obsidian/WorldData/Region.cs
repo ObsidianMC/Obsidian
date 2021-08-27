@@ -130,17 +130,28 @@ namespace Obsidian.WorldData
                 {
                     if (NeighborUpdates.TryTake(out var bu))
                     {
-                        bu.world.BlockUpdateNeighbors(bu.position);
+                        bu.world.BlockUpdateNeighbors(bu);
                     }
                 }
+
+                List<BlockUpdate> delayed = new();
                 while (!BlockUpdates.IsEmpty)
                 {
                     if (BlockUpdates.TryTake(out var bu))
                     {
-                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu.position, bu.block);
-                        if (updateNeighbor) { NeighborUpdates.Add(bu); }
+                        if (bu.delay > 0)
+                        {
+                            bu.delay--;
+                            delayed.Add(bu);
+                        }
+                        else
+                        {
+                            bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
+                            if (updateNeighbor) { NeighborUpdates.Add(bu); }
+                        }
                     }
                 }
+                delayed.ForEach(i => BlockUpdates.Add(i));
             }
         }
 
