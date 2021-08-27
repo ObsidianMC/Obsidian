@@ -563,7 +563,7 @@ namespace Obsidian.Entities
             this.HurtTime = compound.GetShort("HurtTime");
             this.SleepTimer = compound.GetShort("SleepTimer");
 
-            var dim = Registry.Dimensions.First(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
+            var dim = Registry.Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
             this.Dimension = dim.Key;
 
             this.FoodLevel = compound.GetInt("foodLevel");
