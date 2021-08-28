@@ -8,12 +8,14 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
@@ -833,7 +835,10 @@ namespace Obsidian.Net
                     foreach (var c in pattern)
                     {
                         if (char.IsWhiteSpace(c))
+                        {
+                            x++;
                             continue;
+                        }
 
                         var index = x + (y * width);
 
@@ -856,8 +861,7 @@ namespace Obsidian.Net
                 {
                     if (items == null)
                     {
-                        await WriteVarIntAsync(1);
-                        await WriteSlotAsync(ItemStack.Air);
+                        await WriteVarIntAsync(0);
                         continue;
                     }
 
@@ -964,10 +968,12 @@ namespace Obsidian.Net
                     foreach (var c in pattern)
                     {
                         if (char.IsWhiteSpace(c))
+                        {
+                            x++;
                             continue;
+                        }
 
                         var index = x + (y * width);
-
                         var key = shapedRecipe.Key[c];
 
                         foreach (var item in key)
@@ -987,8 +993,7 @@ namespace Obsidian.Net
                 {
                     if (items == null)
                     {
-                        WriteVarInt(1);
-                        WriteItemStack(ItemStack.Air);
+                        WriteVarInt(0);
                         continue;
                     }
 
