@@ -503,9 +503,6 @@ namespace Obsidian.Entities
             {
                 foreach(var (item, slot) in items)
                 {
-                    if (item is null)
-                        continue;
-
                     writer.WriteCompoundStart();
 
                     writer.WriteByte("Count", (byte)item.Count);

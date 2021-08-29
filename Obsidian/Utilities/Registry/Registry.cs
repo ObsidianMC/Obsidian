@@ -258,10 +258,16 @@ namespace Obsidian.Utilities.Registry
                 switch (result)
                 {
                     case CraftingType.CraftingShaped:
-                        Recipes.Add(name, json.FromJson<ShapedRecipe>());
+                        var shapedRecipe = json.FromJson<ShapedRecipe>();
+                        shapedRecipe.Name = name;
+                        Recipes.Add(name, shapedRecipe);
+
                         break;
                     case CraftingType.CraftingShapeless:
-                        Recipes.Add(name, json.FromJson<ShapelessRecipe>());
+                        var shapelessRecipe = json.FromJson<ShapelessRecipe>();
+                        shapelessRecipe.Name = name;
+
+                        Recipes.Add(name, shapelessRecipe);
                         break;
                     case CraftingType.CraftingSpecialArmordye:
                     case CraftingType.CraftingSpecialBookcloning:
@@ -281,13 +287,22 @@ namespace Obsidian.Utilities.Registry
                     case CraftingType.Blasting:
                     case CraftingType.Smoking:
                     case CraftingType.CampfireCooking:
-                        Recipes.Add(name, json.FromJson<SmeltingRecipe>());
+                        var smeltingRecipe = json.FromJson<SmeltingRecipe>();
+                        smeltingRecipe.Name = name;
+
+                        Recipes.Add(name, smeltingRecipe);
                         break;
                     case CraftingType.Stonecutting:
-                        Recipes.Add(name, json.FromJson<CuttingRecipe>());
+                        var stonecuttingRecipe = json.FromJson<CuttingRecipe>();
+                        stonecuttingRecipe.Name = name;
+
+                        Recipes.Add(name, stonecuttingRecipe);
                         break;
                     case CraftingType.Smithing:
-                        Recipes.Add(name, json.FromJson<SmithingRecipe>());
+                        var smithingRecipe = json.FromJson<SmithingRecipe>();
+                        smithingRecipe.Name = name;
+
+                        Recipes.Add(name, smithingRecipe);
                         break;
                     default:
                         break;
