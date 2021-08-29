@@ -489,7 +489,7 @@ namespace Obsidian
                         {
                             this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                            this.World.SetBlock(digging.Position, Block.Air);
+                            this.World.SetBlock(digging.Position, Block.Air, true);
                         }
                     }
                     break;
@@ -514,7 +514,7 @@ namespace Obsidian
 
                         this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                        this.World.SetBlock(digging.Position, Block.Air);
+                        this.World.SetBlock(digging.Position, Block.Air, true);
 
                         var droppedItem = Registry.GetItem(block.Material);
 

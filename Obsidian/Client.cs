@@ -517,7 +517,7 @@ namespace Obsidian
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Sending packet failed");
+                Logger.LogError(e, $"Sending packet failed {packet.Id}");
             }
         }
 

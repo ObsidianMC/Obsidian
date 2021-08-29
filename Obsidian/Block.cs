@@ -29,6 +29,47 @@ namespace Obsidian
         private readonly short baseId;
         private readonly short state;
 
+        internal static readonly List<Material> Replaceable = new()
+        {
+            Material.Air,
+            Material.CaveAir,
+            Material.Cobweb,
+            Material.SugarCane,
+            Material.DeadBush,
+            Material.Grass,
+            Material.TallGrass,
+            Material.AcaciaSapling,
+            Material.BambooSapling,
+            Material.BirchSapling,
+            Material.DarkOakSapling,
+            Material.JungleSapling,
+            Material.OakSapling,
+            Material.SpruceSapling,
+            Material.Dandelion,
+            Material.Poppy,
+            Material.BlueOrchid,
+            Material.Allium,
+            Material.AzureBluet,
+            Material.OrangeTulip,
+            Material.PinkTulip,
+            Material.RedTulip,
+            Material.WhiteTulip,
+            Material.OxeyeDaisy,
+            Material.Cornflower,
+            Material.LilyOfTheValley,
+            Material.WitherRose,
+            Material.Sunflower,
+            Material.Lilac,
+            Material.Sunflower,
+            Material.Peony,
+            Material.Wheat,
+            Material.PumpkinStem,
+            Material.Carrots,
+            Material.Potatoes,
+            Material.Beetroots,
+            Material.SweetBerryBush
+        };
+
         internal static readonly List<Material> GravityAffected = new()
         {
             Material.Anvil,
@@ -147,17 +188,42 @@ namespace Obsidian
     {
         internal readonly World world;
         internal Vector position;
-        internal Block? block;
-        internal int delay;
+        internal int delay { get; private set; }
         internal int delayCounter;
+        private Block? _block;
+        internal Block? block
+        {
+            get => _block;
+            set 
+            {
+                _block = value;
+                if (value is Block b)
+                {
+                    if (Block.GravityAffected.Contains(b.Material))
+                    {
+                        delay = 2; // 2 ticks b/w block falling
+                    }
+                    else if (b.Material == Material.Lava)
+                    {
+                        delay = 40;
+                    }
+                    else if (b.Material == Material.Water)
+                    {
+                        delay = 5;
+                    }
+                }
+                delayCounter = delay;
+            }
+        }
 
-        public BlockUpdate(World w, Vector pos, int delayTicks, Block? blk = null)
+        public BlockUpdate(World w, Vector pos, Block? blk = null)
         {
             world = w;
             position = pos;
-            block = blk;
-            delay = delayTicks;
+            delay = 0;
             delayCounter = delay;
+            _block = null;
+            block = blk;
         }
     }
 }

@@ -223,9 +223,17 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-        public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
+        public void SetBlock(Vector location, Block block, bool doBlockUpdate = false) => SetBlock(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-        public void SetBlock(int x, int y, int z, Block block) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate = false)
+        {
+            if (doBlockUpdate)
+            {
+                ScheduleBlockUpdate(new BlockUpdate(this, new Vector(x, y, z), block));
+                BlockUpdateNeighbors(new BlockUpdate(this, new Vector(x, y, z), block));
+            }
+            GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        }
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
 
@@ -300,9 +308,7 @@ namespace Obsidian.WorldData
                     _ = await LoadRegionAsync(rx, rz);
 
             // spawn chunks are radius 12 from spawn,
-            // but we want to preload radius 16 so that
-            // we're prepared for the first client to join
-            var radius = 16;
+            var radius = 12;
             var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
             for (var cx = x - radius; cx < x + radius; cx++)
                 for (var cz = z - radius; cz < z + radius; cz++)
@@ -400,24 +406,8 @@ namespace Obsidian.WorldData
 
         public void ScheduleBlockUpdate(BlockUpdate bu)
         {
+            bu.block ??= GetBlock(bu.position);
             var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
-            
-            // I don't know where to put this. Maybe it goes in region?
-            if (bu.block is Block b)
-            {
-                if (Block.GravityAffected.Contains(b.Material))
-                {
-                    bu.delay = 2; // 2 ticks b/w block falling
-                }
-                else if (b.Material == Material.Lava)
-                {
-                    bu.delay = 20;
-                }
-                else if (b.Material == Material.Water)
-                {
-                    bu.delay = 60;
-                }
-            }
 
             r.BlockUpdates.Add(bu);
         }
@@ -429,8 +419,6 @@ namespace Obsidian.WorldData
         /// <returns>Whether to update neighbor blocks.</returns>
         internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
         {
-            bu.block ??= GetBlock(bu.position);
-
             if (bu.block is null) { return false; }
 
                 // Todo: this better
@@ -450,6 +438,7 @@ namespace Obsidian.WorldData
         internal void BlockUpdateNeighbors(BlockUpdate bu)
         {
             bu.block = null;
+            bu.delayCounter = bu.delay;
             var north = bu;
             north.position += Vector.Forwards;
 

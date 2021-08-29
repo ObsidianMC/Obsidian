@@ -38,6 +38,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             // TODO: this better
             if (itemType == Material.WaterBucket)
                 itemType = Material.Water;
+            if (itemType == Material.LavaBucket)
+                itemType = Material.Lava;
 
             var block = Registry.GetBlock(itemType);
 
@@ -349,8 +351,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             // TODO calculate the block state
-            server.World.SetBlock(position, block);
-            server.World.ScheduleBlockUpdate(new BlockUpdate(server.World, position, 0, block));
+            server.World.SetBlock(position, block, true);
             await server.BroadcastBlockPlacementAsync(player, block, position);
         }
     }
