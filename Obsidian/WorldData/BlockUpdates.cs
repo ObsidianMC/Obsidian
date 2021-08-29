@@ -51,10 +51,13 @@ namespace Obsidian.WorldData
 
                 foreach (var pathLoc in paths)
                 {
-                    var pathBelow = w.GetBlock(pathLoc + Vector.Down);
-                    if (pathBelow is Block pBelow && Block.Replaceable.Contains(pBelow.Material))
+                    if (w.GetBlock(pathLoc) is Block pathSide && (Block.Replaceable.Contains(pathSide.Material) || pathSide.IsFluid))
                     {
-                        validPaths.Add(pathLoc);
+                        var pathBelow = w.GetBlock(pathLoc + Vector.Down);
+                        if (pathBelow is Block pBelow && (Block.Replaceable.Contains(pBelow.Material) || pBelow.IsFluid))
+                        {
+                            validPaths.Add(pathLoc);
+                        }
                     }
                 }
 
@@ -111,7 +114,7 @@ namespace Obsidian.WorldData
                 };
 
                 // Check infinite source blocks
-                if (state == 1)
+                if (state == 1 && b.Material == Material.Water)
                 {
                     // if 2 neighbors are source blocks (state = 0), then become source block
                     int sourceNeighborCount = 0;

@@ -201,7 +201,7 @@ namespace Obsidian
                 {
                     if (Block.GravityAffected.Contains(b.Material))
                     {
-                        delay = 2; // 2 ticks b/w block falling
+                        delay = 1;
                     }
                     else if (b.Material == Material.Lava)
                     {
