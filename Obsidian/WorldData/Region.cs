@@ -122,7 +122,7 @@ namespace Obsidian.WorldData
         {
             while (!cts.IsCancellationRequested || cancel)
             {
-                await Task.Delay(20);
+                await Task.Delay(20, cts);
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
                 List<BlockUpdate> neighborUpdates = new();
