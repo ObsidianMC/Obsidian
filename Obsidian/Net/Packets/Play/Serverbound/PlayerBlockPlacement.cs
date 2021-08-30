@@ -6,6 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -41,7 +42,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (itemType == Material.LavaBucket)
                 itemType = Material.Lava;
 
+            if (!Registry.NumericToBase.Contains((short)itemType))
+            {
+
+                return;
+            }
+
             var block = Registry.GetBlock(itemType);
+
 
             var position = this.Position;
 
