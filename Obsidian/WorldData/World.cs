@@ -223,9 +223,17 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-        public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
+        public void SetBlock(Vector location, Block block, bool doBlockUpdate = false) => SetBlock(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-        public void SetBlock(int x, int y, int z, Block block) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate = false)
+        {
+            if (doBlockUpdate)
+            {
+                ScheduleBlockUpdate(new BlockUpdate(this, new Vector(x, y, z), block));
+                BlockUpdateNeighbors(new BlockUpdate(this, new Vector(x, y, z), block));
+            }
+            GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        }
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
 
@@ -300,9 +308,7 @@ namespace Obsidian.WorldData
                     _ = await LoadRegionAsync(rx, rz);
 
             // spawn chunks are radius 12 from spawn,
-            // but we want to preload radius 16 so that
-            // we're prepared for the first client to join
-            var radius = 16;
+            var radius = 12;
             var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
             for (var cx = x - radius; cx < x + radius; cx++)
                 for (var cz = z - radius; cz < z + radius; cz++)
@@ -398,10 +404,12 @@ namespace Obsidian.WorldData
                 await r.FlushAsync();
         }
 
-        public void ScheduleBlockUpdate(Vector worldLoc)
+        public void ScheduleBlockUpdate(BlockUpdate bu)
         {
-            var r = GetRegionForChunk(worldLoc.X.ToChunkCoord(), worldLoc.Z.ToChunkCoord());
-            r.BlockUpdates.Add(new BlockUpdate(this, worldLoc));
+            bu.block ??= GetBlock(bu.position);
+            var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
+
+            r.BlockUpdates.Add(bu);
         }
 
         /// <summary>
@@ -409,34 +417,52 @@ namespace Obsidian.WorldData
         /// </summary>
         /// <param name="worldLoc"></param>
         /// <returns>Whether to update neighbor blocks.</returns>
-        internal async Task<bool> HandleBlockUpdate(Vector worldLoc)
+        internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
         {
-            if (GetBlock(worldLoc) is Block block && Block.GravityAffected.Contains(block.Material)) // Todo: this better
+            if (bu.block is null) { return false; }
+
+                // Todo: this better
+            if (Block.GravityAffected.Contains(bu.block.Value.Material))
             {
-                if (GetBlock(worldLoc + Vector.Down) is Block below && (below.IsAir || below.IsFluid))
-                {
-                    await Task.Delay(40);
-                    SetBlock(worldLoc, new Block(Material.Air));
-                    foreach(var p in Server.PlayersInRange(worldLoc))
-                    {
-                        await Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
-                    }
-                    SpawnFallingBlock(worldLoc, block.Material);
-                    return true;
-                }
+                return await BlockUpdates.HandleFallingBlock(bu);
+            }
+
+            if (bu.block.Value.IsFluid)
+            {
+                return await BlockUpdates.HandleLiquidPhysics(bu);
             }
 
             return false;
         }
 
-        internal void BlockUpdateNeighbors(Vector worldLoc)
+        internal void BlockUpdateNeighbors(BlockUpdate bu)
         {
-            ScheduleBlockUpdate(worldLoc + Vector.Forwards);
-            ScheduleBlockUpdate(worldLoc + Vector.Backwards);
-            ScheduleBlockUpdate(worldLoc + Vector.Left);
-            ScheduleBlockUpdate(worldLoc + Vector.Right);
-            ScheduleBlockUpdate(worldLoc + Vector.Up);
-            ScheduleBlockUpdate(worldLoc + Vector.Down);
+            bu.block = null;
+            bu.delayCounter = bu.delay;
+            var north = bu;
+            north.position += Vector.Forwards;
+
+            var south = bu;
+            south.position += Vector.Backwards;
+
+            var west = bu;
+            west.position += Vector.Left;
+
+            var east = bu;
+            east.position += Vector.Right;
+
+            var up = bu;
+            up.position += Vector.Up;
+
+            var down = bu;
+            down.position += Vector.Down;
+
+            ScheduleBlockUpdate(north);
+            ScheduleBlockUpdate(south);
+            ScheduleBlockUpdate(west);
+            ScheduleBlockUpdate(east);
+            ScheduleBlockUpdate(up);
+            ScheduleBlockUpdate(down);
         }
 
         public async Task ManageChunksAsync()

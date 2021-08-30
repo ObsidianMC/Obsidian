@@ -501,7 +501,7 @@ namespace Obsidian.Entities
 
             if(nonNullItems.Count() > 0)
             {
-                foreach(var (item, slot) in items)
+                foreach(var (item, slot) in nonNullItems)
                 {
                     writer.WriteCompoundStart();
 
