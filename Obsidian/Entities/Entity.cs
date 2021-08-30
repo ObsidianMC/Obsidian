@@ -44,10 +44,10 @@ namespace Obsidian.Entities
 
         public float Health { get; set; }
 
-        public ChatMessage CustomName { get; private set; }
+        public ChatMessage CustomName { get; set; }
 
-        public bool CustomNameVisible { get; private set; }
-        public bool Silent { get; private set; }
+        public bool CustomNameVisible { get; set; }
+        public bool Silent { get; set; }
         public bool NoGravity { get; set; }
         public bool OnGround { get; set; }
         public bool Sneaking { get; set; }

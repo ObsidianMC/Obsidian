@@ -610,8 +610,6 @@ namespace Obsidian.Entities
                     item.Count = itemCompound.GetByte("Count");
 
                     this.Inventory.SetItem(slot, item);
-
-                    Console.WriteLine($"Set slot({slot}) to {item.Type}");
                 }
             }
         }

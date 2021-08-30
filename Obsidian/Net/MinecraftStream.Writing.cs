@@ -834,13 +834,12 @@ namespace Obsidian.Net
                     var x = 0;
                     foreach (var c in pattern)
                     {
-                        if (char.IsWhiteSpace(c))
-                        {
-                            x++;
-                            continue;
-                        }
+                        var preX = ++x;
 
-                        var index = x + (y * width);
+                        if (char.IsWhiteSpace(c))
+                            continue;
+
+                        var index = preX + (y * width);
 
                         var key = shapedRecipe.Key[c];
 
@@ -851,8 +850,6 @@ namespace Obsidian.Net
                             else
                                 ingredients[index].Add(item);
                         }
-
-                        x++;
                     }
                     y++;
                 }
