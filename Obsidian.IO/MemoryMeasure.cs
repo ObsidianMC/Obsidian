@@ -9,19 +9,19 @@ namespace Obsidian.IO
         private static readonly Encoding utf8 = Encoding.UTF8;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int GetByteCount<T>(T[] array) where T : unmanaged
+        public static unsafe int GetByteCount<T>(T[] array) where T : unmanaged
         {
             return array.Length * sizeof(T);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int GetByteCount<T>(IList<T> list) where T : unmanaged
+        public static unsafe int GetByteCount<T>(IList<T> list) where T : unmanaged
         {
             return list.Count * sizeof(T);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int GetByteCount<T>() where T : unmanaged
+        public static unsafe int GetByteCount<T>() where T : unmanaged
         {
             return sizeof(T);
         }

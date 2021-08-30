@@ -13,7 +13,7 @@ namespace Obsidian.Tests
         [Theory(DisplayName = "Serialization of VarLong")]
         public void Serialize(long input, byte[] expectedOutput)
         {
-            var writer = MemoryWriter.WithBuffer(10);
+            var writer = ProtocolWriter.WithBuffer(10);
             writer.WriteVarLong(input);
 
             byte[] actualBytes = writer.Memory.ToArray();

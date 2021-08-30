@@ -13,7 +13,7 @@ namespace Obsidian.Tests
         [Theory(DisplayName = "Serialization of VarInt")]
         public void Serialize(int input, byte[] expectedOutput)
         {
-            var writer = MemoryWriter.WithBuffer(5);
+            var writer = ProtocolWriter.WithBuffer(5);
             writer.WriteVarInt(input);
 
             byte[] actualBytes = writer.Memory.ToArray();
