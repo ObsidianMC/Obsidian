@@ -59,7 +59,7 @@ namespace Obsidian
             //Packets.TryAdd(0x29, UpdateJigsawBlock);
             //Packets.TryAdd(0x2A, UpdateStructureBlock);
             //Packets.TryAdd(0x2B, UpdateSign);
-            Packets.TryAdd(0x2C, new Animation());
+            //Packets.TryAdd(0x2C, new Animation());
             //Packets.TryAdd(0x2D, Spectate);
             //Packets.TryAdd(0x2E, new PlayerBlockPlacement()); !
             //Packets.TryAdd(0x2F, UseItem);
@@ -67,6 +67,7 @@ namespace Obsidian
 
         public async Task HandlePlayPackets(int id, byte[] data, Client client)
         {
+            Console.WriteLine(id);
             switch (id)
             {
                 case 0x00:
@@ -133,6 +134,10 @@ namespace Obsidian
 
                 case 0x28:
                     await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
+                    break;
+
+                case 0x2C:
+                    await HandleFromPoolAsync<Animation>(data, client);
                     break;
 
                 case 0x2E:
