@@ -482,6 +482,8 @@ namespace Obsidian.Entities
             writer.WriteInt("XpLevel", this.XpLevel);
             writer.WriteInt("XpTotal", this.XpTotal);
 
+            writer.WriteFloat("Health", this.Health);
+
             writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
             writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
@@ -556,7 +558,7 @@ namespace Obsidian.Entities
             this.Air = compound.GetShort("Air");
             this.AttackTime = compound.GetShort("AttackTime");
             this.DeathTime = compound.GetShort("DeathTime");
-            this.Health = compound.GetShort("Health");
+            this.Health = compound.GetFloat("Health");
             this.HurtTime = compound.GetShort("HurtTime");
             this.SleepTimer = compound.GetShort("SleepTimer");
 
