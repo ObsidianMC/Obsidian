@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Obsidian.API.Performance;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -43,6 +44,7 @@ namespace Obsidian.API
         public Task TeleportAsync(IPlayer to);
         public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
+        internal Task SendMessageAsync(Utf8Message message, MessageType type = MessageType.Chat, Guid? sender = null);
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(ChatMessage reason);

@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.API.Performance;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -23,6 +24,7 @@ namespace Obsidian.API
         public bool IsPlayerOnline(Guid uuid);
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
         public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat);
+        internal Task BroadcastAsync(Utf8Message message, MessageType type = MessageType.Chat);
         public IPlayer? GetPlayer(string username);
         public IPlayer? GetPlayer(Guid uuid);
         public IPlayer? GetPlayer(int entityId);

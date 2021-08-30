@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Performance;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.BossBar;
@@ -305,6 +306,8 @@ namespace Obsidian.Entities
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
         public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+
+        Task IPlayer.SendMessageAsync(Utf8Message message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));

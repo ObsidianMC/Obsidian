@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
+using Obsidian.API.Performance;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -193,7 +194,7 @@ namespace Obsidian
         /// </summary>
         public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat)
         {
-            this.chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
+            this.chatMessages.Enqueue(new QueueChat() { Message = message.ToUtf8Message(), Type = type });
             this.Logger.LogInformation(message.Text);
 
             return Task.CompletedTask;
@@ -201,8 +202,16 @@ namespace Obsidian
 
         public Task BroadcastAsync(string message, MessageType type = MessageType.Chat)
         {
-            this.chatMessages.Enqueue(new QueueChat() { Message = ChatMessage.Simple(message), Type = type });
+            this.chatMessages.Enqueue(new QueueChat() { Message = new Utf8Message(message), Type = type });
             this.Logger.LogInformation(message);
+
+            return Task.CompletedTask;
+        }
+
+        Task IServer.BroadcastAsync(Utf8Message message, MessageType type = MessageType.Chat)
+        {
+            chatMessages.Enqueue(new QueueChat() { Message = message, Type = type });
+            Logger.LogInformation(message.ToString());
 
             return Task.CompletedTask;
         }
@@ -692,10 +701,10 @@ namespace Obsidian
             ConsoleIO.UpdateStatusLine(status);
         }
 
-        private struct QueueChat
+        private readonly struct QueueChat
         {
-            public ChatMessage Message;
-            public MessageType Type;
+            public Utf8Message Message { get; init; }
+            public MessageType Type { get; init; }
         }
     }
 }

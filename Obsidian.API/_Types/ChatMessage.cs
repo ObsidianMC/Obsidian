@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Obsidian.API
 {
-    public class ChatMessage
+    public sealed class ChatMessage
     {
         public string Text { get; set; }
 

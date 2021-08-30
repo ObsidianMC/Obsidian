@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Crafting;
+using Obsidian.API.Performance;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -329,6 +330,16 @@ namespace Obsidian.Net
         public void WriteChat(ChatMessage chatMessage)
         {
             WriteString(chatMessage.ToString(Globals.JsonOptions));
+        }
+
+        [WriteMethod]
+        public void WriteUtf8Message(Utf8Message utf8Message)
+        {
+            WriteVarInt(utf8Message.length);
+            for (int i = 0; i < utf8Message.bytes.Length; i++)
+            {
+                BaseStream.Write(utf8Message.bytes[i]);
+            }
         }
 
         [WriteMethod]
