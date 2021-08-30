@@ -20,6 +20,7 @@ namespace Obsidian.Events
         public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
         public AsyncEvent<EntityInteractEventArgs> EntityInteract;
         public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
+        public AsyncEvent<ItemUsedEventArgs> ItemUsed;
         public AsyncEvent ServerTick;
 
         public MinecraftEventHandler()
@@ -40,6 +41,7 @@ namespace Obsidian.Events
             ServerStatusRequest = new("ServerStatusRequest", HandleException);
             EntityInteract = new("EntityInteract", HandleException);
             PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
+            ItemUsed = new("ItemUsed", HandleException);
         }
 
         private void HandleException(AsyncEvent e, Exception exception)
@@ -105,6 +107,12 @@ namespace Obsidian.Events
         internal async Task<PlayerAttackEntityEventArgs> InvokePlayerAttackEntityAsync(PlayerAttackEntityEventArgs eventArgs)
         {
             await this.PlayerAttackEntity.InvokeAsync(eventArgs);
+            return eventArgs;
+        }
+
+        internal async Task<ItemUsedEventArgs> InvokeItemUsedAsync(ItemUsedEventArgs eventArgs)
+        {
+            await this.ItemUsed.InvokeAsync(eventArgs);
             return eventArgs;
         }
 
