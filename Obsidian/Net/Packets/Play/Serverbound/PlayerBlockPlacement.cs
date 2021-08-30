@@ -42,14 +42,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (itemType == Material.LavaBucket)
                 itemType = Material.Lava;
 
-            if (!Registry.NumericToBase.Contains((short)itemType))
+            Block block;
+            try
             {
-
-                return;
+                block = Registry.GetBlock(itemType);
             }
-
-            var block = Registry.GetBlock(itemType);
-
+            catch //item is not a block so just return
+            { 
+                return; 
+            }
 
             var position = this.Position;
 
