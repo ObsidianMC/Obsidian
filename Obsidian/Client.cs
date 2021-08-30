@@ -272,10 +272,13 @@ namespace Obsidian
                         break;
 
                     case ClientState.Play:
+                        var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
+                        await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
 
-                        //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
-
-                        await this.handler.HandlePlayPackets(id, data, this);
+                        if (!packetReceivedEventArgs.Cancel)
+                        {
+                            await handler.HandlePlayPackets(id, data, this);
+                        }
                         break;
                 }
 
