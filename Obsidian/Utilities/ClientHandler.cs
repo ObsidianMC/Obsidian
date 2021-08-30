@@ -67,7 +67,6 @@ namespace Obsidian
 
         public async Task HandlePlayPackets(int id, byte[] data, Client client)
         {
-            Console.WriteLine(id);
             switch (id)
             {
                 case 0x00:
