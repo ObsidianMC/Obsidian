@@ -6,6 +6,8 @@ namespace Obsidian.API
 {
     public interface IPlayer : ILiving
     {
+        public Inventory Inventory { get; }
+
         public string Username { get; }
         public string DisplayName { get; }
 
