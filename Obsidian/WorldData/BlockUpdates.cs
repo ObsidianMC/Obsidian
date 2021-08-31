@@ -15,7 +15,7 @@ namespace Obsidian.WorldData
             var mat = bu.block.Value.Material;
             if (w.GetBlock(worldLoc + Vector.Down) is Block below && (Block.Replaceable.Contains(below.Material) || below.IsFluid))
             {
-                w.SetBlock(worldLoc, new Block(Material.Air));
+                w.SetBlockUntracked(worldLoc, new Block(Material.Air));
                 foreach (var p in w.Server.PlayersInRange(worldLoc))
                 {
                     await w.Server.BroadcastBlockPlacementToPlayerAsync(p, new Block(Material.Air), worldLoc);
@@ -66,7 +66,7 @@ namespace Obsidian.WorldData
                 {
                     var path = validPaths[0];
                     var newBlock = new Block(b.BaseId, state + 1);
-                    w.SetBlock(path, newBlock);
+                    w.SetBlockUntracked(path, newBlock);
                     w.Server.PlayersInRange(path).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, path));
                     var neighborUpdate = new BlockUpdate(w, path, newBlock);
                     w.ScheduleBlockUpdate(neighborUpdate);
@@ -80,7 +80,7 @@ namespace Obsidian.WorldData
                 if (w.GetBlock(worldLoc + Vector.Up) is Block up && !up.IsFluid)
                 {
                     var newBlock = new Block(Material.Air);
-                    w.SetBlock(worldLoc, newBlock);
+                    w.SetBlockUntracked(worldLoc, newBlock);
                     w.Server.PlayersInRange(worldLoc).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, worldLoc));
                     w.ScheduleBlockUpdate(new BlockUpdate(w, belowPos));
                     return false;
@@ -90,7 +90,7 @@ namespace Obsidian.WorldData
                 if (w.GetBlock(belowPos) is Block below && Block.Replaceable.Contains(below.Material))
                 {
                     var newBlock = new Block(b.BaseId, state);
-                    w.SetBlock(belowPos, newBlock);
+                    w.SetBlockUntracked(belowPos, newBlock);
                     w.Server.PlayersInRange(belowPos).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, belowPos));
                     w.ScheduleBlockUpdate(new BlockUpdate(w, belowPos, newBlock));
                     return false;
@@ -99,7 +99,7 @@ namespace Obsidian.WorldData
                 {
                     // Falling water has hit something solid. Change state to spread.
                     state = 1;
-                    w.SetBlock(worldLoc, new Block(b.BaseId, state));
+                    w.SetBlockUntracked(worldLoc, new Block(b.BaseId, state));
                 }
             }
 
@@ -128,7 +128,7 @@ namespace Obsidian.WorldData
                     if (sourceNeighborCount > 1)
                     {
                         var newBlock = new Block(Material.Water);
-                        w.SetBlock(worldLoc, newBlock);
+                        w.SetBlockUntracked(worldLoc, newBlock);
                         w.Server.PlayersInRange(worldLoc).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, worldLoc));
                         return true;
                     }
@@ -148,7 +148,7 @@ namespace Obsidian.WorldData
                     if (lowestState >= state && w.GetBlock(worldLoc + Vector.Up).Value.Material != b.Material)
                     {
                         var newBlock = new Block(Material.Air);
-                        w.SetBlock(worldLoc, newBlock);
+                        w.SetBlockUntracked(worldLoc, newBlock);
                         w.Server.PlayersInRange(worldLoc).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, worldLoc));
                         return true;
                     }
@@ -160,7 +160,7 @@ namespace Obsidian.WorldData
                     if (Block.Replaceable.Contains(below.Material))
                     {
                         var newBlock = new Block(b.BaseId, state + 8);
-                        w.SetBlock(belowPos, newBlock);
+                        w.SetBlockUntracked(belowPos, newBlock);
                         w.Server.PlayersInRange(belowPos).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, belowPos));
                         var neighborUpdate = new BlockUpdate(w, belowPos, newBlock);
                         w.ScheduleBlockUpdate(neighborUpdate);
@@ -179,7 +179,7 @@ namespace Obsidian.WorldData
                     if (Block.Replaceable.Contains(neighbor.Material) || (neighbor.Material == b.Material && neighbor.State > state + 1))
                     {
                         var newBlock = new Block(b.BaseId, state + 1);
-                        w.SetBlock(loc, newBlock);
+                        w.SetBlockUntracked(loc, newBlock);
                         w.Server.PlayersInRange(loc).ForEach(async p => await w.Server.BroadcastBlockPlacementToPlayerAsync(p, newBlock, loc));
                         var neighborUpdate = new BlockUpdate(w, loc, newBlock);
                         w.ScheduleBlockUpdate(neighborUpdate);

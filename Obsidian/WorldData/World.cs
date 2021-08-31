@@ -223,9 +223,17 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-        public void SetBlock(Vector location, Block block, bool doBlockUpdate = false) => SetBlock(location.X, location.Y, location.Z, block, doBlockUpdate);
+        public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 
-        public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate = false)
+        public void SetBlock(Vector location, Block block)
+        {
+            SetBlockUntracked(location.X, location.Y, location.Z, block);
+            Server.BroadcastBlockPlacement(null, block, location);
+        }
+
+        public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+
+        public void SetBlockUntracked(int x, int y, int z, Block block, bool doBlockUpdate = false)
         {
             if (doBlockUpdate)
             {

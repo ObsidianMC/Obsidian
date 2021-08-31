@@ -75,13 +75,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                 {
                     for (int y = topY; y > 0; y--)
                     {
-                        world.SetBlock(origin + (x, y, z), new Block(trunk, 1));
+                        world.SetBlockUntracked(origin + (x, y, z), new Block(trunk, 1));
                     }
 
                     // Fill in any air gaps under the trunk
                     if (world.GetBlock(origin+(x, -1, z)).Value.IsAir)
                     {
-                        world.SetBlock(origin + (x, -1, z), new Block(trunk, 1));
+                        world.SetBlockUntracked(origin + (x, -1, z), new Block(trunk, 1));
                     }
                 }
             }
@@ -96,7 +96,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                         for (int y = -2; y < 2; y++)
                         {
                             if ((Material)world.GetBlock(origin + (x - 4, y, z - 4)).Value.Id == Material.GrassBlock)
-                                world.SetBlock(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
+                                world.SetBlockUntracked(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
                         }
                     }
                 }
@@ -127,7 +127,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                         {
                             if (leaves[x, z])
                             {
-                                world.SetBlock(origin + (x-4, y-level, z-4), new Block(leaf));
+                                world.SetBlockUntracked(origin + (x-4, y-level, z-4), new Block(leaf));
                             }
                         }
                     }

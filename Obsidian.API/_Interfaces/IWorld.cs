@@ -13,8 +13,8 @@ namespace Obsidian.API
 
         public Block? GetBlock(Vector location);
         public Block? GetBlock(int x, int y, int z);
-        public void SetBlock(Vector location, Block block, bool blockUpdate = false);
-        public void SetBlock(int x, int y, int z, Block block, bool blockUpdate = false);
+        public void SetBlock(Vector location, Block block);
+        public void SetBlock(int x, int y, int z, Block block);
 
         public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type);
         public Task SpawnExperienceOrbs(VectorF position, short count);

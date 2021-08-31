@@ -65,7 +65,7 @@ namespace Obsidian.Entities
         private async Task ConvertToBlock(Vector loc)
         {
             var block = new Block(BlockMaterial);
-            server.World.SetBlock(loc, block);
+            server.World.SetBlockUntracked(loc, block);
 
             foreach (var p in server.PlayersInRange(loc))
             {

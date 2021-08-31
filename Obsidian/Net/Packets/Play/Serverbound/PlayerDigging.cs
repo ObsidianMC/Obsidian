@@ -26,8 +26,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (b is not Block block)
                 return;
 
-            if (Status == DiggingStatus.FinishedDigging)
+            if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
             {
+                server.World.SetBlockUntracked(Position, Block.Air, true);
+
                 var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
                 if (blockBreakEvent.Cancel)
                     return;
