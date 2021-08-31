@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API;
+using Obsidian.Net;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;

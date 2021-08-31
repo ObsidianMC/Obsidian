@@ -1,27 +1,28 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry;
-using Obsidian.WorldData;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Obsidian
+namespace Obsidian.API
 {
     [DebuggerDisplay("{Name,nq}:{Id}")]
     public readonly struct Block : IEquatable<Block>
     {
         public static Block Air => new Block(0, 0);
 
+        internal static string[] blockNames;
+        internal static MatchTarget[] stateToMatch;
+        internal static short[] numericToBase;
+
         private static short[] interactables;
         private static bool initialized = false;
 
-        public string UnlocalizedName => Registry.BlockNames[Id];
+        public string UnlocalizedName => blockNames[Id];
         public string Name => Material.ToString();
-        public Material Material => (Material)Registry.StateToMatch[baseId].numeric;
+        public Material Material => (Material)stateToMatch[baseId].numeric;
         public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
         public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
         public bool IsFluid => StateId > 33 && StateId < 66;
-        public int Id => Registry.StateToMatch[baseId].numeric;
+        public int Id => stateToMatch[baseId].numeric;
         public short StateId => (short)(baseId + state);
         public int State => state;
         public short BaseId => baseId;
@@ -103,7 +104,7 @@ namespace Obsidian
 
         public Block(short stateId)
         {
-            baseId = Registry.StateToMatch[stateId].@base;
+            baseId = stateToMatch[stateId].@base;
             state = (short)(stateId - baseId);
         }
 
@@ -119,7 +120,7 @@ namespace Obsidian
 
         public Block(Material material, short state = 0)
         {
-            baseId = Registry.NumericToBase[(int)material];
+            baseId = numericToBase[(int)material];
             this.state = state;
         }
 
@@ -135,7 +136,7 @@ namespace Obsidian
 
         public bool Is(Material material)
         {
-            return Registry.StateToMatch[baseId].numeric == (int)material;
+            return stateToMatch[baseId].numeric == (int)material;
         }
 
         public override bool Equals(object obj)
@@ -166,64 +167,34 @@ namespace Obsidian
 
             interactables = new[]
             {
-                Registry.NumericToBase[(int)Material.Chest],
-                Registry.NumericToBase[(int)Material.CraftingTable],
-                Registry.NumericToBase[(int)Material.Furnace],
-                Registry.NumericToBase[(int)Material.BrewingStand],
-                Registry.NumericToBase[(int)Material.EnderChest],
-                Registry.NumericToBase[(int)Material.Anvil],
-                Registry.NumericToBase[(int)Material.ChippedAnvil],
-                Registry.NumericToBase[(int)Material.DamagedAnvil],
-                Registry.NumericToBase[(int)Material.TrappedChest],
-                Registry.NumericToBase[(int)Material.Hopper],
-                Registry.NumericToBase[(int)Material.Barrel],
-                Registry.NumericToBase[(int)Material.Smoker],
-                Registry.NumericToBase[(int)Material.BlastFurnace],
-                Registry.NumericToBase[(int)Material.Grindstone],
+                numericToBase[(int)Material.Chest],
+                numericToBase[(int)Material.CraftingTable],
+                numericToBase[(int)Material.Furnace],
+                numericToBase[(int)Material.BrewingStand],
+                numericToBase[(int)Material.EnderChest],
+                numericToBase[(int)Material.Anvil],
+                numericToBase[(int)Material.ChippedAnvil],
+                numericToBase[(int)Material.DamagedAnvil],
+                numericToBase[(int)Material.TrappedChest],
+                numericToBase[(int)Material.Hopper],
+                numericToBase[(int)Material.Barrel],
+                numericToBase[(int)Material.Smoker],
+                numericToBase[(int)Material.BlastFurnace],
+                numericToBase[(int)Material.Grindstone],
             };
         }
     }
 
-    public struct BlockUpdate
+    [DebuggerDisplay("{@base}:{numeric}")]
+    internal struct MatchTarget
     {
-        internal readonly World world;
-        internal Vector position;
-        internal int delay { get; private set; }
-        internal int delayCounter;
-        private Block? _block;
-        internal Block? block
-        {
-            get => _block;
-            set 
-            {
-                _block = value;
-                if (value is Block b)
-                {
-                    if (Block.GravityAffected.Contains(b.Material))
-                    {
-                        delay = 1;
-                    }
-                    else if (b.Material == Material.Lava)
-                    {
-                        delay = 40;
-                    }
-                    else if (b.Material == Material.Water)
-                    {
-                        delay = 5;
-                    }
-                }
-                delayCounter = delay;
-            }
-        }
+        public short @base;
+        public short numeric;
 
-        public BlockUpdate(World w, Vector pos, Block? blk = null)
+        public MatchTarget(short @base, short numeric)
         {
-            world = w;
-            position = pos;
-            delay = 0;
-            delayCounter = delay;
-            _block = null;
-            block = blk;
+            this.@base = @base;
+            this.numeric = numeric;
         }
     }
 }
