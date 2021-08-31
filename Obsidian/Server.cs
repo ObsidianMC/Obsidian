@@ -409,13 +409,9 @@ namespace Obsidian
 
         private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-        internal void BroadcastPlayerDig(PlayerDiggingStore store)
+        internal void BroadcastPlayerDig(PlayerDiggingStore store, Block block)
         {
             var digging = store.Packet;
-
-            var b = this.World.GetBlock(digging.Position);
-            if (b is null) { return; }
-            var block = (Block)b;
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
