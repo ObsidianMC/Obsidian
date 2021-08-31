@@ -28,7 +28,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             if (Status == DiggingStatus.FinishedDigging)
             {
-                var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(player, block, Position));
+                var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
                 if (blockBreakEvent.Cancel)
                     return;
             }

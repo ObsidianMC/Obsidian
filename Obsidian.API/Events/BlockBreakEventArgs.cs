@@ -1,24 +1,18 @@
 ﻿namespace Obsidian.API.Events
 {
-    public class BlockBreakEventArgs : PlayerEventArgs, ICancellable
+    public class BlockBreakEventArgs : BlockEventArgs, ICancellable
     {
         /// <summary>
-        /// The block that was broken.
+        /// Player that has broken the block. If the block wasn't broken by a player, value of this property will be null.
         /// </summary>
-        public Block Block { get; }
-
-        /// <summary>
-        /// Location of the broken block.
-        /// </summary>
-        public Vector Location { get; }
+        public IPlayer? Player { get; }
 
         /// <inheritdoc/>
         public bool Cancel { get; set; }
 
-        internal BlockBreakEventArgs(IPlayer player, Block block, Vector location) : base(player)
+        internal BlockBreakEventArgs(IServer server, IPlayer? player, Block block, Vector location) : base(server, block, location)
         {
-            Block = block;
-            Location = location;
+            Player = player;
         }
     }
 }
