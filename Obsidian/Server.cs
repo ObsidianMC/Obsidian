@@ -400,6 +400,14 @@ namespace Obsidian
                 player.client.SendPacket(packet);
         }
 
+        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet)
+        {
+            foreach (var (_, player) in OnlinePlayers)
+            {
+                player.client.SendPacket(packet);
+            }
+        }
+
         internal async Task BroadcastNewCommandsAsync()
         {
             Registry.RegisterCommands(this);
@@ -432,7 +440,7 @@ namespace Obsidian
                     {
                         var droppedItem = player.GetHeldItem();
 
-                        if (droppedItem is null || droppedItem.Type == Material.Air)
+                        if (droppedItem is null or { Type: Material.Air })
                             return;
 
                         var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
@@ -487,16 +495,14 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = block.StateId,
                             Status = digging.Status,
                             Successful = true
                         });
 
                         if (player.Gamemode == Gamemode.Creative)
                         {
-                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
-
-                            this.World.SetBlockUntracked(digging.Position, Block.Air, true);
+                            World.SetBlock(digging.Position, Block.Air);
                         }
                     }
                     break;
@@ -507,7 +513,7 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = block.StateId,
                             Status = digging.Status,
                             Successful = true
                         });
