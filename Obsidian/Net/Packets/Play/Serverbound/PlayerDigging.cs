@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
@@ -19,20 +20,31 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public int Id => 0x1B;
 
-        public ValueTask HandleAsync(Server server, Player player)
+        public async ValueTask HandleAsync(Server server, Player player)
         {
+            Block? b = server.World.GetBlock(Position);
+            if (b is not Block block)
+                return;
+
+            if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
+            {
+                server.World.SetBlockUntracked(Position, Block.Air, true);
+
+                var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
+                if (blockBreakEvent.Cancel)
+                    return;
+            }
+
             server.BroadcastPlayerDig(new PlayerDiggingStore
             {
                 Player = player.Uuid,
                 Packet = this
-            });
+            }, block);
 
             if (Status == DiggingStatus.FinishedDigging)
             {
                 server.World.BlockUpdateNeighbors(new BlockUpdate(server.World, Position));
             }
-
-            return ValueTask.CompletedTask;
         }
     }
 

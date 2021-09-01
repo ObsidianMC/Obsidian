@@ -22,7 +22,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                         {
                             if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                             {
-                                world.SetBlock(x, y, z, new Block(leaf));
+                                world.SetBlockUntracked(x, y, z, new Block(leaf));
                             }
                         }
                         else if (!(
@@ -32,7 +32,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                             (x == origin.X + 3 && z == origin.Z + 3)
                             ))
                         {
-                            world.SetBlock(x, y, z, new Block(leaf));
+                            world.SetBlockUntracked(x, y, z, new Block(leaf));
                         }
                     }
                 }

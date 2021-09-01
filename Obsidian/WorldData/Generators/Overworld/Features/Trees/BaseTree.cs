@@ -49,12 +49,12 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
                         {
                             if (x != origin.X - 2 && x != origin.X + 2 && z != origin.Z - 2 && z != origin.Z + 2)
                             {
-                                world.SetBlock(x, y, z, new Block(leaf));
+                                world.SetBlockUntracked(x, y, z, new Block(leaf));
                             }
                         }
                         else
                         {
-                            world.SetBlock(x, y, z, new Block(leaf));
+                            world.SetBlockUntracked(x, y, z, new Block(leaf));
                         }
                     }
                 }
@@ -66,9 +66,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
             int topY = trunkHeight + heightOffset;
             for (int y = topY; y > 0; y--)
             {
-                world.SetBlock(origin + (0, y, 0), new Block(trunk, 1));
+                world.SetBlockUntracked(origin + (0, y, 0), new Block(trunk, 1));
             }
-            world.SetBlock(origin, new Block(Material.Dirt));
+            world.SetBlockUntracked(origin, new Block(Material.Dirt));
         }
 
         protected virtual bool TreeCanGrow(Vector origin)

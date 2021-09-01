@@ -351,6 +351,17 @@ namespace Obsidian
             }
         }
 
+        internal void BroadcastBlockPlacement(Player player, Block block, Vector location)
+        {
+            foreach (var (_, other) in OnlinePlayers)
+            {
+                if (other == player)
+                    continue;
+
+                other.client.SendPacket(new BlockChange(location, block.StateId));
+            }
+        }
+
         internal async Task ParseMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
         {
             if (format == null) format = "<{0}> {1}";
@@ -409,13 +420,9 @@ namespace Obsidian
 
         private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-        internal void BroadcastPlayerDig(PlayerDiggingStore store)
+        internal void BroadcastPlayerDig(PlayerDiggingStore store, Block block)
         {
             var digging = store.Packet;
-
-            var b = this.World.GetBlock(digging.Position);
-            if (b is null) { return; }
-            var block = (Block)b;
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
@@ -489,7 +496,7 @@ namespace Obsidian
                         {
                             this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
 
-                            this.World.SetBlock(digging.Position, Block.Air, true);
+                            this.World.SetBlockUntracked(digging.Position, Block.Air, true);
                         }
                     }
                     break;
@@ -513,8 +520,6 @@ namespace Obsidian
                         });
 
                         this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
-
-                        this.World.SetBlock(digging.Position, Block.Air, true);
 
                         var droppedItem = Registry.GetItem(block.Material);
 
