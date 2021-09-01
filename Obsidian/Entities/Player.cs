@@ -237,6 +237,9 @@ namespace Obsidian.Entities
         {
             var actualBoard = (Scoreboard)scoreboard;
 
+            if (actualBoard.Objective is null)
+                throw new InvalidOperationException("You must create an objective for the scoreboard before displaying it.");
+
             this.CurrentScoreboard = actualBoard;
 
             await this.client.QueuePacketAsync(new ScoreboardObjectivePacket
@@ -495,15 +498,15 @@ namespace Obsidian.Entities
 
             writer.EndList();
 
-            var items =  this.Inventory.Items.Select((item, slot) => (item, slot));
+            var items = this.Inventory.Items.Select((item, slot) => (item, slot));
 
             var nonNullItems = items.Where(x => x.item != null);
 
             writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
 
-            if(nonNullItems.Count() > 0)
+            if (nonNullItems.Count() > 0)
             {
-                foreach(var (item, slot) in nonNullItems)
+                foreach (var (item, slot) in nonNullItems)
                 {
                     writer.WriteCompoundStart();
 
