@@ -85,6 +85,10 @@ namespace Obsidian
                     element.Value += 1;
             }
 
+            Score previousScore = null;
+            if (this.scores.ContainsKey(scoreName))
+                previousScore = this.scores[scoreName];
+
             this.scores[scoreName] = score;
 
             foreach (var (_, player) in this.server.OnlinePlayers)
@@ -93,6 +97,16 @@ namespace Obsidian
                 {
                     foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
                     {
+                        if (previousScore is not null)
+                        {
+                            await player.client.QueuePacketAsync(new UpdateScore
+                            {
+                                EntityName = previousScore.DisplayText,
+                                ObjectiveName = this.Objective.ObjectiveName,
+                                Action = 1,
+                                Value = s.Value
+                            });
+                        }
                         await player.client.QueuePacketAsync(new UpdateScore
                         {
                             EntityName = s.DisplayText,
@@ -104,6 +118,24 @@ namespace Obsidian
                 }
             }
 
+        }
+
+        public async Task RemoveScoreAsync(string scoreName)
+        {
+            if (this.scores.ContainsKey(scoreName))
+            {
+                foreach (var (_, player) in this.server.OnlinePlayers)
+                {
+                    if (player.CurrentScoreboard == this)
+                        await player.client.QueuePacketAsync(new UpdateScore
+                        {
+                            EntityName = this.scores[scoreName].DisplayText,
+                            ObjectiveName = this.Objective.ObjectiveName,
+                            Action = 1,
+                            Value = this.scores[scoreName].Value
+                        });
+                }
+            }
         }
 
         public Score GetScore(string scoreName) => this.scores.GetValueOrDefault(scoreName);

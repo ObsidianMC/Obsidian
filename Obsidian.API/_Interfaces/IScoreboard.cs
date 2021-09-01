@@ -12,6 +12,8 @@ namespace Obsidian.API
 
         public Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int value = 0);
 
+        public Task RemoveScoreAsync(string scoreName);
+
         public Score GetScore(string scoreName);
     }
 }
