@@ -31,9 +31,6 @@ namespace Obsidian.Entities
 
         public string Username { get; }
 
-        public string DisplayName { get; internal set; }
-
-
         /// <summary>
         /// The players inventory
         /// </summary>
@@ -464,7 +461,7 @@ namespace Obsidian.Entities
 
             await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
 
-            this.DisplayName = newDisplayName;
+            this.CustomName = newDisplayName;
         }
 
         public async Task SaveAsync()
@@ -504,32 +501,28 @@ namespace Obsidian.Entities
 
             writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
 
-            if (nonNullItems.Count() > 0)
+            foreach (var (item, slot) in nonNullItems)
             {
-                foreach (var (item, slot) in nonNullItems)
-                {
-                    writer.WriteCompoundStart();
+                writer.WriteCompoundStart();
 
-                    writer.WriteByte("Count", (byte)item.Count);
-                    writer.WriteByte("Slot", (byte)slot);
+                writer.WriteByte("Count", (byte)item.Count);
+                writer.WriteByte("Slot", (byte)slot);
 
-                    writer.WriteString("id", item.GetItem().UnlocalizedName);
+                writer.WriteString("id", item.GetItem().UnlocalizedName);
 
-                    writer.WriteCompoundStart("tag");
+                writer.WriteCompoundStart("tag");
 
-                    writer.WriteInt("Damage", item.ItemMeta.Durability);
-                    writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+                writer.WriteInt("Damage", item.ItemMeta.Durability);
+                writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
 
-                    //TODO: item attributes
+                //TODO: item attributes
 
-                    writer.EndCompound();
-                    writer.EndCompound();
-                }
+                writer.EndCompound();
+                writer.EndCompound();
             }
-            else
-            {
+
+            if (nonNullItems.Count() <= 0)
                 writer.Write(NbtTagType.End);
-            }
 
             writer.EndList();
 

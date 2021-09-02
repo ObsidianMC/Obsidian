@@ -9,7 +9,6 @@ namespace Obsidian.API
         public Inventory Inventory { get; }
 
         public string Username { get; }
-        public string DisplayName { get; }
 
         public Guid Uuid { get; }
         public bool IsOperator { get; }
