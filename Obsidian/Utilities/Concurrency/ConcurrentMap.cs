@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Obsidian.Utilities.Concurrency
@@ -10,6 +11,7 @@ namespace Obsidian.Utilities.Concurrency
     public sealed class ConcurrentMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IDisposable where TKey : notnull
     {
         public int Count => map.Count;
+        public IEnumerable<TValue> Values => this.Select(pair => pair.Value);
 
         private readonly ReaderWriterLockSlim mapLock = new();
         private readonly Dictionary<TKey, TValue> map = new();

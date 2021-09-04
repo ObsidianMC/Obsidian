@@ -100,12 +100,12 @@ namespace Obsidian.Utilities
             return Registry.Registry.GetItem(itemStack.Type);
         }
 
-        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids)
+        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this IEnumerable<KeyValuePair<Guid, Player>> source, params Guid[] uuids)
         {
             return source.Where(x => !uuids.Contains(x.Value.Uuid));
         }
 
-        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
+        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this IEnumerable<KeyValuePair<Guid, Player>> source, params Player[] players)
         {
             var newDict = new Dictionary<Guid, Player>();
             foreach ((Guid uuid, Player player) in source)

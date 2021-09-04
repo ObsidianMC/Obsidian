@@ -15,6 +15,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Concurrency;
 using Obsidian.Utilities.Debug;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
@@ -62,7 +63,7 @@ namespace Obsidian
 
         internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new ConcurrentDictionary<Guid, Inventory>();
 
-        public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new ConcurrentDictionary<Guid, Player>();
+        public ConcurrentMap<Guid, Player> OnlinePlayers { get; } = new();
 
         public ConcurrentDictionary<string, World> Worlds { get; private set; } = new ConcurrentDictionary<string, World>();
 
@@ -184,7 +185,7 @@ namespace Obsidian
 
         public IPlayer GetPlayer(string username) => this.OnlinePlayers.FirstOrDefault(player => player.Value.Username == username).Value;
 
-        public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
+        public IPlayer GetPlayer(Guid uuid) => this.OnlinePlayers.TryGet(uuid, out var player) ? player : null;
 
         public IPlayer GetPlayer(int entityId) => this.OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
 
@@ -432,7 +433,7 @@ namespace Obsidian
         {
             var digging = store.Packet;
 
-            var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
+            OnlinePlayers.TryGet(store.Player, out Player player);
 
             switch (digging.Status)
             {
