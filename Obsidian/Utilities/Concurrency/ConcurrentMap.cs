@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Obsidian.Utilities.Concurrency
 {
-    public sealed class ConcurrentMap<TKey, TValue> : IDisposable
+    [DebuggerDisplay("Count = {Count}")]
+    public sealed class ConcurrentMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>, IDisposable where TKey : notnull
     {
         public int Count => map.Count;
 
@@ -71,9 +74,59 @@ namespace Obsidian.Utilities.Concurrency
             GC.SuppressFinalize(this);
         }
 
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => new Enumerator(this);
+
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+
         ~ConcurrentMap()
         {
             mapLock.Dispose();
+        }
+
+        private sealed class Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+        {
+            public KeyValuePair<TKey, TValue> Current => enumerator.Current;
+            object IEnumerator.Current => Current;
+
+            private readonly ConcurrentMap<TKey, TValue> map;
+            private readonly IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
+            private bool locked;
+
+            public Enumerator(ConcurrentMap<TKey, TValue> map)
+            {
+                this.map = map;
+                enumerator = map.GetEnumerator();
+            }
+
+            public bool MoveNext()
+            {
+                if (!locked)
+                {
+                    locked = true;
+                    map.mapLock.EnterReadLock();
+                }
+
+                return enumerator.MoveNext();
+            }
+
+            public void Reset()
+            {
+                enumerator.Reset();
+                if (locked)
+                {
+                    map.mapLock.ExitReadLock();
+                    locked = false;
+                }
+            }
+
+            public void Dispose()
+            {
+                if (locked)
+                {
+                    map.mapLock.ExitReadLock();
+                    locked = false;
+                }
+            }
         }
     }
 }
