@@ -68,6 +68,14 @@ namespace Obsidian.Utilities.Concurrency
             return success;
         }
 
+        public bool ContainsKey(TKey key)
+        {
+            mapLock.EnterReadLock();
+            bool hasKey = key is not null && map.ContainsKey(key);
+            mapLock.ExitReadLock();
+            return hasKey;
+        }
+
         public void Dispose()
         {
             mapLock.Dispose();
