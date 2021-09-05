@@ -4,23 +4,21 @@ namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateHealthAction : BossBarAction
     {
-        public override int Action => 2;
         public float Health { get; set; }
 
-        public override byte[] ToArray()
-        {
-            using var stream = new MinecraftStream();
-            stream.WriteFloat(Health);
+        public BossBarUpdateHealthAction() : base(2) { }
 
-            return stream.ToArray();
+        public override void WriteTo(MinecraftStream stream)
+        {
+            base.WriteTo(stream);
+
+            stream.WriteFloat(Health);
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task WriteToAsync(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
+            await base.WriteToAsync(stream); 
             await stream.WriteFloatAsync(Health);
-
-            return stream.ToArray();
         }
     }
 }

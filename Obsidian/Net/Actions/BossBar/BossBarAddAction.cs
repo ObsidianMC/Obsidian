@@ -1,13 +1,11 @@
 ﻿using Obsidian.API;
-using Obsidian.BossBar;
+using Obsidian.API.Boss;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarAddAction : BossBarAction
     {
-        public override int Action => 0;
-
         public ChatMessage Title { get; set; }
 
         public float Health { get; set; }
@@ -18,26 +16,27 @@ namespace Obsidian.Net.Actions.BossBar
 
         public BossBarFlags Flags { get; set; }
 
-        public override byte[] ToArray()
+        public BossBarAddAction() : base(0) { }
+
+        public override void WriteTo(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
+            base.WriteTo(stream);
+
             stream.WriteChat(Title);
             stream.WriteFloat(Health);
             stream.WriteVarInt(Color);
             stream.WriteVarInt(Division);
             stream.WriteUnsignedByte((byte)Flags);
-            return stream.ToArray();
         }
-
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task WriteToAsync(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
+            await base.WriteToAsync(stream);
+
             await stream.WriteChatAsync(Title);
             await stream.WriteFloatAsync(Health);
             await stream.WriteVarIntAsync(Color);
             await stream.WriteVarIntAsync(Division);
             await stream.WriteUnsignedByteAsync((byte)Flags);
-            return stream.ToArray();
         }
     }
 }

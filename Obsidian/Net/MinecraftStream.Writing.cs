@@ -415,11 +415,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WriteBossBarAction(BossBarAction value)
-        {
-            WriteVarInt(value.Action);
-            Write(value.ToArray());
-        }
+        public void WriteBossBarAction(BossBarAction value) => value.WriteTo(this);
 
         [WriteMethod]
         public void WriteTag(Tag value)

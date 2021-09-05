@@ -1,28 +1,26 @@
-﻿using System.Threading.Tasks;
-
-using Obsidian.BossBar;
+﻿using Obsidian.API.Boss;
+using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateFlagsAction : BossBarAction
     {
-        public override int Action => 5;
-
         public BossBarFlags Flags { get; set; }
 
-        public override byte[] ToArray()
+        public BossBarUpdateFlagsAction() : base(5) { }
+
+        public override void WriteTo(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
+            base.WriteTo(stream);
+
             stream.WriteUnsignedByte((byte)Flags);
-            return stream.ToArray();
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task WriteToAsync(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
-            await stream.WriteUnsignedByteAsync((byte)Flags);
+            await base.WriteToAsync(stream);
 
-            return stream.ToArray();
+            await stream.WriteUnsignedByteAsync((byte)Flags);
         }
     }
 }
