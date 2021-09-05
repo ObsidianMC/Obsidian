@@ -22,10 +22,12 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
-        internal HashSet<int> VisiblePlayers = new();
+        internal HashSet<int> visiblePlayers = new();
 
         //TODO: better name??
         internal short inventorySlot = 36;
+
+        internal bool isDragging;
 
         public bool IsOperator => Server.Operators.IsOperator(this);
 
@@ -50,7 +52,6 @@ namespace Obsidian.Entities
 
         public bool Sleeping { get; set; }
         public bool InHorseInventory { get; set; }
-        public bool IsDragging { get; set; }
 
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
@@ -149,10 +150,10 @@ namespace Obsidian.Entities
         {
             foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
             {
-                if (!this.VisiblePlayers.Contains(player.EntityId) && player.Alive)
+                if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
                 {
                     this.server.Logger.LogDebug($"Added back: {player.Username}");
-                    this.VisiblePlayers.Add(player.EntityId);
+                    this.visiblePlayers.Add(player.EntityId);
 
                     await this.client.QueuePacketAsync(new SpawnPlayer
                     {
@@ -165,7 +166,7 @@ namespace Obsidian.Entities
                 }
             }
 
-            this.VisiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
+            this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
         }
 
         private async Task PickupNearbyItemsAsync(float distance = 0.5f)
@@ -195,14 +196,6 @@ namespace Obsidian.Entities
                     await item.RemoveAsync();
                 }
             }
-        }
-
-        internal async Task SendScoreboardInfo(ScoreboardObjectivePacket packet, UpdateScore scorePacket = null)
-        {
-            await this.client.QueuePacketAsync(packet);
-
-            if (scorePacket != null)
-                await this.client.QueuePacketAsync(scorePacket);
         }
 
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -300,8 +293,7 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
-        public async Task TeleportAsync(Player to)
+        public async Task TeleportAsync(IPlayer to)
         {
             this.LastPosition = this.Position;
             this.Position = to.Position;
@@ -316,9 +308,11 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
+            this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
+            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));
@@ -333,7 +327,7 @@ namespace Obsidian.Entities
 
         public async Task RespawnAsync()
         {
-            this.VisiblePlayers.Clear();
+            this.visiblePlayers.Clear();
 
             Registry.Dimensions.TryGetValue(0, out var codec);
 
@@ -380,7 +374,7 @@ namespace Obsidian.Entities
             await this.RemoveAsync();
 
             if (source is Player attacker)
-                attacker.VisiblePlayers.Remove(this.EntityId);
+                attacker.visiblePlayers.Remove(this.EntityId);
         }
 
         public override async Task WriteAsync(MinecraftStream stream)

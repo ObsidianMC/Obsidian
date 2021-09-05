@@ -683,7 +683,7 @@ namespace Obsidian
             foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
             {
                 await other.client.RemovePlayerFromListAsync(player);
-                if (other.VisiblePlayers.Contains(player.EntityId))
+                if (other.visiblePlayers.Contains(player.EntityId))
                     await other.client.QueuePacketAsync(destroy);
             }
 
