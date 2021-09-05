@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Crafting;
+﻿using Obsidian.API.Boss;
+using Obsidian.API.Crafting;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -27,5 +28,7 @@ namespace Obsidian.API
         public IPlayer? GetPlayer(Guid uuid);
         public IPlayer? GetPlayer(int entityId);
         public void RegisterRecipes(params IRecipe[] recipes);
+
+        public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
     }
 }

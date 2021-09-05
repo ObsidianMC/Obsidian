@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Boss;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands;
@@ -318,6 +319,15 @@ namespace Obsidian
 
             this.Logger.LogWarning("Server is shutting down...");
         }
+
+        public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
+        {
+            Title = title,
+            Health = health,
+            Color = color,
+            DivisionType = divisionType,
+            Flags = flags
+        };
 
         internal async Task ExecuteCommand(string input)
         {
