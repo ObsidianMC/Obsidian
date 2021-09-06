@@ -1,11 +1,13 @@
-﻿using Obsidian.Entities;
+﻿using Obsidian.API;
+using Obsidian.API.Boss;
+using Obsidian.Entities;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Obsidian.API.Boss
+namespace Obsidian
 {
     public class BossBar : IBossBar
     {
