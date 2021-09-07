@@ -5,7 +5,6 @@ using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Nbt;
 using Obsidian.Net;
-using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
@@ -75,24 +74,17 @@ namespace Obsidian.Entities
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
+        public int XpP { get; set; } = 0;
 
         public double HeadY { get; private set; }
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
-        public float FoodExhaustionLevel { get; set; } // not a type, it's in docs like this
+        public float FoodExhaustionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
-        public int Score { get; set; } = 0; // idfk, xp points?
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
-
-        /* Missing for now:
-            NbtCompound(inventory)
-            NbtList(Motion)
-            NbtList(Pos)
-            NbtList(Rotation)
-        */
 
         // Properties set by Obsidian (unofficial)
         // Not sure whether these should be saved to the NBT file.
@@ -312,7 +304,7 @@ namespace Obsidian.Entities
         public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
             this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => 
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
             client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
@@ -382,7 +374,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
 
-            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.Score);
+            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
 
             await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (byte)this.PlayerBitMask);
 
@@ -403,7 +395,7 @@ namespace Obsidian.Entities
             stream.WriteFloat(AdditionalHearts);
 
             stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
-            stream.WriteVarInt(Score);
+            stream.WriteVarInt(XpP);
 
             stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
             stream.WriteByte((byte)PlayerBitMask);
@@ -488,6 +480,13 @@ namespace Obsidian.Entities
 
             writer.EndList();
 
+            writer.WriteListStart("Rotation", NbtTagType.Float, 2);
+
+            writer.WriteFloat(this.Yaw);
+            writer.WriteFloat(this.Pitch);
+
+            writer.EndList();
+
             var items = this.Inventory.Items.Select((item, slot) => (item, slot));
 
             var nonNullItems = items.Where(x => x.item != null);
@@ -562,9 +561,7 @@ namespace Obsidian.Entities
             this.FallDistance = compound.GetFloat("FallDistance");
             this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
             this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
-            this.Score = compound.GetInt("XpP");
-
-            float x = 0, y = 0, z = 0;
+            this.XpP = compound.GetInt("XpP");
 
             if (compound.TryGetTag("Pos", out var posTag))
             {
@@ -572,12 +569,24 @@ namespace Obsidian.Entities
 
                 var pos = list.Select(x => x as NbtTag<double>).ToList();
 
-                x = (float)pos[0].Value;
-                y = (float)pos[1].Value;
+                float x = (float)pos[0].Value,
+                y = (float)pos[1].Value,
                 z = (float)pos[2].Value;
-            }
 
-            this.Position = x <= 0 && y <= 0 && z <= 0 ? this.World.Data.SpawnPosition : new VectorF(x, y, z);
+                this.Position = new VectorF(x, y, z);
+            }
+            else
+                this.Position = this.World.Data.SpawnPosition;
+
+            if (compound.TryGetTag("Rotation", out var rotationTag))
+            {
+                var list = rotationTag as NbtList;
+
+                var rotation = list.Select(x => x as NbtTag<float>).ToList();
+
+                this.Yaw = rotation[0].Value;
+                this.Pitch = rotation[1].Value;
+            }
 
             if (compound.TryGetTag("Inventory", out var rawTag))
             {
