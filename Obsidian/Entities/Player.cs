@@ -199,6 +199,7 @@ namespace Obsidian.Entities
         }
 
         public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
+        public ItemStack GetOffHandItem() => this.Inventory.GetItem(45);
 
         public async Task LoadPermsAsync()
         {

@@ -59,5 +59,8 @@ namespace Obsidian.API
         public Task SetGamemodeAsync(Gamemode gamemode);
 
         public Task UpdateDisplayNameAsync(string newDisplayName);
+
+        public ItemStack GetHeldItem();
+        public ItemStack GetOffHandItem();
     }
 }
