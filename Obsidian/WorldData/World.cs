@@ -228,7 +228,15 @@ namespace Obsidian.WorldData
         public void SetBlock(Vector location, Block block)
         {
             SetBlockUntracked(location.X, location.Y, location.Z, block);
-            Server.BroadcastBlockPlacement(null, block, location);
+            Server.BroadcastBlockChange(block, location);
+        }
+
+        public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlock(new Vector(x, y, z), block, doBlockUpdate);
+
+        public void SetBlock(Vector location, Block block, bool doBlockUpdate)
+        {
+            SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+            Server.BroadcastBlockChange(block, location);
         }
 
         public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
@@ -527,9 +535,9 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            await Server.BroadcastAsync("Saving to disk...");
+            Server.BroadcastMessage("Saving to disk...");
             Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-            await Server.BroadcastAsync("Save complete.");
+            Server.BroadcastMessage("Save complete.");
         }
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)

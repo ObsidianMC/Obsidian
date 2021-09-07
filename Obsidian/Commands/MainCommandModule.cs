@@ -26,7 +26,7 @@ namespace Obsidian.Commands
         {
             var sender = Context.Sender;
             var server = (Server)Context.Server;
-            var commandHandler = server.Commands;
+            var commandHandler = server.CommandsHandler;
             var allCommands = commandHandler.GetAllCommands();
             var availableCommands = new List<Command>();
 
@@ -197,14 +197,14 @@ namespace Obsidian.Commands
         #region echo
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
-        public Task EchoAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
+        public void Echo(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
         #endregion
 
         #region announce
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
         [RequirePermission(op: true, permissions: "obsidian.announce")]
-        public Task AnnounceAsync(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastAsync(text, MessageType.ActionBar);
+        public void Announce(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage(text, MessageType.ActionBar);
         #endregion
 
         #region leave
@@ -386,7 +386,7 @@ namespace Obsidian.Commands
         public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
-            await server.BroadcastAsync($"Server stopped by {ChatColor.Red}{Context.Player?.Username ?? Context.Sender.ToString()}{ChatColor.Reset}.");
+            server.BroadcastMessage($"Server stopped by {ChatColor.Red}{Context.Player?.Username ?? Context.Sender.ToString()}{ChatColor.Reset}.");
             await Task.Run(() =>
             {
                 server.StopServer();
@@ -463,7 +463,7 @@ namespace Obsidian.Commands
         [RequirePermission(op: true)]
         public async Task BreakpointAsync(CommandContext Context)
         {
-            await Context.Server.BroadcastAsync("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
+            Context.Server.BroadcastMessage("You might get kicked due to timeout, a breakpoint will hit in 3 seconds!");
             await Task.Delay(3000);
             Debugger.Break();
         }

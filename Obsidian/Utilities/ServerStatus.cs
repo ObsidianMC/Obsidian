@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.Entities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -80,21 +81,16 @@ namespace Obsidian.Utilities
 
         public ServerPlayers(Server server)
         {
-            var players = server.OnlinePlayers.Values;
-
             Max = server.Config.MaxPlayers;
-            Online = players.Count();
 
-            if (this.Online > 0)
+            foreach (Player player in server.Players)
             {
-                foreach (var player in players)
+                Sample.Add(new
                 {
-                    this.Sample.Add(new
-                    {
-                        name = player.Username,
-                        id = player.Uuid
-                    });
-                }
+                    name = player.Username,
+                    id = player.Uuid
+                });
+                Online++; // Don't move out of the loop.  The contents exposed through the enumerator may contain modifications made to the dictionary after GetEnumerator was called.
             }
         }
 

@@ -119,6 +119,14 @@ namespace Obsidian.Utilities
             return newDict;
         }
 
+        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
+        {
+            foreach (T t in collection)
+            {
+                action(t);
+            }
+        }
+
         // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
         public static string MinecraftShaDigest(this byte[] data)
         {
@@ -151,6 +159,11 @@ namespace Obsidian.Utilities
         public static ref T GetRef<T>(this Span<T> span) where T : struct
         {
             return ref MemoryMarshal.GetReference(span);
+        }
+
+        public static Task<Task> StartLongRunning(this TaskFactory factory, Func<Task> func)
+        {
+            return factory.StartNew(func, CancellationToken.None, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);

@@ -67,10 +67,7 @@ namespace Obsidian.Entities
             var block = new Block(BlockMaterial);
             server.World.SetBlockUntracked(loc, block);
 
-            foreach (var p in server.PlayersInRange(loc))
-            {
-                await server.BroadcastBlockPlacementToPlayerAsync(p, block, loc);
-            }
+            server.BroadcastBlockChange(block, loc);
 
             await server.World.DestroyEntityAsync(this);
         }

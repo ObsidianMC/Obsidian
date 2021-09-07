@@ -20,7 +20,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            await server.ParseMessageAsync(Message, Format, player.client);
+            await server.HandleIncomingMessageAsync(Message, Format, player.client);
         }
     }
 }
