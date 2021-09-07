@@ -9,7 +9,7 @@ namespace Obsidian.API
     {
         public string Version { get; }
         public int Port { get; }
-        public int TPS { get; }
+        public int Tps { get; }
         public DateTimeOffset StartTime { get; }
         public ProtocolVersion Protocol { get; }
         public IEnumerable<IPlayer> Players { get; }

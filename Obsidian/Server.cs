@@ -36,48 +36,30 @@ namespace Obsidian
 {
     public class Server : IServer
     {
-        private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
-        private readonly ConcurrentHashSet<Client> clients = new();
-        private readonly TcpListener tcpListener;
-
-        internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
-
-        internal readonly CancellationTokenSource cts;
-
-        internal static byte LastInventoryId;
-
         public const ProtocolVersion protocol = ProtocolVersion.v1_16_5;
         public ProtocolVersion Protocol => protocol;
 
-        public int TPS { get; private set; }
+        public int Tps { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
 
-        public MinecraftEventHandler Events { get; }
         public PluginManager PluginManager { get; }
+        public MinecraftEventHandler Events { get; } = new();
 
         public IOperatorList Operators { get; }
-
         public IScoreboardManager ScoreboardManager { get; private set; }
 
-        internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new();
-
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-
         public ConcurrentDictionary<string, World> Worlds { get; } = new();
-
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
-
+        internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new();
         public HashSet<string> RegisteredChannels { get; } = new();
-
         public CommandHandler CommandsHandler { get; }
+
         public Config Config { get; }
         public IConfig Configuration => Config;
 
         public ILogger Logger { get; }
-
         public LoggerProvider LoggerProvider { get; }
-
-        public int TotalTicks { get; private set; }
 
         public int Id { get; }
         public string Version { get; }
@@ -88,6 +70,16 @@ namespace Obsidian
         public IEnumerable<IPlayer> Players => GetPlayers();
 
         public string ServerFolderPath { get; }
+
+        private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
+        private readonly ConcurrentHashSet<Client> clients = new();
+        private readonly TcpListener tcpListener;
+
+        internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+
+        internal readonly CancellationTokenSource cts = new();
+
+        internal static byte LastInventoryId;
 
         /// <summary>
         /// Creates a new instance of <see cref="Server"/>.
@@ -103,10 +95,6 @@ namespace Obsidian
             ServerFolderPath = Path.GetFullPath($"Server-{Id}");
 
             tcpListener = new TcpListener(IPAddress.Any, Port);
-
-            cts = new CancellationTokenSource();
-
-            Events = new MinecraftEventHandler();
 
             Operators = new OperatorList(this);
 
@@ -159,7 +147,7 @@ namespace Obsidian
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             CommandsHandler.AddArgumentParser(parser);
 
-        //TODO make sure to re-send recipes
+        // TODO make sure to re-send recipes
         public void RegisterRecipes(params IRecipe[] recipes)
         {
             foreach (var recipe in recipes)
@@ -394,24 +382,30 @@ namespace Obsidian
             }
         }
 
-        internal async Task BroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
+        internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
+        {
+            foreach (Player player in Players)
+                await player.client.QueuePacketAsync(packet);
+        }
+
+        internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet, params int[] excluded)
         {
             foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
                 await player.client.QueuePacketAsync(packet);
         }
 
-        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet, params int[] excluded)
-        {
-            foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
-                player.client.SendPacket(packet);
-        }
-
-        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet)
+        internal void BroadcastPacket(IClientboundPacket packet)
         {
             foreach (Player player in Players)
             {
                 player.client.SendPacket(packet);
             }
+        }
+
+        internal void BroadcastPacket(IClientboundPacket packet, params int[] excluded)
+        {
+            foreach (Player player in Players.Where(x => !excluded.Contains(x.EntityId)))
+                player.client.SendPacket(packet);
         }
 
         internal async Task BroadcastNewCommandsAsync()
@@ -467,7 +461,7 @@ namespace Obsidian
 
                         var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                        BroadcastPacketWithoutQueue(new SpawnEntity
+                        BroadcastPacket(new SpawnEntity
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,
@@ -478,7 +472,7 @@ namespace Obsidian
                             Data = 1,
                             Velocity = vel
                         });
-                        BroadcastPacketWithoutQueue(new EntityMetadata
+                        BroadcastPacket(new EntityMetadata
                         {
                             EntityId = item.EntityId,
                             Entity = item
@@ -498,7 +492,7 @@ namespace Obsidian
                     }
                 case DiggingStatus.StartedDigging:
                     {
-                        BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        BroadcastPacket(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
                             Block = block.StateId,
@@ -516,7 +510,7 @@ namespace Obsidian
                     break;
                 case DiggingStatus.FinishedDigging:
                     {
-                        BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
+                        BroadcastPacket(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
                             Block = block.StateId,
@@ -524,14 +518,14 @@ namespace Obsidian
                             Successful = true
                         });
 
-                        BroadcastPacketWithoutQueue(new BlockBreakAnimation
+                        BroadcastPacket(new BlockBreakAnimation
                         {
                             EntityId = player,
                             Position = digging.Position,
                             DestroyStage = -1
                         });
 
-                        BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
+                        BroadcastPacket(new BlockChange(digging.Position, 0));
 
                         var droppedItem = Registry.GetItem(block.Material);
 
@@ -550,7 +544,7 @@ namespace Obsidian
 
                         TryAddEntity(player.World, item);
 
-                        BroadcastPacketWithoutQueue(new SpawnEntity
+                        BroadcastPacket(new SpawnEntity
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,
@@ -565,7 +559,7 @@ namespace Obsidian
                                 (Globals.Random.NextFloat() * 0.5f) + 0.25f))
                         });
 
-                        BroadcastPacketWithoutQueue(new EntityMetadata
+                        BroadcastPacket(new EntityMetadata
                         {
                             EntityId = item.EntityId,
                             Entity = item
@@ -608,17 +602,17 @@ namespace Obsidian
                 keepAliveTicks++;
                 if (keepAliveTicks > 50)
                 {
-                    var keepaliveid = DateTime.Now.Millisecond;
+                    var keepAliveId = DateTime.Now.Millisecond;
 
                     foreach (var client in clients.Where(x => x.State == ClientState.Play))
-                        client.ProcessKeepAlive(keepaliveid);
+                        client.ProcessKeepAlive(keepAliveId);
 
                     keepAliveTicks = 0;
                 }
 
                 if (Config.Baah.HasValue)
                 {
-                    foreach (var (uuid, player) in OnlinePlayers)
+                    foreach (Player player in Players)
                     {
                         var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
                         await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
@@ -633,9 +627,10 @@ namespace Obsidian
                     }
                 }
 
-                tpsMeasure.PushMeasurement(stopwatch.ElapsedTicks);
-                TPS = tpsMeasure.Tps;
+                long elapsedTicks = stopwatch.ElapsedTicks;
                 stopwatch.Restart();
+                tpsMeasure.PushMeasurement(elapsedTicks);
+                Tps = tpsMeasure.Tps;
 
                 await World.ManageChunksAsync();
                 UpdateStatusConsole();
@@ -706,7 +701,7 @@ namespace Obsidian
         internal void UpdateStatusConsole()
         {
             int chunksLoaded = World.Regions.Sum(entry => entry.Value.LoadedChunkCount);
-            var status = $"    tps:{TPS} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+            var status = $"    tps:{Tps} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
             ConsoleIO.UpdateStatusLine(status);
         }
     }

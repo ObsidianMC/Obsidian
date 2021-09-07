@@ -8,7 +8,7 @@ namespace Obsidian.Utilities
         public int Tps => _tps;
         private int _tps;
 
-        private long[] buffer = new long[20];
+        private long[] buffer = new long[10];
         private int bufferIndex;
 
         public void PushMeasurement(long ticks)

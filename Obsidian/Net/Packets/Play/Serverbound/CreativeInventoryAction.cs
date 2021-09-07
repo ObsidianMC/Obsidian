@@ -34,7 +34,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             {
                 var heldItem = player.GetHeldItem();
 
-                await server.BroadcastPacketAsync(new EntityEquipment
+                await server.QueueBroadcastPacketAsync(new EntityEquipment
                 {
                     EntityId = player.EntityId,
                     Slot = ESlot.MainHand,

@@ -108,13 +108,13 @@ namespace Obsidian.Commands
             ChatColor color;
             var sender = ctx.Sender;
 
-            if (ctx.Server.TPS > 15) color = ChatColor.BrightGreen;
-            else if (ctx.Server.TPS > 10) color = ChatColor.Yellow;
+            if (ctx.Server.Tps > 15) color = ChatColor.BrightGreen;
+            else if (ctx.Server.Tps > 10) color = ChatColor.Yellow;
             else color = ChatColor.Red;
 
             var message = new ChatMessage
             {
-                Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.TPS}",
+                Text = $"{ChatColor.Gold}Current server TPS: {color}{ctx.Server.Tps}",
             };
             await sender.SendMessageAsync(message);
 
@@ -476,7 +476,7 @@ namespace Obsidian.Commands
         {
             var server = (Server)Context.Server;
             var player = Context.Player;
-            await server.BroadcastPacketAsync(new Explosion()
+            await server.QueueBroadcastPacketAsync(new Explosion()
             {
                 Position = player.Position + (10, 0, 0),
                 Strength = 2.0f,

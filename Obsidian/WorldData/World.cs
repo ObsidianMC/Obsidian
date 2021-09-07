@@ -117,7 +117,7 @@ namespace Obsidian.WorldData
             var destroyed = new DestroyEntities();
             destroyed.AddEntity(entity);
 
-            await this.Server.BroadcastPacketAsync(destroyed);
+            await this.Server.QueueBroadcastPacketAsync(destroyed);
 
             var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
@@ -554,7 +554,7 @@ namespace Obsidian.WorldData
                 BlockMaterial = mat
             };
 
-            Server.BroadcastPacketWithoutQueue(new SpawnEntity
+            Server.BroadcastPacket(new SpawnEntity
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -600,7 +600,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    await this.Server.BroadcastPacketAsync(new SpawnEntity
+                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntity
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
@@ -622,7 +622,7 @@ namespace Obsidian.WorldData
                     Type = type
                 };
 
-                await this.Server.BroadcastPacketAsync(new SpawnLivingEntity
+                await this.Server.QueueBroadcastPacketAsync(new SpawnLivingEntity
                 {
                     EntityId = entity.EntityId,
                     Uuid = entity.Uuid,
@@ -742,13 +742,13 @@ namespace Obsidian.WorldData
 
         public async Task SpawnExperienceOrbs(VectorF position, short count = 1)
         {
-            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
+            await this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
         }
 
         public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
         {
             if (uuid == Guid.Empty) uuid = Guid.NewGuid();
-            await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
+            await this.Server.QueueBroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
         }
     }
 }
