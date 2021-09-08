@@ -483,9 +483,6 @@ namespace Obsidian.WorldData
 
         public async Task ManageChunksAsync()
         {
-            // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
-            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-
             // Load regions. Load no more than 4 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
             // this.Regions, but will be null.
