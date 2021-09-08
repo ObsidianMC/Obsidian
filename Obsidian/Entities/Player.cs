@@ -167,7 +167,7 @@ namespace Obsidian.Entities
             {
                 if (entity is ItemEntity item)
                 {
-                    this.server.BroadcastPacketWithoutQueue(new CollectItem
+                    this.server.BroadcastPacket(new CollectItem
                     {
                         CollectedEntityId = item.EntityId,
                         CollectorEntityId = this.EntityId,
@@ -427,7 +427,7 @@ namespace Obsidian.Entities
                 }
             };
 
-            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(1, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(1, list));
             await this.client.QueuePacketAsync(new ChangeGameState(gamemode));
 
             this.Gamemode = gamemode;
@@ -444,7 +444,7 @@ namespace Obsidian.Entities
                 }
             };
 
-            await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(3, list));
 
             this.CustomName = newDisplayName;
         }
