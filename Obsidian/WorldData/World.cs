@@ -417,7 +417,7 @@ namespace Obsidian.WorldData
             bu.block ??= GetBlock(bu.position);
             var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
 
-            r.BlockUpdates.Add(bu);
+            r.AddBlockUpdate(bu);
         }
 
         /// <summary>

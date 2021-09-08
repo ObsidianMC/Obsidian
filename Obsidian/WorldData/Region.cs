@@ -5,7 +5,6 @@ using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -33,10 +32,10 @@ namespace Obsidian.WorldData
         public int LoadedChunkCount => LoadedChunks.Count;
 
         private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
-
-        internal ConcurrentBag<BlockUpdate> BlockUpdates { get; set; } = new();
-
+        
         private readonly RegionFile regionFile;
+
+        private readonly ConcurrentDictionary<Vector, BlockUpdate> BlockUpdates = new();
 
         internal Region(int x, int z, string worldRegionsPath)
         {
@@ -47,6 +46,14 @@ namespace Obsidian.WorldData
             var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
             regionFile = new RegionFile(filePath, cubicRegionSize);
 
+        }
+
+        internal void AddBlockUpdate(BlockUpdate bu)
+        {
+            if (!BlockUpdates.TryAdd(bu.position, bu))
+            {
+                BlockUpdates[bu.position] = bu;
+            }
         }
 
         internal async Task InitAsync()
@@ -127,23 +134,22 @@ namespace Obsidian.WorldData
 
                 List<BlockUpdate> neighborUpdates = new();
                 List<BlockUpdate> delayed = new();
-                while (!BlockUpdates.IsEmpty)
+
+                foreach(var pos in BlockUpdates.Keys)
                 {
-                    if (BlockUpdates.TryTake(out var bu))
+                    BlockUpdates.Remove(pos, out var bu);
+                    if (bu.delayCounter > 0)
                     {
-                        if (bu.delayCounter > 0)
-                        {
-                            bu.delayCounter--;
-                            delayed.Add(bu);
-                        }
-                        else
-                        {
-                            bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
-                            if (updateNeighbor) { neighborUpdates.Add(bu); }
-                        }
+                        bu.delayCounter--;
+                        delayed.Add(bu);
+                    }
+                    else
+                    {
+                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
+                        if (updateNeighbor) { neighborUpdates.Add(bu); }
                     }
                 }
-                delayed.ForEach(i => BlockUpdates.Add(i));
+                delayed.ForEach(i => AddBlockUpdate(i));
                 neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
             }
         }
