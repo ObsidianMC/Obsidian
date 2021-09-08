@@ -594,7 +594,7 @@ namespace Obsidian
 
             var tpsMeasure = new TpsMeasure();
             var stopwatch = Stopwatch.StartNew();
-            var timer = new BalancingTimer(20, cts.Token);
+            var timer = new BalancingTimer(50, cts.Token);
             while (await timer.WaitForNextTickAsync())
             {
                 await Events.InvokeServerTickAsync();

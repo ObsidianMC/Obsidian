@@ -17,7 +17,7 @@ namespace Obsidian.Utilities
             if (bufferIndex == buffer.Length)
                 bufferIndex = 0;
 
-            _tps = (int)(buffer.Average() * 1000L / Stopwatch.Frequency);
+            _tps = (int)(1000d / (buffer.Average() * 1000d / Stopwatch.Frequency));
         }
     }
 }
