@@ -105,8 +105,8 @@ namespace Obsidian.WorldData
         internal void SetChunk(Chunk chunk)
         {
             if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-            loadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+            loadedChunks[x, z] = chunk;
         }
 
         internal void SerializeChunk(Chunk chunk)
@@ -118,7 +118,7 @@ namespace Obsidian.WorldData
             using NbtWriter writer = new(strm, NbtCompression.GZip);
 
             writer.WriteTag(chunkNbt);
-            writer.WriteInt("DataVersion", 2724);//HArdcoded version try to get data version through minecraft data and use data correctly
+            writer.WriteInt("DataVersion", 2724);// Hardcoded version try to get data version through minecraft data and use data correctly
 
             writer.TryFinish();
             regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
