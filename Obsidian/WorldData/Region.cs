@@ -19,28 +19,27 @@ namespace Obsidian.WorldData
         public const int cubicRegionSizeShift = 5;
         public const int cubicRegionSize = 1 << cubicRegionSizeShift;
 
-        private bool cancel = false;
         public int X { get; }
         public int Z { get; }
 
-        public bool IsDirty { get; set; } = true;
+        public bool IsDirty { get; private set; } = true;
 
         public string RegionFolder { get; }
 
-        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
+        public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-        public int LoadedChunkCount => LoadedChunks.Count;
+        public int LoadedChunkCount => loadedChunks.Count;
 
-        private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
+        private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
         
         private readonly RegionFile regionFile;
 
-        private readonly ConcurrentDictionary<Vector, BlockUpdate> BlockUpdates = new();
+        private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
         internal Region(int x, int z, string worldRegionsPath)
         {
-            this.X = x;
-            this.Z = z;
+            X = x;
+            Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
             var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
@@ -50,9 +49,9 @@ namespace Obsidian.WorldData
 
         internal void AddBlockUpdate(BlockUpdate bu)
         {
-            if (!BlockUpdates.TryAdd(bu.position, bu))
+            if (!blockUpdates.TryAdd(bu.position, bu))
             {
-                BlockUpdates[bu.position] = bu;
+                blockUpdates[bu.position] = bu;
             }
         }
 
@@ -63,7 +62,7 @@ namespace Obsidian.WorldData
 
         internal async Task FlushAsync()
         {
-            foreach(Chunk c in LoadedChunks) { SerializeChunk(c); }
+            foreach(Chunk c in loadedChunks) { SerializeChunk(c); }
             await regionFile.FlushToDiskAsync();
         }
 
@@ -73,11 +72,11 @@ namespace Obsidian.WorldData
 
         internal Chunk GetChunk(Vector relativePosition)
         {
-            var chunk = LoadedChunks[relativePosition.X, relativePosition.Z];
+            var chunk = loadedChunks[relativePosition.X, relativePosition.Z];
             if (chunk is null)
             {
                 chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
-                LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+                loadedChunks[relativePosition.X, relativePosition.Z] = chunk;
             }
             return chunk;
         }
@@ -94,7 +93,7 @@ namespace Obsidian.WorldData
 
         internal IEnumerable<Chunk> GeneratedChunks()
         {
-            foreach(var c in LoadedChunks)
+            foreach(var c in loadedChunks)
             {
                 if (c is not null && c.isGenerated)
                 {
@@ -107,7 +106,7 @@ namespace Obsidian.WorldData
         {
             if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
             var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-            LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            loadedChunks[relativePosition.X, relativePosition.Z] = chunk;
         }
 
         internal void SerializeChunk(Chunk chunk)
@@ -127,17 +126,17 @@ namespace Obsidian.WorldData
 
         internal async Task BeginTickAsync(CancellationToken cts)
         {
-            while (!cts.IsCancellationRequested || cancel)
+            var timer = new BalancingTimer(50, cts);
+            while (await timer.WaitForNextTickAsync())
             {
-                await Task.Delay(20, cts);
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
 
                 List<BlockUpdate> neighborUpdates = new();
                 List<BlockUpdate> delayed = new();
 
-                foreach(var pos in BlockUpdates.Keys)
+                foreach (var pos in blockUpdates.Keys)
                 {
-                    BlockUpdates.Remove(pos, out var bu);
+                    blockUpdates.Remove(pos, out var bu);
                     if (bu.delayCounter > 0)
                     {
                         bu.delayCounter--;
@@ -153,8 +152,6 @@ namespace Obsidian.WorldData
                 neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
             }
         }
-
-        internal void Cancel() => this.cancel = true;
 
         #region NBT Ops
         public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
