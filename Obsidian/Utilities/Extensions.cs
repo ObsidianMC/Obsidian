@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
@@ -20,41 +18,44 @@ namespace Obsidian.Utilities
 {
     public static partial class Extensions
     {
-        internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
-                EntityType.SpectralArrow,
-                EntityType.Boat,
-                EntityType.DragonFireball,
-                EntityType.AreaEffectCloud,
-                EntityType.EndCrystal,
-                EntityType.EvokerFangs,
-                EntityType.ExperienceOrb,
-                EntityType.FireworkRocket,
-                EntityType.FallingBlock,
-                EntityType.Item,
-                EntityType.ItemFrame,
-                EntityType.Fireball,
-                EntityType.LeashKnot,
-                EntityType.LightningBolt,
-                EntityType.LlamaSpit,
-                EntityType.Minecart,
-                EntityType.ChestMinecart,
-                EntityType.CommandBlockMinecart,
-                EntityType.FurnaceMinecart,
-                EntityType.HopperMinecart,
-                EntityType.SpawnerMinecart,
-                EntityType.TntMinecart,
-                EntityType.Painting,
-                EntityType.PrimedTNT,
-                EntityType.ShulkerBullet,
-                EntityType.EnderPearl,
-                EntityType.Snowball,
-                EntityType.SmallFireball,
-                EntityType.Egg,
-                EntityType.ExperienceBottle,
-                EntityType.Potion,
-                EntityType.Trident,
-                EntityType.FishingBobber,
-                EntityType.EyeOfEnder};
+        internal readonly static EntityType[] nonLiving = new[]
+        {
+            EntityType.Arrow,
+            EntityType.SpectralArrow,
+            EntityType.Boat,
+            EntityType.DragonFireball,
+            EntityType.AreaEffectCloud,
+            EntityType.EndCrystal,
+            EntityType.EvokerFangs,
+            EntityType.ExperienceOrb,
+            EntityType.FireworkRocket,
+            EntityType.FallingBlock,
+            EntityType.Item,
+            EntityType.ItemFrame,
+            EntityType.Fireball,
+            EntityType.LeashKnot,
+            EntityType.LightningBolt,
+            EntityType.LlamaSpit,
+            EntityType.Minecart,
+            EntityType.ChestMinecart,
+            EntityType.CommandBlockMinecart,
+            EntityType.FurnaceMinecart,
+            EntityType.HopperMinecart,
+            EntityType.SpawnerMinecart,
+            EntityType.TntMinecart,
+            EntityType.Painting,
+            EntityType.PrimedTNT,
+            EntityType.ShulkerBullet,
+            EntityType.EnderPearl,
+            EntityType.Snowball,
+            EntityType.SmallFireball,
+            EntityType.Egg,
+            EntityType.ExperienceBottle,
+            EntityType.Potion,
+            EntityType.Trident,
+            EntityType.FishingBobber,
+            EntityType.EyeOfEnder
+        };
 
         public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
 
@@ -147,23 +148,6 @@ namespace Obsidian.Utilities
             {
                 return b.ToString("x").TrimStart('0');
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T MoveNext<T>(this ref T t) where T : struct
-        {
-            return ref Unsafe.Add(ref t, 1);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T GetRef<T>(this Span<T> span) where T : struct
-        {
-            return ref MemoryMarshal.GetReference(span);
-        }
-
-        public static Task<Task> StartLongRunning(this TaskFactory factory, Func<Task> func)
-        {
-            return factory.StartNew(func, CancellationToken.None, TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);

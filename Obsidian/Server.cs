@@ -128,7 +128,7 @@ namespace Obsidian
 
             if (Config.UDPBroadcast)
             {
-                Task.Factory.StartLongRunning(async () =>
+                _ = Task.Run(async () =>
                 {
                     var udpClient = new UdpClient("224.0.2.60", 4445);
                     while (!cts.IsCancellationRequested)
@@ -276,9 +276,9 @@ namespace Obsidian
 
             Registry.RegisterCommands(this);
 
-            _ = Task.Factory.StartLongRunning(LoopAsync);
+            _ = Task.Run(LoopAsync);
 
-            _ = Task.Factory.StartLongRunning(ServerSaveAsync);
+            _ = Task.Run(ServerSaveAsync);
 
             Logger.LogInformation($"Listening for new clients...");
 
