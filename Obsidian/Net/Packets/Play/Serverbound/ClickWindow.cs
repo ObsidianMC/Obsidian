@@ -220,11 +220,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             if (ClickedSlot == Outsideinventory)
             {
                 if (Button == 0 || Button == 4 || Button == 8)
-                    player.IsDragging = true;
+                    player.isDragging = true;
                 else if (Button == 2 || Button == 6 || Button == 10)
-                    player.IsDragging = false;
+                    player.isDragging = false;
             }
-            else if (player.IsDragging)
+            else if (player.isDragging)
             {
                 if (player.Gamemode == Gamemode.Creative)
                 {

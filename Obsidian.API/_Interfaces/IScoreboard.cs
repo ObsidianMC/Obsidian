@@ -10,7 +10,9 @@ namespace Obsidian.API
 
         public Task CreateOrUpdateObjectiveAsync(string title, DisplayType displayType = DisplayType.Integer);
 
-        public Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int value = 0);
+        public Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null);
+
+        public Task<bool> RemoveScoreAsync(string scoreName);
 
         public Score GetScore(string scoreName);
     }

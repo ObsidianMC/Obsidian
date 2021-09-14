@@ -3,8 +3,8 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.Nbt;
 using Obsidian.Net;
-using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
@@ -21,14 +21,16 @@ namespace Obsidian.Entities
     {
         internal readonly Client client;
 
-        internal HashSet<int> VisiblePlayers = new();
+        internal HashSet<int> visiblePlayers = new();
+
+        //TODO: better name??
+        internal short inventorySlot = 36;
+
+        internal bool isDragging;
 
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
-
-        public string DisplayName { get; internal set; }
-
 
         /// <summary>
         /// The players inventory
@@ -49,13 +51,22 @@ namespace Obsidian.Entities
 
         public bool Sleeping { get; set; }
         public bool InHorseInventory { get; set; }
-        public bool IsDragging { get; set; }
 
         public short AttackTime { get; set; }
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; } = 36;
+
+        public short CurrentSlot
+        {
+            get => (short)(this.inventorySlot - 36);
+            internal set {
+                if (value < 0 || value > 8)
+                    throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
+
+                this.inventorySlot = (short)(value + 36);
+            }
+        }
 
         public int Ping => this.client.ping;
         public int Dimension { get; set; }
@@ -63,24 +74,17 @@ namespace Obsidian.Entities
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
+        public int XpP { get; set; } = 0;
 
         public double HeadY { get; private set; }
 
         public float AdditionalHearts { get; set; } = 0;
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; } // not a type, it's in docs like this
+        public float FoodExhaustionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
-        public int Score { get; set; } = 0; // idfk, xp points?
 
         public Entity LeftShoulder { get; set; }
         public Entity RightShoulder { get; set; }
-
-        /* Missing for now:
-            NbtCompound(inventory)
-            NbtList(Motion)
-            NbtList(Pos)
-            NbtList(Rotation)
-        */
 
         // Properties set by Obsidian (unofficial)
         // Not sure whether these should be saved to the NBT file.
@@ -96,6 +100,7 @@ namespace Obsidian.Entities
             this.EntityId = client.id;
             this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
             {
+                Id = 0,
                 Owner = uuid
             };
             this.Server = client.Server;
@@ -137,10 +142,10 @@ namespace Obsidian.Entities
         {
             foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
             {
-                if (!this.VisiblePlayers.Contains(player.EntityId) && player.Alive)
+                if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
                 {
                     this.server.Logger.LogDebug($"Added back: {player.Username}");
-                    this.VisiblePlayers.Add(player.EntityId);
+                    this.visiblePlayers.Add(player.EntityId);
 
                     await this.client.QueuePacketAsync(new SpawnPlayer
                     {
@@ -153,7 +158,7 @@ namespace Obsidian.Entities
                 }
             }
 
-            this.VisiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
+            this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
         }
 
         private async Task PickupNearbyItemsAsync(float distance = 0.5f)
@@ -185,28 +190,18 @@ namespace Obsidian.Entities
             }
         }
 
-        internal async Task SendScoreboardInfo(ScoreboardObjectivePacket packet, UpdateScore scorePacket = null)
-        {
-            await this.client.QueuePacketAsync(packet);
-
-            if (scorePacket != null)
-                await this.client.QueuePacketAsync(scorePacket);
-        }
-
-        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.CurrentSlot);
+        public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
+        public ItemStack GetOffHandItem() => this.Inventory.GetItem(45);
 
         public async Task LoadPermsAsync()
         {
             // Load a JSON file that contains all permissions
-            var server = (Server)this.Server;
-            var dir = Path.Combine($"Server-{server.Id}", "permissions");
-            var user = server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (File.Exists(file))
+            if (file.Exists)
             {
-                using var fs = new FileStream(file, FileMode.Open);
-                
+                using var fs = file.OpenRead();
+
                 this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
             }
         }
@@ -214,14 +209,9 @@ namespace Obsidian.Entities
         public async Task SavePermsAsync()
         {
             // Save permissions to JSON file
-            var dir = Path.Combine($"Server-{this.server.Id}", "permissions");
-            var user = this.server.Config.OnlineMode ? this.Uuid.ToString() : this.Username;
-            var file = Path.Combine(dir, $"{user}.json");
+            var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            using var fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write);
+            using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             await this.PlayerPermissions.ToJsonAsync(fs);
         }
@@ -229,6 +219,9 @@ namespace Obsidian.Entities
         public async Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position)
         {
             var actualBoard = (Scoreboard)scoreboard;
+
+            if (actualBoard.Objective is null)
+                throw new InvalidOperationException("You must create an objective for the scoreboard before displaying it.");
 
             this.CurrentScoreboard = actualBoard;
 
@@ -293,8 +286,7 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public async Task TeleportAsync(IPlayer to) => await TeleportAsync(to as Player);
-        public async Task TeleportAsync(Player to)
+        public async Task TeleportAsync(IPlayer to)
         {
             this.LastPosition = this.Position;
             this.Position = to.Position;
@@ -309,9 +301,11 @@ namespace Obsidian.Entities
             this.TeleportId = tid;
         }
 
-        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
+        public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
+            this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
-        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) => client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+        public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
+            client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
 
         public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));
@@ -319,14 +313,12 @@ namespace Obsidian.Entities
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
             client.QueuePacketAsync(new NamedSoundEffect(name, position, category, volume, pitch));
 
-        public Task SendBossBarAsync(Guid uuid, BossBarAction action) => client.QueuePacketAsync(new Net.Packets.Play.Clientbound.BossBar(uuid, action));
-
         public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
         public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
         public async Task RespawnAsync()
         {
-            this.VisiblePlayers.Clear();
+            this.visiblePlayers.Clear();
 
             Registry.Dimensions.TryGetValue(0, out var codec);
 
@@ -374,7 +366,7 @@ namespace Obsidian.Entities
             await this.RemoveAsync();
 
             if (source is Player attacker)
-                attacker.VisiblePlayers.Remove(this.EntityId);
+                attacker.visiblePlayers.Remove(this.EntityId);
         }
 
         public override async Task WriteAsync(MinecraftStream stream)
@@ -383,7 +375,7 @@ namespace Obsidian.Entities
 
             await stream.WriteEntityMetdata(14, EntityMetadataType.Float, this.AdditionalHearts);
 
-            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.Score);
+            await stream.WriteEntityMetdata(15, EntityMetadataType.VarInt, this.XpP);
 
             await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, (byte)this.PlayerBitMask);
 
@@ -404,7 +396,7 @@ namespace Obsidian.Entities
             stream.WriteFloat(AdditionalHearts);
 
             stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
-            stream.WriteVarInt(Score);
+            stream.WriteVarInt(XpP);
 
             stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
             stream.WriteByte((byte)PlayerBitMask);
@@ -424,8 +416,6 @@ namespace Obsidian.Entities
                 stream.WriteVarInt(RightShoulder);
             }
         }
-
-        public override string ToString() => this.Username;
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
@@ -457,10 +447,175 @@ namespace Obsidian.Entities
 
             await this.client.Server.BroadcastPacketAsync(new PlayerInfo(3, list));
 
-            this.DisplayName = newDisplayName;
+            this.CustomName = newDisplayName;
         }
 
-        public async Task<bool> GrantPermission(string permission)
+        public async Task SaveAsync()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+
+            using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+
+            writer.WriteInt("DataVersion", 2724);
+            writer.WriteInt("playerGameType", (int)this.Gamemode);
+            writer.WriteInt("previousPlayerGameType", (int)this.Gamemode);
+            writer.WriteInt("Score", 0);
+            writer.WriteInt("SelectedItemSlot", this.inventorySlot);
+            writer.WriteInt("foodLevel", this.FoodLevel);
+            writer.WriteInt("foodTickTimer", this.FoodTickTimer);
+            writer.WriteInt("XpLevel", this.XpLevel);
+            writer.WriteInt("XpTotal", this.XpTotal);
+
+            writer.WriteFloat("Health", this.Health);
+
+            writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
+            writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
+
+            writer.WriteListStart("Pos", NbtTagType.Double, 3);
+
+            writer.WriteDouble(this.Position.X);
+            writer.WriteDouble(this.Position.Y);
+            writer.WriteDouble(this.Position.Z);
+
+            writer.EndList();
+
+            writer.WriteListStart("Rotation", NbtTagType.Float, 2);
+
+            writer.WriteFloat(this.Yaw);
+            writer.WriteFloat(this.Pitch);
+
+            writer.EndList();
+
+            var items = this.Inventory.Items.Select((item, slot) => (item, slot));
+
+            var nonNullItems = items.Where(x => x.item != null);
+
+            writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
+
+            foreach (var (item, slot) in nonNullItems)
+            {
+                writer.WriteCompoundStart();
+
+                writer.WriteByte("Count", (byte)item.Count);
+                writer.WriteByte("Slot", (byte)slot);
+
+                writer.WriteString("id", item.GetItem().UnlocalizedName);
+
+                writer.WriteCompoundStart("tag");
+
+                writer.WriteInt("Damage", item.ItemMeta.Durability);
+                writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+
+                //TODO: item attributes
+
+                writer.EndCompound();
+                writer.EndCompound();
+            }
+
+            if (nonNullItems.Count() <= 0)
+                writer.Write(NbtTagType.End);
+
+            writer.EndList();
+
+            writer.WriteString("Dimension", "minecraft:overworld");
+
+            writer.EndCompound();
+
+            await writer.TryFinishAsync();
+        }
+
+        public void Load()
+        {
+            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            if (!playerFile.Exists)
+            {
+                this.Position = this.World.Data.SpawnPosition;
+                return;
+            }
+
+            using var playerFileStream = playerFile.OpenRead();
+
+            var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+
+            var compound = reader.ReadNextTag() as NbtCompound;
+
+            this.OnGround = compound.GetBool("OnGround");
+            this.Sleeping = compound.GetBool("Sleeping");
+            this.Air = compound.GetShort("Air");
+            this.AttackTime = compound.GetShort("AttackTime");
+            this.DeathTime = compound.GetShort("DeathTime");
+            this.Health = compound.GetFloat("Health");
+            this.HurtTime = compound.GetShort("HurtTime");
+            this.SleepTimer = compound.GetShort("SleepTimer");
+
+            var dim = Registry.Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
+            this.Dimension = dim.Key;
+
+            this.FoodLevel = compound.GetInt("foodLevel");
+            this.FoodTickTimer = compound.GetInt("foodTickTimer");
+            this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
+            this.XpLevel = compound.GetInt("XpLevel");
+            this.XpTotal = compound.GetInt("XpTotal");
+            this.FallDistance = compound.GetFloat("FallDistance");
+            this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
+            this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
+            this.XpP = compound.GetInt("XpP");
+
+            if (compound.TryGetTag("Pos", out var posTag))
+            {
+                var list = posTag as NbtList;
+
+                var pos = list.Select(x => x as NbtTag<double>).ToList();
+
+                float x = (float)pos[0].Value,
+                y = (float)pos[1].Value,
+                z = (float)pos[2].Value;
+
+                this.Position = new VectorF(x, y, z);
+            }
+            else
+                this.Position = this.World.Data.SpawnPosition;
+
+            if (compound.TryGetTag("Rotation", out var rotationTag))
+            {
+                var list = rotationTag as NbtList;
+
+                var rotation = list.Select(x => x as NbtTag<float>).ToList();
+
+                this.Yaw = rotation[0].Value;
+                this.Pitch = rotation[1].Value;
+            }
+
+            if (compound.TryGetTag("Inventory", out var rawTag))
+            {
+                var inventory = rawTag as NbtList;
+
+                foreach (var rawItemTag in inventory)
+                {
+                    if (rawItemTag.Type == NbtTagType.End)
+                        break;
+
+                    var itemCompound = rawItemTag as NbtCompound;
+
+                    var slot = itemCompound.GetByte("Slot");
+
+                    var itemMetaBuilder = new ItemMetaBuilder()
+                        .WithDurability(itemCompound.GetInt("Damage"))
+                        .IsUnbreakable(itemCompound.GetBool("Unbreakable"))
+                        .WithSlot(slot);
+
+                    var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
+                    item.Count = itemCompound.GetByte("Count");
+
+                    this.Inventory.SetItem(slot, item);
+                }
+            }
+        }
+
+        public async Task<bool> GrantPermissionAsync(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
@@ -495,7 +650,7 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public async Task<bool> RevokePermission(string permission)
+        public async Task<bool> RevokePermissionAsync(string permission)
         {
             // trim and split permission string
 
@@ -530,17 +685,15 @@ namespace Obsidian.Entities
             return result;
         }
 
-        public Task<bool> HasPermission(string permission)
+        public bool HasPermission(string permission)
         {
             // trim and split permission string
             permission = permission.ToLower().Trim();
             string[] split = permission.Split('.');
 
-
             // Set root node and whether we created a new permission (still false)
             var result = false;
             var parent = this.PlayerPermissions;
-
 
             foreach (var i in split)
             {
@@ -563,25 +716,29 @@ namespace Obsidian.Entities
                 }
             }
 
-            return Task.FromResult(result);
+            return result;
         }
 
-        public async Task<bool> HasAnyPermission(IEnumerable<string> permissions)
+        public bool HasAnyPermission(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (await HasPermission(perm)) return true;
+                if (HasPermission(perm)) return true;
             }
+
             return false;
         }
 
-        public async Task<bool> HasAllPermissions(IEnumerable<string> permissions)
+        public bool HasAllPermissions(IEnumerable<string> permissions)
         {
             foreach (var perm in permissions)
             {
-                if (!await HasPermission(perm)) return false;
+                if (!HasPermission(perm)) return false;
             }
+
             return true;
         }
+
+        public override string ToString() => this.Username;
     }
 }

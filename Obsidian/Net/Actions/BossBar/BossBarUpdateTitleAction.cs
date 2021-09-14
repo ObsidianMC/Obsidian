@@ -5,23 +5,22 @@ namespace Obsidian.Net.Actions.BossBar
 {
     public class BossBarUpdateTitleAction : BossBarAction
     {
-        public override int Action => 3;
         public ChatMessage Title { get; set; }
 
-        public override byte[] ToArray()
-        {
-            using var stream = new MinecraftStream();
-            stream.WriteChat(Title);
+        public BossBarUpdateTitleAction() : base(3) { }
 
-            return stream.ToArray();
+        public override void WriteTo(MinecraftStream stream)
+        {
+            base.WriteTo(stream);
+
+            stream.WriteChat(Title);
         }
 
-        public override async Task<byte[]> ToArrayAsync()
+        public override async Task WriteToAsync(MinecraftStream stream)
         {
-            using var stream = new MinecraftStream();
-            await stream.WriteChatAsync(Title);
+            await base.WriteToAsync(stream);
 
-            return stream.ToArray();
+            await stream.WriteChatAsync(Title);
         }
     }
 }

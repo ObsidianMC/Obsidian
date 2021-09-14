@@ -32,9 +32,9 @@ namespace Obsidian.Utilities.Registry
         public static readonly Dictionary<string, IRecipe> Recipes = new();
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
-        public static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
-        public static readonly string[] BlockNames = new string[763]; // 762 - block count
-        public static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
+        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
+        internal static readonly string[] BlockNames = new string[763]; // 762 - block count
+        internal static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
 
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
@@ -98,6 +98,10 @@ namespace Obsidian.Utilities.Registry
                 }
                 registered++;
             }
+
+            Block.numericToBase = NumericToBase;
+            Block.stateToMatch = StateToMatch;
+            Block.blockNames = BlockNames;
 
             Logger?.LogDebug($"Successfully registered {registered} blocks...");
         }
@@ -258,10 +262,16 @@ namespace Obsidian.Utilities.Registry
                 switch (result)
                 {
                     case CraftingType.CraftingShaped:
-                        Recipes.Add(name, json.FromJson<ShapedRecipe>());
+                        var shapedRecipe = json.FromJson<ShapedRecipe>();
+                        shapedRecipe.Name = name;
+                        Recipes.Add(name, shapedRecipe);
+
                         break;
                     case CraftingType.CraftingShapeless:
-                        Recipes.Add(name, json.FromJson<ShapelessRecipe>());
+                        var shapelessRecipe = json.FromJson<ShapelessRecipe>();
+                        shapelessRecipe.Name = name;
+
+                        Recipes.Add(name, shapelessRecipe);
                         break;
                     case CraftingType.CraftingSpecialArmordye:
                     case CraftingType.CraftingSpecialBookcloning:
@@ -281,13 +291,22 @@ namespace Obsidian.Utilities.Registry
                     case CraftingType.Blasting:
                     case CraftingType.Smoking:
                     case CraftingType.CampfireCooking:
-                        Recipes.Add(name, json.FromJson<SmeltingRecipe>());
+                        var smeltingRecipe = json.FromJson<SmeltingRecipe>();
+                        smeltingRecipe.Name = name;
+
+                        Recipes.Add(name, smeltingRecipe);
                         break;
                     case CraftingType.Stonecutting:
-                        Recipes.Add(name, json.FromJson<CuttingRecipe>());
+                        var stonecuttingRecipe = json.FromJson<CuttingRecipe>();
+                        stonecuttingRecipe.Name = name;
+
+                        Recipes.Add(name, stonecuttingRecipe);
                         break;
                     case CraftingType.Smithing:
-                        Recipes.Add(name, json.FromJson<SmithingRecipe>());
+                        var smithingRecipe = json.FromJson<SmithingRecipe>();
+                        smithingRecipe.Name = name;
+
+                        Recipes.Add(name, smithingRecipe);
                         break;
                     default:
                         break;
@@ -387,19 +406,6 @@ namespace Obsidian.Utilities.Registry
             public string Type { get; set; }
 
             public List<T> Value { get; set; }
-        }
-    }
-
-    [DebuggerDisplay("{@base}:{numeric}")]
-    public struct MatchTarget
-    {
-        public short @base;
-        public short numeric;
-
-        public MatchTarget(short @base, short numeric)
-        {
-            this.@base = @base;
-            this.numeric = numeric;
         }
     }
 }

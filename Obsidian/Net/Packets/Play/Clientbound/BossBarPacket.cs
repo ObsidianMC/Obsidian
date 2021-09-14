@@ -4,19 +4,15 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class BossBar : IClientboundPacket
+    public partial class BossBarPacket : IClientboundPacket
     {
         [Field(0)]
-        public Guid UUID { get; }
-
-        [Field(1)]
         public BossBarAction Action { get; }
 
         public int Id => 0x0D;
 
-        public BossBar(Guid uuid, BossBarAction action)
+        public BossBarPacket(BossBarAction action)
         {
-            UUID = uuid;
             Action = action ?? throw new ArgumentNullException(nameof(action));
         }
     }

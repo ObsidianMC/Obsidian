@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Net.Packets.Play.Clientbound;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -69,41 +70,89 @@ namespace Obsidian
         public Task CreateOrUpdateObjectiveAsync(string title, DisplayType displayType = DisplayType.Integer)
             => this.CreateOrUpdateObjectiveAsync(ChatMessage.Simple(title), displayType);
 
-        public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int value = 0)
+        public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null)
         {
             var score = new Score
             {
                 DisplayText = displayText,
-                Value = value
+                Value = value ?? 0
             };
 
-            if (this.scores.Count > 0)
+            if (this.scores.TryGetValue(scoreName, out var cachedScore))
             {
-                score.Value = this.scores.Select(x => x.Value).OrderByDescending(x => x.Value).Last().Value;
+                score = cachedScore;
 
-                foreach (var element in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
-                    element.Value += 1;
+                if (value.HasValue)
+                    score.Value = (int)value;
+
+                foreach (var (_, player) in this.server.OnlinePlayers)
+                {
+                    if (player.CurrentScoreboard != this)
+                        continue;
+
+                    await player.client.QueuePacketAsync(new UpdateScore
+                    {
+                        EntityName = score.DisplayText,
+                        ObjectiveName = this.name,
+                        Action = 1,
+                    });
+                }
+
+                score.DisplayText = displayText;
             }
+            else
+            {
+                if (this.scores.Count > 0)
+                {
+                    score.Value = this.scores.Select(x => x.Value).OrderByDescending(x => x.Value).Last().Value;
 
-            this.scores[scoreName] = score;
+                    foreach (var element in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
+                        element.Value += 1;
+                }
+
+                this.scores[scoreName] = score;
+            }
 
             foreach (var (_, player) in this.server.OnlinePlayers)
             {
-                if (player.CurrentScoreboard == this)
+                if (player.CurrentScoreboard != this)
+                    continue;
+
+                foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
                 {
-                    foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
+                    await player.client.QueuePacketAsync(new UpdateScore
                     {
-                        await player.client.QueuePacketAsync(new UpdateScore
-                        {
-                            EntityName = s.DisplayText,
-                            ObjectiveName = this.Objective.ObjectiveName,
-                            Action = 0,
-                            Value = s.Value
-                        });
-                    }
+                        EntityName = s.DisplayText,
+                        ObjectiveName = this.name,
+                        Action = 0,
+                        Value = s.Value
+                    });
                 }
             }
 
+        }
+
+        public async Task<bool> RemoveScoreAsync(string scoreName)
+        {
+            if (this.scores.Remove(scoreName, out var score))
+            {
+                foreach (var (_, player) in this.server.OnlinePlayers)
+                {
+                    if (player.CurrentScoreboard != this)
+                        continue;
+
+                    await player.client.QueuePacketAsync(new UpdateScore
+                    {
+                        EntityName = score.DisplayText,
+                        ObjectiveName = this.name,
+                        Action = 1,
+                    });
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         public Score GetScore(string scoreName) => this.scores.GetValueOrDefault(scoreName);

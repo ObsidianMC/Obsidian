@@ -6,11 +6,11 @@ namespace Obsidian.Nbt
 {
     public partial class NbtWriter
     {
-        private void Write(NbtTagType tagType) => this.WriteByte((byte)tagType);
+        internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
 
-        public void WriteByte(byte value) => this.BaseStream.WriteByte(value);
+        internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
 
-        public void WriteString(string value)
+        internal void WriteStringInternal(string value)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -20,11 +20,11 @@ namespace Obsidian.Nbt
 
             var buffer = Encoding.UTF8.GetBytes(value);
 
-            this.WriteShort((short)buffer.Length);
+            this.WriteShortInternal((short)buffer.Length);
             this.BaseStream.Write(buffer);
         }
 
-        public void WriteShort(short value)
+        internal void WriteShortInternal(short value)
         {
             Span<byte> buffer = stackalloc byte[2];
 
@@ -36,7 +36,7 @@ namespace Obsidian.Nbt
             this.BaseStream.Write(buffer);
         }
 
-        public void WriteInt(int value)
+        internal void WriteIntInternal(int value)
         {
             Span<byte> buffer = stackalloc byte[4];
 
@@ -48,7 +48,7 @@ namespace Obsidian.Nbt
             this.BaseStream.Write(buffer);
         }
 
-        public void WriteFloat(float value)
+        internal void WriteFloatInternal(float value)
         {
             Span<byte> buffer = stackalloc byte[4];
 
@@ -60,7 +60,7 @@ namespace Obsidian.Nbt
             this.BaseStream.Write(buffer);
         }
 
-        public void WriteLong(long value)
+        internal void WriteLongInternal(long value)
         {
             Span<byte> buffer = stackalloc byte[8];
 
@@ -72,7 +72,7 @@ namespace Obsidian.Nbt
             this.BaseStream.Write(buffer);
         }
 
-        public void WriteDouble(double value)
+        internal void WriteDoubleInternal(double value)
         {
             Span<byte> buffer = stackalloc byte[8];
 

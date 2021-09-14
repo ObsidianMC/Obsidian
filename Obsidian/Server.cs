@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
+using Obsidian.API.Boss;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
 using Obsidian.Commands;
@@ -40,6 +41,8 @@ namespace Obsidian
         private readonly ConcurrentHashSet<Client> clients;
         private readonly TcpListener tcpListener;
         private readonly UdpClient udpClient;
+
+        internal string PermissionPath => Path.Combine(this.ServerFolderPath, "permissions");
 
         internal readonly CancellationTokenSource cts;
 
@@ -138,6 +141,9 @@ namespace Obsidian
             this.Events.PlayerLeave += this.OnPlayerLeave;
             this.Events.PlayerJoin += this.OnPlayerJoin;
             this.Events.PlayerAttackEntity += this.PlayerAttack;
+
+            if (!Directory.Exists(this.PermissionPath))
+                Directory.CreateDirectory(this.PermissionPath);
 
             if (this.Config.UDPBroadcast)
             {
@@ -314,6 +320,15 @@ namespace Obsidian
             this.Logger.LogWarning("Server is shutting down...");
         }
 
+        public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
+        {
+            Title = title,
+            Health = health,
+            Color = color,
+            DivisionType = divisionType,
+            Flags = flags
+        };
+
         internal async Task ExecuteCommand(string input)
         {
             var context = new CommandContext(Commands._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
@@ -327,13 +342,33 @@ namespace Obsidian
             }
         }
 
+        internal List<Player> PlayersInRange(Vector worldPosition)
+        {
+            var chunkCoord = (worldPosition.X.ToChunkCoord(), worldPosition.Z.ToChunkCoord());
+            return World.Players.Values.Where(p => p.client.LoadedChunks.Contains(chunkCoord)).ToList();
+        }
+
+        internal async Task BroadcastBlockPlacementToPlayerAsync(Player player, Block block, Vector location)
+        {
+            await player.client.QueuePacketAsync(new BlockChange(location, block.StateId));
+        }
+
         internal async Task BroadcastBlockPlacementAsync(Player player, Block block, Vector location)
         {
             foreach (var (_, other) in this.OnlinePlayers.Except(player))
             {
-                var client = other.client;
+                await BroadcastBlockPlacementToPlayerAsync(other, block, location);
+            }
+        }
 
-                await client.QueuePacketAsync(new BlockChange(location, block.Id));
+        internal void BroadcastBlockPlacement(Player player, Block block, Vector location)
+        {
+            foreach (var (_, other) in OnlinePlayers)
+            {
+                if (other == player)
+                    continue;
+
+                other.client.SendPacket(new BlockChange(location, block.StateId));
             }
         }
 
@@ -375,6 +410,14 @@ namespace Obsidian
                 player.client.SendPacket(packet);
         }
 
+        internal void BroadcastPacketWithoutQueue(IClientboundPacket packet)
+        {
+            foreach (var (_, player) in OnlinePlayers)
+            {
+                player.client.SendPacket(packet);
+            }
+        }
+
         internal async Task BroadcastNewCommandsAsync()
         {
             Registry.RegisterCommands(this);
@@ -395,13 +438,9 @@ namespace Obsidian
 
         private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-        internal void BroadcastPlayerDig(PlayerDiggingStore store)
+        internal void BroadcastPlayerDig(PlayerDiggingStore store, Block block)
         {
             var digging = store.Packet;
-
-            var b = this.World.GetBlock(digging.Position);
-            if (b is null) { return; }
-            var block = (Block)b;
 
             var player = this.OnlinePlayers.GetValueOrDefault(store.Player);
 
@@ -411,7 +450,7 @@ namespace Obsidian
                     {
                         var droppedItem = player.GetHeldItem();
 
-                        if (droppedItem is null || droppedItem.Type == Material.Air)
+                        if (droppedItem is null or { Type: Material.Air })
                             return;
 
                         var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
@@ -451,14 +490,14 @@ namespace Obsidian
 
                         player.client.SendPacket(new SetSlot
                         {
-                            Slot = player.CurrentSlot,
+                            Slot = player.inventorySlot,
 
                             WindowId = 0,
 
-                            SlotData = player.Inventory.GetItem(player.CurrentSlot) - 1
+                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1
                         });
 
-                        player.Inventory.RemoveItem(player.CurrentSlot);
+                        player.Inventory.RemoveItem(player.inventorySlot);
                         break;
                     }
                 case DiggingStatus.StartedDigging:
@@ -466,16 +505,14 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = block.StateId,
                             Status = digging.Status,
                             Successful = true
                         });
 
                         if (player.Gamemode == Gamemode.Creative)
                         {
-                            this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
-
-                            this.World.SetBlock(digging.Position, Block.Air);
+                            World.SetBlock(digging.Position, Block.Air);
                         }
                     }
                     break;
@@ -486,7 +523,7 @@ namespace Obsidian
                         this.BroadcastPacketWithoutQueue(new AcknowledgePlayerDigging
                         {
                             Position = digging.Position,
-                            Block = block.Id,
+                            Block = block.StateId,
                             Status = digging.Status,
                             Successful = true
                         });
@@ -499,8 +536,6 @@ namespace Obsidian
                         });
 
                         this.BroadcastPacketWithoutQueue(new BlockChange(digging.Position, 0));
-
-                        this.World.SetBlock(digging.Position, Block.Air);
 
                         var droppedItem = Registry.GetItem(block.Material);
 
@@ -647,6 +682,8 @@ namespace Obsidian
         {
             var player = e.Player as Player;
 
+            await player.SaveAsync();
+
             this.World.RemovePlayer(player);
 
             var destroy = new DestroyEntities(player.EntityId);
@@ -654,7 +691,7 @@ namespace Obsidian
             foreach (var (_, other) in this.OnlinePlayers.Except(player.Uuid))
             {
                 await other.client.RemovePlayerFromListAsync(player);
-                if (other.VisiblePlayers.Contains(player.EntityId))
+                if (other.visiblePlayers.Contains(player.EntityId))
                     await other.client.QueuePacketAsync(destroy);
             }
 

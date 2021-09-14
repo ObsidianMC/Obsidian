@@ -5,6 +5,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -52,6 +53,10 @@ namespace Obsidian.WorldData
 
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
+
+            var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
+            if (!Directory.Exists(playerDataPath))
+                Directory.CreateDirectory(playerDataPath);
         }
 
         public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -93,7 +98,7 @@ namespace Obsidian.WorldData
                 await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
                 c.LoadedChunks.TryRemove(chunkLoc);
             });
-            
+
             Parallel.ForEach(clientNeededChunks, async chunkLoc =>
             {
                 var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
@@ -151,7 +156,7 @@ namespace Obsidian.WorldData
             {
                 // region hasn't been loaded yet
                 var (rX, rZ) = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-                if (scheduleGeneration) 
+                if (scheduleGeneration)
                 {
                     if (!RegionsToLoad.Contains((rX, rZ)))
                         RegionsToLoad.Enqueue((rX, rZ));
@@ -174,9 +179,9 @@ namespace Obsidian.WorldData
 
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
             var chunk = region.GetChunk(chunkIndex);
-            
-            if (chunk is not null) 
-            { 
+
+            if (chunk is not null)
+            {
                 if (!chunk.isGenerated && scheduleGeneration)
                 {
                     if (!ChunksToGen.Contains((chunkX, chunkZ)))
@@ -190,7 +195,7 @@ namespace Obsidian.WorldData
             // Chunk hasn't been generated yet.
             if (scheduleGeneration)
             {
-                if (!ChunksToGen.Contains((chunkX, chunkZ))) 
+                if (!ChunksToGen.Contains((chunkX, chunkZ)))
                     ChunksToGen.Enqueue((chunkX, chunkZ));
                 return null;
             }
@@ -217,10 +222,26 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-        public void SetBlock(Vector location, Block block) => SetBlock(location.X, location.Y, location.Z, block);
+        public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 
-        public void SetBlock(int x, int y, int z, Block block) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
-  
+        public void SetBlock(Vector location, Block block)
+        {
+            SetBlockUntracked(location.X, location.Y, location.Z, block);
+            Server.BroadcastBlockPlacement(null, block, location);
+        }
+
+        public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+
+        public void SetBlockUntracked(int x, int y, int z, Block block, bool doBlockUpdate = false)
+        {
+            if (doBlockUpdate)
+            {
+                ScheduleBlockUpdate(new BlockUpdate(this, new Vector(x, y, z), block));
+                BlockUpdateNeighbors(new BlockUpdate(this, new Vector(x, y, z), block));
+            }
+            GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        }
+
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
 
         public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
@@ -289,25 +310,24 @@ namespace Obsidian.WorldData
             this.Generator = value;
 
             Server.Logger.LogInformation($"Loading spawn chunks into memory...");
-            for(int rx = -1; rx < 1; rx++)
-                for(int rz = -1; rz < 1; rz++)
+            for (int rx = -1; rx < 1; rx++)
+                for (int rz = -1; rz < 1; rz++)
                     _ = await LoadRegionAsync(rx, rz);
 
             // spawn chunks are radius 12 from spawn,
-            // but we want to preload radius 16 so that
-            // we're prepared for the first client to join
-            var radius = 16;
+            var radius = 12;
             var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
             for (var cx = x - radius; cx < x + radius; cx++)
                 for (var cz = z - radius; cz < z + radius; cz++)
                     SpawnChunks.Add((cx, cz));
 
-            Parallel.ForEach(SpawnChunks, (c) => {
+            Parallel.ForEach(SpawnChunks, (c) =>
+            {
                 GetChunk(c.X, c.Z);
                 // Update status occasionally so we're not destroying consoleio
                 if (c.X % 5 == 0)
                     Server.UpdateStatusConsole();
-                });
+            });
 
             Loaded = true;
             return true;
@@ -347,45 +367,12 @@ namespace Obsidian.WorldData
             writer.TryFinish();
         }
 
-        public void LoadPlayer(Guid uuid)
-        {
-            var path = Path.Combine(Server.ServerFolderPath, Name, "players", $"{uuid}.dat");
-            var playerFile = new FileInfo(path);
-
-            var pfile = new NbtReader(playerFile.OpenRead(), NbtCompression.GZip);
-
-            var playercompound = pfile.ReadNextTag() as NbtCompound;
-            // filenames are player UUIDs. ???
-            var player = new Player(uuid, Path.GetFileNameWithoutExtension(path), null)//TODO: changes
-            {
-                OnGround = playercompound.GetBool("OnGround"),
-                Sleeping = playercompound.GetBool("Sleeping"),
-                Air = playercompound.GetShort("Air"),
-                AttackTime = playercompound.GetShort("AttackTime"),
-                DeathTime = playercompound.GetShort("DeathTime"),
-                //Fire = playercompound["Fire"].ShortValue,
-                Health = playercompound.GetShort("Health"),
-                HurtTime = playercompound.GetShort("HurtTime"),
-                SleepTimer = playercompound.GetShort("SleepTimer"),
-                Dimension = playercompound.GetInt("Dimension"),
-                FoodLevel = playercompound.GetInt("foodLevel"),
-                FoodTickTimer = playercompound.GetInt("foodTickTimer"),
-                Gamemode = (Gamemode)playercompound.GetInt("playerGameType"),
-                XpLevel = playercompound.GetInt("XpLevel"),
-                XpTotal = playercompound.GetInt("XpTotal"),
-                FallDistance = playercompound.GetFloat("FallDistance"),
-                FoodExhastionLevel = playercompound.GetFloat("foodExhastionLevel"),
-                FoodSaturationLevel = playercompound.GetFloat("foodSaturationLevel"),
-                Score = playercompound.GetInt("XpP")
-                // TODO: NBTCompound(inventory), NBTList(Motion), NBTList(Pos), NBTList(Rotation)
-            };
-            this.Players.TryAdd(uuid, player);
-        }
-
-        public void UnloadPlayer(Guid uuid)
+        public async Task UnloadPlayerAsync(Guid uuid)
         {
             // TODO save changed data to file [uuid].dat
-            this.Players.TryRemove(uuid, out _);
+            this.Players.TryRemove(uuid, out var player);
+
+            await player.SaveAsync();
         }
         #endregion
 
@@ -413,7 +400,7 @@ namespace Obsidian.WorldData
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
 
             this.Regions[value] = region;
-            
+
             return region;
         }
 
@@ -422,6 +409,67 @@ namespace Obsidian.WorldData
             long value = NumericsHelper.IntsToLong(regionX, regionZ);
             if (Regions.TryRemove(value, out var r))
                 await r.FlushAsync();
+        }
+
+        public void ScheduleBlockUpdate(BlockUpdate bu)
+        {
+            bu.block ??= GetBlock(bu.position);
+            var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
+
+            r.AddBlockUpdate(bu);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="worldLoc"></param>
+        /// <returns>Whether to update neighbor blocks.</returns>
+        internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
+        {
+            if (bu.block is null) { return false; }
+
+                // Todo: this better
+            if (Block.GravityAffected.Contains(bu.block.Value.Material))
+            {
+                return await BlockUpdates.HandleFallingBlock(bu);
+            }
+
+            if (bu.block.Value.IsFluid)
+            {
+                return await BlockUpdates.HandleLiquidPhysics(bu);
+            }
+
+            return false;
+        }
+
+        internal void BlockUpdateNeighbors(BlockUpdate bu)
+        {
+            bu.block = null;
+            bu.delayCounter = bu.delay;
+            var north = bu;
+            north.position += Vector.Forwards;
+
+            var south = bu;
+            south.position += Vector.Backwards;
+
+            var west = bu;
+            west.position += Vector.Left;
+
+            var east = bu;
+            east.position += Vector.Right;
+
+            var up = bu;
+            up.position += Vector.Up;
+
+            var down = bu;
+            down.position += Vector.Down;
+
+            ScheduleBlockUpdate(north);
+            ScheduleBlockUpdate(south);
+            ScheduleBlockUpdate(west);
+            ScheduleBlockUpdate(east);
+            ScheduleBlockUpdate(up);
+            ScheduleBlockUpdate(down);
         }
 
         public async Task ManageChunksAsync()
@@ -483,6 +531,36 @@ namespace Obsidian.WorldData
             await Server.BroadcastAsync("Save complete.");
         }
 
+        public IEntity SpawnFallingBlock(VectorF position, Material mat)
+        {
+            // offset position so it spawns in the right spot
+            position.X += 0.5f;
+            position.Z += 0.5f;
+            FallingBlock entity = new()
+            {
+                Type = EntityType.FallingBlock,
+                Position = position,
+                EntityId = TotalLoadedEntities() + 1,
+                Server = Server,
+                BlockMaterial = mat
+            };
+
+            Server.BroadcastPacketWithoutQueue(new SpawnEntity
+            {
+                EntityId = entity.EntityId,
+                Uuid = entity.Uuid,
+                Type = entity.Type,
+                Position = entity.Position,
+                Pitch = 0,
+                Yaw = 0,
+                Data = new Block(mat).StateId
+            });
+
+            TryAddEntity(entity);
+
+            return entity;
+        }
+
         public async Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type)
         {
             // Arrow, Boat, DragonFireball, AreaEffectCloud, EndCrystal, EvokerFangs, ExperienceOrb, 
@@ -491,8 +569,13 @@ namespace Obsidian.WorldData
             // SpawnerMinecart, TntMinecart, Painting, Tnt, ShulkerBullet, SpectralArrow, EnderPearl, Snowball, SmallFireball,
             // Egg, ExperienceBottle, Potion, Trident, FishingBobber, EyeOfEnder
 
+            if (type == EntityType.FallingBlock)
+            {
+                return SpawnFallingBlock(position + (0, 20, 0), Material.Sand);
+            }
+
             Entity entity;
-            if (type.IsLiving())
+            if (type.IsNonLiving())
             {
                 entity = new Entity
                 {
@@ -512,7 +595,7 @@ namespace Obsidian.WorldData
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
-                        Type = type,
+                        Type = entity.Type,
                         Position = position,
                         Pitch = 0,
                         Yaw = 0,
@@ -613,7 +696,7 @@ namespace Obsidian.WorldData
                             {
                                 if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
                                 {
-                                    var worldPos = new VectorF(bx + (c.X << Region.cubicRegionSizeShift), by + 8, bz + (c.Z << Region.cubicRegionSizeShift));
+                                    var worldPos = new VectorF(bx + 0.5f + (c.X * 16), by + 1, bz + 0.5f + (c.Z * 16));
                                     this.Data.SpawnPosition = worldPos;
                                     this.Server.Logger.LogInformation($"World Spawn set to {worldPos}");
 

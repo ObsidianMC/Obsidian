@@ -5,7 +5,6 @@ using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -33,8 +32,10 @@ namespace Obsidian.WorldData
         public int LoadedChunkCount => LoadedChunks.Count;
 
         private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
-
+        
         private readonly RegionFile regionFile;
+
+        private readonly ConcurrentDictionary<Vector, BlockUpdate> BlockUpdates = new();
 
         internal Region(int x, int z, string worldRegionsPath)
         {
@@ -42,9 +43,17 @@ namespace Obsidian.WorldData
             this.Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
-            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mcr");
+            var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
             regionFile = new RegionFile(filePath, cubicRegionSize);
 
+        }
+
+        internal void AddBlockUpdate(BlockUpdate bu)
+        {
+            if (!BlockUpdates.TryAdd(bu.position, bu))
+            {
+                BlockUpdates[bu.position] = bu;
+            }
         }
 
         internal async Task InitAsync()
@@ -105,9 +114,13 @@ namespace Obsidian.WorldData
         {
             var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
             NbtCompound chunkNbt = GetNbtFromChunk(chunk);
+
             using MemoryStream strm = new();
             using NbtWriter writer = new(strm, NbtCompression.GZip);
+
             writer.WriteTag(chunkNbt);
+            writer.WriteInt("DataVersion", 2724);//HArdcoded version try to get data version through minecraft data and use data correctly
+
             writer.TryFinish();
             regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
         }
@@ -117,10 +130,28 @@ namespace Obsidian.WorldData
             while (!cts.IsCancellationRequested || cancel)
             {
                 await Task.Delay(20, cts);
-
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+
+                List<BlockUpdate> neighborUpdates = new();
+                List<BlockUpdate> delayed = new();
+
+                foreach(var pos in BlockUpdates.Keys)
+                {
+                    BlockUpdates.Remove(pos, out var bu);
+                    if (bu.delayCounter > 0)
+                    {
+                        bu.delayCounter--;
+                        delayed.Add(bu);
+                    }
+                    else
+                    {
+                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
+                        if (updateNeighbor) { neighborUpdates.Add(bu); }
+                    }
+                }
+                delayed.ForEach(i => AddBlockUpdate(i));
+                neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
             }
-            await regionFile.FlushToDiskAsync();
         }
 
         internal void Cancel() => this.cancel = true;
@@ -136,12 +167,12 @@ namespace Obsidian.WorldData
                 isGenerated = true
             };
 
-            foreach (var secCompound in chunkCompound["Sections"] as NbtList)
+            foreach (var child in chunkCompound["Sections"] as NbtList)
             {
-                var compound = secCompound as NbtCompound;
-                var secY = (int)compound.GetByte("Y");
-                var states = compound["BlockStates"] as NbtArray<long>;//TODO
-                var palettes = compound["Palette"] as NbtList;
+                var sectionCompound = child as NbtCompound;
+                var secY = (int)sectionCompound.GetByte("Y");
+                var states = sectionCompound["BlockStates"] as NbtArray<long>;//TODO
+                var palettes = sectionCompound["Palette"] as NbtList;
 
                 chunk.Sections[secY].BlockStorage.Storage = states.GetArray();
 
@@ -165,27 +196,6 @@ namespace Obsidian.WorldData
             return chunk;
         }
 
-        public NbtCompound GetNbt()
-        {
-            // var entitiesCompound = new NbtList("Entities"); //TODO: this
-
-            var chunksCompound = new NbtList(NbtTagType.Compound, "Chunks");
-            foreach (var chunk in LoadedChunks)
-            {
-                var chunkNbt = GetNbtFromChunk(chunk);
-                chunksCompound.Add(chunkNbt);
-            };
-
-            var regionCompound = new NbtCompound("Data")
-            {
-                new NbtTag<int>("xPos", this.X),
-                new NbtTag<int>("zPos", this.Z),
-                chunksCompound
-            };
-
-            return regionCompound;
-        }
-
         public static NbtCompound GetNbtFromChunk(Chunk chunk)
         {
             var sectionsCompound = new NbtList(NbtTagType.Compound, "Sections");
@@ -204,7 +214,7 @@ namespace Obsidian.WorldData
 
                         var block = new Block(stateId);
 
-                        palette.Add(new NbtCompound//TODO redstone etc... has a lit metadata added when creating the palette
+                        palette.Add(new NbtCompound()//TODO redstone etc... has a lit metadata added when creating the palette
                             {
                                 new NbtTag<string>("Name", block.UnlocalizedName),
                                 new NbtTag<int>("Id", block.StateId)
@@ -221,7 +231,7 @@ namespace Obsidian.WorldData
                 sectionsCompound.Add(sec);
             }
 
-            var chunkCompound = new NbtCompound()
+            var chunkCompound = new NbtCompound($"Level")
                 {
                     new NbtTag<int>("xPos", chunk.X),
                     new NbtTag<int>("zPos", chunk.Z),

@@ -30,7 +30,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             player.LastClickedItem = ClickedItem;
 
-            if (player.CurrentSlot == ClickedSlot)
+            if (player.inventorySlot == ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 

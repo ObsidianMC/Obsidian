@@ -6,8 +6,9 @@ namespace Obsidian.API
 {
     public interface IPlayer : ILiving
     {
+        public Inventory Inventory { get; }
+
         public string Username { get; }
-        public string DisplayName { get; }
 
         public Guid Uuid { get; }
         public bool IsOperator { get; }
@@ -23,7 +24,7 @@ namespace Obsidian.API
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; }
 
         public int Ping { get; }
         public int Dimension { get; set; }
@@ -36,7 +37,7 @@ namespace Obsidian.API
 
         public float AdditionalHearts { get; set; }
         public float FallDistance { get; set; }
-        public float FoodExhastionLevel { get; set; }
+        public float FoodExhaustionLevel { get; set; }
         public float FoodSaturationLevel { get; set; }
 
         public Task TeleportAsync(VectorF position);
@@ -50,13 +51,16 @@ namespace Obsidian.API
         public Task OpenInventoryAsync(Inventory inventory);
         public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
 
-        public Task<bool> GrantPermission(string permission);
-        public Task<bool> RevokePermission(string permission);
-        public Task<bool> HasPermission(string permission);
-        public Task<bool> HasAnyPermission(IEnumerable<string> permissions);
-        public Task<bool> HasAllPermissions(IEnumerable<string> permissions);
+        public Task<bool> GrantPermissionAsync(string permission);
+        public Task<bool> RevokePermissionAsync(string permission);
+        public bool HasPermission(string permission);
+        public bool HasAnyPermission(IEnumerable<string> permissions);
+        public bool HasAllPermissions(IEnumerable<string> permissions);
         public Task SetGamemodeAsync(Gamemode gamemode);
 
         public Task UpdateDisplayNameAsync(string newDisplayName);
+
+        public ItemStack GetHeldItem();
+        public ItemStack GetOffHandItem();
     }
 }
