@@ -5,6 +5,7 @@
         AreaEffectCloud,
         ArmorStand,
         Arrow,
+        Axolotl,
         Bat,
         Bee,
         Blaze,
@@ -33,6 +34,9 @@
         Fox,
         Ghast,
         Giant,
+        GlowItemFrame,
+        GlowSquid,
+        Goat,
         Guardian,
         Hoglin,
         Horse,
@@ -47,6 +51,7 @@
         Llama,
         LlamaSpit,
         MagmaCube,
+        Marker,
         Minecart,
         ChestMinecart,
         CommandBlockMinecart,
@@ -66,7 +71,7 @@
         PiglinBrute,
         Pillager,
         PolarBear,
-        PrimedTNT,
+        Tnt,
         Pufferfish,
         Rabbit,
         Ravager,
@@ -109,6 +114,6 @@
         ZombieVillager,
         ZombifiedPiglin,
         Player,
-        FishingBobber,
+        FishingBobber
     }
 }
