@@ -32,9 +32,9 @@ namespace Obsidian.Utilities.Registry
         public static readonly Dictionary<string, IRecipe> Recipes = new();
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
-        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
-        internal static readonly string[] BlockNames = new string[763]; // 762 - block count
-        internal static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
+        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[20_342]; // 20,341 - highest block state
+        internal static readonly string[] BlockNames = new string[899]; // 898 - block count
+        internal static readonly short[] NumericToBase = new short[899]; // 898 - highest block numeric id
 
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
