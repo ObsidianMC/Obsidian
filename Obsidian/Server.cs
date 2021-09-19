@@ -121,7 +121,7 @@ namespace Obsidian
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
+            Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
             Logger.LogDebug("Initializing command handler...");
             this.Commands = new CommandHandler("/");
@@ -422,7 +422,7 @@ namespace Obsidian
         {
             Registry.RegisterCommands(this);
             foreach (var (_, player) in this.OnlinePlayers)
-                await player.client.SendDeclareCommandsAsync();
+                await player.client.SendCommandsAsync();
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
