@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3), DataFormat(typeof(float))]
         public VectorF PlayerMotion { get; init; }
 
-        public int Id => 0x1B;
+        public int Id => 0x1C;
     }
 
     public readonly struct ExplosionRecord
