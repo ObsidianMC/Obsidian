@@ -1,7 +1,5 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play
 {
@@ -13,7 +11,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(1)]
         public byte[] PluginData { get; private set; }
 
-        public int Id => 0x17;
+        public int Id => 0x18;
 
         public PluginMessage()
         {
