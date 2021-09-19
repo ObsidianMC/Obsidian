@@ -1,4 +1,5 @@
 ﻿using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities.Registry;
 using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -6,18 +7,16 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     public partial class TagsPacket : IClientboundPacket
     {
         [Field(0)]
-        public List<Tag> Blocks { get; init; }
-
-        [Field(1)]
-        public List<Tag> Items { get; init; }
-
-        [Field(2)]
-        public List<Tag> Fluids { get; init; }
-
-        [Field(3)]
-        public List<Tag> Entities { get; init; }
+        public IDictionary<string, List<Tag>> Tags { get; }
 
         public int Id => 0x66;
+
+        public static readonly TagsPacket FromRegistry = new(Registry.Tags);
+
+        public TagsPacket(IDictionary<string, List<Tag>> tags)
+        {
+            this.Tags = tags;
+        }
     }
 
     public class Tag
