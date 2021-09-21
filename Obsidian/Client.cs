@@ -371,7 +371,7 @@ namespace Obsidian
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
             //Load chunks (also currently will not work because new property)
-            //await this.Player.World.ResendBaseChunksAsync(this);
+            await this.Player.World.ResendBaseChunksAsync(this);
 
             //TODO: check for last position
 
@@ -390,7 +390,7 @@ namespace Obsidian
             });
 
             //Initialize inventory (its currently broken due to missing properties
-            //await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
+            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
         }
 
         #region Packet sending
