@@ -1,13 +1,20 @@
 import glob
 import json
 
-tag_files = glob.glob("./data/minecraft/tags/**/*.json", recursive=False)
+tag_files = glob.glob("./data/minecraft/tags/**/*.json", recursive=True)
 
 json_obj = {}
 
 for tag_file in tag_files:
     element_name = tag_file.replace("./data/minecraft/tags\\", "").replace("\\", "/").replace(".json", "")
-    tag_type, tag_name = element_name.split("/")
+    base = element_name.split("/")
+
+    if(len(base) == 3):
+        tag_name = base[1] + "/" + base[2]
+        tag_type = base[0]
+    else:
+        tag_type, tag_name = base
+
     print(f"Processing {element_name}")
     with open(tag_file) as tf:
         contents = json.load(tf)

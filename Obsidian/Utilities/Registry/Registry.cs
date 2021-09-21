@@ -224,7 +224,7 @@ namespace Obsidian.Utilities.Registry
                 var split = name.Split('/');
 
                 var tagBase = split[0];
-                var tagName = split[1];
+                var tagName = split.Length == 3 ? $"{split[1]}/{split[2]}" : split[1];
 
                 if (Tags.ContainsKey(tagBase))
                 {
