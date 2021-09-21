@@ -116,7 +116,7 @@ namespace Obsidian.WorldData
         {
             var destroyed = new DestroyEntities(entity);
 
-            await this.Server.BroadcastPacketAsync(destroyed);
+            await this.Server.QueueBroadcastPacketAsync(destroyed);
 
             var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
@@ -227,7 +227,15 @@ namespace Obsidian.WorldData
         public void SetBlock(Vector location, Block block)
         {
             SetBlockUntracked(location.X, location.Y, location.Z, block);
-            Server.BroadcastBlockPlacement(null, block, location);
+            Server.BroadcastBlockChange(block, location);
+        }
+
+        public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlock(new Vector(x, y, z), block, doBlockUpdate);
+
+        public void SetBlock(Vector location, Block block, bool doBlockUpdate)
+        {
+            SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+            Server.BroadcastBlockChange(block, location);
         }
 
         public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
@@ -474,9 +482,6 @@ namespace Obsidian.WorldData
 
         public async Task ManageChunksAsync()
         {
-            // Run this thread with high priority so as to prioritize chunk generation over the minecraft client.
-            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-
             // Load regions. Load no more than 4 at a time b/c it's an expensive operation.
             // Regions that are in the process of being loaded will appear in
             // this.Regions, but will be null.
@@ -526,9 +531,9 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            await Server.BroadcastAsync("Saving to disk...");
+            Server.BroadcastMessage("Saving to disk...");
             Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-            await Server.BroadcastAsync("Save complete.");
+            Server.BroadcastMessage("Save complete.");
         }
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)
@@ -545,7 +550,7 @@ namespace Obsidian.WorldData
                 BlockMaterial = mat
             };
 
-            Server.BroadcastPacketWithoutQueue(new SpawnEntity
+            Server.BroadcastPacket(new SpawnEntity
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -591,7 +596,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    await this.Server.BroadcastPacketAsync(new SpawnEntity
+                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntity
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
@@ -613,7 +618,7 @@ namespace Obsidian.WorldData
                     Type = type
                 };
 
-                await this.Server.BroadcastPacketAsync(new SpawnLivingEntity
+                await this.Server.QueueBroadcastPacketAsync(new SpawnLivingEntity
                 {
                     EntityId = entity.EntityId,
                     Uuid = entity.Uuid,
@@ -733,13 +738,13 @@ namespace Obsidian.WorldData
 
         public async Task SpawnExperienceOrbs(VectorF position, short count = 1)
         {
-            await this.Server.BroadcastPacketAsync(new SpawnExperienceOrb(count, position));
+            await this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
         }
 
         public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
         {
             if (uuid == Guid.Empty) uuid = Guid.NewGuid();
-            await this.Server.BroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
+            await this.Server.QueueBroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));
         }
     }
 }

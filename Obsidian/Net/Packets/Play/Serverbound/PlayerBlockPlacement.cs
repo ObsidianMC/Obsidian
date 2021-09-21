@@ -360,8 +360,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             // TODO calculate the block state
-            server.World.SetBlockUntracked(position, block, true);
-            await server.BroadcastBlockPlacementAsync(player, block, position);
+            server.World.SetBlock(position, block, doBlockUpdate: true);
         }
     }
 }

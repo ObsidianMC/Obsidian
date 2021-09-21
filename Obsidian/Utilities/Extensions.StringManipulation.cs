@@ -58,11 +58,11 @@ namespace Obsidian.Utilities
             if (char.IsUpper(value[0]))
                 return value;
 
-            var result = new string(value);
-            ref char firstChar = ref Unsafe.AsRef(result.GetPinnableReference());
-            firstChar = char.ToUpper(firstChar);
-
-            return result;
+            return string.Create(value.Length, value, (span, source) =>
+            {
+                source.AsSpan().CopyTo(span);
+                span[0] = char.ToUpper(span[0]);
+            });
         }
 
         public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
@@ -73,21 +73,23 @@ namespace Obsidian.Utilities
         public static string TrimMinecraftTag(this string value)
         {
             const int minecraftTagLength = 10; // "minecraft:"
-            ReadOnlySpan<char> source = value.AsSpan(start: minecraftTagLength);
-            Span<char> result = stackalloc char[source.Length];
-            ref char targetChar = ref result.GetRef();
-            int resultLength = 0;
-            for (int i = 0; i < source.Length; i++)
+            int underscoreCount = value.Count(c => c == '_');
+            int length = value.Length - minecraftTagLength - underscoreCount;
+
+            return string.Create(length, value, (span, source) =>
             {
-                char sourceChar = source[i];
-                if (sourceChar != '_')
+                int sourceIndex = minecraftTagLength;
+                for (int i = 0; i < span.Length;)
                 {
-                    targetChar = sourceChar;
-                    targetChar = ref targetChar.MoveNext();
-                    resultLength++;
+                    char sourceChar = source[sourceIndex];
+                    if (sourceChar != '_')
+                    {
+                        span[i] = sourceChar;
+                        i++;
+                    }
+                    sourceIndex++;
                 }
-            }
-            return new string(result.Slice(0, resultLength));
+            });
         }
 
         [Obsolete("Do not use. Kept as a masterpiece.")]

@@ -13,6 +13,8 @@ namespace Obsidian.Commands.Framework
 {
     public class CommandHandler
     {
+        public static readonly string DefaultPrefix = "/";
+
         internal List<Command> _commands;
         internal CommandParser _commandParser;
         internal List<BaseArgumentParser> _argumentParsers;

@@ -78,7 +78,7 @@ namespace Obsidian.Entities
             {
                 Vector delta = (Vector)(position * 32 - Position * 32) * 128;
 
-                server.BroadcastPacketWithoutQueue(new EntityPosition
+                server.BroadcastPacket(new EntityPosition
                 {
                     EntityId = this.EntityId,
 
@@ -105,7 +105,7 @@ namespace Obsidian.Entities
 
                 if (isNewRotation)
                 {
-                    this.server.BroadcastPacketWithoutQueue(new EntityPositionAndRotation
+                    this.server.BroadcastPacket(new EntityPositionAndRotation
                     {
                         EntityId = this.EntityId,
 
@@ -117,7 +117,7 @@ namespace Obsidian.Entities
                         OnGround = onGround
                     }, this.EntityId);
 
-                    this.server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                    this.server.BroadcastPacket(new EntityHeadLook
                     {
                         EntityId = this.EntityId,
                         HeadYaw = yaw
@@ -125,7 +125,7 @@ namespace Obsidian.Entities
                 }
                 else
                 {
-                    this.server.BroadcastPacketWithoutQueue(new EntityPosition
+                    this.server.BroadcastPacket(new EntityPosition
                     {
                         EntityId = this.EntityId,
 
@@ -148,7 +148,7 @@ namespace Obsidian.Entities
 
             if (isNewRotation)
             {
-                this.server.BroadcastPacketWithoutQueue(new EntityRotation
+                this.server.BroadcastPacket(new EntityRotation
                 {
                     EntityId = this.EntityId,
                     OnGround = onGround,
@@ -156,7 +156,7 @@ namespace Obsidian.Entities
                     Pitch = pitch
                 }, this.EntityId);
 
-                this.server.BroadcastPacketWithoutQueue(new EntityHeadLook
+                this.server.BroadcastPacket(new EntityHeadLook
                 {
                     EntityId = this.EntityId,
                     HeadYaw = yaw
@@ -294,7 +294,7 @@ namespace Obsidian.Entities
 
             if (this is ILiving living)
             {
-                await this.server.BroadcastPacketAsync(new EntityAnimation
+                await this.server.QueueBroadcastPacketAsync(new EntityAnimation
                 {
                     EntityId = this.EntityId,
                     Animation = EAnimation.TakeDamage

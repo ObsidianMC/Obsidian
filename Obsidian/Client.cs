@@ -460,7 +460,7 @@ namespace Obsidian
         {
             var list = new List<PlayerInfoAction>();
 
-            foreach (Player player in this.Server.OnlinePlayers.Values)
+            foreach (var (_, player) in this.Server.OnlinePlayers)
             {
                 var piaa = new PlayerInfoAddAction()
                 {

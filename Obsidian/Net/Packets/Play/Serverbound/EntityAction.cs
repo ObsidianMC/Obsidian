@@ -60,7 +60,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     break;
             }
 
-            await server.BroadcastPacketAsync(new EntityMetadata
+            await server.QueueBroadcastPacketAsync(new EntityMetadata
             {
                 EntityId = player.EntityId,
                 Entity = player

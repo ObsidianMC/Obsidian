@@ -348,7 +348,7 @@ namespace Obsidian.Utilities.Registry
                 Index = index
             };
 
-            foreach (var cmd in server.Commands.GetAllCommands())
+            foreach (var cmd in server.CommandsHandler.GetAllCommands())
             {
                 var cmdNode = new CommandNode()
                 {
@@ -376,7 +376,7 @@ namespace Obsidian.Utilities.Registry
 
                         Type type = arg.ParameterType;
 
-                        var mctype = server.Commands.FindMinecraftType(type);
+                        var mctype = server.CommandsHandler.FindMinecraftType(type);
 
                         argNode.Parser = mctype switch
                         {
