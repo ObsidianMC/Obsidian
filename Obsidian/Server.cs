@@ -411,7 +411,7 @@ namespace Obsidian
         internal async Task BroadcastNewCommandsAsync()
         {
             Registry.RegisterCommands(this);
-            foreach (var (_, player) in Players)
+            foreach (Player player in Players)
                 await player.client.SendCommandsAsync();
         }
 
@@ -668,10 +668,8 @@ namespace Obsidian
 
             World.RemovePlayer(player);
 
-            var destroy = new DestroyEntities
-            {
-                EntityIds = new() { player.EntityId }
-            };
+            var destroy = new DestroyEntities(player.EntityId);
+
             foreach (Player other in Players)
             {
                 if (other == player)
