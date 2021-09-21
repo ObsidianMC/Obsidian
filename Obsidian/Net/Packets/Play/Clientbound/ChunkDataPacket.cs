@@ -1,6 +1,7 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -26,21 +27,22 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.WriteInt(Chunk.X);
             stream.WriteInt(Chunk.Z);
 
-            stream.WriteVarInt(32);
-
+            var primaryBitmask = new HashSet<long>();
             int chunkSectionY = 0, mask = 0;
             foreach (var section in Chunk.Sections)
             {
                 if ((changedSectionFilter & 1 << chunkSectionY) != 0)
                 {
-                    mask |= 1 << chunkSectionY;
+                    primaryBitmask.Add(mask |= 1 << chunkSectionY);
                     section.WriteTo(dataStream);
                 }
 
                 chunkSectionY++;
             }
 
-            stream.WriteVarInt(mask);
+            stream.WriteVarInt(primaryBitmask.Count);
+            foreach(var l in primaryBitmask)
+                stream.WriteLong(l);
 
             Chunk.CalculateHeightmap();
             var writer = new NbtWriter(stream, string.Empty);
