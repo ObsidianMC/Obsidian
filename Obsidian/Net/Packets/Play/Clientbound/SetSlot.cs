@@ -12,9 +12,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public sbyte WindowId { get; init; } = 0;
 
+        //TODO figure out how to handle this
 
         [Field(1), VarLength]
-        public int StateId { get; init; }
+        public int StateId { get; init; } = 0;
 
         /// <summary>
         /// Can be -1 to set the currently dragged item.
