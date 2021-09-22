@@ -32,6 +32,8 @@ namespace Obsidian.ChunkData
         public bool SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
         public bool SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
 
+        public bool IsEmpty => this.BlockStorage.Storage.Length <= 0;
+
         private void FillWithAir()
         {
             var air = Block.Air;
