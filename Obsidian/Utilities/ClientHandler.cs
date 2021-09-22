@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Utilities.Collection;
 using System;
@@ -31,7 +32,6 @@ namespace Obsidian
             //Packets.TryAdd(0x0C, EditBook);
             //Packets.TryAdd(0x0E, InteractEntity);
             //Packets.TryAdd(0x0F, GenerateStructure);
-            Packets.TryAdd(0x21, new ServerboundKeepAlive());
             //Packets.TryAdd(0x11, LockDifficulty);
             Packets.TryAdd(0x0F, new PlayerPosition());
             Packets.TryAdd(0x12, new PlayerPositionAndRotation());
@@ -97,6 +97,9 @@ namespace Obsidian
 
                 case 0x0A:
                     await HandleFromPoolAsync<ServerboundPluginMessage>(data, client);
+                    break;
+                case 0x0F:
+                    await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                     break;
 
                 case 0x0D:
