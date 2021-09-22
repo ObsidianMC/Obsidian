@@ -32,13 +32,17 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
             int chunkSectionY = 0;
 
-            var bits = new long[64 >> 6];
+            //Probably best to make it into a class and support resizing but for now it works atleast
+            var bits = new long[1];
             foreach (var section in Chunk.Sections)
             {
                 if (section != null && !section.IsEmpty)
                 {
-                    var offset = chunkSectionY >> 6;
-                    bits[offset] |= 1L << chunkSectionY;
+                    //get index
+                    var index = chunkSectionY >> 6;
+
+                    //Set the bit
+                    bits[index] |= 1L << chunkSectionY;
 
                     section.WriteTo(dataStream);
                 }
