@@ -390,7 +390,11 @@ namespace Obsidian
             });
 
             //Initialize inventory (its currently broken due to missing properties
-            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
+            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
+            {
+                StateId = 0, 
+                CarriedItem = this.Player.GetHeldItem(),
+            });
         }
 
         #region Packet sending
