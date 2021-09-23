@@ -370,7 +370,6 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-            //Load chunks (also currently will not work because new property)
             await this.Player.World.ResendBaseChunksAsync(this);
 
             //TODO: check for last position
@@ -389,7 +388,7 @@ namespace Obsidian
                 TeleportId = 0
             });
 
-            //Initialize inventory (its currently broken due to missing properties
+            //Initialize inventory
             await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
             {
                 StateId = 0, 
