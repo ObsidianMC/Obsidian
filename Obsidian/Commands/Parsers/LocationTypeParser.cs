@@ -37,7 +37,7 @@ namespace Obsidian.Commands.Parsers
                 else if (text.StartsWith("~"))
                 {
                     var player = (Player)ctx.Player;
-                    if(float.TryParse(text.Replace("~", ""), out float relative))
+                    var relative = float.TryParse(text.Replace("~", ""), out float r) ? r : 0;
                         switch (i)
                         {
                             case 0:
@@ -48,21 +48,6 @@ namespace Obsidian.Commands.Parsers
                                 break;
                             case 2:
                                 location.Z = player.Position.Z + relative;;
-                                break;
-                            default:
-                                throw new IndexOutOfRangeException("Count went out of range");
-                        }
-                    else
-                        switch (i)
-                        {
-                            case 0:
-                                location.X = player.Position.X;
-                                break;
-                            case 1:
-                                location.Y = player.Position.Y;
-                                break;
-                            case 2:
-                                location.Z = player.Position.Z;
                                 break;
                             default:
                                 throw new IndexOutOfRangeException("Count went out of range");
