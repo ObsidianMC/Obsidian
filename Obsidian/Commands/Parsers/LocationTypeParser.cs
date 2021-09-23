@@ -37,7 +37,7 @@ namespace Obsidian.Commands.Parsers
                 else if (text.StartsWith("~"))
                 {
                     var player = (Player)ctx.Player;
-                    var relative = float.TryParse(text.Replace("~", ""), out float r) ? r : 0;
+                    float.TryParse(text.Replace("~", ""), out float relative);
                         switch (i)
                         {
                             case 0:
