@@ -356,6 +356,8 @@ namespace Obsidian
 
             await this.QueuePacketAsync(TagsPacket.FromRegistry);
 
+            await this.SendCommandsAsync();
+
             await this.DeclareRecipesAsync();
 
             await this.QueuePacketAsync(new UnlockRecipes
