@@ -5,7 +5,6 @@ using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -20,31 +19,40 @@ namespace Obsidian.WorldData
         public const int cubicRegionSizeShift = 5;
         public const int cubicRegionSize = 1 << cubicRegionSizeShift;
 
-        private bool cancel = false;
         public int X { get; }
         public int Z { get; }
 
-        public bool IsDirty { get; set; } = true;
+        public bool IsDirty { get; private set; } = true;
 
         public string RegionFolder { get; }
 
-        public ConcurrentDictionary<int, Entity> Entities { get; private set; } = new();
+        public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-        public int LoadedChunkCount => LoadedChunks.Count;
+        public int LoadedChunkCount => loadedChunks.Count;
 
-        private DenseCollection<Chunk> LoadedChunks { get; set; } = new DenseCollection<Chunk>(cubicRegionSize, cubicRegionSize);
-
+        private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
+        
         private readonly RegionFile regionFile;
+
+        private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
         internal Region(int x, int z, string worldRegionsPath)
         {
-            this.X = x;
-            this.Z = z;
+            X = x;
+            Z = z;
             RegionFolder = Path.Join(worldRegionsPath, "regions");
             Directory.CreateDirectory(RegionFolder);
             var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
             regionFile = new RegionFile(filePath, cubicRegionSize);
 
+        }
+
+        internal void AddBlockUpdate(BlockUpdate bu)
+        {
+            if (!blockUpdates.TryAdd(bu.position, bu))
+            {
+                blockUpdates[bu.position] = bu;
+            }
         }
 
         internal async Task InitAsync()
@@ -54,7 +62,7 @@ namespace Obsidian.WorldData
 
         internal async Task FlushAsync()
         {
-            foreach(Chunk c in LoadedChunks) { SerializeChunk(c); }
+            foreach(Chunk c in loadedChunks) { SerializeChunk(c); }
             await regionFile.FlushToDiskAsync();
         }
 
@@ -64,11 +72,11 @@ namespace Obsidian.WorldData
 
         internal Chunk GetChunk(Vector relativePosition)
         {
-            var chunk = LoadedChunks[relativePosition.X, relativePosition.Z];
+            var chunk = loadedChunks[relativePosition.X, relativePosition.Z];
             if (chunk is null)
             {
                 chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
-                LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+                loadedChunks[relativePosition.X, relativePosition.Z] = chunk;
             }
             return chunk;
         }
@@ -85,7 +93,7 @@ namespace Obsidian.WorldData
 
         internal IEnumerable<Chunk> GeneratedChunks()
         {
-            foreach(var c in LoadedChunks)
+            foreach(var c in loadedChunks)
             {
                 if (c is not null && c.isGenerated)
                 {
@@ -97,8 +105,8 @@ namespace Obsidian.WorldData
         internal void SetChunk(Chunk chunk)
         {
             if (chunk is null) { return; } // I dunno... maybe we'll need to null out a chunk someday?
-            var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-            LoadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+            loadedChunks[x, z] = chunk;
         }
 
         internal void SerializeChunk(Chunk chunk)
@@ -110,7 +118,7 @@ namespace Obsidian.WorldData
             using NbtWriter writer = new(strm, NbtCompression.GZip);
 
             writer.WriteTag(chunkNbt);
-            writer.WriteInt("DataVersion", 2724);//HArdcoded version try to get data version through minecraft data and use data correctly
+            writer.WriteInt("DataVersion", 2724);// Hardcoded version try to get data version through minecraft data and use data correctly
 
             writer.TryFinish();
             regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
@@ -118,25 +126,36 @@ namespace Obsidian.WorldData
 
         internal async Task BeginTickAsync(CancellationToken cts)
         {
-            while (!cts.IsCancellationRequested || cancel)
+            var timer = new BalancingTimer(50, cts);
+            while (await timer.WaitForNextTickAsync())
             {
-                await Task.Delay(20, cts);
-
                 await Task.WhenAll(Entities.Select(entityEntry => entityEntry.Value.TickAsync()));
+
+                List<BlockUpdate> neighborUpdates = new();
+                List<BlockUpdate> delayed = new();
+
+                foreach (var pos in blockUpdates.Keys)
+                {
+                    blockUpdates.Remove(pos, out var bu);
+                    if (bu.delayCounter > 0)
+                    {
+                        bu.delayCounter--;
+                        delayed.Add(bu);
+                    }
+                    else
+                    {
+                        bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
+                        if (updateNeighbor) { neighborUpdates.Add(bu); }
+                    }
+                }
+                delayed.ForEach(i => AddBlockUpdate(i));
+                neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
             }
-            await regionFile.FlushToDiskAsync();
         }
 
-        internal void Cancel() => this.cancel = true;
-
         #region NBT Ops
-        public static Chunk GetChunkFromNbt(NbtCompound compound)
+        public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
         {
-            if (!compound.TryGetTag("Level", out var tag))
-                throw new InvalidOperationException("Chunk compound incorrectly serialized");
-
-            var chunkCompound = tag as NbtCompound;
-
             int x = chunkCompound.GetInt("xPos");
             int z = chunkCompound.GetInt("zPos");
 

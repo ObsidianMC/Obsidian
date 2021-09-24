@@ -15,11 +15,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            player.CurrentSlot = (short)(Slot + 36);
+            player.CurrentSlot = Slot;
 
             var heldItem = player.GetHeldItem();
 
-            await server.BroadcastPacketAsync(new EntityEquipment
+            await server.QueueBroadcastPacketAsync(new EntityEquipment
             {
                 EntityId = player.EntityId,
                 Slot = ESlot.MainHand,

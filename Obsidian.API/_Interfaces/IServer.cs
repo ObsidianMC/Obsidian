@@ -1,7 +1,7 @@
-﻿using Obsidian.API.Crafting;
+﻿using Obsidian.API.Boss;
+using Obsidian.API.Crafting;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.API
 {
@@ -9,7 +9,7 @@ namespace Obsidian.API
     {
         public string Version { get; }
         public int Port { get; }
-        public short TPS { get; }
+        public int Tps { get; }
         public DateTimeOffset StartTime { get; }
         public ProtocolVersion Protocol { get; }
         public IEnumerable<IPlayer> Players { get; }
@@ -21,11 +21,13 @@ namespace Obsidian.API
 
         public bool IsPlayerOnline(string username);
         public bool IsPlayerOnline(Guid uuid);
-        public Task BroadcastAsync(string message, MessageType type = MessageType.Chat);
-        public Task BroadcastAsync(ChatMessage message, MessageType type = MessageType.Chat);
+        public void BroadcastMessage(string message, MessageType type = MessageType.Chat);
+        public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat);
         public IPlayer? GetPlayer(string username);
         public IPlayer? GetPlayer(Guid uuid);
         public IPlayer? GetPlayer(int entityId);
         public void RegisterRecipes(params IRecipe[] recipes);
+
+        public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
     }
 }

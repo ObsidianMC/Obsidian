@@ -30,11 +30,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             player.LastClickedItem = ClickedItem;
 
-            if (player.CurrentSlot == ClickedSlot)
+            if (player.inventorySlot == ClickedSlot)
             {
                 var heldItem = player.GetHeldItem();
 
-                await server.BroadcastPacketAsync(new EntityEquipment
+                await server.QueueBroadcastPacketAsync(new EntityEquipment
                 {
                     EntityId = player.EntityId,
                     Slot = ESlot.MainHand,

@@ -6,7 +6,7 @@ namespace Obsidian.Nbt
 {
     public partial class NbtWriter
     {
-        private void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+        internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
 
         internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
 

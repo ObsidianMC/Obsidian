@@ -6,8 +6,9 @@ namespace Obsidian.API
 {
     public interface IPlayer : ILiving
     {
+        public Inventory Inventory { get; }
+
         public string Username { get; }
-        public string DisplayName { get; }
 
         public Guid Uuid { get; }
         public bool IsOperator { get; }
@@ -23,7 +24,7 @@ namespace Obsidian.API
         public short DeathTime { get; set; }
         public short HurtTime { get; set; }
         public short SleepTimer { get; set; }
-        public short CurrentSlot { get; set; }
+        public short CurrentSlot { get; }
 
         public int Ping { get; }
         public int Dimension { get; set; }
@@ -58,5 +59,8 @@ namespace Obsidian.API
         public Task SetGamemodeAsync(Gamemode gamemode);
 
         public Task UpdateDisplayNameAsync(string newDisplayName);
+
+        public ItemStack GetHeldItem();
+        public ItemStack GetOffHandItem();
     }
 }

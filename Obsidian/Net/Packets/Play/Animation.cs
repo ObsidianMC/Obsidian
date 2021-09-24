@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play
             switch (Hand)
             {
                 case Hand.MainHand:
-                    await server.BroadcastPacketAsync(new EntityAnimation
+                    await server.QueueBroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,
                         Animation = EAnimation.SwingMainArm
@@ -27,7 +27,7 @@ namespace Obsidian.Net.Packets.Play
                     break;
 
                 case Hand.OffHand:
-                    await server.BroadcastPacketAsync(new EntityAnimation
+                    await server.QueueBroadcastPacketAsync(new EntityAnimation
                     {
                         EntityId = player.EntityId,
                         Animation = EAnimation.SwingOffhand

@@ -28,6 +28,8 @@ namespace Obsidian.API
 
         public float Health { get; set; }
 
+        public ChatMessage CustomName { get; set; }
+
         public bool CustomNameVisible { get; }
         public bool Silent { get; }
         public bool NoGravity { get; }

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.BossBar
+﻿namespace Obsidian.API.Boss
 {
     public enum BossBarColor
     {

@@ -167,9 +167,15 @@ namespace Obsidian.Commands.Framework.Entities
             }
 
             // await the command with it's args
-            var task = (Task)method.Invoke(obj, parsedargs);
-
-            await task;
+            object result = method.Invoke(obj, parsedargs);
+            if (result is Task task)
+            {
+                await task;
+            }
+            else if (result is ValueTask valueTask)
+            {
+                await valueTask;
+            }
         }
 
         public override string ToString()

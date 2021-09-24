@@ -6,6 +6,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -33,7 +34,23 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             var currentItem = player.GetHeldItem();
 
-            var block = Registry.GetBlock(currentItem.Type);
+            var itemType = currentItem.Type;
+
+            // TODO: this better
+            if (itemType == Material.WaterBucket)
+                itemType = Material.Water;
+            if (itemType == Material.LavaBucket)
+                itemType = Material.Lava;
+
+            Block block;
+            try
+            {
+                block = Registry.GetBlock(itemType);
+            }
+            catch //item is not a block so just return
+            { 
+                return; 
+            }
 
             var position = this.Position;
 
@@ -310,7 +327,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             if (player.Gamemode != Gamemode.Creative)
-                player.Inventory.RemoveItem(player.CurrentSlot);
+                player.Inventory.RemoveItem(player.inventorySlot);
 
             switch (Face) // TODO fix this for logs
             {
@@ -343,9 +360,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             // TODO calculate the block state
-            server.World.SetBlock(position, block);
-
-            await server.BroadcastBlockPlacementAsync(player, block, position);
+            server.World.SetBlock(position, block, doBlockUpdate: true);
         }
     }
 }

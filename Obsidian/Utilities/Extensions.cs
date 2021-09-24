@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
@@ -20,45 +18,48 @@ namespace Obsidian.Utilities
 {
     public static partial class Extensions
     {
-        internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
-                EntityType.SpectralArrow,
-                EntityType.Boat,
-                EntityType.DragonFireball,
-                EntityType.AreaEffectCloud,
-                EntityType.EndCrystal,
-                EntityType.EvokerFangs,
-                EntityType.ExperienceOrb,
-                EntityType.FireworkRocket,
-                EntityType.FallingBlock,
-                EntityType.Item,
-                EntityType.ItemFrame,
-                EntityType.Fireball,
-                EntityType.LeashKnot,
-                EntityType.LightningBolt,
-                EntityType.LlamaSpit,
-                EntityType.Minecart,
-                EntityType.ChestMinecart,
-                EntityType.CommandBlockMinecart,
-                EntityType.FurnaceMinecart,
-                EntityType.HopperMinecart,
-                EntityType.SpawnerMinecart,
-                EntityType.TntMinecart,
-                EntityType.Painting,
-                EntityType.PrimedTNT,
-                EntityType.ShulkerBullet,
-                EntityType.EnderPearl,
-                EntityType.Snowball,
-                EntityType.SmallFireball,
-                EntityType.Egg,
-                EntityType.ExperienceBottle,
-                EntityType.Potion,
-                EntityType.Trident,
-                EntityType.FishingBobber,
-                EntityType.EyeOfEnder};
+        internal readonly static EntityType[] nonLiving = new[]
+        {
+            EntityType.Arrow,
+            EntityType.SpectralArrow,
+            EntityType.Boat,
+            EntityType.DragonFireball,
+            EntityType.AreaEffectCloud,
+            EntityType.EndCrystal,
+            EntityType.EvokerFangs,
+            EntityType.ExperienceOrb,
+            EntityType.FireworkRocket,
+            EntityType.FallingBlock,
+            EntityType.Item,
+            EntityType.ItemFrame,
+            EntityType.Fireball,
+            EntityType.LeashKnot,
+            EntityType.LightningBolt,
+            EntityType.LlamaSpit,
+            EntityType.Minecart,
+            EntityType.ChestMinecart,
+            EntityType.CommandBlockMinecart,
+            EntityType.FurnaceMinecart,
+            EntityType.HopperMinecart,
+            EntityType.SpawnerMinecart,
+            EntityType.TntMinecart,
+            EntityType.Painting,
+            EntityType.PrimedTNT,
+            EntityType.ShulkerBullet,
+            EntityType.EnderPearl,
+            EntityType.Snowball,
+            EntityType.SmallFireball,
+            EntityType.Egg,
+            EntityType.ExperienceBottle,
+            EntityType.Potion,
+            EntityType.Trident,
+            EntityType.FishingBobber,
+            EntityType.EyeOfEnder
+        };
 
         public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
 
-        internal static bool IsLiving(this EntityType type) => nonLiving.Contains(type);
+        internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
         /// <summary>
         /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
@@ -119,6 +120,14 @@ namespace Obsidian.Utilities
             return newDict;
         }
 
+        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
+        {
+            foreach (T t in collection)
+            {
+                action(t);
+            }
+        }
+
         // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
         public static string MinecraftShaDigest(this byte[] data)
         {
@@ -139,18 +148,6 @@ namespace Obsidian.Utilities
             {
                 return b.ToString("x").TrimStart('0');
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T MoveNext<T>(this ref T t) where T : struct
-        {
-            return ref Unsafe.Add(ref t, 1);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T GetRef<T>(this Span<T> span) where T : struct
-        {
-            return ref MemoryMarshal.GetReference(span);
         }
 
         public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);

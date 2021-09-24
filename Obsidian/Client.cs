@@ -33,7 +33,7 @@ namespace Obsidian
     public class Client : IDisposable
     {
         public event Action<Client> Disconnected;
-        
+
         private byte[] randomToken;
         private byte[] sharedKey;
 
@@ -272,10 +272,13 @@ namespace Obsidian
                         break;
 
                     case ClientState.Play:
+                        var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
+                        await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
 
-                        //await this.Logger.LogDebugAsync($"Received Play packet with Packet ID 0x{packet.id.ToString("X")}");
-
-                        await this.handler.HandlePlayPackets(id, data, this);
+                        if (!packetReceivedEventArgs.Cancel)
+                        {
+                            await handler.HandlePlayPackets(id, data, this);
+                        }
                         break;
                 }
 
@@ -395,6 +398,9 @@ namespace Obsidian
                 Flags = PositionFlags.None,
                 TeleportId = 0
             });
+
+            //Initialize inventory
+            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
         }
 
         #region Packet sending
@@ -467,7 +473,7 @@ namespace Obsidian
         {
             var list = new List<PlayerInfoAction>();
 
-            foreach (Player player in this.Server.OnlinePlayers.Values)
+            foreach (var (_, player) in this.Server.OnlinePlayers)
             {
                 var piaa = new PlayerInfoAddAction()
                 {
@@ -514,7 +520,7 @@ namespace Obsidian
             }
             catch (Exception e)
             {
-                Logger.LogError(e, "Sending packet failed");
+                Logger.LogError(e, $"Sending packet failed {packet.Id}");
             }
         }
 
