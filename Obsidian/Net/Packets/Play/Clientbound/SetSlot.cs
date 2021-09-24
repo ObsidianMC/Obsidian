@@ -10,7 +10,12 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         /// If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
         /// </summary>
         [Field(0)]
-        public byte WindowId { get; init; } = 0;
+        public sbyte WindowId { get; init; } = 0;
+
+        //TODO figure out how to handle this
+
+        [Field(1), VarLength]
+        public int StateId { get; init; } = 0;
 
         /// <summary>
         /// Can be -1 to set the currently dragged item.
@@ -21,6 +26,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public ItemStack SlotData { get; init; }
 
-        public int Id => 0x15;
+        public int Id => 0x16;
     }
 }

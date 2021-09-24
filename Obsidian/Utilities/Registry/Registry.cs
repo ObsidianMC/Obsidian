@@ -12,7 +12,6 @@ using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -32,9 +31,9 @@ namespace Obsidian.Utilities.Registry
         public static readonly Dictionary<string, IRecipe> Recipes = new();
         public static readonly Dictionary<string, List<Tag>> Tags = new();
 
-        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[17_112]; // 17 111 - highest block state
-        internal static readonly string[] BlockNames = new string[763]; // 762 - block count
-        internal static readonly short[] NumericToBase = new short[763]; // 762 - highest block numeric id
+        internal static readonly MatchTarget[] StateToMatch = new MatchTarget[20_342]; // 20,341 - highest block state
+        internal static readonly string[] BlockNames = new string[898]; // 897 - block count
+        internal static readonly short[] NumericToBase = new short[898]; // 897 - highest block numeric id
 
         public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
@@ -42,7 +41,7 @@ namespace Obsidian.Utilities.Registry
         private static readonly string mainDomain = "Obsidian.Assets";
 
         private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
-        {   
+        {
             Converters =
             {
                 new StringToBoolConverter(),
@@ -160,6 +159,58 @@ namespace Obsidian.Utilities.Registry
             Logger?.LogDebug($"Successfully registered {registered} dimensions...");
         }
 
+        private static void AddTagValues(string tagBase, Tag tag, List<string> values, Dictionary<string, RawTag> dict)
+        {
+            foreach (var value in values)
+            {
+                switch (tagBase)
+                {
+                    case "items":
+                        var item = GetItem(value);
+
+                        tag.Entries.Add(item.Id);
+                        break;
+                    case "blocks":
+                        CheckIfNamespace(value, tag, dict);
+                        break;
+                    case "entity_types":
+                        Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
+                        tag.Entries.Add((int)type);
+                        break;
+                    case "fluids":
+                        Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
+                        tag.Entries.Add((int)fluid);
+                        break;
+                    case "game_events":
+                        Enum.TryParse<GameEvents>(value.TrimMinecraftTag(), true, out var gameEvent);
+                        tag.Entries.Add((int)gameEvent);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private static void CheckIfNamespace(string value, Tag tag, Dictionary<string, RawTag> dict)
+        {
+            if (value.StartsWith('#'))
+            {
+                var sanitizedValue = value.TrimStart('#').Replace(':', '/').Replace("minecraft", "blocks");
+
+                if (dict.TryGetValue(sanitizedValue, out RawTag rawTag))
+                {
+                    foreach (var newValue in rawTag.Values)
+                        CheckIfNamespace(newValue, tag, dict);
+
+                    return;
+                }
+            }
+
+            var block = GetBlock(value);
+
+            tag.Entries.Add(block.Id);
+        }
+
         public static async Task RegisterTagsAsync()
         {
             int registered = 0;
@@ -168,42 +219,12 @@ namespace Obsidian.Utilities.Registry
 
             var dict = await stream.FromJsonAsync<Dictionary<string, RawTag>>();
 
-            static void addValues(string tagBase, Tag tag, List<string> values)
-            {
-                foreach (var value in values)
-                {
-                    switch (tagBase)
-                    {
-                        case "items":
-                            var item = GetItem(value);
-
-                            tag.Entries.Add(item.Id);
-                            break;
-                        case "blocks":
-                            var block = GetBlock(value);
-
-                            tag.Entries.Add(block.Id);
-                            break;
-                        case "entity_types":
-                            Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
-                            tag.Entries.Add((int)type);
-                            break;
-                        case "fluids":
-                            Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
-                            tag.Entries.Add((int)fluid);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-
             foreach (var (name, rawTag) in dict)
             {
                 var split = name.Split('/');
 
                 var tagBase = split[0];
-                var tagName = split[1];
+                var tagName = split.Length == 3 ? $"{split[1]}/{split[2]}" : split[1];
 
                 if (Tags.ContainsKey(tagBase))
                 {
@@ -212,7 +233,7 @@ namespace Obsidian.Utilities.Registry
                         Type = tagBase,
                         Name = tagName
                     };
-                    addValues(tagBase, tag, rawTag.Values);
+                    AddTagValues(tagBase, tag, rawTag.Values, dict);
 
                     Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 
@@ -226,7 +247,7 @@ namespace Obsidian.Utilities.Registry
                         Name = tagName
                     };
 
-                    addValues(tagBase, tag, rawTag.Values);
+                    AddTagValues(tagBase, tag, rawTag.Values, dict);
 
                     Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
 

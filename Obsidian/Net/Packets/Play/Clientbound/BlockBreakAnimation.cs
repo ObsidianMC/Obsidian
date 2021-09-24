@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public sbyte DestroyStage { get; init; }
 
-        public int Id => 0x08;
+        public int Id => 0x09;
     }
 }

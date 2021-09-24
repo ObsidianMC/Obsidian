@@ -7,7 +7,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public byte Slot { get; }
 
-        public int Id => 0x3F;
+        public int Id => 0x48;
 
         public ClientHeldItemChange(byte slot)
         {

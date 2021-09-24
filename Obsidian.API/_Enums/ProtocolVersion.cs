@@ -23,6 +23,9 @@ namespace Obsidian.API
 
         //1.16.4 & 1.16.5 have the same PVN
         [Description("1.16.5")]
-        v1_16_5 = 754
+        v1_16_5 = 754,
+
+        [Description("1.17.1")]
+        v1_17_1 = 756
     }
 }

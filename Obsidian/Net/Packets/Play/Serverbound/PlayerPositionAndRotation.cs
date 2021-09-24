@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(3)]
         public bool OnGround { get; private set; }
 
-        public int Id => 0x34;
+        public int Id => 0x12;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

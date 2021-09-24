@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public IDictionary<string, IRecipe> Recipes { get; }
 
-        public int Id => 0x5A;
+        public int Id => 0x65;
 
         public static readonly DeclareRecipes FromRegistry = new(Registry.Recipes);
 

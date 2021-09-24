@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public float Value { get; }
 
-        public int Id => 0x1D;
+        public int Id => 0x1E;
 
         public ChangeGameState(ChangeGameStateReason reason)
         {

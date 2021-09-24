@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public ItemStack Item { get; init; }
 
-        public int Id => 0x47;
+        public int Id => 0x50;
     }
 
     public enum ESlot : int

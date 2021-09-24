@@ -14,14 +14,13 @@ namespace Obsidian.Commands.Parsers
         {
             var splitted = input.Split(' ');
             var location = new VectorF();
-
-            int count = 0;
+            
             var ctx = context;
-            foreach (var text in splitted)
+            for (int i = 0; i < splitted.Length; i++)
             {
+                var text = splitted[i];
                 if (float.TryParse(text, out var floatResult))
-                {
-                    switch (count)
+                    switch (i)
                     {
                         case 0:
                             location.X = floatResult;
@@ -35,27 +34,25 @@ namespace Obsidian.Commands.Parsers
                         default:
                             throw new IndexOutOfRangeException("Count went out of range");
                     }
-
-                }
-                else if (text.Equals("~"))
+                else if (text.StartsWith("~"))
                 {
                     var player = (Player)ctx.Player;
-                    switch (count)
-                    {
-                        case 0:
-                            location.X = player.Position.X;
-                            break;
-                        case 1:
-                            location.Y = player.Position.Y;
-                            break;
-                        case 2:
-                            location.Z = player.Position.Z;
-                            break;
-                        default:
-                            throw new IndexOutOfRangeException("Count went out of range");
-                    }
+                    float.TryParse(text.Replace("~", ""), out float relative);
+                        switch (i)
+                        {
+                            case 0:
+                                location.X = player.Position.X + relative;
+                                break;
+                            case 1:
+                                location.Y = player.Position.Y + relative;;
+                                break;
+                            case 2:
+                                location.Z = player.Position.Z + relative;;
+                                break;
+                            default:
+                                throw new IndexOutOfRangeException("Count went out of range");
+                        }
                 }
-                count++;
             }
 
             result = location;

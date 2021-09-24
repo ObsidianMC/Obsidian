@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public string RecipeId { get; }
 
-        public int Id => 0x2F;
+        public int Id => 0x31;
 
         public CraftRecipeResponse(sbyte windowId, string recipeId)
         {

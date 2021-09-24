@@ -11,6 +11,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public string ScoreName { get; init; }
 
-        public int Id => 0x43;
+        public int Id => 0x4C;
     }
 }

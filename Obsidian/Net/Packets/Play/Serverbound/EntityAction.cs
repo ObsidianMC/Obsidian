@@ -18,7 +18,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2), VarLength]
         public int JumpBoost { get; set; }
 
-        public int Id => 0x1C;
+        public int Id => 0x1B;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

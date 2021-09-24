@@ -26,14 +26,14 @@ namespace Obsidian.Entities
         {
             await base.WriteAsync(stream);
 
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
+            await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
         }
 
         public override void Write(MinecraftStream stream)
         {
             base.Write(stream);
 
-            stream.WriteEntityMetadataType(7, EntityMetadataType.Slot);
+            stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
             stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
         }
 

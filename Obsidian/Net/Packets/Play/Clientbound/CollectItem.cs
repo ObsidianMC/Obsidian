@@ -13,6 +13,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2), VarLength]
         public int PickupItemCount { get; init; }
 
-        public int Id => 0x55;
+        public int Id => 0x60;
     }
 }

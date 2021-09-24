@@ -417,14 +417,28 @@ namespace Obsidian.Net
         [WriteMethod]
         public void WriteBossBarAction(BossBarAction value) => value.WriteTo(this);
 
-        [WriteMethod]
-        public void WriteTag(Tag value)
+        private void WriteTag(Tag value)
         {
             WriteString(value.Name);
             WriteVarInt(value.Count);
             for (int i = 0; i < value.Entries.Count; i++)
             {
                 WriteVarInt(value.Entries[i]);
+            }
+        }
+
+        [WriteMethod]
+        public void WriteTags(IDictionary<string, List<Tag>> tagsDictionary)
+        {
+            this.WriteVarInt(tagsDictionary.Count);
+
+            foreach (var (name, tags) in tagsDictionary)
+            {
+                this.WriteString($"minecraft:{name.TrimEnd('s')}");
+
+                this.WriteVarInt(tags.Count);
+                foreach (var tag in tags)
+                    this.WriteTag(tag);
             }
         }
 

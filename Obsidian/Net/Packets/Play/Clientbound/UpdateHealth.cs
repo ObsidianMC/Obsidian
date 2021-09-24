@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public float FoodSaturation { get; }
 
-        public int Id => 0x49;
+        public int Id => 0x52;
 
         public UpdateHealth(float health, int food, float foodSaturation)
         {

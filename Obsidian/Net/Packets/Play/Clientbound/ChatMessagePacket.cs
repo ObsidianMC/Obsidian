@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public Guid Sender { get; }
 
-        public int Id => 0x0E;
+        public int Id => 0x0F;
 
         public ChatMessagePacket(ChatMessage message, MessageType type) : this(message, type, Guid.Empty)
         {

@@ -14,7 +14,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2), VarLength]
         public int TotalExperience { get; }
 
-        public int Id => 0x48;
+        public int Id => 0x51;
         
         public SetExperience(float experienceBar, int level, int totalExperience)
         {

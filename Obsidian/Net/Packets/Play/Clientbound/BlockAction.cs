@@ -17,6 +17,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3), VarLength]
         public int BlockType { get; init; }
 
-        public int Id => 0x0A;
+        public int Id => 0x0B;
     }
 }

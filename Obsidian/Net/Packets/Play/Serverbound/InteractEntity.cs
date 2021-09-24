@@ -24,7 +24,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(4)]
         public bool Sneaking { get; private set; }
 
-        public int Id => 0x0E;
+        public int Id => 0x0D;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

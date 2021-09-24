@@ -3,6 +3,7 @@ using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,29 +12,32 @@ namespace Obsidian.Net.Packets.Play.Serverbound
     // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
     public partial class ClickWindow : IServerboundPacket
     {
+        private const int Outsideinventory = -999;
+
         /// <summary>
         /// The ID of the window which was clicked. 0 for player inventory.
         /// </summary>
         [Field(0)]
         public byte WindowId { get; private set; }
 
+
+        /// <summary>
+        /// The last recieved State ID from either a Set Slot or a Window Items packet
+        /// </summary>
+        [Field(1), VarLength]
+        public int StateId { get; private set; }
+
         /// <summary>
         /// The clicked slot number
         /// </summary>
-        [Field(1)]
+        [Field(2)]
         public short ClickedSlot { get; private set; }
 
         /// <summary>
         /// The button used in the click
         /// </summary>
-        [Field(2)]
-        public sbyte Button { get; private set; }
-
-        /// <summary>
-        /// A unique number for the action
-        /// </summary>
         [Field(3)]
-        public short ActionNumber { get; private set; }
+        public sbyte Button { get; private set; }
 
         /// <summary>
         /// Inventory operation mode
@@ -41,15 +45,34 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(4), ActualType(typeof(int)), VarLength]
         public InventoryOperationMode Mode { get; private set; }
 
+        [Field(5)]
+        public Dictionary<short, ItemStack> Slots { get; private set; }
+
         /// <summary>
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
         /// </summary>
-        [Field(5)]
-        public ItemStack Item { get; private set; }
+        [Field(6)]
+        public ItemStack ClickedItem { get; private set; }
 
-        public int Id => 0x09;
+        public int Id => 0x08;
 
-        private const int Outsideinventory = -999;
+        public void Populate(MinecraftStream stream)
+        {
+            this.WindowId = stream.ReadUnsignedByte();
+            this.StateId = stream.ReadVarInt();
+            this.ClickedSlot = stream.ReadShort();
+            this.Button = stream.ReadSignedByte();
+            this.Mode = (InventoryOperationMode)stream.ReadVarInt();
+
+            var length = stream.ReadVarInt();
+
+            for (int i = 0; i < length; i++)
+            {
+                this.Slots.Add(stream.ReadShort(), stream.ReadItemStack());
+            }
+
+            this.ClickedItem = stream.ReadItemStack();
+        }
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
@@ -57,6 +80,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             var (value, forPlayer) = ClickedSlot.GetDifference(inventory.Size);
 
+            //Uhh this isn't supposed to be like this 😅
             if (WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && ClickedSlot >= 27 && ClickedSlot <= 62 || forPlayer)
                 inventory = player.Inventory;
 
@@ -68,11 +92,11 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 case InventoryOperationMode.ShiftMouseClick:
                     {
-                        if (Item == null)
+                        if (ClickedItem == null)
                             return;
 
                         inventory.RemoveItem(value);
-                        player.Inventory.AddItem(Item);
+                        player.Inventory.AddItem(ClickedItem);
                         break;
                     }
 
@@ -82,17 +106,17 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                         var currentItem = player.Inventory.GetItem(localSlot);
 
-                        if (currentItem.IsAir() && Item != null)
+                        if (currentItem.IsAir() && ClickedItem != null)
                         {
                             inventory.RemoveItem(value);
 
-                            player.Inventory.SetItem(localSlot, Item);
+                            player.Inventory.SetItem(localSlot, ClickedItem);
                         }
-                        else if (!currentItem.IsAir() && Item != null)
+                        else if (!currentItem.IsAir() && ClickedItem != null)
                         {
                             inventory.SetItem(value, currentItem);
 
-                            player.Inventory.SetItem(localSlot, Item);
+                            player.Inventory.SetItem(localSlot, ClickedItem);
                         }
                         else
                         {
@@ -130,10 +154,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 case InventoryOperationMode.DoubleClick:
                     {
-                        if (Item == null || Item.Count >= 64)
+                        if (ClickedItem == null || ClickedItem.Count >= 64)
                             return;
 
-                        var item = Item;
+                        var item = ClickedItem;
 
                         (ItemStack item, int index) selectedItem = (null, 0);
 
@@ -178,9 +202,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         private async Task HandleMouseClick(Inventory inventory, Server server, Player player, int value)
         {
-            if (!Item.IsAir())
+            if (!ClickedItem.IsAir())
             {
-                var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, Item)
+                var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, ClickedItem)
                 {
                     Slot = value
                 });
@@ -188,7 +212,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 if (@event.Cancel)
                     return;
 
-                player.LastClickedItem = Item;
+                player.LastClickedItem = ClickedItem;
 
                 inventory.SetItem(value, null);
             }
@@ -201,7 +225,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                    player.LastClickedItem = Item;
+                    player.LastClickedItem = ClickedItem;
                 }
                 else
                 {
@@ -210,7 +234,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                    player.LastClickedItem = Item;
+                    player.LastClickedItem = ClickedItem;
                 }
             }
         }
@@ -231,7 +255,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     if (Button != 9)
                         return;
 
-                    inventory.SetItem(value, Item);
+                    inventory.SetItem(value, ClickedItem);
                 }
                 else
                 {
@@ -240,7 +264,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     if (Button != 1 || Button != 5)
                         return;
 
-                    inventory.SetItem(value, Item);
+                    inventory.SetItem(value, ClickedItem);
                 }
             }
         }

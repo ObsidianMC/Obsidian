@@ -8,7 +8,10 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0)]
         public VectorF Position { get; }
 
-        public int Id => 0x42;
+        [Field(1), DataFormat(typeof(float))]
+        public Angle Angle { get; set; }
+
+        public int Id => 0x4B;
 
         public SpawnPosition(VectorF position)
         {

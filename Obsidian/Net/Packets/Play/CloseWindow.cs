@@ -11,7 +11,7 @@ namespace Obsidian.Net.Packets.Play
         [Field(0)]
         public byte WindowId { get; private set; }
 
-        public int Id => 0x0A;
+        public int Id => 0x09;
 
         public async ValueTask HandleAsync(Server server, Player player)
         {

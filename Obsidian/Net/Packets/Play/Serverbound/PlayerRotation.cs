@@ -16,7 +16,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         [Field(2)]
         public bool OnGround { get; private set; }
 
-        public int Id => 0x14;
+        public int Id => 0x13;
 
         public PlayerRotation()
         {

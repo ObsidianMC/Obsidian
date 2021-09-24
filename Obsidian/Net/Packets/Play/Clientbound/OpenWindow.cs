@@ -15,7 +15,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(2)]
         public ChatMessage Title { get; }
 
-        public int Id => 0x2D;
+        public int Id => 0x2E;
 
         public OpenWindow(Inventory inventory)
         {
