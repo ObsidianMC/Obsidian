@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(0), ActualType(typeof(byte))]
         public Difficulty Difficulty { get; }
 
-        public int Id => 0x0D;
+        public int Id => 0x0E;
 
         public ServerDifficulty(Difficulty difficulty)
         {

@@ -37,6 +37,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(10)]
         public byte[] BlockLightArrays { get; init; }
 
-        public int Id => 0x23;
+        public int Id => 0x25;
     }
 }

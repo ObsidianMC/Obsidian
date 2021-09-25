@@ -11,6 +11,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public Velocity Velocity { get; init; }
 
-        public int Id => 0x46;
+        public int Id => 0x4F;
     }
 }

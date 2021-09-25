@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Login
 
         public Disconnect(ChatMessage reason, ClientState state)
         {
-            Id = state == ClientState.Play ? 0x19 : 0x00;
+            Id = state == ClientState.Play ? 0x1A : 0x00;
             Reason = reason;
         }
     }

@@ -13,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1), VarLength]
         public int RootIndex { get; }
 
-        public int Id => 0x10;
+        public int Id => 0x12;
 
         public void AddNode(CommandNode node)
         {

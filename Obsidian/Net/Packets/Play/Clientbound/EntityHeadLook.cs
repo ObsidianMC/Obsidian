@@ -11,6 +11,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public Angle HeadYaw { get; init; }
 
-        public int Id => 0x3A;
+        public int Id => 0x3E;
     }
 }

@@ -1,17 +1,19 @@
 ﻿using Obsidian.Serialization.Attributes;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public partial class DestroyEntities : IClientboundPacket
     {
         [Field(0), VarLength]
-        public List<int> EntityIds { get; init; } = new();
+        public List<int> Entities { get; private set; } = new();
 
-        public int Id => 0x36;
+        public int Id => 0x3A;
 
-        public void AddEntity(int entity) => EntityIds.Add(entity);
-
-        public void AddEntityRange(params int[] entities) => EntityIds.AddRange(entities);
+        public DestroyEntities(params int[] entities)
+        {
+            this.Entities = entities.ToList();
+        }
     }
 }

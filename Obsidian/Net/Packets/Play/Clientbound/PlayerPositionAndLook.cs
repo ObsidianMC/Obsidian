@@ -32,6 +32,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(4), VarLength]
         public int TeleportId { get; init; }
 
-        public int Id => 0x34;
+        [Field(5)]
+        public bool DismountVehicle { get; init; }
+
+        public int Id => 0x38;
     }
 }

@@ -60,7 +60,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(15)]
         public bool Flat { get; init; } = false;
 
-        public int Id => 0x24;
+        public int Id => 0x26;
     }
 
     public enum LevelType

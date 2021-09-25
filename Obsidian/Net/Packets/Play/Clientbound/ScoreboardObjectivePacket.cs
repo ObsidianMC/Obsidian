@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
         public DisplayType Type { get; init; }
 
-        public int Id => 0x4A;
+        public int Id => 0x53;
 
         private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
     }

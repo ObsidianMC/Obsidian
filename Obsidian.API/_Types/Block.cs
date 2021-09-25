@@ -20,7 +20,7 @@ namespace Obsidian.API
         public string Name => Material.ToString();
         public Material Material => (Material)stateToMatch[baseId].numeric;
         public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
-        public bool IsAir => baseId == 0 || baseId == 9670 || baseId == 9669;
+        public bool IsAir => baseId == 0 || baseId == 9915 || baseId == 9916;
         public bool IsFluid => StateId > 33 && StateId < 66;
         public int Id => stateToMatch[baseId].numeric;
         public short StateId => (short)(baseId + state);

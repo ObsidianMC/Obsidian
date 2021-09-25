@@ -11,13 +11,13 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public float Strength { get; init; }
 
-        [Field(2), CountType(typeof(int))]
+        [Field(2)]
         public ExplosionRecord[] Records { get; init; }
 
         [Field(3), DataFormat(typeof(float))]
         public VectorF PlayerMotion { get; init; }
 
-        public int Id => 0x1B;
+        public int Id => 0x1C;
     }
 
     public readonly struct ExplosionRecord

@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1), ActualType(typeof(byte))]
         public EAnimation Animation { get; init; }
 
-        public int Id => 0x05;
+        public int Id => 0x06;
     }
 
     public enum EAnimation : byte

@@ -354,20 +354,11 @@ namespace Obsidian
 
             await this.SendServerBrand();
 
-            await this.QueuePacketAsync(new TagsPacket
-            {
-                Blocks = Registry.Tags["blocks"],
+            await this.QueuePacketAsync(TagsPacket.FromRegistry);
 
-                Items = Registry.Tags["items"],
-
-                Fluids = Registry.Tags["fluids"],
-
-                Entities = Registry.Tags["entity_types"]
-            });
+            await this.SendCommandsAsync();
 
             await this.DeclareRecipesAsync();
-
-            await SendDeclareCommandsAsync();
 
             await this.QueuePacketAsync(new UnlockRecipes
             {
@@ -381,7 +372,7 @@ namespace Obsidian
 
             await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-            await this.LoadChunksAsync();
+            await this.Player.World.ResendBaseChunksAsync(this);
 
             //TODO: check for last position
 
@@ -400,7 +391,11 @@ namespace Obsidian
             });
 
             //Initialize inventory
-            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList()));
+            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
+            {
+                StateId = 0, 
+                CarriedItem = this.Player.GetHeldItem(),
+            });
         }
 
         #region Packet sending
@@ -409,7 +404,7 @@ namespace Obsidian
         internal void ProcessKeepAlive(long id)
         {
             this.ping = (int)(DateTime.Now.Millisecond - id);
-            this.SendPacket(new KeepAlive(id));
+            this.SendPacket(new KeepAlivePacket(id));
             this.missedKeepalives++; // This will be decreased after an answer is received.
 
             if (this.missedKeepalives > this.config.MaxMissedKeepAlives)
@@ -434,10 +429,7 @@ namespace Obsidian
             //}).ConfigureAwait(false);
         }
 
-        internal async Task SendDeclareCommandsAsync()
-        {
-            await this.QueuePacketAsync(Registry.DeclareCommandsPacket);
-        }
+        internal Task SendCommandsAsync() => this.QueuePacketAsync(Registry.DeclareCommandsPacket);
 
         internal async Task RemovePlayerFromListAsync(IPlayer player)
         {
@@ -536,11 +528,6 @@ namespace Obsidian
 
             await this.packetQueue.SendAsync(packet);
             //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
-        }
-
-        internal async Task LoadChunksAsync()
-        {
-            await this.Player.World.ResendBaseChunksAsync(this);
         }
 
         internal async Task SendChunkAsync(Chunk chunk)

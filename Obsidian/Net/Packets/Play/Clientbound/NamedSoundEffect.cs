@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(4)]
         public float Pitch { get; }
 
-        public int Id => 0x18;
+        public int Id => 0x19;
 
         public NamedSoundEffect(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
         {

@@ -36,7 +36,7 @@ namespace Obsidian
 {
     public class Server : IServer
     {
-        public const ProtocolVersion protocol = ProtocolVersion.v1_16_5;
+        public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
         public ProtocolVersion Protocol => protocol;
 
         public int Tps { get; private set; }
@@ -101,9 +101,9 @@ namespace Obsidian
             LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
             Logger = LoggerProvider.CreateLogger($"Server/{Id}");
             // This stuff down here needs to be looked into
-            Globals.PacketLogger = LoggerProvider.CreateLogger("Packets");
-            PacketDebug.Logger = LoggerProvider.CreateLogger("PacketDebug");
-            //Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
+            Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
+            PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
+            Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
 
             Logger.LogDebug("Initializing command handler...");
             CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
@@ -412,7 +412,7 @@ namespace Obsidian
         {
             Registry.RegisterCommands(this);
             foreach (Player player in Players)
-                await player.client.SendDeclareCommandsAsync();
+                await player.client.SendCommandsAsync();
         }
 
         internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
@@ -668,14 +668,13 @@ namespace Obsidian
 
             World.RemovePlayer(player);
 
-            var destroy = new DestroyEntities
-            {
-                EntityIds = new() { player.EntityId }
-            };
+            var destroy = new DestroyEntities(player.EntityId);
+
             foreach (Player other in Players)
             {
                 if (other == player)
                     continue;
+                    
                 await other.client.RemovePlayerFromListAsync(player);
                 if (other.visiblePlayers.Contains(player.EntityId))
                     await other.client.QueuePacketAsync(destroy);

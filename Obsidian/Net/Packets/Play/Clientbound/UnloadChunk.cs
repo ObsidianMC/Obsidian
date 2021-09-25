@@ -10,7 +10,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public int Z { get; }
 
-        public int Id => 0x1C;
+        public int Id => 0x1D;
 
         public UnloadChunk(int x, int z)
         {

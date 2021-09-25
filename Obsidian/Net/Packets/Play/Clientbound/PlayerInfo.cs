@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         [Field(1)]
         public List<PlayerInfoAction> Actions { get; }
 
-        public int Id => 0x32;
+        public int Id => 0x36;
 
         public PlayerInfo(int action, List<PlayerInfoAction> actions)
         {

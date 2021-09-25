@@ -48,6 +48,10 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
 
             writer.WriteBool("has_raids", this.Element.HasRaids);
 
+            writer.WriteInt("min_y", this.Element.MinY);
+
+            writer.WriteInt("height", this.Element.Height);
+
             writer.WriteInt("logical_height", this.Element.LogicalHeight);
 
             writer.WriteFloat("coordinate_scale", this.Element.CoordinateScale);
@@ -75,6 +79,10 @@ namespace Obsidian.Utilities.Registry.Codecs.Dimensions
                 new NbtTag<string>("effects", this.Element.Effects),
 
                 new NbtTag<bool>("has_raids", this.Element.HasRaids),
+
+                new NbtTag<int>("min_y", this.Element.MinY),
+
+                new NbtTag<int>("height", this.Element.Height),
 
                 new NbtTag<int>("logical_height", this.Element.LogicalHeight),
 

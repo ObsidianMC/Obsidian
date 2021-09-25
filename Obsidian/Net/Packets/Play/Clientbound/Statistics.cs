@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             Stats.Clear();
         }
 
-        public int Id => 0x06;
+        public int Id => 0x07;
     }
 
     public readonly struct Statistic

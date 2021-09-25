@@ -1,6 +1,10 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Collection;
 using Obsidian.WorldData;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
@@ -9,7 +13,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
     {
         public Chunk Chunk { get; }
 
-        public int Id => 0x20;
+        public int Id => 0x22;
 
         public int changedSectionFilter = 65535; // 0b1111111111111111;
 
@@ -26,21 +30,29 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             stream.WriteInt(Chunk.X);
             stream.WriteInt(Chunk.Z);
 
-            stream.WriteBoolean(true); // full chunk
+            int chunkSectionY = 0;
 
-            int chunkSectionY = 0, mask = 0;
+            //Probably best to make it into a class and support resizing but for now it works atleast
+            var bits = new long[1];
             foreach (var section in Chunk.Sections)
             {
-                if ((changedSectionFilter & 1 << chunkSectionY) != 0)
+                if (section != null && !section.IsEmpty)
                 {
-                    mask |= 1 << chunkSectionY;
+                    //get index
+                    var index = chunkSectionY >> 6;
+
+                    //Set the bit
+                    bits[index] |= 1L << chunkSectionY;
+
                     section.WriteTo(dataStream);
                 }
 
                 chunkSectionY++;
             }
 
-            stream.WriteVarInt(mask);
+            stream.WriteVarInt(bits.Length);
+            foreach(var bit in bits)
+                stream.WriteLong(bit);
 
             Chunk.CalculateHeightmap();
             var writer = new NbtWriter(stream, string.Empty);
