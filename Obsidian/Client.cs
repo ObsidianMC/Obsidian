@@ -374,12 +374,10 @@ namespace Obsidian
 
             await this.Player.World.ResendBaseChunksAsync(this);
 
-            //TODO: check for last position
-
-            var (chunkX, chunkZ) = this.Server.World.Data.SpawnPosition.ToChunkCoord();
+            var (chunkX, chunkZ) = this.Player.Position.ToChunkCoord();
 
             await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
-            await this.QueuePacketAsync(new SpawnPosition(this.Player.World.Data.SpawnPosition));
+            await this.QueuePacketAsync(new SpawnPosition(this.Player.Position));
 
             await this.QueuePacketAsync(new PlayerPositionAndLook
             {
