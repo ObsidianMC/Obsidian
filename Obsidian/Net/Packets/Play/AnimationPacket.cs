@@ -15,7 +15,6 @@ namespace Obsidian.Net.Packets.Play
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            // TODO broadcast entity animation to nearby players
             var entities = player.GetEntitiesNear(player.client.ClientSettings.ViewDistance);
             foreach (var otherEntity in entities)
             {
