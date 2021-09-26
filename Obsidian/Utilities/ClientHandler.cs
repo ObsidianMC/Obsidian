@@ -135,7 +135,7 @@ namespace Obsidian
                     break;
 
                 case 0x2C:
-                    await HandleFromPoolAsync<Animation>(data, client);
+                    await HandleFromPoolAsync<AnimationPacket>(data, client);
                     break;
 
                 case 0x2E:
