@@ -8,18 +8,13 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
     {
         public BiomeEffect Effects { get; set; }
 
-        [JsonConverter(typeof(DefaultObjectConverter))]
         public float Depth { get; set; }
 
-        [JsonConverter(typeof(DefaultObjectConverter))]
         public float Temperature { get; set; }
 
-        [JsonConverter(typeof(DefaultObjectConverter))]
         public float Scale { get; set; }
 
-        [JsonConverter(typeof(DefaultObjectConverter))]
         public float Downfall { get; set; }
-
 
         public string Category { get; set; }
 

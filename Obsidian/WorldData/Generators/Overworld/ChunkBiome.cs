@@ -1,4 +1,4 @@
-﻿using Obsidian.ChunkData;
+﻿using Obsidian.API;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using static Obsidian.API.Noise.VoronoiBiomes;
 

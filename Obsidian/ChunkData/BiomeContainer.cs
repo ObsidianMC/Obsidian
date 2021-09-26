@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API;
+using Obsidian.Net;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
