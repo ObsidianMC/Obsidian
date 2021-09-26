@@ -2,8 +2,6 @@
 using SharpNoise.Modules;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace Obsidian.API.Noise
 {
@@ -219,43 +217,43 @@ namespace Obsidian.API.Noise
             {
                 // If a frozen or cold ocean borders a warm ocean,
                 // then place a lukewarm ocean at the edge.
-                case Biomes.FrozenOcean: // Biomes.FrozenOcean
-                case Biomes.DeepFrozenOcean: // Biomes.DeepFrozenOcean
-                case Biomes.ColdOcean: // Biomes.ColdOcean
-                case Biomes.DeepColdOcean: // Biomes.DeepColdOcean
-                    if (neighbor.Biome == Biomes.WarmOcean || // Biomes.WarmOcean
-                        neighbor.Biome == Biomes.DeepWarmOcean) // Biomes.DeepWarmOcean
-                        me.Biome = Biomes.LukewarmOcean; // Biomes.LukeWarmOcean
+                case Biomes.FrozenOcean:
+                case Biomes.DeepFrozenOcean:
+                case Biomes.ColdOcean:
+                case Biomes.DeepColdOcean:
+                    if (neighbor.Biome == Biomes.WarmOcean ||
+                        neighbor.Biome == Biomes.DeepWarmOcean)
+                        me.Biome = Biomes.LukewarmOcean;
                     return me;
 
                 // Badlands plateau and wooded badlands plateau generate
                 // regular badlands on all edges.
-                case Biomes.WoodedBadlandsPlateau: // Biomes.WoodedBadlandsPlateau
-                case Biomes.BadlandsPlateau: // Biomes.BadlandsPlateau
-                    me.Biome = Biomes.Badlands; // Biomes.Badlands
+                case Biomes.WoodedBadlandsPlateau:
+                case Biomes.BadlandsPlateau:
+                    me.Biome = Biomes.Badlands;
                     return me;
 
                 // Giant tree taiga generates the regular taiga on all edges,
                 // unless there is a pre-existing snowy Taiga or taiga bordering it.
-                case Biomes.GiantTreeTaiga: // Biomes.GiantTreeTaiga
-                    if (neighbor.Biome != Biomes.SnowyTaiga) // Biomes.SnowyTaiga
-                        me.Biome = Biomes.Taiga; // Biomes.Taiga
+                case Biomes.GiantTreeTaiga:
+                    if (neighbor.Biome != Biomes.SnowyTaiga)
+                        me.Biome = Biomes.Taiga;
                     return me;
                 // If a desert borders a snowy tundra, a wooded mountain generates.
-                case Biomes.Desert: // Biomes.Desert
-                    if (neighbor.Biome == Biomes.SnowyTundra) // Biomes.SnowyTundra
-                        me.Biome = Biomes.WoodedMountains; // Biomes.WoodedMountains
+                case Biomes.Desert:
+                    if (neighbor.Biome == Biomes.SnowyTundra)
+                        me.Biome = Biomes.WoodedMountains;
                     return me;
                 // If a swamp borders a jungle, a jungle edge generate.
                 // If a swamp borders a desert, snowy taiga, or snowy tundra,
                 // a plains biome generates.
-                case Biomes.Swamp: // Biomes.Swamp
-                    if (neighbor.Biome == Biomes.Jungle) // Biomes.Jungle
-                        me.Biome = Biomes.JungleEdge; // Biomes.JungleEdge
-                    else if (neighbor.Biome == Biomes.Desert || // Biomes.Desert
-                        neighbor.Biome == Biomes.SnowyTaiga || // Biomes.SnowyTaiga
-                        neighbor.Biome == Biomes.SnowyTundra) // Biomes.SnowyTundra
-                        me.Biome = Biomes.Plains; // Biomes.Plains
+                case Biomes.Swamp:
+                    if (neighbor.Biome == Biomes.Jungle)
+                        me.Biome = Biomes.JungleEdge;
+                    else if (neighbor.Biome == Biomes.Desert ||
+                        neighbor.Biome == Biomes.SnowyTaiga ||
+                        neighbor.Biome == Biomes.SnowyTundra)
+                        me.Biome = Biomes.Plains;
                     return me;
                 default:
                     return me;
@@ -268,22 +266,22 @@ namespace Obsidian.API.Noise
 
             me.Biome = me.Biome switch
             {
-                Biomes.Plains => me.Variant < 30 ? Biomes.SunflowerPlains : me.Variant < 60 ? Biomes.WoodedHills : Biomes.Forest, // Biomes.Plains => Biomes.SunflowerPlains, Biomes.WoodedHills, Biomes.Forest,
-                Biomes.Desert => Biomes.DesertHills, // Biomes.Desert => Biomes.DesertHills,
-                Biomes.Mountains => me.BaseBiome == BaseBiome.Cold ? Biomes.SnowyMountains : Biomes.GravellyMountains, // Biomes.SnowyMountains : Biomes.GravellyMountains
-                Biomes.Forest => me.BaseBiome == BaseBiome.Cold ? Biomes.WoodedHills : Biomes.FlowerForest, // Biomes.WoodedHills : Biomes.FlowerForest
-                Biomes.Taiga => Biomes.TaigaHills, // Biomes.Taiga => Biomes.TaigaHills,
-                Biomes.Swamp => Biomes.SwampHills, // Biomes.Swamp => Biomes.SwampHills,
-                Biomes.SnowyTundra => Biomes.SnowyMountains, // Biomes.SnowyTundra => Biomes.SnowyMountains,
-                Biomes.Jungle => me.Variant < 50 ? Biomes.JungleHills : Biomes.BambooJungle, // Biomes.Jungle => Biomes.JungleHills,
-                Biomes.BirchForest => Biomes.BirchForestHills, // Biomes.BirchForest => Biomes.BirchForestHills,
-                Biomes.DarkForest => Biomes.Plains, // Biomes.DarkForest => Biomes.Plains,
-                Biomes.SnowyTaiga => Biomes.SnowyTaigaHills, // Biomes.SnowyTaiga => Biomes.SnowyTaigaHills,
-                Biomes.GiantTreeTaiga => Biomes.GiantTreeTaigaHills, // Biomes.GiantTreeTaiga => Biomes.GiantTreeTaigaHills,
-                Biomes.Savanna => Biomes.SavannaPlateau, // Biomes.Savanna => Biomes.SavannaPlateau,
-                Biomes.WoodedBadlandsPlateau => Biomes.Badlands, // Biomes.WoodedBadlandsPlateau => Biomes.Badlands,
-                Biomes.BadlandsPlateau => Biomes.Badlands, // Biomes.BadlandsPlateau => Biomes.Badlands,
-                Biomes.GiantSpruceTaiga => Biomes.GiantSpruceTaigaHills, // Biomes.GiantSpruceTaiga => Biomes.GiantSpruceTaigaHills
+                Biomes.Plains => me.Variant < 30 ? Biomes.SunflowerPlains : me.Variant < 60 ? Biomes.WoodedHills : Biomes.Forest,
+                Biomes.Desert => Biomes.DesertHills,
+                Biomes.Mountains => me.BaseBiome == BaseBiome.Cold ? Biomes.SnowyMountains : Biomes.GravellyMountains,
+                Biomes.Forest => me.BaseBiome == BaseBiome.Cold ? Biomes.WoodedHills : Biomes.FlowerForest,
+                Biomes.Taiga => Biomes.TaigaHills,
+                Biomes.Swamp => Biomes.SwampHills,
+                Biomes.SnowyTundra => Biomes.SnowyMountains,
+                Biomes.Jungle => me.Variant < 50 ? Biomes.JungleHills : Biomes.BambooJungle,
+                Biomes.BirchForest => Biomes.BirchForestHills,
+                Biomes.DarkForest => Biomes.Plains,
+                Biomes.SnowyTaiga => Biomes.SnowyTaigaHills,
+                Biomes.GiantTreeTaiga => Biomes.GiantTreeTaigaHills,
+                Biomes.Savanna => Biomes.SavannaPlateau,
+                Biomes.WoodedBadlandsPlateau => Biomes.Badlands,
+                Biomes.BadlandsPlateau => Biomes.Badlands,
+                Biomes.GiantSpruceTaiga => Biomes.GiantSpruceTaigaHills,
                 _ => me.Biome
             };
             return me;
@@ -301,12 +299,8 @@ namespace Obsidian.API.Noise
             if (!Oceans.Contains(me.Biome) && !Oceans.Contains(nearest.Biome))
             {
                 if (dist <= riverSize)
-                {
-                    if (me.BaseBiome == BaseBiome.Frozen || me.BaseBiome == BaseBiome.FrozenRare)
-                        me.Biome = Biomes.FrozenRiver; // Biomes.FrozenRiver
-                    else
-                        me.Biome = Biomes.River; // Biomes.River
-                }
+                    me.Biome = me.BaseBiome == BaseBiome.Frozen || me.BaseBiome == BaseBiome.FrozenRare ? Biomes.FrozenRiver : Biomes.River;
+
                 return me;
             }
 
@@ -317,9 +311,9 @@ namespace Obsidian.API.Noise
                 {
                     me.Biome = me.Biome switch
                     {
-                        Biomes.FrozenOcean or Biomes.DeepFrozenOcean => Biomes.SnowyBeach, // if frozen ocean, snowy beach
-                        Biomes.SnowyMountains => Biomes.StoneShore, // if snowy mountains, stone shore
-                        _ => Biomes.Beach // Biomes.Beach
+                        Biomes.FrozenOcean or Biomes.DeepFrozenOcean => Biomes.SnowyBeach, 
+                        Biomes.SnowyMountains => Biomes.StoneShore,
+                        _ => Biomes.Beach
                     };
                 }
             }
@@ -391,7 +385,7 @@ namespace Obsidian.API.Noise
             public double DistanceToPoint { get; set; }
             public BaseBiome BaseBiome { get; set; }
             public int Variant { get; set; }
-            public Biomes Biome { get; set; } //TODO: When Biomes moves to API, fix this.
+            public Biomes Biome { get; set; }
         }
     }
 }
