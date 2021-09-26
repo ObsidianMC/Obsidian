@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
-    //TODO detect when an entity is swimming
     public class Entity : IEquatable<Entity>, IEntity
     {
         public IServer Server { get; set; }

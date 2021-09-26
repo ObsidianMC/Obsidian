@@ -1,6 +1,9 @@
-﻿namespace Obsidian.Entities
+﻿using Obsidian.API;
+using Obsidian.Net;
+
+namespace Obsidian.Entities
 {
-    public class AreaEffectCloud
+    public class AreaEffectCloud : Entity
     {
         public float Radius { get; private set; }
 
@@ -14,6 +17,21 @@
         /// </summary>
         public bool SinglePoint { get; private set; }
 
-        public object Effect { get; private set; } // TODO: make particle effect class.
+        public IParticle Effect { get; private set; }
+
+        public override void Write(MinecraftStream stream)
+        {
+            stream.WriteEntityMetadataType(8, EntityMetadataType.Float);
+            stream.WriteFloat(this.Radius);
+
+            stream.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
+            stream.WriteVarInt(this.Color);
+
+            stream.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
+            stream.WriteBoolean(this.SinglePoint);
+
+            //TODO write particle
+            //this.Effect.Write(effect);
+        }
     }
 }
