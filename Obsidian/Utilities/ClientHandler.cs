@@ -88,7 +88,7 @@ namespace Obsidian
                     break;
 
                 case 0x08:
-                    await HandleFromPoolAsync<ClickWindow>(data, client);
+                    await HandleFromPoolAsync<ClickWindowPacket>(data, client);
                     break;
 
                 case 0x09:

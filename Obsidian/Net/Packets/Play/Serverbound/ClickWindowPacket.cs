@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 namespace Obsidian.Net.Packets.Play.Serverbound
 {
     // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
-    public partial class ClickWindow : IServerboundPacket
+    public partial class ClickWindowPacket : IServerboundPacket
     {
         private const int Outsideinventory = -999;
 
@@ -133,17 +134,51 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 case InventoryOperationMode.Drop:
                     {
-                        // TODO drop actual item
                         if (ClickedSlot != Outsideinventory)
                         {
+                            ItemStack removedItem = null;
                             if (Button == 0)
-                            {
-                                inventory.RemoveItem(value);
-                            }
+                                inventory.TryRemoveItem(value, out removedItem);
                             else
+                                inventory.TryRemoveItem(value, 64, out removedItem);
+
+                            if (removedItem == null)
+                                return;
+
+                            var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+                            var item = new ItemEntity
                             {
-                                inventory.RemoveItem(value, 64);
-                            }
+                                EntityId = player + player.World.TotalLoadedEntities() + 1,
+                                Count = 1,
+                                Id = removedItem.AsItem().Id,
+                                Glowing = true,
+                                World = player.World,
+                                Position = loc
+                            };
+
+                            player.World.TryAddEntity(item);
+
+                            server.BroadcastPacket(new SpawnEntityPacket
+                            {
+                                EntityId = item.EntityId,
+                                Uuid = item.Uuid,
+                                Type = EntityType.Item,
+                                Position = item.Position,
+                                Pitch = 0,
+                                Yaw = 0,
+                                Data = 1,
+                                Velocity = Velocity.FromVector(player.Position + new VectorF(
+                                    (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                    (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                                    (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                            });
+
+                            server.BroadcastPacket(new EntityMetadata
+                            {
+                                EntityId = item.EntityId,
+                                Entity = item
+                            });
                         }
                         break;
                     }

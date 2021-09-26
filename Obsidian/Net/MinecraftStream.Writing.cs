@@ -455,7 +455,7 @@ namespace Obsidian.Net
             WriteBoolean(value.Present);
             if (value.Present)
             {
-                var item = value.GetItem();
+                var item = value.AsItem();
 
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
@@ -745,7 +745,7 @@ namespace Obsidian.Net
                     Present = true
                 };
 
-            var item = slot.GetItem();
+            var item = slot.AsItem();
 
             await WriteBooleanAsync(slot.Present);
             if (slot.Present)

@@ -194,6 +194,42 @@ namespace Obsidian.API
             return true;
         }
 
+        public bool TryRemoveItem(int slot, out ItemStack? removedItem)
+        {
+            if (slot > this.Size - 1 || slot < 0)
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
+
+            var item = this.Items[slot];
+
+            if (item == null)
+            {
+                removedItem = null;
+                return false;
+            }
+
+            removedItem = item;
+
+            return this.RemoveItem(slot);
+        }
+
+        public bool TryRemoveItem(int slot, short amount, out ItemStack? removedItem)
+        {
+            if (slot > this.Size - 1 || slot < 0)
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
+
+            var item = this.Items[slot];
+
+            if(item == null)
+            {
+                removedItem = null;
+                return false;
+            }
+
+            removedItem = item;
+
+            return this.RemoveItem(slot, amount);
+        }
+
         public bool HasItems() => this.Items.Any(x => x is not null);
     }
 

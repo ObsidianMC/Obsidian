@@ -449,7 +449,7 @@ namespace Obsidian
                         {
                             EntityId = player + World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = droppedItem.GetItem().Id,
+                            Id = droppedItem.AsItem().Id,
                             Glowing = true,
                             World = World,
                             Position = loc
@@ -461,7 +461,7 @@ namespace Obsidian
 
                         var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                        BroadcastPacket(new SpawnEntity
+                        BroadcastPacket(new SpawnEntityPacket
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,
@@ -544,7 +544,7 @@ namespace Obsidian
 
                         TryAddEntity(player.World, item);
 
-                        BroadcastPacket(new SpawnEntity
+                        BroadcastPacket(new SpawnEntityPacket
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,

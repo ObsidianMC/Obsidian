@@ -501,7 +501,7 @@ namespace Obsidian.Entities
                 writer.WriteByte("Count", (byte)item.Count);
                 writer.WriteByte("Slot", (byte)slot);
 
-                writer.WriteString("id", item.GetItem().UnlocalizedName);
+                writer.WriteString("id", item.AsItem().UnlocalizedName);
 
                 writer.WriteCompoundStart("tag");
 

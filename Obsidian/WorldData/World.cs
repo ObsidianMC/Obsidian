@@ -550,7 +550,7 @@ namespace Obsidian.WorldData
                 BlockMaterial = mat
             };
 
-            Server.BroadcastPacket(new SpawnEntity
+            Server.BroadcastPacket(new SpawnEntityPacket
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -596,7 +596,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntity
+                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntityPacket
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,
