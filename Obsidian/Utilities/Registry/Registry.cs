@@ -127,7 +127,7 @@ namespace Obsidian.Utilities.Registry
 
         public static async Task RegisterCodecsAsync()
         {
-            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
+            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_codec.json");
 
             var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
