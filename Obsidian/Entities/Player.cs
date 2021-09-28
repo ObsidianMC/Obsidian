@@ -69,7 +69,7 @@ namespace Obsidian.Entities
         }
 
         public int Ping => this.client.ping;
-        public int Dimension { get; set; }
+        public string Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
@@ -320,7 +320,7 @@ namespace Obsidian.Entities
         {
             this.visiblePlayers.Clear();
 
-            Registry.Dimensions.TryGetValue(0, out var codec);
+            Registry.Dimensions.TryGetValue("minecraft:overworld", out var codec);
 
             await this.client.QueuePacketAsync(new Respawn
             {
@@ -473,6 +473,8 @@ namespace Obsidian.Entities
             writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
             writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
+            writer.WriteString("Dimension", this.Dimension);
+
             writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
             writer.WriteDouble(this.Position.X);
@@ -514,12 +516,10 @@ namespace Obsidian.Entities
                 writer.EndCompound();
             }
 
-            if (nonNullItems.Count() <= 0)
+            if (!nonNullItems.Any())
                 writer.Write(NbtTagType.End);
 
             writer.EndList();
-
-            writer.WriteString("Dimension", "minecraft:overworld");
 
             writer.EndCompound();
 
@@ -533,6 +533,7 @@ namespace Obsidian.Entities
             if (!playerFile.Exists)
             {
                 this.Position = this.World.Data.SpawnPosition;
+                this.Dimension = "minecraft:overworld";
                 return;
             }
 
@@ -551,8 +552,7 @@ namespace Obsidian.Entities
             this.HurtTime = compound.GetShort("HurtTime");
             this.SleepTimer = compound.GetShort("SleepTimer");
 
-            var dim = Registry.Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
-            this.Dimension = dim.Key;
+            this.Dimension = Registry.Dimensions.TryGetValue(compound.GetString("Dimension"), out var dimension) ? dimension.Name : "minecraft:overworld";
 
             this.FoodLevel = compound.GetInt("foodLevel");
             this.FoodTickTimer = compound.GetInt("foodTickTimer");

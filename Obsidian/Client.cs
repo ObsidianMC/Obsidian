@@ -301,7 +301,7 @@ namespace Obsidian
             }
         }
 
-        // TODO fix compression
+        // TODO fix compression (.net 6)
         private void SetCompression()
         {
             this.SendPacket(new SetCompression(compressionThreshold));
@@ -323,7 +323,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.Dimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
+            Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec); // TODO support custom dimensions and save client dimensionns
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -341,7 +341,7 @@ namespace Obsidian
 
                 Dimension = codec,
 
-                DimensionName = codec.Name,
+                WorldName = "minecraft:world",
 
                 HashedSeed = 0,
 

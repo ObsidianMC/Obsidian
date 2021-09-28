@@ -377,7 +377,6 @@ namespace Obsidian.WorldData
 
         public async Task UnloadPlayerAsync(Guid uuid)
         {
-            // TODO save changed data to file [uuid].dat
             this.Players.TryRemove(uuid, out var player);
 
             await player.SaveAsync();

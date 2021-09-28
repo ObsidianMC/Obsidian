@@ -27,7 +27,7 @@ namespace Obsidian.API
         public short CurrentSlot { get; }
 
         public int Ping { get; }
-        public int Dimension { get; set; }
+        public string Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
