@@ -109,7 +109,7 @@ namespace Obsidian.Net
             catch (Exception)
             {
                 return 0;
-            }//TODO better handling of this//TODO better handling of this
+            }//TODO better handling of this
         }
 
         public virtual async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default)
@@ -123,7 +123,7 @@ namespace Obsidian.Net
             catch (Exception)
             {
                 return 0;
-            }//TODO better handling of this//TODO better handling of this
+            }//TODO better handling of this
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

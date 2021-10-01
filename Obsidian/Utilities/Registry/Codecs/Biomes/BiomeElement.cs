@@ -1,6 +1,4 @@
 ﻿using Obsidian.Nbt;
-using Obsidian.Utilities.Converters;
-using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Registry.Codecs.Biomes
 {

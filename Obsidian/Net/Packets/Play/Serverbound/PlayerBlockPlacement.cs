@@ -67,8 +67,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 player.LastClickedBlock = interactedBlock;
 
-                // TODO open chests/Crafting inventory ^ ^
-
                 if (Server.LastInventoryId == byte.MaxValue)
                     Server.LastInventoryId = 1;
 
