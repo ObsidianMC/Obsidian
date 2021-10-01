@@ -8,7 +8,7 @@ namespace Obsidian.API
     {
         internal byte Id { get; set; }
 
-        internal int ActionsNumber { get; set; }
+        internal int StateId { get; set; }
 
         public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 

@@ -484,7 +484,9 @@ namespace Obsidian
 
                             WindowId = 0,
 
-                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1
+                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1,
+
+                            StateId = player.Inventory.StateId++
                         });
 
                         player.Inventory.RemoveItem(player.inventorySlot);

@@ -323,7 +323,7 @@ namespace Obsidian
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec); // TODO support custom dimensions and save client dimensionns
+            Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec);
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -391,7 +391,7 @@ namespace Obsidian
             //Initialize inventory
             await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
             {
-                StateId = 0, 
+                StateId = this.Player.Inventory.StateId++, 
                 CarriedItem = this.Player.GetHeldItem(),
             });
         }
