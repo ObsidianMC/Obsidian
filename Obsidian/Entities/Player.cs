@@ -74,7 +74,7 @@ namespace Obsidian.Entities
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
-        public int XpP { get; set; } = 0;
+        public float XpP { get; set; } = 0;
 
         public double HeadY { get; private set; }
 
@@ -140,7 +140,7 @@ namespace Obsidian.Entities
 
         private async Task TrySpawnPlayerAsync(VectorF position)
         {
-            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
+            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.client.ClientSettings.ViewDistance))
             {
                 if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
                 {
@@ -182,7 +182,9 @@ namespace Obsidian.Entities
 
                         WindowId = 0,
 
-                        SlotData = this.Inventory.GetItem(slot)
+                        SlotData = this.Inventory.GetItem(slot),
+
+                        StateId = this.Inventory.StateId++
                     });
 
                     await item.RemoveAsync();
@@ -396,7 +398,7 @@ namespace Obsidian.Entities
             stream.WriteFloat(AdditionalHearts);
 
             stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
-            stream.WriteVarInt(XpP);
+            stream.WriteVarInt(XpTotal);
 
             stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
             stream.WriteByte((byte)PlayerBitMask);
