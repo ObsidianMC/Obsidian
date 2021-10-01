@@ -17,6 +17,8 @@ namespace Obsidian
 
         public ScoreboardObjective Objective { get; private set; }
 
+        public List<ITeam> Teams { get; set; } = new();
+
         public Scoreboard(string name, Server server)
         {
             this.name = name;
@@ -66,9 +68,6 @@ namespace Obsidian
                 }
             }
         }
-
-        public Task CreateOrUpdateObjectiveAsync(string title, DisplayType displayType = DisplayType.Integer)
-            => this.CreateOrUpdateObjectiveAsync(ChatMessage.Simple(title), displayType);
 
         public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null)
         {
@@ -192,6 +191,47 @@ namespace Obsidian
                     }
                 }
             }
+        }
+
+        public async Task<ITeam> CreateTeamAsync(string name, ChatMessage displayName, NameTagVisibility nameTagVisibility, CollisionRule collisionRule,
+            TeamColor color, params string[] entities)
+        {
+            var team = new Team(this, this.server)
+            {
+                Name = name,
+                DisplayName = displayName,
+                NameTagVisibility = nameTagVisibility,
+                CollisionRule = collisionRule,
+                Color = color,
+                Entities = entities.ToHashSet()
+            };
+
+            await team.CreateAsync();
+
+            this.Teams.Add(team);
+
+            return team;
+        }
+        public async Task<ITeam> CreateTeamAsync(string name, ChatMessage displayName, NameTagVisibility nameTagVisibility, CollisionRule collisionRule,
+            TeamColor color, ChatMessage prefix, ChatMessage suffix, params string[] entities)
+        {
+            var team = new Team(this, this.server)
+            {
+                Name = name,
+                DisplayName = displayName,
+                NameTagVisibility = nameTagVisibility,
+                CollisionRule = collisionRule,
+                Color = color,
+                Prefix = prefix,
+                Suffix = suffix,
+                Entities = entities.ToHashSet()
+            };
+
+            await team.CreateAsync();
+
+            this.Teams.Add(team);
+
+            return team;
         }
     }
 }

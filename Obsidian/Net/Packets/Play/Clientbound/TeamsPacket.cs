@@ -37,7 +37,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public ChatMessage TeamSuffix { get; set; }
 
         [Field(9), Condition("Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam")]
-        public List<string> Entities { get; set; }
+        public HashSet<string> Entities { get; set; } = new();
 
         public int Id => 0x55;
 
@@ -55,8 +55,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound
                 packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.NameTagVisibility.ToString()));
                 packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.CollisionRule.ToString()));
                 packetStream.WriteVarInt((int)this.TeamColor);
-                packetStream.WriteChat(this.TeamPrefix);
-                packetStream.WriteChat(this.TeamSuffix);
+                packetStream.WriteChat(this.TeamPrefix ?? "");
+                packetStream.WriteChat(this.TeamSuffix ?? "");
             }
 
             if (this.Mode != TeamModeOption.RemoveTeam || this.Mode != TeamModeOption.UpdateTeam)
