@@ -51,6 +51,34 @@ namespace Obsidian.API
         public Task OpenInventoryAsync(Inventory inventory);
         public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
 
+        /// <summary>
+        /// Sends a title message to the player.
+        /// </summary>
+        /// <param name="title">The title text</param>
+        /// <param name="fadeIn">Time in ticks for the title to fade in</param>
+        /// <param name="stay">Time in ticks for the title to stay on screen</param>
+        /// <param name="fadeOut">Time in ticks for the title to fade out</param>
+        public Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut);
+
+        /// <summary>
+        /// Sends a title and subtitle message to the player.
+        /// </summary>
+        /// <param name="title">The title text</param>
+        /// <param name="subtitle">The subtitle text</param>
+        /// <param name="fadeIn">Time in ticks for the title to fade in</param>
+        /// <param name="stay">Time in ticks for the title to stay on screen</param>
+        /// <param name="fadeOut">Time in ticks for the title to fade out</param>
+        public Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
+
+        /// <summary>
+        /// Sends a subtitle message to the player.
+        /// </summary>
+        /// <param name="subtitle">The title text</param>
+        /// <param name="fadeIn">Time in ticks for the title to fade in</param>
+        /// <param name="stay">Time in ticks for the title to stay on screen</param>
+        /// <param name="fadeOut">Time in ticks for the title to fade out</param>
+        public Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
+
         public Task<bool> GrantPermissionAsync(string permission);
         public Task<bool> RevokePermissionAsync(string permission);
         public bool HasPermission(string permission);

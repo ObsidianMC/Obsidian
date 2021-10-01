@@ -452,6 +452,56 @@ namespace Obsidian.Entities
             this.CustomName = newDisplayName;
         }
 
+        public async Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetTitle)
+            {
+                Text = title
+            };
+
+            var titleTimesPacket = new TitleTimesPacket
+            {
+                FadeIn = fadeIn,
+                FadeOut = fadeOut,
+                Stay = stay,
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+            await this.client.QueuePacketAsync(titleTimesPacket);
+
+        }
+
+        public async Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetSubtitle)
+            {
+                Text = subtitle
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+
+            await this.SendTitleAsync(title, fadeIn, stay, fadeOut);
+        }
+
+        public async Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetSubtitle)
+            {
+                Text = subtitle
+            };
+
+            var titleTimesPacket = new TitleTimesPacket
+            {
+                FadeIn = fadeIn,
+                FadeOut = fadeOut,
+                Stay = stay,
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+
+            await this.client.QueuePacketAsync(titleTimesPacket);
+        }
+
         public async Task SaveAsync()
         {
             var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
