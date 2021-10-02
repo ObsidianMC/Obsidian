@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-
-namespace Obsidian.Items
+﻿namespace Obsidian.API
 {
     public struct Item
     {
