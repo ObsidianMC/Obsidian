@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -15,7 +16,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
@@ -439,6 +439,67 @@ namespace Obsidian.Net
                 this.WriteVarInt(tags.Count);
                 foreach (var tag in tags)
                     this.WriteTag(tag);
+            }
+        }
+
+        public void WriteAdvancements(IDictionary<string, Advancement> advancements)
+        {
+            this.WriteVarInt(advancements.Count);
+
+            foreach (var (name, value) in advancements)
+            {
+                this.WriteString(name);
+                this.WriteAdvancement(value);
+            }
+        }
+
+        public void WriteAdvancement(Advancement advancement)
+        {
+            var hasParent = !string.IsNullOrEmpty(advancement.Parent);
+            this.WriteBoolean(hasParent);
+
+            if (hasParent)
+                this.WriteString(advancement.Parent);
+
+            var hasDisplay = advancement.Display != null;
+
+            this.WriteBoolean(hasDisplay);
+
+            if (hasDisplay)
+            {
+                this.WriteChat(advancement.Display.Title);
+                this.WriteChat(advancement.Display.Description);
+
+                this.WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
+
+                this.WriteVarInt(advancement.Display.AdvancementFrameType);
+
+                this.WriteInt((int)advancement.Display.Flags);
+
+                if (advancement.Display.Flags.HasFlag(AdvancementFlags.HasBackgroundTexture))
+                    this.WriteString(advancement.Display.BackgroundTexture);
+
+                this.WriteFloat(advancement.Display.XCoord);
+                this.WriteFloat(advancement.Display.YCoord);
+            }
+
+            this.WriteVarInt(advancement.Criterias.Count);
+
+            foreach (var criteria in advancement.Criterias)
+                this.WriteString(criteria.Identifier);
+
+            var reqired = advancement.Criterias.Where(x => x.Required);
+
+            //For some reason this takes a array of an array??
+            if (reqired.Any())
+            {
+                //Always gonna be 1 for now
+                this.WriteVarInt(1);
+
+                this.WriteVarInt(reqired.Count());
+
+                foreach (var criteria in reqired)
+                    this.WriteString(criteria.Identifier);
             }
         }
 
