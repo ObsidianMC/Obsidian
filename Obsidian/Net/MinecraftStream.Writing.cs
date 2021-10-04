@@ -669,7 +669,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePlayerInfoAction(PlayerInfoAction value)
+        public void WritePlayerInfoAction(InfoAction value)
         {
             value.Write(this);
         }

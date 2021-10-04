@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {
-    public class PlayerInfoUpdatePingAction : PlayerInfoAction
+    public class UpdatePingInfoAction : InfoAction
     {
         public int Ping { get; set; }
 

@@ -109,7 +109,7 @@ namespace Obsidian.Entities
             _ = Task.Run(this.LoadPermsAsync);
         }
 
-        internal override async Task UpdateAsync(VectorF position, bool onGround)
+        internal async override Task UpdateAsync(VectorF position, bool onGround)
         {
             await base.UpdateAsync(position, onGround);
 
@@ -120,7 +120,7 @@ namespace Obsidian.Entities
             await this.PickupNearbyItemsAsync(1);
         }
 
-        internal override async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+        internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(position, yaw, pitch, onGround);
 
@@ -131,7 +131,7 @@ namespace Obsidian.Entities
             await this.PickupNearbyItemsAsync(0.8f);
         }
 
-        internal override async Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+        internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(yaw, pitch, onGround);
 
@@ -356,7 +356,7 @@ namespace Obsidian.Entities
         }
 
         //TODO make IDamageSource 
-        public override async Task KillAsync(IEntity source, ChatMessage deathMessage)
+        public async override Task KillAsync(IEntity source, ChatMessage deathMessage)
         {
             //await this.client.QueuePacketAsync(new PlayerDied
             //{
@@ -373,7 +373,7 @@ namespace Obsidian.Entities
                 attacker.visiblePlayers.Remove(this.EntityId);
         }
 
-        public override async Task WriteAsync(MinecraftStream stream)
+        public async override Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);
 
@@ -423,16 +423,16 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            var list = new List<PlayerInfoAction>()
+            var list = new List<InfoAction>()
             {
-                new PlayerInfoUpdateGamemodeAction()
+                new UpdateGamemodeInfoAction()
                 {
                     Uuid = this.Uuid,
                     Gamemode = (int)gamemode,
                 }
             };
 
-            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(1, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateGamemode, list));
             await this.client.QueuePacketAsync(new ChangeGameState(gamemode));
 
             this.Gamemode = gamemode;
@@ -440,16 +440,16 @@ namespace Obsidian.Entities
 
         public async Task UpdateDisplayNameAsync(string newDisplayName)
         {
-            var list = new List<PlayerInfoAction>()
+            var list = new List<InfoAction>()
             {
-                new PlayerInfoUpdateDisplayNameAction()
+                new UpdateDisplayNameInfoAction()
                 {
                     Uuid = this.Uuid,
                     DisplayName = newDisplayName,
                 }
             };
 
-            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(3, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateDisplayName, list));
 
             this.CustomName = newDisplayName;
         }
