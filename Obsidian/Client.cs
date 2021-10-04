@@ -319,7 +319,7 @@ namespace Obsidian
             this.State = ClientState.Play;
             this.Player.Health = 20f;
 
-            this.Player.Load();
+            await this.Player.LoadAsync();
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 

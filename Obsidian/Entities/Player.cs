@@ -202,7 +202,7 @@ namespace Obsidian.Entities
 
             if (file.Exists)
             {
-                using var fs = file.OpenRead();
+                await using var fs = file.OpenRead();
 
                 this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
             }
@@ -213,7 +213,7 @@ namespace Obsidian.Entities
             // Save permissions to JSON file
             var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             await this.PlayerPermissions.ToJsonAsync(fs);
         }
@@ -258,9 +258,7 @@ namespace Obsidian.Entities
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
             if (inventory.HasItems())
-            {
                 await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
-            }
         }
 
         public async Task TeleportAsync(VectorF pos)
@@ -320,6 +318,9 @@ namespace Obsidian.Entities
 
         public async Task RespawnAsync()
         {
+            if (this.Alive)
+                return;
+
             this.visiblePlayers.Clear();
 
             Registry.Dimensions.TryGetValue("minecraft:overworld", out var codec);
@@ -350,10 +351,11 @@ namespace Obsidian.Entities
                 TeleportId = 0
             });
 
-            if (!this.Alive)
-                this.Health = 20f;
+
+            this.Health = 20f;
         }
 
+        //TODO make IDamageSource 
         public override async Task KillAsync(IEntity source, ChatMessage deathMessage)
         {
             //await this.client.QueuePacketAsync(new PlayerDied
@@ -468,7 +470,6 @@ namespace Obsidian.Entities
 
             await this.client.QueuePacketAsync(titlePacket);
             await this.client.QueuePacketAsync(titleTimesPacket);
-
         }
 
         public async Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
@@ -498,7 +499,6 @@ namespace Obsidian.Entities
             };
 
             await this.client.QueuePacketAsync(titlePacket);
-
             await this.client.QueuePacketAsync(titleTimesPacket);
         }
 
@@ -578,7 +578,7 @@ namespace Obsidian.Entities
             await writer.TryFinishAsync();
         }
 
-        public void Load()
+        public async ValueTask LoadAsync()
         {
             var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
 
@@ -589,7 +589,7 @@ namespace Obsidian.Entities
                 return;
             }
 
-            using var playerFileStream = playerFile.OpenRead();
+            await using var playerFileStream = playerFile.OpenRead();
 
             var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
 
@@ -667,23 +667,20 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task<bool> GrantPermissionAsync(string permission)
+        public async Task<bool> GrantPermissionAsync(string permissionNode)
         {
-            // trim and split permission string
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
+            var permissions = permissionNode.ToLower().Trim().Split('.');
 
-            // Set root node and whether we created a new permission (still false)
             var parent = this.PlayerPermissions;
             var result = false;
 
-            foreach (var i in split)
+            foreach (var permission in permissions)
             {
                 // no such child, this permission is new!
-                if (!parent.Children.Any(x => x.Name == i))
+                if (!parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
                 {
                     // create the new child, add it to its parent and set parent to the next value to continue the loop
-                    var child = new Permission(i);
+                    var child = new Permission(permission);
                     parent.Children.Add(child);
                     parent = child;
                     // yes, new permission!
@@ -692,104 +689,63 @@ namespace Obsidian.Entities
                 }
 
                 // child already exists, set parent to existing child to continue loop
-                parent = parent.Children.First(x => x.Name == i);
+                parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
             }
 
             await this.SavePermsAsync();
 
             if (result)
-                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
+                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permissionNode));
+
             return result;
         }
 
-        public async Task<bool> RevokePermissionAsync(string permission)
+        public async Task<bool> RevokePermissionAsync(string permissionNode)
         {
-            // trim and split permission string
-
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
+            var permissions = permissionNode.ToLower().Trim().Split('.');
 
             // Set root node and whether we created a new permission (still false)
             var parent = this.PlayerPermissions;
-            var childToRemove = this.PlayerPermissions;
-            var result = true;
 
-            foreach (var i in split)
+            foreach (var permission in permissions)
             {
-                if (parent.Children.Any(x => x.Name == i))
+                if (parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
                 {
-                    // child exists, set its parent node and mark it to be removed
-                    parent = childToRemove;
-                    childToRemove = parent.Children.First(x => x.Name == i);
-                    continue;
+                    // child exists remove them
+                    var childToRemove = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
+
+                    parent.Children.Remove(childToRemove);
+
+                    await this.SavePermsAsync();
+                    await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permissionNode));
+
+                    return true;
                 }
-                // no such child node, result false and break
-                result = false;
-                break;
-            }
-
-            if (result)
-            {
-                parent.Children.Remove(childToRemove);
-                await this.SavePermsAsync();
-                await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
-            }
-            return result;
-        }
-
-        public bool HasPermission(string permission)
-        {
-            // trim and split permission string
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
-
-            // Set root node and whether we created a new permission (still false)
-            var result = false;
-            var parent = this.PlayerPermissions;
-
-            foreach (var i in split)
-            {
-                if (parent.Children.Any(x => x.Name == "*"))
-                {
-                    // WILDCARD! all child permissions are granted here.
-                    result = true;
-                    break;
-                }
-                if (parent.Children.Any(x => x.Name == i))
-                {
-                    parent = parent.Children.First(x => x.Name == i);
-                    result = true;
-                }
-                else
-                {
-                    // no such child. break loop and stop searching.
-                    result = false;
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        public bool HasAnyPermission(IEnumerable<string> permissions)
-        {
-            foreach (var perm in permissions)
-            {
-                if (HasPermission(perm)) return true;
             }
 
             return false;
         }
 
-        public bool HasAllPermissions(IEnumerable<string> permissions)
+        public bool HasPermission(string permissionNode)
         {
-            foreach (var perm in permissions)
+            var permissions = permissionNode.ToLower().Trim().Split('.');
+
+            var parent = this.PlayerPermissions;
+
+            foreach (var permission in permissions)
             {
-                if (!HasPermission(perm)) return false;
+                if (parent.Children.Any(x => x.Name == "*") || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+                    return true;
+
+                parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
             }
 
-            return true;
+            return false;
         }
+
+        public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => this.HasPermission(x));
+
+        public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.Count(x => this.HasPermission(x)) == permissions.Count();
 
         public override string ToString() => this.Username;
     }
