@@ -34,9 +34,9 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             //Write progress for advancements
             foreach (var (name, advancement) in this.Advancements)
             {
-                packetStream.WriteVarInt(advancement.Criterias.Count);
+                packetStream.WriteVarInt(advancement.Criteria.Count);
 
-                foreach (var criteria in advancement.Criterias)
+                foreach (var criteria in advancement.Criteria)
                 {
                     packetStream.WriteString(criteria.Identifier);
 

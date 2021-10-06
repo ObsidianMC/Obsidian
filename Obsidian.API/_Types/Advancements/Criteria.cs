@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Obsidian.API.Advancements
 {
@@ -13,9 +14,14 @@ namespace Obsidian.API.Advancements
 
         public bool Required { get; }
 
+        public string? Trigger { get; init; }
+
         public bool Achieved { get; private set; }
 
         public DateTimeOffset? AchievedAt { get; private set; }
+
+        //TODO
+        //public IReadOnlyDictionary<string, INbtTag> Conditions { get; private set; } = new();
 
         public Criteria(string name, bool required)
         {

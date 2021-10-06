@@ -483,12 +483,12 @@ namespace Obsidian.Net
                 this.WriteFloat(advancement.Display.YCoord);
             }
 
-            this.WriteVarInt(advancement.Criterias.Count);
+            this.WriteVarInt(advancement.Criteria.Count);
 
-            foreach (var criteria in advancement.Criterias)
+            foreach (var criteria in advancement.Criteria)
                 this.WriteString(criteria.Identifier);
 
-            var reqired = advancement.Criterias.Where(x => x.Required);
+            var reqired = advancement.Criteria.Where(x => x.Required);
 
             //For some reason this takes a array of an array??
             if (reqired.Any())

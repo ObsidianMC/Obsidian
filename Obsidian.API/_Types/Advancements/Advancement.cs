@@ -14,6 +14,8 @@ namespace Obsidian.API.Advancements
 
         public AdvancementDisplay? Display { get; init; }
 
-        public List<Criteria> Criterias { get; init;  }
+        public AdvancementReward? Reward { get; init; }
+
+        public List<Criteria> Criteria { get; init;  }
     }
 }
