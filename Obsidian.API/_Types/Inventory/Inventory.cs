@@ -168,13 +168,8 @@ namespace Obsidian.API
             this.Items[slot] = item;
         }
 
-        public ItemStack GetItem(int slot)
-        {
-            if (slot > this.Size - 1 || slot < 0)
-                throw new IndexOutOfRangeException(nameof(slot));
-
-            return this.Items[slot] ?? ItemStack.Air;
-        }
+        public ItemStack? GetItem(int slot) =>
+            slot > this.Size - 1 || slot < 0 ? throw new IndexOutOfRangeException(nameof(slot)) : this.Items[slot];
 
         public bool RemoveItem(int slot, short amount = 1)
         {
@@ -219,7 +214,7 @@ namespace Obsidian.API
 
             var item = this.Items[slot];
 
-            if(item == null)
+            if (item == null)
             {
                 removedItem = null;
                 return false;

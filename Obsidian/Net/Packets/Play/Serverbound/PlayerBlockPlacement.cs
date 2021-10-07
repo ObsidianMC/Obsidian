@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -60,7 +61,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
             if (interactedBlock.IsInteractable && !player.Sneaking)
             {
-                var arg = await server.Events.InvokeBlockInteractAsync(new BlockInteractEventArgs(player, block, this.Position));
+                var arg = await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+                {
+                    Item = player.MainHand == Hand.MainHand ? player.GetHeldItem(): player.GetOffHandItem(),
+                    Block = interactedBlock,
+                    BlockLocation = this.Position,
+                });
 
                 if (arg.Cancel)
                     return;

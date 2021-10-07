@@ -16,12 +16,11 @@ namespace Obsidian.Events
         public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
         public AsyncEvent<InventoryClickEventArgs> ClickEvent;
         public AsyncEvent<BlockBreakEventArgs> BlockBreak;
-        public AsyncEvent<BlockInteractEventArgs> BlockInteract;
         public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
         public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
         public AsyncEvent<EntityInteractEventArgs> EntityInteract;
         public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
-        public AsyncEvent<ItemUsedEventArgs> ItemUsed;
+        public AsyncEvent<PlayerInteractEventArgs> PlayerInteract;
         public AsyncEvent ServerTick;
 
         public MinecraftEventHandler()
@@ -37,13 +36,12 @@ namespace Obsidian.Events
             PermissionRevoked = new("PermissionRevoked", HandleException);
             ClickEvent = new("InventoryClick", HandleException);
             BlockBreak = new("BlockBreak", HandleException);
-            BlockInteract = new("BlockInteract", HandleException);
             IncomingChatMessage = new("IncomingChatMessage", HandleException);
             PlayerTeleported = new("PlayerTeleported", HandleException);
             ServerStatusRequest = new("ServerStatusRequest", HandleException);
             EntityInteract = new("EntityInteract", HandleException);
             PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
-            ItemUsed = new("ItemUsed", HandleException);
+            PlayerInteract = new("PlayerInteract", HandleException);
         }
 
         private void HandleException(AsyncEvent e, Exception exception)
@@ -72,9 +70,9 @@ namespace Obsidian.Events
             return eventArgs;
         }
 
-        internal async ValueTask<BlockInteractEventArgs> InvokeBlockInteractAsync(BlockInteractEventArgs eventArgs)
+        internal async ValueTask<PlayerInteractEventArgs> InvokePlayerInteractAsync(PlayerInteractEventArgs eventArgs)
         {
-            await BlockInteract.InvokeAsync(eventArgs);
+            await PlayerInteract.InvokeAsync(eventArgs);
             return eventArgs;
         }
 
@@ -111,12 +109,6 @@ namespace Obsidian.Events
         internal async ValueTask<PlayerAttackEntityEventArgs> InvokePlayerAttackEntityAsync(PlayerAttackEntityEventArgs eventArgs)
         {
             await PlayerAttackEntity.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<ItemUsedEventArgs> InvokeItemUsedAsync(ItemUsedEventArgs eventArgs)
-        {
-            await ItemUsed.InvokeAsync(eventArgs);
             return eventArgs;
         }
 
