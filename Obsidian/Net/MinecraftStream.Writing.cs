@@ -7,6 +7,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
@@ -307,6 +308,13 @@ namespace Obsidian.Net
                 await WriteUnsignedByteAsync(temp);
             }
             while (unsigned != 0);
+        }
+
+        [WriteMethod]
+        public void WriteWindowProperty(IWindowProperty windowProperty)
+        {
+            this.WriteShort(windowProperty.Property);
+            this.WriteShort(windowProperty.Value);
         }
 
         [WriteMethod]
