@@ -47,7 +47,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public InventoryOperationMode Mode { get; private set; }
 
         [Field(5)]
-        public Dictionary<short, ItemStack> Slots { get; private set; }
+        public IDictionary<short, ItemStack> Slots { get; private set; }
 
         /// <summary>
         /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
@@ -56,24 +56,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         public ItemStack ClickedItem { get; private set; }
 
         public int Id => 0x08;
-
-        public void Populate(MinecraftStream stream)
-        {
-            this.WindowId = stream.ReadUnsignedByte();
-            this.StateId = stream.ReadVarInt();
-            this.ClickedSlot = stream.ReadShort();
-            this.Button = stream.ReadSignedByte();
-            this.Mode = (InventoryOperationMode)stream.ReadVarInt();
-
-            var length = stream.ReadVarInt();
-
-            for (int i = 0; i < length; i++)
-            {
-                this.Slots.Add(stream.ReadShort(), stream.ReadItemStack());
-            }
-
-            this.ClickedItem = stream.ReadItemStack();
-        }
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
