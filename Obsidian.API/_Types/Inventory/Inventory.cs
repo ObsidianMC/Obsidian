@@ -32,41 +32,30 @@ namespace Obsidian.API
         {
             this.Type = type;
 
-            switch (type)
+            this.Size = type switch
             {
-                case InventoryType.Beacon:
-                case InventoryType.Lectern:
-                    this.Size = 1;
-                    break;
-                case InventoryType.Grindstone:
-                case InventoryType.CartographyTable:
-                case InventoryType.Anvil:
-                case InventoryType.BlastFurnace:
-                case InventoryType.Smoker:
-                case InventoryType.Furnace:
-                case InventoryType.Merchant:
-                    this.Size = 3;
-                    break;
-                case InventoryType.BrewingStand:
-                case InventoryType.Hopper:
-                    this.Size = 5;
-                    break;
-                case InventoryType.Crafting:
-                    this.Size = 2 * 5;
-                    break;
-                case InventoryType.Stonecutter:
-                case InventoryType.Enchantment:
-                    this.Size = 2;
-                    break;
-                case InventoryType.Loom:
-                    this.Size = 4;
-                    break;
-                case InventoryType.Generic:
-                    this.Size = 9 * 3;
-                    break;
-                default:
-                    break;
-            }
+                InventoryType.Beacon or InventoryType.Lectern => 1,
+
+                InventoryType.Grindstone or
+                InventoryType.CartographyTable or
+                InventoryType.Anvil or
+                InventoryType.BlastFurnace or
+                InventoryType.Smoker or
+                InventoryType.Furnace or
+                InventoryType.Merchant => 3,
+
+                InventoryType.BrewingStand or InventoryType.Hopper => 5,
+
+                InventoryType.Crafting => 2 * 5,
+
+                InventoryType.Stonecutter or InventoryType.Enchantment => 2,
+
+                InventoryType.Loom => 4,
+
+                InventoryType.Generic or InventoryType.ShulkerBox => 9 * 3,
+
+                _ => 0
+            };
 
             this.Items = new ItemStack[this.Size];
         }

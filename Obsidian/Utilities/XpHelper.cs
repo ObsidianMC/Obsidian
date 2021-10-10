@@ -4,14 +4,29 @@ namespace Obsidian.Utilities
 {
     public static class XpHelper
     {
-        public static int TotalExperienceFromLevel(int level) => level < 0
-                ? throw new ArgumentOutOfRangeException(nameof(level))
-                : level < 17
-                    ? level * (level + 6)
-                    : level < 32 ? (int)(level * (2.5f * level - 40.5f) + 360f) : (int)(level * (4.5f * level - 162.5f) + 2220f);
+        public static int TotalExperienceFromLevel(int level)
+        {
+            if (level < 0)
+                throw new ArgumentOutOfRangeException(nameof(level));
 
-        public static int ExperienceRequiredForLevel(int currentLevel) => currentLevel < 0
-                ? throw new ArgumentOutOfRangeException(nameof(currentLevel))
-                : currentLevel < 16 ? 2 * currentLevel + 7 : currentLevel < 31 ? 5 * currentLevel - 38 : 9 * currentLevel - 158;
+            if (level < 17)
+                return level * (level + 6);
+            else if (level < 32)
+                return (int)(level * (2.5f * level - 40.5f) + 360f);
+
+            return (int)(level * (4.5f * level - 162.5f) + 2220f);
+        }
+        public static int ExperienceRequiredForNextLevel(int currentLevel)
+        {
+            if (currentLevel < 0)
+                throw new ArgumentOutOfRangeException(nameof(currentLevel));
+
+            if (currentLevel < 16)
+                return 2 * currentLevel + 7;
+            else if (currentLevel < 31)
+                return 5 * currentLevel - 38;
+
+            return 9 * currentLevel - 158;
+        }
     }
 }
