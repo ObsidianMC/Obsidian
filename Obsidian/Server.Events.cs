@@ -42,7 +42,6 @@ namespace Obsidian
                 if (LastInventoryId == byte.MaxValue)
                     LastInventoryId = 1;
 
-                var maxId = Math.Max((byte)1, ++LastInventoryId);
                 var meta = this.World.GetBlockMeta(blockPosition);
 
                 if (meta is not null && meta.Value.InventoryId != Guid.Empty)
@@ -75,7 +74,7 @@ namespace Obsidian
                     {
                         Owner = player.Uuid,
                         Title = ChatMessage.Simple("Chest"),
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -105,7 +104,7 @@ namespace Obsidian
                     {
                         Owner = player.Uuid,
                         Title = ChatMessage.Simple("Ender Chest"),
-                        Id = maxId
+                        Id = player.GetNextContainerId()
                     };
 
                     var invUuid = Guid.NewGuid();
@@ -133,7 +132,7 @@ namespace Obsidian
                     var crafting = new Inventory(InventoryType.Crafting)
                     {
                         Title = ChatMessage.Simple("Crafting Table"),
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -148,7 +147,7 @@ namespace Obsidian
 
                     var furnace = new Inventory(actualType)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -160,7 +159,7 @@ namespace Obsidian
                 {
                     var enchantmentTable = new Inventory(InventoryType.Enchantment)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -172,7 +171,7 @@ namespace Obsidian
                 {
                     var anvil = new Inventory(InventoryType.Anvil)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -186,7 +185,7 @@ namespace Obsidian
                     {
                         Owner = player.Uuid,
                         Title = ChatMessage.Simple("Shulker Box"),
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -198,7 +197,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.Loom)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -212,7 +211,7 @@ namespace Obsidian
                     {
                         //Owner = player.Uuid,
                         Title = ChatMessage.Simple("Barrel"),
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -224,7 +223,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.CartographyTable)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -236,7 +235,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.Stonecutter)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -248,7 +247,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.Grindstone)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -260,7 +259,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.BrewingStand)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -272,7 +271,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.Lectern)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
@@ -284,7 +283,7 @@ namespace Obsidian
                 {
                     var box = new Inventory(InventoryType.Hopper)
                     {
-                        Id = maxId,
+                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 

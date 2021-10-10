@@ -6,13 +6,15 @@ namespace Obsidian.API
 {
     public class Inventory
     {
-        internal byte Id { get; set; }
+        internal byte Id { get; init; }
 
         internal int StateId { get; set; }
 
         public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 
-        public Vector BlockPosition { get; set; }
+        public Vector? BlockPosition { get; internal set; }
+
+        public Guid Uuid { get; private set; } = Guid.NewGuid();
 
         public Guid Owner { get; set; }
 
@@ -22,55 +24,58 @@ namespace Obsidian.API
 
         public int Size { get; }
 
-        public bool IsPlayerInventory { get; }
+        public bool IsPlayerInventory => this.Id == 0;
 
         public ItemStack?[] Items { get; }
 
-        public Inventory(InventoryType type, int size = 0, bool isPlayerInventory = false)
+        public Inventory(InventoryType type)
         {
             this.Type = type;
-            this.IsPlayerInventory = isPlayerInventory;
 
-            if (size <= 0)
+            switch (type)
             {
-                switch (type)
-                {
-                    case InventoryType.Beacon:
-                    case InventoryType.Lectern:
-                        size = 1;
-                        break;
-                    case InventoryType.Grindstone:
-                    case InventoryType.CartographyTable:
-                    case InventoryType.Anvil:
-                    case InventoryType.BlastFurnace:
-                    case InventoryType.Smoker:
-                    case InventoryType.Furnace:
-                    case InventoryType.Merchant:
-                        size = 3;
-                        break;
-                    case InventoryType.BrewingStand:
-                    case InventoryType.Hopper:
-                        size = 5;
-                        break;
-                    case InventoryType.Crafting:
-                        size = 2 * 5;
-                        break;
-                    case InventoryType.Stonecutter:
-                    case InventoryType.Enchantment:
-                        size = 2;
-                        break;
-                    case InventoryType.Loom:
-                        size = 4;
-                        break;
-                    case InventoryType.Generic:
-                        size = 9 * 3;
-                        break;
-                    default:
-                        break;
-                }
+                case InventoryType.Beacon:
+                case InventoryType.Lectern:
+                    this.Size = 1;
+                    break;
+                case InventoryType.Grindstone:
+                case InventoryType.CartographyTable:
+                case InventoryType.Anvil:
+                case InventoryType.BlastFurnace:
+                case InventoryType.Smoker:
+                case InventoryType.Furnace:
+                case InventoryType.Merchant:
+                    this.Size = 3;
+                    break;
+                case InventoryType.BrewingStand:
+                case InventoryType.Hopper:
+                    this.Size = 5;
+                    break;
+                case InventoryType.Crafting:
+                    this.Size = 2 * 5;
+                    break;
+                case InventoryType.Stonecutter:
+                case InventoryType.Enchantment:
+                    this.Size = 2;
+                    break;
+                case InventoryType.Loom:
+                    this.Size = 4;
+                    break;
+                case InventoryType.Generic:
+                    this.Size = 9 * 3;
+                    break;
+                default:
+                    break;
             }
 
-            if (!this.IsPlayerInventory && type == InventoryType.Generic && size % 9 != 0)
+            this.Items = new ItemStack[this.Size];
+        }
+
+        public Inventory(int size)
+        {
+            this.Type = InventoryType.Generic;
+
+            if (size % 9 != 0)
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");

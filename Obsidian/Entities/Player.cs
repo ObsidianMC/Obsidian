@@ -28,6 +28,8 @@ namespace Obsidian.Entities
 
         internal bool isDragging;
 
+        private byte containerId = 0;
+
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
@@ -98,7 +100,7 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
+            this.Inventory = new Inventory(9 * 5 + 1)
             {
                 Id = 0,
                 Owner = uuid
@@ -746,6 +748,13 @@ namespace Obsidian.Entities
         public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => this.HasPermission(x));
 
         public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.Count(x => this.HasPermission(x)) == permissions.Count();
+
+        public byte GetNextContainerId()
+        {
+            this.containerId = (byte)(this.containerId % 255 + 1); 
+
+            return this.containerId;
+        }
 
         public override string ToString() => this.Username;
     }
