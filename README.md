@@ -12,10 +12,10 @@ Obsidian is a C# .NET 5 implementation of the Minecraft server protocol. Obsidia
 - [x] Player movement/Info and chat
 - [x] Basic chunk loading
 - [x] Block breaking/placing
-- [ ] Other gamemodes besides creative
+- [x] Other gamemodes besides creative
 - [ ] Usable storage and crafting blocks
 - [x] Low memory usage
-- [ ] Inventory management
+- [x] Inventory management
 - [ ] Daylight and weather cycle
 - [ ] Complete world generation
 - [ ] Liquid physics
