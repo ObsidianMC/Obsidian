@@ -257,6 +257,8 @@ namespace Obsidian.Entities
 
         public async Task OpenInventoryAsync(Inventory inventory)
         {
+            this.OpenedInventory = inventory;
+
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
             if (inventory.HasItems())

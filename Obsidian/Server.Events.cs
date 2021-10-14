@@ -39,9 +39,6 @@ namespace Obsidian
 
                 player.LastClickedBlock = interactedBlock;
 
-                if (LastInventoryId == byte.MaxValue)
-                    LastInventoryId = 1;
-
                 var meta = this.World.GetBlockMeta(blockPosition);
 
                 if (meta is not null && meta.Value.InventoryId != Guid.Empty)
@@ -59,8 +56,6 @@ namespace Obsidian
                             BlockType = interactedBlock.Id
                         });
                         await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
-
-                        player.OpenedInventory = inventory;
                     }
 
                     return;
@@ -95,8 +90,6 @@ namespace Obsidian
                     this.World.SetBlockMeta(blockPosition, blockMeta);
 
                     this.CachedWindows.TryAdd(invUuid, inventory);
-
-                    player.OpenedInventory = inventory;
                 }
                 else if (type == Material.EnderChest)
                 {
@@ -114,8 +107,6 @@ namespace Obsidian
                     this.World.SetBlockMeta(blockPosition, blockMeta);
 
                     this.CachedWindows.TryAdd(invUuid, enderChest);
-
-                    player.OpenedInventory = enderChest;
 
                     await player.OpenInventoryAsync(enderChest);
                     await player.client.QueuePacketAsync(new BlockAction
@@ -136,8 +127,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = crafting;
-
                     await player.OpenInventoryAsync(crafting);
                 }
                 else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
@@ -151,8 +140,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = furnace;
-
                     await player.OpenInventoryAsync(furnace);
                 }
                 else if (type == Material.EnchantingTable)
@@ -163,8 +150,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = enchantmentTable;
-
                     await player.OpenInventoryAsync(enchantmentTable);
                 }
                 else if (type == Material.Anvil || type == Material.SmithingTable) // TODO implement other anvil types
@@ -174,8 +159,6 @@ namespace Obsidian
                         Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
-
-                    player.OpenedInventory = anvil;
 
                     await player.OpenInventoryAsync(anvil);
                 }
@@ -189,8 +172,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = box;
-
                     await player.OpenInventoryAsync(box);
                 }
                 else if (type == Material.Loom)
@@ -200,8 +181,6 @@ namespace Obsidian
                         Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
-
-                    player.OpenedInventory = box;
 
                     await player.OpenInventoryAsync(box);
                 }
@@ -215,8 +194,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = box;
-
                     await player.OpenInventoryAsync(box);
                 }
                 else if (type == Material.CartographyTable)
@@ -226,8 +203,6 @@ namespace Obsidian
                         Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
-
-                    player.OpenedInventory = box;
 
                     await player.OpenInventoryAsync(box);
                 }
@@ -239,8 +214,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = box;
-
                     await player.OpenInventoryAsync(box);
                 }
                 else if (type == Material.Grindstone)
@@ -250,8 +223,6 @@ namespace Obsidian
                         Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
-
-                    player.OpenedInventory = box;
 
                     await player.OpenInventoryAsync(box);
                 }
@@ -263,8 +234,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = box;
-
                     await player.OpenInventoryAsync(box);
                 }
                 else if (type == Material.Lectern)
@@ -275,8 +244,6 @@ namespace Obsidian
                         BlockPosition = blockPosition
                     };
 
-                    player.OpenedInventory = box;
-
                     await player.OpenInventoryAsync(box);
                 }
                 else if (type == Material.Hopper || type == Material.HopperMinecart)
@@ -286,8 +253,6 @@ namespace Obsidian
                         Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
-
-                    player.OpenedInventory = box;
 
                     await player.OpenInventoryAsync(box);
                 }

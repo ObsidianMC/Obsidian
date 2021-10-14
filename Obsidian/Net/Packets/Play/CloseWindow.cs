@@ -15,13 +15,16 @@ namespace Obsidian.Net.Packets.Play
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            if (WindowId == 0)
+            if (WindowId == 0 || !player.OpenedInventory.BlockPosition.HasValue)
                 return;
 
-            var position = player.OpenedInventory.BlockPosition;
+            var position = player.OpenedInventory.BlockPosition.Value;
 
             var b = server.World.GetBlock(position);
-            if (b is null) { return; }
+
+            if (!b.HasValue)
+                return;
+
             var block = (Block)b;
             if (block.Is(Material.Chest))
             {

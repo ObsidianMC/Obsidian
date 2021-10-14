@@ -79,8 +79,6 @@ namespace Obsidian
 
         internal readonly CancellationTokenSource cts = new();
 
-        internal static byte LastInventoryId;
-
         /// <summary>
         /// Creates a new instance of <see cref="Server"/>.
         /// </summary>
