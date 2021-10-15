@@ -70,7 +70,7 @@ namespace Obsidian.API
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
 
             this.Size = size;
-            this.Items = new ItemStack[size];
+            this.Items = new ItemStack[size + 1];
         }
 
         public void AddItems(params ItemStack[] items)

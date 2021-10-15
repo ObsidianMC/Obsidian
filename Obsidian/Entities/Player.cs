@@ -100,7 +100,7 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(9 * 5 + 1)
+            this.Inventory = new Inventory(9 * 5)
             {
                 Id = 0,
                 Owner = uuid
