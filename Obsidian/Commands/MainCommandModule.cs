@@ -15,7 +15,6 @@ namespace Obsidian.Commands
 {
     public class MainCommandModule
     {
-        #region help
         private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
@@ -98,9 +97,7 @@ namespace Obsidian.Commands
             }
             await sender.SendMessageAsync(commands);
         }
-        #endregion
 
-        #region tps
         [Command("tps")]
         [CommandInfo("Gets server TPS", "/tps")]
         public async Task TPSAsync(CommandContext ctx)
@@ -119,9 +116,7 @@ namespace Obsidian.Commands
             await sender.SendMessageAsync(message);
 
         }
-        #endregion
 
-        #region plugins
         [Command("plugins", "pl")]
         [CommandInfo("Gets all plugins", "/plugins")]
         public async Task PluginsAsync(CommandContext Context)
@@ -165,9 +160,7 @@ namespace Obsidian.Commands
 
             await sender.SendMessageAsync(message);
         }
-        #endregion
 
-        #region save
         [Command("save")]
         [CommandInfo("Save World", "/save")]
         [IssuerScope(CommandIssuers.Any)]
@@ -177,9 +170,7 @@ namespace Obsidian.Commands
             var world = server.World;
             await world.FlushRegionsAsync();
         }
-        #endregion
 
-        #region forcechunkreload
         [Command("forcechunkreload")]
         [CommandInfo("Force chunk reload", "/forcechunkreload")]
         [IssuerScope(CommandIssuers.Client)]
@@ -192,43 +183,31 @@ namespace Obsidian.Commands
 
             await world.UpdateClientChunksAsync(c, true);
         }
-        #endregion
 
-        #region echo
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
         public void Echo(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
-        #endregion
-
-        #region announce
+        
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
         [RequirePermission(op: true, permissions: "obsidian.announce")]
         public void Announce(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage(text, MessageType.ActionBar);
-        #endregion
-
-        #region leave
+        
         [Command("leave", "kickme")]
         [CommandInfo("kicks you", "/leave")]
         [IssuerScope(CommandIssuers.Client)]
         public Task LeaveAsync(CommandContext Context) => Context.Player.KickAsync("Is this what you wanted?");
-        #endregion
-
-        #region uptime
+        
         [Command("uptime", "up")]
         [CommandInfo("Gets current uptime", "/uptime")]
         public Task UptimeAsync(CommandContext Context)
             => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
-        #endregion
-
-        #region declarecmds
+        
         [Command("declarecmds", "declarecommands")]
         [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
         [IssuerScope(CommandIssuers.Client)]
         public Task DeclareCommandsTestAsync(CommandContext Context) => ((Player)Context.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
-        #endregion
-
-        #region gamemode
+        
         [Command("gamemode")]
         [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
         [IssuerScope(CommandIssuers.Client)]
@@ -275,9 +254,7 @@ namespace Obsidian.Commands
             var player = Context.Player;
             await player.SendMessageAsync(chatMessage);
         }
-        #endregion
 
-        #region tp
         [Command("tp")]
         [CommandInfo("teleports you to a location", "/tp <x> <y> <z>")]
         [IssuerScope(CommandIssuers.Client)]
@@ -287,9 +264,7 @@ namespace Obsidian.Commands
             await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
             await player.TeleportAsync(location);
         }
-        #endregion
 
-        #region op
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
         [RequirePermission]
@@ -303,9 +278,7 @@ namespace Obsidian.Commands
 
             await Context.Player.SendMessageAsync($"Made {player} a server operator");
         }
-        #endregion
 
-        #region deop
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
         [RequirePermission]
@@ -319,9 +292,7 @@ namespace Obsidian.Commands
 
             await Context.Player.SendMessageAsync($"Made {player} no longer a server operator");
         }
-        #endregion
 
-        #region oprequest
         [Command("oprequest", "opreq")]
         [CommandInfo("Request operator rights.", "/oprequest [<code>]")]
         [IssuerScope(CommandIssuers.Client)]
@@ -352,16 +323,13 @@ namespace Obsidian.Commands
                 await Context.Player.SendMessageAsync("§cYou have already sent a request");
             }
         }
-        #endregion
 
-        #region obsidian
         [Command("obsidian")]
         [CommandInfo("Shows obsidian popup", "/obsidian")]
         public async Task ObsidianAsync(CommandContext Context)
         {
             await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
         }
-        #endregion
 
         [Command("title")]
         [CommandInfo("Sends a title", "/title")]
@@ -388,7 +356,6 @@ namespace Obsidian.Commands
             }
         }
 
-        #region stop
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
         [RequirePermission(permissions: "obsidian.stop")]
@@ -401,9 +368,6 @@ namespace Obsidian.Commands
                 server.StopServer();
             });
         }
-        #endregion
-
-        #region time
 
         [Command("time")]
         [CommandInfo("Sets declared time", "/time <timeOfDay>")]
@@ -416,11 +380,6 @@ namespace Obsidian.Commands
             await player.SendMessageAsync($"Time set to {time}");
         }
         
-        
-        
-        #endregion
-
-        #region permissions
         [CommandGroup("permission")]
         [RequirePermission(permissions: "obsidian.permissions")]
         public class Permission
@@ -463,10 +422,8 @@ namespace Obsidian.Commands
                 }
             }
         }
-        #endregion
 
 #if DEBUG
-        #region breakpoint
         [Command("breakpoint")]
         [CommandInfo("Creats a breakpoint to help debug", "/breakpoint")]
         [RequirePermission(op: true)]
@@ -476,9 +433,7 @@ namespace Obsidian.Commands
             await Task.Delay(3000);
             Debugger.Break();
         }
-        #endregion
 
-        #region boom
         [Command("kaboom")]
         [CommandInfo("The big bang.")]
         public async Task KaboomAsync(CommandContext Context)
@@ -493,10 +448,8 @@ namespace Obsidian.Commands
                 PlayerMotion = new VectorF(-10f, 0f, 0f)
             });
         }
-        #endregion
 #endif
 
-        #region Render command usage
         private ChatMessage SendCommandUsage(string commandUsage)
         {
             var commands = ChatMessage.Simple("");
@@ -525,6 +478,5 @@ namespace Obsidian.Commands
             commands.AddExtra(usage);
             return commands;
         }
-        #endregion
     }
 }
