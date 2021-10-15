@@ -91,7 +91,7 @@ namespace Obsidian.Commands.Framework.Entities
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
             {
                 //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
-                await context.Player.SendMessageAsync($"&4Correct usage: {this.Usage}");
+                await context.Sender.SendMessageAsync($"&4Correct usage: {this.Usage}");
 
                 return;
             }
