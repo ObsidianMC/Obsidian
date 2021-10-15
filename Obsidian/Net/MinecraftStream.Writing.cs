@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -6,6 +7,7 @@ using Obsidian.Nbt;
 using Obsidian.Net.Actions.BossBar;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
@@ -15,7 +17,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net
@@ -310,6 +311,13 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
+        public void WriteWindowProperty(IWindowProperty windowProperty)
+        {
+            this.WriteShort(windowProperty.Property);
+            this.WriteShort(windowProperty.Value);
+        }
+
+        [WriteMethod]
         public void WriteAngle(Angle angle)
         {
             BaseStream.WriteByte(angle.Value);
@@ -442,6 +450,67 @@ namespace Obsidian.Net
             }
         }
 
+        public void WriteAdvancements(IDictionary<string, Advancement> advancements)
+        {
+            this.WriteVarInt(advancements.Count);
+
+            foreach (var (name, value) in advancements)
+            {
+                this.WriteString(name);
+                this.WriteAdvancement(value);
+            }
+        }
+
+        public void WriteAdvancement(Advancement advancement)
+        {
+            var hasParent = !string.IsNullOrEmpty(advancement.Parent);
+            this.WriteBoolean(hasParent);
+
+            if (hasParent)
+                this.WriteString(advancement.Parent);
+
+            var hasDisplay = advancement.Display != null;
+
+            this.WriteBoolean(hasDisplay);
+
+            if (hasDisplay)
+            {
+                this.WriteChat(advancement.Display.Title);
+                this.WriteChat(advancement.Display.Description);
+
+                this.WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
+
+                this.WriteVarInt(advancement.Display.AdvancementFrameType);
+
+                this.WriteInt((int)advancement.Display.Flags);
+
+                if (advancement.Display.Flags.HasFlag(AdvancementFlags.HasBackgroundTexture))
+                    this.WriteString(advancement.Display.BackgroundTexture);
+
+                this.WriteFloat(advancement.Display.XCoord);
+                this.WriteFloat(advancement.Display.YCoord);
+            }
+
+            this.WriteVarInt(advancement.Criteria.Count);
+
+            foreach (var criteria in advancement.Criteria)
+                this.WriteString(criteria.Identifier);
+
+            var reqired = advancement.Criteria.Where(x => x.Required);
+
+            //For some reason this takes a array of an array??
+            if (reqired.Any())
+            {
+                //Always gonna be 1 for now
+                this.WriteVarInt(1);
+
+                this.WriteVarInt(reqired.Count());
+
+                foreach (var criteria in reqired)
+                    this.WriteString(criteria.Identifier);
+            }
+        }
+
         [WriteMethod]
         public void WriteCommandNode(CommandNode value)
         {
@@ -455,7 +524,7 @@ namespace Obsidian.Net
             WriteBoolean(value.Present);
             if (value.Present)
             {
-                var item = value.GetItem();
+                var item = value.AsItem();
 
                 WriteVarInt(item.Id);
                 WriteByte((sbyte)value.Count);
@@ -608,7 +677,7 @@ namespace Obsidian.Net
         }
 
         [WriteMethod]
-        public void WritePlayerInfoAction(PlayerInfoAction value)
+        public void WritePlayerInfoAction(InfoAction value)
         {
             value.Write(this);
         }
@@ -745,7 +814,7 @@ namespace Obsidian.Net
                     Present = true
                 };
 
-            var item = slot.GetItem();
+            var item = slot.AsItem();
 
             await WriteBooleanAsync(slot.Present);
             if (slot.Present)

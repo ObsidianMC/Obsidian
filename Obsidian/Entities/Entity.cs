@@ -6,11 +6,11 @@ using Obsidian.WorldData;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Obsidian.Entities
 {
-    //TODO detect when an entity is swimming
     public class Entity : IEquatable<Entity>, IEntity
     {
         public IServer Server { get; set; }
@@ -282,7 +282,7 @@ namespace Obsidian.Entities
             stream.WriteVarInt(this.PowderedSnowTicks);
         }
 
-        public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance);
+        public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance).Where(x => x != this);
 
         public virtual Task TickAsync() => Task.CompletedTask;
 
@@ -294,10 +294,10 @@ namespace Obsidian.Entities
 
             if (this is ILiving living)
             {
-                await this.server.QueueBroadcastPacketAsync(new EntityAnimation
+                await this.server.QueueBroadcastPacketAsync(new EntityAnimationPacket
                 {
                     EntityId = this.EntityId,
-                    Animation = EAnimation.TakeDamage
+                    Animation = EntityAnimationType.TakeDamage
                 });
 
                 if (living is IPlayer iplayer)

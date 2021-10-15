@@ -363,6 +363,15 @@ namespace Obsidian.Commands
         }
         #endregion
 
+        [Command("title")]
+        [CommandInfo("Sends a title", "/title")]
+        public async Task SendTitleAsync(CommandContext ctx)
+        {
+            var player = ctx.Player;
+
+            await player.SendTitleAsync("Test Title", "Test subtitle", 20, 40, 20);
+        }
+
         [Command("spawnentity")]
         [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
         public async Task SpawnEntityAsync(CommandContext context, string entityType)

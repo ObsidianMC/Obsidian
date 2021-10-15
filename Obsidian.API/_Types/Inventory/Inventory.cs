@@ -6,13 +6,15 @@ namespace Obsidian.API
 {
     public class Inventory
     {
-        internal byte Id { get; set; }
+        internal byte Id { get; init; }
 
-        internal int ActionsNumber { get; set; }
+        internal int StateId { get; set; }
 
         public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 
-        public Vector BlockPosition { get; set; }
+        public Vector? BlockPosition { get; internal set; }
+
+        public Guid Uuid { get; private set; } = Guid.NewGuid();
 
         public Guid Owner { get; set; }
 
@@ -22,55 +24,47 @@ namespace Obsidian.API
 
         public int Size { get; }
 
-        public bool IsPlayerInventory { get; }
+        public bool IsPlayerInventory => this.Id == 0;
 
         public ItemStack?[] Items { get; }
 
-        public Inventory(InventoryType type, int size = 0, bool isPlayerInventory = false)
+        public Inventory(InventoryType type)
         {
             this.Type = type;
-            this.IsPlayerInventory = isPlayerInventory;
 
-            if (size <= 0)
+            this.Size = type switch
             {
-                switch (type)
-                {
-                    case InventoryType.Beacon:
-                    case InventoryType.Lectern:
-                        size = 1;
-                        break;
-                    case InventoryType.Grindstone:
-                    case InventoryType.CartographyTable:
-                    case InventoryType.Anvil:
-                    case InventoryType.BlastFurnace:
-                    case InventoryType.Smoker:
-                    case InventoryType.Furnace:
-                    case InventoryType.Merchant:
-                        size = 3;
-                        break;
-                    case InventoryType.BrewingStand:
-                    case InventoryType.Hopper:
-                        size = 5;
-                        break;
-                    case InventoryType.Crafting:
-                        size = 2 * 5;
-                        break;
-                    case InventoryType.Stonecutter:
-                    case InventoryType.Enchantment:
-                        size = 2;
-                        break;
-                    case InventoryType.Loom:
-                        size = 4;
-                        break;
-                    case InventoryType.Generic:
-                        size = 9 * 3;
-                        break;
-                    default:
-                        break;
-                }
-            }
+                InventoryType.Beacon or InventoryType.Lectern => 1,
 
-            if (!this.IsPlayerInventory && type == InventoryType.Generic && size % 9 != 0)
+                InventoryType.Grindstone or
+                InventoryType.CartographyTable or
+                InventoryType.Anvil or
+                InventoryType.BlastFurnace or
+                InventoryType.Smoker or
+                InventoryType.Furnace or
+                InventoryType.Merchant => 3,
+
+                InventoryType.BrewingStand or InventoryType.Hopper => 5,
+
+                InventoryType.Crafting => 2 * 5,
+
+                InventoryType.Stonecutter or InventoryType.Enchantment => 2,
+
+                InventoryType.Loom => 4,
+
+                InventoryType.Generic or InventoryType.ShulkerBox => 9 * 3,
+
+                _ => 0
+            };
+
+            this.Items = new ItemStack[this.Size];
+        }
+
+        public Inventory(int size)
+        {
+            this.Type = InventoryType.Generic;
+
+            if (size % 9 != 0)
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
@@ -168,13 +162,8 @@ namespace Obsidian.API
             this.Items[slot] = item;
         }
 
-        public ItemStack GetItem(int slot)
-        {
-            if (slot > this.Size - 1 || slot < 0)
-                throw new IndexOutOfRangeException(nameof(slot));
-
-            return this.Items[slot] ?? ItemStack.Air;
-        }
+        public ItemStack? GetItem(int slot) =>
+            slot > this.Size - 1 || slot < 0 ? throw new IndexOutOfRangeException(nameof(slot)) : this.Items[slot];
 
         public bool RemoveItem(int slot, short amount = 1)
         {
@@ -192,6 +181,42 @@ namespace Obsidian.API
                 item.Count -= amount;
 
             return true;
+        }
+
+        public bool TryRemoveItem(int slot, out ItemStack? removedItem)
+        {
+            if (slot > this.Size - 1 || slot < 0)
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
+
+            var item = this.Items[slot];
+
+            if (item == null)
+            {
+                removedItem = null;
+                return false;
+            }
+
+            removedItem = item;
+
+            return this.RemoveItem(slot);
+        }
+
+        public bool TryRemoveItem(int slot, short amount, out ItemStack? removedItem)
+        {
+            if (slot > this.Size - 1 || slot < 0)
+                throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
+
+            var item = this.Items[slot];
+
+            if (item == null)
+            {
+                removedItem = null;
+                return false;
+            }
+
+            removedItem = item;
+
+            return this.RemoveItem(slot, amount);
         }
 
         public bool HasItems() => this.Items.Any(x => x is not null);

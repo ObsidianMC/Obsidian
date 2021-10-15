@@ -301,7 +301,7 @@ namespace Obsidian
             }
         }
 
-        // TODO fix compression
+        // TODO fix compression (.net 6)
         private void SetCompression()
         {
             this.SendPacket(new SetCompression(compressionThreshold));
@@ -319,11 +319,11 @@ namespace Obsidian
             this.State = ClientState.Play;
             this.Player.Health = 20f;
 
-            this.Player.Load();
+            await this.Player.LoadAsync();
 
             this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-            Registry.Dimensions.TryGetValue(0, out var codec); // TODO support custom dimensions and save client dimensionns
+            Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec);
 
             await this.QueuePacketAsync(new JoinGame
             {
@@ -341,7 +341,7 @@ namespace Obsidian
 
                 Dimension = codec,
 
-                DimensionName = codec.Name,
+                WorldName = "minecraft:world",
 
                 HashedSeed = 0,
 
@@ -374,12 +374,10 @@ namespace Obsidian
 
             await this.Player.World.ResendBaseChunksAsync(this);
 
-            //TODO: check for last position
-
-            var (chunkX, chunkZ) = this.Server.World.Data.SpawnPosition.ToChunkCoord();
+            var (chunkX, chunkZ) = this.Player.Position.ToChunkCoord();
 
             await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
-            await this.QueuePacketAsync(new SpawnPosition(this.Player.World.Data.SpawnPosition));
+            await this.QueuePacketAsync(new SpawnPosition(this.Player.Position));
 
             await this.QueuePacketAsync(new PlayerPositionAndLook
             {
@@ -393,7 +391,7 @@ namespace Obsidian
             //Initialize inventory
             await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
             {
-                StateId = 0, 
+                StateId = this.Player.Inventory.StateId++, 
                 CarriedItem = this.Player.GetHeldItem(),
             });
         }
@@ -431,43 +429,38 @@ namespace Obsidian
 
         internal Task SendCommandsAsync() => this.QueuePacketAsync(Registry.DeclareCommandsPacket);
 
-        internal async Task RemovePlayerFromListAsync(IPlayer player)
+        internal Task RemovePlayerFromListAsync(IPlayer player) => this.QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.RemovePlayer, new InfoAction
         {
-            var list = new List<PlayerInfoAction>
-            {
-                new PlayerInfoAction
-                {
-                    Uuid = player.Uuid
-                }
-            };
-
-            await this.QueuePacketAsync(new PlayerInfo(4, list));
-        }
+            Uuid = player.Uuid
+        }));
 
         internal async Task AddPlayerToListAsync(IPlayer player)
         {
-            var list = new List<PlayerInfoAction>
+            var addAction = new AddPlayerInfoAction
             {
-                new PlayerInfoAddAction
-                {
-                    Name = player.Username,
-                    Uuid = player.Uuid,
-                    Ping = this.Player.Ping,
-                    Gamemode = (int)this.Player.Gamemode,
-                    DisplayName = ChatMessage.Simple(player.Username)
-                }
+                Name = player.Username,
+                Uuid = player.Uuid,
+                Ping = this.Player.Ping,
+                Gamemode = (int)this.Player.Gamemode,
+                DisplayName = ChatMessage.Simple(player.Username)
             };
 
-            await this.QueuePacketAsync(new PlayerInfo(0, list));
-        }
+            if (this.config.OnlineMode)
+            {
+                var uuid = player.Uuid.ToString().Replace("-", "");
+                var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
+                addAction.Properties.AddRange(skin.Properties);
+            }
 
+            await this.QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
+        }
         internal async Task SendPlayerInfoAsync()
         {
-            var list = new List<PlayerInfoAction>();
+            var list = new List<InfoAction>();
 
             foreach (var (_, player) in this.Server.OnlinePlayers)
             {
-                var piaa = new PlayerInfoAddAction()
+                var piaa = new AddPlayerInfoAction()
                 {
                     Name = player.Username,
                     Uuid = player.Uuid,
@@ -486,7 +479,7 @@ namespace Obsidian
                 list.Add(piaa);
             }
 
-            await this.QueuePacketAsync(new PlayerInfo(0, list));
+            await this.QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, list));
         }
 
         internal void SendPacket(IClientboundPacket packet)
@@ -530,21 +523,9 @@ namespace Obsidian
             //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
         }
 
-        internal async Task SendChunkAsync(Chunk chunk)
-        {
-            if (chunk != null)
-            {
-                await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-            }
-        }
+        internal Task SendChunkAsync(Chunk chunk) => chunk != null ? this.QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
 
-        public async Task UnloadChunkAsync(int x, int z)
-        {
-            if (this.LoadedChunks.Contains((x, z)))
-            {
-                await this.QueuePacketAsync(new UnloadChunk(x, z));
-            }
-        }
+        public Task UnloadChunkAsync(int x, int z) => this.LoadedChunks.Contains((x, z)) ? this.QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
 
         private async Task SendServerBrand()
         {

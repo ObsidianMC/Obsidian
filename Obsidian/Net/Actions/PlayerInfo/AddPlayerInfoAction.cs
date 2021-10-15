@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {
-    public class PlayerInfoAddAction : PlayerInfoAction
+    public class AddPlayerInfoAction : InfoAction
     {
         public string Name { get; set; }
 
@@ -19,7 +19,7 @@ namespace Obsidian.Net.Actions.PlayerInfo
 
         public bool HasDisplayName => DisplayName != null;
 
-        public override async Task WriteAsync(MinecraftStream stream)
+        public async override Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);
 

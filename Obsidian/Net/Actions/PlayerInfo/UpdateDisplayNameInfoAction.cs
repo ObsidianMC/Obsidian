@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {
-    public class PlayerInfoUpdateDisplayNameAction : PlayerInfoAction
+    public class UpdateDisplayNameInfoAction : InfoAction
     {
         public string DisplayName { get; set; }
         public bool HasDisplayName => string.IsNullOrWhiteSpace(DisplayName);

@@ -1,4 +1,4 @@
-﻿namespace Obsidian.ChunkData
+﻿namespace Obsidian.API
 {
     public enum Biomes : int
     {
@@ -10,7 +10,7 @@
         Taiga = 5,
         Swamp = 6,
         River = 7,
-        Nether = 8,
+        NetherWastes = 8,
         TheEnd = 9,
         FrozenOcean = 10,
         FrozenRiver = 11,
@@ -77,5 +77,11 @@
         ModifiedBadlandsPlateau = 167,
         BambooJungle = 168,
         BambooJungleHills = 169,
+        SoulSandValley = 170,
+        CrimsonForest = 171,
+        WarpedForest = 172,
+        BasaltDeltas = 173,
+        DripstoneCaves = 174,
+        LushCaves = 175,
     }
 }

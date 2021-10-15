@@ -35,7 +35,7 @@ namespace Obsidian.Utilities.Registry
         internal static readonly string[] BlockNames = new string[898]; // 897 - block count
         internal static readonly short[] NumericToBase = new short[898]; // 897 - highest block numeric id
 
-        public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
+        public static CodecCollection<string, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
         public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
         private static readonly string mainDomain = "Obsidian.Assets";
@@ -127,7 +127,7 @@ namespace Obsidian.Utilities.Registry
 
         public static async Task RegisterCodecsAsync()
         {
-            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_dimension_codec.json");
+            using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_codec.json");
 
             var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
@@ -150,7 +150,7 @@ namespace Obsidian.Utilities.Registry
             {
                 foreach (var codec in values)
                 {
-                    Dimensions.TryAdd(codec.Id, codec);
+                    Dimensions.TryAdd(codec.Name, codec);
 
                     Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                     registered++;

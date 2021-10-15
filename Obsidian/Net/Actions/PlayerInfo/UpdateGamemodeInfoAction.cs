@@ -2,7 +2,7 @@
 
 namespace Obsidian.Net.Actions.PlayerInfo
 {
-    public class PlayerInfoUpdateGamemodeAction : PlayerInfoAction
+    public class UpdateGamemodeInfoAction : InfoAction
     {
         public int Gamemode { get; set; }
 

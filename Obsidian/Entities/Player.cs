@@ -28,6 +28,8 @@ namespace Obsidian.Entities
 
         internal bool isDragging;
 
+        private byte containerId = 0;
+
         public bool IsOperator => Server.Operators.IsOperator(this);
 
         public string Username { get; }
@@ -69,12 +71,12 @@ namespace Obsidian.Entities
         }
 
         public int Ping => this.client.ping;
-        public int Dimension { get; set; }
+        public string Dimension { get; set; }
         public int FoodLevel { get; set; }
         public int FoodTickTimer { get; set; }
         public int XpLevel { get; set; }
         public int XpTotal { get; set; }
-        public int XpP { get; set; } = 0;
+        public float XpP { get; set; } = 0;
 
         public double HeadY { get; private set; }
 
@@ -98,7 +100,7 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(InventoryType.Generic, 9 * 5 + 1, true)
+            this.Inventory = new Inventory(9 * 5 + 1)
             {
                 Id = 0,
                 Owner = uuid
@@ -109,7 +111,7 @@ namespace Obsidian.Entities
             _ = Task.Run(this.LoadPermsAsync);
         }
 
-        internal override async Task UpdateAsync(VectorF position, bool onGround)
+        internal async override Task UpdateAsync(VectorF position, bool onGround)
         {
             await base.UpdateAsync(position, onGround);
 
@@ -120,7 +122,7 @@ namespace Obsidian.Entities
             await this.PickupNearbyItemsAsync(1);
         }
 
-        internal override async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+        internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(position, yaw, pitch, onGround);
 
@@ -131,7 +133,7 @@ namespace Obsidian.Entities
             await this.PickupNearbyItemsAsync(0.8f);
         }
 
-        internal override async Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+        internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
         {
             await base.UpdateAsync(yaw, pitch, onGround);
 
@@ -140,7 +142,7 @@ namespace Obsidian.Entities
 
         private async Task TrySpawnPlayerAsync(VectorF position)
         {
-            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= 10))//TODO use view distance
+            foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.client.ClientSettings.ViewDistance))
             {
                 if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
                 {
@@ -182,7 +184,9 @@ namespace Obsidian.Entities
 
                         WindowId = 0,
 
-                        SlotData = this.Inventory.GetItem(slot)
+                        SlotData = this.Inventory.GetItem(slot),
+
+                        StateId = this.Inventory.StateId++
                     });
 
                     await item.RemoveAsync();
@@ -200,7 +204,7 @@ namespace Obsidian.Entities
 
             if (file.Exists)
             {
-                using var fs = file.OpenRead();
+                await using var fs = file.OpenRead();
 
                 this.PlayerPermissions = await fs.FromJsonAsync<Permission>();
             }
@@ -211,7 +215,7 @@ namespace Obsidian.Entities
             // Save permissions to JSON file
             var file = new FileInfo(Path.Combine(this.server.PermissionPath, $"{this.Uuid}.json"));
 
-            using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            await using var fs = file.Open(FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
             await this.PlayerPermissions.ToJsonAsync(fs);
         }
@@ -253,12 +257,12 @@ namespace Obsidian.Entities
 
         public async Task OpenInventoryAsync(Inventory inventory)
         {
+            this.OpenedInventory = inventory;
+
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
             if (inventory.HasItems())
-            {
                 await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
-            }
         }
 
         public async Task TeleportAsync(VectorF pos)
@@ -318,9 +322,12 @@ namespace Obsidian.Entities
 
         public async Task RespawnAsync()
         {
+            if (this.Alive)
+                return;
+
             this.visiblePlayers.Clear();
 
-            Registry.Dimensions.TryGetValue(0, out var codec);
+            Registry.Dimensions.TryGetValue("minecraft:overworld", out var codec);
 
             await this.client.QueuePacketAsync(new Respawn
             {
@@ -348,11 +355,12 @@ namespace Obsidian.Entities
                 TeleportId = 0
             });
 
-            if (!this.Alive)
-                this.Health = 20f;
+
+            this.Health = 20f;
         }
 
-        public override async Task KillAsync(IEntity source, ChatMessage deathMessage)
+        //TODO make IDamageSource 
+        public async override Task KillAsync(IEntity source, ChatMessage deathMessage)
         {
             //await this.client.QueuePacketAsync(new PlayerDied
             //{
@@ -369,7 +377,7 @@ namespace Obsidian.Entities
                 attacker.visiblePlayers.Remove(this.EntityId);
         }
 
-        public override async Task WriteAsync(MinecraftStream stream)
+        public async override Task WriteAsync(MinecraftStream stream)
         {
             await base.WriteAsync(stream);
 
@@ -396,7 +404,7 @@ namespace Obsidian.Entities
             stream.WriteFloat(AdditionalHearts);
 
             stream.WriteEntityMetadataType(15, EntityMetadataType.VarInt);
-            stream.WriteVarInt(XpP);
+            stream.WriteVarInt(XpTotal);
 
             stream.WriteEntityMetadataType(16, EntityMetadataType.Byte);
             stream.WriteByte((byte)PlayerBitMask);
@@ -419,16 +427,16 @@ namespace Obsidian.Entities
 
         public async Task SetGamemodeAsync(Gamemode gamemode)
         {
-            var list = new List<PlayerInfoAction>()
+            var list = new List<InfoAction>()
             {
-                new PlayerInfoUpdateGamemodeAction()
+                new UpdateGamemodeInfoAction()
                 {
                     Uuid = this.Uuid,
                     Gamemode = (int)gamemode,
                 }
             };
 
-            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(1, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateGamemode, list));
             await this.client.QueuePacketAsync(new ChangeGameState(gamemode));
 
             this.Gamemode = gamemode;
@@ -436,18 +444,66 @@ namespace Obsidian.Entities
 
         public async Task UpdateDisplayNameAsync(string newDisplayName)
         {
-            var list = new List<PlayerInfoAction>()
+            var list = new List<InfoAction>()
             {
-                new PlayerInfoUpdateDisplayNameAction()
+                new UpdateDisplayNameInfoAction()
                 {
                     Uuid = this.Uuid,
                     DisplayName = newDisplayName,
                 }
             };
 
-            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfo(3, list));
+            await this.client.Server.QueueBroadcastPacketAsync(new PlayerInfoPacket(PlayerInfoAction.UpdateDisplayName, list));
 
             this.CustomName = newDisplayName;
+        }
+
+        public async Task SendTitleAsync(ChatMessage title, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetTitle)
+            {
+                Text = title
+            };
+
+            var titleTimesPacket = new TitleTimesPacket
+            {
+                FadeIn = fadeIn,
+                FadeOut = fadeOut,
+                Stay = stay,
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+            await this.client.QueuePacketAsync(titleTimesPacket);
+        }
+
+        public async Task SendTitleAsync(ChatMessage title, ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetSubtitle)
+            {
+                Text = subtitle
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+
+            await this.SendTitleAsync(title, fadeIn, stay, fadeOut);
+        }
+
+        public async Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut)
+        {
+            var titlePacket = new TitlePacket(TitleMode.SetSubtitle)
+            {
+                Text = subtitle
+            };
+
+            var titleTimesPacket = new TitleTimesPacket
+            {
+                FadeIn = fadeIn,
+                FadeOut = fadeOut,
+                Stay = stay,
+            };
+
+            await this.client.QueuePacketAsync(titlePacket);
+            await this.client.QueuePacketAsync(titleTimesPacket);
         }
 
         public async Task SaveAsync()
@@ -472,6 +528,8 @@ namespace Obsidian.Entities
 
             writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
             writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
+
+            writer.WriteString("Dimension", this.Dimension);
 
             writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -501,7 +559,7 @@ namespace Obsidian.Entities
                 writer.WriteByte("Count", (byte)item.Count);
                 writer.WriteByte("Slot", (byte)slot);
 
-                writer.WriteString("id", item.GetItem().UnlocalizedName);
+                writer.WriteString("id", item.AsItem().UnlocalizedName);
 
                 writer.WriteCompoundStart("tag");
 
@@ -514,29 +572,28 @@ namespace Obsidian.Entities
                 writer.EndCompound();
             }
 
-            if (nonNullItems.Count() <= 0)
+            if (!nonNullItems.Any())
                 writer.Write(NbtTagType.End);
 
             writer.EndList();
-
-            writer.WriteString("Dimension", "minecraft:overworld");
 
             writer.EndCompound();
 
             await writer.TryFinishAsync();
         }
 
-        public void Load()
+        public async ValueTask LoadAsync()
         {
             var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
 
             if (!playerFile.Exists)
             {
                 this.Position = this.World.Data.SpawnPosition;
+                this.Dimension = "minecraft:overworld";
                 return;
             }
 
-            using var playerFileStream = playerFile.OpenRead();
+            await using var playerFileStream = playerFile.OpenRead();
 
             var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
 
@@ -551,8 +608,7 @@ namespace Obsidian.Entities
             this.HurtTime = compound.GetShort("HurtTime");
             this.SleepTimer = compound.GetShort("SleepTimer");
 
-            var dim = Registry.Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(compound.GetString("Dimension")));
-            this.Dimension = dim.Key;
+            this.Dimension = Registry.Dimensions.TryGetValue(compound.GetString("Dimension"), out var dimension) ? dimension.Name : "minecraft:overworld";
 
             this.FoodLevel = compound.GetInt("foodLevel");
             this.FoodTickTimer = compound.GetInt("foodTickTimer");
@@ -615,23 +671,20 @@ namespace Obsidian.Entities
             }
         }
 
-        public async Task<bool> GrantPermissionAsync(string permission)
+        public async Task<bool> GrantPermissionAsync(string permissionNode)
         {
-            // trim and split permission string
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
+            var permissions = permissionNode.ToLower().Trim().Split('.');
 
-            // Set root node and whether we created a new permission (still false)
             var parent = this.PlayerPermissions;
             var result = false;
 
-            foreach (var i in split)
+            foreach (var permission in permissions)
             {
                 // no such child, this permission is new!
-                if (!parent.Children.Any(x => x.Name == i))
+                if (!parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
                 {
                     // create the new child, add it to its parent and set parent to the next value to continue the loop
-                    var child = new Permission(i);
+                    var child = new Permission(permission);
                     parent.Children.Add(child);
                     parent = child;
                     // yes, new permission!
@@ -640,103 +693,69 @@ namespace Obsidian.Entities
                 }
 
                 // child already exists, set parent to existing child to continue loop
-                parent = parent.Children.First(x => x.Name == i);
+                parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
             }
 
             await this.SavePermsAsync();
 
             if (result)
-                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permission));
+                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permissionNode));
+
             return result;
         }
 
-        public async Task<bool> RevokePermissionAsync(string permission)
+        public async Task<bool> RevokePermissionAsync(string permissionNode)
         {
-            // trim and split permission string
-
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
+            var permissions = permissionNode.ToLower().Trim().Split('.');
 
             // Set root node and whether we created a new permission (still false)
             var parent = this.PlayerPermissions;
-            var childToRemove = this.PlayerPermissions;
-            var result = true;
 
-            foreach (var i in split)
+            foreach (var permission in permissions)
             {
-                if (parent.Children.Any(x => x.Name == i))
+                if (parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
                 {
-                    // child exists, set its parent node and mark it to be removed
-                    parent = childToRemove;
-                    childToRemove = parent.Children.First(x => x.Name == i);
-                    continue;
+                    // child exists remove them
+                    var childToRemove = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
+
+                    parent.Children.Remove(childToRemove);
+
+                    await this.SavePermsAsync();
+                    await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permissionNode));
+
+                    return true;
                 }
-                // no such child node, result false and break
-                result = false;
-                break;
-            }
-
-            if (result)
-            {
-                parent.Children.Remove(childToRemove);
-                await this.SavePermsAsync();
-                await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permission));
-            }
-            return result;
-        }
-
-        public bool HasPermission(string permission)
-        {
-            // trim and split permission string
-            permission = permission.ToLower().Trim();
-            string[] split = permission.Split('.');
-
-            // Set root node and whether we created a new permission (still false)
-            var result = false;
-            var parent = this.PlayerPermissions;
-
-            foreach (var i in split)
-            {
-                if (parent.Children.Any(x => x.Name == "*"))
-                {
-                    // WILDCARD! all child permissions are granted here.
-                    result = true;
-                    break;
-                }
-                if (parent.Children.Any(x => x.Name == i))
-                {
-                    parent = parent.Children.First(x => x.Name == i);
-                    result = true;
-                }
-                else
-                {
-                    // no such child. break loop and stop searching.
-                    result = false;
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        public bool HasAnyPermission(IEnumerable<string> permissions)
-        {
-            foreach (var perm in permissions)
-            {
-                if (HasPermission(perm)) return true;
             }
 
             return false;
         }
 
-        public bool HasAllPermissions(IEnumerable<string> permissions)
+        public bool HasPermission(string permissionNode)
         {
-            foreach (var perm in permissions)
+            var permissions = permissionNode.ToLower().Trim().Split('.');
+
+            var parent = this.PlayerPermissions;
+
+            foreach (var permission in permissions)
             {
-                if (!HasPermission(perm)) return false;
+                if (parent.Children.Any(x => x.Name == "*") || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+                    return true;
+
+                parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));
             }
 
-            return true;
+            return false;
+        }
+
+        public bool HasAnyPermission(IEnumerable<string> permissions) => permissions.Any(x => this.HasPermission(x));
+
+        public bool HasAllPermissions(IEnumerable<string> permissions) => permissions.Count(x => this.HasPermission(x)) == permissions.Count();
+
+        public byte GetNextContainerId()
+        {
+            this.containerId = (byte)(this.containerId % 255 + 1); 
+
+            return this.containerId;
         }
 
         public override string ToString() => this.Username;

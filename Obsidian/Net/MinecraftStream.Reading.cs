@@ -5,6 +5,7 @@ using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -516,6 +517,24 @@ namespace Obsidian.Net
         public Guid ReadGuid()
         {
             return Guid.Parse(ReadString());
+        }
+
+        [ReadMethod]
+        public IDictionary<short, ItemStack> ReadSlots()
+        {
+            var dict = new Dictionary<short, ItemStack>();
+
+            var length = this.ReadVarInt();
+
+            for(int i = 0; i < length; i++)
+            {
+                var slot = this.ReadShort();
+                var item = this.ReadItemStack();
+
+                dict.Add(slot, item);
+            }
+
+            return dict;
         }
 
         [ReadMethod]

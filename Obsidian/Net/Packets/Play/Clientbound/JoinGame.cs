@@ -9,7 +9,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 {
     public class MixedCodec
     {
-        public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
+        public CodecCollection<string, DimensionCodec> Dimensions { get; init; }
         public CodecCollection<string, BiomeCodec> Biomes { get; init; }
     }
 
@@ -37,7 +37,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public DimensionCodec Dimension { get; init; }
 
         [Field(8)]
-        public string DimensionName { get; init; }
+        public string WorldName { get; init; }
 
         [Field(9)]
         public long HashedSeed { get; init; }

@@ -93,7 +93,7 @@ namespace Obsidian.Utilities
             return (add > 0 ? clickedSlot + add : clickedSlot - sub, sub > 0 || add > 0);
         }
 
-        public static Item GetItem(this ItemStack itemStack)
+        public static Item AsItem(this ItemStack itemStack)
         {
             return Registry.Registry.GetItem(itemStack.Type);
         }

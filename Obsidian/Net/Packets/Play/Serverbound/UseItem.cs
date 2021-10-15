@@ -2,10 +2,6 @@
 using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound
@@ -22,10 +18,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             switch (Hand)
             {
                 case Hand.MainHand:
-                    await server.Events.InvokeItemUsedAsync(new ItemUsedEventArgs(player, player.Inventory.Items[player.Inventory.Size - 1 - (9 - player.CurrentSlot)], player.CurrentSlot));
+                    await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+                    {
+                        Item = player.GetHeldItem()
+                    });
                     break;
                 case Hand.OffHand:
-                    await server.Events.InvokeItemUsedAsync(new ItemUsedEventArgs(player, player.Inventory.Items.Last(), 9));
+                    await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+                    {
+                        Item = player.GetOffHandItem()
+                    });
                     break;
             }
         }

@@ -341,6 +341,7 @@ namespace Obsidian.WorldData
             return true;
         }
 
+        //TODO save world generator settings properly
         public void Save()
         {
             var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
@@ -357,7 +358,7 @@ namespace Obsidian.WorldData
             writer.WriteInt("GameType", (int)Gamemode.Creative);
             writer.WriteInt("generatorVersion", 1);
             writer.WriteInt("rainTime", 0);
-            writer.WriteInt("SpawnX", (int)Data.SpawnPosition.X);//Why aren't these floats :eyes:
+            writer.WriteInt("SpawnX", (int)Data.SpawnPosition.X);
             writer.WriteInt("SpawnY", (int)Data.SpawnPosition.Y);
             writer.WriteInt("SpawnZ", (int)Data.SpawnPosition.Z);
             writer.WriteInt("thunderTime", 0);
@@ -377,7 +378,6 @@ namespace Obsidian.WorldData
 
         public async Task UnloadPlayerAsync(Guid uuid)
         {
-            // TODO save changed data to file [uuid].dat
             this.Players.TryRemove(uuid, out var player);
 
             await player.SaveAsync();
@@ -550,7 +550,7 @@ namespace Obsidian.WorldData
                 BlockMaterial = mat
             };
 
-            Server.BroadcastPacket(new SpawnEntity
+            Server.BroadcastPacket(new SpawnEntityPacket
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -596,7 +596,7 @@ namespace Obsidian.WorldData
                 }
                 else
                 {
-                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntity
+                    await this.Server.QueueBroadcastPacketAsync(new SpawnEntityPacket
                     {
                         EntityId = entity.EntityId,
                         Uuid = entity.Uuid,

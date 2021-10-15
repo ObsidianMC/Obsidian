@@ -23,6 +23,6 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             TotalExperience = totalExperience;
         }
 
-        public static SetExperience FromLevel(int level) => new (0, level, XpHelper.LevelToExperience(level));
+        public static SetExperience FromLevel(int level) => new (0, level, XpHelper.TotalExperienceFromLevel(level));
     }
 }

@@ -4,7 +4,7 @@ using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound
 {
-    public partial class SpawnEntity : IClientboundPacket
+    public partial class SpawnEntityPacket : IClientboundPacket
     {
         [Field(0), VarLength]
         public int EntityId { get; init; }

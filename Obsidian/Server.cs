@@ -34,7 +34,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian
 {
-    public class Server : IServer
+    public partial class Server : IServer
     {
         public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
         public ProtocolVersion Protocol => protocol;
@@ -79,8 +79,6 @@ namespace Obsidian
 
         internal readonly CancellationTokenSource cts = new();
 
-        internal static byte LastInventoryId;
-
         /// <summary>
         /// Creates a new instance of <see cref="Server"/>.
         /// </summary>
@@ -123,6 +121,7 @@ namespace Obsidian
             Events.PlayerLeave += OnPlayerLeave;
             Events.PlayerJoin += OnPlayerJoin;
             Events.PlayerAttackEntity += PlayerAttack;
+            Events.PlayerInteract += OnPlayerInteract;
 
             Directory.CreateDirectory(PermissionPath);
 
@@ -449,7 +448,7 @@ namespace Obsidian
                         {
                             EntityId = player + World.TotalLoadedEntities() + 1,
                             Count = 1,
-                            Id = droppedItem.GetItem().Id,
+                            Id = droppedItem.AsItem().Id,
                             Glowing = true,
                             World = World,
                             Position = loc
@@ -461,7 +460,7 @@ namespace Obsidian
 
                         var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                        BroadcastPacket(new SpawnEntity
+                        BroadcastPacket(new SpawnEntityPacket
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,
@@ -484,7 +483,9 @@ namespace Obsidian
 
                             WindowId = 0,
 
-                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1
+                            SlotData = player.Inventory.GetItem(player.inventorySlot) - 1,
+
+                            StateId = player.Inventory.StateId++
                         });
 
                         player.Inventory.RemoveItem(player.inventorySlot);
@@ -544,7 +545,7 @@ namespace Obsidian
 
                         TryAddEntity(player.World, item);
 
-                        BroadcastPacket(new SpawnEntity
+                        BroadcastPacket(new SpawnEntityPacket
                         {
                             EntityId = item.EntityId,
                             Uuid = item.Uuid,
@@ -647,55 +648,6 @@ namespace Obsidian
             Register(new SuperflatGenerator());
             Register(new OverworldGenerator(Config.Seed));
         }
-
-        #region Events
-        private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
-        {
-            var entity = e.Entity;
-            var attacker = e.Attacker;
-
-            if (entity is IPlayer player)
-            {
-                await player.DamageAsync(attacker);
-            }
-        }
-
-        private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
-        {
-            var player = e.Player as Player;
-
-            await player.SaveAsync();
-
-            World.RemovePlayer(player);
-
-            var destroy = new DestroyEntities(player.EntityId);
-
-            foreach (Player other in Players)
-            {
-                if (other == player)
-                    continue;
-                    
-                await other.client.RemovePlayerFromListAsync(player);
-                if (other.visiblePlayers.Contains(player.EntityId))
-                    await other.client.QueuePacketAsync(destroy);
-            }
-
-            BroadcastMessage(string.Format(Config.LeaveMessage, e.Player.Username));
-        }
-
-        private async Task OnPlayerJoin(PlayerJoinEventArgs e)
-        {
-            var joined = e.Player as Player;
-
-            World.AddPlayer(joined); // TODO Add the player to the last world they were in
-
-            BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
-            foreach (Player other in Players)
-            {
-                await other.client.AddPlayerToListAsync(joined);
-            }
-        }
-        #endregion Events
 
         internal void UpdateStatusConsole()
         {

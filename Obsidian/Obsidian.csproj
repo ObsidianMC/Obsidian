@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\biome_dimension_codec.json" />
+    <None Remove="Assets\biome_codec.json" />
     <None Remove="Assets\default_dimensions.json" />
     <None Remove="Assets\default_dimensions.xaml" />
     <None Remove="Assets\entity_types.json" />
@@ -84,7 +84,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Assets\biome_dimension_codec.json">
+    <EmbeddedResource Update="Assets\biome_codec.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Update="Assets\blocks.json">
