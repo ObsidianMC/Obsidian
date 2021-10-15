@@ -18,9 +18,11 @@ namespace Obsidian.Commands
         private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task HelpAsync(CommandContext Context) => await HelpAsync(Context, 1);
         
         [CommandOverload]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task HelpAsync(CommandContext Context, int page)
         {
             var sender = Context.Sender;
@@ -100,6 +102,7 @@ namespace Obsidian.Commands
 
         [Command("tps")]
         [CommandInfo("Gets server TPS", "/tps")]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task TPSAsync(CommandContext ctx)
         {
             ChatColor color;
@@ -119,6 +122,7 @@ namespace Obsidian.Commands
 
         [Command("plugins", "pl")]
         [CommandInfo("Gets all plugins", "/plugins")]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task PluginsAsync(CommandContext Context)
         {
             var srv = (Server)Context.Server;
@@ -186,10 +190,12 @@ namespace Obsidian.Commands
 
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
+        [IssuerScope(CommandIssuers.Any)]
         public void Echo(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
         
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
+        [IssuerScope(CommandIssuers.Any)]
         [RequirePermission(op: true, permissions: "obsidian.announce")]
         public void Announce(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage(text, MessageType.ActionBar);
         
@@ -200,6 +206,7 @@ namespace Obsidian.Commands
         
         [Command("uptime", "up")]
         [CommandInfo("Gets current uptime", "/uptime")]
+        [IssuerScope(CommandIssuers.Any)]
         public Task UptimeAsync(CommandContext Context)
             => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
         
@@ -333,6 +340,7 @@ namespace Obsidian.Commands
 
         [Command("title")]
         [CommandInfo("Sends a title", "/title")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task SendTitleAsync(CommandContext ctx)
         {
             var player = ctx.Player;
@@ -359,6 +367,7 @@ namespace Obsidian.Commands
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
         [RequirePermission(permissions: "obsidian.stop")]
+        [IssuerScope(CommandIssuers.Any)]
         public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
@@ -371,6 +380,7 @@ namespace Obsidian.Commands
 
         [Command("time")]
         [CommandInfo("Sets declared time", "/time <timeOfDay>")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task TimeAsync(CommandContext Context) => TimeAsync(Context, 1337);
         [CommandOverload]
         public async Task TimeAsync(CommandContext Context,int time)
@@ -382,9 +392,11 @@ namespace Obsidian.Commands
         
         [CommandGroup("permission")]
         [RequirePermission(permissions: "obsidian.permissions")]
+        [IssuerScope(CommandIssuers.Any)]
         public class Permission
         {
             [GroupCommand]
+            [IssuerScope(CommandIssuers.Client)]
             public async Task CheckPermission(CommandContext ctx, string permission)
             {
                 if (ctx.Player.HasPermission(permission))
@@ -398,6 +410,7 @@ namespace Obsidian.Commands
             }
 
             [Command("grant")]
+            [IssuerScope(CommandIssuers.Client)]
             public async Task GrantPermission(CommandContext ctx, string permission)
             {
                 if (await ctx.Player.GrantPermissionAsync(permission))
@@ -410,6 +423,7 @@ namespace Obsidian.Commands
                 }
             }
             [Command("revoke")]
+            [IssuerScope(CommandIssuers.Client)]
             public async Task RevokePermission(CommandContext ctx, string permission)
             {
                 if (await ctx.Player.RevokePermissionAsync(permission))
@@ -436,6 +450,7 @@ namespace Obsidian.Commands
 
         [Command("kaboom")]
         [CommandInfo("The big bang.")]
+        [IssuerScope(CommandIssuers.Client)]
         public async Task KaboomAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
