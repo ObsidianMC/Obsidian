@@ -18,11 +18,9 @@ namespace Obsidian.Commands
         private const int CommandsPerPage = 15;
         [Command("help", "commands")]
         [CommandInfo("Lists available commands.", "/help [<page>]")]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task HelpAsync(CommandContext Context) => await HelpAsync(Context, 1);
         
         [CommandOverload]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task HelpAsync(CommandContext Context, int page)
         {
             var sender = Context.Sender;
@@ -102,7 +100,6 @@ namespace Obsidian.Commands
 
         [Command("tps")]
         [CommandInfo("Gets server TPS", "/tps")]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task TPSAsync(CommandContext ctx)
         {
             ChatColor color;
@@ -122,7 +119,6 @@ namespace Obsidian.Commands
 
         [Command("plugins", "pl")]
         [CommandInfo("Gets all plugins", "/plugins")]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task PluginsAsync(CommandContext Context)
         {
             var srv = (Server)Context.Server;
@@ -167,7 +163,6 @@ namespace Obsidian.Commands
 
         [Command("save")]
         [CommandInfo("Save World", "/save")]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task SaveAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
@@ -190,12 +185,10 @@ namespace Obsidian.Commands
 
         [Command("echo")]
         [CommandInfo("Echoes given text.", "/echo <message>")]
-        [IssuerScope(CommandIssuers.Any)]
         public void Echo(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage($"[{Context.Player?.Username ?? Context.Sender.ToString()}] {text}");
         
         [Command("announce")]
         [CommandInfo("Makes an announcement", "/announce <message>")]
-        [IssuerScope(CommandIssuers.Any)]
         [RequirePermission(op: true, permissions: "obsidian.announce")]
         public void Announce(CommandContext Context, [Remaining] string text) => Context.Server.BroadcastMessage(text, MessageType.ActionBar);
         
@@ -206,7 +199,6 @@ namespace Obsidian.Commands
         
         [Command("uptime", "up")]
         [CommandInfo("Gets current uptime", "/uptime")]
-        [IssuerScope(CommandIssuers.Any)]
         public Task UptimeAsync(CommandContext Context)
             => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
         
@@ -275,7 +267,6 @@ namespace Obsidian.Commands
         [Command("op")]
         [CommandInfo("Give operator rights to a specific player.", "/op <player>")]
         [RequirePermission]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task GiveOpAsync(CommandContext Context, IPlayer player)
         {
             if (player == null)
@@ -289,7 +280,6 @@ namespace Obsidian.Commands
         [Command("deop")]
         [CommandInfo("Remove specific player's operator rights.", "/deop <player>")]
         [RequirePermission]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task UnclaimOpAsync(CommandContext Context, IPlayer player)
         {
             if (player == null)
@@ -367,7 +357,6 @@ namespace Obsidian.Commands
         [Command("stop")]
         [CommandInfo("Stops the server.", "/stop")]
         [RequirePermission(permissions: "obsidian.stop")]
-        [IssuerScope(CommandIssuers.Any)]
         public async Task StopAsync(CommandContext Context)
         {
             var server = (Server)Context.Server;
@@ -392,7 +381,6 @@ namespace Obsidian.Commands
         
         [CommandGroup("permission")]
         [RequirePermission(permissions: "obsidian.permissions")]
-        [IssuerScope(CommandIssuers.Any)]
         public class Permission
         {
             [GroupCommand]
