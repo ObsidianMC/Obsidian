@@ -75,7 +75,7 @@ namespace Obsidian.Commands.Framework
             var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Any;
 
             var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, null, checks.ToArray(), this, plugin, null, t, issuers);
             command.Overloads.Add(m);
@@ -133,7 +133,7 @@ namespace Obsidian.Commands.Framework
                 var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
-                var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+                var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Any;
 
                 var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
 
@@ -166,7 +166,7 @@ namespace Obsidian.Commands.Framework
                 var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
-                var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+                var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Any;
 
                 var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
                 command.Overloads.Add(m);
