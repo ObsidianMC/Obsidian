@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.API
 {
-    public class Inventory
+    public class Inventory : IContainer
     {
         internal byte Id { get; init; }
 
@@ -220,6 +221,8 @@ namespace Obsidian.API
         }
 
         public bool HasItems() => this.Items.Any(x => x is not null);
+        public IEnumerator<ItemStack> GetEnumerator() => (IEnumerator<ItemStack>)this.Items.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     public enum InventoryType
@@ -240,6 +243,8 @@ namespace Obsidian.API
         ShulkerBox,
         Smoker,
         CartographyTable,
-        Stonecutter
+        Stonecutter,
+
+        Custom
     }
 }
