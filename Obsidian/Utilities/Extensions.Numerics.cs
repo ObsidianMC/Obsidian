@@ -13,6 +13,9 @@ namespace Obsidian.Utilities
         public static (int x, int z) ToChunkCoord(this VectorF value) => ((int)value.X >> 4, (int)value.Z >> 4);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (int x, int z) ToChunkCoord(this Vector value) => (value.X >> 4, value.Z >> 4);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetUnsignedRightShift(this int value, int s) => value >> s;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

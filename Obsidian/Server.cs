@@ -325,11 +325,7 @@ namespace Obsidian
             }
         }
 
-        internal IEnumerable<Player> PlayersInRange(Vector worldPosition)
-        {
-            var chunkCoord = (worldPosition.X.ToChunkCoord(), worldPosition.Z.ToChunkCoord());
-            return World.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(chunkCoord));
-        }
+        internal IEnumerable<Player> PlayersInRange(Vector worldPosition) => World.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
 
         internal void BroadcastBlockChange(Block block, Vector location)
         {

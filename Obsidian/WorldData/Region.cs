@@ -55,10 +55,7 @@ namespace Obsidian.WorldData
             }
         }
 
-        internal async Task InitAsync()
-        {
-            await regionFile.InitializeAsync();
-        }
+        internal Task InitAsync() => regionFile.InitializeAsync();
 
         internal async Task FlushAsync()
         {
