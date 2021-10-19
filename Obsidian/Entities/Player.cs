@@ -262,7 +262,7 @@ namespace Obsidian.Entities
             await this.client.QueuePacketAsync(new OpenWindow(inventory));
 
             if (inventory.HasItems())
-                await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
+                await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.ToList()));
         }
 
         public async Task TeleportAsync(VectorF pos)
@@ -546,7 +546,7 @@ namespace Obsidian.Entities
 
             writer.EndList();
 
-            var items = this.Inventory.Items.Select((item, slot) => (item, slot));
+            var items = this.Inventory.Select((item, slot) => (item, slot));
 
             var nonNullItems = items.Where(x => x.item != null);
 
@@ -753,7 +753,7 @@ namespace Obsidian.Entities
 
         public byte GetNextContainerId()
         {
-            this.containerId = (byte)(this.containerId % 255 + 1); 
+            this.containerId = (byte)(this.containerId % 255 + 1);
 
             return this.containerId;
         }

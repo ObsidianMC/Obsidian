@@ -178,8 +178,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                         (ItemStack item, int index) selectedItem = (null, 0);
 
-                        var items = inventory.Items
-                            .Select((item, index) => (item, index))
+                        var items = inventory.Select((item, index) => (item, index))
                             .Where(tuple => tuple.item.Type == item.Type)
                             .OrderByDescending(x => x.index);
 

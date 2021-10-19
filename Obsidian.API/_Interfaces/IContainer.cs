@@ -11,6 +11,8 @@ namespace Obsidian.API
 
         public ChatMessage Title { get; set; }
 
+        public void SetItem(int slot, ItemStack? item);
+
         public bool HasItems();
     }
 }

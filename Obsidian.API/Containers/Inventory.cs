@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Obsidian.API
 {
-    public class Inventory : IContainer
+    public sealed class Inventory : IContainer
     {
         internal byte Id { get; init; }
 
@@ -27,7 +27,7 @@ namespace Obsidian.API
 
         public bool IsPlayerInventory => this.Id == 0;
 
-        public ItemStack?[] Items { get; }
+        private ItemStack?[] items;
 
         public Inventory(InventoryType type)
         {
@@ -58,7 +58,7 @@ namespace Obsidian.API
                 _ => 0
             };
 
-            this.Items = new ItemStack[this.Size];
+            this.items = new ItemStack[this.Size];
         }
 
         public Inventory(int size)
@@ -71,7 +71,7 @@ namespace Obsidian.API
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
 
             this.Size = size;
-            this.Items = new ItemStack[size + 1];
+            this.items = new ItemStack[size + 1];
         }
 
         public void AddItems(params ItemStack[] items)
@@ -91,7 +91,7 @@ namespace Obsidian.API
             {
                 for (int i = 36; i < 45; i++)
                 {
-                    var invItem = this.Items[i];
+                    var invItem = this.items[i];
 
                     if (invItem?.Type == item.Type)
                     {
@@ -105,14 +105,14 @@ namespace Obsidian.API
 
                     if (invItem == null)
                     {
-                        this.Items[i] = item;
+                        this.items[i] = item;
                         return i;
                     }
                 }
 
                 for (int i = 9; i < 36; i++)
                 {
-                    var invItem = this.Items[i];
+                    var invItem = this.items[i];
 
                     if (invItem != null)
                     {
@@ -124,7 +124,7 @@ namespace Obsidian.API
                         return i;
                     }
 
-                    this.Items[i] = item;
+                    this.items[i] = item;
 
                     return i;
                 }
@@ -133,7 +133,7 @@ namespace Obsidian.API
             {
                 for (int i = 0; i < this.Size; i++)
                 {
-                    var invItem = this.Items[i];
+                    var invItem = this.items[i];
 
                     if (invItem?.Type == item.Type)
                     {
@@ -146,7 +146,7 @@ namespace Obsidian.API
                     }
 
                     if (invItem == null)
-                        this.Items[i] = item;
+                        this.items[i] = item;
 
                     return i;
                 }
@@ -160,24 +160,24 @@ namespace Obsidian.API
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            this.Items[slot] = item;
+            this.items[slot] = item;
         }
 
         public ItemStack? GetItem(int slot) =>
-            slot > this.Size - 1 || slot < 0 ? throw new IndexOutOfRangeException(nameof(slot)) : this.Items[slot];
+            slot > this.Size - 1 || slot < 0 ? throw new IndexOutOfRangeException(nameof(slot)) : this.items[slot];
 
         public bool RemoveItem(int slot, short amount = 1)
         {
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            var item = this.Items[slot];
+            var item = this.items[slot];
 
             if (item == null)
                 return false;
 
             if (amount >= 64 || item.Count - amount <= 0)
-                this.Items[slot] = null;
+                this.items[slot] = null;
             else
                 item.Count -= amount;
 
@@ -189,7 +189,7 @@ namespace Obsidian.API
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            var item = this.Items[slot];
+            var item = this.items[slot];
 
             if (item == null)
             {
@@ -207,7 +207,7 @@ namespace Obsidian.API
             if (slot > this.Size - 1 || slot < 0)
                 throw new IndexOutOfRangeException($"{slot} > {this.Size - 1}");
 
-            var item = this.Items[slot];
+            var item = this.items[slot];
 
             if (item == null)
             {
@@ -220,8 +220,8 @@ namespace Obsidian.API
             return this.RemoveItem(slot, amount);
         }
 
-        public bool HasItems() => this.Items.Any(x => x is not null);
-        public IEnumerator<ItemStack> GetEnumerator() => (IEnumerator<ItemStack>)this.Items.GetEnumerator();
+        public bool HasItems() => this.items.Any(x => x is not null);
+        public IEnumerator<ItemStack> GetEnumerator() => (this.items as IEnumerable<ItemStack>).GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
