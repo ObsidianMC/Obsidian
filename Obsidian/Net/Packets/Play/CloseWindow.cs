@@ -15,10 +15,10 @@ namespace Obsidian.Net.Packets.Play
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            if (WindowId == 0 || !player.OpenedInventory.BlockPosition.HasValue)
+            if (WindowId == 0 || (player.OpenedContainer is not ITileEntity tileEntity || !tileEntity.BlockPosition.HasValue))
                 return;
 
-            var position = player.OpenedInventory.BlockPosition.Value;
+            var position = tileEntity.BlockPosition.Value;
 
             var b = server.World.GetBlock(position);
 
@@ -49,7 +49,7 @@ namespace Obsidian.Net.Packets.Play
                 await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
             }
 
-            player.OpenedInventory = null;
+            player.OpenedContainer = null;
         }
     }
 }

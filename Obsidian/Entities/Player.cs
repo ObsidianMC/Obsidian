@@ -38,7 +38,9 @@ namespace Obsidian.Entities
         /// The players inventory
         /// </summary>
         public Inventory Inventory { get; }
-        public Inventory OpenedInventory { get; set; }
+        public Inventory EnderInventory { get; }
+
+        public IContainer OpenedContainer { get; set; }
 
         public ItemStack LastClickedItem { get; internal set; }
 
@@ -100,15 +102,19 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(9 * 5)
+            this.Inventory = new Inventory(9 * 5 + 1)
             {
-                Id = 0,
-                Owner = uuid
+                Owner = uuid,
+                IsPlayerInventory = true
             };
+
+            this.EnderInventory = new Inventory
+            {
+                Title = "Ender Chest"
+            };
+
             this.Server = client.Server;
             this.Type = EntityType.Player;
-
-            _ = Task.Run(this.LoadPermsAsync);
         }
 
         internal async override Task UpdateAsync(VectorF position, bool onGround)
@@ -255,14 +261,16 @@ namespace Obsidian.Entities
             });
         }
 
-        public async Task OpenInventoryAsync(Inventory inventory)
+        public async Task OpenInventoryAsync(IContainer container)
         {
-            this.OpenedInventory = inventory;
+            this.OpenedContainer = container;
 
-            await this.client.QueuePacketAsync(new OpenWindow(inventory));
+            var nextId = this.GetNextContainerId();
 
-            if (inventory.HasItems())
-                await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.ToList()));
+            await this.client.QueuePacketAsync(new OpenWindow(container, nextId));
+
+            if (container.HasItems())
+                await this.client.QueuePacketAsync(new WindowItems(nextId, container.ToList()));
         }
 
         public async Task TeleportAsync(VectorF pos)
@@ -546,11 +554,21 @@ namespace Obsidian.Entities
 
             writer.EndList();
 
-            var items = this.Inventory.Select((item, slot) => (item, slot));
+            this.WriteItems(writer);
+            this.WriteItems(writer, false);
+
+            writer.EndCompound();
+
+            await writer.TryFinishAsync();
+        }
+
+        private void WriteItems(NbtWriter writer, bool inventory = true)
+        {
+            var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
 
             var nonNullItems = items.Where(x => x.item != null);
 
-            writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
+            writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
 
             foreach (var (item, slot) in nonNullItems)
             {
@@ -576,15 +594,13 @@ namespace Obsidian.Entities
                 writer.Write(NbtTagType.End);
 
             writer.EndList();
-
-            writer.EndCompound();
-
-            await writer.TryFinishAsync();
         }
 
-        public async ValueTask LoadAsync()
+        public async Task LoadAsync()
         {
             var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+            await this.LoadPermsAsync();
 
             if (!playerFile.Exists)
             {

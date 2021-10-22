@@ -19,7 +19,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            var inventory = player.OpenedInventory ?? player.Inventory;
+            var inventory = player.OpenedContainer ?? player.Inventory;
 
             var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
 

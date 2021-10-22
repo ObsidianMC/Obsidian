@@ -59,13 +59,16 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            var inventory = player.OpenedInventory ?? player.Inventory;
+            var container = player.OpenedContainer ?? player.Inventory;
 
-            var (value, forPlayer) = ClickedSlot.GetDifference(inventory.Size);
+            var (value, forPlayer) = ClickedSlot.GetDifference(container.Size);
 
-            //Uhh this isn't supposed to be like this 😅
-            if (WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && ClickedSlot >= 27 && ClickedSlot <= 62 || forPlayer)
-                inventory = player.Inventory;
+            if (WindowId == 0 || forPlayer)
+                container = player.Inventory;
+
+            //TODO support the other containers
+            if (container is not Inventory inventory)
+                return;
 
             switch (Mode)
             {

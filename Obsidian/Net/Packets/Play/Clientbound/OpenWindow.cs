@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x2E;
 
-        public OpenWindow(Inventory inventory)
+        public OpenWindow(IContainer inventory, int windowId)
         {
             Title = inventory.Title;
 
@@ -26,7 +26,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
             else if (Enum.TryParse($"generic9x{inventory.Size / 9}", true, out type))
                 Type = type;
 
-            WindowId = inventory.Id;
+            WindowId = windowId;
         }
 
         public override string ToString() => $"{this.WindowId}:{this.Type}";

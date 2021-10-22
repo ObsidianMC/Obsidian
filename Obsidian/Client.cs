@@ -389,7 +389,7 @@ namespace Obsidian
             });
 
             //Initialize inventory
-            await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.ToList())
+            await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
             {
                 StateId = this.Player.Inventory.StateId++, 
                 CarriedItem = this.Player.GetHeldItem(),
