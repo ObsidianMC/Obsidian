@@ -51,6 +51,8 @@ namespace Obsidian
         public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
         public ConcurrentDictionary<string, World> Worlds { get; } = new();
         public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
+
+        //TODO remove this
         internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new();
         public HashSet<string> RegisteredChannels { get; } = new();
         public CommandHandler CommandsHandler { get; }

@@ -1,8 +1,10 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Utilities;
 using System;
 using System.Threading.Tasks;
 
@@ -63,17 +65,18 @@ namespace Obsidian
 
                 var type = interactedBlock.Material;
 
+                //TODO check if container is cached if so get that container
                 if (type == Material.Chest) // TODO check if chest its next to another single chest
                 {
-                    var inventory = new Inventory(InventoryType.Generic)
+                    var container = new Inventory
                     {
                         Owner = player.Uuid,
-                        Title = ChatMessage.Simple("Chest"),
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
+                        Title = "Chest",
+                        BlockPosition = blockPosition,
+                        Id = "chest"
                     };
 
-                    await player.OpenInventoryAsync(inventory);
+                    await player.OpenInventoryAsync(container);
                     await player.client.QueuePacketAsync(new BlockAction
                     {
                         Position = blockPosition,
@@ -89,15 +92,15 @@ namespace Obsidian
 
                     this.World.SetBlockMeta(blockPosition, blockMeta);
 
-                    this.CachedWindows.TryAdd(invUuid, inventory);
+                    this.CachedWindows.TryAdd(invUuid, container);
                 }
                 else if (type == Material.EnderChest)
                 {
-                    var enderChest = new Inventory(InventoryType.Generic)
+                    var container = new Inventory
                     {
                         Owner = player.Uuid,
-                        Title = ChatMessage.Simple("Ender Chest"),
-                        Id = player.GetNextContainerId()
+                        Title = "Ender Chest",
+                        Id = type.ToString().ToSnakeCase()
                     };
 
                     var invUuid = Guid.NewGuid();
@@ -106,9 +109,9 @@ namespace Obsidian
 
                     this.World.SetBlockMeta(blockPosition, blockMeta);
 
-                    this.CachedWindows.TryAdd(invUuid, enderChest);
+                    this.CachedWindows.TryAdd(invUuid, container);
 
-                    await player.OpenInventoryAsync(enderChest);
+                    await player.OpenInventoryAsync(container);
                     await player.client.QueuePacketAsync(new BlockAction
                     {
                         Position = blockPosition,
@@ -120,141 +123,124 @@ namespace Obsidian
                 }
                 else if (type == Material.CraftingTable)
                 {
-                    var crafting = new Inventory(InventoryType.Crafting)
-                    {
-                        Title = ChatMessage.Simple("Crafting Table"),
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
+                    var container = new CraftingTable();
 
-                    await player.OpenInventoryAsync(crafting);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Furnace || type == Material.BlastFurnace || type == Material.Smoker)
                 {
-                    InventoryType actualType = type == Material.Furnace ? InventoryType.Furnace :
-                        type == Material.BlastFurnace ? InventoryType.BlastFurnace : InventoryType.Smoker;
-
-                    var furnace = new Inventory(actualType)
+                    InventoryType actualType = type switch
                     {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
+                        Material.Furnace => InventoryType.Furnace,
+                        Material.BlastFurnace => InventoryType.BlastFurnace,
+                        Material.Smoker => InventoryType.Smoker,
+                        _ => InventoryType.Furnace
                     };
 
-                    await player.OpenInventoryAsync(furnace);
+                    var container = new SmeltingContainer(actualType, actualType.ToString().ToSnakeCase())
+                    {
+                        BlockPosition = blockPosition,
+                        Title = actualType.ToString()
+                    };
+
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.EnchantingTable)
                 {
-                    var enchantmentTable = new Inventory(InventoryType.Enchantment)
+                    var container = new EnchantmentTable
                     {
-                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(enchantmentTable);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Anvil || type == Material.SmithingTable) // TODO implement other anvil types
                 {
-                    var anvil = new Inventory(InventoryType.Anvil)
+                    var container = new AnvilContainer(type.ToString().ToSnakeCase())
                     {
-                        Id = player.GetNextContainerId(),
+                        Title = type == Material.Anvil ? "Anvil" : "Smithing Table"
+                    };
+
+                    await player.OpenInventoryAsync(container);
+                }
+                else if(type == Material.Dropper || type == Material.Dispenser)
+                {
+                    var container = new Inventory(9)
+                    {
+                        Owner = player.Uuid,
+                        Title = type.ToString(),
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(anvil);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type >= Material.ShulkerBox && type <= Material.BlackShulkerBox)
                 {
-                    var box = new Inventory(InventoryType.ShulkerBox) // TODO shulker box functionality
+                    var container = new Inventory // TODO shulker box functionality
                     {
                         Owner = player.Uuid,
-                        Title = ChatMessage.Simple("Shulker Box"),
-                        Id = player.GetNextContainerId(),
+                        Title = "Shulker Box",
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Loom)
                 {
-                    var box = new Inventory(InventoryType.Loom)
-                    {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
+                    var container = new Loom();
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Barrel)
                 {
-                    var box = new Inventory(InventoryType.Generic)
+                    var container = new Inventory
                     {
                         //Owner = player.Uuid,
-                        Title = ChatMessage.Simple("Barrel"),
-                        Id = player.GetNextContainerId(),
+                        Title = "Barrel",
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.CartographyTable)
                 {
-                    var box = new Inventory(InventoryType.CartographyTable)
-                    {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
+                    var container = new CartographyTable();
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Stonecutter)
                 {
-                    var box = new Inventory(InventoryType.Stonecutter)
-                    {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
+                    var container = new Stonecutter();
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Grindstone)
                 {
-                    var box = new Inventory(InventoryType.Grindstone)
-                    {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
+                    var container = new Grindstone();
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.BrewingStand)
                 {
-                    var box = new Inventory(InventoryType.BrewingStand)
+                    var container = new BrewingStand
                     {
-                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
                 else if (type == Material.Lectern)
                 {
-                    var box = new Inventory(InventoryType.Lectern)
-                    {
-                        Id = player.GetNextContainerId(),
-                        BlockPosition = blockPosition
-                    };
-
-                    await player.OpenInventoryAsync(box);
+                    //TODO open lectern??
                 }
                 else if (type == Material.Hopper || type == Material.HopperMinecart)
                 {
-                    var box = new Inventory(InventoryType.Hopper)
+                    var container = new Inventory(5)
                     {
-                        Id = player.GetNextContainerId(),
                         BlockPosition = blockPosition
                     };
 
-                    await player.OpenInventoryAsync(box);
+                    await player.OpenInventoryAsync(container);
                 }
             }
             else
