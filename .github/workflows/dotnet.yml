@@ -3,6 +3,8 @@ name: .NET Build
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
@@ -24,3 +26,4 @@ jobs:
       with:
         name: Obsidian-Nightly-Build
         path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net5.0/
+      if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs
