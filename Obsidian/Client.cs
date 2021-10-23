@@ -158,6 +158,9 @@ namespace Obsidian
                             case 0x00:
                                 var status = new ServerStatus(Server);
 
+                                if (config.AnonymousOnlineList) // If online list anonymous, clear the player sample.
+                                    status.Players.Sample.Clear();
+
                                 await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
 
                                 this.SendPacket(new RequestResponse(status));
