@@ -35,7 +35,11 @@ Plugins are cool! Wanna make them yourself?
 Find out about plugin development [here](https://obsidian-mc.net/articles/plugins.html)
 
 ## 🔥 Development builds
-Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository. Find the latest `.NET Build` action and scroll to the bottom of the page to find the artifacts. Unzip the artifact and run `dotnet Obsidian.dll` to start the server.
+Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
+- Ensure you have .NET 5 installed
+- Find the latest `.NET Build` action and scroll to the bottom of the page to find the artifacts.
+- Unzip the artifact and run `dotnet Obsidian.dll` to start the server.
+Easy, isn't it?
 
 ## 😎 The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
