@@ -1,9 +1,7 @@
-name: .NET
+name: .NET Build
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
     branches: [ master ]
 
 jobs:
@@ -24,4 +22,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: Obsidian Nightly Build
+        name: Obsidian-Nightly-Build
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net5.0/
