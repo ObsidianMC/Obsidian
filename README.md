@@ -7,6 +7,10 @@
 
 Obsidian is a C# .NET 5 implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
 
+Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious about the current state of the project, questions are always welcome!
+
+[![Obsidian Discord](https://discord.com/api/guilds/772894170451804220/embed.png?style=banner2)](https://discord.gg/gQBtqyXChu)
+
 ## ✅ Roadmap
 - [x] A custom plugin framework
 - [x] Player movement/Info and chat
@@ -21,8 +25,6 @@ Obsidian is a C# .NET 5 implementation of the Minecraft server protocol. Obsidia
 - [ ] Liquid physics
 - [ ] Mobs AI & pathfinding
 - [ ] Redstone circuits
-- [ ] Support for spigot plugins
-- [ ] Backwards version compatibility
 
 ## 💻 Contribute
 Contributions are always welcome! 
@@ -39,10 +41,17 @@ Find out about plugin development [here](https://obsidian-mc.net/articles/plugin
 - [Seb-stian](https://github.com/Seb-stian) (developer)
 - [Jonpro03](https://github.com/Jonpro03) (developer)
 
-## 💕 Contributors
-Big thanks to everyone that contributed!
+## 💕 Thank-you's
+Thank you to [`#mcdevs`](https://wiki.vg/MCDevs) for additional support.
+
+Thank you to [Wiki.vg](https://wiki.vg/) for documenting Minecraft's protocol.
+
+Thank you to Mojang for creating this wonderful game named [Minecraft](https://www.minecraft.net/nl-nl).
+
+**...and of course the biggest thank you to everyone that contributed!**
+
 <a href="https://github.com/obsidianserver/obsidian/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=obsidianserver/obsidian" />
 </a>
 
-Made with [contributors-img](https://contributors-img.web.app)
+<sub><sup>Made with [contributors-img](https://contributors-img.web.app)</sup></sub>
