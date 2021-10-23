@@ -151,7 +151,9 @@ namespace Obsidian
                     case ClientState.Status: // Server ping/list
                         if(!this.config.EnableQuerying)
                         {
+                            this.Logger.LogInformation("Closing connection, querying is disabled.");
                             this.Disconnect();
+                            break;
                         }
                         switch (id)
                         {
