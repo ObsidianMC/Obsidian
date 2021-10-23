@@ -11,7 +11,7 @@ namespace Obsidian.Utilities
 
         public string Generator { get; set; } = "overworld";
 
-        public string Seed { get; set; } = "Obsidian691337";
+        public string Seed { get; set; } = new Random().Next().ToString();
 
         public string JoinMessage { get; set; } = "§e{0} joined the game";
 
