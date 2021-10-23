@@ -149,6 +149,10 @@ namespace Obsidian
                 switch (this.State)
                 {
                     case ClientState.Status: // Server ping/list
+                        if(!this.config.EnableQuerying)
+                        {
+                            this.Disconnect();
+                        }
                         switch (id)
                         {
                             case 0x00:

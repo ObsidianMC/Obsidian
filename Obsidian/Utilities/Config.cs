@@ -40,5 +40,9 @@ namespace Obsidian.Utilities
         public bool UDPBroadcast = false;
         
         public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
+
+        public bool AnonymousOnlineList { get; set; } = false;
+
+        public bool EnableQuerying { get; set; } = true;
     }
 }
