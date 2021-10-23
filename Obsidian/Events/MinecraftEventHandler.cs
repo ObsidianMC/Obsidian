@@ -14,7 +14,7 @@ namespace Obsidian.Events
         public AsyncEvent<PlayerTeleportEventArgs> PlayerTeleported;
         public AsyncEvent<PermissionGrantedEventArgs> PermissionGranted;
         public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
-        public AsyncEvent<InventoryClickEventArgs> ClickEvent;
+        public AsyncEvent<ContainerClickEventArgs> ClickEvent;
         public AsyncEvent<BlockBreakEventArgs> BlockBreak;
         public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
         public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
@@ -34,7 +34,7 @@ namespace Obsidian.Events
             ServerTick = new("ServerTick", HandleException);
             PermissionGranted = new("PermissionGranted", HandleException);
             PermissionRevoked = new("PermissionRevoked", HandleException);
-            ClickEvent = new("InventoryClick", HandleException);
+            ClickEvent = new("ContainerClick", HandleException);
             BlockBreak = new("BlockBreak", HandleException);
             IncomingChatMessage = new("IncomingChatMessage", HandleException);
             PlayerTeleported = new("PlayerTeleported", HandleException);
@@ -58,7 +58,7 @@ namespace Obsidian.Events
             return eventArgs;
         }
 
-        internal async ValueTask<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs eventArgs)
+        internal async ValueTask<ContainerClickEventArgs> InvokeContainerClickAsync(ContainerClickEventArgs eventArgs)
         {
             await ClickEvent.InvokeAsync(eventArgs);
             return eventArgs;

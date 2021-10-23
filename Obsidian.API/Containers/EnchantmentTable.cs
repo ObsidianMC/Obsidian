@@ -1,27 +1,17 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.API.Containers
 {
-    public sealed class EnchantmentTable : IContainer, ITileEntity
+    public sealed class EnchantmentTable : AbstractContainer, ITileEntity
     {
-        private ItemStack?[] items;
-
         public string Id => "enchantment_table";
 
         public Vector? BlockPosition { get; set; }
 
-        public InventoryType Type => InventoryType.Enchantment;
-
-        public int Size => 2;
-
-        public ChatMessage? Title { get; set; } = "Enchantment Table";
-
-        public EnchantmentTable()
+        public EnchantmentTable() : base(2, InventoryType.Enchantment)
         {
-            this.items = new ItemStack?[this.Size];
+            this.Title = "Enchantment Table";
         }
 
         public bool HasItems() => this.items.Any(x => x is not null);
@@ -35,8 +25,5 @@ namespace Obsidian.API.Containers
 
         public void FromNbt() => throw new NotImplementedException();
         public void ToNbt() => throw new NotImplementedException();
-
-        public IEnumerator<ItemStack> GetEnumerator() => (this.items as IEnumerable<ItemStack>).GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

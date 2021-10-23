@@ -40,7 +40,7 @@ namespace Obsidian.Entities
         public Inventory Inventory { get; }
         public Inventory EnderInventory { get; }
 
-        public IContainer OpenedContainer { get; set; }
+        public AbstractContainer OpenedContainer { get; set; }
 
         public ItemStack LastClickedItem { get; internal set; }
 
@@ -261,7 +261,7 @@ namespace Obsidian.Entities
             });
         }
 
-        public async Task OpenInventoryAsync(IContainer container)
+        public async Task OpenInventoryAsync(AbstractContainer container)
         {
             this.OpenedContainer = container;
 

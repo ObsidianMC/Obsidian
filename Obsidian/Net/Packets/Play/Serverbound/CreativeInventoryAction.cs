@@ -21,7 +21,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             var inventory = player.OpenedContainer ?? player.Inventory;
 
-            var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
+            var (slot, isForPlayer) = inventory.GetDifference(ClickedSlot);
 
             if (isForPlayer)
                 inventory = player.Inventory;

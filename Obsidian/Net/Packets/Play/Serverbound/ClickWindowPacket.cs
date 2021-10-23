@@ -61,19 +61,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             var container = player.OpenedContainer ?? player.Inventory;
 
-            var (value, forPlayer) = ClickedSlot.GetDifference(container.Size);
+            var (slot, forPlayer) = container.GetDifference(ClickedSlot);
 
             if (WindowId == 0 || forPlayer)
                 container = player.Inventory;
 
-            //TODO support the other containers
-            if (container is not Inventory inventory)
-                return;
-
             switch (Mode)
             {
                 case InventoryOperationMode.MouseClick:
-                    await HandleMouseClick(inventory, server, player, value);
+                    await HandleMouseClick(container, server, player, slot);
                     break;
 
                 case InventoryOperationMode.ShiftMouseClick:
@@ -81,7 +77,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         if (ClickedItem == null)
                             return;
 
-                        inventory.RemoveItem(value);
+                        container.SetItem(slot, null);
                         player.Inventory.AddItem(ClickedItem);
                         break;
                     }
@@ -94,19 +90,19 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                         if (currentItem.IsAir() && ClickedItem != null)
                         {
-                            inventory.RemoveItem(value);
+                            container.RemoveItem(slot);
 
                             player.Inventory.SetItem(localSlot, ClickedItem);
                         }
                         else if (!currentItem.IsAir() && ClickedItem != null)
                         {
-                            inventory.SetItem(value, currentItem);
+                            container.SetItem(slot, currentItem);
 
                             player.Inventory.SetItem(localSlot, ClickedItem);
                         }
                         else
                         {
-                            inventory.SetItem(value, currentItem);
+                            container.SetItem(slot, currentItem);
 
                             player.Inventory.RemoveItem(localSlot);
                         }
@@ -123,9 +119,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         {
                             ItemStack removedItem = null;
                             if (Button == 0)
-                                inventory.TryRemoveItem(value, out removedItem);
+                                container.TryRemoveItem(slot, out removedItem);
                             else
-                                inventory.TryRemoveItem(value, 64, out removedItem);
+                                container.TryRemoveItem(slot, 64, out removedItem);
 
                             if (removedItem == null)
                                 return;
@@ -169,7 +165,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     }
 
                 case InventoryOperationMode.MouseDrag:
-                    HandleDragClick(inventory, player, value);
+                    HandleDragClick(container, player, slot);
                     break;
 
                 case InventoryOperationMode.DoubleClick:
@@ -181,7 +177,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                         (ItemStack item, int index) selectedItem = (null, 0);
 
-                        var items = inventory.Select((item, index) => (item, index))
+                        var items = container.Select((item, index) => (item, index))
                             .Where(tuple => tuple.item.Type == item.Type)
                             .OrderByDescending(x => x.index);
 
@@ -213,17 +209,17 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                             break;
                         }
 
-                        inventory.SetItem((short)selectedItem.index, selectedItem.item);
+                        container.SetItem((short)selectedItem.index, selectedItem.item);
                         break;
                     }
             }
         }
 
-        private async Task HandleMouseClick(Inventory inventory, Server server, Player player, int value)
+        private async Task HandleMouseClick(AbstractContainer container, Server server, Player player, int value)
         {
             if (!ClickedItem.IsAir())
             {
-                var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, ClickedItem)
+                var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, ClickedItem)
                 {
                     Slot = value
                 });
@@ -233,13 +229,13 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 player.LastClickedItem = ClickedItem;
 
-                inventory.SetItem(value, null);
+                container.SetItem(value, null);
             }
             else
             {
                 if (Button == 0)
                 {
-                    inventory.SetItem(value, player.LastClickedItem);
+                    container.SetItem(value, player.LastClickedItem);
 
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
@@ -248,7 +244,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else
                 {
-                    inventory.SetItem(value, player.LastClickedItem);
+                    container.SetItem(value, player.LastClickedItem);
 
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
@@ -258,7 +254,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private void HandleDragClick(Inventory inventory, Player player, int value)
+        private void HandleDragClick(AbstractContainer container, Player player, int value)
         {
             if (ClickedSlot == Outsideinventory)
             {
@@ -274,7 +270,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     if (Button != 9)
                         return;
 
-                    inventory.SetItem(value, ClickedItem);
+                    container.SetItem(value, ClickedItem);
                 }
                 else
                 {
@@ -283,7 +279,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                     if (Button != 1 || Button != 5)
                         return;
 
-                    inventory.SetItem(value, ClickedItem);
+                    container.SetItem(value, ClickedItem);
                 }
             }
         }

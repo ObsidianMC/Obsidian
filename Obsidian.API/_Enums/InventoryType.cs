@@ -2,24 +2,40 @@
 {
     public enum InventoryType
     {
-        Generic,
         Anvil,
-        Beacon,
-        BlastFurnace,
-        BrewingStand,
-        Crafting,
-        Enchantment,
-        Furnace,
-        Grindstone,
-        Hopper,
-        Lectern,
-        Loom,
-        Merchant,
-        ShulkerBox,
-        Smoker,
-        CartographyTable,
-        Stonecutter,
 
-        Custom
+        Beacon,
+
+        BlastFurnace,
+
+        BrewingStand,
+
+        CartographyTable,
+
+        Crafting,
+
+        Custom,
+
+        Enchantment,
+
+        Furnace,
+
+        Generic,
+
+        Grindstone,
+
+        Hopper,
+
+        Lectern,
+
+        Loom,
+
+        Merchant,
+
+        ShulkerBox,
+
+        Smoker,
+
+        Stonecutter,
     }
 }

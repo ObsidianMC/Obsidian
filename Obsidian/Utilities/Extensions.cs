@@ -58,50 +58,10 @@ namespace Obsidian.Utilities
 
         internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
-        /// <summary>
-        /// Gets the new slot value from varying inventory sizes and transforms it to a local inventory slot value
-        /// </summary>
-        /// <returns>The local slot value for a player inventory</returns>
-        public static (int slot, bool forPlayer) GetDifference(this short clickedSlot, int inventorySize)
-        {
-            inventorySize -= 1;
+        public static Item AsItem(this ItemStack itemStack) => Registry.Registry.GetItem(itemStack.Type);
 
-            int sub = clickedSlot switch
-            {
-                _ when clickedSlot > inventorySize && (clickedSlot >= 54 && clickedSlot <= 89) => 45,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 27 && clickedSlot <= 62) => 18,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 17 && clickedSlot <= 52) => 9,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 14 && clickedSlot <= 49) => 5,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 11 && clickedSlot <= 46) => 2,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 10 && clickedSlot <= 45) => 1,
-                _ when clickedSlot <= inventorySize => 0,
-                _ => 0,
-            };
-
-            int add = clickedSlot switch
-            {
-                _ when clickedSlot > inventorySize && (clickedSlot >= 8 && clickedSlot <= 43) => 1,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 5 && clickedSlot <= 40) => 4,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 4 && clickedSlot <= 39) => 3,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 3 && clickedSlot <= 38) => 6,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 2 && clickedSlot <= 37) => 7,
-                _ when clickedSlot > inventorySize && (clickedSlot >= 1 && clickedSlot <= 36) => 8,
-                _ when clickedSlot <= inventorySize => 0,
-                _ => 0
-            };
-
-            return (add > 0 ? clickedSlot + add : clickedSlot - sub, sub > 0 || add > 0);
-        }
-
-        public static Item AsItem(this ItemStack itemStack)
-        {
-            return Registry.Registry.GetItem(itemStack.Type);
-        }
-
-        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids)
-        {
-            return source.Where(x => !uuids.Contains(x.Value.Uuid));
-        }
+        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids) => 
+            source.Where(x => !uuids.Contains(x.Value.Uuid));
 
         public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
         {
@@ -150,7 +110,9 @@ namespace Obsidian.Utilities
         public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
         public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
 
-        public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
-        public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) => JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
+        public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => 
+            JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
+        public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) => 
+            JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
     }
 }

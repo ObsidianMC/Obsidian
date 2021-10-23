@@ -1,11 +1,11 @@
 ﻿namespace Obsidian.API.Events
 {
-    public class InventoryClickEventArgs : PlayerEventArgs, ICancellable
+    public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
     {
         /// <summary>
-        /// Gets the clicked inventory
+        /// Gets the clicked container
         /// </summary>
-        public Inventory Inventory { get; }
+        public AbstractContainer container { get; }
 
         /// <summary>
         /// Gets the current item that was clicked
@@ -19,9 +19,9 @@
 
         public bool Cancel { get; set; }
 
-        internal InventoryClickEventArgs(IPlayer player, Inventory inventory, ItemStack item) : base(player)
+        internal ContainerClickEventArgs(IPlayer player, AbstractContainer container, ItemStack item) : base(player)
         {
-            this.Inventory = inventory;
+            this.container = container;
             this.Item = item;
         }
     }
