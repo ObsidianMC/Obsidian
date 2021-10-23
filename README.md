@@ -2,7 +2,7 @@
 
 ---
 
-[![Build Status](https://dev.azure.com/naamloos-ops/Obsidian/_apis/build/status/Naamloos.Obsidian?branchName=master)](https://dev.azure.com/naamloos-ops/Obsidian/_build/latest?definitionId=1&branchName=master)
+[![.NET Build](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml/badge.svg)](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml)
 [![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
 Obsidian is a C# .NET 5 implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
@@ -33,6 +33,9 @@ Read about how you can contribute [here](https://obsidian-mc.net/articles/contri
 ## 🔌 Develop plugins
 Plugins are cool! Wanna make them yourself?
 Find out about plugin development [here](https://obsidian-mc.net/articles/plugins.html)
+
+## 🔥 Development builds
+Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository. Find the latest `.NET Build` action and scroll to the bottom of the page to find the artifacts. Unzip the artifact and run `dotnet Obsidian.dll` to start the server.
 
 ## 😎 The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
