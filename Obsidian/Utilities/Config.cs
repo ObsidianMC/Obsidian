@@ -29,7 +29,7 @@ namespace Obsidian.Utilities
 
         public string Header { get; set; } = "§dObsidian > All other servers";
 
-        public string Footer { get; set; } = "§5tiddies §l§d( §c. §d)( §c. §d)";
+        public string Footer { get; set; } = "§l( §cU §dw §cU §r§l)";
 
         public bool? Baah { get; set; }
 
