@@ -82,7 +82,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing unsigned Short ({value})");
 #endif
 
-            var write = new byte[sizeof(ushort)];
+            using var write = new RentedArray<byte>(sizeof(ushort));
             BinaryPrimitives.WriteUInt16BigEndian(write, value);
             await WriteAsync(write);
         }
@@ -101,7 +101,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Short ({value})");
 #endif
 
-            var write = new byte[sizeof(short)];
+            using var write = new RentedArray<byte>(sizeof(short));
             BinaryPrimitives.WriteInt16BigEndian(write, value);
             await WriteAsync(write);
         }
@@ -120,7 +120,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Int ({value})");
 #endif
 
-            var write = new byte[sizeof(int)];
+            using var write = new RentedArray<byte>(sizeof(int));
             BinaryPrimitives.WriteInt32BigEndian(write, value);
             await WriteAsync(write);
         }
@@ -139,7 +139,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Long ({value})");
 #endif
 
-            var write = new byte[sizeof(long)];
+            using var write = new RentedArray<byte>(sizeof(long));
             BinaryPrimitives.WriteInt64BigEndian(write, value);
             await WriteAsync(write);
         }
@@ -158,7 +158,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Float ({value})");
 #endif
 
-            var write = new byte[sizeof(float)];
+            using var write = new RentedArray<byte>(sizeof(float));
             BinaryPrimitives.WriteSingleBigEndian(write, value);
             await WriteAsync(write);
         }
@@ -177,7 +177,7 @@ namespace Obsidian.Net
             await Globals.PacketLogger.LogDebugAsync($"Writing Double ({value})");
 #endif
 
-            var write = new byte[sizeof(double)];
+            using var write = new RentedArray<byte>(sizeof(double));
             BinaryPrimitives.WriteDoubleBigEndian(write, value);
             await WriteAsync(write);
         }
@@ -187,7 +187,8 @@ namespace Obsidian.Net
         {
             System.Diagnostics.Debug.Assert(value.Length <= maxLength);
 
-            var bytes = Encoding.UTF8.GetBytes(value);
+            using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
+            Encoding.UTF8.GetBytes(value, bytes.Span);
             WriteVarInt(bytes.Length);
             Write(bytes);
         }
@@ -202,7 +203,8 @@ namespace Obsidian.Net
             if (value.Length > maxLength)
                 throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
 
-            var bytes = Encoding.UTF8.GetBytes(value);
+            using var bytes = new RentedArray<byte>(Encoding.UTF8.GetByteCount(value));
+            Encoding.UTF8.GetBytes(value, bytes.Span);
             await WriteVarIntAsync(bytes.Length);
             await WriteAsync(bytes);
         }
