@@ -8,8 +8,6 @@ namespace Obsidian.Blocks
 {
     public class BlockMetaBuilder
     {
-        internal Guid InventoryId { get; set; }
-
         public ChatMessage Name { get; internal set; }
 
         public NbtCompound BlockEntityTag { get; }
@@ -31,13 +29,6 @@ namespace Obsidian.Blocks
             this.CanPlaceOn = new ReadOnlyCollection<string>(this.canPlaceOn);
 
             this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
-        }
-
-        internal BlockMetaBuilder WithInventoryId(Guid id)
-        {
-            this.InventoryId = id;
-
-            return this;
         }
 
         public BlockMetaBuilder CouldPlaceOn(string id)
@@ -81,7 +72,6 @@ namespace Obsidian.Blocks
             {
                 Name = this.Name,
                 Lore = this.lore,
-                InventoryId = this.InventoryId,
                 CanPlaceOn = this.canPlaceOn,
                 BlockEntityTag = this.BlockEntityTag,
                 BlockStateTag = this.BlockStateTag

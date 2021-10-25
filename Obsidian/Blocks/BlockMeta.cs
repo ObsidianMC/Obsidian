@@ -1,14 +1,11 @@
 ﻿using Obsidian.API;
 using Obsidian.Nbt;
-using System;
 using System.Collections.Generic;
 
 namespace Obsidian.Blocks
 {
     public struct BlockMeta
     {
-        internal Guid InventoryId { get; set; }
-
         public ChatMessage Name { get; internal set; }
         public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
