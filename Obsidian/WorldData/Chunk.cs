@@ -20,13 +20,14 @@ namespace Obsidian.WorldData
         private const int height = 16;
         private const int cubesHorizontal = 16 / width;
         private const int cubesVertical = 256 / height;
-        
-        public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
-        public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
-        public List<INbtTag> BlockEntities { get; private set; } = new List<INbtTag>();
+        //TODO try and do some temp caching
+        public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
+        public Dictionary<short, INbtTag> TileEntities { get; private set; } = new Dictionary<short, INbtTag>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
+
+        public ChunkSection[] Sections { get; private set; } = new ChunkSection[16];
 
         public Chunk(int x, int z)
         {
@@ -90,6 +91,27 @@ namespace Obsidian.WorldData
             }
         }
 
+        public INbtTag GetTileEntity(Vector position) => this.GetTileEntity(position.X, position.Y, position.Z);
+
+        public INbtTag GetTileEntity(int x, int y, int z)
+        {
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
+            var value = (short)((x << 8) | (z << 4) | y);
+
+            return this.TileEntities.GetValueOrDefault(value);
+        }
+
+        public void SetTileEntity(Vector position, INbtTag tileEntityData) => this.SetTileEntity(position.X, position.Y, position.Z, tileEntityData);
+
+        public void SetTileEntity(int x, int y, int z, INbtTag tileEntityData)
+        {
+            x = NumericsHelper.Modulo(x, 16);
+            z = NumericsHelper.Modulo(z, 16);
+            var value = (short)((x << 8) | (z << 4) | y);
+
+            this.TileEntities[value] = tileEntityData; 
+        }
 
         public BlockMeta GetBlockMeta(int x, int y, int z)
         {
@@ -100,7 +122,7 @@ namespace Obsidian.WorldData
             return this.BlockMetaStore.GetValueOrDefault(value);
         }
 
-        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
+        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta(position.X, position.Y, position.Z);
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
@@ -111,7 +133,7 @@ namespace Obsidian.WorldData
             this.BlockMetaStore[value] = meta;
         }
 
-        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
+        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta(position.X, position.Y, position.Z, meta);
 
         public void CalculateHeightmap()
         {

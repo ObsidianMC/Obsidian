@@ -31,7 +31,7 @@ namespace Obsidian.WorldData
         public int LoadedChunkCount => loadedChunks.Count;
 
         private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
-        
+
         private readonly RegionFile regionFile;
 
         private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
@@ -59,11 +59,11 @@ namespace Obsidian.WorldData
 
         internal async Task FlushAsync()
         {
-            foreach(Chunk c in loadedChunks) { SerializeChunk(c); }
+            foreach (Chunk c in loadedChunks) { SerializeChunk(c); }
             await regionFile.FlushToDiskAsync();
         }
 
-        internal Chunk GetChunk((int X, int Z) relativePos) =>  GetChunk(relativePos.X, relativePos.Z);
+        internal Chunk GetChunk((int X, int Z) relativePos) => GetChunk(relativePos.X, relativePos.Z);
 
         internal Chunk GetChunk(int relativeX, int relativeZ) => GetChunk(new Vector(relativeX, 0, relativeZ));
 
@@ -90,7 +90,7 @@ namespace Obsidian.WorldData
 
         internal IEnumerable<Chunk> GeneratedChunks()
         {
-            foreach(var c in loadedChunks)
+            foreach (var c in loadedChunks)
             {
                 if (c is not null && c.isGenerated)
                 {
@@ -115,7 +115,7 @@ namespace Obsidian.WorldData
             using NbtWriter writer = new(strm, NbtCompression.GZip);
 
             writer.WriteTag(chunkNbt);
-            writer.WriteInt("DataVersion", 2724);// Hardcoded version try to get data version through minecraft data and use data correctly
+            writer.WriteInt("DataVersion", 2730);// Hardcoded version try to get data version through minecraft data and use data correctly
 
             writer.TryFinish();
             regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
@@ -187,6 +187,13 @@ namespace Obsidian.WorldData
                 chunk.Heightmaps[heightmapType].data.Storage = ((NbtArray<long>)heightmap).GetArray();
             }
 
+            foreach (var tileEntityNbt in chunkCompound["TileEntities"] as NbtList)
+            {
+                var tileEntityCompound = tileEntityNbt as NbtCompound;
+
+                chunk.SetTileEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
+            }
+
             return chunk;
         }
 
@@ -225,6 +232,11 @@ namespace Obsidian.WorldData
                 sectionsCompound.Add(sec);
             }
 
+            //Write tile entities
+            var tileEntities = new NbtList(NbtTagType.Compound, "TileEntities");
+            foreach (var (_, blockEntity) in chunk.TileEntities)
+                tileEntities.Add(blockEntity);
+
             var chunkCompound = new NbtCompound($"Level")
                 {
                     new NbtTag<int>("xPos", chunk.X),
@@ -236,7 +248,8 @@ namespace Obsidian.WorldData
                         new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
                         new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
                     },
-                    sectionsCompound
+                    sectionsCompound,
+                    tileEntities
                 };
             return chunkCompound;
         }
