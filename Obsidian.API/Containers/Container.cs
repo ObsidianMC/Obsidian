@@ -2,7 +2,7 @@
 
 namespace Obsidian.API
 {
-    public sealed class Inventory : AbstractContainer, ITileEntity
+    public sealed class Container : AbstractContainer, ITileEntity
     {
         internal int StateId { get; set; }
 
@@ -14,13 +14,13 @@ namespace Obsidian.API
 
         public bool IsPlayerInventory { get; internal init; }
 
-        public Inventory(InventoryType type = InventoryType.Generic) : this(9 * 3, type) { }
+        public Container(InventoryType type = InventoryType.Generic) : this(9 * 3, type) { }
 
-        public Inventory(int size, InventoryType type = InventoryType.Generic) : base(size, type)
+        public Container(int size, InventoryType type = InventoryType.Generic) : base(size, type)
         {
             if (type is not InventoryType.Generic or InventoryType.ShulkerBox)
                 throw new InvalidOperationException("Inventory type can only be Generic or ShulkerBox");
-            if (size % 9 is not 0 or 9 * 5 + 1)
+            if (size % 9 != 0 && size != 46)
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");

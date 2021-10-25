@@ -37,8 +37,8 @@ namespace Obsidian.Entities
         /// <summary>
         /// The players inventory
         /// </summary>
-        public Inventory Inventory { get; }
-        public Inventory EnderInventory { get; }
+        public Container Inventory { get; }
+        public Container EnderInventory { get; }
 
         public AbstractContainer OpenedContainer { get; set; }
 
@@ -102,13 +102,13 @@ namespace Obsidian.Entities
             this.Username = username;
             this.client = client;
             this.EntityId = client.id;
-            this.Inventory = new Inventory(9 * 5 + 1)
+            this.Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
             {
                 Owner = uuid,
                 IsPlayerInventory = true
             };
 
-            this.EnderInventory = new Inventory
+            this.EnderInventory = new Container
             {
                 Title = "Ender Chest"
             };

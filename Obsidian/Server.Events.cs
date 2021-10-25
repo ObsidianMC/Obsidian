@@ -41,34 +41,29 @@ namespace Obsidian
 
                 player.LastClickedBlock = interactedBlock;
 
-                var meta = this.World.GetBlockMeta(blockPosition);
+                /*
+               if (meta is not null && meta.Value.InventoryId != Guid.Empty)
+               {
+                   // Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
-                if (meta is not null && meta.Value.InventoryId != Guid.Empty)
-                {
-                    if (this.CachedWindows.TryGetValue(meta.Value.InventoryId, out var inventory))
-                    {
-                        // Globals.PacketLogger.LogDebug($"Opened window with id of: {meta.InventoryId} {(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
-
-                        await player.OpenInventoryAsync(inventory);
-                        await player.client.QueuePacketAsync(new BlockAction
-                        {
-                            Position = blockPosition,
-                            ActionId = 1,
-                            ActionParam = 1,
-                            BlockType = interactedBlock.Id
-                        });
-                        await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
-                    }
-
-                    return;
-                }
+                  await player.OpenInventoryAsync(inventory);
+                   await player.client.QueuePacketAsync(new BlockAction
+                   {
+                       Position = blockPosition,
+                       ActionId = 1,
+                       ActionParam = 1,
+                       BlockType = interactedBlock.Id
+                   });
+                   await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
+                return;
+                }*/
 
                 var type = interactedBlock.Material;
 
                 //TODO check if container is cached if so get that container
                 if (type == Material.Chest) // TODO check if chest its next to another single chest
                 {
-                    var container = new Inventory
+                    var container = new Container
                     {
                         Owner = player.Uuid,
                         Title = "Chest",
@@ -91,12 +86,10 @@ namespace Obsidian
                     var blockMeta = new BlockMetaBuilder().WithInventoryId(invUuid).Build();
 
                     this.World.SetBlockMeta(blockPosition, blockMeta);
-
-                    this.CachedWindows.TryAdd(invUuid, container);
                 }
                 else if (type == Material.EnderChest)
                 {
-                    var container = new Inventory
+                    var container = new Container
                     {
                         Owner = player.Uuid,
                         Title = "Ender Chest",
@@ -108,8 +101,6 @@ namespace Obsidian
                     var blockMeta = new BlockMetaBuilder().WithInventoryId(invUuid).Build();
 
                     this.World.SetBlockMeta(blockPosition, blockMeta);
-
-                    this.CachedWindows.TryAdd(invUuid, container);
 
                     await player.OpenInventoryAsync(container);
                     await player.client.QueuePacketAsync(new BlockAction
@@ -163,9 +154,9 @@ namespace Obsidian
 
                     await player.OpenInventoryAsync(container);
                 }
-                else if(type == Material.Dropper || type == Material.Dispenser)
+                else if (type == Material.Dropper || type == Material.Dispenser)
                 {
-                    var container = new Inventory(9)
+                    var container = new Container(9)
                     {
                         Owner = player.Uuid,
                         Title = type.ToString(),
@@ -176,7 +167,7 @@ namespace Obsidian
                 }
                 else if (type >= Material.ShulkerBox && type <= Material.BlackShulkerBox)
                 {
-                    var container = new Inventory // TODO shulker box functionality
+                    var container = new Container // TODO shulker box functionality
                     {
                         Owner = player.Uuid,
                         Title = "Shulker Box",
@@ -193,7 +184,7 @@ namespace Obsidian
                 }
                 else if (type == Material.Barrel)
                 {
-                    var container = new Inventory
+                    var container = new Container
                     {
                         //Owner = player.Uuid,
                         Title = "Barrel",
@@ -235,7 +226,7 @@ namespace Obsidian
                 }
                 else if (type == Material.Hopper || type == Material.HopperMinecart)
                 {
-                    var container = new Inventory(5)
+                    var container = new Container(5)
                     {
                         BlockPosition = blockPosition
                     };

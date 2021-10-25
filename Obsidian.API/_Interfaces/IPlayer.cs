@@ -6,8 +6,8 @@ namespace Obsidian.API
 {
     public interface IPlayer : ILiving
     {
-        public Inventory Inventory { get; }
-        public Inventory EnderInventory { get; }
+        public Container Inventory { get; }
+        public Container EnderInventory { get; }
         public AbstractContainer? OpenedContainer { get; set; }
 
         public string Username { get; }
