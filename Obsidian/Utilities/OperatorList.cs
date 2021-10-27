@@ -41,7 +41,7 @@ namespace Obsidian.Utilities
 
         public void AddOperator(IPlayer p)
         {
-            ops.Add(new Operator() { Username = p.Username, Uuid = p.Uuid });
+            ops.Add(new Operator { Username = p.Username, Uuid = p.Uuid });
 
             UpdateList();
         }
@@ -84,7 +84,7 @@ namespace Obsidian.Utilities
 
         public void AddOperator(string username)
         {
-            this.ops.Add(new Operator() { Username = username, Uuid = Guid.Empty });
+            this.ops.Add(new Operator { Username = username, Uuid = Guid.Empty });
             this.UpdateList();
         }
 

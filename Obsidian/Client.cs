@@ -90,7 +90,7 @@ namespace Obsidian
             Stream parentStream = this.tcp.GetStream();
             this.minecraftStream = new MinecraftStream(parentStream);
 
-            var blockOptions = new ExecutionDataflowBlockOptions() { CancellationToken = Cancellation.Token, EnsureOrdered = true };
+            var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = Cancellation.Token, EnsureOrdered = true };
             packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
             var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
             {
@@ -99,7 +99,7 @@ namespace Obsidian
             },
             blockOptions);
 
-            var linkOptions = new DataflowLinkOptions() { PropagateCompletion = true };
+            var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
             packetQueue.LinkTo(sendPacketBlock, linkOptions);
 
             this.handler.RegisterHandlers();
