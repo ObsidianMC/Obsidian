@@ -72,12 +72,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Include="Assets\default_dimensions.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
     <ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
