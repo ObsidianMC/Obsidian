@@ -447,7 +447,7 @@ namespace Obsidian.Commands
             {
                 Position = player.Position + (10, 0, 0),
                 Strength = 2.0f,
-                Records = new ExplosionRecord[1] { new ExplosionRecord() { X = 0, Y = 0, Z = 0 } },
+                Records = new ExplosionRecord[1] { new ExplosionRecord { X = 0, Y = 0, Z = 0 } },
                 PlayerMotion = new VectorF(-10f, 0f, 0f)
             });
         }

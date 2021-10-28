@@ -45,8 +45,8 @@ namespace Obsidian.API
         /// <summary>
         /// Creates a new <see cref="ChatMessage"/> object with plain text.
         /// </summary>
-        public static ChatMessage Simple(string text) => new ChatMessage() { Text = text.Replace('&', '§') };
-        public static ChatMessage Simple(string text, ChatColor color) => new ChatMessage() { Text = $"{color}{text}" };
+        public static ChatMessage Simple(string text) => new() { Text = text.Replace('&', '§') };
+        public static ChatMessage Simple(string text, ChatColor color) => new() { Text = $"{color}{text}" };
 
         public ChatMessage AddExtra(ChatMessage message)
         {
