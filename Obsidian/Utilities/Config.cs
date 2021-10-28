@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using System;
 
 namespace Obsidian.Utilities
@@ -40,5 +41,17 @@ namespace Obsidian.Utilities
         public bool UDPBroadcast = false;
         
         public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
+
+
+#if DEBUG
+        public LogLevel LogLevel = LogLevel.Debug;
+
+#else
+        public LogLevel LogLevel = LogLevel.Information;
+#endif
+
+        public bool DebugMode;
+
+        public bool VerboseExceptionLogging { get; set; } = false;
     }
 }

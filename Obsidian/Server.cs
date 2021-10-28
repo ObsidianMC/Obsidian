@@ -60,8 +60,6 @@ namespace Obsidian
 
         public ILogger Logger { get; }
         public LoggerProvider LoggerProvider { get; }
-
-        public int Id { get; }
         public string Version { get; }
         public int Port { get; }
 
@@ -83,21 +81,20 @@ namespace Obsidian
         /// Creates a new instance of <see cref="Server"/>.
         /// </summary>
         /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-        public Server(Config config, string version, int serverId)
+        public Server(Config config, string version, string path)
         {
             Config = config;
 
             Port = config.Port;
             Version = version;
-            Id = serverId;
-            ServerFolderPath = Path.GetFullPath($"Server-{Id}");
+            ServerFolderPath = path;
 
             tcpListener = new TcpListener(IPAddress.Any, Port);
 
             Operators = new OperatorList(this);
 
-            LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
-            Logger = LoggerProvider.CreateLogger($"Server/{Id}");
+            LoggerProvider = new LoggerProvider(config.LogLevel);
+            Logger = LoggerProvider.CreateLogger($"Server");
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
@@ -223,7 +220,7 @@ namespace Obsidian
         {
             StartTime = DateTimeOffset.Now;
 
-            Logger.LogInformation($"Launching Obsidian Server v{Version} with ID {Id}");
+            Logger.LogInformation($"Launching Obsidian Server v{Version}");
             var loadTimeStopwatch = Stopwatch.StartNew();
 
             // Check if MPDM and OM are enabled, if so, we can't handle connections
@@ -258,7 +255,7 @@ namespace Obsidian
 
             await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-            World = new World("world1", this);
+            World = new World("overworld", this);
             if (!await World.LoadAsync())
             {
                 if (!WorldGenerators.TryGetValue(Config.Generator, out WorldGenerator value))
@@ -283,7 +280,7 @@ namespace Obsidian
 
             loadTimeStopwatch.Stop();
 
-            Logger.LogInformation($"Server-{Id} loaded in {loadTimeStopwatch.Elapsed}");
+            Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
             tcpListener.Start();
 
