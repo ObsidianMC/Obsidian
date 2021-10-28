@@ -13,7 +13,7 @@ namespace Obsidian.Utilities
         private List<Operator> ops;
         private readonly List<OperatorRequest> reqs;
         private readonly Server server;
-        private string Path => System.IO.Path.Combine(this.server.ServerFolderPath, "ops.json");
+        private const string Path = "ops.json";
 
         public OperatorList(Server server)
         {
@@ -24,7 +24,7 @@ namespace Obsidian.Utilities
 
         public async Task InitializeAsync()
         {
-            var fi = new FileInfo(this.Path);
+            var fi = new FileInfo(Path);
 
             if (fi.Exists)
             {
@@ -48,7 +48,7 @@ namespace Obsidian.Utilities
 
         public bool CreateRequest(IPlayer p)
         {
-            if (!server.Config.AllowOperatorRequests)
+            if (!Globals.Config.AllowOperatorRequests)
             {
                 return false;
             }

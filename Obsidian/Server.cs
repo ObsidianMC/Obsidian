@@ -38,6 +38,8 @@ namespace Obsidian
     {
         public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
         public ProtocolVersion Protocol => protocol;
+        
+        public static Server Current { get; private set; }
 
         public int Tps { get; private set; }
         public DateTimeOffset StartTime { get; private set; }
@@ -54,14 +56,11 @@ namespace Obsidian
         internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new();
         public HashSet<string> RegisteredChannels { get; } = new();
         public CommandHandler CommandsHandler { get; }
-
-        public Config Config { get; }
-        public IConfig Configuration => Config;
+        public IConfig Configuration => Globals.Config;
 
         public ILogger Logger { get; }
         public LoggerProvider LoggerProvider { get; }
-
-        public int Id { get; }
+        
         public string Version { get; }
         public int Port { get; }
 
@@ -69,13 +68,11 @@ namespace Obsidian
         public IWorld DefaultWorld => World;
         public IEnumerable<IPlayer> Players => GetPlayers();
 
-        public string ServerFolderPath { get; }
-
         private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
         private readonly ConcurrentHashSet<Client> clients = new();
         private readonly TcpListener tcpListener;
 
-        internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+        internal string PermissionPath => Path.Combine("permissions");
 
         internal readonly CancellationTokenSource cts = new();
 
@@ -83,21 +80,19 @@ namespace Obsidian
         /// Creates a new instance of <see cref="Server"/>.
         /// </summary>
         /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-        public Server(Config config, string version, int serverId)
+        public Server(string version)
         {
-            Config = config;
+            Current = this;
 
-            Port = config.Port;
+            Port = Globals.Config.Port;
             Version = version;
-            Id = serverId;
-            ServerFolderPath = Path.GetFullPath($"Server-{Id}");
 
             tcpListener = new TcpListener(IPAddress.Any, Port);
 
             Operators = new OperatorList(this);
 
             LoggerProvider = new LoggerProvider(Globals.Config.LogLevel);
-            Logger = LoggerProvider.CreateLogger($"Server/{Id}");
+            Logger = LoggerProvider.CreateLogger("Server");
             // This stuff down here needs to be looked into
             Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
             PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
@@ -105,7 +100,7 @@ namespace Obsidian
 
             Logger.LogDebug("Initializing command handler...");
             CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
-            PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
+            PluginManager = new PluginManager(Events, LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
             CommandsHandler.LinkPluginManager(PluginManager);
 
             Logger.LogDebug("Registering commands...");
@@ -125,7 +120,7 @@ namespace Obsidian
 
             Directory.CreateDirectory(PermissionPath);
 
-            if (Config.UDPBroadcast)
+            if (Globals.Config.UDPBroadcast)
             {
                 _ = Task.Run(async () =>
                 {
@@ -133,7 +128,7 @@ namespace Obsidian
                     while (!cts.IsCancellationRequested)
                     {
                         await Task.Delay(1500, cts.Token); // TODO (.NET 6), use PeriodicTimer
-                        byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                        byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Globals.Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Globals.Config.Port}[/AD]");
                         await udpClient.SendAsync(motd, motd.Length);
                     }
                 });
@@ -223,11 +218,11 @@ namespace Obsidian
         {
             StartTime = DateTimeOffset.Now;
 
-            Logger.LogInformation($"Launching Obsidian Server v{Version} with ID {Id}");
+            Logger.LogInformation($"Launching Obsidian Server v{Version}");
             var loadTimeStopwatch = Stopwatch.StartNew();
 
             // Check if MPDM and OM are enabled, if so, we can't handle connections
-            if (Config.MulitplayerDebugMode && Config.OnlineMode)
+            if (Globals.Config.MulitplayerDebugMode && Globals.Config.OnlineMode)
             {
                 Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
                 StopServer();
@@ -250,19 +245,19 @@ namespace Obsidian
             ScoreboardManager = new ScoreboardManager(this);
             Logger.LogInformation("Loading plugins...");
 
-            Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
+            Directory.CreateDirectory("plugins");
 
             PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
             PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
-            PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+            PluginManager.DirectoryWatcher.Watch("plugins");
 
-            await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+            await Task.WhenAll(Globals.Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
             World = new World("world1", this);
             if (!await World.LoadAsync())
             {
-                if (!WorldGenerators.TryGetValue(Config.Generator, out WorldGenerator value))
-                    Logger.LogWarning($"Unknown generator type {Config.Generator}");
+                if (!WorldGenerators.TryGetValue(Globals.Config.Generator, out WorldGenerator value))
+                    Logger.LogWarning($"Unknown generator type {Globals.Config.Generator}");
 
                 var gen = value ?? new SuperflatGenerator();
                 Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
@@ -270,7 +265,7 @@ namespace Obsidian
                 World.Save();
             }
 
-            if (!Config.OnlineMode)
+            if (!Globals.Config.OnlineMode)
                 Logger.LogInformation($"Starting in offline mode...");
 
             Registry.RegisterCommands(this);
@@ -283,7 +278,7 @@ namespace Obsidian
 
             loadTimeStopwatch.Stop();
 
-            Logger.LogInformation($"Server-{Id} loaded in {loadTimeStopwatch.Elapsed}");
+            Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
             tcpListener.Start();
 
@@ -292,7 +287,7 @@ namespace Obsidian
                 var tcp = await tcpListener.AcceptTcpClientAsync();
                 Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-                var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.TotalLoadedEntities()), this);
+                var client = new Client(tcp, Globals.Config, Math.Max(0, clients.Count + World.TotalLoadedEntities()), this);
                 clients.Add(client);
 
                 client.Disconnected += client => clients.TryRemove(client);
@@ -607,7 +602,7 @@ namespace Obsidian
                     keepAliveTicks = 0;
                 }
 
-                if (Config.Baah.HasValue)
+                if (Globals.Config.Baah.HasValue)
                 {
                     foreach (Player player in Players)
                     {
@@ -642,7 +637,7 @@ namespace Obsidian
         private void RegisterDefaults()
         {
             Register(new SuperflatGenerator());
-            Register(new OverworldGenerator(Config.Seed));
+            Register(new OverworldGenerator(Globals.Config.Seed));
         }
 
         internal void UpdateStatusConsole()

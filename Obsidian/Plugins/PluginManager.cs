@@ -39,28 +39,22 @@ namespace Obsidian.Plugins
         private readonly List<PluginContainer> stagedPlugins = new();
         internal readonly ServiceProvider serviceProvider = ServiceProvider.Create();
         private readonly object eventSource;
-        private readonly IServer server;
         private readonly List<EventContainer> events = new();
         internal readonly ILogger logger;
         private readonly CommandHandler commands;
 
         private const string loadEvent = "OnLoad";
 
-        public PluginManager(CommandHandler commands) : this(null, null, null, commands)
+        public PluginManager(CommandHandler commands) : this(null, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, CommandHandler commands) : this(eventSource, null, null, commands)
+        public PluginManager(object eventSource, CommandHandler commands) : this(eventSource, null, commands)
         {
         }
 
-        public PluginManager(object eventSource, IServer server, CommandHandler commands) : this(eventSource, server, null, commands)
+        public PluginManager(object eventSource, ILogger logger, CommandHandler commands)
         {
-        }
-
-        public PluginManager(object eventSource, IServer server, ILogger logger, CommandHandler commands)
-        {
-            this.server = server;
             this.logger = logger;
             this.eventSource = eventSource;
             this.commands = commands;
@@ -174,7 +168,7 @@ namespace Obsidian.Plugins
                 {
                     commands.RegisterCommandClass(plugin, root, null);
                 }
-                Registry.RegisterCommands((Server)server);
+                Registry.RegisterCommands(Server.Current);
 
                 plugin.Loaded = true;
                 ExposePluginAsDependency(plugin);
@@ -392,7 +386,7 @@ namespace Obsidian.Plugins
 
         private void InvokeOnLoad(PluginContainer plugin)
         {
-            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, server);
+            var task = plugin.Plugin.FriendlyInvokeAsync(loadEvent, Server.Current);
             if (task.Status == TaskStatus.Created)
             {
                 task.RunSynchronously();

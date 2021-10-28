@@ -13,7 +13,7 @@ namespace Obsidian
     {
         public static HttpClient HttpClient { get; } = new HttpClient();
         public static XorshiftRandom Random { get; } = XorshiftRandom.Create();
-        public static GlobalConfig Config { get; set; }
+        public static Config Config { get; set; }
         public static ILogger PacketLogger { get; set; }
 
         public static readonly JsonSerializerOptions JsonOptions = new()

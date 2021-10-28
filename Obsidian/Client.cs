@@ -539,8 +539,8 @@ namespace Obsidian
 
         private async Task SendPlayerListDecoration()
         {
-            var header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
-            var footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
+            var header = string.IsNullOrWhiteSpace(Globals.Config.Header) ? null : ChatMessage.Simple(Globals.Config.Header);
+            var footer = string.IsNullOrWhiteSpace(Globals.Config.Footer) ? null : ChatMessage.Simple(Globals.Config.Footer);
 
             await this.QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
             this.Logger.LogDebug("Sent player list decoration");

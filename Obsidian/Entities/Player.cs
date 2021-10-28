@@ -508,7 +508,7 @@ namespace Obsidian.Entities
 
         public async Task SaveAsync()
         {
-            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+            var playerFile = new FileInfo(Path.Join(this.World.Name, "playerdata", $"{this.Uuid}.dat"));
 
             await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
 
@@ -584,7 +584,7 @@ namespace Obsidian.Entities
 
         public async ValueTask LoadAsync()
         {
-            var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+            var playerFile = new FileInfo(Path.Join(this.World.Name, "playerdata", $"{this.Uuid}.dat"));
 
             if (!playerFile.Exists)
             {

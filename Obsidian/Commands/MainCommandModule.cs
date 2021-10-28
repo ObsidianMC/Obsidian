@@ -298,7 +298,7 @@ namespace Obsidian.Commands
             var server = (Server)Context.Server;
             var player = Context.Player;
 
-            if (!server.Config.AllowOperatorRequests)
+            if (!Globals.Config.AllowOperatorRequests)
             {
                 await player.SendMessageAsync("§cOperator requests are disabled on this server.");
                 return;

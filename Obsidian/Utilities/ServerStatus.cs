@@ -81,7 +81,7 @@ namespace Obsidian.Utilities
 
         public ServerPlayers(Server server)
         {
-            Max = server.Config.MaxPlayers;
+            Max = Globals.Config.MaxPlayers;
 
             foreach (Player player in server.Players)
             {
@@ -117,6 +117,6 @@ namespace Obsidian.Utilities
         [JsonInclude]
         private string text;
 
-        public ServerDescription(Server server) => this.Text = server.Config.Motd;
+        public ServerDescription(Server server) => this.Text = Globals.Config.Motd;
     }
 }

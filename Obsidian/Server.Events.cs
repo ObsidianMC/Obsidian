@@ -283,7 +283,7 @@ namespace Obsidian
                     await other.client.QueuePacketAsync(destroy);
             }
 
-            BroadcastMessage(string.Format(Config.LeaveMessage, e.Player.Username));
+            BroadcastMessage(string.Format(Globals.Config.LeaveMessage, e.Player.Username));
         }
 
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
@@ -292,7 +292,7 @@ namespace Obsidian
 
             World.AddPlayer(joined); // TODO Add the player to the last world they were in
 
-            BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
+            BroadcastMessage(string.Format(Globals.Config.JoinMessage, e.Player.Username));
             foreach (Player other in Players)
             {
                 await other.client.AddPlayerToListAsync(joined);

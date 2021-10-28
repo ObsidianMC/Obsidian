@@ -42,6 +42,8 @@ namespace Obsidian.WorldData
 
         public Gamemode GameType => Data.GameType;
 
+        private const string WorldsFolder = "worlds";
+
         internal World(string name, Server server)
         {
             this.Data = new Level
@@ -54,7 +56,7 @@ namespace Obsidian.WorldData
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Server = server;
 
-            var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
+            var playerDataPath = Path.Combine(WorldsFolder, this.Name, "playerdata");
             if (!Directory.Exists(playerDataPath))
                 Directory.CreateDirectory(playerDataPath);
         }
@@ -282,7 +284,7 @@ namespace Obsidian.WorldData
 
         public async Task<bool> LoadAsync()
         {
-            var dataPath = Path.Join(Server.ServerFolderPath, Name, "level.dat");
+            var dataPath = Path.Combine(WorldsFolder, Name, "level.dat");
 
             var fi = new FileInfo(dataPath);
 
@@ -344,7 +346,7 @@ namespace Obsidian.WorldData
         //TODO save world generator settings properly
         public void Save()
         {
-            var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
+            var worldFile = new FileInfo(Path.Combine(WorldsFolder, Name, "level.dat"));
 
             using var fs = worldFile.OpenWrite();
 
@@ -402,7 +404,7 @@ namespace Obsidian.WorldData
                 }
             }
 
-            var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
+            var region = new Region(regionX, regionZ, Path.Combine(WorldsFolder, Name));
             await region.InitAsync();
 
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
@@ -639,7 +641,7 @@ namespace Obsidian.WorldData
         internal async Task Init(WorldGenerator gen)
         {
             // Make world directory
-            Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
+            Directory.CreateDirectory(Path.Combine(WorldsFolder, Name));
             this.Generator = gen;
             await GenerateWorld();
             SetWorldSpawn();
@@ -647,8 +649,8 @@ namespace Obsidian.WorldData
 
         internal async Task GenerateWorld()
         {
-            this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
-            int pregenerationRange = Server.Config.PregenerateChunkRange;
+            this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Globals.Config.PregenerateChunkRange})");
+            int pregenerationRange = Globals.Config.PregenerateChunkRange;
 
             int regionPregenRange = (pregenerationRange >> Region.cubicRegionSizeShift) + 1;
 
@@ -707,9 +709,9 @@ namespace Obsidian.WorldData
 
                                     // Should spawn be far from (0,0), queue up chunks in generation range.
                                     // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                                    for (int x = c.X - Server.Config.PregenerateChunkRange; x < c.X + Server.Config.PregenerateChunkRange; x++)
+                                    for (int x = c.X - Globals.Config.PregenerateChunkRange; x < c.X + Globals.Config.PregenerateChunkRange; x++)
                                     {
-                                        for (int z = c.Z - Server.Config.PregenerateChunkRange; z < c.Z + Server.Config.PregenerateChunkRange; z++)
+                                        for (int z = c.Z - Globals.Config.PregenerateChunkRange; z < c.Z + Globals.Config.PregenerateChunkRange; z++)
                                         {
                                             GetChunk(x, z);
                                         }
