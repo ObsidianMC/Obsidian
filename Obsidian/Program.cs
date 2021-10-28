@@ -32,11 +32,8 @@ namespace Obsidian
             string version = "0.1";
 #else
             string version = "0.1-DEV";
-            string asmpath = Assembly.GetExecutingAssembly().Location;
-            //This will strip just the working path name:
-            //C:\Program Files\MyApplication
-            string asmdir = Path.GetDirectoryName(asmpath);
-            Environment.CurrentDirectory = asmdir;
+            var asmDir = AppContext.BaseDirectory;
+            Environment.CurrentDirectory = asmDir;
 #endif
             // Kept for consistant number parsing
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
