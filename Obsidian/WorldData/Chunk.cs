@@ -100,7 +100,7 @@ namespace Obsidian.WorldData
             return this.BlockMetaStore.GetValueOrDefault(value);
         }
 
-        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta((int)position.X, (int)position.Y, (int)position.Z);
+        public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta(position.X, position.Y, position.Z);
 
         public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
         {
@@ -111,7 +111,7 @@ namespace Obsidian.WorldData
             this.BlockMetaStore[value] = meta;
         }
 
-        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta((int)position.X, (int)position.Y, (int)position.Z, meta);
+        public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta(position.X, position.Y, position.Z, meta);
 
         public void CalculateHeightmap()
         {

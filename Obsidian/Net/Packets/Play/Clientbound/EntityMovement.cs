@@ -1,6 +1,4 @@
-﻿using Obsidian.Serialization.Attributes;
-
-namespace Obsidian.Net.Packets.Play.Clientbound
+﻿namespace Obsidian.Net.Packets.Play.Clientbound
 {
     // This packet got dropped.
     //public partial class EntityMovement : IClientboundPacket
