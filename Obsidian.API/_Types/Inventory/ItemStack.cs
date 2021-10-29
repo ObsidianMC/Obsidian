@@ -6,6 +6,8 @@ namespace Obsidian.API
     {
         public readonly static ItemStack Air = new ItemStack(Material.Air, 0);
 
+        internal int Slot { get; set; }
+
         internal bool Present { get; set; }
 
         public short Count { get; internal set; }

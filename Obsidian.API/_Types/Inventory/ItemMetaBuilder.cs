@@ -5,8 +5,6 @@ namespace Obsidian.API
 {
     public class ItemMetaBuilder
     {
-        internal byte Slot { get; set; }
-
         internal int CustomModelData { get; set; }
         public ChatMessage Name { get; internal set; }
 
@@ -36,13 +34,6 @@ namespace Obsidian.API
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
 
             this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
-        }
-
-        internal ItemMetaBuilder WithSlot(byte slot)
-        {
-            this.Slot = slot;
-
-            return this;
         }
 
         internal ItemMetaBuilder WithCustomModelData(int modelData)
@@ -127,7 +118,6 @@ namespace Obsidian.API
         {
             var meta = new ItemMeta
             {
-                Slot = this.Slot,
                 CustomModelData = this.CustomModelData,
                 Name = this.Name,
                 Lore = this.Lore,

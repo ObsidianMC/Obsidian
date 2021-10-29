@@ -676,11 +676,11 @@ namespace Obsidian.Entities
 
                     var itemMetaBuilder = new ItemMetaBuilder()
                         .WithDurability(itemCompound.GetInt("Damage"))
-                        .IsUnbreakable(itemCompound.GetBool("Unbreakable"))
-                        .WithSlot(slot);
+                        .IsUnbreakable(itemCompound.GetBool("Unbreakable"));
 
                     var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
                     item.Count = itemCompound.GetByte("Count");
+                    item.Slot = slot;
 
                     this.Inventory.SetItem(slot, item);
                 }

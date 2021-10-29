@@ -546,7 +546,7 @@ namespace Obsidian.Net
             {
                 var item = Registry.GetItem((short)ReadVarInt());
 
-                var slot = new ItemStack(item.Type, ReadUnsignedByte())
+                var itemStack = new ItemStack(item.Type, ReadUnsignedByte())
                 {
                     Present = present
                 };
@@ -603,7 +603,7 @@ namespace Obsidian.Net
                                     {
                                         var byteTag = (NbtTag<byte>)child;
 
-                                        itemMetaBuilder.WithSlot(byteTag.Value);
+                                        itemStack.Slot = byteTag.Value;
                                         //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
@@ -641,10 +641,10 @@ namespace Obsidian.Net
                         }
                     }
 
-                    slot.ItemMeta = itemMetaBuilder.Build();
+                    itemStack.ItemMeta = itemMetaBuilder.Build();
                 }
 
-                return slot;
+                return itemStack;
             }
 
             return null;
@@ -658,7 +658,7 @@ namespace Obsidian.Net
             {
                 var item = Registry.GetItem((short)await this.ReadVarIntAsync());
 
-                var slot = new ItemStack(item.Type, await this.ReadByteAsync())
+                var itemStack = new ItemStack(item.Type, await this.ReadByteAsync())
                 {
                     Present = present
                 };
@@ -713,7 +713,7 @@ namespace Obsidian.Net
                                     {
                                         var byteTag = (NbtTag<byte>)child;
 
-                                        itemMetaBuilder.WithSlot(byteTag.Value);
+                                        itemStack.Slot = byteTag.Value;
                                         //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                         break;
                                     }
@@ -758,10 +758,10 @@ namespace Obsidian.Net
                         //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
                     }
 
-                    slot.ItemMeta = itemMetaBuilder.Build();
+                    itemStack.ItemMeta = itemMetaBuilder.Build();
                 }
 
-                return slot;
+                return itemStack;
             }
 
             return null;
