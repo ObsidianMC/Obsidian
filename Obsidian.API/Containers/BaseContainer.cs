@@ -68,6 +68,9 @@ namespace Obsidian.API
 
         public virtual bool RemoveItem(int slot)
         {
+            if (this.items[slot] == null)
+                return false;
+
             this.SetItem(slot, null);
 
             return true;
