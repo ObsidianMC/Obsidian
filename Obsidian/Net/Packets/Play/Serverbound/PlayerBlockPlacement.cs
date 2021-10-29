@@ -28,26 +28,8 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            var currentItem = player.GetHeldItem();
-
-            var itemType = currentItem.Type;
-
-            // TODO: this better
-            if (itemType == Material.WaterBucket)
-                itemType = Material.Water;
-            if (itemType == Material.LavaBucket)
-                itemType = Material.Lava;
-
-            Block block;
-            try
-            {
-                block = Registry.GetBlock(itemType);
-            }
-            catch //item is not a block so just return
-            {
-                return;
-            }
-
+            //Get main hand first return offhand if null
+            var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
             var position = this.Position;
 
             var b = server.World.GetBlock(position);
@@ -59,11 +41,37 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             {
                 await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
                 {
-                    Item = player.MainHand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
+                    Item = currentItem,
                     Block = interactedBlock,
                     BlockLocation = this.Position,
                 });
 
+                return;
+            }
+
+            var itemType = currentItem != null ? currentItem.Type : Material.Air;
+
+            switch (itemType)
+            {
+                case Material.WaterBucket:
+                    itemType = Material.Water;
+                    break;
+                case Material.LavaBucket:
+                    itemType = Material.Lava;
+                    break;
+                case Material.Air:
+                    return;
+                default:
+                    break;
+            }
+
+            Block block;
+            try
+            {
+                block = Registry.GetBlock(itemType);
+            }
+            catch //item is not a block so just return
+            {
                 return;
             }
 

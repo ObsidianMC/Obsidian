@@ -19,6 +19,8 @@ namespace Obsidian.API
 
         public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
 
+        public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
+
         public AbstractContainer(int size) : this(size, InventoryType.Custom) { }
 
         internal AbstractContainer(int size, InventoryType type)

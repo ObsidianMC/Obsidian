@@ -38,10 +38,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 {
                     EntityId = player.EntityId,
                     Slot = ESlot.MainHand,
-                    Item = new ItemStack(heldItem.Type, heldItem.Count, heldItem.ItemMeta)
-                    {
-                        Present = heldItem.Present
-                    }
+                    Item = heldItem
                 }, player);
             }
         }
