@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class CraftingTable : AbstractResultContainer
+    public sealed class CraftingTable : ResultContainer
     {
         public CraftingTable() : base(10, InventoryType.Crafting)
         {

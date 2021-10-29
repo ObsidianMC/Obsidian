@@ -2,7 +2,7 @@
 
 namespace Obsidian.API
 {
-    public sealed class Container : AbstractContainer, ITileEntity
+    public sealed class Container : BaseContainer, ITileEntity
     {
         internal int StateId { get; set; }
 
@@ -20,7 +20,7 @@ namespace Obsidian.API
         {
             if (type is not InventoryType.Generic or InventoryType.ShulkerBox)
                 throw new InvalidOperationException("Inventory type can only be Generic or ShulkerBox");
-            if (size % 9 != 0 && size != 46)
+            if (size % 9 != 0 && (size != 46 || size != 5))
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
@@ -28,6 +28,9 @@ namespace Obsidian.API
 
         public override int AddItem(ItemStack item)
         {
+            if (item is null)
+                throw new ArgumentNullException(nameof(item));
+
             if (this.IsPlayerInventory)
             {
                 for (int i = 45; i > 8; i--)

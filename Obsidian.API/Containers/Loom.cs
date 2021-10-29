@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class Loom : AbstractResultContainer
+    public sealed class Loom : ResultContainer
     {
         public Loom() : base(4, InventoryType.Loom)
         {

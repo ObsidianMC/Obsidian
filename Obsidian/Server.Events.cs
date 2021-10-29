@@ -45,7 +45,7 @@ namespace Obsidian
 
                 var type = interactedBlock.Material;
 
-                AbstractContainer container = type switch
+                BaseContainer container = type switch
                 {
                     Material.Anvil or Material.SmithingTable => new AnvilContainer(type.ToString().ToSnakeCase())
                     {

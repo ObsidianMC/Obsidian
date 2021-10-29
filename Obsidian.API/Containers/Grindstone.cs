@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class Grindstone : AbstractResultContainer
+    public sealed class Grindstone : ResultContainer
     {
         public Grindstone() : base(3, InventoryType.Grindstone)
         {

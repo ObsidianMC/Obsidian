@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class Stonecutter : AbstractResultContainer
+    public sealed class Stonecutter : ResultContainer
     {
         public Stonecutter() : base(2, InventoryType.Stonecutter)
         {

@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Obsidian.API.Containers
 {
-    public sealed class EnchantmentTable : AbstractContainer, ITileEntity
+    public sealed class EnchantmentTable : BaseContainer, ITileEntity
     {
         public string Id => "enchantment_table";
 

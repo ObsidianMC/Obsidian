@@ -17,7 +17,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
 
         public int Id => 0x2E;
 
-        public OpenWindow(AbstractContainer inventory, int windowId)
+        public OpenWindow(BaseContainer inventory, int windowId)
         {
             Title = inventory.Title;
 

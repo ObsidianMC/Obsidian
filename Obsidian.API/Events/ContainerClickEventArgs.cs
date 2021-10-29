@@ -5,7 +5,7 @@
         /// <summary>
         /// Gets the clicked container
         /// </summary>
-        public AbstractContainer container { get; }
+        public BaseContainer container { get; }
 
         /// <summary>
         /// Gets the current item that was clicked
@@ -19,7 +19,7 @@
 
         public bool Cancel { get; set; }
 
-        internal ContainerClickEventArgs(IPlayer player, AbstractContainer container, ItemStack item) : base(player)
+        internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
         {
             this.container = container;
             this.Item = item;

@@ -122,9 +122,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         {
                             ItemStack removedItem = null;
                             if (Button == 0)
-                                container.TryRemoveItem(slot, out removedItem);
+                                container.RemoveItem(slot, 1, out removedItem);
                             else
-                                container.TryRemoveItem(slot, 64, out removedItem);
+                                container.RemoveItem(slot, 64, out removedItem);
 
                             if (removedItem == null)
                                 return;
@@ -246,7 +246,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private void FillNbtList(NbtList items, AbstractContainer container)
+        private void FillNbtList(NbtList items, BaseContainer container)
         {
             for (int i = 0; i < container.Size; i++)
             {
@@ -261,7 +261,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private async Task HandleMouseClick(AbstractContainer container, Server server, Player player, int slot)
+        private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
         {
             if (!ClickedItem.IsAir())
             {
@@ -301,7 +301,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
         }
 
-        private void HandleDragClick(AbstractContainer container, Player player, int value)
+        private void HandleDragClick(BaseContainer container, Player player, int value)
         {
             if (ClickedSlot == Outsideinventory)
             {

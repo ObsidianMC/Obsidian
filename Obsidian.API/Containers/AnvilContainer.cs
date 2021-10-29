@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class AnvilContainer : AbstractResultContainer, ITileEntity
+    public sealed class AnvilContainer : ResultContainer, ITileEntity
     {
         public string Id { get; }
 

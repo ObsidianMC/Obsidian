@@ -2,13 +2,27 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class SmeltingContainer : AbstractSmeltingContainer, ITileEntity
+    public class SmeltingContainer : ResultContainer, ITileEntity
     {
         public string Id { get; }
 
+        public short FuelBurnTime { get; set; }
+
+        public short CookTime { get; set; }
+
+        public short CookTimeTotal { get; set; }
+
         public Vector BlockPosition { get; set; }
 
-        public SmeltingContainer(InventoryType type, string id) : base(3, type)
+        internal SmeltingContainer(InventoryType type, string id) : base(3, type)
+        {
+            if (type != InventoryType.Furnace || type != InventoryType.Smoker || type != InventoryType.BlastFurnace || type != InventoryType.Custom)
+                throw new InvalidOperationException("Type must either be custom, furnace, blast furnace or smoker.");
+
+            this.Id = id;
+        }
+
+        public SmeltingContainer(InventoryType type, int size, string id) : base(size, type)
         {
             if (type != InventoryType.Furnace || type != InventoryType.Smoker || type != InventoryType.BlastFurnace || type != InventoryType.Custom)
                 throw new InvalidOperationException("Type must either be custom, furnace, blast furnace or smoker.");
@@ -18,8 +32,8 @@ namespace Obsidian.API.Containers
 
         public void ToNbt() => throw new NotImplementedException();
         public void FromNbt() => throw new NotImplementedException();
-        public override ItemStack? GetFuel() => throw new NotImplementedException();
-        public override ItemStack? GetIngredient() => throw new NotImplementedException();
+        public virtual ItemStack? GetFuel() => throw new NotImplementedException();
+        public virtual ItemStack?[] GetIngredients() => throw new NotImplementedException();
         public override void SetResult(ItemStack? result) => throw new NotImplementedException();
         public override ItemStack? GetResult() => throw new NotImplementedException();
     }

@@ -8,7 +8,7 @@ namespace Obsidian.API
     {
         public Container Inventory { get; }
         public Container EnderInventory { get; }
-        public AbstractContainer? OpenedContainer { get; set; }
+        public BaseContainer? OpenedContainer { get; set; }
 
         public string Username { get; }
 
@@ -50,7 +50,7 @@ namespace Obsidian.API
         public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
         public Task KickAsync(ChatMessage reason);
         public Task KickAsync(string reason);
-        public Task OpenInventoryAsync(AbstractContainer container);
+        public Task OpenInventoryAsync(BaseContainer container);
         public Task DisplayScoreboardAsync(IScoreboard scoreboard, ScoreboardPosition position);
 
         /// <summary>

@@ -2,7 +2,7 @@
 
 namespace Obsidian.API.Containers
 {
-    public sealed class CartographyTable : AbstractResultContainer
+    public sealed class CartographyTable : ResultContainer
     {
         public CartographyTable() : base(3, InventoryType.CartographyTable)
         {

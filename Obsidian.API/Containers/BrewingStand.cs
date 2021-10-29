@@ -3,7 +3,7 @@
 namespace Obsidian.API.Containers
 {
     //TODO override add item and match fuel to fuel slot
-    public sealed class BrewingStand : AbstractResultContainer, ITileEntity
+    public sealed class BrewingStand : ResultContainer, ITileEntity
     {
         public string Id => "brewing_stand";
 

@@ -5,27 +5,26 @@ using System.Linq;
 
 namespace Obsidian.API
 {
-    public abstract class AbstractContainer : IEnumerable<ItemStack>, IEnumerable
+    public abstract class BaseContainer : IEnumerable<ItemStack>
     {
         protected ItemStack?[] items;
 
-        public int Size { get; protected set; }
+        public int Size => this.items.Length;
 
         public InventoryType Type { get; }
 
         public ChatMessage? Title { get; set; }
 
-        public Guid Uuid { get; private set; } = Guid.NewGuid();
+        public Guid Uuid { get; } = Guid.NewGuid();
 
-        public List<IPlayer> Viewers { get; private set; } = new List<IPlayer>();
+        public List<IPlayer> Viewers { get; } = new();
 
         public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
 
-        public AbstractContainer(int size) : this(size, InventoryType.Custom) { }
+        public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
-        internal AbstractContainer(int size, InventoryType type)
+        internal BaseContainer(int size, InventoryType type)
         {
-            this.Size = size;
             this.Type = type;
 
             this.items = new ItemStack?[size];
@@ -34,12 +33,16 @@ namespace Obsidian.API
         //TODO match item meta
         public virtual int AddItem(ItemStack item)
         {
+            if (item is null)
+                throw new ArgumentNullException(nameof(item));
+
             for (int i = 0; i < this.Size; i++)
             {
                 var invItem = this.items[i];
 
                 if (invItem?.Type == item.Type)
                 {
+                    //TODO use the items max stack size
                     if (invItem.Count >= 64)
                         continue;
 
@@ -63,22 +66,28 @@ namespace Obsidian.API
 
         public virtual ItemStack? GetItem(int slot) => this.items[slot];
 
-        public virtual bool RemoveItem(int slot, short amount = 1)
+        public virtual bool RemoveItem(int slot)
+        {
+            this.SetItem(slot, null);
+
+            return true;
+        }
+
+        public virtual bool RemoveItem(int slot, short amount)
         {
             var item = this.items[slot];
 
             if (item == null)
                 return false;
 
-            if (amount >= 64 || item.Count - amount <= 0)
-                this.items[slot] = null;
-            else
-                item.Count -= amount;
+            item.Count -= amount;
+            if (item.Count <= 0)
+                this.SetItem(slot, null);
 
             return true;
         }
 
-        public virtual bool TryRemoveItem(int slot, out ItemStack? removedItem)
+        public virtual bool RemoveItem(int slot, out ItemStack? removedItem)
         {
             var item = this.items[slot];
 
@@ -93,7 +102,7 @@ namespace Obsidian.API
             return this.RemoveItem(slot);
         }
 
-        public virtual bool TryRemoveItem(int slot, short amount, out ItemStack? removedItem)
+        public virtual bool RemoveItem(int slot, short amount, out ItemStack? removedItem)
         {
             var item = this.items[slot];
 
@@ -108,40 +117,26 @@ namespace Obsidian.API
             return this.RemoveItem(slot, amount);
         }
 
-        public virtual bool HasItems() => this.items.Any(x => x is not null);
-
-        public virtual (int slot, bool forPlayer) GetDifference(short clickedSlot) =>
+        public virtual (int slot, bool forPlayer) GetDifference(int clickedSlot) =>
             clickedSlot > this.Size ? (clickedSlot - this.Size + 9, true) : (clickedSlot, false);
 
+        public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
+
+        public bool HasItems() => this.items.Any(x => x is not null);
+
         public IEnumerator<ItemStack> GetEnumerator() => (this.items as IEnumerable<ItemStack>).GetEnumerator();
+
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    public abstract class AbstractResultContainer : AbstractContainer
+    public abstract class ResultContainer : BaseContainer
     {
-        protected AbstractResultContainer(int size) : this(size, InventoryType.Custom) { }
+        protected ResultContainer(int size) : this(size, InventoryType.Custom) { }
 
-        internal AbstractResultContainer(int size, InventoryType type) : base(size, type) { }
+        internal ResultContainer(int size, InventoryType type) : base(size, type) { }
 
         public abstract void SetResult(ItemStack? result);
 
         public abstract ItemStack? GetResult();
-    }
-
-    public abstract class AbstractSmeltingContainer : AbstractResultContainer
-    {
-        protected AbstractSmeltingContainer(int size) : this(size, InventoryType.Custom) { }
-
-        internal AbstractSmeltingContainer(int size, InventoryType type) : base(size, type) { }
-
-        public short FuelBurnTime { get; set; }
-
-        public short CookTime { get; set; }
-
-        public short CookTimeTotal { get; set; }
-
-        public abstract ItemStack? GetFuel();
-
-        public abstract ItemStack? GetIngredient();
     }
 }
