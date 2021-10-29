@@ -76,7 +76,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             }
 
             if (player.Gamemode != Gamemode.Creative)
-                player.Inventory.RemoveItem(player.inventorySlot);
+                player.Inventory.RemoveItem(player.inventorySlot, 1);
 
             switch (Face) // TODO fix this for logs
             {

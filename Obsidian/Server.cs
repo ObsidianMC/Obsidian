@@ -484,7 +484,11 @@ namespace Obsidian
                             StateId = player.Inventory.StateId++
                         });
 
-                        player.Inventory.RemoveItem(player.inventorySlot);
+                        if(player.Sneaking)
+                            player.Inventory.RemoveItem(player.inventorySlot, 64);//TODO get max stack size for the item
+                        else
+                            player.Inventory.RemoveItem(player.inventorySlot, 1);
+
                         break;
                     }
                 case DiggingStatus.StartedDigging:
