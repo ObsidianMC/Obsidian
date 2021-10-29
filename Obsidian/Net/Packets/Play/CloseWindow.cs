@@ -15,10 +15,10 @@ namespace Obsidian.Net.Packets.Play
 
         public async ValueTask HandleAsync(Server server, Player player)
         {
-            if (WindowId == 0 || (player.OpenedContainer is not ITileEntity tileEntity || !tileEntity.BlockPosition.HasValue))
+            if (WindowId == 0 || (player.OpenedContainer is not ITileEntity tileEntity))
                 return;
 
-            var position = tileEntity.BlockPosition.Value;
+            var position = tileEntity.BlockPosition;
 
             var b = server.World.GetBlock(position);
 

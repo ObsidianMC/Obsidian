@@ -6,7 +6,7 @@ namespace Obsidian.API.Containers
     {
         public string Id { get; }
 
-        public Vector? BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public SmeltingContainer(InventoryType type, string id) : base(3, type)
         {

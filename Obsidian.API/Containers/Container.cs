@@ -8,7 +8,7 @@ namespace Obsidian.API
 
         public string Id { get; set; }
 
-        public Vector? BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public Guid Owner { get; set; }
 

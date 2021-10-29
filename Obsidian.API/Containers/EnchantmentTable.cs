@@ -7,7 +7,7 @@ namespace Obsidian.API.Containers
     {
         public string Id => "enchantment_table";
 
-        public Vector? BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public EnchantmentTable() : base(2, InventoryType.Enchantment)
         {

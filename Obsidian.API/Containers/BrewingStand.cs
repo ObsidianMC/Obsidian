@@ -7,7 +7,7 @@ namespace Obsidian.API.Containers
     {
         public string Id => "brewing_stand";
 
-        public Vector? BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public BrewingStand() : base(5, InventoryType.BrewingStand)
         {

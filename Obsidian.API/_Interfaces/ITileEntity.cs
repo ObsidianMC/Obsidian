@@ -4,7 +4,7 @@
     {
         public string Id { get; }
 
-        public Vector? BlockPosition { get; set; }
+        public Vector BlockPosition { get; set; }
 
         public void ToNbt();
 
