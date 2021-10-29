@@ -1,9 +1,12 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -213,15 +216,58 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                         break;
                     }
             }
+
+            if (container is ITileEntity tileEntityContainer)
+            {
+                var tileEntity = server.World.GetTileEntity(tileEntityContainer.BlockPosition);
+
+                if (tileEntity is null)
+                    return;
+
+                if (tileEntity.TryGetTag("Items", out var list))
+                {
+                    var items = list as NbtList;
+
+                    var itemsToBeRemoved = new HashSet<int>();
+                    var itemsToBeUpdated = new HashSet<NbtCompound>();
+
+                    items.Clear();
+
+                    this.FillNbtList(items, container);
+                }
+                else
+                {
+                    var items = new NbtList(NbtTagType.Compound, "Items");
+
+                    this.FillNbtList(items, container);
+
+                    tileEntity.Add(items);
+                }
+            }
         }
 
-        private async Task HandleMouseClick(AbstractContainer container, Server server, Player player, int value)
+        private void FillNbtList(NbtList items, AbstractContainer container)
+        {
+            for (int i = 0; i < container.Size; i++)
+            {
+                var item = container[i];
+
+                if (item is null)
+                    continue;
+
+                item.Slot = i;
+
+                items.Add(item.ToNbt());
+            }
+        }
+
+        private async Task HandleMouseClick(AbstractContainer container, Server server, Player player, int slot)
         {
             if (!ClickedItem.IsAir())
             {
                 var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, ClickedItem)
                 {
-                    Slot = value
+                    Slot = slot
                 });
 
                 if (@event.Cancel)
@@ -229,13 +275,14 @@ namespace Obsidian.Net.Packets.Play.Serverbound
 
                 player.LastClickedItem = ClickedItem;
 
-                container.SetItem(value, null);
+                container.SetItem(slot, null);
             }
             else
             {
                 if (Button == 0)
                 {
-                    container.SetItem(value, player.LastClickedItem);
+                    server.Logger.LogDebug("Placed: {} in container: {}", player.LastClickedItem?.Type, container.Title?.Text);
+                    container.SetItem(slot, player.LastClickedItem);
 
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
@@ -244,7 +291,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound
                 }
                 else
                 {
-                    container.SetItem(value, player.LastClickedItem);
+                    container.SetItem(slot, player.LastClickedItem);
 
                     // if (!inventory.OwnedByPlayer)
                     //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");

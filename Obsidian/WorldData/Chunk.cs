@@ -23,7 +23,7 @@ namespace Obsidian.WorldData
 
         //TODO try and do some temp caching
         public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-        public Dictionary<short, INbtTag> TileEntities { get; private set; } = new Dictionary<short, INbtTag>();
+        public Dictionary<short, NbtCompound> TileEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
         public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
@@ -91,9 +91,9 @@ namespace Obsidian.WorldData
             }
         }
 
-        public INbtTag GetTileEntity(Vector position) => this.GetTileEntity(position.X, position.Y, position.Z);
+        public NbtCompound GetTileEntity(Vector position) => this.GetTileEntity(position.X, position.Y, position.Z);
 
-        public INbtTag GetTileEntity(int x, int y, int z)
+        public NbtCompound GetTileEntity(int x, int y, int z)
         {
             x = NumericsHelper.Modulo(x, 16);
             z = NumericsHelper.Modulo(z, 16);
@@ -102,9 +102,9 @@ namespace Obsidian.WorldData
             return this.TileEntities.GetValueOrDefault(value);
         }
 
-        public void SetTileEntity(Vector position, INbtTag tileEntityData) => this.SetTileEntity(position.X, position.Y, position.Z, tileEntityData);
+        public void SetTileEntity(Vector position, NbtCompound tileEntityData) => this.SetTileEntity(position.X, position.Y, position.Z, tileEntityData);
 
-        public void SetTileEntity(int x, int y, int z, INbtTag tileEntityData)
+        public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData)
         {
             x = NumericsHelper.Modulo(x, 16);
             z = NumericsHelper.Modulo(z, 16);

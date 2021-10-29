@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Blocks;
@@ -168,11 +169,13 @@ namespace Obsidian
                     //TODO open lectern??
                 }
 
-                var tileEntity = server.World.GetTileEntity(blockPosition);
-
-                if (tileEntity == null)
+                if(container is ITileEntity)
                 {
-                    tileEntity = new NbtCompound()
+                    var tileEntity = server.World.GetTileEntity(blockPosition);
+
+                    if (tileEntity == null)
+                    {
+                        tileEntity = new NbtCompound()
                     {
                         new NbtTag<string>("id", (container as ITileEntity).Id),
 
@@ -183,22 +186,24 @@ namespace Obsidian
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    server.World.SetTileEntity(blockPosition, tileEntity);
-                }
-                else if (tileEntity is NbtCompound dataCompound)
-                {
-                    if (dataCompound.TryGetTag("Items", out var tag))
+                        server.World.SetTileEntity(blockPosition, tileEntity);
+                    }
+                    else if (tileEntity is NbtCompound dataCompound)
                     {
-                        var items = tag as NbtList;
-
-                        for (int i = 0; i < items.Count; i++)
+                        if (dataCompound.TryGetTag("Items", out var tag))
                         {
-                            var inventoryItem = items[i].ItemFromNbt();
+                            var items = tag as NbtList;
 
-                            container.SetItem(i, inventoryItem);
+                            foreach (NbtCompound i in items)
+                            {
+                                var inventoryItem = i.ItemFromNbt();
+
+                                container.SetItem(inventoryItem.Slot, inventoryItem);
+                            }
                         }
                     }
                 }
+
                 await player.OpenInventoryAsync(container);
             }
             else

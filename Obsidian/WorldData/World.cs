@@ -220,12 +220,12 @@ namespace Obsidian.WorldData
 
         public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-        public INbtTag GetTileEntity(Vector blockPosition) => this.GetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
+        public NbtCompound GetTileEntity(Vector blockPosition) => this.GetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
-        public INbtTag GetTileEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetTileEntity(x, y, z);
+        public NbtCompound GetTileEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetTileEntity(x, y, z);
 
-        public void SetTileEntity(Vector blockPosition, INbtTag tileEntityData) => this.SetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
-        public void SetTileEntity(int x, int y, int z, INbtTag tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetTileEntity(x, y, z, tileEntityData);
+        public void SetTileEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+        public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetTileEntity(x, y, z, tileEntityData);
 
         public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 
