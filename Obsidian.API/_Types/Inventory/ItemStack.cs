@@ -57,7 +57,7 @@ namespace Obsidian.API
             return item;
         }
 
-        public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
+        public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other.Type, other.ItemMeta);
 
         public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
