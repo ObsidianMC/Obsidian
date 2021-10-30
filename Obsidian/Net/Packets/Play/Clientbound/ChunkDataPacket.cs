@@ -1,10 +1,6 @@
 ﻿using Obsidian.Nbt;
 using Obsidian.Utilities;
-using Obsidian.Utilities.Collection;
 using Obsidian.WorldData;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Obsidian.Net.Packets.Play.Clientbound

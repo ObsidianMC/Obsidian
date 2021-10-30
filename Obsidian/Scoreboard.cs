@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
