@@ -117,15 +117,15 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                 }
             };
 
-            Module scaled = new Blend
-            {
-                Distance = 2,
-                Source0 = new TerrainSelect
+            Module scaled = new Blend(
+                new TerrainSelect
                 {
                     BiomeSelector = FinalBiomes,
                     Control = biomeTransitionSel2,
                     TerrainModules = biomesMap,
-                }
+                })
+            {
+                Distance = 2
             };
 
             if (isUnitTest)

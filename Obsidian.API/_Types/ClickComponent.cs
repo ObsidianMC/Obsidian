@@ -8,7 +8,7 @@
 
         public string Translate { get; set; }
 
-        public ClickComponent(EClickAction action, string value, string translate)
+        public ClickComponent(EClickAction action, string value, string translate = "")
         {
             Action = action;
             Value = value;

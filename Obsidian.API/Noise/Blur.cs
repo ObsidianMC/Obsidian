@@ -29,11 +29,10 @@ namespace Obsidian.API.Noise
         {
             // Bitshift the source module by 1 one so we can
             // "divide" each pixel into 4 quadrants
-            var shifted = new BitShiftInput
+            var shifted = new BitShiftInput(this.Source0)
             {
                 Amount = 1,
-                Left = false,
-                Source0 = this.Source0
+                Left = false
             };
 
             var self = shifted.GetValue(x, y, z);

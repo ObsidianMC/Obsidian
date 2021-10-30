@@ -8,7 +8,7 @@
 
         public string Translate { get; set; }
 
-        public HoverComponent(EHoverAction action, object contents, string translate)
+        public HoverComponent(EHoverAction action, object contents, string translate = "")
         {
             Action = action;
             Contents = contents;
