@@ -27,7 +27,10 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// ctor.
         /// </summary>
-        public BitShiftInput() : base(1) { }
+        public BitShiftInput(Module source0) : base(1) 
+        {
+            Source0 = source0;
+        }
 
         /// <summary>
         /// Retrieve noise value

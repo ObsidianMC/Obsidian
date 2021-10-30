@@ -370,7 +370,8 @@ namespace Obsidian.Commands
         [Command("time")]
         [CommandInfo("Sets declared time", "/time <timeOfDay>")]
         [IssuerScope(CommandIssuers.Client)]
-        public async Task TimeAsync(CommandContext Context) => TimeAsync(Context, 1337);
+        public async Task TimeAsync(CommandContext Context) => await TimeAsync(Context, 1337);
+
         [CommandOverload]
         public async Task TimeAsync(CommandContext Context,int time)
         {

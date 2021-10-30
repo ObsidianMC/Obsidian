@@ -19,10 +19,23 @@ namespace Obsidian.API.Plugins.Services.IO
             if (!IsUsable)
                 throw new SecurityException(SecurityExceptionMessage);
 
-            var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            string workingDirectory = GetWorkingDirectory();
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return File.Exists(path);
         }
@@ -37,9 +50,22 @@ namespace Obsidian.API.Plugins.Services.IO
                 throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return Directory.Exists(path);
         }
@@ -49,13 +75,26 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string CombinePath(params string[] paths)
         {
-            var workingDirectory = GetWorkingDirectory();
+            string workingDirectory = GetWorkingDirectory();
             for (int i = 0; i < paths.Length; i++)
             {
                 var path = paths[i];
-                if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+                var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+                var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+                if (fullPath == null)
+                {
+                    throw new DirectoryNotFoundException();
+                }
+
+                if (fullPathToCombine == null)
+                {
+                    throw new DirectoryNotFoundException();
+                }
+
+                if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
                 if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                    paths[i] = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                    paths[i] = Path.Combine(fullPathToCombine, path);;
             }
 
             return Path.Combine(paths);
@@ -67,9 +106,22 @@ namespace Obsidian.API.Plugins.Services.IO
         public string GetExtension(string path)
         {
             var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return Path.GetExtension(path);
         }
@@ -80,9 +132,22 @@ namespace Obsidian.API.Plugins.Services.IO
         public string GetFileName(string path)
         {
             var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return Path.GetFileName(path);
         }
@@ -93,9 +158,22 @@ namespace Obsidian.API.Plugins.Services.IO
         public string GetFileNameWithoutExtension(string path)
         {
             var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return Path.GetFileNameWithoutExtension(path);
         }
@@ -106,9 +184,22 @@ namespace Obsidian.API.Plugins.Services.IO
         public string GetFullPath(string path)
         {
             var workingDirectory = GetWorkingDirectory();
-            if (!Path.GetDirectoryName(Path.GetFullPath(path)).StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
+            var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
+            var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
+
+            if (fullPath == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (fullPathToCombine == null)
+            {
+                throw new DirectoryNotFoundException();
+            }
+
+            if (!fullPath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(path)) throw new UnauthorizedAccessException(path);
             if (workingDirectory != null && !Path.IsPathFullyQualified(path))
-                path = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(workingDirectory)), path);
+                path = Path.Combine(fullPathToCombine, path);
 
             return Path.GetFullPath(path);
         }

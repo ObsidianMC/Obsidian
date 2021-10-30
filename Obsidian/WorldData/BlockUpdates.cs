@@ -9,19 +9,24 @@ namespace Obsidian.WorldData
     {
         internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
         {
-            if (blockUpdate.block is null) { return false; }
-            var world = blockUpdate.world;
-            var location = blockUpdate.position;
-            var material = blockUpdate.block.Value.Material;
-            if (world.GetBlock(location + Vector.Down) is Block below && (Block.Replaceable.Contains(below.Material) || below.IsFluid))
+            return await Task.Run(() =>
             {
-                world.SetBlock(location, Block.Air);
-                world.SpawnFallingBlock(location, material);
-                return true;
-            }
-            return false;
+                if (blockUpdate.block is null) { return false; }
+                var world = blockUpdate.world;
+                var location = blockUpdate.position;
+                var material = blockUpdate.block.Value.Material;
+                if (world.GetBlock(location + Vector.Down) is Block below && (Block.Replaceable.Contains(below.Material) || below.IsFluid))
+                {
+                    world.SetBlock(location, Block.Air);
+                    world.SpawnFallingBlock(location, material);
+                    return true;
+                }
+                return false;
+            });
         }
 
+        // TODO: This method will need to be implemented as above if it is going to be declared async
+        // HenryMigo 30/10/2021
         internal static async Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
         {
             if (blockUpdate.block is null) { return false; }
@@ -30,7 +35,7 @@ namespace Obsidian.WorldData
             var location = blockUpdate.position;
             int state = block.State;
             Vector belowPos = location + Vector.Down;
-            
+
             // Handle the initial search for closet path downwards.
             // Just going to do a crappy pathfind for now. We can do
             // proper pathfinding some other time.

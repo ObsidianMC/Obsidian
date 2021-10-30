@@ -20,8 +20,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
         private Module FinalBiomes;
 
-        
-
         public OverworldTerrain(bool isUnitTest = false)
         {
             settings = OverworldGenerator.GeneratorSettings;
