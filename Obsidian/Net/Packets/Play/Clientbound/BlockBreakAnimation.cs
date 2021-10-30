@@ -12,7 +12,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound
         public VectorF Position { get; init; }
 
         /// <summary>
-        /// 0-9 to set it, any other value to remove it
+        /// 0-9 to set it, any other value to remove it.
         /// </summary>
         [Field(2)]
         public sbyte DestroyStage { get; init; }
