@@ -62,14 +62,14 @@ namespace Obsidian.API.Crafting.Builders
                 throw new InvalidOperationException("Sub ingredients must have atleast 1 item.");
 
             return new SmithingRecipe
-            {
-                Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = CraftingType.Smithing,
-                Group = this.Group,
-                Base = this.Base,
-                Addition = this.Addition,
-                Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
-            };
+            (
+                this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+                CraftingType.Smithing,
+                this.Group,
+                this.Base,
+                this.Addition,
+                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
+            );
         }
     }
 }

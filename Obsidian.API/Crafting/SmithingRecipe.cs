@@ -13,5 +13,15 @@
         public Ingredient Base { get; set; }
 
         public Ingredient Addition { get; set; }
+
+        public SmithingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient Base, Ingredient addition)
+        {
+            Name = name;
+            Type = type;
+            Group = group;
+            Result = result;
+            this.Base = Base;
+            Addition = addition;
+        }
     }
 }

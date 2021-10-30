@@ -35,13 +35,13 @@ namespace Obsidian.API.Crafting.Builders
                 throw new InvalidOperationException("Ingredients must be filled with atleast 1 item.");
 
             return new ShapelessRecipe
-            {
-                Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = CraftingType.CraftingShapeless,
-                Group = this.Group,
-                Ingredients = new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients)),
-                Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
-            };
+            (
+                this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+                CraftingType.CraftingShapeless,
+                this.Group,
+                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+                new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients))
+            );
         }
 
         public ShapelessRecipeBuilder WithName(string name)

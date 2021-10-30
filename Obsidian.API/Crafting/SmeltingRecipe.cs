@@ -15,5 +15,16 @@
         public float Experience { get; set; }
 
         public int Cookingtime { get; set; }
+
+        public SmeltingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient ingredient, float experience, int cookingTime)
+        {
+            Name = name;
+            Type = type;
+            Group = group;
+            Result = result;
+            Ingredient = ingredient;
+            Experience = experience;
+            Cookingtime = cookingTime;
+        }
     }
 }
