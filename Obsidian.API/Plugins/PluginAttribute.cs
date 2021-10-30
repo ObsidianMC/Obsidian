@@ -8,6 +8,15 @@ namespace Obsidian.API.Plugins
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class PluginAttribute : Attribute
     {
+        public PluginAttribute(string name, string version, string authors, string description, string projectUrl)
+        {
+            Name = name;
+            Version = version;
+            Authors = authors;
+            Description = description;
+            ProjectUrl = projectUrl;
+        }
+
         /// <summary>
         /// Name of the plugin.
         /// </summary>

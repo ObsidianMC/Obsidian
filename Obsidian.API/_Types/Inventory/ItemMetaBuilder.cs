@@ -28,11 +28,11 @@ namespace Obsidian.API
 
         private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
-        public ItemMetaBuilder()
+        public ItemMetaBuilder(string name = "")
         {
             this.Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.enchantments);
             this.StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.storedEnchantments);
-
+            this.Name = name;
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
 
             this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);

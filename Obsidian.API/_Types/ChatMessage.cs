@@ -6,6 +6,28 @@ namespace Obsidian.API
 {
     public class ChatMessage
     {
+        public ChatMessage(string text, HexColor color, bool bold, bool italic, bool underlined, bool strikethrough, bool obfuscated, string insertion, ClickComponent clickEvent, HoverComponent hoverEvent, List<ChatMessage> extra)
+        {
+            Text = text;
+            Color = color;
+            Bold = bold;
+            Italic = italic;
+            Underlined = underlined;
+            Strikethrough = strikethrough;
+            Obfuscated = obfuscated;
+            Insertion = insertion;
+            ClickEvent = clickEvent;
+            HoverEvent = hoverEvent;
+            Extra = extra;
+        }
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public ChatMessage()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        {
+
+        }
+
         public string Text { get; set; }
 
         public HexColor Color { get; set; }

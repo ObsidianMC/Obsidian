@@ -7,9 +7,9 @@ namespace Obsidian.API.Noise
     {
         public Module Source0 { get; set; }
 
-        public Interpolate() : base(1)
+        public Interpolate(Module source0) : base(1)
         {
-
+            Source0 = source0;
         }
 
         public override double GetValue(double x, double y, double z)

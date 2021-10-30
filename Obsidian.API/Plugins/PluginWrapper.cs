@@ -7,9 +7,16 @@ namespace Obsidian.API.Plugins
     /// </summary>
     public abstract class PluginWrapper
     {
-        internal PluginBase plugin;
+        internal PluginBase Plugin;
 
+        public PluginWrapper(PluginBase plugin)
+        {
+            Plugin = plugin;
+        }
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public PluginWrapper()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
 
         }
@@ -17,17 +24,17 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public object Invoke(string methodName, params object[] args)
+        public object? Invoke(string methodName, params object[] args)
         {
-            return plugin.Invoke(methodName, args);
+            return Plugin.Invoke(methodName, args);
         }
 
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public T Invoke<T>(string methodName, params object[] args)
+        public T? Invoke<T>(string methodName, params object[] args)
         {
-            return plugin.Invoke<T>(methodName, args);
+            return Plugin.Invoke<T>(methodName, args);
         }
 
         /// <summary>
@@ -35,7 +42,7 @@ namespace Obsidian.API.Plugins
         /// </summary>
         public T GetMethod<T>(string methodName, params Type[] parameterTypes) where T : Delegate
         {
-            return plugin.GetMethod<T>(methodName, parameterTypes);
+            return Plugin.GetMethod<T>(methodName, parameterTypes);
         }
 
         /// <summary>
@@ -43,7 +50,7 @@ namespace Obsidian.API.Plugins
         /// </summary>
         public Func<T> GetPropertyGetter<T>(string propertyName)
         {
-            return plugin.GetPropertyGetter<T>(propertyName);
+            return Plugin.GetPropertyGetter<T>(propertyName);
         }
 
         /// <summary>
@@ -51,7 +58,7 @@ namespace Obsidian.API.Plugins
         /// </summary>
         public Action<T> GetPropertySetter<T>(string propertyName)
         {
-            return plugin.GetPropertySetter<T>(propertyName);
+            return Plugin.GetPropertySetter<T>(propertyName);
         }
     }
 }

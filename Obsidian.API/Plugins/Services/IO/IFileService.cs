@@ -75,10 +75,10 @@ namespace Obsidian.API.Plugins.Services.IO
         /// </summary>
         public string CombinePath(params string[] paths)
         {
-            string workingDirectory = GetWorkingDirectory();
             for (int i = 0; i < paths.Length; i++)
             {
                 var path = paths[i];
+                var workingDirectory = GetWorkingDirectory();
                 var fullPath = Path.GetDirectoryName(Path.GetFullPath(path));
                 var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
 

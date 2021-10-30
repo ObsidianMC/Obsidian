@@ -157,7 +157,7 @@ namespace Obsidian.Plugins
                     return null;
                 }
 
-                wrapper.plugin = plugin;
+                wrapper.Plugin = plugin;
 
                 Type pluginType = plugin.GetType();
                 var methods = pluginType.GetMethods();

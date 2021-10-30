@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
-    [Plugin(Name = "Sample Plugin", Version = "1.0",
-            Authors = "Obsidian Team", Description = "My sample plugin.",
-            ProjectUrl = "https://github.com/Naamloos/Obsidian")]
+    [Plugin("Sample Plugin", "1.0",
+            "Obsidian Team", "My sample plugin.",
+            "https://github.com/Naamloos/Obsidian")]
     public class SamplePlugin : PluginBase
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
@@ -19,7 +19,7 @@ namespace SamplePlugin
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
         // Optional dependencies may be injected at any time, if at all
-        [Dependency(MinVersion = "2.0", Optional = true), Alias("Sample Remote Plugin")]
+        [Dependency("2.0", true), Alias("Sample Remote Plugin")]
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs

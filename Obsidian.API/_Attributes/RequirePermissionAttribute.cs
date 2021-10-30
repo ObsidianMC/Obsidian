@@ -19,6 +19,11 @@ namespace Obsidian.API
 
         public override Task<bool> RunChecksAsync(CommandContext context)
         {
+            if (context.Player == null)
+            {
+                throw new Exception("Player not found");
+            }
+
             if(context.Sender.Issuer == CommandIssuers.Console)
                 return Task.FromResult(true);
             if (this.op && context.Player.IsOperator)

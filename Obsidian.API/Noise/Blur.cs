@@ -13,9 +13,9 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// ctor.
         /// </summary>
-        public Blur() : base(1)
+        public Blur(Module source0) : base(1)
         {
-
+            Source0 = source0;
         }
 
         /// <summary>

@@ -110,19 +110,14 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             var biomeTransitionSel2 = new Cache
             {
-                Source0 = new TransitionMap
-                {
-                    Distance = 5,
-                    Source0 = FinalBiomes
-                }
+                Source0 = new TransitionMap(FinalBiomes, 5)
             };
 
             Module scaled = new Blend(
-                new TerrainSelect
+                new TerrainSelect(FinalBiomes)
                 {
-                    BiomeSelector = FinalBiomes,
                     Control = biomeTransitionSel2,
-                    TerrainModules = biomesMap,
+                    TerrainModules = biomesMap
                 })
             {
                 Distance = 2

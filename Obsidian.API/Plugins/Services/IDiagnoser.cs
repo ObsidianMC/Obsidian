@@ -31,7 +31,7 @@ namespace Obsidian.API.Plugins.Services
         /// <param name="createWindow">Indicates whether to start the process in a new window.</param>
         /// <param name="useShell">Indicates whether to use the operating system shell to start the process.</param>
         /// <returns>A new <see cref="IProcess"/> that is associated with the process resource, or null if no process resource is started. </returns>
-        public IProcess StartProcess(string fileName, string arguments = null, bool createWindow = true, bool useShell = false);
+        public IProcess StartProcess(string fileName, string arguments = "", bool createWindow = true, bool useShell = false);
 
         /// <summary>
         /// Returns a new instance of <see cref="IStopwatch"/>.

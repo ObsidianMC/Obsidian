@@ -8,6 +8,12 @@ namespace Obsidian.API.Plugins
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public class DependencyAttribute : Attribute
     {
+        public DependencyAttribute(string minVersion, bool optional)
+        {
+            Optional = optional;
+            MinVersion = minVersion;
+        }
+
         /// <summary>
         /// Indicates whether the plugin can run without this dependency.
         /// </summary>

@@ -233,7 +233,7 @@ namespace Obsidian.WorldData
             {
                 if (disposing)
                 {
-                    FlushToDiskAsync();
+                    Task.Run(async () => await FlushToDiskAsync());
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
