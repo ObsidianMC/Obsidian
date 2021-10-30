@@ -4,7 +4,7 @@
     {
         public LivingBitMask LivingBitMask { get; set; }
 
-        public float Health { get; set; }
+        public new float Health { get; set; }
 
         public uint ActiveEffectColor { get; }
 

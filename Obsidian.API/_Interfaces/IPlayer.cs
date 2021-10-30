@@ -10,7 +10,7 @@ namespace Obsidian.API
 
         public string Username { get; }
 
-        public Guid Uuid { get; }
+        public new Guid Uuid { get; }
         public bool IsOperator { get; }
 
         public Gamemode Gamemode { get; set; }
