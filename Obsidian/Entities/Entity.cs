@@ -169,13 +169,27 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(VectorF pos, bool onGround = true)
         {
-            this.Position = pos;
+            using (Chunk chunk = this.World.GetChunk(pos.X / 16f, pos.Y / 16f, false))
+            {
+                if (chunk != null && chunk.isGenerated)
+                {
+                    this.Position = pos;
+                }
+            }
+            
             this.OnGround = onGround;
         }
 
         public void UpdatePosition(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
         {
-            this.Position = pos;
+            using (Chunk chunk = this.World.GetChunk(pos.X / 16f, pos.Y / 16f, false))
+            {
+                if (chunk != null && chunk.isGenerated)
+                {
+                    this.Position = pos;
+                }
+            }
+
             this.Yaw = yaw;
             this.Pitch = pitch;
             this.OnGround = onGround;
@@ -183,8 +197,7 @@ namespace Obsidian.Entities
 
         public void UpdatePosition(float x, float y, float z, bool onGround = true)
         {
-            this.Position = new VectorF(x, y, z);
-            this.OnGround = onGround;
+            this.UpdatePosition(new VectorF(x, y, z), onGround);
         }
 
         public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
