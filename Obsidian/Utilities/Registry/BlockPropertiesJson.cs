@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Utilities.Registry.Enums;
-using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities.Registry
 {

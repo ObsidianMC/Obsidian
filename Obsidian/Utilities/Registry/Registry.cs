@@ -3,7 +3,6 @@ using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
-using Obsidian.Items;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
 using Obsidian.Utilities.Registry.Codecs;

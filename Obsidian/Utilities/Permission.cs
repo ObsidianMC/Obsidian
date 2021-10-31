@@ -2,16 +2,10 @@
 
 namespace Obsidian.Utilities
 {
-    public class Permission
+    public record Permission(string Name)
     {
-        public string Name { get; set; }
+        public static readonly string Wildcard = "*";
 
-        public List<Permission> Children { get; set; }
-
-        public Permission(string name)
-        {
-            this.Name = name;
-            this.Children = new List<Permission>();
-        }
+        public List<Permission> Children { get; } = new();
     }
 }

@@ -2,7 +2,6 @@
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using System;
 using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound

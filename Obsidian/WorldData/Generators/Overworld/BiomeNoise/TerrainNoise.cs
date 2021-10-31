@@ -1,8 +1,4 @@
-﻿using SharpNoise;
-using SharpNoise.Modules;
-using System.Collections.Generic;
-
-namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
+﻿namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
 {
     public class TerrainNoise : BaseBiomeNoise
     {
