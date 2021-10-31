@@ -58,7 +58,7 @@ namespace Obsidian
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
             }
 
-            string serverDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string serverDir = string.Empty; // This resolves to the binary path by default.
 
             string configPath = Path.Combine(serverDir, "config.json");
             Config config;
