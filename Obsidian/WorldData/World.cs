@@ -529,11 +529,13 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            await Task.Run(() =>
-            {
-                Server.BroadcastMessage("Saving to disk...");
-                Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-                Server.BroadcastMessage("Save complete.");
+            await Task.WhenAll(new List<Task> {
+                Task.Run(() =>
+                {
+                    Server.BroadcastMessage("Saving to disk...");
+                    Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
+                    Server.BroadcastMessage("Save complete.");
+                })
             });
         }
 

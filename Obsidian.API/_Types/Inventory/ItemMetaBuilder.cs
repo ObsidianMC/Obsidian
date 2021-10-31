@@ -8,7 +8,7 @@ namespace Obsidian.API
         internal byte Slot { get; set; }
 
         internal int CustomModelData { get; set; }
-        public ChatMessage Name { get; internal set; }
+        public ChatMessage? Name { get; internal set; }
 
         public int Durability { get; internal set; }
 
@@ -28,13 +28,11 @@ namespace Obsidian.API
 
         private readonly List<ChatMessage> lore = new List<ChatMessage>();
 
-        public ItemMetaBuilder(string name = "")
+        public ItemMetaBuilder()
         {
             this.Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.enchantments);
             this.StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.storedEnchantments);
-            this.Name = name;
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
-
             this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
         }
 

@@ -20,16 +20,9 @@ namespace Obsidian.API.Plugins
 
         private Type typeCache;
 
-        public PluginBase(Type TypeCache)
-        {
-            typeCache = TypeCache;
-        }
-
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public PluginBase()
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
-
+            typeCache ??= GetType();
         }
 
         public void RegisterCommand(Action action)

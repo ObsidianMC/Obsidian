@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
 {
-    public class RegionFile : IDisposable
+    public class RegionFile : IAsyncDisposable
     {
         private readonly string filePath;
         private readonly int cubicRegionSize;
@@ -227,13 +227,13 @@ namespace Obsidian.WorldData
         }
 
         #region IDisposable
-        protected virtual void Dispose(bool disposing)
+        protected async virtual Task DisposeAsync(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    Task.Run(async () => await FlushToDiskAsync());
+                    await FlushToDiskAsync();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
@@ -249,10 +249,10 @@ namespace Obsidian.WorldData
         //     Dispose(disposing: false);
         // }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
+            // Do not change this code. Put cleanup code in 'DisposeAsync(bool disposing)' method
+            await DisposeAsync(true);
             GC.SuppressFinalize(this);
         }
         #endregion IDisposable

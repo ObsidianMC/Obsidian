@@ -57,10 +57,6 @@ namespace Obsidian.API.Plugins.Services
             {
                 Log(exception.StackTrace);
             }
-            else
-            {
-                Log("No stack trace...");
-            }
         }
     }
 }
