@@ -85,7 +85,7 @@ namespace Obsidian
             this.packetCryptography = new PacketCryptography();
             this.Server = originServer;
             this.LoadedChunks = new();
-            this.handler = new ClientHandler();
+            this.handler = new ClientHandler(config);
 
             Stream parentStream = this.tcp.GetStream();
             this.minecraftStream = new MinecraftStream(parentStream);

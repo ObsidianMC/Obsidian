@@ -3,6 +3,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 using System;
 using System.Collections.Concurrent;
@@ -13,6 +14,12 @@ namespace Obsidian
     public class ClientHandler
     {
         private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
+        private Config config;
+
+        public ClientHandler(Config config)
+        {
+            this.config = config;
+        }
 
         public void RegisterHandlers()
         {
@@ -153,7 +160,7 @@ namespace Obsidian
                     }
                     catch (Exception e)
                     {
-                        if (Globals.Config.VerboseExceptionLogging)
+                        if (this.config.VerboseExceptionLogging)
                             Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                     }
                     break;
@@ -170,7 +177,7 @@ namespace Obsidian
             }
             catch (Exception e)
             {
-                if (Globals.Config.VerboseExceptionLogging)
+                if (client.Server.Config.VerboseExceptionLogging)
                     Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
             }
             ObjectPool<T>.Shared.Return(packet);
