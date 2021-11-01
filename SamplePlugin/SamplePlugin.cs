@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
-    [Plugin("Sample Plugin", "1.0",
-            "Obsidian Team", "My sample plugin.",
-            "https://github.com/Naamloos/Obsidian")]
+    [Plugin(name: "Sample Plugin", version: "1.0",
+            authors: "Obsidian Team", description: "My sample plugin.",
+            projectUrl: "https://github.com/Naamloos/Obsidian")]
     public class SamplePlugin : PluginBase
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
@@ -19,38 +19,38 @@ namespace SamplePlugin
         // Dependencies will be injected automatically, if dependency class and field/property names match
         // Plugins won't load until all their required dependencies are added
         // Optional dependencies may be injected at any time, if at all
-        [Dependency("2.0", true), Alias("Sample Remote Plugin")]
+        [Dependency(minVersion: "2.0", optional: true), Alias(identifier: "Sample Remote Plugin")]
         public MyWrapper SampleRemotePlugin { get; set; }
 
         // One of server messages, called when an event occurs
         public void OnLoad(IServer server)
         {
-            Logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
-            Logger.Log($"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
+            Logger.Log(message: $"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            Logger.Log(message: $"Hello! I live at §a{FileReader.CreateWorkingDirectory()}§f!");
         }
 
         public void OnPermissionRevoked(PermissionRevokedEventArgs args)
         {
-            Logger.Log($"Permission {args.Permission} revoked from player {args.Player.Username}");
+            Logger.Log(message: $"Permission {args.Permission} revoked from player {args.Player.Username}");
         }
 
         public void OnPermissionGranted(PermissionGrantedEventArgs args)
         {
-            Logger.Log($"Permission {args.Permission} granted to player {args.Player.Username}");
+            Logger.Log(message: $"Permission {args.Permission} granted to player {args.Player.Username}");
         }
 
         public async Task OnPlayerJoin(PlayerJoinEventArgs playerJoinEvent)
         {
             var player = playerJoinEvent.Player;
 
-            await player.SendMessageAsync(ChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
+            await player.SendMessageAsync(message: ChatMessage.Simple(text: $"Welcome {player.Username}!", color: ChatColor.Gold));
         }
 
-        [Command("plugincommand")]
-        [CommandInfo("woop dee doo this command is from within a plugin class!!")]
+        [Command(commandName: "plugincommand")]
+        [CommandInfo(description: "woop dee doo this command is from within a plugin class!!")]
         public async Task PluginCommandAsync(CommandContext ctx)
         {
-            await ctx.Sender.SendMessageAsync("Hello from plugin command implemented in Plugin class!");
+            await ctx.Sender.SendMessageAsync(message: "Hello from plugin command implemented in Plugin class!");
         }
     }
 

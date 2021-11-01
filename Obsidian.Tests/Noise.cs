@@ -21,18 +21,11 @@ namespace Obsidian.Tests
 
                 var map = new NoiseMap();
 
-                PlaneNoiseMapBuilder builder = new PlaneNoiseMapBuilder()
-                {
-                    DestNoiseMap = map,
-                    SourceModule = noiseGen.Result
-                };
+                PlaneNoiseMapBuilder builder =
+                    new PlaneNoiseMapBuilder() {DestNoiseMap = map, SourceModule = noiseGen.Result};
 
                 var image = new SharpNoise.Utilities.Imaging.Image();
-                var renderer = new ImageRenderer()
-                {
-                    SourceNoiseMap = map,
-                    DestinationImage = image
-                };
+                var renderer = new ImageRenderer() {SourceNoiseMap = map, DestinationImage = image};
 
                 //renderer.BuildGrayscaleGradient();
                 renderer.BuildTerrainGradient();

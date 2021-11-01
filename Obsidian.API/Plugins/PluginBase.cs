@@ -51,12 +51,12 @@ namespace Obsidian.API.Plugins
                 args = args.Take(parameterCount).ToArray();
             try
             {
-                    var result = method?.Invoke(this, args);
-                    if (result is Task task)
-                        return task;
-                    else if (result is ValueTask valueTask)
-                        return valueTask.AsTask();
-                    return Task.FromResult(result);
+                var result = method?.Invoke(this, args);
+                if (result is Task task)
+                    return task;
+                else if (result is ValueTask valueTask)
+                    return valueTask.AsTask();
+                return Task.FromResult(result);
             }
             catch (Exception e)
             {
@@ -230,6 +230,7 @@ namespace Obsidian.API.Plugins
                         break;
                     }
                 }
+
                 if (match)
                     return (method, parameters.Length);
             }

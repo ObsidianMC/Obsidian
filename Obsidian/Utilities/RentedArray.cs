@@ -27,14 +27,12 @@ namespace Obsidian.Utilities
         /// </summary>
         public Memory<T> Memory => array.AsMemory(0, Length);
 
-#nullable enable
         public RentedArray(int length, ArrayPool<T>? pool = null)
         {
             this.pool = pool ?? ArrayPool<T>.Shared;
             array = this.pool.Rent(length);
             Length = length;
         }
-#nullable disable
 
         /// <summary>
         /// Returns the rented array to the pool
