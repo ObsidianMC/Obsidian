@@ -106,11 +106,11 @@ namespace Obsidian.API.Plugins.Services
                 throw new SecurityException(SecurityExceptionMessage);
 
             string workingDirectory = GetWorkingDirectory();
-            var fullPath1 = Path.GetDirectoryName(Path.GetFullPath(sourceFileName));
-            var fullPath2 = Path.GetDirectoryName(Path.GetFullPath(destinationFileName));
+            var sourceFilePath = Path.GetDirectoryName(Path.GetFullPath(sourceFileName));
+            var destinationFilePath = Path.GetDirectoryName(Path.GetFullPath(destinationFileName));
             var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
 
-            if (fullPath1 == null || fullPath2 == null)
+            if (sourceFilePath == null || destinationFilePath == null)
             {
                 throw new DirectoryNotFoundException();
             }
@@ -120,13 +120,13 @@ namespace Obsidian.API.Plugins.Services
                 throw new DirectoryNotFoundException();
             }
 
-            if (!fullPath1.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
+            if (!sourceFilePath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
             if (workingDirectory != null && !Path.IsPathFullyQualified(sourceFileName))
                 sourceFileName = Path.Combine(fullPathToCombine, sourceFileName);
 
             workingDirectory = GetWorkingDirectory();
 
-            if (!fullPath2.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
+            if (!destinationFilePath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
             if (workingDirectory != null && !Path.IsPathFullyQualified(destinationFileName))
                 destinationFileName = Path.Combine(fullPathToCombine, destinationFileName);
 
@@ -143,11 +143,11 @@ namespace Obsidian.API.Plugins.Services
                 throw new SecurityException(SecurityExceptionMessage);
 
             var workingDirectory = GetWorkingDirectory();
-            var fullPath1 = Path.GetDirectoryName(Path.GetFullPath(sourceFileName));
-            var fullPath2 = Path.GetDirectoryName(Path.GetFullPath(destinationFileName));
+            var sourceFilePath = Path.GetDirectoryName(Path.GetFullPath(sourceFileName));
+            var destinationFilePath = Path.GetDirectoryName(Path.GetFullPath(destinationFileName));
             var fullPathToCombine = Path.GetDirectoryName(Path.GetFullPath(workingDirectory));
 
-            if (fullPath1 == null || fullPath2 == null)
+            if (sourceFilePath == null || destinationFilePath == null)
             {
                 throw new DirectoryNotFoundException();
             }
@@ -157,13 +157,13 @@ namespace Obsidian.API.Plugins.Services
                 throw new DirectoryNotFoundException();
             }
 
-            if (!fullPath1.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
+            if (!sourceFilePath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(sourceFileName)) throw new UnauthorizedAccessException(sourceFileName);
             if (workingDirectory != null && !Path.IsPathFullyQualified(sourceFileName))
                 sourceFileName = Path.Combine(fullPathToCombine, sourceFileName);
 
             workingDirectory = GetWorkingDirectory();
 
-            if (!fullPath2.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
+            if (!destinationFilePath.StartsWith(workingDirectory, true, null) && Path.IsPathFullyQualified(destinationFileName)) throw new UnauthorizedAccessException(destinationFileName);
             if (workingDirectory != null && !Path.IsPathFullyQualified(destinationFileName))
                 destinationFileName = Path.Combine(fullPathToCombine, destinationFileName);
             

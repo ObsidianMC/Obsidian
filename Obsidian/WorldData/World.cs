@@ -529,7 +529,7 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            await Task.WhenAll(Regions.Values.Select(r => r.FlushAsync()));
+            await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
         }
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)
