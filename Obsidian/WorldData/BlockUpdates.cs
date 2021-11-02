@@ -25,9 +25,9 @@ namespace Obsidian.WorldData
             return false;
         }
 
-        internal static async Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
+        internal static Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
         {
-            if (blockUpdate.block is null) { return false; }
+            if (blockUpdate.block is null) { return Task.FromResult(false); }
 
             var block = blockUpdate.block.Value;
             var world = blockUpdate.world;
@@ -70,7 +70,7 @@ namespace Obsidian.WorldData
                     world.SetBlock(path, newBlock);
                     var neighborUpdate = new BlockUpdate(world, path, newBlock);
                     world.ScheduleBlockUpdate(neighborUpdate);
-                    return false;
+                    return Task.FromResult(false);
                 }
             }
 
@@ -81,7 +81,7 @@ namespace Obsidian.WorldData
                 {
                     world.SetBlock(location, Block.Air);
                     world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos));
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // Keep falling
@@ -90,7 +90,7 @@ namespace Obsidian.WorldData
                     var newBlock = new Block(block.BaseId, state);
                     world.SetBlock(belowPos, newBlock);
                     world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos, newBlock));
-                    return false;
+                    return Task.FromResult(false);
                 }
                 else
                 {
@@ -127,7 +127,7 @@ namespace Obsidian.WorldData
                     {
                         var newBlock = new Block(Material.Water);
                         world.SetBlock(location, newBlock);
-                        return true;
+                        return Task.FromResult(true);
                     }
                 }
 
@@ -146,13 +146,13 @@ namespace Obsidian.WorldData
                         world.GetBlock(location + Vector.Up).Value.Material != block.Material)
                     {
                         world.SetBlock(location, Block.Air);
-                        return true;
+                        return Task.FromResult(true);
                     }
                 }
 
                 if (world.GetBlock(belowPos) is Block below)
                 {
-                    if (below.Material == block.Material) { return false; }
+                    if (below.Material == block.Material) { return Task.FromResult(false); }
 
                     if (Block.Replaceable.Contains(below.Material))
                     {
@@ -160,12 +160,12 @@ namespace Obsidian.WorldData
                         world.SetBlock(belowPos, newBlock);
                         var neighborUpdate = new BlockUpdate(world, belowPos, newBlock);
                         world.ScheduleBlockUpdate(neighborUpdate);
-                        return false;
+                        return Task.FromResult(false);
                     }
                 }
 
                 // the lowest level of water can only go down, so bail now.
-                if (state == 7) { return false; }
+                if (state == 7) { return Task.FromResult(false); }
 
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
@@ -183,7 +183,7 @@ namespace Obsidian.WorldData
                 }
             }
 
-            return false;
+            return Task.FromResult(false);
         }
     }
 }
