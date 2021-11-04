@@ -20,6 +20,11 @@ namespace Obsidian.API.Plugins
 
         private Type typeCache;
 
+        public PluginBase()
+        {
+            typeCache ??= GetType();
+        }
+
         public void RegisterCommand(Action action)
         {
             registerSingleCommand(action);
@@ -31,7 +36,7 @@ namespace Obsidian.API.Plugins
         public object? Invoke(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
-            return method.Invoke(this, args);
+            return method?.Invoke(this, args);
         }
 
         /// <summary>
@@ -46,7 +51,7 @@ namespace Obsidian.API.Plugins
                 args = args.Take(parameterCount).ToArray();
             try
             {
-                var result = method.Invoke(this, args);
+                var result = method?.Invoke(this, args);
                 if (result is Task task)
                     return task;
                 else if (result is ValueTask valueTask)
@@ -66,7 +71,7 @@ namespace Obsidian.API.Plugins
         public Task InvokeAsync(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
-            var result = method.Invoke(this, args);
+            var result = method?.Invoke(this, args);
             if (result is Task task)
                 return task;
             else if (result is ValueTask valueTask)
@@ -80,7 +85,7 @@ namespace Obsidian.API.Plugins
         public T? Invoke<T>(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
-            return (T?)method.Invoke(this, args);
+            return (T?)method?.Invoke(this, args);
         }
 
         /// <summary>
@@ -90,7 +95,7 @@ namespace Obsidian.API.Plugins
         public Task<T?> InvokeAsync<T>(string methodName, params object[] args)
         {
             var method = GetMethod(methodName, args);
-            var result = method.Invoke(this, args);
+            var result = method?.Invoke(this, args);
             if (result is Task<T?> task)
                 return task;
             else if (result is ValueTask<T?> valueTask)
@@ -137,7 +142,7 @@ namespace Obsidian.API.Plugins
                 args = args.Take(parameterCount).ToArray();
             try
             {
-                return method.Invoke(this, args);
+                return method?.Invoke(this, args);
             }
             catch (Exception e)
             {
@@ -175,7 +180,7 @@ namespace Obsidian.API.Plugins
             }
         }
 
-        private MethodInfo GetMethod(string methodName, object[] args)
+        private MethodInfo? GetMethod(string methodName, object[] args)
         {
             args ??= Array.Empty<object>();
             var types = new Type[args.Length];
@@ -225,6 +230,7 @@ namespace Obsidian.API.Plugins
                         break;
                     }
                 }
+
                 if (match)
                     return (method, parameters.Length);
             }

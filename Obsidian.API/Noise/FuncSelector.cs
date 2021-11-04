@@ -26,9 +26,11 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// Ctor.
         /// </summary>
-        public FuncSelector() : base(2)
+        public FuncSelector(Module source0, Module source1, Func<(double, double, double), int> conditionFunction) : base(2)
         {
-
+            Source0 = source0;
+            Source1 = source1;
+            ConditionFunction = conditionFunction;
         }
 
         /// <summary>

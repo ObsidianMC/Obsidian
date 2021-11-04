@@ -529,9 +529,7 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            Server.BroadcastMessage("Saving to disk...");
-            Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-            Server.BroadcastMessage("Save complete.");
+            await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
         }
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)

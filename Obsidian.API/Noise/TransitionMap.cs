@@ -16,9 +16,10 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// ctor.
         /// </summary>
-        public TransitionMap() : base(1)
+        public TransitionMap(Module source0, int distance) : base (1)
         {
-
+            Source0 = source0;
+            Distance = distance;
         }
 
         /// <summary>

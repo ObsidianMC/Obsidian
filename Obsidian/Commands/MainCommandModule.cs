@@ -75,15 +75,15 @@ namespace Obsidian.Commands
                 {
                     Text = $"\n{ChatColor.Gold}{usage}",
                     ClickEvent = new ClickComponent
-                    {
-                        Action = EClickAction.SuggestCommand,
-                        Value = usage.Contains(' ') ? $"{usage.Substring(0, usage.IndexOf(' '))} " : usage
-                    },
+                    (
+                        EClickAction.SuggestCommand,
+                        usage.Contains(' ') ? $"{usage.Substring(0, usage.IndexOf(' '))} " : usage
+                    ),
                     HoverEvent = new HoverComponent
-                    {
-                        Action = EHoverAction.ShowText,
-                        Contents = $"Click to suggest the command"
-                    }
+                    (
+                        EHoverAction.ShowText,
+                        $"Click to suggest the command"
+                    )
                 };
                 commands.AddExtra(commandName);
 
@@ -142,9 +142,14 @@ namespace Obsidian.Commands
                 plugin.Text = pluginContainer.Info.Name;
                 plugin.Color = colorByState;
 
-                plugin.HoverEvent = new HoverComponent { Action = EHoverAction.ShowText, Contents = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
+                plugin.HoverEvent = new HoverComponent 
+                ( 
+                    EHoverAction.ShowText, 
+                    $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" 
+                );
+
                 if (pluginContainer.Info.ProjectUrl != null)
-                    plugin.ClickEvent = new ClickComponent { Action = EClickAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
+                    plugin.ClickEvent = new ClickComponent (EClickAction.OpenUrl, pluginContainer.Info.ProjectUrl.AbsoluteUri);
 
                 messages.Add(plugin);
 
@@ -370,7 +375,8 @@ namespace Obsidian.Commands
         [Command("time")]
         [CommandInfo("Sets declared time", "/time <timeOfDay>")]
         [IssuerScope(CommandIssuers.Client)]
-        public async Task TimeAsync(CommandContext Context) => TimeAsync(Context, 1337);
+        public async Task TimeAsync(CommandContext Context) => await TimeAsync(Context, 1337);
+
         [CommandOverload]
         public async Task TimeAsync(CommandContext Context,int time)
         {
@@ -461,15 +467,15 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Red}{commandUsage}",
                 ClickEvent = new ClickComponent
-                {
-                    Action = EClickAction.SuggestCommand,
-                    Value = $"{commandSuggest}"
-                },
+                (
+                    EClickAction.SuggestCommand,
+                    $"{commandSuggest}"
+                ),
                 HoverEvent = new HoverComponent
-                {
-                    Action = EHoverAction.ShowText,
-                    Contents = $"Click to suggest the command"
-                }
+                (
+                    EHoverAction.ShowText,
+                    $"Click to suggest the command"
+                )
             };
 
             var prefix = new ChatMessage

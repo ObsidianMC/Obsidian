@@ -33,7 +33,6 @@ namespace Obsidian.Utilities
             array = this.pool.Rent(length);
             Length = length;
         }
-        
 
         /// <summary>
         /// Returns the rented array to the pool

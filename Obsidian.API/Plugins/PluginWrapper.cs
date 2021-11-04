@@ -9,7 +9,14 @@ namespace Obsidian.API.Plugins
     {
         internal PluginBase plugin;
 
+        public PluginWrapper(PluginBase plugin)
+        {
+            this.plugin = plugin;
+        }
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public PluginWrapper()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
 
         }
@@ -17,7 +24,7 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public object Invoke(string methodName, params object[] args)
+        public object? Invoke(string methodName, params object[] args)
         {
             return plugin.Invoke(methodName, args);
         }
@@ -25,7 +32,7 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Invokes a method in the class. For repeated calls use <see cref="GetMethod{T}(string, Type[])">GetMethod</see> or make a plugin wrapper.
         /// </summary>
-        public T Invoke<T>(string methodName, params object[] args)
+        public T? Invoke<T>(string methodName, params object[] args)
         {
             return plugin.Invoke<T>(methodName, args);
         }
