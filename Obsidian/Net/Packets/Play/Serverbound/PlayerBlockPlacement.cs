@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
@@ -57,13 +58,12 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             //TODO check if a player can place a block if they can't then call the player interact event
             if (interactedBlock.IsInteractable && !player.Sneaking)
             {
-                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+                await server.Events.InvokeAsync(Event.PlayerInteract, new PlayerInteractEventArgs(player)
                 {
                     Item = player.MainHand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
                     Block = interactedBlock,
-                    BlockLocation = this.Position,
+                    BlockLocation = Position,
                 });
-
                 return;
             }
 

@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Linq;
@@ -33,15 +34,15 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             switch (Type)
             {
                 case InteractionType.Interact:
-                    await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
+                    await server.Events.InvokeAsync(Event.EntityInteract, new EntityInteractEventArgs(player, entity, server, Sneaking));
                     break;
 
                 case InteractionType.Attack:
-                    await server.Events.InvokePlayerAttackEntityAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
+                    await server.Events.InvokeAsync(Event.PlayerAttackEntity, new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
                     break;
 
                 case InteractionType.InteractAt:
-                    await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
+                    await server.Events.InvokeAsync(Event.EntityInteract, new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
                     break;
             }
         }

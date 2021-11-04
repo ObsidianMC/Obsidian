@@ -1,4 +1,5 @@
 ﻿using Obsidian.API;
+using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System;
@@ -20,14 +21,14 @@ namespace Obsidian.Commands.Framework.Entities
         internal CommandHandler Handler { get; set; }
         public List<MethodInfo> Overloads { get; internal set; }
         public BaseExecutionCheckAttribute[] ExecutionChecks { get; private set; }
-        internal PluginContainer Plugin { get; }
+        internal Plugin Plugin { get; }
 
         public Command Parent { get; private set; }
         internal object ParentInstance { get; set; }
         internal Type ParentType { get; set; }
 
         public Command(string name, string[] aliases, string description, string usage, Command parent, BaseExecutionCheckAttribute[] checks,
-            CommandHandler handler, PluginContainer plugin, object parentinstance, Type parentType, CommandIssuers allowedIssuers)
+            CommandHandler handler, Plugin plugin, object parentInstance, Type parentType, CommandIssuers allowedIssuers)
         {
             Name = name;
             Aliases = aliases;
@@ -36,7 +37,7 @@ namespace Obsidian.Commands.Framework.Entities
             Handler = handler;
             Description = description;
             Usage = usage;
-            ParentInstance = parentinstance;
+            ParentInstance = parentInstance;
             Plugin = plugin;
             ParentType = parentType;
             AllowedIssuers = allowedIssuers;
@@ -105,31 +106,31 @@ namespace Obsidian.Commands.Framework.Entities
                 obj = this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
 
             // Get required params
-            var methodparams = method.GetParameters().Skip(1).ToArray();
+            var methodParams = method.GetParameters().Skip(1).ToArray();
 
             // Set first parameter to be the context.
-            var parsedargs = new object[methodparams.Length + 1];
-            parsedargs[0] = context;
+            var parsedArgs = new object[methodParams.Length + 1];
+            parsedArgs[0] = context;
 
             // TODO comments
-            for (int i = 0; i < methodparams.Length; i++)
+            for (int i = 0; i < methodParams.Length; i++)
             {
                 // Current param and arg
-                var paraminfo = methodparams[i];
+                var paramInfo = methodParams[i];
                 var arg = args[i];
 
                 // This can only be true if we get a [Remaining] arg. Sets arg to remaining text.
-                if (args.Length > methodparams.Length && i == methodparams.Length - 1)
+                if (args.Length > methodParams.Length && i == methodParams.Length - 1)
                 {
                     arg = string.Join(' ', args.Skip(i));
                 }
 
                 // Checks if there is any valid registered command handler
-                if (this.Handler._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
+                if (this.Handler.ArgumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paramInfo.ParameterType))
                 {
                     // Gets parser
                     // TODO premake instances of parsers in command handler
-                    var parsertype = this.Handler._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
+                    var parsertype = this.Handler.ArgumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paramInfo.ParameterType).GetType();
                     var parser = Activator.CreateInstance(parsertype);
 
                     // sets args for parser method
@@ -139,17 +140,17 @@ namespace Obsidian.Commands.Framework.Entities
                     if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))
                     {
                         // parse success!
-                        parsedargs[i + 1] = parseargs[2];
+                        parsedArgs[i + 1] = parseargs[2];
                     }
                     else
                     {
                         // Argument can't be parsed to the parser's type.
-                        throw new CommandArgumentParsingException($"Argument '{arg}' was not parseable to {paraminfo.ParameterType.Name}!");
+                        throw new CommandArgumentParsingException($"Argument '{arg}' was not parseable to {paramInfo.ParameterType.Name}!");
                     }
                 }
                 else
                 {
-                    throw new NoSuchParserException($"No valid argumentparser found for type {paraminfo.ParameterType.Name}!");
+                    throw new NoSuchParserException($"No valid argumentparser found for type {paramInfo.ParameterType.Name}!");
                 }
             }
 
@@ -167,7 +168,7 @@ namespace Obsidian.Commands.Framework.Entities
             }
 
             // await the command with it's args
-            object result = method.Invoke(obj, parsedargs);
+            object result = method.Invoke(obj, parsedArgs);
             if (result is Task task)
             {
                 await task;
@@ -180,7 +181,7 @@ namespace Obsidian.Commands.Framework.Entities
 
         public override string ToString()
         {
-            return $"{this.Handler._prefix}{this.GetQualifiedName()}";
+            return $"{this.Handler.Prefix}{this.GetQualifiedName()}";
         }
     }
 }

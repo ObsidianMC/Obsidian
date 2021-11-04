@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -10,7 +11,8 @@ namespace Obsidian
 {
     public partial class Server
     {
-        private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
+        [EventHandler(Event.PlayerAttackEntity, EventPriority.Lowest)]
+        private async Task PlayerAttackEntity(PlayerAttackEntityEventArgs e)
         {
             var entity = e.Entity;
             var attacker = e.Attacker;
@@ -21,6 +23,7 @@ namespace Obsidian
             }
         }
 
+        [EventHandler(Event.PlayerInteract, EventPriority.Lowest)]
         private async Task OnPlayerInteract(PlayerInteractEventArgs e)
         {
             var item = e.Item;
@@ -263,6 +266,7 @@ namespace Obsidian
             }
         }
 
+        [EventHandler(Event.PlayerLeave, EventPriority.Lowest)]
         private async Task OnPlayerLeave(PlayerLeaveEventArgs e)
         {
             var player = e.Player as Player;
@@ -286,6 +290,7 @@ namespace Obsidian
             BroadcastMessage(string.Format(Config.LeaveMessage, e.Player.Username));
         }
 
+        [EventHandler(Event.PlayerJoin, EventPriority.Lowest)]
         private async Task OnPlayerJoin(PlayerJoinEventArgs e)
         {
             var joined = e.Player as Player;

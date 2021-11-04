@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System;
@@ -30,7 +31,9 @@ namespace Obsidian.Net.Packets.Play.Serverbound
             {
                 server.World.SetBlockUntracked(Position, Block.Air, true);
 
-                var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
+                var blockBreakEvent = new BlockBreakEventArgs(server, player, block, Position);
+                await server.Events.InvokeAsync(Event.BlockBreak, blockBreakEvent);
+                
                 if (blockBreakEvent.Cancel)
                     return;
             }

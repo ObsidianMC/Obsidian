@@ -1,133 +1,105 @@
-﻿using Obsidian.API.Events;
-using Obsidian.Events.EventArgs;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
+using Obsidian.Plugins;
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Obsidian.Events
 {
     public class MinecraftEventHandler
     {
-        public AsyncEvent<PacketReceivedEventArgs> PacketReceived;
-        public AsyncEvent<QueuePacketEventArgs> QueuePacket;
-        public AsyncEvent<PlayerJoinEventArgs> PlayerJoin;
-        public AsyncEvent<PlayerLeaveEventArgs> PlayerLeave;
-        public AsyncEvent<PlayerTeleportEventArgs> PlayerTeleported;
-        public AsyncEvent<PermissionGrantedEventArgs> PermissionGranted;
-        public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
-        public AsyncEvent<InventoryClickEventArgs> ClickEvent;
-        public AsyncEvent<BlockBreakEventArgs> BlockBreak;
-        public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
-        public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
-        public AsyncEvent<EntityInteractEventArgs> EntityInteract;
-        public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
-        public AsyncEvent<PlayerInteractEventArgs> PlayerInteract;
-        public AsyncEvent ServerTick;
+        private readonly PluginManager pluginManager;
+        private readonly ILogger logger;
+        private readonly Dictionary<string, SortedSet<EventContainer>> eventMap = new();
 
-        public MinecraftEventHandler()
+        public MinecraftEventHandler(PluginManager pluginManager, ILogger logger)
         {
-            // Events that don't need additional arguments
-            PacketReceived = new("PacketReceived", HandleException);
-            QueuePacket = new("QueuePacket", HandleException);
-
-            PlayerJoin = new("PlayerJoin", HandleException);
-            PlayerLeave = new("PlayerLeave", HandleException);
-            ServerTick = new("ServerTick", HandleException);
-            PermissionGranted = new("PermissionGranted", HandleException);
-            PermissionRevoked = new("PermissionRevoked", HandleException);
-            ClickEvent = new("InventoryClick", HandleException);
-            BlockBreak = new("BlockBreak", HandleException);
-            IncomingChatMessage = new("IncomingChatMessage", HandleException);
-            PlayerTeleported = new("PlayerTeleported", HandleException);
-            ServerStatusRequest = new("ServerStatusRequest", HandleException);
-            EntityInteract = new("EntityInteract", HandleException);
-            PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
-            PlayerInteract = new("PlayerInteract", HandleException);
+            this.pluginManager = pluginManager;
+            this.logger = logger;
         }
 
-        private void HandleException(AsyncEvent e, Exception exception)
+        public void RegisterEvents(object source)
         {
+            foreach (var methodInfo in source.GetType().GetMethods())
+            {
+                var attr = methodInfo.GetCustomAttribute<EventHandlerAttribute>();
+                if (attr is null)
+                    continue;
+
+                if (!eventMap.ContainsKey(attr.Event))
+                    eventMap.Add(attr.Event, new SortedSet<EventContainer>(new EventContainerComparer()));
+
+                eventMap[attr.Event].Add(new EventContainer(attr.Priority, methodInfo, source));
+            }
         }
 
-        private void HandleException<T>(AsyncEvent<T> e, Exception exception)
+        public void UnregisterEvents(object source)
         {
+            foreach (var key in eventMap.Keys) eventMap[key].RemoveWhere(x => x.TargetObject == source);
         }
 
-        internal async ValueTask<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs eventArgs)
+        public void Invoke(string @event, AsyncEventArgs args)
         {
-            await QueuePacket.InvokeAsync(eventArgs);
-            return eventArgs;
+            pluginManager.InvokeEvent(@event, args);
+            if (args is ICancellable {Cancel: true}) return;
+            if (args.Handled) return;
+            InvokeInternal(@event, args);
         }
 
-        internal async ValueTask<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs eventArgs)
+        public async Task InvokeAsync(string @event, AsyncEventArgs args)
         {
-            await ClickEvent.InvokeAsync(eventArgs);
-            return eventArgs;
+            await pluginManager.InvokeEventAsync(@event, args);
+            if (args is ICancellable {Cancel: true}) return;
+            if (args.Handled) return;
+            await InvokeInternalAsync(@event, args);
+        }
+        
+        private void InvokeInternal(string @event, AsyncEventArgs args)
+        {
+            if (!eventMap.TryGetValue(@event, out var events)) return;
+            
+            foreach (var container in events)
+            {
+                if (args.Handled) return;
+                try
+                {
+                    container.Method.Invoke(container.TargetObject, new object[] {args});
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "Error executing event {Event}", @event);
+                }
+            }
         }
 
-        internal async ValueTask<BlockBreakEventArgs> InvokeBlockBreakAsync(BlockBreakEventArgs eventArgs)
+        private async Task InvokeInternalAsync(string @event, AsyncEventArgs args)
         {
-            await BlockBreak.InvokeAsync(eventArgs);
-            return eventArgs;
+            if (!eventMap.TryGetValue(@event, out var events)) return;
+            
+            foreach (var container in events)
+            {
+                if (args.Handled) return;
+                try
+                {
+                    if (IsAsync(container.Method))
+                    {
+                        var task = (Task)container.Method.Invoke(container.TargetObject, new object[] {args});
+                        if (task is not null) await task;
+                    }
+                    else
+                        container.Method.Invoke(container.TargetObject, new object[] {args});
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "Error executing event {Event}", @event);
+                }
+            }
         }
-
-        internal async ValueTask<PlayerInteractEventArgs> InvokePlayerInteractAsync(PlayerInteractEventArgs eventArgs)
-        {
-            await PlayerInteract.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<IncomingChatMessageEventArgs> InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs)
-        {
-            await IncomingChatMessage.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<PlayerTeleportEventArgs> InvokePlayerTeleportedAsync(PlayerTeleportEventArgs eventArgs)
-        {
-            await PlayerTeleported.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<PermissionGrantedEventArgs> InvokePermissionGrantedAsync(PermissionGrantedEventArgs eventArgs)
-        {
-            await PermissionGranted.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<PermissionRevokedEventArgs> InvokePermissionRevokedAsync(PermissionRevokedEventArgs eventArgs)
-        {
-            await PermissionRevoked.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<EntityInteractEventArgs> InvokeEntityInteractAsync(EntityInteractEventArgs eventArgs)
-        {
-            await EntityInteract.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal async ValueTask<PlayerAttackEntityEventArgs> InvokePlayerAttackEntityAsync(PlayerAttackEntityEventArgs eventArgs)
-        {
-            await PlayerAttackEntity.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
-
-        internal ValueTask InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
-            PacketReceived.InvokeAsync(eventArgs);
-
-        internal ValueTask InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
-            PlayerJoin.InvokeAsync(eventArgs);
-
-        internal ValueTask InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs) =>
-            PlayerLeave.InvokeAsync(eventArgs);
-
-        internal ValueTask InvokeServerTickAsync() =>
-            ServerTick.InvokeAsync();
-
-        internal async ValueTask<ServerStatusRequestEventArgs> InvokeServerStatusRequest(ServerStatusRequestEventArgs eventArgs)
-        {
-            await ServerStatusRequest.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
+        
+        private static bool IsAsync(MemberInfo methodInfo) => methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() != null;
     }
 }

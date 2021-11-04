@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.API.Boss;
 using Obsidian.API.Crafting;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Commands;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Entities;
@@ -43,8 +44,8 @@ namespace Obsidian
         public DateTimeOffset StartTime { get; private set; }
 
         public PluginManager PluginManager { get; }
-        public MinecraftEventHandler Events { get; } = new();
-
+        public MinecraftEventHandler Events { get; }
+        
         public IOperatorList Operators { get; }
         public IScoreboardManager ScoreboardManager { get; private set; }
 
@@ -102,7 +103,7 @@ namespace Obsidian
 
             Logger.LogDebug("Initializing command handler...");
             CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
-            PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
+            PluginManager = new PluginManager(LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
             CommandsHandler.LinkPluginManager(PluginManager);
 
             Logger.LogDebug("Registering commands...");
@@ -115,10 +116,8 @@ namespace Obsidian
             Logger.LogDebug("Registering command context type...");
             Logger.LogDebug("Done registering commands.");
 
-            Events.PlayerLeave += OnPlayerLeave;
-            Events.PlayerJoin += OnPlayerJoin;
-            Events.PlayerAttackEntity += PlayerAttack;
-            Events.PlayerInteract += OnPlayerInteract;
+            Events = new MinecraftEventHandler(PluginManager, LoggerProvider.CreateLogger("Event Handler"));
+            Events.RegisterEvents(this);
 
             Directory.CreateDirectory(PermissionPath);
 
@@ -137,8 +136,8 @@ namespace Obsidian
             }
         }
 
-        public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
-            CommandsHandler.RegisterCommandClass<T>(plugin, instance);
+        // public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
+        //     CommandsHandler.RegisterCommandClass<T>(plugin, instance);
 
         public void RegisterArgumentHandler<T>(T parser) where T : BaseArgumentParser =>
             CommandsHandler.AddArgumentParser(parser);
@@ -245,15 +244,11 @@ namespace Obsidian
             RegisterDefaults();
 
             ScoreboardManager = new ScoreboardManager(this);
+            
             Logger.LogInformation("Loading plugins...");
-
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
-
-            PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-            PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
-            PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
-
-            await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+            PluginManager.LoadFrom(new DirectoryInfo(Path.Combine(ServerFolderPath, "plugins")));
+            PluginManager.InitializePlugins();
 
             World = new World("overworld", this);
             if (!await World.LoadAsync())
@@ -311,7 +306,7 @@ namespace Obsidian
 
         internal async Task ExecuteCommand(string input)
         {
-            var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
+            var context = new CommandContext(CommandsHandler.Prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
             try
             {
                 await CommandsHandler.ProcessCommand(context);
@@ -365,12 +360,11 @@ namespace Obsidian
             }
             else
             {
-                var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+                var chat = new IncomingChatMessageEventArgs(source.Player, message, format);
+                await Events.InvokeAsync(Event.IncomingChatMessage, chat);
 
                 if (!chat.Cancel)
                     BroadcastMessage(string.Format(format, source.Player.Username, message), type);
-
-                return;
             }
         }
 
@@ -568,6 +562,8 @@ namespace Obsidian
             cts.Cancel();
             tcpListener.Stop();
             WorldGenerators.Clear();
+            PluginManager.DeInitializePlugins();
+            Events.UnregisterEvents(this);
 
             foreach (var client in clients)
                 client.Disconnect();
@@ -591,7 +587,7 @@ namespace Obsidian
             var timer = new BalancingTimer(50, cts.Token);
             while (await timer.WaitForNextTickAsync())
             {
-                await Events.InvokeServerTickAsync();
+                await Events.InvokeAsync(Event.ServerTick, null);
 
                 keepAliveTicks++;
                 if (keepAliveTicks > 50)

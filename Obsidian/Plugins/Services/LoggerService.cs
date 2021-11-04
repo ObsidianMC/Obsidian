@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Plugins;
 using System;
 
 namespace Obsidian.Plugins.Services
 {
     public class LoggerService : Logging.Logger, API.Plugins.Services.ILogger
     {
-        public LoggerService(PluginContainer plugin, LogLevel loglevel) : base(plugin.Info.Name, loglevel)
+        public LoggerService(Plugin plugin, LogLevel loglevel) : base(plugin.Info.Name, loglevel)
         {
         }
 
@@ -38,7 +39,7 @@ namespace Obsidian.Plugins.Services
             if (exception is null)
                 return message;
             
-            return message + exception.ToString();
+            return message + exception;
         }
     }
 }

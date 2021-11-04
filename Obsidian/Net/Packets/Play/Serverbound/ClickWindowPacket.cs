@@ -1,5 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -221,12 +222,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound
         {
             if (!ClickedItem.IsAir())
             {
-                var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, ClickedItem)
-                {
-                    Slot = value
-                });
+                var args = new InventoryClickEventArgs(player, inventory, ClickedItem) {Slot = value};
+                await server.Events.InvokeAsync(Event.InventoryClick, args);
 
-                if (@event.Cancel)
+                if (args.Cancel)
                     return;
 
                 player.LastClickedItem = ClickedItem;

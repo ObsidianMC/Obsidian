@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -272,14 +273,11 @@ namespace Obsidian.Entities
             await this.client.Server.World.ResendBaseChunksAsync(this.client);
 
             var tid = Globals.Random.Next(0, 999);
-
-            await client.Server.Events.InvokePlayerTeleportedAsync(
-                new PlayerTeleportEventArgs
-                (
-                    this,
-                    this.Position,
-                    pos
-                ));
+            
+            await client.Server.Events.InvokeAsync(Event.PlayerTeleported, new PlayerTeleportEventArgs
+            (
+                this, Position, pos
+            ));
 
             await this.client.QueuePacketAsync(new PlayerPositionAndLook
             {
@@ -699,7 +697,7 @@ namespace Obsidian.Entities
             await this.SavePermsAsync();
 
             if (result)
-                await this.client.Server.Events.InvokePermissionGrantedAsync(new PermissionGrantedEventArgs(this, permissionNode));
+                await client.Server.Events.InvokeAsync(Event.PermissionGranted, new PermissionGrantedEventArgs(this, permissionNode));
 
             return result;
         }
@@ -721,7 +719,7 @@ namespace Obsidian.Entities
                     parent.Children.Remove(childToRemove);
 
                     await this.SavePermsAsync();
-                    await this.client.Server.Events.InvokePermissionRevokedAsync(new PermissionRevokedEventArgs(this, permissionNode));
+                    await client.Server.Events.InvokeAsync(Event.PermissionRevoked, new PermissionRevokedEventArgs(this, permissionNode));
 
                     return true;
                 }

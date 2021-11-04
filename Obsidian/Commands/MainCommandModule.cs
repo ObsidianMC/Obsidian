@@ -133,20 +133,25 @@ namespace Obsidian.Commands
 
             for (int i = 0; i < pluginCount; i++)
             {
-                var pluginContainer = srv.PluginManager.Plugins[i];
-                var info = pluginContainer.Info;
+                var plugin = srv.PluginManager.Plugins[i];
 
-                var plugin = new ChatMessage();
-                var colorByState = pluginContainer.Loaded || pluginContainer.IsReady ? HexColor.Green : HexColor.Red;
+                var cm = new ChatMessage
+                {
+                    Text = plugin.Info.Name,
+                    HoverEvent = new HoverComponent
+                    {
+                        Action = EHoverAction.ShowText,
+                        Contents = $"{plugin.Identifier}\n" +
+                                   $"Version: {plugin.Info.Version}\n" +
+                                   $"Author(s): {string.Join(", ", plugin.Info.Authors)}"
+                    }
+                };
 
-                plugin.Text = pluginContainer.Info.Name;
-                plugin.Color = colorByState;
+                if (plugin.Info.ProjectUrl != null)
+                    cm.ClickEvent = new ClickComponent
+                        { Action = EClickAction.OpenUrl, Value = plugin.Info.ProjectUrl.AbsoluteUri };
 
-                plugin.HoverEvent = new HoverComponent { Action = EHoverAction.ShowText, Contents = $"{colorByState}{info.Name}{ChatColor.Reset}\nVersion: {colorByState}{info.Version}{ChatColor.Reset}\nAuthor(s): {colorByState}{info.Authors}{ChatColor.Reset}" };
-                if (pluginContainer.Info.ProjectUrl != null)
-                    plugin.ClickEvent = new ClickComponent { Action = EClickAction.OpenUrl, Value = pluginContainer.Info.ProjectUrl.AbsoluteUri };
-
-                messages.Add(plugin);
+                messages.Add(cm);
 
                 messages.Add(new ChatMessage
                 {

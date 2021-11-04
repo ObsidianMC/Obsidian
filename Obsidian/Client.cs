@@ -2,6 +2,7 @@
 
 using Obsidian.API;
 using Obsidian.API.Events;
+using Obsidian.API.Plugins.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -154,7 +155,7 @@ namespace Obsidian
                             case 0x00:
                                 var status = new ServerStatus(Server);
 
-                                await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
+                                await Server.Events.InvokeAsync(Event.ServerStatusRequest, new ServerStatusRequestEventArgs(this.Server, status));
 
                                 this.SendPacket(new RequestResponse(status));
                                 break;
@@ -266,14 +267,14 @@ namespace Obsidian
                                 await ConnectAsync();
                                 break;
                             case 0x02:
-                                // Login Plugin Response
+                                // Login TargetObject Response
                                 break;
                         }
                         break;
 
                     case ClientState.Play:
                         var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
-                        await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
+                        await Server.Events.InvokeAsync(Event.PacketReceived, packetReceivedEventArgs);
 
                         if (!packetReceivedEventArgs.Cancel)
                         {
@@ -288,7 +289,7 @@ namespace Obsidian
             Logger.LogInformation($"Disconnected client");
 
             if (this.State == ClientState.Play)
-                await this.Server.Events.InvokePlayerLeaveAsync(new PlayerLeaveEventArgs(this.Player, DateTimeOffset.Now));
+                await Server.Events.InvokeAsync(Event.PlayerLeave, new PlayerLeaveEventArgs(Player, DateTimeOffset.Now));
 
             if (tcp.Connected)
             {
@@ -370,7 +371,8 @@ namespace Obsidian
             await this.SendPlayerInfoAsync();
             await this.SendPlayerListDecoration();
 
-            await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+            var args = new PlayerJoinEventArgs(Player, DateTimeOffset.Now);
+            await Server.Events.InvokeAsync(Event.PlayerJoin, args);
 
             await this.Player.World.ResendBaseChunksAsync(this);
 
@@ -511,7 +513,9 @@ namespace Obsidian
 
         internal async Task QueuePacketAsync(IClientboundPacket packet)
         {
-            var args = await this.Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
+            var args = new QueuePacketEventArgs(this, packet);
+
+            await Server.Events.InvokeAsync(Event.QueuePacket, args);
 
             if (args.Cancel)
             {
