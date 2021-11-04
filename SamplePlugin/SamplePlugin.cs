@@ -29,7 +29,7 @@ namespace SamplePlugin
             server = serviceProvider.GetServer();
 
             logger.Log("Hello world!");
-            logger.Log($"§a{Info.Name} §floaded! Hello §a{server.DefaultWorld.Name}§f!");
+            logger.Log($"§a{Info.Name} §floaded!");
         }
 
         public override void DeInitialize()
