@@ -40,5 +40,11 @@ namespace Obsidian.API.Plugins.Services
         /// <param name="plugin">Plugin for which create a service</param>
         /// <returns>Logger instance</returns>
         public ILogger GetLogger(Plugin plugin);
+
+        /// <summary>
+        /// Gets a server instance
+        /// </summary>
+        /// <returns>Server instance</returns>
+        public IServer GetServer();
     }
 }

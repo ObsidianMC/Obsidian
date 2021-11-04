@@ -2,6 +2,7 @@
 //     Copyright (C) 2021
 
 using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Plugins;
 using Obsidian.API.Plugins.Services;
 using Obsidian.API.Plugins.Services.Common;
@@ -50,6 +51,8 @@ namespace Obsidian.Plugins.Services
 #pragma warning disable CA1822
         public ILogger GetLogger(Plugin plugin) => new LoggerService(plugin, LogLevel.Debug);
 #pragma warning restore CA1822
+
+        public IServer GetServer() => pluginManager.server;
 
         public void Dispose()
         {

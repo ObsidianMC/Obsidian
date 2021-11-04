@@ -31,12 +31,14 @@ namespace Obsidian.Plugins
 
         internal readonly IPluginServiceProvider PluginServiceProvider;
         private readonly Dictionary<string, SortedSet<EventContainer>> eventMap = new();
-        internal readonly ILogger Logger;
+        private readonly ILogger logger;
+        internal readonly Server server;
         private readonly CommandHandler commands;
 
-        public PluginManager(ILogger logger, CommandHandler commands)
+        public PluginManager(Server server, ILogger logger, CommandHandler commands)
         {
-            Logger = logger;
+            this.server = server;
+            this.logger = logger;
             this.commands = commands;
             PluginServiceProvider = new PluginServiceProvider(this);
         }
@@ -175,7 +177,7 @@ namespace Obsidian.Plugins
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "Error executing event {Event} in plugin {Identifier}", @event, ((Plugin) container.TargetObject).Identifier);
+                    logger.LogError(e, "Error executing event {Event} in plugin {Identifier}", @event, ((Plugin) container.TargetObject).Identifier);
                 }
             }
         }
@@ -199,7 +201,7 @@ namespace Obsidian.Plugins
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError(e, "Error executing event {Event} in plugin {Identifier}", @event, ((Plugin) container.TargetObject).Identifier);
+                    logger.LogError(e, "Error executing event {Event} in plugin {Identifier}", @event, ((Plugin) container.TargetObject).Identifier);
                 }
             }
         }

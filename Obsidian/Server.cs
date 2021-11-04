@@ -103,7 +103,7 @@ namespace Obsidian
 
             Logger.LogDebug("Initializing command handler...");
             CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
-            PluginManager = new PluginManager(LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
+            PluginManager = new PluginManager(this, LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
             CommandsHandler.LinkPluginManager(PluginManager);
 
             Logger.LogDebug("Registering commands...");
