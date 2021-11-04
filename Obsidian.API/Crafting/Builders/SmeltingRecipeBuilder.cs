@@ -78,22 +78,23 @@ namespace Obsidian.API.Crafting.Builders
                 SmeltingType.Default => CraftingType.Smelting,
                 SmeltingType.Blasting => CraftingType.Blasting,
                 SmeltingType.Smoking => CraftingType.Smoking,
-                SmeltingType.CampfireCooking => CraftingType.CampfireCooking
+                SmeltingType.CampfireCooking => CraftingType.CampfireCooking,
+                _ => throw new NotImplementedException()
             };
 
             if (this.Ingredient.Count <= 0)
                 throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
             return new SmeltingRecipe
-            {
-                Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = type,
+            (
+                this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+                type,
                 Group = this.Group,
-                Ingredient = this.Ingredient,
-                Cookingtime = this.CookingTime,
-                Experience = this.Experience,
-                Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
-            };
+                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+                this.Ingredient,
+                this.Experience,
+                this.CookingTime
+            );
         }
     }
 

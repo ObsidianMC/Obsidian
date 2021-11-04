@@ -8,9 +8,9 @@ namespace Obsidian.API.Noise
 
         public double Center { get; set; } = 0;
 
-        public Polariaze() : base(1)
+        public Polariaze(Module source0) : base(1)
         {
-
+            Source0 = source0;
         }
 
         public override double GetValue(double x, double y, double z)

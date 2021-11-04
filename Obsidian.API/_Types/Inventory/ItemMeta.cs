@@ -30,7 +30,7 @@ namespace Obsidian.API
             (this.Slot, this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore) ==
             (other.Slot, other.CustomModelData, other.Name, other.RepairAmount, other.Durability, other.Unbreakable, other.Enchantments, other.StoredEnchantments, other.CanDestroy, other.Lore);
 
-        public override bool Equals(object obj) => obj is ItemMeta meta && Equals(meta);
+        public override bool Equals(object? obj) => obj is ItemMeta meta && Equals(meta);
 
         public static bool operator ==(ItemMeta left, ItemMeta right) => left.Equals(right);
 

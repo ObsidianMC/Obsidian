@@ -4,6 +4,15 @@ namespace Obsidian.API.Advancements
 {
     public sealed class Advancement
     {
+        public Advancement(string identifier, string parent, AdvancementDisplay? display, AdvancementReward? reward, List<Criteria> criteria)
+        {
+            Identifier = identifier;
+            Parent = parent;
+            Display = display;
+            Reward = reward;
+            Criteria = criteria;
+        }
+
         /// <summary>
         /// The identifier of the advancement.
         /// If a valid identifier is not detected this advancement will register with the obsidian namespace.

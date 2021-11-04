@@ -75,15 +75,15 @@ namespace Obsidian.Commands
                 {
                     Text = $"\n{ChatColor.Gold}{usage}",
                     ClickEvent = new ClickComponent
-                    {
-                        Action = EClickAction.SuggestCommand,
-                        Value = usage.Contains(' ') ? $"{usage.Substring(0, usage.IndexOf(' '))} " : usage
-                    },
+                    (
+                        EClickAction.SuggestCommand,
+                        usage.Contains(' ') ? $"{usage.Substring(0, usage.IndexOf(' '))} " : usage
+                    ),
                     HoverEvent = new HoverComponent
-                    {
-                        Action = EHoverAction.ShowText,
-                        Contents = $"Click to suggest the command"
-                    }
+                    (
+                        EHoverAction.ShowText,
+                        $"Click to suggest the command"
+                    )
                 };
                 commands.AddExtra(commandName);
 
@@ -375,7 +375,8 @@ namespace Obsidian.Commands
         [Command("time")]
         [CommandInfo("Sets declared time", "/time <timeOfDay>")]
         [IssuerScope(CommandIssuers.Client)]
-        public async Task TimeAsync(CommandContext Context) => TimeAsync(Context, 1337);
+        public async Task TimeAsync(CommandContext Context) => await TimeAsync(Context, 1337);
+
         [CommandOverload]
         public async Task TimeAsync(CommandContext Context,int time)
         {
@@ -466,15 +467,15 @@ namespace Obsidian.Commands
             {
                 Text = $"{ChatColor.Red}{commandUsage}",
                 ClickEvent = new ClickComponent
-                {
-                    Action = EClickAction.SuggestCommand,
-                    Value = $"{commandSuggest}"
-                },
+                (
+                    EClickAction.SuggestCommand,
+                    $"{commandSuggest}"
+                ),
                 HoverEvent = new HoverComponent
-                {
-                    Action = EHoverAction.ShowText,
-                    Contents = $"Click to suggest the command"
-                }
+                (
+                    EHoverAction.ShowText,
+                    $"Click to suggest the command"
+                )
             };
 
             var prefix = new ChatMessage

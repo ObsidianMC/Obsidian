@@ -92,7 +92,7 @@ namespace SamplePlugin
         {
             var player = args.Player;
 
-            await player.SendMessageAsync(ChatMessage.Simple($"Welcome {player.Username}!", ChatColor.Gold));
+            await player.SendMessageAsync(message: ChatMessage.Simple(text: $"Welcome {player.Username}!", color: ChatColor.Gold));
         }
     }
 }

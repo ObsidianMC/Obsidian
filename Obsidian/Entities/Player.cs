@@ -36,7 +36,7 @@ namespace Obsidian.Entities
         public string Username { get; }
 
         /// <summary>
-        /// The players inventory
+        /// The players inventory.
         /// </summary>
         public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }

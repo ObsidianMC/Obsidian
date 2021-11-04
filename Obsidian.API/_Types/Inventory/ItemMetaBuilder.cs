@@ -32,9 +32,7 @@ namespace Obsidian.API
         {
             this.Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.enchantments);
             this.StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.storedEnchantments);
-
             this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
-
             this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
         }
 

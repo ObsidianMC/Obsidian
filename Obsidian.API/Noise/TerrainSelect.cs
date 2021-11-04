@@ -9,9 +9,10 @@ namespace Obsidian.API.Noise
 
         public Module BiomeSelector { get; set; }
 
-        public TerrainSelect()
+        public TerrainSelect(Module biomeSelector)
         {
             Source1 = new Constant { ConstantValue = 0 };
+            BiomeSelector = biomeSelector;
         }
 
         public override double GetValue(double x, double y, double z)
