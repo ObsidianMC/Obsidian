@@ -12,17 +12,9 @@ namespace Obsidian.API.Plugins
         /// Plugin attribute constructor.
         /// </summary>
         /// <param name="name"></param>
-        /// <param name="version"></param>
-        /// <param name="authors"></param>
-        /// <param name="description"></param>
-        /// <param name="projectUrl"></param>
-        public PluginAttribute(string name, string version, string authors, string description, string projectUrl)
+        public PluginAttribute(string name)
         {
             Name = name;
-            Version = version;
-            Authors = authors;
-            Description = description;
-            ProjectUrl = projectUrl;
         }
 
         /// <summary>
@@ -33,21 +25,21 @@ namespace Obsidian.API.Plugins
         /// <summary>
         /// Version of the plugin. The string should contain the major, minor, <i>[build]</i>, and <i>[revision]</i> numbers, split by a period character ('.').
         /// </summary>
-        public string Version { get; }
+        public string Version { get; set; }
 
         /// <summary>
         /// Name(s) of the plugin's author(s).
         /// </summary>
-        public string Authors { get; }
+        public string Authors { get; set; }
 
         /// <summary>
         /// Description of the plugin.
         /// </summary>
-        public string Description { get; }
+        public string Description { get; set; }
 
         /// <summary>
         /// URL address of where the plugin is hosted.
         /// </summary>
-        public string ProjectUrl { get; }
+        public string ProjectUrl { get; set; }
     }
 }

@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace SamplePlugin
 {
-    [Plugin(name: "Sample Plugin", version: "1.0",
-            authors: "Obsidian Team", description: "My sample plugin.",
-            projectUrl: "https://github.com/Naamloos/Obsidian")]
+    [Plugin(name: "Sample Plugin", Version = "1.0",
+            Authors = "Obsidian Team", Description = "My sample plugin.",
+            ProjectUrl = "https://github.com/Naamloos/Obsidian")]
     public class SamplePlugin : PluginBase
     {
         // Any interface from Obsidian.Plugins.Services can be injected into properties
