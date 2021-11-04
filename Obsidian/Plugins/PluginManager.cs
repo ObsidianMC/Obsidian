@@ -111,8 +111,8 @@ namespace Obsidian.Plugins
         {
             foreach (var plugin in plugins)
             {
-                plugin.DeInitialize();
                 UnregisterEvents(plugin);
+                plugin.DeInitialize();
             }
             eventMap.Clear();
 
