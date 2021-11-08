@@ -20,7 +20,7 @@ namespace Obsidian.API
         {
             if (type is not InventoryType.Generic or InventoryType.ShulkerBox)
                 throw new InvalidOperationException("Inventory type can only be Generic or ShulkerBox");
-            if (size % 9 != 0 && (size != 46 || size != 5))
+            if (size % 9 is not 0 && size is not 46 or 5)
                 throw new InvalidOperationException("Size must be divisble by 9");
             if (size > 9 * 6)
                 throw new InvalidOperationException($"Size must be <= {9 * 6}");
