@@ -20,7 +20,7 @@
     <PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
     <PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
-    <PackageLicenseFile>E:\GitHub\Obsidian\LICENSE</PackageLicenseFile>
+    <PackageLicenseFile>..\LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
