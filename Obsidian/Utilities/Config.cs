@@ -1,4 +1,5 @@
-﻿using Obsidian.API;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using System;
 
 namespace Obsidian.Utilities
@@ -11,7 +12,7 @@ namespace Obsidian.Utilities
 
         public string Generator { get; set; } = "overworld";
 
-        public string Seed { get; set; } = "Obsidian691337";
+        public string Seed { get; set; } = new Random().Next().ToString();
 
         public string JoinMessage { get; set; } = "§e{0} joined the game";
 
@@ -29,7 +30,7 @@ namespace Obsidian.Utilities
 
         public string Header { get; set; } = "§dObsidian > All other servers";
 
-        public string Footer { get; set; } = "§5tiddies §l§d( §c. §d)( §c. §d)";
+        public string Footer { get; set; } = "§l( §cU §dw §cU §r§l)";
 
         public bool? Baah { get; set; }
 
@@ -40,5 +41,17 @@ namespace Obsidian.Utilities
         public bool UDPBroadcast = false;
         
         public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
+
+
+#if DEBUG
+        public LogLevel LogLevel = LogLevel.Debug;
+
+#else
+        public LogLevel LogLevel = LogLevel.Information;
+#endif
+
+        public bool DebugMode;
+
+        public bool VerboseExceptionLogging { get; set; } = false;
     }
 }

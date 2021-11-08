@@ -177,7 +177,7 @@ namespace Obsidian.API
             return stateToMatch[baseId].numeric == (int)material;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return (obj is Block block) && block.StateId == StateId;
         }

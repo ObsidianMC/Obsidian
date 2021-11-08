@@ -1,10 +1,10 @@
 ﻿using Obsidian.API.Noise;
+using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise.Modules;
-using Blend = Obsidian.API.Noise.Blend;
 using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
+using Blend = Obsidian.API.Noise.Blend;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain
 {
@@ -19,8 +19,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
         private readonly BaseCarver cave;
 
         private Module FinalBiomes;
-
-        
 
         public OverworldTerrain(bool isUnitTest = false)
         {
@@ -112,22 +110,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
             var biomeTransitionSel2 = new Cache
             {
-                Source0 = new TransitionMap
-                {
-                    Distance = 5,
-                    Source0 = FinalBiomes
-                }
+                Source0 = new TransitionMap(FinalBiomes, 5)
             };
 
-            Module scaled = new Blend
-            {
-                Distance = 2,
-                Source0 = new TerrainSelect
+            Module scaled = new Blend(
+                new TerrainSelect(FinalBiomes)
                 {
-                    BiomeSelector = FinalBiomes,
                     Control = biomeTransitionSel2,
-                    TerrainModules = biomesMap,
-                }
+                    TerrainModules = biomesMap
+                })
+            {
+                Distance = 2
             };
 
             if (isUnitTest)

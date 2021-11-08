@@ -91,7 +91,7 @@ namespace Obsidian.Commands.Framework.Entities
              || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
             {
                 //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
-                await context.Player.SendMessageAsync($"&4Correct usage: {this.Usage}");
+                await context.Sender.SendMessageAsync($"&4Correct usage: {this.Usage}");
 
                 return;
             }
@@ -133,7 +133,7 @@ namespace Obsidian.Commands.Framework.Entities
                     var parser = Activator.CreateInstance(parsertype);
 
                     // sets args for parser method
-                    var parseargs = new object[3] { (object)arg, (object)context, null };
+                    var parseargs = new object[3] { arg, context, null };
 
                     // cast with reflection?
                     if ((bool)parsertype.GetMethod("TryParseArgument").Invoke(parser, parseargs))

@@ -14,6 +14,7 @@ namespace Obsidian.Commands.Framework
     public class CommandHandler
     {
         public static readonly string DefaultPrefix = "/";
+        private static readonly CommandIssuers DefaultIssuerScope = CommandIssuers.Any;
 
         internal List<Command> _commands;
         internal CommandParser _commandParser;
@@ -75,7 +76,7 @@ namespace Obsidian.Commands.Framework
             var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
             var info = m.GetCustomAttribute<CommandInfoAttribute>();
-            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+            var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
 
             var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, null, checks.ToArray(), this, plugin, null, t, issuers);
             command.Overloads.Add(m);
@@ -133,7 +134,7 @@ namespace Obsidian.Commands.Framework
                 var checks = st.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = st.GetCustomAttribute<CommandInfoAttribute>();
-                var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+                var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
 
                 var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
 
@@ -166,7 +167,7 @@ namespace Obsidian.Commands.Framework
                 var checks = m.GetCustomAttributes<BaseExecutionCheckAttribute>();
 
                 var info = m.GetCustomAttribute<CommandInfoAttribute>();
-                var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? CommandIssuers.Client;
+                var issuers = m.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
 
                 var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
                 command.Overloads.Add(m);

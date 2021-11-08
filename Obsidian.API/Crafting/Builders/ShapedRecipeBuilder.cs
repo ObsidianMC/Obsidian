@@ -56,14 +56,14 @@ namespace Obsidian.API.Crafting.Builders
                 throw new InvalidOperationException("Keys cannot be empty.");
 
             return new ShapedRecipe
-            {
-                Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = CraftingType.CraftingShaped,
-                Group = this.Group,
-                Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
-                Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-                Key = new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
-            };
+            (
+                this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+                CraftingType.CraftingShaped,
+                this.Group,
+                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+                new ReadOnlyCollection<string>(new List<string>(this.pattern)),
+                new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
+            );
         }
 
         public ShapedRecipeBuilder WithName(string name)

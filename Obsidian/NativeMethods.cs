@@ -3,7 +3,7 @@
 namespace Obsidian
 {
     /// <summary>
-    /// Native methods for Windows
+    /// Native methods for Windows.
     /// </summary>
     internal static class NativeMethods
     {

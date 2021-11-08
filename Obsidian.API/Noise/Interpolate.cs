@@ -7,20 +7,19 @@ namespace Obsidian.API.Noise
     {
         public Module Source0 { get; set; }
 
-        public Interpolate() : base(1)
+        public Interpolate(Module source0) : base(1)
         {
-
+            Source0 = source0;
         }
 
         public override double GetValue(double x, double y, double z)
         {
             // Bitshift the source module by 1 one so we can
             // "divide" each pixel into 4 quadrants
-            var shifted = new BitShiftInput
+            var shifted = new BitShiftInput(this.Source0)
             {
                 Amount = 1,
-                Left = false,
-                Source0 = this.Source0
+                Left = false
             };
 
             var center = shifted.GetValue(x, y, z);

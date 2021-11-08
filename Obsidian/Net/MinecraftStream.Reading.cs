@@ -83,7 +83,7 @@ namespace Obsidian.Net
 
         public async Task<short> ReadShortAsync()
         {
-            var buffer = new byte[2];
+            using var buffer = new RentedArray<byte>(sizeof(short));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadInt16BigEndian(buffer);
         }
@@ -98,7 +98,7 @@ namespace Obsidian.Net
 
         public async Task<int> ReadIntAsync()
         {
-            var buffer = new byte[4];
+            using var buffer = new RentedArray<byte>(sizeof(int));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadInt32BigEndian(buffer);
         }
@@ -113,7 +113,7 @@ namespace Obsidian.Net
 
         public async Task<long> ReadLongAsync()
         {
-            var buffer = new byte[8];
+            using var buffer = new RentedArray<byte>(sizeof(long));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadInt64BigEndian(buffer);
         }
@@ -128,7 +128,7 @@ namespace Obsidian.Net
 
         public async Task<ulong> ReadUnsignedLongAsync()
         {
-            var buffer = new byte[8];
+            using var buffer = new RentedArray<byte>(sizeof(ulong));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadUInt64BigEndian(buffer);
         }
@@ -143,7 +143,7 @@ namespace Obsidian.Net
 
         public async Task<float> ReadFloatAsync()
         {
-            var buffer = new byte[4];
+            using var buffer = new RentedArray<byte>(sizeof(float));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadSingleBigEndian(buffer);
         }
@@ -158,7 +158,7 @@ namespace Obsidian.Net
 
         public async Task<double> ReadDoubleAsync()
         {
-            var buffer = new byte[8];
+            using var buffer = new RentedArray<byte>(sizeof(double));
             await this.ReadAsync(buffer);
             return BinaryPrimitives.ReadDoubleBigEndian(buffer);
         }
@@ -181,17 +181,17 @@ namespace Obsidian.Net
         public async Task<string> ReadStringAsync(int maxLength = 32767)
         {
             var length = await this.ReadVarIntAsync();
-            var buffer = new byte[length];
+            using var buffer = new RentedArray<byte>(length);
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(buffer);
+                buffer.Span.Reverse();
             }
-            await this.ReadAsync(buffer, 0, length);
+            await this.ReadAsync(buffer);
 
             var value = Encoding.UTF8.GetString(buffer);
             if (maxLength > 0 && value.Length > maxLength)
             {
-                throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
+                throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(maxLength));
             }
             return value;
         }

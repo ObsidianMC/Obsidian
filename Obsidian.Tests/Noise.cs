@@ -4,6 +4,7 @@ using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise;
 using SharpNoise.Builders;
 using SharpNoise.Utilities.Imaging;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Obsidian.Tests
@@ -13,37 +14,33 @@ namespace Obsidian.Tests
         [Fact(DisplayName = "WorldGen", Timeout = 100)]
         public async void SameAsync()
         {
-            OverworldGenerator og = new OverworldGenerator("1");
-            OverworldTerrain noiseGen = new OverworldTerrain(true);
-
-            var map = new NoiseMap();
-
-            PlaneNoiseMapBuilder builder = new PlaneNoiseMapBuilder()
+            await Task.Run(() =>
             {
-                DestNoiseMap = map,
-                SourceModule = noiseGen.Result
-            };
+                OverworldGenerator og = new OverworldGenerator("1");
+                OverworldTerrain noiseGen = new OverworldTerrain(true);
 
-            var image = new SharpNoise.Utilities.Imaging.Image();
-            var renderer = new ImageRenderer()
-            {
-                SourceNoiseMap = map,
-                DestinationImage = image
-            };
+                var map = new NoiseMap();
 
-            //renderer.BuildGrayscaleGradient();
-            renderer.BuildTerrainGradient();
+                PlaneNoiseMapBuilder builder =
+                    new PlaneNoiseMapBuilder() {DestNoiseMap = map, SourceModule = noiseGen.Result};
 
-            builder.SetBounds(-2000, 2000, -2000, 2000);
-            builder.SetDestSize(4000, 4000);
-            builder.Build();
+                var image = new SharpNoise.Utilities.Imaging.Image();
+                var renderer = new ImageRenderer() {SourceNoiseMap = map, DestinationImage = image};
 
-            renderer.Render();
+                //renderer.BuildGrayscaleGradient();
+                renderer.BuildTerrainGradient();
 
-            var bmp = renderer.DestinationImage.ToGdiBitmap();
-            bmp.Save("terrain.bmp");
+                builder.SetBounds(-2000, 2000, -2000, 2000);
+                builder.SetDestSize(4000, 4000);
+                builder.Build();
 
-            Assert.Equal(0, 0);
+                renderer.Render();
+
+                var bmp = renderer.DestinationImage.ToGdiBitmap();
+                bmp.Save("terrain.bmp");
+
+                Assert.Equal(0, 0);
+            });
         }
     }
 }
