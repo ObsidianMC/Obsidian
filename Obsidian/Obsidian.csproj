@@ -16,11 +16,12 @@
     <Company>Obsidian Team</Company>
     <Authors>Obsidian Team</Authors>
     <PackageLicenseExpression></PackageLicenseExpression>
-    <Description>A C# implementation of the Minecraft server protocol (.NET 5)</Description>
-    <PackageProjectUrl>https://github.com/ObsidianServer/Obsidian</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
+    <Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
+    <PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
     <PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseFile>E:\GitHub\Obsidian\LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,6 +34,10 @@
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 

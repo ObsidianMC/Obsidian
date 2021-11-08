@@ -16,8 +16,9 @@
     <RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
     <PackageTags>minecraft obsidian api plugin plugins</PackageTags>
     <PackageIconUrl>https://i.imgur.com/jU1lkP4.png</PackageIconUrl>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseFile>../LICENSE</PackageLicenseFile>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
