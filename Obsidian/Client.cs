@@ -149,7 +149,7 @@ namespace Obsidian
                 switch (this.State)
                 {
                     case ClientState.Status: // Server ping/list
-                        if(!this.config.EnableQuerying)
+                        if(this.config.ServerListQuery == ServerListQuery.Disabled)
                         {
                             this.Logger.LogInformation("Closing connection, querying is disabled.");
                             this.Disconnect();
@@ -160,7 +160,7 @@ namespace Obsidian
                             case 0x00:
                                 var status = new ServerStatus(Server);
 
-                                if (config.AnonymousOnlineList) // If online list anonymous, clear the player sample.
+                                if (config.ServerListQuery != ServerListQuery.Full) // If online list anonymous, clear the player sample.
                                     status.Players.Sample.Clear();
 
                                 await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
