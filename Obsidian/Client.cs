@@ -151,17 +151,15 @@ namespace Obsidian
                     case ClientState.Status: // Server ping/list
                         if(this.config.ServerListQuery == ServerListQuery.Disabled)
                         {
-                            this.Logger.LogInformation("Closing connection, querying is disabled.");
+                            if(this.config.VerboseExceptionLogging)
+                                this.Logger.LogInformation("Closing connection, querying is disabled.");
                             this.Disconnect();
                             break;
                         }
                         switch (id)
                         {
                             case 0x00:
-                                var status = new ServerStatus(Server);
-
-                                if (config.ServerListQuery != ServerListQuery.Full) // If online list anonymous, clear the player sample.
-                                    status.Players.Sample.Clear();
+                                var status = new ServerStatus(Server, config.ServerListQuery != ServerListQuery.Full); // last boolean will ignore player lsit when true.
 
                                 await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
 
