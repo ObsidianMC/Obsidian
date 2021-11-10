@@ -2,14 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Authors>Craftplacer</Authors>
     <Description>Converts Minecraft vanilla server files to JSON/Obsidian ones</Description>
     <RepositoryUrl>https://github.com/Naamloos/Obsidian</RepositoryUrl>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Product>Obsidian Conversion Utility</Product>
     <Company>Obsidian Team</Company>
-    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -27,13 +27,14 @@ namespace Obsidian.Utilities
         /// <summary>
         /// Generates a server status from the specified <paramref name="server"/>.
         /// </summary>
-        public ServerStatus(Server server)
+        public ServerStatus(Server server, bool anonymous = false)
         {
             if (server == null)
                 throw new ArgumentNullException(nameof(server));
 
             this.Version = new ServerVersion();
-            this.Players = new ServerPlayers(server);
+            if(!anonymous)
+                this.Players = new ServerPlayers(server);
             this.Description = new ServerDescription(server);
             var favicon_file = "favicon.png";
             if (File.Exists(favicon_file))

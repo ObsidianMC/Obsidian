@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities
 {
@@ -42,7 +43,6 @@ namespace Obsidian.Utilities
         
         public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 
-
 #if DEBUG
         public LogLevel LogLevel = LogLevel.Debug;
 
@@ -53,5 +53,14 @@ namespace Obsidian.Utilities
         public bool DebugMode;
 
         public bool VerboseExceptionLogging { get; set; } = false;
+
+        public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
+    }
+
+    public enum ServerListQuery
+    {
+        Full,
+        Anonymized,
+        Disabled
     }
 }
