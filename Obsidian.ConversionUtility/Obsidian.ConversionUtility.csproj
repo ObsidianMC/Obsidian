@@ -9,7 +9,6 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Product>Obsidian Conversion Utility</Product>
     <Company>Obsidian Team</Company>
-    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

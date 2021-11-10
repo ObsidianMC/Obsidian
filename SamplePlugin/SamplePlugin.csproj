@@ -5,7 +5,6 @@
     <PreserveCompilationContext>false</PreserveCompilationContext>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <OutputType>Library</OutputType>
-    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
