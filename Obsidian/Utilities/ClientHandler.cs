@@ -40,7 +40,7 @@ namespace Obsidian
             //Packets.TryAdd(0x0E, InteractEntity);
             //Packets.TryAdd(0x0F, GenerateStructure);
             //Packets.TryAdd(0x11, LockDifficulty);
-            Packets.TryAdd(0x0F, new PlayerPosition());
+            Packets.TryAdd(0x11, new PlayerPosition());
             Packets.TryAdd(0x12, new PlayerPositionAndRotation());
             Packets.TryAdd(0x13, new PlayerRotation());
             //Packets.TryAdd(0x15, PlayerMovement);
