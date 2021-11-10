@@ -139,17 +139,17 @@ namespace Obsidian.Commands
                 {
                     Text = plugin.Info.Name,
                     HoverEvent = new HoverComponent
-                    {
-                        Action = EHoverAction.ShowText,
-                        Contents = $"{plugin.Identifier}\n" +
-                                   $"Version: {plugin.Info.Version}\n" +
-                                   $"Author(s): {string.Join(", ", plugin.Info.Authors)}"
-                    }
+                    (
+                        EHoverAction.ShowText,
+                        $"{plugin.Identifier}\n" +
+                        $"Version: {plugin.Info.Version}\n" +
+                        $"Author(s): {string.Join(", ", plugin.Info.Authors)}"
+                    )
                 };
 
                 if (plugin.Info.ProjectUrl != null)
                     cm.ClickEvent = new ClickComponent
-                        { Action = EClickAction.OpenUrl, Value = plugin.Info.ProjectUrl.AbsoluteUri };
+                        (EClickAction.OpenUrl, plugin.Info.ProjectUrl.AbsoluteUri);
 
                 messages.Add(cm);
 

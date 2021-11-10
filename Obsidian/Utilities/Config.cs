@@ -50,7 +50,7 @@ namespace Obsidian.Utilities
         public LogLevel LogLevel = LogLevel.Information;
 #endif
 
-        public bool DebugMode;
+        public bool DebugMode { get; set; } = false;
 
         public bool VerboseExceptionLogging { get; set; } = false;
 

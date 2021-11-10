@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\Obsidian\bin\Debug\net5.0\plugins\</OutputPath>
+    <OutputPath>..\Obsidian\bin\Debug\net6.0\plugins\</OutputPath>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>

@@ -29,11 +29,12 @@ namespace Obsidian.Plugins
         /// </summary>
         public ImmutableList<Plugin> Plugins => plugins.ToImmutableList();
 
-        internal readonly IPluginServiceProvider PluginServiceProvider;
+        private readonly IPluginServiceProvider PluginServiceProvider;
         private readonly Dictionary<string, SortedSet<EventContainer>> eventMap = new();
         private readonly ILogger logger;
         internal readonly Server server;
         private readonly CommandHandler commands;
+        private FileSystemWatcher? watcher;
 
         public PluginManager(Server server, ILogger logger, CommandHandler commands)
         {
@@ -43,6 +44,11 @@ namespace Obsidian.Plugins
             PluginServiceProvider = new PluginServiceProvider(this);
         }
 
+        public void LoadDefault()
+        {
+            LoadFrom(new DirectoryInfo(Path.Combine(server.ServerFolderPath, "plugins")));
+        }
+        
         public void LoadFrom(DirectoryInfo directory)
         {
             if (!directory.Exists)
@@ -230,8 +236,42 @@ namespace Obsidian.Plugins
 
         public void Dispose()
         {
+            StopWatcher();
             DeInitializePlugins();
             PluginServiceProvider?.Dispose();
+        }
+
+        public void StartWatcher()
+        {
+            watcher = new FileSystemWatcher(Path.Combine(server.ServerFolderPath, "plugins"), "*.dll");
+
+            watcher.IncludeSubdirectories = true;
+            watcher.EnableRaisingEvents = true;
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
+            
+            
+            watcher.Changed += WatcherEventHandler;
+            watcher.Created += WatcherEventHandler;
+            watcher.Deleted += WatcherEventHandler;
+            watcher.Renamed += WatcherEventHandler;
+
+            watcher.Error += (_, args) => logger.LogError(args.GetException(), "Exception in watcher in plugin manager");
+        }
+
+        private void WatcherEventHandler(object sender, FileSystemEventArgs e)
+        {
+            logger.LogDebug("Detected change type {ChangeType} for plugin file {PluginFile}", e.ChangeType.ToString(), e.Name);
+            
+            DeInitializePlugins();
+            
+            LoadDefault();
+            InitializePlugins();
+        }
+
+        public void StopWatcher()
+        {
+            watcher?.Dispose();
+            watcher = null;
         }
     }
 }

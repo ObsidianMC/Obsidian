@@ -247,8 +247,10 @@ namespace Obsidian
             
             Logger.LogInformation("Loading plugins...");
             Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
-            PluginManager.LoadFrom(new DirectoryInfo(Path.Combine(ServerFolderPath, "plugins")));
+            PluginManager.LoadDefault();
             PluginManager.InitializePlugins();
+            if (Config.DebugMode)
+                PluginManager.StartWatcher();
 
             World = new World("overworld", this);
             if (!await World.LoadAsync())
