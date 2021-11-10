@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
@@ -25,5 +25,5 @@ jobs:
       uses: actions/upload-artifact@v2.2.4
       with:
         name: Obsidian-Nightly-Build
-        path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net5.0/
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net6.0/
       if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs
