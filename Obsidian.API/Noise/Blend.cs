@@ -18,9 +18,9 @@ namespace Obsidian.API.Noise
         /// <summary>
         /// ctor.
         /// </summary>
-        public Blend() : base(1)
+        public Blend(Module source0) : base(1)
         {
-
+            Source0 = source0;
         }
 
         /// <summary>

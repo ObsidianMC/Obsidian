@@ -8,9 +8,10 @@ namespace Obsidian.API.Noise
 
         public double Amount { get; set; }
 
-        public Zoom() : base(1)
+        public Zoom(Module source0, double amount) : base(1)
         {
-
+            Source0 = source0;
+            Amount = amount;
         }
 
         public override double GetValue(double x, double y, double z)

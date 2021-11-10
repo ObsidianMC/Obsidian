@@ -7,14 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Obsidian
 {
     public static class Program
     {
-        private static readonly Dictionary<int, Server> Servers = new();
+        private static Server Server;
         private static readonly TaskCompletionSource<bool> cancelKeyPress = new();
         private static bool shutdownPending;
 
@@ -58,66 +57,44 @@ namespace Obsidian
                 Console.CancelKeyPress += OnConsoleCancelKeyPressed;
             }
 
-            var globalConfigFile = new FileInfo(Program.globalConfigFile);
+            string serverDir = string.Empty; // This resolves to the binary path by default.
 
-            if (globalConfigFile.Exists)
+            string configPath = Path.Combine(serverDir, "config.json");
+            Config config;
+
+            var configFile = new FileInfo(configPath);
+
+            if (configFile.Exists)
             {
-                using var fs = globalConfigFile.OpenRead();
-               
-                Globals.Config = await fs.FromJsonAsync<GlobalConfig>();
+                using var fs = configFile.OpenRead();
+
+                config = await fs.FromJsonAsync<Config>();
             }
             else
             {
-                Globals.Config = new GlobalConfig();
+                config = new Config();
 
-                using var fs = globalConfigFile.Create();
+                using var fs = configFile.Create();
 
-                await Globals.Config.ToJsonAsync(fs);
+                await config.ToJsonAsync(fs);
 
-                Console.WriteLine("Created new global configuration file");
+                Console.WriteLine($"Created new configuration file for Server");
+                Console.WriteLine($"Please fill in your config with the values you wish to use for your server.\n");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(configPath);
+                Console.ResetColor();
+                return;
             }
 
-            for (int i = 0; i < Globals.Config.ServerCount; i++)
-            {
-                string serverDir = $"Server-{i}";
+            Program.Server = new Server(config, version, serverDir);
 
-                Directory.CreateDirectory(serverDir);
-
-                string configPath = Path.Combine(serverDir, "config.json");
-                Config config;
-
-                var configFile = new FileInfo(configPath);
-
-                if (configFile.Exists)
-                {
-                    using var fs = configFile.OpenRead();
-
-                    config = await fs.FromJsonAsync<Config>();
-                }
-                else
-                {
-                    config = new Config();
-
-                    using var fs = configFile.Create();
-
-                    await config.ToJsonAsync(fs);
-
-                    Console.WriteLine($"Created new configuration file for Server-{i}");
-                }
-
-                Servers.Add(i, new Server(config, version, i));
-            }
-
-            if (Servers.GroupBy(entry => entry.Value.Port).Any(group => group.Count() > 1))
-                throw new InvalidOperationException("Multiple servers cannot be bound to the same port");
-
-            var serverTasks = Servers.Select(async entry => await entry.Value.StartServerAsync());
+            var serverTask = Program.Server.StartServerAsync();
             InitConsoleInput();
-            await Task.WhenAny(cancelKeyPress.Task, Task.WhenAll(serverTasks));
+            await Task.WhenAny(cancelKeyPress.Task, serverTask);
 
             if (!shutdownPending)
             {
-                Console.WriteLine("Server(s) killed. Press any key to return...");
+                Console.WriteLine("Server killed. Press any key to return...");
                 Console.ReadKey(intercept: false);
             }
         }
@@ -126,71 +103,15 @@ namespace Obsidian
         {
             Task.Run(async () =>
             {
-                Server currentServer = Servers.First().Value;
+                Server currentServer = Program.Server;
                 await Task.Delay(2000);
                 while (!shutdownPending)
                 {
-                    if (currentServer == null && Servers.Count == 0)
+                    if (currentServer == null)
                         break;
 
                     string input = ConsoleIO.ReadLine();
-
-                    if (input.StartsWith('.'))
-                    {
-                        if (input.StartsWith(".switch"))
-                        {
-                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length < 2)
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!int.TryParse(parts[1], out int serverId))
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!Servers.TryGetValue(serverId, out var server))
-                            {
-                                ConsoleIO.WriteLine("No server with given id found");
-                                continue;
-                            }
-
-                            currentServer = server;
-                            ConsoleIO.WriteLine($"Changed current server to {server.Id}");
-                        }
-                        else if (input.StartsWith(".execute"))
-                        {
-                            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length < 3)
-                            {
-                                ConsoleIO.WriteLine("Invalid server id or command");
-                                continue;
-                            }
-                            if (!int.TryParse(parts[1], out int serverId))
-                            {
-                                ConsoleIO.WriteLine("Invalid server id");
-                                continue;
-                            }
-                            if (!Servers.TryGetValue(serverId, out var server))
-                            {
-                                ConsoleIO.WriteLine("No server with given id found");
-                                continue;
-                            }
-
-                            ConsoleIO.WriteLine($"Executing command on Server-{server.Id}");
-                            await server.ExecuteCommand(string.Join(' ', parts.Skip(2)));
-                        }
-                    }
-                    else
-                    {
-                        await currentServer.ExecuteCommand(input);
-                        if (input == "stop")
-                        {
-                            Servers.Remove(currentServer.Id);
-                            currentServer = Servers.FirstOrDefault().Value;
-                        }
-                    }
+                    await currentServer.ExecuteCommand(input);
                 }
             });
         }
@@ -216,8 +137,7 @@ namespace Obsidian
         {
             shutdownPending = true;
 
-            foreach (var (_, server) in Servers)
-                server.StopServer();
+            Server.StopServer();
         }
 
         // Cool startup console logo because that's cool

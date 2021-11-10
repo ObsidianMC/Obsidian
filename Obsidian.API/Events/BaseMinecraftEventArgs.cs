@@ -12,6 +12,7 @@
 
         /// <summary>
         /// Constructs a new instance of the <see cref="BaseMinecraftEventArgs"/> class.
+        /// </summary>
         /// <param name="server">The server that's handling this event.</param>
         internal BaseMinecraftEventArgs(IServer server)
         {

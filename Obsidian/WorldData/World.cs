@@ -5,13 +5,11 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities;
-using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Obsidian.WorldData
@@ -531,9 +529,7 @@ namespace Obsidian.WorldData
 
         public async Task FlushRegionsAsync()
         {
-            Server.BroadcastMessage("Saving to disk...");
-            Parallel.ForEach(Regions.Values, async r => await r.FlushAsync());
-            Server.BroadcastMessage("Save complete.");
+            await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
         }
 
         public IEntity SpawnFallingBlock(VectorF position, Material mat)

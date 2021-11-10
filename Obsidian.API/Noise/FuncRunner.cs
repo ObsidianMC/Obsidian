@@ -11,9 +11,10 @@ namespace Obsidian.API.Noise
 
         public int Utility { get; set; } = 0;
 
-        public FuncRunner() : base(1)
+        public FuncRunner(Module source0, Func<Module, double, double, double, double> conditionFunction) : base(1)
         {
-
+            Source0 = source0;
+            ConditionFunction = conditionFunction;
         }
 
         public override double GetValue(double x, double y, double z)

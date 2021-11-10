@@ -1,9 +1,7 @@
-﻿using ICSharpCode.SharpZipLib.GZip;
-using Obsidian.API;
+﻿using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Utilities.Registry;
-using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -25,12 +23,8 @@ namespace Obsidian.Tests
         public void BigTest()
         {
             var fs = Assembly.GetExecutingAssembly().GetManifestResourceStream("Obsidian.Tests.Assets.bigtest.nbt");
-            var decompressedStream = new MemoryStream();
 
-            GZip.Decompress(fs, decompressedStream, false);
-
-            decompressedStream.Position = 0;
-            var reader = new NbtReader(decompressedStream);
+            var reader = new NbtReader(fs, NbtCompression.GZip);
 
             var main = reader.ReadNextTag() as NbtCompound;
 

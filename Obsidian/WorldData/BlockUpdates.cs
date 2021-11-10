@@ -10,47 +10,52 @@ namespace Obsidian.WorldData
         internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
         {
             if (blockUpdate.block is null) { return false; }
+
             var world = blockUpdate.world;
             var location = blockUpdate.position;
             var material = blockUpdate.block.Value.Material;
-            if (world.GetBlock(location + Vector.Down) is Block below && (Block.Replaceable.Contains(below.Material) || below.IsFluid))
+            if (world.GetBlock(location + Vector.Down) is Block below &&
+                (Block.Replaceable.Contains(below.Material) || below.IsFluid))
             {
                 world.SetBlock(location, Block.Air);
                 world.SpawnFallingBlock(location, material);
                 return true;
             }
+
             return false;
         }
 
-        internal static async Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
+        internal static Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
         {
-            if (blockUpdate.block is null) { return false; }
+            if (blockUpdate.block is null) { return Task.FromResult(false); }
+
             var block = blockUpdate.block.Value;
             var world = blockUpdate.world;
             var location = blockUpdate.position;
             int state = block.State;
             Vector belowPos = location + Vector.Down;
-            
+
             // Handle the initial search for closet path downwards.
             // Just going to do a crappy pathfind for now. We can do
             // proper pathfinding some other time.
             if (state == 0)
             {
                 var validPaths = new List<Vector>();
-                var paths = new List<Vector>()
-                {
-                    { location + Vector.Forwards },
-                    { location + Vector.Backwards },
-                    { location + Vector.Left },
-                    { location + Vector.Right }
+                var paths = new List<Vector>() {
+                    {location + Vector.Forwards},
+                    {location + Vector.Backwards},
+                    {location + Vector.Left},
+                    {location + Vector.Right}
                 };
 
                 foreach (var pathLoc in paths)
                 {
-                    if (world.GetBlock(pathLoc) is Block pathSide && (Block.Replaceable.Contains(pathSide.Material) || pathSide.IsFluid))
+                    if (world.GetBlock(pathLoc) is Block pathSide &&
+                        (Block.Replaceable.Contains(pathSide.Material) || pathSide.IsFluid))
                     {
                         var pathBelow = world.GetBlock(pathLoc + Vector.Down);
-                        if (pathBelow is Block pBelow && (Block.Replaceable.Contains(pBelow.Material) || pBelow.IsFluid))
+                        if (pathBelow is Block pBelow &&
+                            (Block.Replaceable.Contains(pBelow.Material) || pBelow.IsFluid))
                         {
                             validPaths.Add(pathLoc);
                         }
@@ -65,7 +70,7 @@ namespace Obsidian.WorldData
                     world.SetBlock(path, newBlock);
                     var neighborUpdate = new BlockUpdate(world, path, newBlock);
                     world.ScheduleBlockUpdate(neighborUpdate);
-                    return false;
+                    return Task.FromResult(false);
                 }
             }
 
@@ -76,7 +81,7 @@ namespace Obsidian.WorldData
                 {
                     world.SetBlock(location, Block.Air);
                     world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos));
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 // Keep falling
@@ -85,7 +90,7 @@ namespace Obsidian.WorldData
                     var newBlock = new Block(block.BaseId, state);
                     world.SetBlock(belowPos, newBlock);
                     world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos, newBlock));
-                    return false;
+                    return Task.FromResult(false);
                 }
                 else
                 {
@@ -97,12 +102,11 @@ namespace Obsidian.WorldData
 
             if (state < 8)
             {
-                var horizontalNeighbors = new Dictionary<Vector, Block?>()
-                {
-                    { location + Vector.Forwards, world.GetBlock(location + Vector.Forwards) },
-                    { location + Vector.Backwards, world.GetBlock(location + Vector.Backwards) },
-                    { location + Vector.Left, world.GetBlock(location + Vector.Left) },
-                    { location + Vector.Right, world.GetBlock(location + Vector.Right) }
+                var horizontalNeighbors = new Dictionary<Vector, Block?>() {
+                    {location + Vector.Forwards, world.GetBlock(location + Vector.Forwards)},
+                    {location + Vector.Backwards, world.GetBlock(location + Vector.Backwards)},
+                    {location + Vector.Left, world.GetBlock(location + Vector.Left)},
+                    {location + Vector.Right, world.GetBlock(location + Vector.Right)}
                 };
 
                 // Check infinite source blocks
@@ -112,16 +116,18 @@ namespace Obsidian.WorldData
                     int sourceNeighborCount = 0;
                     foreach (var (loc, neighborBlock) in horizontalNeighbors)
                     {
-                        if (neighborBlock is Block neighbor && neighbor.Material == block.Material && neighbor.State == 0)
+                        if (neighborBlock is Block neighbor && neighbor.Material == block.Material &&
+                            neighbor.State == 0)
                         {
                             sourceNeighborCount++;
                         }
                     }
+
                     if (sourceNeighborCount > 1)
                     {
                         var newBlock = new Block(Material.Water);
                         world.SetBlock(location, newBlock);
-                        return true;
+                        return Task.FromResult(true);
                     }
                 }
 
@@ -136,34 +142,38 @@ namespace Obsidian.WorldData
                     }
 
                     // If not, turn to air and update neighbors.
-                    if (lowestState >= state && world.GetBlock(location + Vector.Up).Value.Material != block.Material)
+                    if (lowestState >= state &&
+                        world.GetBlock(location + Vector.Up).Value.Material != block.Material)
                     {
                         world.SetBlock(location, Block.Air);
-                        return true;
+                        return Task.FromResult(true);
                     }
                 }
 
                 if (world.GetBlock(belowPos) is Block below)
                 {
-                    if (below.Material == block.Material) { return false; }
+                    if (below.Material == block.Material) { return Task.FromResult(false); }
+
                     if (Block.Replaceable.Contains(below.Material))
                     {
                         var newBlock = new Block(block.BaseId, state + 8);
                         world.SetBlock(belowPos, newBlock);
                         var neighborUpdate = new BlockUpdate(world, belowPos, newBlock);
                         world.ScheduleBlockUpdate(neighborUpdate);
-                        return false;
+                        return Task.FromResult(false);
                     }
                 }
 
                 // the lowest level of water can only go down, so bail now.
-                if (state == 7) { return false; }
+                if (state == 7) { return Task.FromResult(false); }
 
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
                     if (neighborBlock is null) { continue; }
+
                     var neighbor = neighborBlock.Value;
-                    if (Block.Replaceable.Contains(neighbor.Material) || (neighbor.Material == block.Material && neighbor.State > state + 1))
+                    if (Block.Replaceable.Contains(neighbor.Material) ||
+                        (neighbor.Material == block.Material && neighbor.State > state + 1))
                     {
                         var newBlock = new Block(block.BaseId, state + 1);
                         world.SetBlock(loc, newBlock);
@@ -173,7 +183,7 @@ namespace Obsidian.WorldData
                 }
             }
 
-            return false;
+            return Task.FromResult(false);
         }
     }
 }

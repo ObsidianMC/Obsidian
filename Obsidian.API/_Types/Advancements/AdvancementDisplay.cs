@@ -4,6 +4,18 @@ namespace Obsidian.API.Advancements
 {
     public sealed class AdvancementDisplay
     {
+        public AdvancementDisplay(ChatMessage title, ChatMessage description, Item icon, AdvancementFrameType advancementFrameType, AdvancementFlags flags, string backgroundTexture, float xCoord, float yCoord)
+        {
+            Title = title;
+            Description = description;
+            Icon = icon;
+            AdvancementFrameType = advancementFrameType;
+            Flags = flags;
+            BackgroundTexture = backgroundTexture;
+            XCoord = xCoord;
+            YCoord = yCoord;
+        }
+
         public ChatMessage Title { get; init; }
 
         public ChatMessage Description { get; init; }

@@ -53,7 +53,10 @@ namespace Obsidian.API.Plugins.Services
         public void LogTrace<T>(T exception) where T : Exception
         {
             Log($"{nameof(T)}: {exception.Message}");
-            Log(exception.StackTrace);
+            if (exception.StackTrace != null)
+            {
+                Log(exception.StackTrace);
+            }
         }
     }
 }

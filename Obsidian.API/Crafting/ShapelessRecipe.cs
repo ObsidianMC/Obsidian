@@ -13,5 +13,14 @@ namespace Obsidian.API.Crafting
         public Ingredient Result { get; set; }
 
         public IReadOnlyList<Ingredient> Ingredients { get; set; }
+
+        public ShapelessRecipe(string name, CraftingType type, string? group, Ingredient result, IReadOnlyList<Ingredient> ingredients)
+        {
+            Name = name;
+            Type = type;
+            Group = group;
+            Result = result;
+            Ingredients = ingredients;
+        }
     }
 }

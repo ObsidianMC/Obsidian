@@ -5,7 +5,6 @@ using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using System;
 using System.Collections.Generic;

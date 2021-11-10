@@ -35,7 +35,7 @@ namespace Obsidian.Entities
         public string Username { get; }
 
         /// <summary>
-        /// The players inventory
+        /// The players inventory.
         /// </summary>
         public Inventory Inventory { get; }
         public Inventory OpenedInventory { get; set; }
@@ -738,7 +738,7 @@ namespace Obsidian.Entities
 
             foreach (var permission in permissions)
             {
-                if (parent.Children.Any(x => x.Name == "*") || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
+                if (parent.Children.Any(x => x.Name == Permission.Wildcard) || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
                     return true;
 
                 parent = parent.Children.First(x => x.Name.EqualsIgnoreCase(permission));

@@ -21,6 +21,8 @@ namespace Obsidian.API
         {
             if(context.Sender.Issuer == CommandIssuers.Console)
                 return Task.FromResult(true);
+            if (context.Player == null)
+                return Task.FromResult(false);
             if (this.op && context.Player.IsOperator)
                 return Task.FromResult(true);
 

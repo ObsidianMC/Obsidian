@@ -13,5 +13,15 @@
         public Ingredient Ingredient { get; set; }
 
         public int Count { get; set; }
+
+        public CuttingRecipe(string name, CraftingType type, string? group, Ingredient result, Ingredient ingredient, int count)
+        {
+            Name = name;
+            Type = type;
+            Group = group;
+            Result = result;
+            Ingredient = ingredient;
+            Count = count;
+        }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Obsidian.API;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,11 +41,11 @@ namespace Obsidian
             else
             {
                 this.Objective = new ScoreboardObjective
-                {
-                    ObjectiveName = this.name,
-                    Value = title,
-                    DisplayType = displayType
-                };
+                (
+                    this.name,
+                    title,
+                    displayType
+                );
 
                 foreach (var (_, player) in this.server.OnlinePlayers)
                 {
@@ -71,11 +70,7 @@ namespace Obsidian
 
         public async Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null)
         {
-            var score = new Score
-            {
-                DisplayText = displayText,
-                Value = value ?? 0
-            };
+            var score = new Score(displayText, value ?? 0);
 
             if (this.scores.TryGetValue(scoreName, out var cachedScore))
             {
