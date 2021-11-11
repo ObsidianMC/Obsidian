@@ -5,11 +5,12 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class WoodedMountainsDecorator : BaseDecorator
+    public class BirchForestDecorator : BaseDecorator
     {
-        public WoodedMountainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+        public BirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
-            Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(SpruceTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));
         }
 
         public override void Decorate()
@@ -35,17 +36,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
                 chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
-            var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
+            var poppyNoise = noise.Decoration(worldX * 0.06, 9, worldZ * 0.06); // 0.03 makes more groupings
             if (poppyNoise > 1)
-                chunk.SetBlock(pos, Registry.GetBlock(Material.Dirt));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Poppy));
 
-            var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
+            var dandyNoise = noise.Decoration(worldX * 0.06, 10, worldZ * 0.06); // 0.03 makes more groupings
             if (dandyNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.CobblestoneSlab));
-
-            var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
-            if (cornFlowerNoise > 1)
-                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.OxeyeDaisy));
+                chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Dandelion));
         }
     }
 }

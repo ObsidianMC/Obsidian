@@ -32,7 +32,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
                         {
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.25, // Amplification of terrain
+                                Scale = 0.55, // Amplification of terrain
                                 Bias = 0.33, // lowest level is above sea level (0)
                                 Source0 = MountainsBase()
                             }
