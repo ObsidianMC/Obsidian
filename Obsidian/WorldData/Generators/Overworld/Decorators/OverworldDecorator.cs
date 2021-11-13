@@ -1,6 +1,7 @@
 ﻿using Obsidian.API;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
+using Obsidian.WorldData.Generators.Overworld.Features.Flora;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using System;
 using System.Linq;
@@ -22,7 +23,26 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
                     decorator.Decorate();
                     GenerateTrees(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+                    GenerateFlora(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+
                 }
+            }
+        }
+
+        private static void GenerateFlora(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)
+        {
+            foreach (var (flora, index) in features.Flora.Select((value, i) => (value, i)))
+            {
+                if (flora.Frequency == 0) { continue; }
+                var floraInstance = Activator.CreateInstance(flora.FloraType, world) as BaseFlora;
+                if (floraInstance is null) { continue; }
+
+                var noiseVal = noise.Decoration(pos.X, -33 + (index * 22), pos.Z);
+                var freq = flora.Frequency / 200.0;
+                bool isFlora = noiseVal > 0.9 && noiseVal <= freq + 0.9;
+                if (!isFlora) { continue; }
+
+                floraInstance.GenerateFlora(pos, noise.settings.Seed, flora.Radius, flora.Density);
             }
         }
 

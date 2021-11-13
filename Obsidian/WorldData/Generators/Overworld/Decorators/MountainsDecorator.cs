@@ -12,9 +12,18 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public override void Decorate()
         {
-            if (pos.Y < noise.settings.WaterLevel)
+            if (pos.Y < 74)
             {
-                FillWater();
+                chunk.SetBlock(pos, new Block(Material.GrassBlock, 1));
+                for (int y = pos.Y-1; y > pos.Y - 5; y--)
+                {
+                    chunk.SetBlock(pos.X, y, pos.Z, new Block(Material.Dirt));
+                }
+            }
+
+            if (pos.Y > 120)
+            {
+                chunk.SetBlock(pos, new Block(Material.SnowBlock));
                 return;
             }
 

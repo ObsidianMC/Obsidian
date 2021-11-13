@@ -11,6 +11,11 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
         /// </summary>
         public List<TreeInfo> Trees { get; set; } = new List<TreeInfo>();
 
+        /// <summary>
+        /// List of Flora types
+        /// </summary>
+        public List<FloraInfo> Flora { get; set; } = new List<FloraInfo>();
+
         public class TreeInfo
         {
             /// <summary>
@@ -34,12 +39,21 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
 
         public class FloraInfo
         {
-            public int Frequency { get; set; } = 0;
+            public int Frequency { get; set; }
 
-            public Type BottomFloraType { get; set; }
+            public Type FloraType { get; set; }
 
-            public Type TopFloraType { get; set; } = null;
+            public int Radius { get; set; }
+
+            public int Density { get; set; }
+
+            public FloraInfo(int frequency, Type floraType, int radius, int density)
+            {
+                Frequency = frequency;
+                Radius = radius;
+                Density = density;
+                FloraType = floraType;
+            }
         }
-
     }
 }

@@ -104,7 +104,7 @@ namespace Obsidian.API.Noise
                 // 65% of the ocean will be deep.
                 if (me.DistanceToPoint < averageDistance * 0.65)
                 {
-                    me.BaseBiome -= 4; // deep varient
+                    me.BaseBiome -= 4; // deep variant
                 }
 
                 // 5% chance that a warm ocean has a mooshroom island.
@@ -299,7 +299,10 @@ namespace Obsidian.API.Noise
             if (!Oceans.Contains(me.Biome) && !Oceans.Contains(nearest.Biome))
             {
                 if (dist <= riverSize)
-                    me.Biome = me.BaseBiome == BaseBiome.Frozen || me.BaseBiome == BaseBiome.FrozenRare ? Biomes.FrozenRiver : Biomes.River;
+                    me.Biome = me.BaseBiome == BaseBiome.Frozen ||
+                        me.BaseBiome == BaseBiome.FrozenRare ||
+                        nearest.BaseBiome == BaseBiome.Frozen ||
+                        nearest.BaseBiome == BaseBiome.FrozenRare ? Biomes.FrozenRiver : Biomes.River;
 
                 return me;
             }
@@ -355,9 +358,9 @@ namespace Obsidian.API.Noise
             }
             else
             {
-                // Basically, the first 2 decimals becomes the varient.
-                // So varient will be b/w 0 => 99
-                int varient = (int)(noise * 1000.0) % 100;
+                // Basically, the first 2 decimals becomes the variant.
+                // So variant will be b/w 0 => 99
+                int variant = (int)(noise * 1000.0) % 100;
 
                 // 4 base overworld types but we want the ratio to be
                 // 2 parts medium, 2 parts cold, 1 part frozen, 1 part dry
@@ -366,14 +369,14 @@ namespace Obsidian.API.Noise
                 return val switch
                 {
                     // 18% chance for a rare medium biome.
-                    0 or 1 => varient <= 18 ? (BaseBiome.MediumRare, varient) : (BaseBiome.Medium, varient),
+                    0 or 1 => variant <= 18 ? (BaseBiome.MediumRare, variant) : (BaseBiome.Medium, variant),
                     // 15% chance for a rare cold biome.
-                    2 or 3 => varient <= 15 ? (BaseBiome.ColdRare, varient) : (BaseBiome.Cold, varient),
+                    2 or 3 => variant <= 15 ? (BaseBiome.ColdRare, variant) : (BaseBiome.Cold, variant),
                     // There are no frozen rare biomes.
-                    4 => (BaseBiome.Frozen, varient),
+                    4 => (BaseBiome.Frozen, variant),
                     // 10% chance for a rare dry biome.
-                    5 => varient <= 10 ? (BaseBiome.DryRare, varient) : (BaseBiome.Dry, varient),
-                    _ => (BaseBiome.Medium, varient),
+                    5 => variant <= 10 ? (BaseBiome.DryRare, variant) : (BaseBiome.Dry, variant),
+                    _ => (BaseBiome.Medium, variant),
                 };
             }
         }
