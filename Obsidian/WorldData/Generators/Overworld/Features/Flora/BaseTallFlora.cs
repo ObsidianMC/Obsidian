@@ -26,13 +26,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Flora
             if (growHeight == 0) { return false; }
 
             // Grow base
-            for (int y = 0; y < height-1; y++)
+            for (int y = 0; y < growHeight - 1; y++)
             {
                 world.SetBlockUntracked(placeVector + (0, y, 0), new Block(FloraMat, lowerState));
             }
 
             // Top
-            world.SetBlockUntracked(placeVector + (0, height-1, 0), new Block(FloraMat, upperState));
+            world.SetBlockUntracked(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState));
             return true;
         }
     }
