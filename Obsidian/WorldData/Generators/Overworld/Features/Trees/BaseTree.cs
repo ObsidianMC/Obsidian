@@ -28,11 +28,12 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
             this.trunkHeight = trunkHeight;
         }
 
-        public virtual void GenerateTree(Vector origin, int heightOffset)
+        public virtual bool TryGenerateTree(Vector origin, int heightOffset)
         {
-            if (!TreeCanGrow(origin)) { return; }
+            if (!TreeCanGrow(origin)) { return false; }
             GenerateLeaves(origin, heightOffset);
             GenerateTrunk(origin, heightOffset);
+            return true;
         }
 
         protected virtual void GenerateLeaves(Vector origin, int heightOffset)

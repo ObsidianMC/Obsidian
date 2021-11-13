@@ -6,24 +6,27 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators
 {
-    public class PlainsDecorator : BaseDecorator
+    public class BirchForestDecorator : BaseDecorator
     {
-        public PlainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+        public BirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
         {
             Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));
+            Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(TallBirchTree)));
             Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
             Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(AzureBluetFlora), 4, 3));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(4, typeof(TulipFlora), 6, 5));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(4, typeof(OxeyeDaisyFlora), 2, 5));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(CornflowerFlora), 3, 3));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(LilyFlora), 4, 3));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(LilacFlora), 4, 3));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(RoseBushFlora), 4, 3));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PeonyFlora), 4, 3));
+
         }
 
         public override void Decorate()
         {
             if (pos.Y < noise.settings.WaterLevel)
             {
-                FillSand();
+                FillWater();
                 return;
             }
 
@@ -36,7 +39,6 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             chunk.SetBlock(pos, grass);
             for (int y = -1; y > -4; y--)
                 chunk.SetBlock(pos + (0, y, 0), dirt);
-
 
             var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
             if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass

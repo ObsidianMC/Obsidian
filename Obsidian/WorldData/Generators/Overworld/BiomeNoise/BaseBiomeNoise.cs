@@ -28,7 +28,8 @@ namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise
                 {
                     Frequency = 1.14,
                     Lacunarity = 2.222,
-                    Seed = settings.Seed
+                    Seed = settings.Seed,
+                    
                 }
             };
 
