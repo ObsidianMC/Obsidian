@@ -42,5 +42,15 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 }
             }
         }
+
+        protected void FillSand()
+        {
+            if (chunk is null) { return; }
+            var sand = Registry.GetBlock(Material.Sand);
+            if (pos.Y <= noise.settings.WaterLevel)
+            {
+                chunk.SetBlock(pos, sand);
+            }
+        }
     }
 }

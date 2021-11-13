@@ -53,7 +53,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
                 offset = new Random().Next(-2, 2);
             else
                 offset = (int)heightOffset;
-            tree.GenerateTree(position, offset);
+            tree.TryGenerateTree(position, offset);
         }
         
         private static void GenerateTrees(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)

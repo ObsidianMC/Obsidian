@@ -10,7 +10,14 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Flora
 
         protected Material FloraMat { get; set; }
 
-        protected List<Material> ValidSourceBlocks = new()
+        protected int height = 1;
+
+        protected List<Material> growsIn = new()
+        {
+            Material.Air
+        };
+
+        protected List<Material> growsOn = new()
         {
             Material.GrassBlock,
             Material.Dirt,
@@ -23,6 +30,13 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Flora
             this.FloraMat = mat;
         }
 
+        /// <summary>
+        /// Place a grouping of plants in a circular patch.
+        /// </summary>
+        /// <param name="origin">Center of the grouping.</param>
+        /// <param name="seed">World Seed.</param>
+        /// <param name="radius">Radius of circular patch.</param>
+        /// <param name="density">less dense: 1 < density < 10 :more dense.</param>
         public virtual void GenerateFlora(Vector origin, int seed, int radius, int density)
         {
             density = Math.Max(1, 10 - density);
@@ -40,22 +54,53 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Flora
                         if (y == -1) { continue; }
                         bool isFlora = seedRand.Next(10) % density == 0;
                         var placeVec = new Vector(x, y + 1, z);
-                        if (isFlora & CanPlace(placeVec))
+                        if (isFlora)
                         {
-                            world.SetBlockUntracked(placeVec, new Block(FloraMat));
+                            TryPlaceFlora(placeVec);
                         }
                     }
                 }
             }
         }
 
-        public virtual bool CanPlace(Vector loc)
+        /// <summary>
+        /// Place a single plant.
+        /// </summary>
+        /// <param name="placeVector">The position above the surface block.</param>
+        /// <returns>Whether plant was planted.</returns>
+        public virtual bool TryPlaceFlora(Vector placeVector)
         {
-            var surfaceBlock = world.GetBlock(loc + Vector.Down);
-            var self = world.GetBlock(loc);
-            if (surfaceBlock is null || self is null) { return false; }
-            bool surfaceValid = ValidSourceBlocks.Contains(((Block)surfaceBlock).Material);
-            return surfaceValid & ((Block)self).IsAir;
+            if (GrowHeight(placeVector) >= height && ValidSurface(placeVector))
+            {
+                world.SetBlockUntracked(placeVector, new Block(FloraMat));
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Check if the surface is compatible.
+        /// </summary>
+        /// <param name="loc">The position above the surface block.</param>
+        /// <returns>Whether surface is compatible.</returns>
+        protected virtual bool ValidSurface(Vector loc) => world.GetBlock(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
+
+        /// <summary>
+        /// Check free space above grow location.
+        /// </summary>
+        /// <param name="loc">Location to sample.</param>
+        /// <returns>Count of vertical free space above plant.</returns>
+        protected virtual int GrowHeight(Vector loc)
+        {
+            int freeSpace = 0;
+            for (int y = 0; y < height; y++)
+            {
+                if (world.GetBlock(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
+                {
+                    freeSpace++;
+                }
+            }
+            return freeSpace;
         }
     }
 }

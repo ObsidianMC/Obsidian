@@ -14,16 +14,17 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(AcaciaTree)));
             Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
             Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(CornflowerFlora), 3, 3));
-            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PeonyFlora), 2, 1));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(AzureBluetFlora), 4, 3));
             Features.Flora.Add(new DecoratorFeatures.FloraInfo(4, typeof(TulipFlora), 6, 5));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(4, typeof(OxeyeDaisyFlora), 2, 5));
+            Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(CornflowerFlora), 3, 3));
         }
 
         public override void Decorate()
         {
             if (pos.Y < noise.settings.WaterLevel)
             {
-                FillWater();
+                FillSand();
                 return;
             }
 

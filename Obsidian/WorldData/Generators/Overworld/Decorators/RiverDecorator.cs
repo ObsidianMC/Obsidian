@@ -27,7 +27,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators
             {
                 chunk.SetBlock(pos, sand);
                 for (int y = -1; y > -4; y--)
-                    chunk.SetBlock(pos + (0, y, 0), dirt);
+                    chunk.SetBlock(pos + (0, y, 0), gravel);
             }
         }
     }

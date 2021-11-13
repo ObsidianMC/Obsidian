@@ -2,9 +2,9 @@
 
 namespace Obsidian.WorldData.Generators.Overworld.Features.Flora
 {
-    public class PeonyFlora : BaseTallFlora
+    public class SunflowerFlora : BaseTallFlora
     {
-        public PeonyFlora(World world) : base(world, Material.Peony)
+        public SunflowerFlora(World world) : base(world, Material.Sunflower)
         {
 
         }
