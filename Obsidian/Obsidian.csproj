@@ -30,6 +30,7 @@
     <EmbeddedResource Remove="Sounds\**" />
     <None Remove="PluginMessages\**" />
     <None Remove="Sounds\**" />
+    <None Include="..\.editorconfig" Link=".editorconfig" />
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <PackagePath></PackagePath>

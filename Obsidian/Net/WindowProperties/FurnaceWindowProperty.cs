@@ -1,32 +1,31 @@
 ﻿using System;
 
-namespace Obsidian.Net.WindowProperties
+namespace Obsidian.Net.WindowProperties;
+
+public class FurnaceWindowProperty : IWindowProperty
 {
-    public class FurnaceWindowProperty : IWindowProperty
+    public short Property { get; }
+
+    public short Value { get; }
+
+    public FurnaceWindowProperty(FurnaceProperty property, short value)
     {
-        public short Property { get; }
+        this.Property = (short)property;
 
-        public short Value { get; }
+        if (property == FurnaceProperty.ProgressArrow && value > 200)
+            throw new InvalidOperationException();
 
-        public FurnaceWindowProperty(FurnaceProperty property, short value)
-        {
-            this.Property = (short)property;
-
-            if (property == FurnaceProperty.ProgressArrow && value > 200)
-                throw new InvalidOperationException();
-
-            this.Value = value;
-        }
+        this.Value = value;
     }
+}
 
-    public enum FurnaceProperty : short
-    {
-        FuelLeft,
+public enum FurnaceProperty : short
+{
+    FuelLeft,
 
-        MaximumFuelBurnTime,
+    MaximumFuelBurnTime,
 
-        ProgressArrow,
+    ProgressArrow,
 
-        MaximumProgress
-    }
+    MaximumProgress
 }

@@ -5,49 +5,48 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Obsidian.API.Noise
+namespace Obsidian.API.Noise;
+
+/// <summary>
+/// SharpNoise extension that enables a delegate to determine whether
+/// to utilize one of two input modules.
+/// </summary>
+public class FuncSelector : Module
 {
+    public Module Source0 { get; set; }
+
+    public Module Source1 { get; set; }
+
     /// <summary>
-    /// SharpNoise extension that enables a delegate to determine whether
-    /// to utilize one of two input modules.
+    /// A delegate which returns either 0 or 1 to determine which
+    /// source module to use.
     /// </summary>
-    public class FuncSelector : Module
+    public Func<(double, double, double), int> ConditionFunction { get; set; }
+
+    /// <summary>
+    /// Ctor.
+    /// </summary>
+    public FuncSelector(Module source0, Module source1, Func<(double, double, double), int> conditionFunction) : base(2)
     {
-        public Module Source0 { get; set; }
+        Source0 = source0;
+        Source1 = source1;
+        ConditionFunction = conditionFunction;
+    }
 
-        public Module Source1 { get; set; }
-
-        /// <summary>
-        /// A delegate which returns either 0 or 1 to determine which
-        /// source module to use.
-        /// </summary>
-        public Func<(double, double, double), int> ConditionFunction { get; set; }
-
-        /// <summary>
-        /// Ctor.
-        /// </summary>
-        public FuncSelector(Module source0, Module source1, Func<(double, double, double), int> conditionFunction) : base(2)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <returns></returns>
+    public override double GetValue(double x, double y, double z)
+    {
+        int val = ConditionFunction((x, y, z));
+        if (val == 0)
         {
-            Source0 = source0;
-            Source1 = source1;
-            ConditionFunction = conditionFunction;
+            return Source0.GetValue(x, y, z);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="z"></param>
-        /// <returns></returns>
-        public override double GetValue(double x, double y, double z)
-        {
-            int val = ConditionFunction((x, y, z));
-            if (val == 0)
-            {
-                return Source0.GetValue(x, y, z);
-            }
-            return Source1.GetValue(x, y, z);
-        }
+        return Source1.GetValue(x, y, z);
     }
 }

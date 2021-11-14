@@ -4,28 +4,27 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class ServerHeldItemChange : IServerboundPacket
 {
-    public partial class ServerHeldItemChange : IServerboundPacket
+    [Field(0)]
+    public short Slot { get; private set; }
+
+    public int Id => 0x25;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0)]
-        public short Slot { get; private set; }
+        player.CurrentSlot = Slot;
 
-        public int Id => 0x25;
+        var heldItem = player.GetHeldItem();
 
-        public async ValueTask HandleAsync(Server server, Player player)
+        await server.QueueBroadcastPacketAsync(new EntityEquipment
         {
-            player.CurrentSlot = Slot;
-
-            var heldItem = player.GetHeldItem();
-
-            await server.QueueBroadcastPacketAsync(new EntityEquipment
-            {
-                EntityId = player.EntityId,
-                Slot = ESlot.MainHand,
-                Item = heldItem
-            },
-            excluded: player);
-        }
+            EntityId = player.EntityId,
+            Slot = ESlot.MainHand,
+            Item = heldItem
+        },
+        excluded: player);
     }
 }

@@ -2,34 +2,33 @@
 using Obsidian.Serialization.Attributes;
 using System;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class SpawnLivingEntity : IClientboundPacket
 {
-    public partial class SpawnLivingEntity : IClientboundPacket
-    {
-        [Field(0), VarLength]
-        public int EntityId { get; init; }
-        
-        [Field(1)]
-        public Guid Uuid { get; init; }
+    [Field(0), VarLength]
+    public int EntityId { get; init; }
 
-        [Field(2), ActualType(typeof(int)), VarLength]
-        public EntityType Type { get; init; }
+    [Field(1)]
+    public Guid Uuid { get; init; }
 
-        [Field(3), DataFormat(typeof(double))]
-        public VectorF Position { get; init; }
+    [Field(2), ActualType(typeof(int)), VarLength]
+    public EntityType Type { get; init; }
 
-        [Field(4)]
-        public Angle Yaw { get; init; }
+    [Field(3), DataFormat(typeof(double))]
+    public VectorF Position { get; init; }
 
-        [Field(5)]
-        public Angle Pitch { get; init; }
+    [Field(4)]
+    public Angle Yaw { get; init; }
 
-        [Field(6)]
-        public Angle HeadPitch { get; init; }
+    [Field(5)]
+    public Angle Pitch { get; init; }
 
-        [Field(7)]
-        public Velocity Velocity { get; init; }
+    [Field(6)]
+    public Angle HeadPitch { get; init; }
 
-        public int Id => 0x02;
-    }
+    [Field(7)]
+    public Velocity Velocity { get; init; }
+
+    public int Id => 0x02;
 }

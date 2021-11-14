@@ -1,26 +1,25 @@
 ﻿using System.Threading.Tasks;
 
-namespace Obsidian.Net.Actions.PlayerInfo
+namespace Obsidian.Net.Actions.PlayerInfo;
+
+public class UpdateDisplayNameInfoAction : InfoAction
 {
-    public class UpdateDisplayNameInfoAction : InfoAction
+    public string DisplayName { get; set; }
+    public bool HasDisplayName => string.IsNullOrWhiteSpace(DisplayName);
+
+    public override async Task WriteAsync(MinecraftStream stream)
     {
-        public string DisplayName { get; set; }
-        public bool HasDisplayName => string.IsNullOrWhiteSpace(DisplayName);
+        await base.WriteAsync(stream);
 
-        public override async Task WriteAsync(MinecraftStream stream)
-        {
-            await base.WriteAsync(stream);
+        await stream.WriteStringAsync(this.DisplayName);
+    }
 
-            await stream.WriteStringAsync(this.DisplayName);
-        }
+    public override void Write(MinecraftStream stream)
+    {
+        base.Write(stream);
 
-        public override void Write(MinecraftStream stream)
-        {
-            base.Write(stream);
-
-            stream.WriteBoolean(HasDisplayName);
-            if (HasDisplayName)
-                stream.WriteString(DisplayName);
-        }
+        stream.WriteBoolean(HasDisplayName);
+        if (HasDisplayName)
+            stream.WriteString(DisplayName);
     }
 }

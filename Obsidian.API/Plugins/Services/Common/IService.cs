@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API.Plugins.Services.Common
+﻿namespace Obsidian.API.Plugins.Services.Common;
+
+/// <summary>
+/// Provides the base interface for services.
+/// </summary>
+public interface IService
 {
-    /// <summary>
-    /// Provides the base interface for services.
-    /// </summary>
-    public interface IService
-    {
-    }
 }

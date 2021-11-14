@@ -1,17 +1,16 @@
 ﻿using System;
 
-namespace Obsidian.API.Events
+namespace Obsidian.API.Events;
+
+public class PlayerLeaveEventArgs : PlayerEventArgs
 {
-    public class PlayerLeaveEventArgs : PlayerEventArgs
+    /// <summary>
+    /// The date the player left.
+    /// </summary>
+    public DateTimeOffset LeaveDate { get; }
+
+    public PlayerLeaveEventArgs(IPlayer player, DateTimeOffset leave) : base(player)
     {
-        /// <summary>
-        /// The date the player left.
-        /// </summary>
-        public DateTimeOffset LeaveDate { get; }
-        
-        public PlayerLeaveEventArgs(IPlayer player, DateTimeOffset leave) : base(player)
-        {
-            this.LeaveDate = leave;
-        }
+        this.LeaveDate = leave;
     }
 }

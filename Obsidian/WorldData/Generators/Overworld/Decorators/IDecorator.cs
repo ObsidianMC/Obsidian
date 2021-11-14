@@ -1,8 +1,7 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Decorators
+﻿namespace Obsidian.WorldData.Generators.Overworld.Decorators;
+
+public interface IDecorator
 {
-    public interface IDecorator
-    {
-        public DecoratorFeatures Features { get; }
-        void Decorate();
-    }
+    public DecoratorFeatures Features { get; }
+    void Decorate();
 }

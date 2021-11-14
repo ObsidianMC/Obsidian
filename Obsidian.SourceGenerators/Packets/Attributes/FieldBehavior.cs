@@ -1,19 +1,18 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Obsidian.SourceGenerators.Packets.Attributes
+namespace Obsidian.SourceGenerators.Packets.Attributes;
+
+internal sealed class FieldBehavior : AttributeBehaviorBase
 {
-    internal sealed class FieldBehavior : AttributeBehaviorBase
+    public override string Name => Vocabulary.FieldAttribute;
+    public override AttributeFlags Flag => AttributeFlags.Field;
+
+    public int Order { get; }
+
+    public FieldBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
     {
-        public override string Name => Vocabulary.FieldAttribute;
-        public override AttributeFlags Flag => AttributeFlags.Field;
+        TryEvaluateIntArgument(out int order);
 
-        public int Order { get; }
-
-        public FieldBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
-        {
-            TryEvaluateIntArgument(out int order);
-
-            Order = order;
-        }
+        Order = order;
     }
 }

@@ -1,28 +1,27 @@
 ﻿using System;
 
-namespace Obsidian.Nbt
+namespace Obsidian.Nbt;
+
+public enum NbtTagType : byte
 {
-    public enum NbtTagType : byte
-    {
-        End,
-        Byte,
-        Short,
-        Int,
-        Long,
-        Float,
-        Double,
-        ByteArray,
-        String,
-        List,
-        Compound,
-        IntArray,
-        LongArray,
+    End,
+    Byte,
+    Short,
+    Int,
+    Long,
+    Float,
+    Double,
+    ByteArray,
+    String,
+    List,
+    Compound,
+    IntArray,
+    LongArray,
 
-        Unknown = 255
-    }
+    Unknown = 255
+}
 
-    internal static class TypeExtensions
-    {
-        public static bool IsArray(this NbtTagType type) => type == NbtTagType.ByteArray || type == NbtTagType.IntArray || type == NbtTagType.LongArray;
-    }
+internal static class TypeExtensions
+{
+    public static bool IsArray(this NbtTagType type) => type == NbtTagType.ByteArray || type == NbtTagType.IntArray || type == NbtTagType.LongArray;
 }

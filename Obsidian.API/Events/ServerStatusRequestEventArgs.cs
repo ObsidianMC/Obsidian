@@ -1,12 +1,11 @@
-﻿namespace Obsidian.API.Events
-{
-    public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
-    {
-        public IServerStatus Status { get; }
+﻿namespace Obsidian.API.Events;
 
-        internal ServerStatusRequestEventArgs(IServer server, IServerStatus status) : base(server)
-        {
-            this.Status = status;
-        }
+public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
+{
+    public IServerStatus Status { get; }
+
+    internal ServerStatusRequestEventArgs(IServer server, IServerStatus status) : base(server)
+    {
+        this.Status = status;
     }
 }

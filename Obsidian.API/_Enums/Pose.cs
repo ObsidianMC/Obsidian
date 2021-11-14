@@ -1,19 +1,18 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum Pose : int
 {
-    public enum Pose : int
-    {
-        Standing,
+    Standing,
 
-        FallFlying,
+    FallFlying,
 
-        Sleeping,
+    Sleeping,
 
-        Swimming,
+    Swimming,
 
-        SpinAttack,
+    SpinAttack,
 
-        Sneaking,
+    Sneaking,
 
-        Dying
-    }
+    Dying
 }

@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum Dimension : int
 {
-    public enum Dimension : int
-    {
-        Nether = -1,
-        Overworld = 0,
-        End = 1
-    }
+    Nether = -1,
+    Overworld = 0,
+    End = 1
 }

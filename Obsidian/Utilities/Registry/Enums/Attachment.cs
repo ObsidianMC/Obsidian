@@ -1,10 +1,9 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Attachment
 {
-    public enum Attachment
-    {
-        Floor,
-        Ceiling,
-        SingleWall,
-        DoubleWall
-    }
+    Floor,
+    Ceiling,
+    SingleWall,
+    DoubleWall
 }

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Linq;
 
-namespace Obsidian.API
+namespace Obsidian.API;
+
+public class MinecraftArgumentTypes
 {
-    public class MinecraftArgumentTypes
+    // TODO maybe make a Dictionary mapping an enum to a string?
+    private static string[] mcTypes =
     {
-        // TODO maybe make a Dictionary mapping an enum to a string?
-        private static string[] mcTypes =
-        {
             "brigadier:bool",
             "brigadier:double",
             "brigadier:float",
@@ -57,6 +57,5 @@ namespace Obsidian.API
             "obsidian:player"
         };
 
-        public static bool IsValidMcType(string? input) => mcTypes.Contains(input);
-    }
+    public static bool IsValidMcType(string? input) => mcTypes.Contains(input);
 }

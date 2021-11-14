@@ -1,15 +1,14 @@
-﻿namespace Obsidian.API.AI
+﻿namespace Obsidian.API.AI;
+
+public interface IGoalController
 {
-    public interface IGoalController
-    {
-        public bool IsPaused { get; }
-        public bool IsExecuting { get; }
+    public bool IsPaused { get; }
+    public bool IsExecuting { get; }
 
-        public void AddGoal(IGoal goal);
-        public void RemoveGoal(IGoal goal);
+    public void AddGoal(IGoal goal);
+    public void RemoveGoal(IGoal goal);
 
-        public void Clear();
-        public void Cancel();
-        public void Pause();
-    }
+    public void Clear();
+    public void Cancel();
+    public void Pause();
 }

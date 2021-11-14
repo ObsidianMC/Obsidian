@@ -1,27 +1,25 @@
 ﻿using System;
 
-namespace Obsidian.Concurrency
+namespace Obsidian.Concurrency;
+
+internal static class PlatformHelper
 {
-    internal static class PlatformHelper
+    private const int ProcessorCountRefreshIntervalMs = 30000;
+
+    private static volatile int _processorCount;
+    private static volatile int _lastProcessorCountRefreshTicks;
+
+    internal static int ProcessorCount
     {
-        private const int ProcessorCountRefreshIntervalMs = 30000;
-
-        private static volatile int _processorCount;
-        private static volatile int _lastProcessorCountRefreshTicks;
-
-        internal static int ProcessorCount
-        {
-            get
+        get {
+            var now = Environment.TickCount;
+            if (_processorCount == 0 || now - _lastProcessorCountRefreshTicks >= ProcessorCountRefreshIntervalMs)
             {
-                var now = Environment.TickCount;
-                if (_processorCount == 0 || now - _lastProcessorCountRefreshTicks >= ProcessorCountRefreshIntervalMs)
-                {
-                    _processorCount = Environment.ProcessorCount;
-                    _lastProcessorCountRefreshTicks = now;
-                }
-
-                return _processorCount;
+                _processorCount = Environment.ProcessorCount;
+                _lastProcessorCountRefreshTicks = now;
             }
+
+            return _processorCount;
         }
     }
 }

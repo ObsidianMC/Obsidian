@@ -3,31 +3,30 @@ using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
 {
-    public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
+    [Field(0)]
+    public long KeepAliveId { get; private set; }
+
+    public int Id => 0x21;
+
+    public KeepAlivePacket()
     {
-        [Field(0)]
-        public long KeepAliveId { get; private set; }
+    }
 
-        public int Id => 0x21;
+    public KeepAlivePacket(long id)
+    {
+        KeepAliveId = id;
+    }
 
-        public KeepAlivePacket()
-        {
-        }
+    public ValueTask HandleAsync(Server server, Player player)
+    {
+        Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
 
-        public KeepAlivePacket(long id)
-        {
-            KeepAliveId = id;
-        }
+        player.client.missedKeepalives = 0;
 
-        public ValueTask HandleAsync(Server server, Player player)
-        {
-            Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
-
-            player.client.missedKeepalives = 0;
-
-            return ValueTask.CompletedTask;
-        }
+        return ValueTask.CompletedTask;
     }
 }

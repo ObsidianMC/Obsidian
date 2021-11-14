@@ -2,15 +2,14 @@
 using Obsidian.Serialization.Attributes;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class NameItem : IServerboundPacket
 {
-    public partial class NameItem : IServerboundPacket
-    {
-        [Field(0)]
-        public string ItemName { get; private set; }
+    [Field(0)]
+    public string ItemName { get; private set; }
 
-        public int Id => 0x20;
+    public int Id => 0x20;
 
-        public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
-    }
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

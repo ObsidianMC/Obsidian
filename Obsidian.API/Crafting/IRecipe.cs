@@ -1,13 +1,12 @@
-﻿namespace Obsidian.API.Crafting
+﻿namespace Obsidian.API.Crafting;
+
+public interface IRecipe
 {
-    public interface IRecipe
-    {
-        public string Name { get; set; }
+    public string Name { get; set; }
 
-        public CraftingType Type { get; set; }
+    public CraftingType Type { get; set; }
 
-        public string? Group { get; set; }
+    public string? Group { get; set; }
 
-        public Ingredient Result { get; set; }
-    }
+    public Ingredient Result { get; set; }
 }

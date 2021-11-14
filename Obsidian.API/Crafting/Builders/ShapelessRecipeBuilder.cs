@@ -2,70 +2,69 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.API.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders;
+
+public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
 {
-    public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
+    public string? Name { get; set; }
+    public string? Group { get; set; }
+    public ItemStack? Result { get; set; }
+
+    public IReadOnlyList<Ingredient> Ingredients { get; }
+
+    private readonly List<Ingredient> ingredients = new();
+
+    public ShapelessRecipeBuilder()
     {
-        public string? Name { get; set; }
-        public string? Group { get; set; }
-        public ItemStack? Result { get; set; }
+        this.Ingredients = new ReadOnlyCollection<Ingredient>(this.ingredients);
+    }
 
-        public IReadOnlyList<Ingredient> Ingredients { get; }
+    public ShapelessRecipeBuilder AddIngredients(params ItemStack[] items)
+    {
+        var ingredient = new Ingredient();
 
-        private readonly List<Ingredient> ingredients = new();
+        foreach (var item in items)
+            ingredient.Add(item);
 
-        public ShapelessRecipeBuilder()
-        {
-            this.Ingredients = new ReadOnlyCollection<Ingredient>(this.ingredients);
-        }
+        return this;
+    }
 
-        public ShapelessRecipeBuilder AddIngredients(params ItemStack[] items)
-        {
-            var ingredient = new Ingredient();
+    public IRecipe Build()
+    {
+        if (this.ingredients.Count <= 0)
+            throw new InvalidOperationException("Ingredients must be filled with atleast 1 item.");
 
-            foreach (var item in items)
-                ingredient.Add(item);
+        return new ShapelessRecipe
+        (
+            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            CraftingType.CraftingShapeless,
+            this.Group,
+            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients))
+        );
+    }
 
-            return this;
-        }
+    public ShapelessRecipeBuilder WithName(string name)
+    {
+        this.Name = name;
 
-        public IRecipe Build()
-        {
-            if (this.ingredients.Count <= 0)
-                throw new InvalidOperationException("Ingredients must be filled with atleast 1 item.");
+        return this;
+    }
 
-            return new ShapelessRecipe
-            (
-                this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                CraftingType.CraftingShapeless,
-                this.Group,
-                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-                new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients))
-            );
-        }
+    public ShapelessRecipeBuilder SetResult(ItemStack result)
+    {
+        if (this.Result != null)
+            throw new InvalidOperationException("Result is already set.");
 
-        public ShapelessRecipeBuilder WithName(string name)
-        {
-            this.Name = name;
+        this.Result = result;
 
-            return this;
-        }
+        return this;
+    }
 
-        public ShapelessRecipeBuilder SetResult(ItemStack result)
-        {
-            if (this.Result != null)
-                throw new InvalidOperationException("Result is already set.");
+    public ShapelessRecipeBuilder InGroup(string group)
+    {
+        this.Group = group;
 
-            this.Result = result;
-
-            return this;
-        }
-
-        public ShapelessRecipeBuilder InGroup(string group)
-        {
-            this.Group = group;
-
-            return this;
-        }
+        return this;
     }
 }

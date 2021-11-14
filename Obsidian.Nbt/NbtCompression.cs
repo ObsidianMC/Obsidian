@@ -1,13 +1,12 @@
-﻿namespace Obsidian.Nbt
+﻿namespace Obsidian.Nbt;
+
+public enum NbtCompression
 {
-    public enum NbtCompression
-    {
-        Auto,
+    Auto,
 
-        None,
+    None,
 
-        GZip,
+    GZip,
 
-        ZLib
-    }
+    ZLib
 }

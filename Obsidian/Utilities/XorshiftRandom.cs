@@ -1,102 +1,101 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace Obsidian.Utilities
+namespace Obsidian.Utilities;
+
+public struct XorshiftRandom
 {
-    public struct XorshiftRandom
+    private const double Unit = 1.0 / (int.MaxValue + 1.0);
+    private const float FloatUnit = 1f / uint.MaxValue;
+    private const double DoubleUnit = 1.0 / ulong.MaxValue;
+
+    private ulong stateA;
+    private ulong stateB;
+
+    public XorshiftRandom(long seed)
     {
-        private const double Unit = 1.0 / (int.MaxValue + 1.0);
-        private const float FloatUnit = 1f / uint.MaxValue;
-        private const double DoubleUnit = 1.0 / ulong.MaxValue;
+        stateA = (ulong)seed;
+        stateB = (ulong)seed >> 32;
+    }
 
-        private ulong stateA;
-        private ulong stateB;
+    public int Next()
+    {
+        var value = Step();
+        return (int)(value & 0xFFFFFFFF);
+    }
 
-        public XorshiftRandom(long seed)
+    public int Next(int maxValue)
+    {
+        if (maxValue > 1)
         {
-            stateA = (ulong)seed;
-            stateB = (ulong)seed >> 32;
+            return (int)(Unit * NextInt32() * maxValue);
         }
 
-        public int Next()
+        return 0;
+    }
+
+    public int Next(int minValue, int maxValue)
+    {
+        uint exclusiveRange = (uint)(maxValue - minValue);
+
+        if (exclusiveRange > 1)
         {
-            var value = Step();
-            return (int)(value & 0xFFFFFFFF);
+            return minValue + (int)(Unit * NextInt32() * exclusiveRange);
         }
 
-        public int Next(int maxValue)
-        {
-            if (maxValue > 1)
-            {
-                return (int)(Unit * NextInt32() * maxValue);
-            }
+        return minValue;
+    }
 
-            return 0;
-        }
+    public double NextDouble()
+    {
+        return DoubleUnit * Step();
+    }
 
-        public int Next(int minValue, int maxValue)
-        {
-            uint exclusiveRange = (uint)(maxValue - minValue);
+    public ulong NextUlong()
+    {
+        return Step();
+    }
 
-            if (exclusiveRange > 1)
-            {
-                return minValue + (int)(Unit * NextInt32() * exclusiveRange);
-            }
+    public float NextFloat()
+    {
+        return FloatUnit * NextUInt32();
+    }
 
-            return minValue;
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int NextInt32()
+    {
+        ulong step = Step();
+        return Unsafe.As<ulong, int>(ref step) & int.MaxValue;
+    }
 
-        public double NextDouble()
-        {
-            return DoubleUnit * Step();
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private uint NextUInt32()
+    {
+        ulong step = Step();
+        return Unsafe.As<ulong, uint>(ref step);
+    }
 
-        public ulong NextUlong()
-        {
-            return Step();
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static XorshiftRandom Create()
+    {
+        return new(Environment.TickCount64 ^ long.MinValue);
+    }
 
-        public float NextFloat()
-        {
-            return FloatUnit * NextUInt32();
-        }
+    /// <summary>
+    /// Increases the RNG by one step and returns it's ulong value.
+    /// https://en.wikipedia.org/wiki/Xorshift#xorshift+                                                                                           
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private ulong Step()
+    {
+        ulong t = stateA;
+        ulong s = stateB;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int NextInt32()
-        {
-            ulong step = Step();
-            return Unsafe.As<ulong, int>(ref step) & int.MaxValue;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private uint NextUInt32()
-        {
-            ulong step = Step();
-            return Unsafe.As<ulong, uint>(ref step);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static XorshiftRandom Create()
-        {
-	        return new(Environment.TickCount64 ^ long.MinValue);
-        }
-
-        /// <summary>
-        /// Increases the RNG by one step and returns it's ulong value.
-        /// https://en.wikipedia.org/wiki/Xorshift#xorshift+                                                                                           
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ulong Step()
-        {
-            ulong t = stateA;
-            ulong s = stateB;
-
-            stateA = s;
-            t ^= t << 23;
-            t ^= t >> 17;
-            t ^= s ^ (s >> 26);
-            stateB = t;
-            return t + s;
-        }
+        stateA = s;
+        t ^= t << 23;
+        t ^= t >> 17;
+        t ^= s ^ (s >> 26);
+        stateB = t;
+        return t + s;
     }
 }

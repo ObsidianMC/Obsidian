@@ -1,70 +1,69 @@
 ﻿using System;
 
-namespace Obsidian.API.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders;
+
+public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
 {
-    public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
+    public string? Name { get; set; }
+    public string? Group { get; set; }
+    public ItemStack? Result { get; set; }
+
+    public Ingredient Ingredient { get; private set; } = new Ingredient();
+
+    public int Count { get; set; }
+
+    public CuttingRecipeBuilder AddIngredients(params ItemStack[] items)
     {
-        public string? Name { get; set; }
-        public string? Group { get; set; }
-        public ItemStack? Result { get; set; }
+        foreach (var item in items)
+            this.Ingredient.Add(item);
 
-        public Ingredient Ingredient { get; private set; } = new Ingredient();
+        return this;
+    }
 
-        public int Count { get; set; }
+    public CuttingRecipeBuilder SetOutputCount(int count)
+    {
+        this.Count = count;
 
-        public CuttingRecipeBuilder AddIngredients(params ItemStack[] items)
-        {
-            foreach (var item in items)
-                this.Ingredient.Add(item);
+        return this;
+    }
 
-            return this;
-        }
+    public CuttingRecipeBuilder WithName(string name)
+    {
+        this.Name = name;
 
-        public CuttingRecipeBuilder SetOutputCount(int count)
-        {
-            this.Count = count;
+        return this;
+    }
 
-            return this;
-        }
+    public CuttingRecipeBuilder SetResult(ItemStack result)
+    {
+        if (this.Result != null)
+            throw new InvalidOperationException("Result is already set.");
 
-        public CuttingRecipeBuilder WithName(string name)
-        {
-            this.Name = name;
+        this.Result = result;
 
-            return this;
-        }
+        return this;
+    }
 
-        public CuttingRecipeBuilder SetResult(ItemStack result)
-        {
-            if (this.Result != null)
-                throw new InvalidOperationException("Result is already set.");
+    public CuttingRecipeBuilder InGroup(string group)
+    {
+        this.Group = group;
 
-            this.Result = result;
+        return this;
+    }
 
-            return this;
-        }
+    public IRecipe Build()
+    {
+        if (this.Ingredient.Count <= 0)
+            throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
-        public CuttingRecipeBuilder InGroup(string group)
-        {
-            this.Group = group;
-
-            return this;
-        }
-
-        public IRecipe Build()
-        {
-            if (this.Ingredient.Count <= 0)
-                throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
-
-            return new CuttingRecipe
-            (
-                this.Name ?? throw new NullReferenceException("Name must not be null"),
-                CraftingType.Stonecutting,
-                this.Group,
-                this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-                this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
-                this.Count
-            );
-        }
+        return new CuttingRecipe
+        (
+            this.Name ?? throw new NullReferenceException("Name must not be null"),
+            CraftingType.Stonecutting,
+            this.Group,
+            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
+            this.Count
+        );
     }
 }

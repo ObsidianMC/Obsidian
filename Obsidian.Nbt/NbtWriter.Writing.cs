@@ -2,86 +2,85 @@
 using System.Linq;
 using System.Text;
 
-namespace Obsidian.Nbt
+namespace Obsidian.Nbt;
+
+public partial class NbtWriter
 {
-    public partial class NbtWriter
+    internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+
+    internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+
+    internal void WriteStringInternal(string value)
     {
-        internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+        if (value == null)
+            throw new ArgumentNullException(nameof(value));
 
-        internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+        if (value.Length > short.MaxValue)
+            throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
 
-        internal void WriteStringInternal(string value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+        var buffer = Encoding.UTF8.GetBytes(value);
 
-            if (value.Length > short.MaxValue)
-                throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
+        this.WriteShortInternal((short)buffer.Length);
+        this.BaseStream.Write(buffer);
+    }
 
-            var buffer = Encoding.UTF8.GetBytes(value);
+    internal void WriteShortInternal(short value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
 
-            this.WriteShortInternal((short)buffer.Length);
-            this.BaseStream.Write(buffer);
-        }
+        BitConverter.TryWriteBytes(buffer, value);
 
-        internal void WriteShortInternal(short value)
-        {
-            Span<byte> buffer = stackalloc byte[2];
+        if (BitConverter.IsLittleEndian)
+            buffer.Reverse();
 
-            BitConverter.TryWriteBytes(buffer, value);
+        this.BaseStream.Write(buffer);
+    }
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+    internal void WriteIntInternal(int value)
+    {
+        Span<byte> buffer = stackalloc byte[4];
 
-            this.BaseStream.Write(buffer);
-        }
+        BitConverter.TryWriteBytes(buffer, value);
 
-        internal void WriteIntInternal(int value)
-        {
-            Span<byte> buffer = stackalloc byte[4];
+        if (BitConverter.IsLittleEndian)
+            buffer.Reverse();
 
-            BitConverter.TryWriteBytes(buffer, value);
+        this.BaseStream.Write(buffer);
+    }
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+    internal void WriteFloatInternal(float value)
+    {
+        Span<byte> buffer = stackalloc byte[4];
 
-            this.BaseStream.Write(buffer);
-        }
+        BitConverter.TryWriteBytes(buffer, value);
 
-        internal void WriteFloatInternal(float value)
-        {
-            Span<byte> buffer = stackalloc byte[4];
+        if (BitConverter.IsLittleEndian)
+            buffer.Reverse();
 
-            BitConverter.TryWriteBytes(buffer, value);
+        this.BaseStream.Write(buffer);
+    }
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+    internal void WriteLongInternal(long value)
+    {
+        Span<byte> buffer = stackalloc byte[8];
 
-            this.BaseStream.Write(buffer);
-        }
+        BitConverter.TryWriteBytes(buffer, value);
 
-        internal void WriteLongInternal(long value)
-        {
-            Span<byte> buffer = stackalloc byte[8];
+        if (BitConverter.IsLittleEndian)
+            buffer.Reverse();
 
-            BitConverter.TryWriteBytes(buffer, value);
+        this.BaseStream.Write(buffer);
+    }
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+    internal void WriteDoubleInternal(double value)
+    {
+        Span<byte> buffer = stackalloc byte[8];
 
-            this.BaseStream.Write(buffer);
-        }
+        BitConverter.TryWriteBytes(buffer, value);
 
-        internal void WriteDoubleInternal(double value)
-        {
-            Span<byte> buffer = stackalloc byte[8];
+        if (BitConverter.IsLittleEndian)
+            buffer.Reverse();
 
-            BitConverter.TryWriteBytes(buffer, value);
-
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
-
-            this.BaseStream.Write(buffer);
-        }
+        this.BaseStream.Write(buffer);
     }
 }

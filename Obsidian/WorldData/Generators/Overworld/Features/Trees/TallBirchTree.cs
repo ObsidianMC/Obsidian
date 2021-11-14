@@ -1,11 +1,10 @@
 ﻿using Obsidian.API;
 
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
+namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+
+public class TallBirchTree : BaseTree
 {
-    public class TallBirchTree : BaseTree
+    public TallBirchTree(World world) : base(world, Material.BirchLeaves, Material.BirchLog, 11)
     {
-        public TallBirchTree(World world) : base(world, Material.BirchLeaves, Material.BirchLog, 11)
-        {
-        }
     }
 }

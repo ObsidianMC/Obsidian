@@ -1,19 +1,18 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum MinecraftType
 {
-    public enum MinecraftType
-    {
-        //Pistons
-        Normal,
-        Sticky,
+    //Pistons
+    Normal,
+    Sticky,
 
-        //Chests
-        Single,
-        Left,
-        Right,
+    //Chests
+    Single,
+    Left,
+    Right,
 
-        //IDk
-        Top,
-        Bottom,
-        Double
-    }
+    //IDk
+    Top,
+    Bottom,
+    Double
 }
