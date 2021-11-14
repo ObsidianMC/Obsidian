@@ -1,11 +1,10 @@
 ﻿using Obsidian.API;
 
-namespace Obsidian.Entities
-{
-    public class EndCrystal : Entity
-    {
-        public VectorF BeamTarget { get; private set; }
+namespace Obsidian.Entities;
 
-        public bool ShowBottom { get; private set; } = true;
-    }
+public class EndCrystal : Entity
+{
+    public VectorF BeamTarget { get; private set; }
+
+    public bool ShowBottom { get; private set; } = true;
 }

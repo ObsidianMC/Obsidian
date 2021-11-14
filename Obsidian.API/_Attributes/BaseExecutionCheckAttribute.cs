@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace Obsidian.API
+namespace Obsidian.API;
+
+public abstract class BaseExecutionCheckAttribute : Attribute
 {
-    public abstract class BaseExecutionCheckAttribute : Attribute
-    {
-        public abstract Task<bool> RunChecksAsync(CommandContext context);
-    }
+    public abstract Task<bool> RunChecksAsync(CommandContext context);
 }

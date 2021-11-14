@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
-{
-    public struct Enchantment
-    {
-        public EnchantmentType Type { get; set; }
+﻿namespace Obsidian.API;
 
-        public int Level { get; set; }
-    }
+public struct Enchantment
+{
+    public EnchantmentType Type { get; set; }
+
+    public int Level { get; set; }
 }

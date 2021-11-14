@@ -1,26 +1,25 @@
 ﻿using Obsidian.API;
 using System.Threading.Tasks;
 
-namespace Obsidian.Net.Actions.BossBar
+namespace Obsidian.Net.Actions.BossBar;
+
+public class BossBarUpdateTitleAction : BossBarAction
 {
-    public class BossBarUpdateTitleAction : BossBarAction
+    public ChatMessage Title { get; set; }
+
+    public BossBarUpdateTitleAction() : base(3) { }
+
+    public override void WriteTo(MinecraftStream stream)
     {
-        public ChatMessage Title { get; set; }
+        base.WriteTo(stream);
 
-        public BossBarUpdateTitleAction() : base(3) { }
+        stream.WriteChat(Title);
+    }
 
-        public override void WriteTo(MinecraftStream stream)
-        {
-            base.WriteTo(stream);
+    public override async Task WriteToAsync(MinecraftStream stream)
+    {
+        await base.WriteToAsync(stream);
 
-            stream.WriteChat(Title);
-        }
-
-        public override async Task WriteToAsync(MinecraftStream stream)
-        {
-            await base.WriteToAsync(stream);
-
-            await stream.WriteChatAsync(Title);
-        }
+        await stream.WriteChatAsync(Title);
     }
 }

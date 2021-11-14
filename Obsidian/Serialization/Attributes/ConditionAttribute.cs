@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace Obsidian.Serialization.Attributes
+namespace Obsidian.Serialization.Attributes;
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
+public sealed class ConditionAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class ConditionAttribute : Attribute
+    public ConditionAttribute(string condition)
     {
-        public ConditionAttribute(string condition)
-        {
-        }
     }
 }

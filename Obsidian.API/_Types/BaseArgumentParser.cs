@@ -1,32 +1,31 @@
 ﻿using System;
 
-namespace Obsidian.API
+namespace Obsidian.API;
+
+public abstract class BaseArgumentParser
 {
-    public abstract class BaseArgumentParser
+    public string ParserIdentifier => minecraftType;
+    private readonly string minecraftType;
+
+    public BaseArgumentParser(string minecraftType)
     {
-        public string ParserIdentifier => minecraftType;
-        private readonly string minecraftType;
+        if (!MinecraftArgumentTypes.IsValidMcType(minecraftType))
+            throw new Exception($"Invalid minecraft type: {minecraftType} in {GetType().Name}");
 
-        public BaseArgumentParser(string minecraftType)
-        {
-            if (!MinecraftArgumentTypes.IsValidMcType(minecraftType))
-                throw new Exception($"Invalid minecraft type: {minecraftType} in {GetType().Name}");
+        this.minecraftType = minecraftType;
+    }
+}
 
-            this.minecraftType = minecraftType;
-        }
+public abstract class BaseArgumentParser<T> : BaseArgumentParser
+{
+    public BaseArgumentParser(string minecraftType) : base(minecraftType)
+    {
     }
 
-    public abstract class BaseArgumentParser<T> : BaseArgumentParser
+    public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
+
+    public Type GetParserType()
     {
-        public BaseArgumentParser(string minecraftType) : base(minecraftType)
-        {
-        }
-
-        public abstract bool TryParseArgument(string input, CommandContext ctx, out T result);
-
-        public Type GetParserType()
-        {
-            return typeof(T);
-        }
+        return typeof(T);
     }
 }

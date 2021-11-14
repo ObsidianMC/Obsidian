@@ -4,57 +4,56 @@ using Obsidian.Utilities.Registry;
 using System;
 using System.Threading.Tasks;
 
-namespace Obsidian.Entities
+namespace Obsidian.Entities;
+
+public class ItemEntity : Entity
 {
-    public class ItemEntity : Entity
+    public int Id { get; set; }
+
+    public Material Material => Registry.GetItem(this.Id).Type;
+
+    public sbyte Count { get; set; }
+
+    public ItemMeta ItemMeta { get; set; }
+
+    public bool CanPickup { get; set; }
+
+    public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
+
+    public ItemEntity() => this.Type = EntityType.Item;
+
+    public override async Task WriteAsync(MinecraftStream stream)
     {
-        public int Id { get; set; }
+        await base.WriteAsync(stream);
 
-        public Material Material => Registry.GetItem(this.Id).Type;
+        await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
+    }
 
-        public sbyte Count { get; set; }
+    public override void Write(MinecraftStream stream)
+    {
+        base.Write(stream);
 
-        public ItemMeta ItemMeta { get; set; }
+        stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
+        stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
+    }
 
-        public bool CanPickup { get; set; }
+    public override async Task TickAsync()
+    {
+        await base.TickAsync();
 
-        public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
+        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
+            this.CanPickup = true;
 
-        public ItemEntity() => this.Type = EntityType.Item;
-
-        public override async Task WriteAsync(MinecraftStream stream)
+        foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5f))
         {
-            await base.WriteAsync(stream);
-
-            await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
-        }
-
-        public override void Write(MinecraftStream stream)
-        {
-            base.Write(stream);
-
-            stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-            stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
-        }
-
-        public override async Task TickAsync()
-        {
-            await base.TickAsync();
-
-            if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
-                this.CanPickup = true;
-
-            foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5f))
+            if (ent is ItemEntity item)
             {
-                if (ent is ItemEntity item)
-                {
-                    if (item == this)
-                        continue;
+                if (item == this)
+                    continue;
 
-                    this.Count += item.Count;
+                this.Count += item.Count;
 
-                    await item.RemoveAsync();//TODO find a better way to removed item entities that merged
-                }
+                await item.RemoveAsync();//TODO find a better way to removed item entities that merged
             }
         }
     }

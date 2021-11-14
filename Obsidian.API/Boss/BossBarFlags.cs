@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace Obsidian.API.Boss
+namespace Obsidian.API.Boss;
+
+[Flags]
+public enum BossBarFlags : byte
 {
-    [Flags]
-    public enum BossBarFlags : byte
-    {
-        None = 0x0,
-        DarkenSky = 0x1,
-        DragonBar = 0x2,
-        CreateFog = 0x04
-    }
+    None = 0x0,
+    DarkenSky = 0x1,
+    DragonBar = 0x2,
+    CreateFog = 0x04
 }

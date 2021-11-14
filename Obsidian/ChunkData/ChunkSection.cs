@@ -1,50 +1,49 @@
 ﻿using Obsidian.API;
 using Obsidian.Utilities.Collection;
 
-namespace Obsidian.ChunkData
+namespace Obsidian.ChunkData;
+
+public class ChunkSection : BlockStateContainer
 {
-    public class ChunkSection : BlockStateContainer
+    public bool Overworld = true;
+
+    public int? YBase { get; }
+    public override byte BitsPerBlock { get; }
+    public override DataArray BlockStorage { get; }
+
+    public override IBlockStatePalette Palette { get; internal set; }
+
+    public ChunkSection(byte bitsPerBlock = 6, int? yBase = null)
     {
-        public bool Overworld = true;
+        this.BitsPerBlock = bitsPerBlock;
 
-        public int? YBase { get; }
-        public override byte BitsPerBlock { get; }
-        public override DataArray BlockStorage { get; }
+        this.BlockStorage = new DataArray(bitsPerBlock, 4096);
 
-        public override IBlockStatePalette Palette { get; internal set; }
+        this.Palette = bitsPerBlock.DeterminePalette();
 
-        public ChunkSection(byte bitsPerBlock = 6, int? yBase = null)
+        this.YBase = yBase;
+
+        this.FillWithAir();
+    }
+
+    public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
+    public Block GetBlock(int x, int y, int z) => this.Get(x, y, z);
+
+    public bool SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
+    public bool SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
+
+    public bool IsEmpty => this.BlockStorage.Storage.Length <= 0;
+
+    private void FillWithAir()
+    {
+        var air = Block.Air;
+        for (int x = 0; x < 16; x++)
         {
-            this.BitsPerBlock = bitsPerBlock;
-
-            this.BlockStorage = new DataArray(bitsPerBlock, 4096);
-
-            this.Palette = bitsPerBlock.DeterminePalette();
-
-            this.YBase = yBase;
-
-            this.FillWithAir();
-        }
-
-        public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
-        public Block GetBlock(int x, int y, int z) => this.Get(x, y, z);
-
-        public bool SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
-        public bool SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
-
-        public bool IsEmpty => this.BlockStorage.Storage.Length <= 0;
-
-        private void FillWithAir()
-        {
-            var air = Block.Air;
-            for (int x = 0; x < 16; x++)
+            for (int y = 0; y < 16; y++)
             {
-                for (int y = 0; y < 16; y++)
+                for (int z = 0; z < 16; z++)
                 {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        this.Set(x, y, z, air);
-                    }
+                    this.Set(x, y, z, air);
                 }
             }
         }

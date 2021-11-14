@@ -1,13 +1,12 @@
-﻿namespace Obsidian.API.Events
+﻿namespace Obsidian.API.Events;
+
+/// <summary>
+/// Provides a mechanism for cancelling default behaviour.
+/// </summary>
+public interface ICancellable
 {
     /// <summary>
-    /// Provides a mechanism for cancelling default behaviour.
+    /// Gets or sets a value indicating whether the default behaviour should be cancelled.
     /// </summary>
-    public interface ICancellable
-    {
-        /// <summary>
-        /// Gets or sets a value indicating whether the default behaviour should be cancelled.
-        /// </summary>
-        public bool Cancel { get; set; }
-    }
+    public bool Cancel { get; set; }
 }

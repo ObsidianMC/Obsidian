@@ -1,11 +1,10 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Axis
 {
-    public enum Axis
-    {
-        X,
+    X,
 
-        Y,
+    Y,
 
-        Z
-    }
+    Z
 }

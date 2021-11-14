@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Direction
 {
-    public enum Direction
-    {
-        North, East, South, West
-    }
+    North, East, South, West
 }

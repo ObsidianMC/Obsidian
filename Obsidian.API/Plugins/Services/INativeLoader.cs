@@ -3,35 +3,34 @@ using System;
 using System.Security;
 using System.Text;
 
-namespace Obsidian.API.Plugins.Services
+namespace Obsidian.API.Plugins.Services;
+
+/// <summary>
+/// Represents a service used for loading and using native libraries.
+/// </summary>
+public interface INativeLoader : ISecuredService
 {
     /// <summary>
-    /// Represents a service used for loading and using native libraries.
+    /// Attempts to load exported function from native library.
     /// </summary>
-    public interface INativeLoader : ISecuredService
-    {
-        /// <summary>
-        /// Attempts to load exported function from native library.
-        /// </summary>
-        /// <exception cref="SecurityException"></exception>
-        public T LoadMethod<T>(string libraryPath) where T : Delegate;
+    /// <exception cref="SecurityException"></exception>
+    public T LoadMethod<T>(string libraryPath) where T : Delegate;
 
-        /// <summary>
-        /// Attempts to load exported function with specific string encoding from native library.
-        /// </summary>
-        /// <exception cref="SecurityException"></exception>
-        public T LoadMethod<T>(string libraryPath, Encoding stringEncoding) where T : Delegate;
+    /// <summary>
+    /// Attempts to load exported function with specific string encoding from native library.
+    /// </summary>
+    /// <exception cref="SecurityException"></exception>
+    public T LoadMethod<T>(string libraryPath, Encoding stringEncoding) where T : Delegate;
 
-        /// <summary>
-        /// Attempts to load exported function from native library.
-        /// </summary>
-        /// <exception cref="SecurityException"></exception>
-        public T LoadMethod<T>(string libraryPath, string name) where T : Delegate;
+    /// <summary>
+    /// Attempts to load exported function from native library.
+    /// </summary>
+    /// <exception cref="SecurityException"></exception>
+    public T LoadMethod<T>(string libraryPath, string name) where T : Delegate;
 
-        /// <summary>
-        /// Attempts to load exported function with specific encoding from native library.
-        /// </summary>
-        /// <exception cref="SecurityException"></exception>
-        public T LoadMethod<T>(string libraryPath, string name, Encoding stringEncoding) where T : Delegate;
-    }
+    /// <summary>
+    /// Attempts to load exported function with specific encoding from native library.
+    /// </summary>
+    /// <exception cref="SecurityException"></exception>
+    public T LoadMethod<T>(string libraryPath, string name, Encoding stringEncoding) where T : Delegate;
 }

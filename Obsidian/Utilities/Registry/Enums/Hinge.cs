@@ -1,9 +1,8 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
-{
-    public enum Hinge
-    {
-        Left,
+﻿namespace Obsidian.Utilities.Registry.Enums;
 
-        Right
-    }
+public enum Hinge
+{
+    Left,
+
+    Right
 }

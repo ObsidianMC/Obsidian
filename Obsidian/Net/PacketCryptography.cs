@@ -6,58 +6,57 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
 using System.Security.Cryptography;
 
-namespace Obsidian.Net
+namespace Obsidian.Net;
+
+public class PacketCryptography
 {
-    public class PacketCryptography
+    private RsaKeyPairGenerator provider;
+
+    private IAsymmetricBlockCipher encryptCipher;
+    private IAsymmetricBlockCipher decryptCipher;
+
+    internal byte[] VerifyToken { get; set; }
+    internal byte[] PublicKey { get; set; }
+
+    internal AsymmetricCipherKeyPair KeyPair { get; set; }
+
+    public AsymmetricCipherKeyPair GenerateKeyPair()
     {
-        private RsaKeyPairGenerator provider;
-
-        private IAsymmetricBlockCipher encryptCipher;
-        private IAsymmetricBlockCipher decryptCipher;
-
-        internal byte[] VerifyToken { get; set; }
-        internal byte[] PublicKey { get; set; }
-
-        internal AsymmetricCipherKeyPair KeyPair { get; set; }
-
-        public AsymmetricCipherKeyPair GenerateKeyPair()
+        if (provider is null)
         {
-            if (provider is null)
+            try
             {
-                try
-                {
-                    this.provider = new RsaKeyPairGenerator();
-                    this.provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
-                    this.encryptCipher = new Pkcs1Encoding(new RsaEngine());
-                    this.decryptCipher = new Pkcs1Encoding(new RsaEngine());
-                    this.KeyPair = provider.GenerateKeyPair();
+                this.provider = new RsaKeyPairGenerator();
+                this.provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
+                this.encryptCipher = new Pkcs1Encoding(new RsaEngine());
+                this.decryptCipher = new Pkcs1Encoding(new RsaEngine());
+                this.KeyPair = provider.GenerateKeyPair();
 
-                    this.encryptCipher.Init(true, KeyPair.Public);
-                    this.decryptCipher.Init(false, KeyPair.Private);
-                }
-                catch
-                {
-                    throw;
-                }
+                this.encryptCipher.Init(true, KeyPair.Public);
+                this.decryptCipher.Init(false, KeyPair.Private);
             }
-
-            return this.KeyPair;
+            catch
+            {
+                throw;
+            }
         }
 
-        public byte[] Decrypt(byte[] toDecrypt) => this.decryptCipher.ProcessBlock(toDecrypt, 0, this.decryptCipher.GetInputBlockSize());
+        return this.KeyPair;
+    }
 
-        public byte[] Encrypt(byte[] toDecrypt) => this.encryptCipher.ProcessBlock(toDecrypt, 0, this.encryptCipher.GetInputBlockSize());
+    public byte[] Decrypt(byte[] toDecrypt) => this.decryptCipher.ProcessBlock(toDecrypt, 0, this.decryptCipher.GetInputBlockSize());
 
-        public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
-        {
-            var randomToken = new byte[4];
-            using var provider = new RNGCryptoServiceProvider();
-            provider.GetBytes(randomToken);
+    public byte[] Encrypt(byte[] toDecrypt) => this.encryptCipher.ProcessBlock(toDecrypt, 0, this.encryptCipher.GetInputBlockSize());
 
-            this.VerifyToken = randomToken;
-            this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
+    public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
+    {
+        var randomToken = new byte[4];
+        using var provider = new RNGCryptoServiceProvider();
+        provider.GetBytes(randomToken);
 
-            return (this.PublicKey, this.VerifyToken);
-        }
+        this.VerifyToken = randomToken;
+        this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
+
+        return (this.PublicKey, this.VerifyToken);
     }
 }

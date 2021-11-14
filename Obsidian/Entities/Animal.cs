@@ -1,6 +1,5 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class Animal : AgeableMob
 {
-    public class Animal : AgeableMob
-    {
-    }
 }

@@ -2,34 +2,33 @@
 using System;
 using System.Linq;
 
-namespace Obsidian.SourceGenerators.Packets
+namespace Obsidian.SourceGenerators.Packets;
+
+internal sealed class Method : AttributeOwner
 {
-    internal sealed class Method : AttributeOwner
+    public string Name { get; }
+    public string Type { get; }
+
+    public Method(string name, string type, AttributeBehaviorBase[] attributes)
     {
-        public string Name { get; }
-        public string Type { get; }
+        Name = name;
+        Type = type;
+        Attributes = attributes;
 
-        public Method(string name, string type, AttributeBehaviorBase[] attributes)
+        if (Type.Contains('.'))
         {
-            Name = name;
-            Type = type;
-            Attributes = attributes;
-
-            if (Type.Contains('.'))
-            {
-                Type = Type.Substring(Type.LastIndexOf('.') + 1);
-            }
-
-            Flags = AttributeFlags.Field;
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                Flags |= attributes[i].Flag;
-            }
+            Type = Type.Substring(Type.LastIndexOf('.') + 1);
         }
 
-        public override string ToString()
+        Flags = AttributeFlags.Field;
+        for (int i = 0; i < attributes.Length; i++)
         {
-            return Name;
+            Flags |= attributes[i].Flag;
         }
+    }
+
+    public override string ToString()
+    {
+        return Name;
     }
 }

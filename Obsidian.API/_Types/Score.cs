@@ -1,15 +1,14 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public sealed class Score
 {
-    public sealed class Score
+    public Score(string displayText, int value)
     {
-        public Score(string displayText, int value)
-        {
-            DisplayText = displayText;
-            Value = value;
-        }
-
-        public string DisplayText { get; internal set; }
-
-        public int Value { get; internal set; }
+        DisplayText = displayText;
+        Value = value;
     }
+
+    public string DisplayText { get; internal set; }
+
+    public int Value { get; internal set; }
 }

@@ -1,32 +1,31 @@
-﻿namespace Obsidian.Net.WindowProperties
+﻿namespace Obsidian.Net.WindowProperties;
+
+public class EnchantmentTableWindowProperty : IWindowProperty
 {
-    public class EnchantmentTableWindowProperty : IWindowProperty
+    public short Property { get; }
+
+    public short Value { get; }
+
+    public EnchantmentTableWindowProperty(EnchantmentTableProperty property, short value)
     {
-        public short Property { get; }
-
-        public short Value { get; }
-
-        public EnchantmentTableWindowProperty(EnchantmentTableProperty property, short value)
-        {
-            this.Property = (short)property;
-            this.Value = value;
-        }
+        this.Property = (short)property;
+        this.Value = value;
     }
+}
 
-    public enum EnchantmentTableProperty : short
-    {
-        LevelRequirementTop,
-        LevelRequirementMiddle,
-        LevelRequirementBottom,
+public enum EnchantmentTableProperty : short
+{
+    LevelRequirementTop,
+    LevelRequirementMiddle,
+    LevelRequirementBottom,
 
-        EnchantmentSeed,
+    EnchantmentSeed,
 
-        EnchantmentIdOnHoverTop,
-        EnchantmentIdOnHoverMiddle,
-        EnchantmentIdOnHoverBottom,
+    EnchantmentIdOnHoverTop,
+    EnchantmentIdOnHoverMiddle,
+    EnchantmentIdOnHoverBottom,
 
-        EnchantmentLevelOnHoverTop,
-        EnchantmentLevelOnHoverMiddle,
-        EnchantmentLevelOnHoverBottom,
-    }
+    EnchantmentLevelOnHoverTop,
+    EnchantmentLevelOnHoverMiddle,
+    EnchantmentLevelOnHoverBottom,
 }

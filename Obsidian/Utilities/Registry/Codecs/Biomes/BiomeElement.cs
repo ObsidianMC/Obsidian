@@ -1,28 +1,28 @@
 ﻿using Obsidian.Nbt;
 
-namespace Obsidian.Utilities.Registry.Codecs.Biomes
+namespace Obsidian.Utilities.Registry.Codecs.Biomes;
+
+public class BiomeElement
 {
-    public class BiomeElement
+    public BiomeEffect Effects { get; set; }
+
+    public float Depth { get; set; }
+
+    public float Temperature { get; set; }
+
+    public float Scale { get; set; }
+
+    public float Downfall { get; set; }
+
+    public string Category { get; set; }
+
+    public string Precipitation { get; set; }//TODO turn into enum
+
+    public string TemperatureModifier { get; set; }//TODO turn into enum
+
+    internal void Write(NbtCompound compound)
     {
-        public BiomeEffect Effects { get; set; }
-
-        public float Depth { get; set; }
-
-        public float Temperature { get; set; }
-
-        public float Scale { get; set; }
-
-        public float Downfall { get; set; }
-
-        public string Category { get; set; }
-
-        public string Precipitation { get; set; }//TODO turn into enum
-
-        public string TemperatureModifier { get; set; }//TODO turn into enum
-
-        internal void Write(NbtCompound compound)
-        {
-            var elements = new NbtCompound("element")
+        var elements = new NbtCompound("element")
             {
                 new NbtTag<string>("precipitation", this.Precipitation),
 
@@ -34,12 +34,11 @@ namespace Obsidian.Utilities.Registry.Codecs.Biomes
                 new NbtTag<string>("category", this.Category)
             };
 
-            this.Effects.Write(elements);
+        this.Effects.Write(elements);
 
-            if (!this.TemperatureModifier.IsNullOrEmpty())
-                elements.Add(new NbtTag<string>("temperature_modifier", this.TemperatureModifier));
+        if (!this.TemperatureModifier.IsNullOrEmpty())
+            elements.Add(new NbtTag<string>("temperature_modifier", this.TemperatureModifier));
 
-            compound.Add(elements);
-        }
+        compound.Add(elements);
     }
 }

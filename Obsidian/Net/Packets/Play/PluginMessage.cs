@@ -1,73 +1,72 @@
 ﻿using Obsidian.Serialization.Attributes;
 using System.Text;
 
-namespace Obsidian.Net.Packets.Play
+namespace Obsidian.Net.Packets.Play;
+
+public partial class PluginMessage : IClientboundPacket
 {
-    public partial class PluginMessage : IClientboundPacket
+    [Field(0)]
+    public string Channel { get; private set; }
+
+    [Field(1)]
+    public byte[] PluginData { get; private set; }
+
+    public int Id => 0x18;
+
+    public PluginMessage()
     {
-        [Field(0)]
-        public string Channel { get; private set; }
+    }
 
-        [Field(1)]
-        public byte[] PluginData { get; private set; }
+    public PluginMessage(string channel, byte[] data)
+    {
+        Channel = channel;
+        PluginData = data;
+    }
 
-        public int Id => 0x18;
+    public PluginMessageStore Handle()
+    {
+        using var stream = new MinecraftStream(PluginData);
 
-        public PluginMessage()
+        var result = Channel switch
         {
-        }
-
-        public PluginMessage(string channel, byte[] data)
-        {
-            Channel = channel;
-            PluginData = data;
-        }
-
-        public PluginMessageStore Handle()
-        {
-            using var stream = new MinecraftStream(PluginData);
-
-            var result = Channel switch
+            "minecraft:brand" => new PluginMessageStore
             {
-                "minecraft:brand" => new PluginMessageStore
-                {
-                    Type = PluginMessageType.Brand,
-                    Value = stream.ReadString()
-                },
-                "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
-                {
-                    Type = PluginMessageType.Register,
-                    Value = Encoding.UTF8.GetString(PluginData)
-                },
-                "minecraft:unregister" => new PluginMessageStore
-                {
-                    Type = PluginMessageType.Unregister,
-                    Value = Encoding.UTF8.GetString(PluginData)
-                },
-                _ => null
-            };
+                Type = PluginMessageType.Brand,
+                Value = stream.ReadString()
+            },
+            "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
+            {
+                Type = PluginMessageType.Register,
+                Value = Encoding.UTF8.GetString(PluginData)
+            },
+            "minecraft:unregister" => new PluginMessageStore
+            {
+                Type = PluginMessageType.Unregister,
+                Value = Encoding.UTF8.GetString(PluginData)
+            },
+            _ => null
+        };
 
-            return result;
-        }
-
-        public void Populate(MinecraftStream stream)
-        {
-            Channel = stream.ReadString();
-            PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
-        }
+        return result;
     }
 
-    public enum PluginMessageType
+    public void Populate(MinecraftStream stream)
     {
-        Brand,
-        Register,
-        Unregister,
-        Custom
+        Channel = stream.ReadString();
+        PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
     }
+}
 
-    public class PluginMessageStore
-    {
-        public PluginMessageType Type { get; init; }
-        public object Value { get; init; }
-    }
+public enum PluginMessageType
+{
+    Brand,
+    Register,
+    Unregister,
+    Custom
+}
+
+public class PluginMessageStore
+{
+    public PluginMessageType Type { get; init; }
+    public object Value { get; init; }
 }
