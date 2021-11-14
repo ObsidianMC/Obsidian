@@ -12,8 +12,7 @@ public static class GuidHelper
 
     public static Guid FromStringHash(string text)
     {
-        if (text is null)
-            throw new ArgumentNullException(nameof(text));
+        ArgumentNullException.ThrowIfNull(text);
 
         var i128 = new Int128();
 

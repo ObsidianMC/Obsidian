@@ -49,8 +49,7 @@ public static partial class Extensions
 
     public static string Capitalize(this string value)
     {
-        if (value is null)
-            throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
 
         if (value.IsEmpty())
             return value;

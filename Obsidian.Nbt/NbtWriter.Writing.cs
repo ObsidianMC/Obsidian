@@ -12,8 +12,7 @@ public partial class NbtWriter
 
     internal void WriteStringInternal(string value)
     {
-        if (value == null)
-            throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
 
         if (value.Length > short.MaxValue)
             throw new InvalidOperationException($"value length must be less than {short.MaxValue}");

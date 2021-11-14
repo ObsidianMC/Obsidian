@@ -197,8 +197,7 @@ public partial class MinecraftStream
     {
         //await Globals.PacketLogger.LogDebugAsync($"Writing String ({value})");
 
-        if (value == null)
-            throw new ArgumentNullException(nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
 
         if (value.Length > maxLength)
             throw new ArgumentException($"string ({value.Length}) exceeded maximum length ({maxLength})", nameof(value));
