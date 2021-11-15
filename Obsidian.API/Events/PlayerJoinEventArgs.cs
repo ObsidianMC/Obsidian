@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Events;
+﻿namespace Obsidian.API.Events;
 
 public class PlayerJoinEventArgs : PlayerEventArgs
 {

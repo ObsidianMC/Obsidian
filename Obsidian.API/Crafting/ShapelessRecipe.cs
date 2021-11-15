@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Obsidian.API.Crafting;
+﻿namespace Obsidian.API.Crafting;
 
 public sealed class ShapelessRecipe : IRecipe
 {

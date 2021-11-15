@@ -1,7 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
-
-namespace Obsidian.SourceGenerators.Packets;
+﻿namespace Obsidian.SourceGenerators.Packets;
 
 internal sealed class MethodBuildingContext
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Plugins;
+﻿namespace Obsidian.API.Plugins;
 
 /// <summary>
 /// Indicates that the field/property should have it's value injected with a plugin.

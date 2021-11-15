@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Nbt;
+﻿namespace Obsidian.Nbt;
 
 public class NbtTag<T> : INbtTag
 {

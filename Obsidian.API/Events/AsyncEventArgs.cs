@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Events;
+﻿namespace Obsidian.API.Events;
 
 /// <summary>
 /// Represents the base class for classes that contain event data, where events are invoked asynchronously.

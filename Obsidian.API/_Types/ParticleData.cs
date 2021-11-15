@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public sealed class ParticleData
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Boss;
+﻿namespace Obsidian.API.Boss;
 
 [Flags]
 public enum BossBarFlags : byte

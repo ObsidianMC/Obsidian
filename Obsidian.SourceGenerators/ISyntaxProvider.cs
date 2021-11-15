@@ -1,7 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
-
-namespace Obsidian.SourceGenerators;
+﻿namespace Obsidian.SourceGenerators;
 
 public interface ISyntaxProvider<out T> : ISyntaxReceiver where T : SyntaxNode
 {

@@ -1,8 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Linq;
-
-namespace Obsidian.SourceGenerators.Registry;
+﻿namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
 public sealed class RegistryAssetsGenerator : ISourceGenerator

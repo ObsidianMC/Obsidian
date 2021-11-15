@@ -1,7 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq;
-
-namespace Obsidian.SourceGenerators.Packets.Attributes;
+﻿namespace Obsidian.SourceGenerators.Packets.Attributes;
 
 internal sealed class ConditionBehavior : AttributeBehaviorBase
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.SourceGenerators.Packets;
+﻿namespace Obsidian.SourceGenerators.Packets;
 
 internal static class Vocabulary
 {

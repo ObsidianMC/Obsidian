@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class CommandInfoAttribute : Attribute

@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Plugins.Services.Common;
-using System;
 using System.Security;
 using System.Text;
 

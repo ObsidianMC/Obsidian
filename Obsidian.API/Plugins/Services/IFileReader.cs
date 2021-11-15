@@ -1,9 +1,7 @@
 ﻿using Obsidian.API.Plugins.Services.IO;
-using System;
 using System.IO;
 using System.Security;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Obsidian.API.Plugins.Services;
 

@@ -1,7 +1,4 @@
 ﻿using Obsidian.API.Boss;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.API;
 

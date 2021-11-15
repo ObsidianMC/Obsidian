@@ -1,5 +1,4 @@
-﻿using System;
-using System.Security;
+﻿using System.Security;
 
 namespace Obsidian.API.Plugins.Services.Diagnostics;
 

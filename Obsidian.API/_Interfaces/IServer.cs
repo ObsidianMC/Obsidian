@@ -1,7 +1,5 @@
 ﻿using Obsidian.API.Boss;
 using Obsidian.API.Crafting;
-using System;
-using System.Collections.Generic;
 
 namespace Obsidian.API;
 
