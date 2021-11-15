@@ -63,8 +63,7 @@ public struct BoundingBox : IEquatable<BoundingBox>
 
     public static BoundingBox CreateFromPoints(IEnumerable<VectorF> points)
     {
-        if (points == null)
-            throw new ArgumentNullException(nameof(points));
+        ArgumentNullException.ThrowIfNull(points);
 
         var empty = true;
         var pos2 = new VectorF(float.MaxValue);

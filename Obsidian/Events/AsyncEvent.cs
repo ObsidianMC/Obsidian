@@ -201,8 +201,7 @@ public sealed class AsyncEvent : IEventRegistry
 
         public Hook(VoidMethod method)
         {
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             methodType = MethodType.Void;
             voidMethod = method;
@@ -212,8 +211,7 @@ public sealed class AsyncEvent : IEventRegistry
 
         public Hook(ValueTaskMethod method)
         {
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             methodType = MethodType.ValueTask;
             valueTaskMethod = method;
@@ -223,8 +221,7 @@ public sealed class AsyncEvent : IEventRegistry
 
         public Hook(TaskMethod method)
         {
-            if (method is null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             methodType = MethodType.Task;
             taskMethod = method;

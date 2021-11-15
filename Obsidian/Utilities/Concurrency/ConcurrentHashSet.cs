@@ -192,7 +192,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
     public ConcurrentHashSet(IEnumerable<T> collection, IEqualityComparer<T> comparer)
         : this(comparer)
     {
-        if (collection == null) throw new ArgumentNullException(nameof(collection));
+        ArgumentNullException.ThrowIfNull(collection);
 
         InitializeFromCollection(collection);
     }
@@ -219,7 +219,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
     public ConcurrentHashSet(int concurrencyLevel, IEnumerable<T> collection, IEqualityComparer<T> comparer)
         : this(concurrencyLevel, DefaultCapacity, false, comparer)
     {
-        if (collection == null) throw new ArgumentNullException(nameof(collection));
+        ArgumentNullException.ThrowIfNull(collection);
 
         InitializeFromCollection(collection);
     }
@@ -418,7 +418,7 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
 
     void ICollection<T>.CopyTo(T[] array, int arrayIndex)
     {
-        if (array == null) throw new ArgumentNullException(nameof(array));
+        ArgumentNullException.ThrowIfNull(array);
         if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
         var locksAcquired = 0;

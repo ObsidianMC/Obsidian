@@ -23,8 +23,7 @@ public readonly struct ChatColor
     #region FromCode
     public static ChatColor FromCode(string code)
     {
-        if (code is null)
-            throw new ArgumentNullException(nameof(code));
+        ArgumentNullException.ThrowIfNull(code);
 
         for (int i = 0; i < code.Length; i++)
         {

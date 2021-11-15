@@ -29,8 +29,7 @@ public class ServerStatus : IServerStatus
     /// </summary>
     public ServerStatus(Server server, bool anonymous = false)
     {
-        if (server == null)
-            throw new ArgumentNullException(nameof(server));
+        ArgumentNullException.ThrowIfNull(server);
 
         this.Version = new ServerVersion();
         if (!anonymous)
