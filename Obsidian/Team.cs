@@ -1,7 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Net.Packets.Play.Clientbound;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian;
 

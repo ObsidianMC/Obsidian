@@ -1,10 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.Entities;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;

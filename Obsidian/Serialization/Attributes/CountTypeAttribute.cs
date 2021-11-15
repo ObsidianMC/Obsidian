@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Serialization.Attributes;
+﻿namespace Obsidian.Serialization.Attributes;
 
 /// <summary>
 /// Defines the type of count prefix for serialized collections. When left out, VarInt is used by default.

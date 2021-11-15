@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
-using System.Threading.Tasks;
+﻿using Obsidian.Net;
 
 namespace Obsidian.Entities;
 

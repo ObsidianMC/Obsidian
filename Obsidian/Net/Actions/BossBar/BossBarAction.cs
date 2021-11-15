@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace Obsidian.Net.Actions.BossBar;
+﻿namespace Obsidian.Net.Actions.BossBar;
 
 public class BossBarAction
 {

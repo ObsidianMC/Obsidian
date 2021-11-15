@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Obsidian.Utilities.Mojang;
+﻿namespace Obsidian.Utilities.Mojang;
 
 public class JoinedResponse
 {

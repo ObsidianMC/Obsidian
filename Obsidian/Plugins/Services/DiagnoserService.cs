@@ -3,7 +3,6 @@ using Obsidian.API.Plugins.Services;
 using Obsidian.API.Plugins.Services.Diagnostics;
 using Obsidian.Plugins.ServiceProviders;
 using System.Diagnostics;
-using System.Linq;
 using System.Security;
 
 namespace Obsidian.Plugins.Services;

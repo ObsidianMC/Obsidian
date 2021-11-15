@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Boss;
-using System.Threading.Tasks;
+﻿using Obsidian.API.Boss;
 
 namespace Obsidian.Net.Actions.BossBar;
 

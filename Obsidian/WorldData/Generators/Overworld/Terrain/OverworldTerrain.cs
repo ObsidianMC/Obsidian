@@ -2,7 +2,6 @@
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise.Modules;
-using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
 using Blend = Obsidian.API.Noise.Blend;
 

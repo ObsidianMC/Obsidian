@@ -1,7 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Obsidian.Net;
 
 namespace Obsidian.ChunkData;
 

@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.AI;
+﻿using Obsidian.API.AI;
 
 namespace Obsidian.Entities.AI;
 

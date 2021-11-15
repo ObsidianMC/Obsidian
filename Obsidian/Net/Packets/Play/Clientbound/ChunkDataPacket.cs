@@ -1,7 +1,5 @@
 ﻿using Obsidian.Nbt;
-using Obsidian.Utilities;
 using Obsidian.WorldData;
-using System.Linq;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

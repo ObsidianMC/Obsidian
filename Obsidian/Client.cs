@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-
-using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -14,18 +12,12 @@ using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Packets.Status;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
-
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace Obsidian;

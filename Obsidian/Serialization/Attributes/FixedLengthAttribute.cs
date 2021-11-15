@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Serialization.Attributes;
+﻿namespace Obsidian.Serialization.Attributes;
 
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public sealed class FixedLengthAttribute : Attribute

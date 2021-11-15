@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public abstract class BaseTallFlora : BaseFlora
 {

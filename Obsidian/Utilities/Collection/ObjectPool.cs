@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-
-namespace Obsidian.Utilities.Collection;
+﻿namespace Obsidian.Utilities.Collection;
 
 public abstract class ObjectPool<T> where T : new()
 {

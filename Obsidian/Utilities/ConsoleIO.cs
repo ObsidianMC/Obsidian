@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Obsidian.Utilities;
+﻿namespace Obsidian.Utilities;
 
 /// <summary>
 /// Allows simultaneous console input and output without breaking user input

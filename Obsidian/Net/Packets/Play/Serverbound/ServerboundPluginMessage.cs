@@ -1,7 +1,6 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 

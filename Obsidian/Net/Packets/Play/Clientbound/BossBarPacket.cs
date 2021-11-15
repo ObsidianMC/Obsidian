@@ -1,6 +1,5 @@
 ﻿using Obsidian.Net.Actions.BossBar;
 using Obsidian.Serialization.Attributes;
-using System;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

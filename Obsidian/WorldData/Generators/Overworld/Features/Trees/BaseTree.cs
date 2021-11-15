@@ -1,7 +1,4 @@
-﻿using Obsidian.API;
-using System.Collections.Generic;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public abstract class BaseTree
 {

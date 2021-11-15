@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
+﻿using Obsidian.WorldData.Generators.Overworld.Terrain;
 using static Obsidian.API.Noise.VoronoiBiomes;
 
 namespace Obsidian.WorldData.Generators.Overworld;

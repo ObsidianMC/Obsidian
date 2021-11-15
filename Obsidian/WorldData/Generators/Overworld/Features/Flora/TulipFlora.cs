@@ -1,7 +1,4 @@
-﻿using Obsidian.API;
-using System;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public class TulipFlora : BaseFlora
 {

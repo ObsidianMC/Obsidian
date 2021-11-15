@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-
-namespace Obsidian.WorldData;
+﻿namespace Obsidian.WorldData;
 
 public abstract class TileEntity
 {

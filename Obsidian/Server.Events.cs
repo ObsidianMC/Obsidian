@@ -1,10 +1,7 @@
-﻿using Obsidian.API;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
-using System;
-using System.Threading.Tasks;
 
 namespace Obsidian;
 

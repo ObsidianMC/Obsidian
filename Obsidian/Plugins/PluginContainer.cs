@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
 using Obsidian.Plugins.ServiceProviders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 

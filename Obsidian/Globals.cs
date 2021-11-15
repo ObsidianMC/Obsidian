@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Converters;
 using System.Net.Http;
 using System.Text.Encodings.Web;

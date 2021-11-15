@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using System;
-using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;

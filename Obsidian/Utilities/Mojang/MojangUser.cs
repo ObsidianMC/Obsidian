@@ -1,6 +1,4 @@
 ﻿using Obsidian.Net;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Mojang;
 

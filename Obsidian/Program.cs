@@ -1,10 +1,7 @@
-﻿using Obsidian.Utilities;
-using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Obsidian;
 

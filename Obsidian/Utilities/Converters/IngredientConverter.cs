@@ -1,8 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Crafting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Obsidian.API.Crafting;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using static Obsidian.Utilities.Registry.Registry;

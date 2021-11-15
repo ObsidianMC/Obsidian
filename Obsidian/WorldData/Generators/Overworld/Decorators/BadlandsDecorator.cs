@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry;
+﻿using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;

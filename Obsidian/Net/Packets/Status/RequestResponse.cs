@@ -1,5 +1,4 @@
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
 
 namespace Obsidian.Net.Packets.Status;
 

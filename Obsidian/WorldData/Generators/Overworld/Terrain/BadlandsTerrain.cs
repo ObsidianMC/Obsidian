@@ -1,6 +1,5 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
-using System.Collections.Generic;
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain;
 

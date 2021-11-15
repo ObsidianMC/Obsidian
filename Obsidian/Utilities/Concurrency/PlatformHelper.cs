@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Concurrency;
+﻿namespace Obsidian.Concurrency;
 
 internal static class PlatformHelper
 {

@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Obsidian.Net.Actions.PlayerInfo;
+﻿namespace Obsidian.Net.Actions.PlayerInfo;
 
 public class UpdateGamemodeInfoAction : InfoAction
 {

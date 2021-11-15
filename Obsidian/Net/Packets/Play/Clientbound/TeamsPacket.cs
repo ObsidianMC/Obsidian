@@ -1,8 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
-using System;
-using System.Collections.Generic;
+﻿using Obsidian.Serialization.Attributes;
 using System.Text.Json;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
