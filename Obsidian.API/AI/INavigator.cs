@@ -1,25 +1,24 @@
-﻿namespace Obsidian.API.AI
+﻿namespace Obsidian.API.AI;
+
+public interface INavigator
 {
-    public interface INavigator
-    {
-        public bool IsNavigating { get; }
-        public bool IsPaused { get; }
+    public bool IsNavigating { get; }
+    public bool IsPaused { get; }
 
-        public TargetType TargetType { get; }
+    public TargetType TargetType { get; }
 
-        public VectorF TargetLocation { get; set; }
+    public VectorF TargetLocation { get; set; }
 
-        public IEntity Target { get; set; }
+    public IEntity Target { get; set; }
 
-        public void NavigateTo(VectorF to);
+    public void NavigateTo(VectorF to);
 
-        public void NavigateTo(IEntity to);
-    }
+    public void NavigateTo(IEntity to);
+}
 
-    public enum TargetType
-    {
-        Entity,
+public enum TargetType
+{
+    Entity,
 
-        Location
-    }
+    Location
 }

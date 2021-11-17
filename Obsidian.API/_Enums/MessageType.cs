@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum MessageType : sbyte
 {
-    public enum MessageType : sbyte
-    {
-        Chat,
-        System,
-        ActionBar
-    }
+    Chat,
+    System,
+    ActionBar
 }

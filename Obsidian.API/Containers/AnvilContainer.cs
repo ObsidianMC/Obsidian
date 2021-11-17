@@ -1,21 +1,18 @@
-﻿using System;
+﻿namespace Obsidian.API.Containers;
 
-namespace Obsidian.API.Containers
+public sealed class AnvilContainer : ResultContainer, ITileEntity
 {
-    public sealed class AnvilContainer : ResultContainer, ITileEntity
+    public string Id { get; }
+
+    public Vector BlockPosition { get; set; }
+
+    public AnvilContainer(string id) : base(3, InventoryType.Anvil)
     {
-        public string Id { get; }
-
-        public Vector BlockPosition { get; set; }
-
-        public AnvilContainer(string id) : base(3, InventoryType.Anvil)
-        {
-            this.Id = id;
-        }
-
-        public override void SetResult(ItemStack? result) => throw new NotImplementedException();
-        public override ItemStack? GetResult() => throw new NotImplementedException();
-        public void ToNbt() => throw new NotImplementedException();
-        public void FromNbt() => throw new NotImplementedException();
+        this.Id = id;
     }
+
+    public override void SetResult(ItemStack? result) => throw new NotImplementedException();
+    public override ItemStack? GetResult() => throw new NotImplementedException();
+    public void ToNbt() => throw new NotImplementedException();
+    public void FromNbt() => throw new NotImplementedException();
 }

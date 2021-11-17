@@ -1,12 +1,11 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Mode
 {
-    public enum Mode
-    {
-        Save,
-        Load,
-        Corner,
-        Data,
-        Compare,
-        subtract
-    }
+    Save,
+    Load,
+    Corner,
+    Data,
+    Compare,
+    subtract
 }

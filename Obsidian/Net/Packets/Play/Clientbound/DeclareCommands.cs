@@ -1,26 +1,24 @@
 ﻿using Obsidian.Commands;
 using Obsidian.Serialization.Attributes;
-using System.Collections.Generic;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+// Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
+public partial class DeclareCommands : IClientboundPacket
 {
-    // Source: https://wiki.vg/index.php?title=Protocol#Declare_Commands
-    public partial class DeclareCommands : IClientboundPacket
+    [Field(0)]
+    public List<CommandNode> Nodes { get; } = new();
+
+    [Field(1), VarLength]
+    public int RootIndex { get; }
+
+    public int Id => 0x12;
+
+    public void AddNode(CommandNode node)
     {
-        [Field(0)]
-        public List<CommandNode> Nodes { get; } = new();
+        Nodes.Add(node);
 
-        [Field(1), VarLength]
-        public int RootIndex { get; }
-
-        public int Id => 0x12;
-
-        public void AddNode(CommandNode node)
-        {
-            Nodes.Add(node);
-
-            foreach (var child in node.Children)
-                AddNode(child);
-        }
+        foreach (var child in node.Children)
+            AddNode(child);
     }
 }

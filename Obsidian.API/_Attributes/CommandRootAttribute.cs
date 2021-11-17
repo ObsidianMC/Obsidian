@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class CommandRootAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public sealed class CommandRootAttribute : Attribute
-    {
-    }
 }

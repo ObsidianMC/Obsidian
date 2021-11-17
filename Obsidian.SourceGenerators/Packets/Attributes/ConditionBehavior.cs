@@ -1,96 +1,92 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq;
+﻿namespace Obsidian.SourceGenerators.Packets.Attributes;
 
-namespace Obsidian.SourceGenerators.Packets.Attributes
+internal sealed class ConditionBehavior : AttributeBehaviorBase
 {
-    internal sealed class ConditionBehavior : AttributeBehaviorBase
+    public override string Name => Vocabulary.ConditionAttribute;
+    public override AttributeFlags Flag => AttributeFlags.Condition;
+
+    public string Condition { get; }
+    public bool Skip { get; set; }
+
+    private static (object list, string condition) last;
+
+    public ConditionBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
     {
-        public override string Name => Vocabulary.ConditionAttribute;
-        public override AttributeFlags Flag => AttributeFlags.Condition;
+        TryEvaluateStringArgument(out string condition);
 
-        public string Condition { get; }
-        public bool Skip { get; set; }
+        Condition = condition;
+    }
 
-        private static (object list, string condition) last;
+    public override bool ModifySerialization(MethodBuildingContext context)
+    {
+        return OpenCondition(context);
+    }
 
-        public ConditionBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
+    public override bool ModifyDeserialization(MethodBuildingContext context)
+    {
+        return OpenCondition(context);
+    }
+
+    private bool OpenCondition(MethodBuildingContext context)
+    {
+        if (string.IsNullOrWhiteSpace(Condition))
         {
-            TryEvaluateStringArgument(out string condition);
-
-            Condition = condition;
-        }
-
-        public override bool ModifySerialization(MethodBuildingContext context)
-        {
-            return OpenCondition(context);
-        }
-
-        public override bool ModifyDeserialization(MethodBuildingContext context)
-        {
-            return OpenCondition(context);
-        }
-
-        private bool OpenCondition(MethodBuildingContext context)
-        {
-            if (string.IsNullOrWhiteSpace(Condition))
-            {
-                return false;
-            }
-
-            if (Skip)
-            {
-                Skip = false;
-                return false;
-            }
-
-            var endProperty = GetEndProperty(context);
-            endProperty.Written += EndCondition;
-            endProperty.Read += EndCondition;
-
-            if (last.list == context.AllProperties && IsOpposite(last.condition, Condition))
-            {
-                context.CodeBuilder.Statement("else");
-            }
-            else
-            {
-                context.CodeBuilder.Statement($"if ({Condition})");
-            }
-            last = (context.AllProperties, Condition);
-
             return false;
         }
 
-        private void EndCondition(MethodBuildingContext context)
+        if (Skip)
         {
-            context.Property.Written -= EndCondition;
-            context.Property.Read -= EndCondition;
-
-            context.CodeBuilder.EndScope();
+            Skip = false;
+            return false;
         }
 
-        private Property GetEndProperty(MethodBuildingContext context)
+        var endProperty = GetEndProperty(context);
+        endProperty.Written += EndCondition;
+        endProperty.Read += EndCondition;
+
+        if (last.list == context.AllProperties && IsOpposite(last.condition, Condition))
         {
-            var sharedCondition = context.AllProperties
-                .SkipWhile(prop => prop != context.Property)
-                .Select(prop => new { Property = prop, Attribute = prop.TryGetAttribute(out ConditionBehavior condition) ? condition : null })
-                .TakeWhile(entry => entry.Attribute?.Condition == Condition);
+            context.CodeBuilder.Statement("else");
+        }
+        else
+        {
+            context.CodeBuilder.Statement($"if ({Condition})");
+        }
+        last = (context.AllProperties, Condition);
 
-            foreach (var shared in sharedCondition.Skip(1))
-            {
-                shared.Attribute.Skip = true;
-            }
+        return false;
+    }
 
-            return sharedCondition.Last().Property;
+    private void EndCondition(MethodBuildingContext context)
+    {
+        context.Property.Written -= EndCondition;
+        context.Property.Read -= EndCondition;
+
+        context.CodeBuilder.EndScope();
+    }
+
+    private Property GetEndProperty(MethodBuildingContext context)
+    {
+        var sharedCondition = context.AllProperties
+            .SkipWhile(prop => prop != context.Property)
+            .Select(prop => new { Property = prop, Attribute = prop.TryGetAttribute(out ConditionBehavior condition) ? condition : null })
+            .TakeWhile(entry => entry.Attribute?.Condition == Condition);
+
+        foreach (var shared in sharedCondition.Skip(1))
+        {
+            shared.Attribute.Skip = true;
         }
 
-        private bool IsOpposite(string a, string b)
-        {
-            if (a.Length < b.Length)
-                (a, b) = (b, a);
+        return sharedCondition.Last().Property;
+    }
 
-            return a.Length == b.Length + 1
-                && a.StartsWith("!")
-                && a.Substring(1) == b;
-        }
+    private bool IsOpposite(string a, string b)
+    {
+        if (a.Length < b.Length)
+            (a, b) = (b, a);
+
+        return a.Length == b.Length + 1
+            && a.StartsWith("!")
+            && a.Substring(1) == b;
     }
 }

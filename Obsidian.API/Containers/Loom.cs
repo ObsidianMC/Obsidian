@@ -1,15 +1,12 @@
-﻿using System;
+﻿namespace Obsidian.API.Containers;
 
-namespace Obsidian.API.Containers
+public sealed class Loom : ResultContainer
 {
-    public sealed class Loom : ResultContainer
+    public Loom() : base(4, InventoryType.Loom)
     {
-        public Loom() : base(4, InventoryType.Loom)
-        {
-            this.Title = "Loom";
-        }
-
-        public override ItemStack? GetResult() => throw new NotImplementedException();
-        public override void SetResult(ItemStack? result) => throw new NotImplementedException();
+        this.Title = "Loom";
     }
+
+    public override ItemStack? GetResult() => throw new NotImplementedException();
+    public override void SetResult(ItemStack? result) => throw new NotImplementedException();
 }

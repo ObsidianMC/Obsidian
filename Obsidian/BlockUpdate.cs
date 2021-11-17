@@ -1,48 +1,45 @@
-﻿using Obsidian.API;
-using Obsidian.WorldData;
+﻿using Obsidian.WorldData;
 
-namespace Obsidian
+namespace Obsidian;
+
+public struct BlockUpdate
 {
-    public struct BlockUpdate
+    internal readonly World world;
+    internal Vector position;
+    internal int delay { get; private set; }
+    internal int delayCounter;
+    private Block? _block;
+    internal Block? block
     {
-        internal readonly World world;
-        internal Vector position;
-        internal int delay { get; private set; }
-        internal int delayCounter;
-        private Block? _block;
-        internal Block? block
-        {
-            get => _block;
-            set 
+        get => _block;
+        set {
+            _block = value;
+            if (value is Block b)
             {
-                _block = value;
-                if (value is Block b)
+                if (Block.GravityAffected.Contains(b.Material))
                 {
-                    if (Block.GravityAffected.Contains(b.Material))
-                    {
-                        delay = 1;
-                    }
-                    else if (b.Material == Material.Lava)
-                    {
-                        delay = 40;
-                    }
-                    else if (b.Material == Material.Water)
-                    {
-                        delay = 5;
-                    }
+                    delay = 1;
                 }
-                delayCounter = delay;
+                else if (b.Material == Material.Lava)
+                {
+                    delay = 40;
+                }
+                else if (b.Material == Material.Water)
+                {
+                    delay = 5;
+                }
             }
-        }
-
-        public BlockUpdate(World w, Vector pos, Block? blk = null)
-        {
-            world = w;
-            position = pos;
-            delay = 0;
             delayCounter = delay;
-            _block = null;
-            block = blk;
         }
+    }
+
+    public BlockUpdate(World w, Vector pos, Block? blk = null)
+    {
+        world = w;
+        position = pos;
+        delay = 0;
+        delayCounter = delay;
+        _block = null;
+        block = blk;
     }
 }

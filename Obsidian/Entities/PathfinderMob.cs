@@ -1,6 +1,5 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class PathfinderMob : Mob
 {
-    public class PathfinderMob : Mob
-    {
-    }
 }

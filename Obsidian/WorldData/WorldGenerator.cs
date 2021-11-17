@@ -1,19 +1,16 @@
-﻿using System.Collections.Generic;
+﻿namespace Obsidian.WorldData;
 
-namespace Obsidian.WorldData
+public abstract class WorldGenerator
 {
-    public abstract class WorldGenerator
+    public List<Chunk> Chunks { get; }
+
+    public string Id { get; }
+
+    public WorldGenerator(string id)
     {
-        public List<Chunk> Chunks { get; }
-
-        public string Id { get; }
-
-        public WorldGenerator(string id)
-        {
-            this.Chunks = new List<Chunk>();
-            this.Id = id;
-        }
-
-        public abstract Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null);
+        this.Chunks = new List<Chunk>();
+        this.Id = id;
     }
+
+    public abstract Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null);
 }

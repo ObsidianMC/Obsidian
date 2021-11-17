@@ -2,37 +2,36 @@
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
 using SharpNoise.Modules;
-using System.Collections.Generic;
 using static Obsidian.API.Noise.VoronoiBiomes;
 using Blend = Obsidian.API.Noise.Blend;
 
-namespace Obsidian.WorldData.Generators.Overworld.Terrain
+namespace Obsidian.WorldData.Generators.Overworld.Terrain;
+
+public class OverworldTerrain
 {
-    public class OverworldTerrain
+    public Module Result { get; set; }
+
+    public readonly OverworldTerrainSettings settings;
+
+    private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
+
+    private readonly BaseCarver cave;
+
+    private Module FinalBiomes;
+
+    public OverworldTerrain(bool isUnitTest = false)
     {
-        public Module Result { get; set; }
+        settings = OverworldGenerator.GeneratorSettings;
+        ocean = new OceanTerrain();
+        deepocean = new DeepOceanTerrain();
+        plains = new PlainsTerrain();
+        hills = new HillsTerrain();
+        badlands = new BadlandsTerrain();
+        mountains = new MountainsTerrain();
+        rivers = new RiverTerrain();
+        cave = new CavesCarver();
 
-        public readonly OverworldTerrainSettings settings;
-
-        private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
-
-        private readonly BaseCarver cave;
-
-        private Module FinalBiomes;
-
-        public OverworldTerrain(bool isUnitTest = false)
-        {
-            settings = OverworldGenerator.GeneratorSettings;
-            ocean = new OceanTerrain();
-            deepocean = new DeepOceanTerrain();
-            plains = new PlainsTerrain();
-            hills = new HillsTerrain();
-            badlands = new BadlandsTerrain();
-            mountains = new MountainsTerrain();
-            rivers = new RiverTerrain();
-            cave = new CavesCarver();
-
-            Dictionary<int, Module> biomesMap = new Dictionary<int, Module>()
+        Dictionary<int, Module> biomesMap = new Dictionary<int, Module>()
             {
                 { 0, ocean.Result },
                 { 1, plains.Result },
@@ -106,61 +105,60 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain
 
 
 
-            FinalBiomes = VoronoiBiomeNoise.Instance.result;
+        FinalBiomes = VoronoiBiomeNoise.Instance.result;
 
-            var biomeTransitionSel2 = new Cache
-            {
-                Source0 = new TransitionMap(FinalBiomes, 5)
-            };
-
-            Module scaled = new Blend(
-                new TerrainSelect(FinalBiomes)
-                {
-                    Control = biomeTransitionSel2,
-                    TerrainModules = biomesMap
-                })
-            {
-                Distance = 2
-            };
-
-            if (isUnitTest)
-            {
-                scaled = new ScaleBias
-                {
-                    Source0 = FinalBiomes,
-                    Scale = 1 / 85.0,
-                    //Bias = -1
-                };
-            }
-
-            // Scale bias scales the verical output (usually -1.0 to +1.0) to
-            // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
-            // and MaxElev is 168, a value of -1 becomes 40, and a value of 1 becomes 168.
-            var biased = new ScaleBias
-            {
-                Scale = (settings.MaxElev - settings.MinElev) / 2.0,
-                Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
-                Source0 = scaled
-            };
-
-            Result = isUnitTest ? scaled : biased;
-
-        }
-
-        internal BaseBiome GetBiome(double x, double z, double y = 0)
+        var biomeTransitionSel2 = new Cache
         {
-            return (BaseBiome)FinalBiomes.GetValue(x, y, z);
+            Source0 = new TransitionMap(FinalBiomes, 5)
+        };
+
+        Module scaled = new Blend(
+            new TerrainSelect(FinalBiomes)
+            {
+                Control = biomeTransitionSel2,
+                TerrainModules = biomesMap
+            })
+        {
+            Distance = 2
+        };
+
+        if (isUnitTest)
+        {
+            scaled = new ScaleBias
+            {
+                Source0 = FinalBiomes,
+                Scale = 1 / 85.0,
+                //Bias = -1
+            };
         }
 
-        public double GetValue(double x, double z, double y = 0)
+        // Scale bias scales the verical output (usually -1.0 to +1.0) to
+        // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
+        // and MaxElev is 168, a value of -1 becomes 40, and a value of 1 becomes 168.
+        var biased = new ScaleBias
         {
-            return Result.GetValue(x, y, z);
-        }
+            Scale = (settings.MaxElev - settings.MinElev) / 2.0,
+            Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
+            Source0 = scaled
+        };
 
-        public bool IsCave(double x, double y, double z)
-        {
-            var val = cave.Result.GetValue(x, y, z);
-            return val > -0.5;
-        }
+        Result = isUnitTest ? scaled : biased;
+
+    }
+
+    internal BaseBiome GetBiome(double x, double z, double y = 0)
+    {
+        return (BaseBiome)FinalBiomes.GetValue(x, y, z);
+    }
+
+    public double GetValue(double x, double z, double y = 0)
+    {
+        return Result.GetValue(x, y, z);
+    }
+
+    public bool IsCave(double x, double y, double z)
+    {
+        var val = cave.Result.GetValue(x, y, z);
+        return val > -0.5;
     }
 }

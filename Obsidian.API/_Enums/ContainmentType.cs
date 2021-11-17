@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum ContainmentType
 {
-    public enum ContainmentType
-    {
-        Disjoint,
-        Contains,
-        Intersects
-    }
+    Disjoint,
+    Contains,
+    Intersects
 }

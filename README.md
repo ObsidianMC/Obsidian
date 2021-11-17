@@ -54,7 +54,7 @@ Thank you to [`#mcdevs`](https://wiki.vg/MCDevs) for additional support.
 
 Thank you to [Wiki.vg](https://wiki.vg/) for documenting Minecraft's protocol.
 
-Thank you to Mojang for creating this wonderful game named [Minecraft](https://www.minecraft.net/nl-nl).
+Thank you to Mojang for creating this wonderful game named [Minecraft](https://www.minecraft.net).
 
 **...and of course the biggest thank you to everyone that contributed!**
 

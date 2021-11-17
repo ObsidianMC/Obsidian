@@ -1,30 +1,29 @@
-﻿namespace Obsidian.API.Boss
+﻿namespace Obsidian.API.Boss;
+
+public enum BossBarDivisionType : int
 {
-    public enum BossBarDivisionType : int
-    {
-        /// <summary>
-        /// No division/notches
-        /// </summary>
-        None = 0,
+    /// <summary>
+    /// No division/notches
+    /// </summary>
+    None = 0,
 
-        /// <summary>
-        /// 6 Notches
-        /// </summary>
-        SixNotches = 1,
+    /// <summary>
+    /// 6 Notches
+    /// </summary>
+    SixNotches = 1,
 
-        /// <summary>
-        /// 10 Notches
-        /// </summary>
-        TenNotches = 2,
+    /// <summary>
+    /// 10 Notches
+    /// </summary>
+    TenNotches = 2,
 
-        /// <summary>
-        /// 12 Notches
-        /// </summary>
-        TwelveNotches = 3,
+    /// <summary>
+    /// 12 Notches
+    /// </summary>
+    TwelveNotches = 3,
 
-        /// <summary>
-        /// 20 Notches
-        /// </summary>
-        TwentyNotches = 4
-    }
+    /// <summary>
+    /// 20 Notches
+    /// </summary>
+    TwentyNotches = 4
 }

@@ -1,12 +1,10 @@
-﻿namespace Obsidian.Utilities.Registry
+﻿namespace Obsidian.Utilities.Registry;
+
+public class BlockStateJson
 {
-    public class BlockStateJson
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public bool Default { get; set; }
+    public bool Default { get; set; }
 
-        public BlockPropertiesJson Properties { get; set; }
-    }
-
+    public BlockPropertiesJson Properties { get; set; }
 }

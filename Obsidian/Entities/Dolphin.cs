@@ -1,6 +1,5 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class Dolphin : Mob
 {
-    public class Dolphin : Mob
-    {
-    }
 }

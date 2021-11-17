@@ -1,12 +1,11 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum NameTagVisibility
 {
-    public enum NameTagVisibility
-    {
-        Always,
+    Always,
 
-        HideForOtherTeams,
-        HideForOwnTeam,
+    HideForOtherTeams,
+    HideForOwnTeam,
 
-        Never
-    }
+    Never
 }

@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public sealed class CommandOverloadAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class CommandOverloadAttribute : Attribute
-    {
-    }
 }

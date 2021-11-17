@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Serialization.Attributes
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+public sealed class WriteMethodAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class WriteMethodAttribute : Attribute
-    {
-    }
 }

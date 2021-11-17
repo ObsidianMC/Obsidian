@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands;
 
-namespace Obsidian.Commands
+[Obsolete("Note: this should only be used as a workaround until specific code has been written for the parser")]
+public class EmptyFlagsCommandParser : CommandParser
 {
-    [Obsolete("Note: this should only be used as a workaround until specific code has been written for the parser")]
-    public class EmptyFlagsCommandParser : CommandParser
+    public EmptyFlagsCommandParser(string identifier) : base(identifier)
     {
-        public EmptyFlagsCommandParser(string identifier) : base(identifier)
-        {
-        }
     }
 }

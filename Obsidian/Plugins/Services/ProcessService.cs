@@ -1,69 +1,67 @@
 ﻿using Obsidian.API.Plugins.Services.Diagnostics;
 using Obsidian.Plugins.ServiceProviders;
-using System;
 using System.Diagnostics;
 using System.Security;
 
-namespace Obsidian.Plugins.Services
+namespace Obsidian.Plugins.Services;
+
+public class ProcessService : IProcess
 {
-    public class ProcessService : IProcess
+    private readonly Process process;
+    private readonly SecuredServiceBase serviceBase;
+
+    public ProcessService(Process process, SecuredServiceBase serviceBase)
     {
-        private readonly Process process;
-        private readonly SecuredServiceBase serviceBase;
+        this.process = process;
+        this.serviceBase = serviceBase;
+    }
 
-        public ProcessService(Process process, SecuredServiceBase serviceBase)
-        {
-            this.process = process;
-            this.serviceBase = serviceBase;
-        }
+    public string Name => process.ProcessName;
 
-        public string Name => process.ProcessName;
+    public int Id => process.Id;
 
-        public int Id => process.Id;
+    public DateTime StartTime => process.StartTime;
 
-        public DateTime StartTime => process.StartTime;
+    public DateTime ExitTime => process.ExitTime;
 
-        public DateTime ExitTime => process.ExitTime;
+    public int ThreadCount => process.Threads.Count;
 
-        public int ThreadCount => process.Threads.Count;
+    public long VirtualMemorySize => process.VirtualMemorySize64;
 
-        public long VirtualMemorySize => process.VirtualMemorySize64;
+    public long PeakVirtualMemorySize => process.PeakVirtualMemorySize64;
 
-        public long PeakVirtualMemorySize => process.PeakVirtualMemorySize64;
+    public long PagedMemorySize => process.PagedMemorySize64;
 
-        public long PagedMemorySize => process.PagedMemorySize64;
+    public long NonpagedSystemMemorySize => process.NonpagedSystemMemorySize64;
 
-        public long NonpagedSystemMemorySize => process.NonpagedSystemMemorySize64;
+    public long PagedSystemMemorySize => process.PagedSystemMemorySize64;
 
-        public long PagedSystemMemorySize => process.PagedSystemMemorySize64;
+    public long PeakPagedMemorySize => process.PeakPagedMemorySize64;
 
-        public long PeakPagedMemorySize => process.PeakPagedMemorySize64;
+    public long WorkingSet => process.WorkingSet64;
 
-        public long WorkingSet => process.WorkingSet64;
+    public long PeakWorkingSet => process.PeakWorkingSet64;
 
-        public long PeakWorkingSet => process.PeakWorkingSet64;
+    public long PrivateMemorySize => process.PrivateMemorySize64;
 
-        public long PrivateMemorySize => process.PrivateMemorySize64;
+    public void Close()
+    {
+        if (!serviceBase.IsUsable)
+            throw new SecurityException();
 
-        public void Close()
-        {
-            if (!serviceBase.IsUsable)
-                throw new SecurityException();
+        process.Close();
+    }
 
-            process.Close();
-        }
+    public void Kill()
+    {
+        if (!serviceBase.IsUsable)
+            throw new SecurityException();
 
-        public void Kill()
-        {
-            if (!serviceBase.IsUsable)
-                throw new SecurityException();
+        process.Kill();
+    }
 
-            process.Kill();
-        }
-
-        public void Dispose()
-        {
-            process.Dispose();
-        }
+    public void Dispose()
+    {
+        process.Dispose();
     }
 }

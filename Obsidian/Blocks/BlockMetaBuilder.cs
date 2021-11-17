@@ -1,83 +1,79 @@
-﻿using Obsidian.API;
-using Obsidian.Nbt;
-using System;
-using System.Collections.Generic;
+﻿using Obsidian.Nbt;
 using System.Collections.ObjectModel;
 
-namespace Obsidian.Blocks
+namespace Obsidian.Blocks;
+
+public class BlockMetaBuilder
 {
-    public class BlockMetaBuilder
+    public ChatMessage Name { get; internal set; }
+
+    public NbtCompound BlockEntityTag { get; }
+    public NbtCompound BlockStateTag { get; }
+
+    public IReadOnlyList<ChatMessage> Lore { get; }
+
+    public IReadOnlyList<string> CanPlaceOn { get; }
+
+    private readonly List<string> canPlaceOn = new List<string>();
+
+    private readonly List<ChatMessage> lore = new List<ChatMessage>();
+
+    public BlockMetaBuilder()
     {
-        public ChatMessage Name { get; internal set; }
+        this.BlockEntityTag = new NbtCompound("BlockEntityTag");
+        this.BlockStateTag = new NbtCompound("BlockStateTag");
 
-        public NbtCompound BlockEntityTag { get; }
-        public NbtCompound BlockStateTag { get; }
+        this.CanPlaceOn = new ReadOnlyCollection<string>(this.canPlaceOn);
 
-        public IReadOnlyList<ChatMessage> Lore { get; }
+        this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
+    }
 
-        public IReadOnlyList<string> CanPlaceOn { get; }
+    public BlockMetaBuilder CouldPlaceOn(string id)
+    {
+        this.canPlaceOn.Add(id);
 
-        private readonly List<string> canPlaceOn = new List<string>();
+        return this;
+    }
 
-        private readonly List<ChatMessage> lore = new List<ChatMessage>();
+    public BlockMetaBuilder WithName(string name)
+    {
+        this.Name = name;
 
-        public BlockMetaBuilder()
+        return this;
+    }
+
+    public BlockMetaBuilder AddLore(ChatMessage lore)
+    {
+        this.lore.Add(lore);
+
+        return this;
+    }
+
+    public BlockMetaBuilder AddBlockStateTag(INbtTag tag)
+    {
+        this.BlockStateTag.Add(tag);
+
+        return this;
+    }
+
+    public BlockMetaBuilder AddBlockEntityTag(INbtTag tag)
+    {
+        this.BlockEntityTag.Add(tag);
+
+        return this;
+    }
+
+    public BlockMeta Build()
+    {
+        var meta = new BlockMeta
         {
-            this.BlockEntityTag = new NbtCompound("BlockEntityTag");
-            this.BlockStateTag = new NbtCompound("BlockStateTag");
+            Name = this.Name,
+            Lore = this.lore,
+            CanPlaceOn = this.canPlaceOn,
+            BlockEntityTag = this.BlockEntityTag,
+            BlockStateTag = this.BlockStateTag
+        };
 
-            this.CanPlaceOn = new ReadOnlyCollection<string>(this.canPlaceOn);
-
-            this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
-        }
-
-        public BlockMetaBuilder CouldPlaceOn(string id)
-        {
-            this.canPlaceOn.Add(id);
-
-            return this;
-        }
-
-        public BlockMetaBuilder WithName(string name)
-        {
-            this.Name = name;
-
-            return this;
-        }
-
-        public BlockMetaBuilder AddLore(ChatMessage lore)
-        {
-            this.lore.Add(lore);
-
-            return this;
-        }
-
-        public BlockMetaBuilder AddBlockStateTag(INbtTag tag)
-        {
-            this.BlockStateTag.Add(tag);
-
-            return this;
-        }
-
-        public BlockMetaBuilder AddBlockEntityTag(INbtTag tag)
-        {
-            this.BlockEntityTag.Add(tag);
-
-            return this;
-        }
-
-        public BlockMeta Build()
-        {
-            var meta = new BlockMeta
-            {
-                Name = this.Name,
-                Lore = this.lore,
-                CanPlaceOn = this.canPlaceOn,
-                BlockEntityTag = this.BlockEntityTag,
-                BlockStateTag = this.BlockStateTag
-            };
-
-            return meta;
-        }
+        return meta;
     }
 }

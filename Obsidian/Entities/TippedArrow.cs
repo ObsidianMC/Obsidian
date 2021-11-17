@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class TippedArrow : Arrow
 {
-    public class TippedArrow : Arrow
-    {
-        public int Color { get; private set; }
-    }
+    public int Color { get; private set; }
 }

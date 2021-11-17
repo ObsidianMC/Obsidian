@@ -1,29 +1,28 @@
-﻿namespace Obsidian.API.Crafting
+﻿namespace Obsidian.API.Crafting;
+
+public enum CraftingType
 {
-    public enum CraftingType
-    {
-        CraftingShaped,
-        CraftingShapeless,
+    CraftingShaped,
+    CraftingShapeless,
 
-        CraftingSpecialArmordye,
-        CraftingSpecialBookcloning,
-        CraftingSpecialMapcloning,
-        CraftingSpecialMapextending,
-        CraftingSpecialFireworkRocket,
-        CraftingSpecialFireworkStar,
-        CraftingSpecialFireworkStarFade,
-        CraftingSpecialTippedarrow,
-        CraftingSpecialBannerduplicate,
-        CraftingSpecialShielddecoration,
-        CraftingSpecialShulkerboxcoloring,
-        CraftingSpecialSuspiciousstew,
-        CraftingSpecialRepairitem,
+    CraftingSpecialArmordye,
+    CraftingSpecialBookcloning,
+    CraftingSpecialMapcloning,
+    CraftingSpecialMapextending,
+    CraftingSpecialFireworkRocket,
+    CraftingSpecialFireworkStar,
+    CraftingSpecialFireworkStarFade,
+    CraftingSpecialTippedarrow,
+    CraftingSpecialBannerduplicate,
+    CraftingSpecialShielddecoration,
+    CraftingSpecialShulkerboxcoloring,
+    CraftingSpecialSuspiciousstew,
+    CraftingSpecialRepairitem,
 
-        Smelting,
-        Blasting,
-        Smoking,
-        CampfireCooking,
-        Stonecutting,
-        Smithing,
-    }
+    Smelting,
+    Blasting,
+    Smoking,
+    CampfireCooking,
+    Stonecutting,
+    Smithing,
 }

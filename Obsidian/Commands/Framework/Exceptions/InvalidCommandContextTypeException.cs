@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
-namespace Obsidian.Commands.Framework.Exceptions
+public class InvalidCommandContextTypeException : Exception
 {
-    public class InvalidCommandContextTypeException : Exception
+    public InvalidCommandContextTypeException(string message) : base(message)
     {
-        public InvalidCommandContextTypeException(string message) : base(message)
-        {
 
-        }
     }
 }

@@ -1,14 +1,13 @@
-﻿namespace Obsidian.API.Particles
+﻿namespace Obsidian.API.Particles;
+
+public class ItemParticle : IParticle
 {
-    public class ItemParticle : IParticle
+    public ItemParticle(ItemStack item)
     {
-        public ItemParticle(ItemStack item)
-        {
-            Item = item;
-        }
-
-        public int Id => 36;
-
-        public ItemStack Item { get; set; }
+        Item = item;
     }
+
+    public int Id => 36;
+
+    public ItemStack Item { get; set; }
 }

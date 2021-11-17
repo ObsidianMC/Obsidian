@@ -1,13 +1,12 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public interface ITileEntity
 {
-    public interface ITileEntity
-    {
-        public string Id { get; }
+    public string Id { get; }
 
-        public Vector BlockPosition { get; set; }
+    public Vector BlockPosition { get; set; }
 
-        public void ToNbt();
+    public void ToNbt();
 
-        public void FromNbt();
-    }
+    public void FromNbt();
 }

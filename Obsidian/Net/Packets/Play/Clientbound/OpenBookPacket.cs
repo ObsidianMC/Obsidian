@@ -1,13 +1,11 @@
-﻿using Obsidian.API;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class OpenBookPacket : IClientboundPacket
 {
-    public partial class OpenBookPacket : IClientboundPacket
-    {
-        [Field(0), ActualType(typeof(int)), VarLength]
-        public Hand Hand { get; set; }
+    [Field(0), ActualType(typeof(int)), VarLength]
+    public Hand Hand { get; set; }
 
-        public int Id => 0x2D;
-    }
+    public int Id => 0x2D;
 }

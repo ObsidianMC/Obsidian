@@ -4,36 +4,36 @@ using System.Collections.Generic;
 
 using Xunit;
 
-namespace Obsidian.Tests
+namespace Obsidian.Tests;
+
+public class VarInt
 {
-    public class VarInt
+    [MemberData(nameof(VarIntData))]
+    [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
+    public async void SerializeAsync(int input, byte[] bytes)
     {
-        [MemberData(nameof(VarIntData))]
-        [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
-        public async void SerializeAsync(int input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream();
+        using var stream = new MinecraftStream();
 
-            await stream.WriteVarIntAsync(input);
+        await stream.WriteVarIntAsync(input);
 
-            byte[] actualBytes = stream.ToArray();
+        byte[] actualBytes = stream.ToArray();
 
-            Assert.InRange(actualBytes.Length, 1, 5);
-            Assert.Equal(bytes, actualBytes);
-        }
+        Assert.InRange(actualBytes.Length, 1, 5);
+        Assert.Equal(bytes, actualBytes);
+    }
 
-        [MemberData(nameof(VarIntData))]
-        [Theory(DisplayName = "Deserialization of VarInts", Timeout = 100)]
-        public async void DeserializeAsync(int input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream(bytes);
+    [MemberData(nameof(VarIntData))]
+    [Theory(DisplayName = "Deserialization of VarInts", Timeout = 100)]
+    public async void DeserializeAsync(int input, byte[] bytes)
+    {
+        using var stream = new MinecraftStream(bytes);
 
-            int varInt = await stream.ReadVarIntAsync();
+        int varInt = await stream.ReadVarIntAsync();
 
-            Assert.Equal(input, varInt);
-        }
+        Assert.Equal(input, varInt);
+    }
 
-        public static IEnumerable<object[]> VarIntData => new List<object[]>
+    public static IEnumerable<object[]> VarIntData => new List<object[]>
         {
             new object[] { -2147483648, new byte[] { 0x80, 0x80, 0x80, 0x80, 0x08 } },
             new object[] { -1,          new byte[] { 0xff, 0xff, 0xff, 0xff, 0x0f } },
@@ -45,5 +45,4 @@ namespace Obsidian.Tests
             new object[] { 1,           new byte[] { 0x01 } },
             new object[] { 0,           new byte[] { 0x00 } },
         };
-    }
 }

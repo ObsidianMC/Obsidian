@@ -1,69 +1,64 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 
-namespace Obsidian.API.Crafting
+namespace Obsidian.API.Crafting;
+
+public class Ingredient : IEnumerable<ItemStack>
 {
-    public class Ingredient : IEnumerable<ItemStack>
+    private readonly List<ItemStack> items;
+
+    public int Count => this.items.Count;
+
+    public Ingredient()
     {
-        private readonly List<ItemStack> items;
+        this.items = new List<ItemStack>();
+    }
 
-        public int Count => this.items.Count;
+    public void Add(ItemStack item) => this.items.Add(item);
 
-        public Ingredient()
+    public void Remove(ItemStack item) => this.items.Remove(item);
+
+    /// <inheritdoc/>
+    public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
+
+    IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
+
+    private class IngredientEnumerator : IEnumerator<ItemStack>
+    {
+        public int Position { get; set; } = -1;
+
+        private List<ItemStack> items;
+
+        public ItemStack Current
         {
-            this.items = new List<ItemStack>();
+            get {
+                return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
+            }
         }
 
-        public void Add(ItemStack item) => this.items.Add(item);
-
-        public void Remove(ItemStack item) => this.items.Remove(item);
-
-        /// <inheritdoc/>
-        public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
-
-        IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
-
-        private class IngredientEnumerator : IEnumerator<ItemStack>
+        object IEnumerator.Current
         {
-            public int Position { get; set; } = -1;
-
-            private List<ItemStack> items;
-
-            public ItemStack Current
-            {
-                get
-                {
-                    return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
-                }
+            get {
+                return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
             }
+        }
 
-            object IEnumerator.Current
-            {
-                get
-                {
-                    return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
-                }
-            }
+        public IngredientEnumerator(List<ItemStack> items)
+        {
+            this.items = items;
+        }
 
-            public IngredientEnumerator(List<ItemStack> items)
-            {
-                this.items = items;
-            }
+        public bool MoveNext()
+        {
+            return ++Position < items.Count;
+        }
 
-            public bool MoveNext()
-            {
-                return ++Position < items.Count;
-            }
+        public void Reset()
+        {
+            throw new NotSupportedException();
+        }
 
-            public void Reset()
-            {
-                throw new NotSupportedException();
-            }
-
-            public void Dispose()
-            {
-            }
+        public void Dispose()
+        {
         }
     }
 }

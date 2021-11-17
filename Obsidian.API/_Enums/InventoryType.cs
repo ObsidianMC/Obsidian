@@ -1,41 +1,40 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum InventoryType
 {
-    public enum InventoryType
-    {
-        Anvil,
+    Anvil,
 
-        Beacon,
+    Beacon,
 
-        BlastFurnace,
+    BlastFurnace,
 
-        BrewingStand,
+    BrewingStand,
 
-        CartographyTable,
+    CartographyTable,
 
-        Crafting,
+    Crafting,
 
-        Custom,
+    Custom,
 
-        Enchantment,
+    Enchantment,
 
-        Furnace,
+    Furnace,
 
-        Generic,
+    Generic,
 
-        Grindstone,
+    Grindstone,
 
-        Hopper,
+    Hopper,
 
-        Lectern,
+    Lectern,
 
-        Loom,
+    Loom,
 
-        Merchant,
+    Merchant,
 
-        ShulkerBox,
+    ShulkerBox,
 
-        Smoker,
+    Smoker,
 
-        Stonecutter,
-    }
+    Stonecutter,
 }

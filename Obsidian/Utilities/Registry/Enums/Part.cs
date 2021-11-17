@@ -1,9 +1,8 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
-{
-    public enum Part
-    {
-        Head,
+﻿namespace Obsidian.Utilities.Registry.Enums;
 
-        Foot
-    }
+public enum Part
+{
+    Head,
+
+    Foot
 }

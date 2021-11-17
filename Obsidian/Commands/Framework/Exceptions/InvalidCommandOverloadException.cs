@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
-namespace Obsidian.Commands.Framework.Exceptions
+public class InvalidCommandOverloadException : Exception
 {
-    public class InvalidCommandOverloadException : Exception
+    public InvalidCommandOverloadException(string message) : base(message)
     {
-        public InvalidCommandOverloadException(string message) : base(message)
-        {
 
-        }
     }
 }
