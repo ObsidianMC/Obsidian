@@ -1,14 +1,9 @@
-﻿using Obsidian.API;
-using Obsidian.Nbt;
+﻿using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net;
 

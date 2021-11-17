@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Plugins;
+﻿namespace Obsidian.API.Plugins;
 
 /// <summary>
 /// Provides the base class for a plugin wrapper.

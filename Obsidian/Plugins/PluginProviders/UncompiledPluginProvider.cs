@@ -3,9 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Logging;
-using System;
 using System.IO;
-using System.Linq;
 
 namespace Obsidian.Plugins.PluginProviders;
 

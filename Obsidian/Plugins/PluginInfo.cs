@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Plugins;
-using System;
 
 namespace Obsidian.Plugins;
 

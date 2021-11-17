@@ -1,7 +1,5 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Collection;
+﻿using Obsidian.Utilities.Collection;
 using Obsidian.WorldData;
-using System;
 
 namespace Obsidian.ChunkData;
 

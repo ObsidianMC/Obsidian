@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.Noise;
 using SharpNoise.Modules;
-using System;
 
 namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 

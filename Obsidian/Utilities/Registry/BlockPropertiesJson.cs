@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry.Enums;
+﻿using Obsidian.Utilities.Registry.Enums;
 
 namespace Obsidian.Utilities.Registry;
 

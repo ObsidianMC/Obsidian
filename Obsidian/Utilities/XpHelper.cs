@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Utilities;
+﻿namespace Obsidian.Utilities;
 
 public static class XpHelper
 {

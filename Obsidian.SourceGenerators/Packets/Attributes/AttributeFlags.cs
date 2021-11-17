@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.SourceGenerators.Packets.Attributes;
+﻿namespace Obsidian.SourceGenerators.Packets.Attributes;
 
 [Flags]
 internal enum AttributeFlags

@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 namespace Obsidian.Plugins.PluginProviders;

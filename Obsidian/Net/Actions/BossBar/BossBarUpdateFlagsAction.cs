@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Boss;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Actions.BossBar;
 

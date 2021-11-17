@@ -1,7 +1,5 @@
-﻿using Obsidian.API;
-using Obsidian.Utilities.Registry;
+﻿using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
-using System;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 

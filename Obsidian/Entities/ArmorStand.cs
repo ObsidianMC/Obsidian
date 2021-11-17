@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-
-namespace Obsidian.Entities;
+﻿namespace Obsidian.Entities;
 
 public class ArmorStand : Living
 {

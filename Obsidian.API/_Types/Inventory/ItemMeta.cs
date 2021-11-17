@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public struct ItemMeta : IEquatable<ItemMeta>
 {

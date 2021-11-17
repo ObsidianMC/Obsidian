@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Net.WindowProperties;
+﻿namespace Obsidian.Net.WindowProperties;
 
 public class FurnaceWindowProperty : IWindowProperty
 {

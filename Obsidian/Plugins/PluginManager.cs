@@ -1,15 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
 using Obsidian.Plugins.ServiceProviders;
 using Obsidian.Utilities.Registry;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Obsidian.Plugins;
 

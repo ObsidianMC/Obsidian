@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Plugins;
+﻿namespace Obsidian.API.Plugins;
 
 /// <summary>
 /// Indicates that the property should be injected with a service.

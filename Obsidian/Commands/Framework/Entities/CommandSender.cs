@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using System;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Framework.Entities;
 

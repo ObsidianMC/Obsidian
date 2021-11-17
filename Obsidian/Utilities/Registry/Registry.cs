@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -9,14 +8,10 @@ using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Obsidian.Utilities.Registry;
 

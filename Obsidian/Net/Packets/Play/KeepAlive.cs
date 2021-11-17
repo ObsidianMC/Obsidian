@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

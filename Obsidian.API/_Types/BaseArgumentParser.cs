@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public abstract class BaseArgumentParser
 {

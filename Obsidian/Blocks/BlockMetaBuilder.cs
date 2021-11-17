@@ -1,7 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Nbt;
-using System;
-using System.Collections.Generic;
+﻿using Obsidian.Nbt;
 using System.Collections.ObjectModel;
 
 namespace Obsidian.Blocks;

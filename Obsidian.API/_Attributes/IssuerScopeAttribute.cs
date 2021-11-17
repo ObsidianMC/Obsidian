@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
 public sealed class IssuerScopeAttribute : Attribute

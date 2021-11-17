@@ -3,11 +3,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
-using System;
-using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace Obsidian;
 

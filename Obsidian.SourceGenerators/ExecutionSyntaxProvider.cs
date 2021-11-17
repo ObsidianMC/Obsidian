@@ -1,8 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Obsidian.SourceGenerators;
+﻿namespace Obsidian.SourceGenerators;
 
 public abstract class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : SyntaxNode
 {

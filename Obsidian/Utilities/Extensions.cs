@@ -1,15 +1,9 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using Obsidian.Entities;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 
 #nullable enable
 

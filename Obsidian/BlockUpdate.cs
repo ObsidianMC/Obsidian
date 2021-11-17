@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.WorldData;
+﻿using Obsidian.WorldData;
 
 namespace Obsidian;
 

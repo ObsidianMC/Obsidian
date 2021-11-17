@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public interface IScoreboard
 {

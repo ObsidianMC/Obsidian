@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Obsidian.API;
+﻿namespace Obsidian.API;
 
 public class Inventory
 {

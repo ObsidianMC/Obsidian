@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
-using System.Collections.Generic;
 
 namespace Obsidian;
 

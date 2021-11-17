@@ -1,6 +1,4 @@
 ﻿using Obsidian.SourceGenerators.Packets.Attributes;
-using System;
-using System.Linq;
 
 namespace Obsidian.SourceGenerators.Packets;
 

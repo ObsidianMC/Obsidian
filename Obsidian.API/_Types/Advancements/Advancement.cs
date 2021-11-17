@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Obsidian.API.Advancements;
+﻿namespace Obsidian.API.Advancements;
 
 public sealed class Advancement
 {

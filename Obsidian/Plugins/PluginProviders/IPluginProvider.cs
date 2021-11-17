@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
 namespace Obsidian.Plugins.PluginProviders;
 

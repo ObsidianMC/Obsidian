@@ -1,15 +1,9 @@
-using Obsidian.API;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands;
 

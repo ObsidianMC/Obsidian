@@ -1,13 +1,8 @@
-﻿using Obsidian.API;
-using Obsidian.API.Plugins;
+﻿using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Obsidian.Commands.Framework;
 

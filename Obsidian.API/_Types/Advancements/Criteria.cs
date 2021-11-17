@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Obsidian.API.Advancements;
+﻿namespace Obsidian.API.Advancements;
 
 /// <summary>
 /// Criteria for advancements.

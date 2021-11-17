@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.Commands;
+﻿namespace Obsidian.Commands;
 
 /// <summary>
 /// https://wiki.vg/Command_Data#Flags

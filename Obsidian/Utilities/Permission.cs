@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Obsidian.Utilities;
+﻿namespace Obsidian.Utilities;
 
 public record Permission(string Name)
 {

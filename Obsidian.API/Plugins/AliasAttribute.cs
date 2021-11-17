@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Plugins;
+﻿namespace Obsidian.API.Plugins;
 
 /// <summary>
 /// Specifies the property/field name that is used for dependency injection.

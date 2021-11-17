@@ -1,5 +1,4 @@
 ﻿using Obsidian.API.Plugins.Services.Diagnostics;
-using System;
 using System.Diagnostics;
 
 namespace Obsidian.Plugins.Services;

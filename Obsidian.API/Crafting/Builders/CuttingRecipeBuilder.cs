@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Crafting.Builders;
+﻿namespace Obsidian.API.Crafting.Builders;
 
 public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
 {

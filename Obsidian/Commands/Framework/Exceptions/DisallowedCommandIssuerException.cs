@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-using System;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace Obsidian.Commands.Framework.Exceptions;
 

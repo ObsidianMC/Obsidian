@@ -1,6 +1,5 @@
 ﻿using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
-using System.Collections.Generic;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

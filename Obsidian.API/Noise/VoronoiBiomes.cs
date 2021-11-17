@@ -1,7 +1,5 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
-using System;
-using System.Collections.Generic;
 
 namespace Obsidian.API.Noise;
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Plugins;
+﻿namespace Obsidian.API.Plugins;
 
 public interface IPluginInfo
 {

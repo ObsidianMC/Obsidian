@@ -1,6 +1,4 @@
-﻿using Obsidian.API;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeOakTree : BaseTree
 {

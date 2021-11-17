@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace Obsidian.SourceGenerators;
+﻿namespace Obsidian.SourceGenerators;
 
 public static class DiagnosticDescriptors
 {

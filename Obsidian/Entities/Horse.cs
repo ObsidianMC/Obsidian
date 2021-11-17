@@ -1,5 +1,4 @@
 ﻿using Obsidian.Net;
-using System.Threading.Tasks;
 
 namespace Obsidian.Entities;
 

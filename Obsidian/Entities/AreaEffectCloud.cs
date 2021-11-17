@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 
 namespace Obsidian.Entities;
 

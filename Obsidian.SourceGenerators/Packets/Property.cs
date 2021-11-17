@@ -1,9 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Obsidian.SourceGenerators.Packets.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Obsidian.SourceGenerators.Packets.Attributes;
 
 namespace Obsidian.SourceGenerators.Packets;
 

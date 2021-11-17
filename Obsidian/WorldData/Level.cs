@@ -1,8 +1,5 @@
 // This is the data about one world. It gets saved as level.dat.
 
-using Obsidian.API;
-using System.Collections.Generic;
-
 namespace Obsidian.WorldData;
 
 /// <summary>

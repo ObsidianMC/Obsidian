@@ -1,5 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.API.Advancements;
+﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -9,15 +8,10 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
-using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net;
 

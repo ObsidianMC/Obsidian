@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-namespace Obsidian.SourceGenerators.Packets.Attributes;
+﻿namespace Obsidian.SourceGenerators.Packets.Attributes;
 
 internal sealed class VarLengthBehavior : AttributeBehaviorBase
 {

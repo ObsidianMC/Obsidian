@@ -7,7 +7,6 @@ using Org.BouncyCastle.Crypto.Parameters;
 
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net;
 

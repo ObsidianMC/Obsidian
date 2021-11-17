@@ -1,6 +1,5 @@
 ﻿using Obsidian.API.Plugins.Services.Diagnostics;
 using Obsidian.Plugins.ServiceProviders;
-using System;
 using System.Diagnostics;
 using System.Security;
 

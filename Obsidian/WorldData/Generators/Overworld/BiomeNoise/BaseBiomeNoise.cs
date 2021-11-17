@@ -1,6 +1,5 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
-using System.Collections.Generic;
 using static SharpNoise.Modules.Curve;
 
 namespace Obsidian.WorldData.Generators.Overworld.BiomeNoise;

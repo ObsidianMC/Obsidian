@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.API.Advancements;
+﻿namespace Obsidian.API.Advancements;
 
 public sealed class AdvancementDisplay
 {

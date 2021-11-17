@@ -1,9 +1,7 @@
-﻿using Obsidian.API;
-using Obsidian.API.Events;
+﻿using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
-using System.Threading.Tasks;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
