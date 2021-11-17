@@ -1,33 +1,29 @@
-﻿using Newtonsoft.Json;
-using Obsidian.Nbt;
-using Obsidian.Utilities.Converters;
+﻿using Obsidian.Nbt;
 
-namespace Obsidian.Utilities.Registry.Codecs.Biomes
+namespace Obsidian.Utilities.Registry.Codecs.Biomes;
+
+public class BiomeParticle
 {
-    public class BiomeParticle
+    public float Probability { get; set; }
+
+    public BiomeOption Options { get; set; }
+
+    internal void Write(NbtCompound compound)
     {
-        [JsonConverter(typeof(DefaultObjectConverter))]
-        public float Probability { get; set; }
-
-        public BiomeOption Options { get; set; }
-
-        internal void Write(NbtCompound compound)
-        {
-            var particle = new NbtCompound("particle")
+        var particle = new NbtCompound("particle")
             {
                 new NbtTag<float>("probability", this.Probability)
             };
 
-            if (this.Options != null)
-            {
-                var options = new NbtCompound("options")
+        if (this.Options != null)
+        {
+            var options = new NbtCompound("options")
                 {
                     new NbtTag<string>("type", this.Options.Type)
                 };
 
-                particle.Add(options);
-            }
-
+            particle.Add(options);
         }
+
     }
 }

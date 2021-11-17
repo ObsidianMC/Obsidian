@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class WitherSkull : Entity
 {
-    public class WitherSkull : Entity
-    {
-        public bool Invulnerable { get; private set; }
-    }
+    public bool Invulnerable { get; private set; }
 }

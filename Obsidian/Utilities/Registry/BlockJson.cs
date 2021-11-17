@@ -1,14 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿namespace Obsidian.Utilities.Registry;
 
-namespace Obsidian.Utilities.Registry
+public class BlockJson
 {
-    public class BlockJson
-    {
-        [JsonProperty("states")]
-        public BlockStateJson[] States { get; set; }
-
-        [JsonProperty("properties")]
-        public BlockPropertiesExtraJson Properties { get; set; }
-    }
-
+    public BlockStateJson[] States { get; set; }
+    public BlockPropertiesExtraJson Properties { get; set; }
 }

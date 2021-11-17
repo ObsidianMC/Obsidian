@@ -1,18 +1,14 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class PickItem : IServerboundPacket
 {
-    [ServerOnly]
-    public partial class PickItem : IPacket
-    {
-        [Field(0)]
-        public int SlotToUse { get; set; }
+    [Field(0), VarLength]
+    public int SlotToUse { get; private set; }
 
-        public int Id => 0x18;
+    public int Id => 0x17;
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

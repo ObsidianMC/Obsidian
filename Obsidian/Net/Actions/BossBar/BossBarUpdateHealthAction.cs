@@ -1,26 +1,21 @@
-﻿using System.Threading.Tasks;
+﻿namespace Obsidian.Net.Actions.BossBar;
 
-namespace Obsidian.Net.Actions.BossBar
+public class BossBarUpdateHealthAction : BossBarAction
 {
-    public class BossBarUpdateHealthAction : BossBarAction
+    public float Health { get; set; }
+
+    public BossBarUpdateHealthAction() : base(2) { }
+
+    public override void WriteTo(MinecraftStream stream)
     {
-        public override int Action => 2;
-        public float Health { get; set; }
+        base.WriteTo(stream);
 
-        public override byte[] ToArray()
-        {
-            using var stream = new MinecraftStream();
-            stream.WriteFloat(Health);
+        stream.WriteFloat(Health);
+    }
 
-            return stream.ToArray();
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using var stream = new MinecraftStream();
-            await stream.WriteFloatAsync(Health);
-
-            return stream.ToArray();
-        }
+    public override async Task WriteToAsync(MinecraftStream stream)
+    {
+        await base.WriteToAsync(stream);
+        await stream.WriteFloatAsync(Health);
     }
 }

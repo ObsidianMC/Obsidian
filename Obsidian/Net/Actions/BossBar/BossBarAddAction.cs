@@ -1,44 +1,39 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.API.Boss;
 
-using Obsidian.BossBar;
-using Obsidian.Chat;
+namespace Obsidian.Net.Actions.BossBar;
 
-namespace Obsidian.Net.Actions.BossBar
+public class BossBarAddAction : BossBarAction
 {
-    public class BossBarAddAction : BossBarAction
+    public ChatMessage Title { get; set; }
+
+    public float Health { get; set; }
+
+    public BossBarColor Color { get; set; }
+
+    public BossBarDivisionType Division { get; set; }
+
+    public BossBarFlags Flags { get; set; }
+
+    public BossBarAddAction() : base(0) { }
+
+    public override void WriteTo(MinecraftStream stream)
     {
-        public override int Action => 0;
+        base.WriteTo(stream);
 
-        public ChatMessage Title { get; set; }
+        stream.WriteChat(Title);
+        stream.WriteFloat(Health);
+        stream.WriteVarInt(Color);
+        stream.WriteVarInt(Division);
+        stream.WriteUnsignedByte((byte)Flags);
+    }
+    public override async Task WriteToAsync(MinecraftStream stream)
+    {
+        await base.WriteToAsync(stream);
 
-        public float Health { get; set; }
-
-        public BossBarColor Color { get; set; }
-
-        public BossBarDivisionType Division { get; set; }
-
-        public BossBarFlags Flags { get; set; }
-
-        public override byte[] ToArray()
-        {
-            using var stream = new MinecraftStream();
-            stream.WriteChat(Title);
-            stream.WriteFloat(Health);
-            stream.WriteVarInt(Color);
-            stream.WriteVarInt(Division);
-            stream.WriteUnsignedByte((byte)Flags);
-            return stream.ToArray();
-        }
-
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using var stream = new MinecraftStream();
-            await stream.WriteChatAsync(Title);
-            await stream.WriteFloatAsync(Health);
-            await stream.WriteVarIntAsync(Color);
-            await stream.WriteVarIntAsync(Division);
-            await stream.WriteUnsignedByteAsync((byte)Flags);
-            return stream.ToArray();
-        }
+        await stream.WriteChatAsync(Title);
+        await stream.WriteFloatAsync(Health);
+        await stream.WriteVarIntAsync(Color);
+        await stream.WriteVarIntAsync(Division);
+        await stream.WriteUnsignedByteAsync((byte)Flags);
     }
 }

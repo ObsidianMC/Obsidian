@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>9.0</LangVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,11 +15,12 @@
     <Company>Obsidian Team</Company>
     <Authors>Obsidian Team</Authors>
     <PackageLicenseExpression></PackageLicenseExpression>
-    <Description>A C# implementation of the Minecraft server protocol (.NET 5)</Description>
-    <PackageProjectUrl>https://github.com/ObsidianServer/Obsidian</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ObsidianServer/Obsidian</RepositoryUrl>
+    <Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
+    <PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
     <PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,9 +30,14 @@
     <EmbeddedResource Remove="Sounds\**" />
     <None Remove="PluginMessages\**" />
     <None Remove="Sounds\**" />
+    <None Include="..\.editorconfig" Link=".editorconfig" />
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
@@ -40,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Assets\biome_dimension_codec.json" />
+    <None Remove="Assets\biome_codec.json" />
     <None Remove="Assets\default_dimensions.json" />
     <None Remove="Assets\default_dimensions.xaml" />
     <None Remove="Assets\entity_types.json" />
@@ -52,16 +58,12 @@
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
-    <PackageReference Include="DaanV2.UUID.Net" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="sharpcompress" Version="0.27.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.11.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
     <PackageReference Include="SharpNoise" Version="0.12.1.1" />
-    <PackageReference Include="SharpZipLib" Version="1.3.1" />
     <PackageReference Include="xunit.abstractions" Version="2.0.3" />
   </ItemGroup>
 
@@ -87,7 +89,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Assets\biome_dimension_codec.json">
+    <EmbeddedResource Update="Assets\biome_codec.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Update="Assets\blocks.json">
@@ -109,5 +111,4 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
-
 </Project>

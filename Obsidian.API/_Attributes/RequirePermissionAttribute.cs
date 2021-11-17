@@ -1,32 +1,31 @@
-﻿using System.Threading.Tasks;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
 {
-    public class RequirePermissionAttribute : BaseExecutionCheckAttribute
+    private string[] permissions;
+    private PermissionCheckType checkType;
+    private bool op;
+
+    public RequirePermissionAttribute(PermissionCheckType checkType = PermissionCheckType.All, bool op = true, params string[] permissions)
     {
-        private string[] permissions;
-        private PermissionCheckType checkType;
-        private bool op;
+        this.permissions = permissions;
+        this.checkType = checkType;
+        this.op = op;
+    }
 
-        public RequirePermissionAttribute(PermissionCheckType checkType = PermissionCheckType.All, bool op = true, params string[] permissions)
-        {
-            this.permissions = permissions;
-            this.checkType = checkType;
-            this.op = op;
-        }
+    public override Task<bool> RunChecksAsync(CommandContext context)
+    {
+        if (context.Sender.Issuer == CommandIssuers.Console)
+            return Task.FromResult(true);
+        if (context.Player == null)
+            return Task.FromResult(false);
+        if (this.op && context.Player.IsOperator)
+            return Task.FromResult(true);
 
-        public override async Task<bool> RunChecksAsync(CommandContext ctx)
-        {
-            if (ctx.Sender.Issuer.HasFlag(CommandIssuers.Console) || ctx.Sender.Issuer.HasFlag(CommandIssuers.RemoteConsole))
-                return true;
+        if (this.permissions.Length > 0)
+            return Task.FromResult(checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(permissions) : context.Player.HasAnyPermission(permissions));
 
-            if (this.op && ctx.Player.IsOperator)
-                return true;
-
-            if (this.permissions.Length > 0)
-                return checkType == PermissionCheckType.All ? await ctx.Player.HasAllPermissions(permissions) : await ctx.Player.HasAnyPermission(permissions);
-
-            return false;
-        }
+        return Task.FromResult(false);
     }
 }

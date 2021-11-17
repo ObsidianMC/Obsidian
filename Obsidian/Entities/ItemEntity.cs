@@ -1,52 +1,56 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Utilities.Registry;
-using System;
-using System.Threading.Tasks;
 
-namespace Obsidian.Entities
+namespace Obsidian.Entities;
+
+public class ItemEntity : Entity
 {
-    // TODO item entity has to have a MaterialType prop
-    public class ItemEntity : Entity
+    public int Id { get; set; }
+
+    public Material Material => Registry.GetItem(this.Id).Type;
+
+    public sbyte Count { get; set; }
+
+    public ItemMeta ItemMeta { get; set; }
+
+    public bool CanPickup { get; set; }
+
+    public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
+
+    public ItemEntity() => this.Type = EntityType.Item;
+
+    public override async Task WriteAsync(MinecraftStream stream)
     {
-        public short Id { get; set; }
+        await base.WriteAsync(stream);
 
-        public sbyte Count { get; set; }
+        await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
+    }
 
-        public ItemMeta ItemMeta { get; set; }
+    public override void Write(MinecraftStream stream)
+    {
+        base.Write(stream);
 
-        public bool CanPickup { get; set; }
+        stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
+        stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
+    }
 
-        public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
+    public override async Task TickAsync()
+    {
+        await base.TickAsync();
 
-        public override async Task WriteAsync(MinecraftStream stream)
+        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
+            this.CanPickup = true;
+
+        foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5f))
         {
-            await base.WriteAsync(stream);
-
-            await stream.WriteEntityMetdata(7, EntityMetadataType.Slot, new ItemStack(Registry.GetItem(this.Id).Type, this.Count, this.ItemMeta)
+            if (ent is ItemEntity item)
             {
-                Present = true
-            });
-        }
+                if (item == this)
+                    continue;
 
-        public override async Task TickAsync()
-        {
-            await base.TickAsync();
+                this.Count += item.Count;
 
-            if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
-                this.CanPickup = true;
-
-            foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5f))
-            {
-                if (ent is ItemEntity item)
-                {
-                    if (item == this)
-                        continue;
-
-                    this.Count += item.Count;
-
-                    await item.RemoveAsync();//TODO find a better way to removed item entities that merged
-                }
+                await item.RemoveAsync();//TODO find a better way to removed item entities that merged
             }
         }
     }

@@ -1,111 +1,97 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class Statistics : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class Statistics : ISerializablePacket
+    [Field(0)]
+    public List<Statistic> Stats { get; } = new();
+
+    public void Add(Statistic stat)
     {
-        [Field(0), VarLength]
-        public int Count { get => Stats.Count; }
-
-        [Field(1)]
-        public List<Statistic> Stats { get; set; } = new List<Statistic>();
-
-        public Statistics()
-        {
-        }
-
-        public void Add(Statistic stat)
-        {
-            this.Stats.Add(stat);
-        }
-
-        public int Id => 0x06;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+        Stats.Add(stat);
     }
 
-    public struct Statistic
+    public void Clear()
     {
-        public CategoryIds CategoryId;
-
-        /// <summary>
-        /// Can either be a block, item or entity id. For CategoryIds.Custom, use the <see cref="StatisticIds"/> enum casted to an integer.
-        /// </summary>
-        public int StatisticId;
-
-        public int Value;
-
-        public Statistic(CategoryIds category, Block block, int value)
-        {
-            this.CategoryId = category;
-            this.StatisticId = block.Id;
-            this.Value = value;
-        }
-
-        public Statistic(CategoryIds category, StatisticIds statistic, int value)
-        {
-            this.CategoryId = category;
-            this.StatisticId = (int)statistic;
-            this.Value = value;
-        }
-        public Statistic(CategoryIds category, Items.Item item, int value)
-        {
-            this.CategoryId = category;
-            this.StatisticId = item.Id;
-            this.Value = value;
-        }
-        public Statistic(CategoryIds category, Entity entity, int value)
-        {
-            this.CategoryId = category;
-            this.StatisticId = entity.EntityId;
-            this.Value = value;
-        }
+        Stats.Clear();
     }
 
-    public enum CategoryIds : int
+    public int Id => 0x07;
+}
+
+public readonly struct Statistic
+{
+    public CategoryIds CategoryId { get; }
+
+    /// <summary>
+    /// Can either be a block, item or entity id. For CategoryIds.Custom, use the <see cref="StatisticIds"/> enum casted to an integer.
+    /// </summary>
+    public int StatisticId { get; }
+
+    public int Value { get; }
+
+    public Statistic(CategoryIds category, Block block, int value)
     {
-        Mined = 0,
-        Crafted = 1,
-        Used = 2,
-        Broken = 3,
-        PickedUp = 4,
-        Dropped = 5,
-        Killed = 6,
-        KilledBy = 7,
-        Custom = 8
+        CategoryId = category;
+        StatisticId = block.Id;
+        Value = value;
     }
 
-    public enum StatisticIds : int
+    public Statistic(CategoryIds category, StatisticIds statistic, int value)
     {
-        LeaveGame,
-        PlayOneMinute,
-        TimeSinceDeath,
-        SneakTime,
-        WalkOneCm,
-        CrouchOneCm,
-        SprintOneCm,
-        SwimOneCm,
-        FallOneCm,
-        ClimbOneCm,
-        FlyOneCm,
-        DiveOneCm,
-        MinecartOneCm,
-        BoatOneCm,
-        PigOneCm,
-        HorseOneCm,
-        AviateOneCm, // elytras???
-        Jump,
-        Drop,
-        DamageDealt,
-
+        CategoryId = category;
+        StatisticId = (int)statistic;
+        Value = value;
     }
+    public Statistic(CategoryIds category, Item item, int value)
+    {
+        CategoryId = category;
+        StatisticId = item.Id;
+        Value = value;
+    }
+    public Statistic(CategoryIds category, Entity entity, int value)
+    {
+        CategoryId = category;
+        StatisticId = entity.EntityId;
+        Value = value;
+    }
+}
+
+public enum CategoryIds : int
+{
+    Mined = 0,
+    Crafted = 1,
+    Used = 2,
+    Broken = 3,
+    PickedUp = 4,
+    Dropped = 5,
+    Killed = 6,
+    KilledBy = 7,
+    Custom = 8
+}
+
+public enum StatisticIds : int
+{
+    LeaveGame,
+    PlayOneMinute,
+    TimeSinceDeath,
+    SneakTime,
+    WalkOneCm,
+    CrouchOneCm,
+    SprintOneCm,
+    SwimOneCm,
+    FallOneCm,
+    ClimbOneCm,
+    FlyOneCm,
+    DiveOneCm,
+    MinecartOneCm,
+    BoatOneCm,
+    PigOneCm,
+    HorseOneCm,
+    AviateOneCm, // elytras???
+    Jump,
+    Drop,
+    DamageDealt,
 }

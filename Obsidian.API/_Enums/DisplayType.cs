@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
-{
-    public enum DisplayType : int
-    {
-        Integer,
+﻿namespace Obsidian.API;
 
-        Hearts
-    }
+public enum DisplayType : int
+{
+    Integer,
+
+    Hearts
 }

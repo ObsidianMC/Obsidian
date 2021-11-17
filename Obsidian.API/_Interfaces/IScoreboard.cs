@@ -1,17 +1,22 @@
-﻿using System.Threading.Tasks;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+public interface IScoreboard
 {
-    public interface IScoreboard
-    {
-        public Task RemoveObjectiveAsync();
+    public List<ITeam> Teams { get; }
 
-        public Task CreateOrUpdateObjectiveAsync(IChatMessage title, DisplayType displayType = DisplayType.Integer);
+    public Task RemoveObjectiveAsync();
 
-        public Task CreateOrUpdateObjectiveAsync(string title, DisplayType displayType = DisplayType.Integer);
+    public Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer);
 
-        public Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int value = 0);
+    public Task CreateOrUpdateScoreAsync(string scoreName, string displayText, int? value = null);
 
-        public Score GetScore(string scoreName);
-    }
+    public Task<bool> RemoveScoreAsync(string scoreName);
+
+    public Task<ITeam> CreateTeamAsync(string name, ChatMessage displayName, NameTagVisibility nameTagVisibility,
+        CollisionRule collisionRule, TeamColor color, params string[] entities);
+
+    public Task<ITeam> CreateTeamAsync(string name, ChatMessage displayName, NameTagVisibility nameTagVisibility,
+       CollisionRule collisionRule, TeamColor color, ChatMessage prefix, ChatMessage suffix, params string[] entities);
+
+    public Score GetScore(string scoreName);
 }

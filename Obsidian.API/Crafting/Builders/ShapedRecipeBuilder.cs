@@ -1,93 +1,90 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
-namespace Obsidian.API.Crafting.Builders
+namespace Obsidian.API.Crafting.Builders;
+
+public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
 {
-    public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
+    public string? Name { get; set; }
+    public string? Group { get; set; }
+    public ItemStack? Result { get; set; }
+
+    public IReadOnlyList<string> Pattern { get; }
+
+    public IReadOnlyDictionary<char, Ingredient> Key { get; }
+
+    private readonly List<string> pattern = new();
+
+    private readonly Dictionary<char, Ingredient> key = new();
+
+    public ShapedRecipeBuilder()
     {
-        public string Name { get; set; }
-        public string Group { get; set; }
-        public ItemStack Result { get; set; }
+        this.Pattern = new ReadOnlyCollection<string>(this.pattern);
 
-        public IReadOnlyList<string> Pattern { get; }
+        this.Key = new ReadOnlyDictionary<char, Ingredient>(this.key);
+    }
 
-        public IReadOnlyDictionary<char, Ingredient> Key { get; }
+    public ShapedRecipeBuilder WithPattern(params string[] pattern)
+    {
+        if (pattern.Length > 3)
+            throw new InvalidOperationException("Patterns must only have 3 total elements.");
 
-        private readonly List<string> pattern = new List<string>();
+        this.pattern.AddRange(pattern);
 
-        private readonly Dictionary<char, Ingredient> key = new Dictionary<char, Ingredient>();
+        return this;
+    }
 
-        public ShapedRecipeBuilder()
-        {
-            this.Pattern = new ReadOnlyCollection<string>(this.pattern);
+    public ShapedRecipeBuilder WithKey(char key, params ItemStack[] matches)
+    {
+        var ingredient = new Ingredient();
 
-            this.Key = new ReadOnlyDictionary<char, Ingredient>(this.key);
-        }
+        foreach (var match in matches)
+            ingredient.Add(match);
 
-        public ShapedRecipeBuilder WithPattern(params string[] pattern)
-        {
-            if (pattern.Length > 3)
-                throw new InvalidOperationException("Patterns must only have 3 total elements.");
+        this.key.Add(key, ingredient);
 
-            this.pattern.AddRange(pattern);
+        return this;
+    }
 
-            return this;
-        }
+    public IRecipe Build()
+    {
+        if (this.pattern.Count <= 0)
+            throw new InvalidOperationException("Patterns cannot be empty");
 
-        public ShapedRecipeBuilder WithKey(char key, params ItemStack[] matches)
-        {
-            var ingredient = new Ingredient();
+        if (this.key.Count <= 0)
+            throw new InvalidOperationException("Keys cannot be empty.");
 
-            foreach (var match in matches)
-                ingredient.Add(match);
+        return new ShapedRecipe
+        (
+            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            CraftingType.CraftingShaped,
+            this.Group,
+            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
+            new ReadOnlyCollection<string>(new List<string>(this.pattern)),
+            new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
+        );
+    }
 
-            this.key.Add(key, ingredient);
+    public ShapedRecipeBuilder WithName(string name)
+    {
+        this.Name = name;
 
-            return this;
-        }
+        return this;
+    }
 
-        public IRecipe Build()
-        {
-            if (this.pattern.Count <= 0)
-                throw new InvalidOperationException("Patterns cannot be empty");
+    public ShapedRecipeBuilder SetResult(ItemStack result)
+    {
+        if (this.Result != null)
+            throw new InvalidOperationException("Result is already set.");
 
-            if (this.key.Count <= 0)
-                throw new InvalidOperationException("Keys cannot be empty.");
+        this.Result = result;
 
-            return new ShapedRecipe
-            {
-                Name = this.Name ?? throw new NullReferenceException("Recipe must have a name"),
-                Type = "minecraft:crafting_shaped",
-                Group = this.Group,
-                Pattern = new ReadOnlyCollection<string>(new List<string>(this.pattern)),
-                Result = this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-                Key = new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
-            };
-        }
+        return this;
+    }
 
-        public ShapedRecipeBuilder WithName(string name)
-        {
-            this.Name = name;
+    public ShapedRecipeBuilder InGroup(string group)
+    {
+        this.Group = group;
 
-            return this;
-        }
-
-        public ShapedRecipeBuilder SetResult(ItemStack result)
-        {
-            if (this.Result != null)
-                throw new InvalidOperationException("Result is already set.");
-
-            this.Result = result;
-
-            return this;
-        }
-
-        public ShapedRecipeBuilder InGroup(string group)
-        {
-            this.Group = group;
-
-            return this;
-        }
+        return this;
     }
 }

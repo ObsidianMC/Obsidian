@@ -1,53 +1,39 @@
-﻿using Obsidian.IO;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 
 using System.Collections.Generic;
 
 using Xunit;
 
-namespace Obsidian.Tests
+namespace Obsidian.Tests;
+
+public class VarLong
 {
-    public class VarLong
+    [MemberData(nameof(VarLongData))]
+    [Theory(DisplayName = "Serialization of VarLongs", Timeout = 100)]
+    public async void SerializeAsync(long input, byte[] bytes)
     {
-        [MemberData(nameof(VarLongData))]
-        [Theory(DisplayName = "Serialization of VarLong")]
-        public void Serialize(long input, byte[] expectedOutput)
-        {
-            var writer = ProtocolWriter.WithBuffer(10);
-            writer.WriteVarLong(input);
+        using var stream = new MinecraftStream();
 
-            byte[] actualBytes = writer.Memory.ToArray();
+        await stream.WriteVarLongAsync(input);
 
-            Assert.InRange(actualBytes.Length, 1, 10);
-            Assert.Equal(expectedOutput, actualBytes);
-        }
-        
-        [MemberData(nameof(VarLongData))]
-        [Theory(DisplayName = "Serialization of VarLongs", Timeout = 100)]
-        public async void SerializeAsync(long input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream();
+        byte[] actualBytes = stream.ToArray();
 
-            await stream.WriteVarLongAsync(input);
+        Assert.InRange(actualBytes.Length, 1, 10);
+        Assert.Equal(bytes, actualBytes);
+    }
 
-            byte[] actualBytes = stream.ToArray();
+    [MemberData(nameof(VarLongData))]
+    [Theory(DisplayName = "Deserialization of VarLongs", Timeout = 100)]
+    public async void DeserializeAsync(long input, byte[] bytes)
+    {
+        using var stream = new MinecraftStream(bytes);
 
-            Assert.InRange(actualBytes.Length, 1, 10);
-            Assert.Equal(bytes, actualBytes);
-        }
+        long varLong = await stream.ReadVarLongAsync();
 
-        [MemberData(nameof(VarLongData))]
-        [Theory(DisplayName = "Deserialization of VarLongs", Timeout = 100)]
-        public async void DeserializeAsync(long input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream(bytes);
+        Assert.Equal(input, varLong);
+    }
 
-            long varLong = await stream.ReadVarLongAsync();
-
-            Assert.Equal(input, varLong);
-        }
-
-        public static IEnumerable<object[]> VarLongData => new List<object[]>
+    public static IEnumerable<object[]> VarLongData => new List<object[]>
         {
             new object[] { 0,                       new byte[] { 0x00 } },
             new object[] { 1,                       new byte[] { 0x01 } },
@@ -61,5 +47,4 @@ namespace Obsidian.Tests
             new object[] { -2147483648,             new byte[] { 0x80, 0x80, 0x80, 0x80, 0xf8, 0xff, 0xff, 0xff, 0xff, 0x01 } },
             new object[] { -9223372036854775808,    new byte[] { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01 } }
         };
-    }
 }

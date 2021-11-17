@@ -1,56 +1,42 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class CreativeInventoryAction : IServerboundPacket
 {
-    [ServerOnly]
-    public partial class CreativeInventoryAction : IPacket
+    [Field(0)]
+    public short ClickedSlot { get; private set; }
+
+    [Field(1)]
+    public ItemStack ClickedItem { get; private set; }
+
+    public int Id => 0x28;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0)]
-        public short ClickedSlot { get; set; }
+        var inventory = player.OpenedInventory ?? player.Inventory;
 
-        [Field(1)]
-        public ItemStack ClickedItem { get; set; }
+        var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
 
-        public int Id => 0x29;
+        if (isForPlayer)
+            inventory = player.Inventory;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        inventory.SetItem(slot, ClickedItem);
+
+        player.LastClickedItem = ClickedItem;
+
+        if (player.inventorySlot == ClickedSlot)
         {
-            this.ClickedSlot = await stream.ReadShortAsync();
-            this.ClickedItem = await stream.ReadSlotAsync();
-        }
+            var heldItem = player.GetHeldItem();
 
-        public async Task HandleAsync(Server server, Player player)
-        {
-            var inventory = player.OpenedInventory ?? player.Inventory;
-
-            var (value, forPlayer) = this.ClickedSlot.GetDifference(inventory.Size);
-
-            if (forPlayer)
-                inventory = player.Inventory;
-
-            inventory.SetItem(value, this.ClickedItem);
-
-            player.LastClickedItem = this.ClickedItem;
-
-            if (player.CurrentSlot == this.ClickedSlot)
+            await server.QueueBroadcastPacketAsync(new EntityEquipment
             {
-                var heldItem = player.GetHeldItem();
-
-                await server.BroadcastPacketAsync(new EntityEquipment
-                {
-                    EntityId = player.EntityId,
-                    Slot = ESlot.MainHand,
-                    Item = new ItemStack(heldItem.Type, heldItem.Count, heldItem.ItemMeta)
-                    {
-                        Present = heldItem.Present
-                    }
-                }, player);
-            }
+                EntityId = player.EntityId,
+                Slot = ESlot.MainHand,
+                Item = heldItem
+            }, player);
         }
     }
 }

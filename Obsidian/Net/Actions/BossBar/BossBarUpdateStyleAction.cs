@@ -1,31 +1,27 @@
-﻿using System.Threading.Tasks;
+﻿using Obsidian.API.Boss;
 
-using Obsidian.BossBar;
+namespace Obsidian.Net.Actions.BossBar;
 
-namespace Obsidian.Net.Actions.BossBar
+public class BossBarUpdateStyleAction : BossBarAction
 {
-    public class BossBarUpdateStyleAction : BossBarAction
+    public BossBarColor Color { get; set; }
+    public BossBarDivisionType Division { get; set; }
+
+    public BossBarUpdateStyleAction() : base(4) { }
+
+    public override void WriteTo(MinecraftStream stream)
     {
-        public override int Action => 4;
-        public BossBarColor Color { get; set; }
-        public BossBarDivisionType Division { get; set; }
+        base.WriteTo(stream);
 
-        public override byte[] ToArray()
-        {
-            using var stream = new MinecraftStream();
-            stream.WriteVarInt(Color);
-            stream.WriteVarInt(Division);
+        stream.WriteVarInt(Color);
+        stream.WriteVarInt(Division);
+    }
 
-            return stream.ToArray();
-        }
+    public override async Task WriteToAsync(MinecraftStream stream)
+    {
+        await base.WriteToAsync(stream);
 
-        public override async Task<byte[]> ToArrayAsync()
-        {
-            using var stream = new MinecraftStream();
-            await stream.WriteVarIntAsync(Color);
-            await stream.WriteVarIntAsync(Division);
-
-            return stream.ToArray();
-        }
+        await stream.WriteVarIntAsync(Color);
+        await stream.WriteVarIntAsync(Division);
     }
 }

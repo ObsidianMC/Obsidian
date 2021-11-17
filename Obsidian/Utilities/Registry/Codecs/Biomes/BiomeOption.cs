@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Utilities.Registry.Codecs.Biomes
+﻿namespace Obsidian.Utilities.Registry.Codecs.Biomes;
+
+public class BiomeOption
 {
-    public class BiomeOption
-    {
-        public string Type { get; set; }
-    }
+    public string Type { get; set; }
 }

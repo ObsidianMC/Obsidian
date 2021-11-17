@@ -1,37 +1,28 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class EntityEquipment : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class EntityEquipment : ISerializablePacket
-    {
-        [Field(0), VarLength]
-        public int EntityId { get; set; }
+    [Field(0), VarLength]
+    public int EntityId { get; init; }
 
-        [Field(1), ActualType(typeof(int)), VarLength]
-        public ESlot Slot { get; set; }
+    [Field(1), ActualType(typeof(int)), VarLength]
+    public ESlot Slot { get; init; }
 
-        [Field(2)]
-        public ItemStack Item { get; set; }
+    [Field(2)]
+    public ItemStack Item { get; init; }
 
-        public int Id => 0x47;
+    public int Id => 0x50;
+}
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+public enum ESlot : int
+{
+    MainHand,
+    OffHand,
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
-
-    public enum ESlot : int
-    {
-        MainHand,
-        OffHand,
-
-        Boots,
-        Leggings,
-        Chestplate,
-        Helmet
-    }
+    Boots,
+    Leggings,
+    Chestplate,
+    Helmet
 }

@@ -1,29 +1,20 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class BlockChange : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class BlockChange : ISerializablePacket
+    [Field(0)]
+    public Vector Position { get; }
+
+    [Field(1), VarLength]
+    public int BlockId { get; }
+
+    public int Id => 0x0C;
+
+    public BlockChange(Vector position, int block)
     {
-        [Field(0)]
-        public Vector Position { get; private set; }
-
-        [Field(1), VarLength]
-        public int BlockId { get; private set; }
-
-        public int Id => 0x0B;
-
-        public BlockChange(Vector position, int block)
-        {
-            Position = position;
-            BlockId = block;
-        }
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        Position = position;
+        BlockId = block;
     }
 }

@@ -1,10 +1,9 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum WorldType
 {
-    public enum WorldType
-    {
-        Default,
-        Flat,
-        LargeBiomes,
-        Amplified
-    }
+    Default,
+    Flat,
+    LargeBiomes,
+    Amplified
 }

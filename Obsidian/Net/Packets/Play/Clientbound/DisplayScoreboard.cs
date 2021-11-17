@@ -1,25 +1,14 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class DisplayScoreboard : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class DisplayScoreboard : ISerializablePacket
-    {
-        [Field(0), ActualType(typeof(sbyte))]
-        public ScoreboardPosition Position { get; set; }
+    [Field(0), ActualType(typeof(sbyte))]
+    public ScoreboardPosition Position { get; init; }
 
-        [Field(1)]
-        public string ScoreName { get; set; }
+    [Field(1)]
+    public string ScoreName { get; init; }
 
-        public int Id => 0x43;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        
-    }
+    public int Id => 0x4C;
 }

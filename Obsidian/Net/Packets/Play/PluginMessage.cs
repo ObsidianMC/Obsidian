@@ -1,116 +1,72 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play
+namespace Obsidian.Net.Packets.Play;
+
+public partial class PluginMessage : IClientboundPacket
 {
-    public partial class PluginMessage : ISerializablePacket
+    [Field(0)]
+    public string Channel { get; private set; }
+
+    [Field(1)]
+    public byte[] PluginData { get; private set; }
+
+    public int Id => 0x18;
+
+    public PluginMessage()
     {
-        [Field(0)]
-        public string Channel { get; private set; }
+    }
 
-        [Field(1)]
-        public byte[] PluginData { get; private set; }
+    public PluginMessage(string channel, byte[] data)
+    {
+        Channel = channel;
+        PluginData = data;
+    }
 
-        public int Id { get; set; } = 0x17;
+    public PluginMessageStore Handle()
+    {
+        using var stream = new MinecraftStream(PluginData);
 
-        public PluginMessage()
+        var result = Channel switch
         {
-        }
-
-        public PluginMessage(string channel, byte[] data)
-        {
-            this.Channel = channel;
-            this.PluginData = data;
-        }
-
-        public async ValueTask<PluginMessageStore> HandleAsync()
-        {
-            using var stream = new MinecraftStream(this.PluginData);
-
-            var result = this.Channel switch
+            "minecraft:brand" => new PluginMessageStore
             {
-                "minecraft:brand" => new PluginMessageStore
-                {
-                    Type = PluginMessageType.Brand,
-                    Value = await stream.ReadStringAsync()
-                },
-                "minecraft:register" => new PluginMessageStore//Payload should be a list of strings
-                {
-                    Type = PluginMessageType.Register,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
-                },
-                "minecraft:unregister" => new PluginMessageStore
-                {
-                    Type = PluginMessageType.UnRegister,
-                    Value = Encoding.UTF8.GetString(this.PluginData)
-                },
-                _ => null
-            };
-
-            return result;
-        }
-
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.Channel = await stream.ReadStringAsync();
-
-            var length = stream.Length - stream.Position;
-
-            this.PluginData = await stream.ReadUInt8ArrayAsync((int)length);
-        }
-
-        public async Task HandleAsync(Server server, Player player)
-        {
-            var result = await this.HandleAsync();
-
-            if (result == null)
-                return;
-
-            switch (result.Type)
+                Type = PluginMessageType.Brand,
+                Value = stream.ReadString()
+            },
+            "minecraft:register" => new PluginMessageStore // Payload should be a list of strings
             {
-                case PluginMessageType.Brand:
-                    player.client.Brand = result.Value.ToString();
-                    break;
-                case PluginMessageType.Register:
-                    {
-                        var list = result.Value.ToString().Split("/");//Unsure if this is the only separator that's used
+                Type = PluginMessageType.Register,
+                Value = Encoding.UTF8.GetString(PluginData)
+            },
+            "minecraft:unregister" => new PluginMessageStore
+            {
+                Type = PluginMessageType.Unregister,
+                Value = Encoding.UTF8.GetString(PluginData)
+            },
+            _ => null
+        };
 
-                        if (list.Length > 0)
-                        {
-                            foreach (var item in list)
-                                server.RegisteredChannels.Add(item);
-                        }
-                        else
-                            server.RegisteredChannels.Add(result.Value.ToString());
-
-                        break;
-                    }
-                case PluginMessageType.UnRegister:
-                    //TODO unregister registered channels 
-
-                    //server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
-                    break;
-                case PluginMessageType.Custom://This can be ignored for now
-                default:
-                    break;
-            }
-        }
+        return result;
     }
 
-    public enum PluginMessageType
+    public void Populate(MinecraftStream stream)
     {
-        Brand,
-        Register,
-        UnRegister,
-        Custom
+        Channel = stream.ReadString();
+        PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
     }
+}
 
-    public class PluginMessageStore
-    {
-        public PluginMessageType Type { get; set; }
+public enum PluginMessageType
+{
+    Brand,
+    Register,
+    Unregister,
+    Custom
+}
 
-        public object Value { get; set; }
-    }
+public class PluginMessageStore
+{
+    public PluginMessageType Type { get; init; }
+    public object Value { get; init; }
 }

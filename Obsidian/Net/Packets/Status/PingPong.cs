@@ -1,18 +1,14 @@
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Status
+namespace Obsidian.Net.Packets.Status;
+
+public partial class PingPong : IClientboundPacket, IServerboundPacket
 {
-    public partial class PingPong : ISerializablePacket
-    {
-        [Field(0)]
-        public long Payload;
+    [Field(0)]
+    public long Payload { get; private set; }
 
-        public int Id => 0x01;
+    public int Id => 0x01;
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

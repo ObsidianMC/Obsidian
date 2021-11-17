@@ -1,22 +1,14 @@
 ﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class SetDisplayedRecipe : IServerboundPacket
 {
-    [ServerOnly]
-    public partial class SetDisplayedRecipe : IPacket
-    {
-        [Field(0)]
-        public string RecipeId { get; set; }
+    [Field(0)]
+    public string RecipeId { get; private set; }
 
-        public int Id => 0x1E;
+    public int Id => 0x1E;
 
-        public async Task ReadAsync(MinecraftStream stream)
-        {
-            this.RecipeId = await stream.ReadStringAsync();
-        }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

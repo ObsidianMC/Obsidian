@@ -5,49 +5,36 @@ using System.Collections.Generic;
 
 using Xunit;
 
-namespace Obsidian.Tests
+namespace Obsidian.Tests;
+
+public class VarInt
 {
-    public class VarInt
+    [MemberData(nameof(VarIntData))]
+    [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
+    public async void SerializeAsync(int input, byte[] bytes)
     {
-        [MemberData(nameof(VarIntData))]
-        [Theory(DisplayName = "Serialization of VarInt")]
-        public void Serialize(int input, byte[] expectedOutput)
-        {
-            var writer = ProtocolWriter.WithBuffer(5);
-            writer.WriteVarInt(input);
+        using var stream = new MinecraftStream();
 
-            byte[] actualBytes = writer.Memory.ToArray();
+        await stream.WriteVarIntAsync(input);
 
-            Assert.InRange(writer.BytesWritten, 1, 5);
-            Assert.Equal(expectedOutput, actualBytes);
-        }
-        
-        [MemberData(nameof(VarIntData))]
-        [Theory(DisplayName = "Serialization of VarInts", Timeout = 100)]
-        public async void SerializeAsync(int input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream();
+        byte[] actualBytes = stream.ToArray();
 
-            await stream.WriteVarIntAsync(input);
+        Assert.InRange(actualBytes.Length, 1, 5);
+        Assert.Equal(bytes, actualBytes);
+    }
 
-            byte[] actualBytes = stream.ToArray();
+    [MemberData(nameof(VarIntData))]
+    [Theory(DisplayName = "Deserialization of VarInts", Timeout = 100)]
+    public async void DeserializeAsync(int input, byte[] bytes)
+    {
+        using var stream = new MinecraftStream(bytes);
 
-            Assert.InRange(actualBytes.Length, 1, 5);
-            Assert.Equal(bytes, actualBytes);
-        }
+        int varInt = await stream.ReadVarIntAsync();
 
-        [MemberData(nameof(VarIntData))]
-        [Theory(DisplayName = "Deserialization of VarInts", Timeout = 100)]
-        public async void DeserializeAsync(int input, byte[] bytes)
-        {
-            using var stream = new MinecraftStream(bytes);
+        Assert.Equal(input, varInt);
+    }
 
-            int varInt = await stream.ReadVarIntAsync();
-
-            Assert.Equal(input, varInt);
-        }
-
-        public static IEnumerable<object[]> VarIntData => new List<object[]>
+    public static IEnumerable<object[]> VarIntData => new List<object[]>
         {
             new object[] { -2147483648, new byte[] { 0x80, 0x80, 0x80, 0x80, 0x08 } },
             new object[] { -1,          new byte[] { 0xff, 0xff, 0xff, 0xff, 0x0f } },
@@ -59,5 +46,4 @@ namespace Obsidian.Tests
             new object[] { 1,           new byte[] { 0x01 } },
             new object[] { 0,           new byte[] { 0x00 } },
         };
-    }
 }

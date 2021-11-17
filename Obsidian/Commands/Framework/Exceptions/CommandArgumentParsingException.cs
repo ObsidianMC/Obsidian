@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
-namespace Obsidian.Commands.Framework.Exceptions
+public class CommandArgumentParsingException : Exception
 {
-    public class CommandArgumentParsingException : Exception
+    public CommandArgumentParsingException(string message) : base(message)
     {
-        public CommandArgumentParsingException(string message) : base(message)
-        {
 
-        }
     }
 }

@@ -1,15 +1,12 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[Flags]
+public enum CommandIssuers
 {
-    [Flags]
-    public enum CommandIssuers
-    {
-        None,
-        Client,
-        Console,
-        RemoteConsole,
-        Plugin,
-        Any = ~None
-    }
+    None,
+    Client,
+    Console,
+    RemoteConsole,
+    Plugin,
+    Any = ~None
 }

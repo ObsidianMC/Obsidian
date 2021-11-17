@@ -1,29 +1,27 @@
 ﻿using Obsidian.Net;
-using System.Threading.Tasks;
 
-namespace Obsidian.ChunkData
+namespace Obsidian.ChunkData;
+
+public interface IBlockStatePalette
 {
-    public interface IBlockStatePalette
+    bool IsFull { get; }
+    int GetIdFromState(Block blockState);
+    Block GetStateFromIndex(int index);
+    Task WriteToAsync(MinecraftStream stream);
+
+    Task ReadFromAsync(MinecraftStream stream);
+}
+
+
+public static class Palette
+{
+    public static IBlockStatePalette DeterminePalette(this byte bitsPerBlock)
     {
-        bool IsFull { get; }
-        int GetIdFromState(Block blockState);
-        Block GetStateFromIndex(int index);
-        Task WriteToAsync(MinecraftStream stream);
+        if (bitsPerBlock <= 4)
+            return new LinearBlockStatePalette(4);
+        else if (bitsPerBlock > 4 || bitsPerBlock <= 8)
+            return new LinearBlockStatePalette(bitsPerBlock);
 
-        Task ReadFromAsync(MinecraftStream stream);
-    }
-
-
-    public static class Palette
-    {
-        public static IBlockStatePalette DeterminePalette(this byte bitsPerBlock)
-        {
-            if (bitsPerBlock <= 4)
-                return new LinearBlockStatePalette(4);
-            else if (bitsPerBlock > 4 || bitsPerBlock <= 8)
-                return new LinearBlockStatePalette(bitsPerBlock);
-
-            return new GlobalBlockStatePalette();
-        }
+        return new GlobalBlockStatePalette();
     }
 }

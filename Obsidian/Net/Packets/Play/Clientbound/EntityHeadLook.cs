@@ -1,23 +1,14 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class EntityHeadLook : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class EntityHeadLook : ISerializablePacket
-    {
+    [Field(0), VarLength]
+    public int EntityId { get; init; }
 
-        [Field(0), VarLength]
-        public int EntityId { get; set; }
+    [Field(1)]
+    public Angle HeadYaw { get; init; }
 
-        [Field(1)]
-        public Angle HeadYaw { get; set; }
-
-        public int Id => 0x3A;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-    }
+    public int Id => 0x3E;
 }

@@ -1,18 +1,15 @@
 ﻿using Obsidian.Net;
-using System;
-using System.Threading.Tasks;
 
-namespace Obsidian.Commands
+namespace Obsidian.Commands;
+
+public class CommandParser
 {
-    public class CommandParser
-    {
-        private string Identifier { get; }
+    private string Identifier { get; }
 
-        public CommandParser(string identifier) => this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+    public CommandParser(string identifier) => Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
 
-        public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteStringAsync(this.Identifier);
-        public virtual void Write(MinecraftStream stream) => stream.WriteString(Identifier);
+    public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteStringAsync(Identifier);
+    public virtual void Write(MinecraftStream stream) => stream.WriteString(Identifier);
 
-        public override string ToString() => this.Identifier;
-    }
+    public override string ToString() => Identifier;
 }

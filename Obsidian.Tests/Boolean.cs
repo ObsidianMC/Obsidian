@@ -4,40 +4,39 @@ using System.Collections.Generic;
 
 using Xunit;
 
-namespace Obsidian.Tests
+namespace Obsidian.Tests;
+
+public class Boolean
 {
-    public class Boolean
+    [MemberData(nameof(BooleanData))]
+    [Theory(DisplayName = "Serialization of booleans", Timeout = 100)]
+    public async void SerializeAsync(bool input, byte @byte)
     {
-        [MemberData(nameof(BooleanData))]
-        [Theory(DisplayName = "Serialization of booleans", Timeout = 100)]
-        public async void SerializeAsync(bool input, byte @byte)
-        {
-            using var stream = new MinecraftStream();
+        using var stream = new MinecraftStream();
 
-            await stream.WriteBooleanAsync(input);
+        await stream.WriteBooleanAsync(input);
 
-            byte[] actualBytes = stream.ToArray();
+        byte[] actualBytes = stream.ToArray();
 
-            Assert.Single(actualBytes);
+        Assert.Single(actualBytes);
 
-            Assert.Equal(@byte, actualBytes[0]);
-        }
+        Assert.Equal(@byte, actualBytes[0]);
+    }
 
-        [MemberData(nameof(BooleanData))]
-        [Theory(DisplayName = "Deserialization of booleans", Timeout = 100)]
-        public async void DeserializeAsync(bool input, byte @byte)
-        {
-            using var stream = new MinecraftStream(new[] { @byte });
+    [MemberData(nameof(BooleanData))]
+    [Theory(DisplayName = "Deserialization of booleans", Timeout = 100)]
+    public async void DeserializeAsync(bool input, byte @byte)
+    {
+        using var stream = new MinecraftStream(new[] { @byte });
 
-            bool boolean = await stream.ReadBooleanAsync();
+        bool boolean = await stream.ReadBooleanAsync();
 
-            Assert.Equal(input, boolean);
-        }
+        Assert.Equal(input, boolean);
+    }
 
-        public static IEnumerable<object[]> BooleanData => new List<object[]>
+    public static IEnumerable<object[]> BooleanData => new List<object[]>
         {
             new object[] { false, 0x00 },
             new object[] { true,  0x01 },
         };
-    }
 }

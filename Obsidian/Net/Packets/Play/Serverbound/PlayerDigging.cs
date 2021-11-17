@@ -1,60 +1,66 @@
-﻿using Obsidian.API;
+﻿using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class PlayerDigging : IServerboundPacket
 {
-    [ServerOnly]
-    public partial class PlayerDigging : IPacket
+    [Field(0), ActualType(typeof(int)), VarLength]
+    public DiggingStatus Status { get; private set; }
+
+    [Field(1)]
+    public Vector Position { get; private set; }
+
+    [Field(2), ActualType(typeof(sbyte))]
+    public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
+
+    public int Id => 0x1A;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0), ActualType(typeof(int)), VarLength]
-        public DiggingStatus Status { get; private set; }
+        Block? b = server.World.GetBlock(Position);
+        if (b is not Block block)
+            return;
 
-        [Field(1)]
-        public Vector Position { get; private set; }
-
-        [Field(2), ActualType(typeof(sbyte))]
-        public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
-
-        public int Id => 0x1B;
-
-        public async Task ReadAsync(MinecraftStream stream)
+        if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            this.Status = (DiggingStatus)await stream.ReadVarIntAsync();
-            this.Position = await stream.ReadPositionAsync();
-            this.Face = (BlockFace)await stream.ReadByteAsync();
+            server.World.SetBlockUntracked(Position, Block.Air, true);
+
+            var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
+            if (blockBreakEvent.Cancel)
+                return;
         }
 
-        public async Task HandleAsync(Server server, Player player)
+        server.BroadcastPlayerDig(new PlayerDiggingStore
         {
-            server.BroadcastPlayerDig(new PlayerDiggingStore
-            {
-                Player = player.Uuid,
-                Packet = this
-            });
-            await Task.CompletedTask;
+            Player = player.Uuid,
+            Packet = this
+        }, block);
+
+        if (Status == DiggingStatus.FinishedDigging)
+        {
+            server.World.BlockUpdateNeighbors(new BlockUpdate(server.World, Position));
         }
     }
+}
 
-    public class PlayerDiggingStore
-    {
-        public Guid Player { get; set; }
-        public PlayerDigging Packet { get; set; }
-    }
+public class PlayerDiggingStore
+{
+    public Guid Player { get; init; }
+    public PlayerDigging Packet { get; init; }
+}
 
-    public enum DiggingStatus : int
-    {
-        StartedDigging,
-        CancelledDigging,
-        FinishedDigging,
+public enum DiggingStatus : int
+{
+    StartedDigging,
+    CancelledDigging,
+    FinishedDigging,
 
-        DropItemStack,
-        DropItem,
+    DropItemStack,
+    DropItem,
 
-        ShootArrowOrFinishEating,
+    ShootArrowOrFinishEating,
 
-        SwapItemInHand
-    }
+    SwapItemInHand
 }

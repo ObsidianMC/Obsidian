@@ -1,10 +1,9 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public enum EntityId : int
 {
-    public enum EntityId : int
-    {
-        Player = 0,
-        Mob = 1,
-        Object = 2,
-        Thunder = 3
-    }
+    Player = 0,
+    Mob = 1,
+    Object = 2,
+    Thunder = 3
 }

@@ -1,47 +1,37 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class NamedSoundEffect : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class NamedSoundEffect : ISerializablePacket
+    [Field(0)]
+    public string Name { get; }
+
+    [Field(1), ActualType(typeof(int)), VarLength]
+    public SoundCategory Category { get; }
+
+    [Field(2)]
+    public SoundPosition Position { get; }
+
+    [Field(3)]
+    public float Volume { get; }
+
+    [Field(4)]
+    public float Pitch { get; }
+
+    public int Id => 0x19;
+
+    public NamedSoundEffect(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
     {
-        [Field(0)]
-        public string Name { get; }
-
-        [Field(1), ActualType(typeof(int)), VarLength]
-        public SoundCategory Category { get; }
-
-        [Field(2)]
-        public SoundPosition Position { get; }
-
-        [Field(3)]
-        public float Volume { get; }
-
-        [Field(4)]
-        public float Pitch { get; }
-
-        public int Id => 0x18;
-
-        public NamedSoundEffect(string name, SoundPosition location, SoundCategory category, float pitch, float volume)
+        if (string.IsNullOrWhiteSpace(name))
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("message", nameof(name));
-            }
-
-            Name = name;
-            Category = category;
-            Position = location;
-            Volume = volume;
-            Pitch = pitch;
+            throw new ArgumentException("Name cannot be null or empty.", nameof(name));
         }
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        Name = name;
+        Position = position;
+        Category = category;
+        Volume = volume;
+        Pitch = pitch;
     }
 }

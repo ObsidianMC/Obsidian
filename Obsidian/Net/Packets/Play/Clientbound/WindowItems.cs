@@ -1,30 +1,26 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class WindowItems : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class WindowItems : ISerializablePacket
+    [Field(0)]
+    public byte WindowId { get; }
+
+    [Field(1), VarLength]
+    public int StateId { get; set; }
+
+    [Field(2)]
+    public List<ItemStack> Items { get; }
+
+    [Field(3)]
+    public ItemStack CarriedItem { get; set; }
+
+    public int Id => 0x14;
+
+    public WindowItems(byte windowId, List<ItemStack> items)
     {
-        [Field(0)]
-        public byte WindowId { get; }
-
-        [Field(2), CountType(typeof(short))]
-        public List<ItemStack> Items { get; }
-
-        public int Id => 0x13;
-
-        public WindowItems(byte windowId, List<ItemStack> items)
-        {
-            WindowId = windowId;
-            Items = items;
-        }
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+        WindowId = windowId;
+        Items = items;
     }
 }

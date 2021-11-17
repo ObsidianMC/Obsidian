@@ -1,33 +1,29 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class SetSlot : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class SetSlot : ISerializablePacket
-    {
-        /// <summary>
-        /// 0 for player inventory. -1 For the currently dragged item.
-        /// If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
-        /// </summary>
-        [Field(0)]
-        public byte WindowId { get; set; } = 0;
+    /// <summary>
+    /// 0 for player inventory. -1 For the currently dragged item.
+    /// If the window ID is set to -2, then any slot in the inventory can be used but no add item animation will be played.
+    /// </summary>
+    [Field(0)]
+    public sbyte WindowId { get; init; } = 0;
 
-        /// <summary>
-        /// Can be -1 to set the currently dragged item.
-        /// </summary>
-        [Field(1)]
-        public short Slot { get; set; }
+    //TODO figure out how to handle this
 
-        [Field(2)]
-        public ItemStack SlotData { get; set; }
+    [Field(1), VarLength]
+    public int StateId { get; init; } = 0;
 
-        public int Id => 0x15;
+    /// <summary>
+    /// Can be -1 to set the currently dragged item.
+    /// </summary>
+    [Field(1)]
+    public short Slot { get; init; }
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
+    [Field(2)]
+    public ItemStack SlotData { get; init; }
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
+    public int Id => 0x16;
 }

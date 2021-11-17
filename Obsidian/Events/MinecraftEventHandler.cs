@@ -1,114 +1,130 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Events.EventArgs;
-using System;
-using System.Threading.Tasks;
 
-namespace Obsidian.Events
+namespace Obsidian.Events;
+
+public class MinecraftEventHandler
 {
-    public class MinecraftEventHandler
+    public AsyncEvent<PacketReceivedEventArgs> PacketReceived;
+    public AsyncEvent<QueuePacketEventArgs> QueuePacket;
+    public AsyncEvent<PlayerJoinEventArgs> PlayerJoin;
+    public AsyncEvent<PlayerLeaveEventArgs> PlayerLeave;
+    public AsyncEvent<PlayerTeleportEventArgs> PlayerTeleported;
+    public AsyncEvent<PermissionGrantedEventArgs> PermissionGranted;
+    public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
+    public AsyncEvent<InventoryClickEventArgs> ClickEvent;
+    public AsyncEvent<BlockBreakEventArgs> BlockBreak;
+    public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
+    public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
+    public AsyncEvent<EntityInteractEventArgs> EntityInteract;
+    public AsyncEvent<PlayerAttackEntityEventArgs> PlayerAttackEntity;
+    public AsyncEvent<PlayerInteractEventArgs> PlayerInteract;
+    public AsyncEvent ServerTick;
+
+    public MinecraftEventHandler()
     {
-        public AsyncEvent<PacketReceivedEventArgs> PacketReceived;
-        public AsyncEvent<QueuePacketEventArgs> QueuePacket;
-        public AsyncEvent<PlayerJoinEventArgs> PlayerJoin;
-        public AsyncEvent<PlayerLeaveEventArgs> PlayerLeave;
-        public AsyncEvent<PlayerTeleportEventArgs> PlayerTeleported;
-        public AsyncEvent<PermissionGrantedEventArgs> PermissionGranted;
-        public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
-        public AsyncEvent<InventoryClickEventArgs> ClickEvent;
-        public AsyncEvent<BlockInteractEventArgs> BlockInteract;
-        public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
-        public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
-        public AsyncEvent ServerTick;
+        // Events that don't need additional arguments
+        PacketReceived = new("PacketReceived", HandleException);
+        QueuePacket = new("QueuePacket", HandleException);
 
-        public MinecraftEventHandler()
-        {
-            // Events that don't need additional arguments
-            PacketReceived = new("PacketReceived", HandleException);
-            QueuePacket = new("QueuePacket", HandleException);
+        PlayerJoin = new("PlayerJoin", HandleException);
+        PlayerLeave = new("PlayerLeave", HandleException);
+        ServerTick = new("ServerTick", HandleException);
+        PermissionGranted = new("PermissionGranted", HandleException);
+        PermissionRevoked = new("PermissionRevoked", HandleException);
+        ClickEvent = new("InventoryClick", HandleException);
+        BlockBreak = new("BlockBreak", HandleException);
+        IncomingChatMessage = new("IncomingChatMessage", HandleException);
+        PlayerTeleported = new("PlayerTeleported", HandleException);
+        ServerStatusRequest = new("ServerStatusRequest", HandleException);
+        EntityInteract = new("EntityInteract", HandleException);
+        PlayerAttackEntity = new("PlayerAttackEntity", HandleException);
+        PlayerInteract = new("PlayerInteract", HandleException);
+    }
 
-            PlayerJoin = new("PlayerJoin", HandleException);
-            PlayerLeave = new("PlayerLeave", HandleException);
-            ServerTick = new("ServerTick", HandleException);
-            PermissionGranted = new("PermissionGranted", HandleException);
-            PermissionRevoked = new("PermissionRevoked", HandleException);
-            ClickEvent = new("InventoryClick", HandleException);
-            BlockInteract = new("BlockInteract", HandleException);
-            IncomingChatMessage = new("IncomingChatMessage", HandleException);
-            PlayerTeleported = new("PlayerTeleported", HandleException);
-            ServerStatusRequest = new("ServerStatusRequest", HandleException);
-        }
+    private void HandleException(AsyncEvent e, Exception exception)
+    {
+    }
 
-        private void HandleException(AsyncEvent e, Exception exception)
-        {
-        }
+    private void HandleException<T>(AsyncEvent<T> e, Exception exception)
+    {
+    }
 
-        private void HandleException<T>(AsyncEvent<T> e, Exception exception)
-        {
-        }
+    internal async ValueTask<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs eventArgs)
+    {
+        await QueuePacket.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<QueuePacketEventArgs> InvokeQueuePacketAsync(QueuePacketEventArgs args)
-        {
-            await this.QueuePacket.InvokeAsync(args);
+    internal async ValueTask<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs eventArgs)
+    {
+        await ClickEvent.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-            return args;
-        }
+    internal async ValueTask<BlockBreakEventArgs> InvokeBlockBreakAsync(BlockBreakEventArgs eventArgs)
+    {
+        await BlockBreak.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs args)
-        {
-            await this.ClickEvent.InvokeAsync(args);
+    internal async ValueTask<PlayerInteractEventArgs> InvokePlayerInteractAsync(PlayerInteractEventArgs eventArgs)
+    {
+        await PlayerInteract.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-            return args;
-        }
+    internal async ValueTask<IncomingChatMessageEventArgs> InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs)
+    {
+        await IncomingChatMessage.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<BlockInteractEventArgs> InvokeBlockInteractAsync(BlockInteractEventArgs eventArgs)
-        {
-            await this.BlockInteract.InvokeAsync(eventArgs);
+    internal async ValueTask<PlayerTeleportEventArgs> InvokePlayerTeleportedAsync(PlayerTeleportEventArgs eventArgs)
+    {
+        await PlayerTeleported.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-            return eventArgs;
-        }
+    internal async ValueTask<PermissionGrantedEventArgs> InvokePermissionGrantedAsync(PermissionGrantedEventArgs eventArgs)
+    {
+        await PermissionGranted.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<IncomingChatMessageEventArgs> InvokeIncomingChatMessageAsync(IncomingChatMessageEventArgs eventArgs)
-        {
-            await this.IncomingChatMessage.InvokeAsync(eventArgs);
+    internal async ValueTask<PermissionRevokedEventArgs> InvokePermissionRevokedAsync(PermissionRevokedEventArgs eventArgs)
+    {
+        await PermissionRevoked.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-            return eventArgs;
-        }
+    internal async ValueTask<EntityInteractEventArgs> InvokeEntityInteractAsync(EntityInteractEventArgs eventArgs)
+    {
+        await EntityInteract.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<PlayerTeleportEventArgs> InvokePlayerTeleportedAsync(PlayerTeleportEventArgs eventArgs)
-        {
-            await this.PlayerTeleported.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
+    internal async ValueTask<PlayerAttackEntityEventArgs> InvokePlayerAttackEntityAsync(PlayerAttackEntityEventArgs eventArgs)
+    {
+        await PlayerAttackEntity.InvokeAsync(eventArgs);
+        return eventArgs;
+    }
 
-        internal async Task<PermissionGrantedEventArgs> InvokePermissionGrantedAsync(PermissionGrantedEventArgs eventArgs)
-        {
-            await this.PermissionGranted.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
+    internal ValueTask InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
+        PacketReceived.InvokeAsync(eventArgs);
 
-        internal async Task<PermissionRevokedEventArgs> InvokePermissionRevokedAsync(PermissionRevokedEventArgs eventArgs)
-        {
-            await this.PermissionRevoked.InvokeAsync(eventArgs);
-            return eventArgs;
-        }
+    internal ValueTask InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
+        PlayerJoin.InvokeAsync(eventArgs);
 
-        internal ValueTask InvokePacketReceivedAsync(PacketReceivedEventArgs eventArgs) =>
-            this.PacketReceived.InvokeAsync(eventArgs);
+    internal ValueTask InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs) =>
+        PlayerLeave.InvokeAsync(eventArgs);
 
-        internal ValueTask InvokePlayerJoinAsync(PlayerJoinEventArgs eventArgs) =>
-            this.PlayerJoin.InvokeAsync(eventArgs);
+    internal ValueTask InvokeServerTickAsync() =>
+        ServerTick.InvokeAsync();
 
-        internal ValueTask InvokePlayerLeaveAsync(PlayerLeaveEventArgs eventArgs) =>
-            this.PlayerLeave.InvokeAsync(eventArgs);
-
-        internal ValueTask InvokeServerTickAsync() =>
-            this.ServerTick.InvokeAsync();
-
-        internal async Task<ServerStatusRequestEventArgs> InvokeServerStatusRequest(ServerStatusRequestEventArgs eventargs)
-        {
-            await this.ServerStatusRequest.InvokeAsync(eventargs);
-
-            return eventargs;
-        }
+    internal async ValueTask<ServerStatusRequestEventArgs> InvokeServerStatusRequest(ServerStatusRequestEventArgs eventArgs)
+    {
+        await ServerStatusRequest.InvokeAsync(eventArgs);
+        return eventArgs;
     }
 }

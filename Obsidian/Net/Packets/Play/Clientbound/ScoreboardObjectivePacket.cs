@@ -1,57 +1,29 @@
-﻿using Obsidian.API;
-using Obsidian.Chat;
-using Obsidian.Entities;
-using Obsidian.Utilities;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class ScoreboardObjectivePacket : IClientboundPacket
 {
-    public class ScoreboardObjectivePacket : ISerializablePacket
-    {
-        public string ObjectiveName { get; set; }
+    [Field(0)]
+    public string ObjectiveName { get; init; }
 
-        public ScoreboardMode Mode { get; set; }
+    [Field(1), ActualType(typeof(sbyte))]
+    public ScoreboardMode Mode { get; init; }
 
-        public IChatMessage Value { get; set; }
+    [Field(2), ActualType(typeof(ChatMessage)), Condition(nameof(ShouldWriteValue))]
+    public ChatMessage Value { get; init; }
 
-        public DisplayType Type { get; set; }
+    [Field(3), VarLength, ActualType(typeof(int)), Condition(nameof(ShouldWriteValue))]
+    public DisplayType Type { get; init; }
 
-        public int Id => 0x4A;
+    public int Id => 0x53;
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+    private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
+}
 
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public void Serialize(MinecraftStream stream)
-        {
-            using var packetStream = new MinecraftStream();
-            packetStream.WriteString(this.ObjectiveName);
-            packetStream.WriteByte((sbyte)this.Mode);
-
-            if (this.Mode is ScoreboardMode.Create or ScoreboardMode.Update)
-            {
-                packetStream.WriteChat((ChatMessage)this.Value);
-                packetStream.WriteVarInt(this.Type);
-            }
-
-            stream.Lock.Wait();
-
-            stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
-            stream.WriteVarInt(this.Id);
-
-            packetStream.Position = 0;
-            packetStream.CopyTo(stream);
-
-            stream.Lock.Release();
-        }
-    }
-
-    public enum ScoreboardMode : sbyte
-    {
-        Create,
-
-        Remove,
-
-        Update
-    }
+public enum ScoreboardMode : sbyte
+{
+    Create,
+    Remove,
+    Update
 }

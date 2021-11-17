@@ -1,42 +1,32 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class SpawnLivingEntity : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class SpawnLivingEntity : ISerializablePacket
-    {
-        [Field(0), VarLength]
-        public int EntityId { get; set; }
+    [Field(0), VarLength]
+    public int EntityId { get; init; }
 
-        [Field(1)]
-        public Guid Uuid { get; set; }
+    [Field(1)]
+    public Guid Uuid { get; init; }
 
-        [Field(2), ActualType(typeof(int)), VarLength]
-        public EntityType Type { get; set; }
+    [Field(2), ActualType(typeof(int)), VarLength]
+    public EntityType Type { get; init; }
 
-        [Field(3), Absolute]
-        public VectorF Position { get; set; }
+    [Field(3), DataFormat(typeof(double))]
+    public VectorF Position { get; init; }
 
-        [Field(4)]
-        public Angle Yaw { get; set; }
+    [Field(4)]
+    public Angle Yaw { get; init; }
 
-        [Field(5)]
-        public Angle Pitch { get; set; }
+    [Field(5)]
+    public Angle Pitch { get; init; }
 
-        [Field(6)]
-        public Angle HeadPitch { get; set; }
+    [Field(6)]
+    public Angle HeadPitch { get; init; }
 
-        [Field(7)]
-        public Velocity Velocity { get; set; }
+    [Field(7)]
+    public Velocity Velocity { get; init; }
 
-        public int Id => 0x02;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-    }
+    public int Id => 0x02;
 }

@@ -1,56 +1,52 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play
+namespace Obsidian.Net.Packets.Play;
+
+public partial class CloseWindow : IClientboundPacket, IServerboundPacket
 {
-    public partial class CloseWindow : ISerializablePacket
+    [Field(0)]
+    public byte WindowId { get; private set; }
+
+    public int Id => 0x09;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0)]
-        public byte WindowId { get; set; }
+        if (WindowId == 0 || !player.OpenedInventory.BlockPosition.HasValue)
+            return;
 
-        public int Id => 0x0A;
+        var position = player.OpenedInventory.BlockPosition.Value;
 
-        public async Task ReadAsync(MinecraftStream stream)
+        var b = server.World.GetBlock(position);
+
+        if (!b.HasValue)
+            return;
+
+        var block = (Block)b;
+        if (block.Is(Material.Chest))
         {
-            this.WindowId = await stream.ReadUnsignedByteAsync();
+            await player.client.QueuePacketAsync(new BlockAction
+            {
+                Position = position,
+                ActionId = 1,
+                ActionParam = 0,
+                BlockType = block.Id
+            });
+            await player.SendSoundAsync(Sounds.BlockChestClose, position.SoundPosition);
+        }
+        else if (block.Is(Material.EnderChest))
+        {
+            await player.client.QueuePacketAsync(new BlockAction
+            {
+                Position = position,
+                ActionId = 1,
+                ActionParam = 0,
+                BlockType = block.Id
+            });
+            await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
         }
 
-        public async Task HandleAsync(Server server, Player player)
-        {
-            if (this.WindowId == 0)
-                return;
-
-            var loc = player.OpenedInventory.BlockPosition;
-
-            var block = server.World.GetBlock(loc);
-
-            if (block.Is(Material.Chest))
-            {
-                await player.client.QueuePacketAsync(new BlockAction
-                {
-                    Position = loc,
-                    ActionId = 1,
-                    ActionParam = 0,
-                    BlockType = block.Id
-                });
-                await player.SendSoundAsync(Sounds.BlockChestClose, loc.SoundPosition);
-            }
-            else if (block.Is(Material.EnderChest))
-            {
-                await player.client.QueuePacketAsync(new BlockAction
-                {
-                    Position = loc,
-                    ActionId = 1,
-                    ActionParam = 0,
-                    BlockType = block.Id
-                });
-                await player.SendSoundAsync(Sounds.BlockEnderChestClose, loc.SoundPosition);
-            }
-
-            player.OpenedInventory = null;
-        }
+        player.OpenedInventory = null;
     }
 }

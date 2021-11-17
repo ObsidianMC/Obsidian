@@ -1,8 +1,7 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum Hand : int
 {
-    public enum Hand : int
-    {
-        Right = 0,
-        OffHand = 1
-    }
+    MainHand = 0,
+    OffHand = 1
 }

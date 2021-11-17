@@ -1,8 +1,6 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+public sealed class RemainingAttribute : Attribute
 {
-    public class RemainingAttribute : Attribute
-    {
-    }
 }

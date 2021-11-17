@@ -1,59 +1,48 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class UnlockRecipes : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class UnlockRecipes : ISerializablePacket
-    {
-        [Field(0), ActualType(typeof(int)), VarLength]
-        public UnlockRecipeAction Action { get; set; }
+    [Field(0), ActualType(typeof(int)), VarLength]
+    public UnlockRecipeAction Action { get; init; }
 
-        [Field(1)]
-        public bool CraftingeBookOpen { get; set; }
+    [Field(1)]
+    public bool CraftingeBookOpen { get; init; }
 
-        [Field(2)]
-        public bool CraftingBookFilterActive { get; set; }
+    [Field(2)]
+    public bool CraftingBookFilterActive { get; init; }
 
-        [Field(3)]
-        public bool SmeltingBookOpen { get; set; }
+    [Field(3)]
+    public bool SmeltingBookOpen { get; init; }
 
-        [Field(4)]
-        public bool SmeltingBookFilterActive { get; set; }
+    [Field(4)]
+    public bool SmeltingBookFilterActive { get; init; }
 
-        [Field(5)]
-        public bool BlastFurnaceBookOpen { get; set; }
+    [Field(5)]
+    public bool BlastFurnaceBookOpen { get; init; }
 
-        [Field(6)]
-        public bool BlastFurnaceBookFilterActive { get; set; }
+    [Field(6)]
+    public bool BlastFurnaceBookFilterActive { get; init; }
 
-        [Field(7)]
-        public bool SmokerBookOpen { get; set; }
+    [Field(7)]
+    public bool SmokerBookOpen { get; init; }
 
-        [Field(8)]
-        public bool SmokerBookFilterActive { get; set; }
+    [Field(8)]
+    public bool SmokerBookFilterActive { get; init; }
 
-        [Field(9)]
-        public List<string> FirstRecipeIds { get; set; }
+    [Field(9)]
+    public List<string> FirstRecipeIds { get; init; }
 
-        [Field(10)]
-        public List<string> SecondRecipeIds { get; set; }
+    [Field(10)]
+    public List<string> SecondRecipeIds { get; init; }
 
-        public int Id => 0x35;
+    public int Id => 0x39;
+}
 
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-    }
-
-    public enum UnlockRecipeAction : int
-    {
-        Init,
-
-        Add,
-
-        Remove
-    }
+public enum UnlockRecipeAction : int
+{
+    Init,
+    Add,
+    Remove
 }

@@ -1,12 +1,11 @@
-﻿namespace Obsidian.API.Events
-{
-    public class PermissionGrantedEventArgs : PlayerEventArgs
-    {
-        public string Permission { get; }
+﻿namespace Obsidian.API.Events;
 
-        public PermissionGrantedEventArgs(IPlayer player, string permission) : base(player)
-        {
-            Permission = permission;
-        }
+public class PermissionGrantedEventArgs : PlayerEventArgs
+{
+    public string Permission { get; }
+
+    public PermissionGrantedEventArgs(IPlayer player, string permission) : base(player)
+    {
+        Permission = permission;
     }
 }

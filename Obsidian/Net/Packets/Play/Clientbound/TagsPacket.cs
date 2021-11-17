@@ -1,42 +1,36 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities.Registry;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class TagsPacket : IClientboundPacket
 {
-    [ClientOnly]
-    public partial class TagsPacket : ISerializablePacket
+    [Field(0)]
+    public IDictionary<string, List<Tag>> Tags { get; }
+
+    public int Id => 0x66;
+
+    public static readonly TagsPacket FromRegistry = new(Registry.Tags);
+
+    public TagsPacket(IDictionary<string, List<Tag>> tags)
     {
-        [Field(0)]
-        public List<Tag> Blocks { get; set; }
-
-        [Field(1)]
-        public List<Tag> Items { get; set; }
-
-        [Field(2)]
-        public List<Tag> Fluid { get; set; }
-
-        [Field(3)]
-        public List<Tag> Entities { get; set; }
-
-        public int Id => 0x5B;
-
-        public Task ReadAsync(MinecraftStream stream) => Task.CompletedTask;
-
-        public Task HandleAsync(Server server, Player player) => Task.CompletedTask;
+        this.Tags = tags;
     }
+}
 
-    public class Tag
-    {
-        public string Type { get; set; }
+public class Tag
+{
+    public string Name { get; init; }
+    public string Type { get; init; }
+    public bool Replace { get; init; }
+    public List<int> Entries { get; init; } = new();
+    public int Count => Entries.Count;
+}
 
-        public string Name { get; set; }
-
-        public bool Replace { get; set; }
-
-        public int Count => Entries.Count;
-
-        public List<int> Entries { get; set; } = new();
-    }
+public class RawTag
+{
+    public string Name { get; init; }
+    public string Type { get; init; }
+    public bool Replace { get; init; }
+    public List<string> Values { get; set; }
 }

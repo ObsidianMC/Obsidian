@@ -1,206 +1,115 @@
 ﻿// Thank you https://github.com/rthome/SharpNoise/tree/master/Examples/ComplexPlanetExample
 
-namespace Obsidian.WorldData.Generators.Overworld
+namespace Obsidian.WorldData.Generators.Overworld;
+
+public class OverworldTerrainSettings
 {
-    public class OverworldTerrainSettings
+    /// <summary>
+    /// Planet seed.  Change this to generate a different planet.
+    /// </summary>
+    public int Seed { get; set; } = 133769420;
+
+    /// <summary>
+    /// Minimum elevation on the planet, in meters.  This value is approximate.
+    /// </summary>
+    public double MinElev { get; set; } = 0;
+
+    /// <summary>
+    /// Maximum elevation on the planet, in meters.  This value is approximate.
+    /// </summary>
+    public double MaxElev { get; set; } = 128;
+
+    /// <summary>
+    /// Frequency of the planet's continents.  Higher frequency produces smaller,
+    /// more numerous continents.  This value is measured in radians.
+    /// </summary>
+
+    public double ContinentLacunarity { get; set; } = 2.508984375;
+
+    /// <summary>
+    /// Lacunarity of the planet's mountains.  Changing this value produces
+    /// slightly different mountains.  For the best results, this value should
+    /// be random, but close to 2.0.
+    /// </summary>
+    public double MountainLacunarity { get; set; } = 2.03;
+
+    /// <summary>
+    /// Lacunarity of the planet's plains.  Changing this value produces slightly
+    /// different plains.  For the best results, this value should be random, but
+    /// close to 2.0.
+    /// </summary>
+    public double PlainsLacunarity { get; set; } = 1.014453125;
+
+    /// <summary>
+    /// Lacunarity of the planet's badlands.  Changing this value produces
+    /// slightly different badlands.  For the best results, this value should be
+    /// random, but close to 2.0.
+    /// </summary>
+    public double BadlandsLacunarity { get; set; } = 1.200890625;
+
+    /// <summary>
+    /// Specifies the "twistiness" of the mountains.
+    /// </summary>
+    public double MountainsTwist { get; set; } = 2.1337;
+
+    /// <summary>
+    /// Specifies the "twistiness" of the badlands.
+    /// </summary>
+    public double BadlandsTwist { get; set; } = 2.9876;
+
+    /// <summary>
+    /// Specifies the amount of "glaciation" on the mountains.  This value
+    /// should be close to 1.0 and greater than 1.0.
+    /// </summary>
+    public double MountainGlaciation { get; set; } = 1.075;
+
+    /// <summary>
+    /// 0 for equal amounts land/ocean
+    /// 0 -> 0.5 for more land
+    /// -0.5 -> 0 for more ocean
+    /// </summary>
+    public double OceanLandRatio { get; set; } = 0.3;
+
+    /// <summary>
+    /// Size of Continents (and Oceans)
+    /// 4.0 is normal.
+    /// Increase for larger continents
+    /// Decrease for smaller
+    /// </summary>
+    public double ContinentSize { get; set; } = 1.0;
+
+    /// <summary>
+    /// 0 for equal amounts of wet/average/dry biomes
+    /// 0 -> 0.5 for more dry biomes
+    /// -0.5 -> 0 for more wet biomes
+    /// </summary>
+    public double BiomeHumidityRatio { get; set; } = 0.0;
+
+    /// <summary>
+    /// 0 for equal amounts of cold/average/hot biomes
+    /// 0 -> 0.5 for more hot biomes
+    /// -0.5 -> 0 for more cold biomes
+    /// </summary>
+    public double BiomeTemperatureRatio { get; set; } = 0.1;
+
+    /// <summary>
+    /// 0 for equal amounts of plain/hilly/mountainous biomes
+    /// 0 -> 0.5 for more mountains biomes
+    /// -0.5 -> 0 for more plains biomes
+    /// </summary>
+    public double BiomeTerrainRatio { get; set; } = -0.3;
+
+    /// <summary>
+    /// Size of Biomes
+    /// 4.0 is normal
+    /// Increase for larger biomes
+    /// Decrease for smaller biomes
+    /// </summary>
+    public double BiomeSize { get; set; } = 4.1;
+
+    public int WaterLevel { get; set; } = 64;
+
+    public OverworldTerrainSettings()
     {
-        /// <summary>
-        /// Planet seed.  Change this to generate a different planet.
-        /// </summary>
-        public int Seed { get; set; }
-
-        /// <summary>
-        /// Minimum elevation on the planet, in meters.  This value is approximate.
-        /// </summary>
-        public double MinElev { get; set; }
-
-        /// <summary>
-        /// Maximum elevation on the planet, in meters.  This value is approximate.
-        /// </summary>
-        public double MaxElev { get; set; }
-
-        /// <summary>
-        /// Frequency of the planet's continents.  Higher frequency produces smaller,
-        /// more numerous continents.  This value is measured in radians.
-        /// </summary>
-        public double ContinentFrequency { get; set; }
-
-        /// <summary>
-        /// Lacunarity of the planet's continents.  Changing this value produces
-        /// slightly different continents.  For the best results, this value should
-        /// be random, but close to 2.0.
-        /// </summary>
-        public double ContinentLacunarity { get; set; }
-
-        /// <summary>
-        /// Lacunarity of the planet's mountains.  Changing this value produces
-        /// slightly different mountains.  For the best results, this value should
-        /// be random, but close to 2.0.
-        /// </summary>
-        public double MountainLacunarity { get; set; }
-
-        /// <summary>
-        /// Lacunarity of the planet's hills.  Changing this value produces slightly
-        /// different hills.  For the best results, this value should be random, but
-        /// close to 2.0.
-        /// </summary>
-        public double HillsLacunarity { get; set; }
-
-        /// <summary>
-        /// Lacunarity of the planet's plains.  Changing this value produces slightly
-        /// different plains.  For the best results, this value should be random, but
-        /// close to 2.0.
-        /// </summary>
-        public double PlainsLacunarity { get; set; }
-
-        /// <summary>
-        /// Lacunarity of the planet's badlands.  Changing this value produces
-        /// slightly different badlands.  For the best results, this value should be
-        /// random, but close to 2.0.
-        /// </summary>
-        public double BadlandsLacunarity { get; set; }
-
-        /// <summary>
-        /// Specifies the "twistiness" of the mountains.
-        /// </summary>
-        public double MountainsTwist { get; set; }
-
-        /// <summary>
-        /// Specifies the "twistiness" of the hills.
-        /// </summary>
-        public double HillsTwist { get; set; }
-
-        /// <summary>
-        /// Specifies the "twistiness" of the badlands.
-        /// </summary>
-        public double BadlandsTwist { get; set; }
-
-        /// <summary>
-        /// Specifies the planet's sea level.  This value must be between -1.0
-        /// (minimum planet elevation) and +1.0 (maximum planet elevation.)
-        /// </summary>
-        public double SeaLevel { get; set; }
-
-        /// <summary>
-        /// Specifies the level on the planet in which continental shelves appear.
-        /// This value must be between -1.0 (minimum planet elevation) and +1.0
-        /// (maximum planet elevation), and must be less than SeaLevel.
-        /// </summary>
-        public double ShelfLevel { get; set; }
-
-        /// <summary>
-        /// Determines the amount of mountainous terrain that appears on the
-        /// planet.  Values range from 0.0 (no mountains) to 1.0 (all terrain is
-        /// covered in mountains).  Mountainous terrain will overlap hilly terrain.
-        /// Because the badlands terrain may overlap parts of the mountainous
-        /// terrain, setting MountainsAmount to 1.0 may not completely cover the
-        /// terrain in mountains.
-        /// </summary>
-        public double MountainsAmount { get; set; }
-
-        /// <summary>
-        /// Determines the amount of hilly terrain that appears on the planet.
-        /// Values range from 0.0 (no hills) to 1.0 (all terrain is covered in
-        /// hills).  This value must be less than MountainsAmount.  Because the
-        /// mountainous terrain will overlap parts of the hilly terrain, and
-        /// the badlands terrain may overlap parts of the hilly terrain, setting
-        /// HillsAmount to 1.0 may not completely cover the terrain in hills.
-        /// </summary>
-        public double HillsAmount { get; set; }
-
-        /// <summary>
-        /// Determines the amount of badlands terrain that covers the planet.
-        /// Values range from 0.0 (no badlands) to 1.0 (all terrain is covered in
-        /// badlands.)  Badlands terrain will overlap any other type of terrain.
-        /// </summary>
-        public double BadlandsAmount { get; set; }
-
-        /// <summary>
-        /// Offset to apply to the terrain type definition.  Low values (less than 1.0) cause
-        /// the rough areas to appear only at high elevations.  High values (greater than 2.0)
-        /// cause the rough areas to appear at any elevation.  The percentage of
-        /// rough areas on the planet are independent of this value.
-        /// </summary>
-        public double TerrainOffset { get; set; }
-
-        /// <summary>
-        /// Specifies the amount of "glaciation" on the mountains.  This value
-        /// should be close to 1.0 and greater than 1.0.
-        /// </summary>
-        public double MountainGlaciation { get; set; }
-
-        /// <summary>
-        /// Scaling to apply to the base continent elevations, in planetary elevation
-        /// units.
-        /// </summary>
-        public double ContinentHeightScale { get; set; }
-
-        /// <summary>
-        /// Maximum depth of the rivers, in planetary elevation units.
-        /// </summary>
-        public double RiverDepth { get; set; }
-
-        /// <summary>
-        /// Percentage of ground consumed by caves.
-        /// </summary>
-        public double CaveFillPercent { get; set; }
-
-        /// <summary>
-        /// Height of caves. Values below 1 make caves smaller.
-        /// </summary>
-        public double CaveVertStretch { get; set; }
-
-        /// <summary>
-        /// Horizontal stretch applied to caves.
-        /// </summary>
-        public double CaveHorizStretch { get; set; }
-
-        /// <summary>
-        /// Horizontal stretch applied to terrain.
-        /// </summary>
-        public double TerrainHorizStretch { get; set; }
-
-        /// <summary>
-        /// Vertical stretch applied to terrain.
-        /// </summary>
-        public double TerrainVertStretch { get; set; }
-
-
-        public OverworldTerrainSettings()
-        {
-            Seed = 1337;
-            MinElev = 40;
-            MaxElev = 168;
-            ContinentFrequency = 1.9;
-
-            ContinentHeightScale = 1;
-            TerrainOffset = 1.3;
-
-            RiverDepth = 0.3;
-            SeaLevel = 8 / 64.0;
-            ShelfLevel = -4 / 64.0;
-
-            MountainsAmount = 0.25;
-            HillsAmount = 0.15;
-            BadlandsAmount = 0.65;
-
-            MountainGlaciation = 1.075;
-            MountainsTwist = 2.1337;
-            HillsTwist = 1;
-            BadlandsTwist = 3;
-
-            ContinentLacunarity = 2.508984375;
-            MountainLacunarity = 2.03;
-            HillsLacunarity = 2.162109375;
-            PlainsLacunarity = 2.814453125;
-            BadlandsLacunarity = 1.200890625;
-
-            CaveFillPercent = 0.5;
-            CaveVertStretch = 0.035;
-            CaveHorizStretch = 0.022;
-
-            TerrainHorizStretch = 0.00008; // 0.0008; // 
-            TerrainVertStretch = 0.60; // 0.4; //
-        }
     }
 }

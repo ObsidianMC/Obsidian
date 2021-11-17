@@ -1,19 +1,18 @@
-﻿namespace Obsidian.API.Crafting.Builders
+﻿namespace Obsidian.API.Crafting.Builders;
+
+public interface IRecipeBuilder<TBuilder>
 {
-    public interface IRecipeBuilder<TBuilder>
-    {
-        public string Name { get; set; }
+    public string? Name { get; set; }
 
-        public string Group { get; set; }
+    public string? Group { get; set; }
 
-        public ItemStack Result { get; set; }
+    public ItemStack? Result { get; set; }
 
-        public TBuilder WithName(string name);
+    public TBuilder WithName(string name);
 
-        public TBuilder SetResult(ItemStack result);
+    public TBuilder SetResult(ItemStack result);
 
-        public TBuilder InGroup(string group);
+    public TBuilder InGroup(string group);
 
-        public IRecipe Build();
-    }
+    public IRecipe Build();
 }

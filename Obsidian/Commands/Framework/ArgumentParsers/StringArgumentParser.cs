@@ -1,23 +1,20 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+public class StringArgumentParser : BaseArgumentParser<string>
 {
-    public class StringArgumentParser : BaseArgumentParser<string>
+    public StringArgumentParser() : base("brigadier:string") { }
+    public override bool TryParseArgument(string input, CommandContext ctx, out string result)
     {
-        public StringArgumentParser() : base("brigadier:string") { }
-        public override bool TryParseArgument(string input, CommandContext ctx, out string result)
-        {
-            result = input;
-            return true;
-        }
+        result = input;
+        return true;
     }
+}
 
-    public class GuidArgumentParser : BaseArgumentParser<Guid>
+public class GuidArgumentParser : BaseArgumentParser<Guid>
+{
+    public GuidArgumentParser() : base("minecraft:uuid") { }
+    public override bool TryParseArgument(string input, CommandContext ctx, out Guid result)
     {
-        public GuidArgumentParser() : base("minecraft:uuid") { }
-        public override bool TryParseArgument(string input, CommandContext ctx, out Guid result)
-        {
-            return Guid.TryParse(input, out result);
-        }
+        return Guid.TryParse(input, out result);
     }
 }

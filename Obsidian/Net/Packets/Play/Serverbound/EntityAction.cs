@@ -1,79 +1,83 @@
 ﻿using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class EntityAction : IServerboundPacket
 {
-    [ServerOnly]
-    public partial class EntityAction : IPacket
+    [Field(0), VarLength]
+    public int EntityId { get; private set; }
+
+    [Field(1), ActualType(typeof(int)), VarLength]
+    public EAction Action { get; set; }
+
+    [Field(2), VarLength]
+    public int JumpBoost { get; set; }
+
+    public int Id => 0x1B;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0), VarLength]
-        public int EntityId { get; set; }
+        var block = player.World.GetBlock((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
-        [Field(1), ActualType(typeof(int)), VarLength]
-        public EAction Action { get; set; }
-
-        [Field(2), VarLength]
-        public int JumpBoost { get; set; }
-
-        public int Id => 0x1C;
-
-        public async Task ReadAsync(MinecraftStream stream)
+        switch (Action)
         {
-            this.EntityId = await stream.ReadVarIntAsync();
-            this.Action = (EAction)await stream.ReadVarIntAsync();
-            this.JumpBoost = await stream.ReadVarIntAsync();
+            case EAction.StartSneaking:
+                player.Sneaking = true;
+                break;
+            case EAction.StopSneaking:
+                player.Sneaking = false;
+                player.Pose = Pose.Standing;
+                break;
+            case EAction.LeaveBed:
+                player.Sleeping = false;
+                break;
+            case EAction.StartSprinting:
+                if ((bool)(block?.IsFluid))
+                    player.Swimming = true;
+
+                player.Sprinting = true;
+                break;
+            case EAction.StopSprinting:
+                if (player.Swimming)
+                    player.Swimming = false;
+
+                player.Sprinting = false;
+                break;
+            case EAction.StartJumpWithHorse:
+                break;
+            case EAction.StopJumpWithHorse:
+                break;
+            case EAction.OpenHorseInventory:
+                player.InHorseInventory = true;
+                break;
+            case EAction.StartFlyingWithElytra:
+                player.FlyingWithElytra = true;
+                break;
         }
 
-        public Task HandleAsync(Server server, Player player)
+        await server.QueueBroadcastPacketAsync(new EntityMetadata
         {
-            switch (this.Action)
-            {
-                case EAction.StartSneaking:
-                    player.Sneaking = true;
-                    break;
-                case EAction.StopSneaking:
-                    player.Sneaking = false;
-                    break;
-                case EAction.LeaveBed:
-                    player.Sleeping = false;
-                    break;
-                case EAction.StartSprinting:
-                    player.Sprinting = true;
-                    break;
-                case EAction.StopSprinting:
-                    player.Sprinting = false;
-                    break;
-                case EAction.StartJumpWithHorse:
-                    break;
-                case EAction.StopJumpWithHorse:
-                    break;
-                case EAction.OpenHorseInventory:
-                    player.InHorseInventory = true;
-                    break;
-                case EAction.StartFlyingWithElytra:
-                    player.FlyingWithElytra = true;
-                    break;
-            }
-
-            return Task.CompletedTask;
-        }
+            EntityId = player.EntityId,
+            Entity = player
+        }, player.EntityId);
     }
+}
 
-    public enum EAction
-    {
-        StartSneaking,
-        StopSneaking,
+public enum EAction : int
+{
+    StartSneaking,
+    StopSneaking,
 
-        LeaveBed,
+    LeaveBed,
 
-        StartSprinting,
-        StopSprinting,
+    StartSprinting,
+    StopSprinting,
 
-        StartJumpWithHorse,
-        StopJumpWithHorse,
-        OpenHorseInventory,
+    StartJumpWithHorse,
+    StopJumpWithHorse,
+    OpenHorseInventory,
 
-        StartFlyingWithElytra
-    }
+    StartFlyingWithElytra
 }
