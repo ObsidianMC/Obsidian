@@ -1,66 +1,65 @@
 ﻿using System;
 using System.IO;
 
-namespace Obsidian.IO.Console
+namespace Obsidian.IO.Console;
+
+using Console = System.Console;
+
+public static partial class CommandLine
 {
-    using Console = System.Console;
+    private static TextWriter consoleOut;
 
-    public static partial class CommandLine
+    private static partial void TakeControlInternal()
     {
-        private static TextWriter consoleOut;
+        consoleOut = Console.Out;
 
-        private static partial void TakeControlInternal()
-        {
-            consoleOut = Console.Out;
+        // Prevent Console interception
+        Console.SetOut(TextWriter.Null);
+        Console.SetIn(TextReader.Null);
+        Console.SetError(TextWriter.Null);
+    }
 
-            // Prevent Console interception
-            Console.SetOut(TextWriter.Null);
-            Console.SetIn(TextReader.Null);
-            Console.SetError(TextWriter.Null);
-        }
+    public static partial void ResetColor()
+    {
+        Console.ResetColor();
+    }
 
-        public static partial void ResetColor()
-        {
-            Console.ResetColor();
-        }
+    public static partial void Write(string text)
+    {
+        Write(text.AsSpan());
+    }
 
-        public static partial void Write(string text)
-        {
-            Write(text.AsSpan());
-        }
+    public static partial void Write(ReadOnlySpan<char> text)
+    {
+        consoleOut.Write(text);
+    }
 
-        public static partial void Write(ReadOnlySpan<char> text)
-        {
-            consoleOut.Write(text);
-        }
+    public static partial void WriteLine()
+    {
+        WriteLine(ReadOnlySpan<char>.Empty);
+    }
 
-        public static partial void WriteLine()
-        {
-            WriteLine(ReadOnlySpan<char>.Empty);
-        }
+    public static partial void WriteLine(string text)
+    {
+        WriteLine(text.AsSpan());
+    }
 
-        public static partial void WriteLine(string text)
-        {
-            WriteLine(text.AsSpan());
-        }
+    public static partial void WriteLine(ReadOnlySpan<char> text)
+    {
+        consoleOut.WriteLine(text);
+    }
 
-        public static partial void WriteLine(ReadOnlySpan<char> text)
-        {
-            consoleOut.WriteLine(text);
-        }
+    private static partial void ChangeCommandPrefixInternal(string value)
+    {
+    }
 
-        private static partial void ChangeCommandPrefixInternal(string value)
-        {
-        }
+    private static partial void SetForegroundColor(ConsoleColor color)
+    {
+        Console.ForegroundColor = color;
+    }
 
-        private static partial void SetForegroundColor(ConsoleColor color)
-        {
-            Console.ForegroundColor = color;
-        }
-
-        private static partial void SetBackgroundColor(ConsoleColor color)
-        {
-            Console.BackgroundColor = color;
-        }
+    private static partial void SetBackgroundColor(ConsoleColor color)
+    {
+        Console.BackgroundColor = color;
     }
 }
