@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Obsidian.IO.Console;
+﻿namespace Obsidian.IO.Console;
 
 public delegate ValueTask CommandCallback(string[] words, ReadOnlyMemory<char> fullArgs);
 
