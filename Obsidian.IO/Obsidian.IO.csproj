@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -34,6 +34,10 @@
   <!-- Android, iOS, Browser, etc. -->
   <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(TargetsUnix)' != 'true'">
     <Compile Include="Console\CommandLine.NoInput.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
   </ItemGroup>
   
 </Project>

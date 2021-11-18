@@ -2,66 +2,65 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Obsidian.IO.Console
+namespace Obsidian.IO.Console;
+
+public delegate ValueTask CommandCallback(string[] words, ReadOnlyMemory<char> fullArgs);
+
+internal readonly struct Command : IComparable<Command>
 {
-    public delegate ValueTask CommandCallback(string[] words, ReadOnlyMemory<char> fullArgs);
+    public string Name { get; }
+    public ReadOnlyMemory<char>[] Words { get; }
+    public CommandCallback Callback { get; }
 
-    internal readonly struct Command : IComparable<Command>
+    public Command(string name, CommandCallback callback)
     {
-        public string Name { get; }
-        public ReadOnlyMemory<char>[] Words { get; }
-        public CommandCallback Callback { get; }
+        Name = name;
+        Callback = callback;
 
-        public Command(string name, CommandCallback callback)
+        var words = new List<ReadOnlyMemory<char>>();
+        int start = 0;
+        for (int i = 0; i < name.Length; i++)
         {
-            Name = name;
-            Callback = callback;
+            while (i < name.Length && char.IsWhiteSpace(name[i])) i++;
 
-            var words = new List<ReadOnlyMemory<char>>();
-            int start = 0;
-            for (int i = 0; i < name.Length; i++)
-            {
-                while (i < name.Length && char.IsWhiteSpace(name[i])) i++;
+            start = i++;
 
-                start = i++;
+            while (i < name.Length && !char.IsWhiteSpace(name[i])) i++;
 
-                while (i < name.Length && !char.IsWhiteSpace(name[i])) i++;
-
-                words.Add(name.AsMemory(start, i - start));
-            }
-
-            Words = words.ToArray();
+            words.Add(name.AsMemory(start, i - start));
         }
 
-        public int CompareTo(Command other)
-        {
-            return Name.CompareTo(other.Name);
-        }
+        Words = words.ToArray();
+    }
 
-        public bool TryExecute(string original, string[] input)
+    public int CompareTo(Command other)
+    {
+        return Name.CompareTo(other.Name);
+    }
+
+    public bool TryExecute(string original, string[] input)
+    {
+        if (input.Length < Words.Length)
+            return false;
+
+        for (int i = 0; i < Words.Length; i++)
         {
-            if (input.Length < Words.Length)
+            if (!MemoryExtensions.Equals(input[i], Words[i].Span, StringComparison.Ordinal))
                 return false;
-
-            for (int i = 0; i < Words.Length; i++)
-            {
-                if (!MemoryExtensions.Equals(input[i], Words[i].Span, StringComparison.Ordinal))
-                    return false;
-            }
-
-            int argsStart = 0;
-            for (int i = 0; i < Words.Length; i++)
-            {
-                argsStart += Words[i].Length;
-                while (argsStart < original.Length && char.IsWhiteSpace(original[argsStart])) argsStart++;
-            }
-
-            CommandCallback func = Callback;
-            string[] args = input[Words.Length..];
-            ReadOnlyMemory<char> fullArgs = original.AsMemory(argsStart);
-            Task.Run(async () => await func(args, fullArgs));
-
-            return true;
         }
+
+        int argsStart = 0;
+        for (int i = 0; i < Words.Length; i++)
+        {
+            argsStart += Words[i].Length;
+            while (argsStart < original.Length && char.IsWhiteSpace(original[argsStart])) argsStart++;
+        }
+
+        CommandCallback func = Callback;
+        string[] args = input[Words.Length..];
+        ReadOnlyMemory<char> fullArgs = original.AsMemory(argsStart);
+        Task.Run(async () => await func(args, fullArgs));
+
+        return true;
     }
 }
