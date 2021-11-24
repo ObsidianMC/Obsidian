@@ -28,11 +28,11 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 
 ## 💻 Contribute
 Contributions are always welcome! 
-Read about how you can contribute [here](https://obsidian-mc.net/articles/contrib.html)
+Read about how you can contribute [here](https://github.com/ObsidianMC/Documentation/blob/master/articles/contrib.md)
 
 ## 🔌 Develop plugins
 Plugins are cool! Wanna make them yourself?
-Find out about plugin development [here](https://obsidian-mc.net/articles/plugins.html)
+Find out about plugin development [here](https://github.com/ObsidianMC/Documentation/blob/master/articles/plugins.md)
 
 ## 🔥 Development builds
 Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
