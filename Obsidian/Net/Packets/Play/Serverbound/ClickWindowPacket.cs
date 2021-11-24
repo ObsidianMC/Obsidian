@@ -114,7 +114,7 @@ public partial class ClickWindowPacket : IServerboundPacket
                 {
                     if (ClickedSlot != Outsideinventory)
                     {
-                        ItemStack removedItem = null;
+                        ItemStack? removedItem = null;
                         if (Button == 0)
                             container.RemoveItem(slot, 1, out removedItem);
                         else
@@ -135,7 +135,8 @@ public partial class ClickWindowPacket : IServerboundPacket
                             Position = loc
                         };
 
-                        player.World.TryAddEntity(item);
+                        var lookDir = player.GetLookDirection();
+                        var vel = Velocity.FromDirection(loc, lookDir);
 
                         server.BroadcastPacket(new SpawnEntityPacket
                         {
@@ -146,21 +147,17 @@ public partial class ClickWindowPacket : IServerboundPacket
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromVector(player.Position + new VectorF(
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                            Velocity = vel
                         });
-
                         server.BroadcastPacket(new EntityMetadata
                         {
                             EntityId = item.EntityId,
                             Entity = item
                         });
+
                     }
                     break;
                 }
-
             case InventoryOperationMode.MouseDrag:
                 HandleDragClick(container, player, slot);
                 break;
@@ -170,43 +167,23 @@ public partial class ClickWindowPacket : IServerboundPacket
                     if (ClickedItem == null || ClickedItem.Count >= 64)
                         return;
 
-                    var item = ClickedItem;
-
-                    (ItemStack item, int index) selectedItem = (null, 0);
-
                     var items = container.Select((item, index) => (item, index))
-                        .Where(tuple => tuple.item.Type == item.Type)
-                        .OrderByDescending(x => x.index);
+                        .OrderBy(x => x.index)
+                        .Where(x => x.item == this.ClickedItem);
 
-                    foreach (var (invItem, index) in items)
-                    {
-                        if (invItem != item)
-                            continue;
+                    var amountNeeded = 64 - this.ClickedItem.Count;//TODO use max item count
 
-                        var copyItem = invItem;
-
-                        var finalCount = item.Count + copyItem.Count;
-
-                        if (finalCount <= 64)
-                        {
-                            item += copyItem.Count;
-
-                            copyItem -= finalCount;
-                        }
-                        else if (finalCount > 64)
-                        {
-                            var difference = finalCount - 64;
-
-                            copyItem -= difference;
-
-                            item += difference;
-                        }
-
-                        selectedItem = (copyItem, index);
+                    if (amountNeeded == 0)
                         break;
+
+                    foreach(var (item, itemSlot) in items)
+                    {
+                        var itemCount = item.Count;
+
+                        
                     }
 
-                    container.SetItem((short)selectedItem.index, selectedItem.item);
+                    //TODO double click operation
                     break;
                 }
         }
@@ -225,7 +202,7 @@ public partial class ClickWindowPacket : IServerboundPacket
                 var itemsToBeRemoved = new HashSet<int>();
                 var itemsToBeUpdated = new HashSet<NbtCompound>();
 
-                items.Clear();
+                items!.Clear();
 
                 this.FillNbtList(items, container);
             }
@@ -278,17 +255,11 @@ public partial class ClickWindowPacket : IServerboundPacket
                 server.Logger.LogDebug("Placed: {} in container: {}", player.LastClickedItem?.Type, container.Title?.Text);
                 container.SetItem(slot, player.LastClickedItem);
 
-                // if (!inventory.OwnedByPlayer)
-                //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
-
                 player.LastClickedItem = ClickedItem;
             }
             else
             {
                 container.SetItem(slot, player.LastClickedItem);
-
-                // if (!inventory.OwnedByPlayer)
-                //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
 
                 player.LastClickedItem = ClickedItem;
             }

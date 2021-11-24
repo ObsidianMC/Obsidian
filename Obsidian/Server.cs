@@ -463,21 +463,21 @@ public partial class Server : IServer
                         Entity = item
                     });
 
+                    if (player.Sneaking)
+                        player.Inventory.RemoveItem(player.inventorySlot, 64);//TODO get max stack size for the item
+                    else
+                        player.Inventory.RemoveItem(player.inventorySlot, 1);
+
                     player.client.SendPacket(new SetSlot
                     {
                         Slot = player.inventorySlot,
 
                         WindowId = 0,
 
-                        SlotData = player.Inventory.GetItem(player.inventorySlot) - 1,
+                        SlotData = player.GetHeldItem(),
 
                         StateId = player.Inventory.StateId++
                     });
-
-                    if (player.Sneaking)
-                        player.Inventory.RemoveItem(player.inventorySlot, 64);//TODO get max stack size for the item
-                    else
-                        player.Inventory.RemoveItem(player.inventorySlot, 1);
 
                     break;
                 }
