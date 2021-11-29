@@ -17,8 +17,9 @@ public static class Program
     private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
     private const string globalConfigFile = "global_config.json";
 
-    private static async Task Main()
+    private static async Task Main(params string[] args)
     {
+
 #if RELEASE
             string version = "0.1";
 #else
@@ -27,7 +28,10 @@ public static class Program
         //This will strip just the working path name:
         //C:\Program Files\MyApplication
         string asmdir = Path.GetDirectoryName(asmpath);
+
         Environment.CurrentDirectory = asmdir;
+        if (args.Length > 0)
+            Environment.CurrentDirectory = string.Join(' ', args);
 #endif
         // Kept for consistant number parsing
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -89,25 +93,29 @@ public static class Program
         if (!shutdownPending)
         {
             Console.WriteLine("Server killed. Press any key to return...");
+            #if DEBUG
+            Console.WriteLine(serverTask.Exception?.ToString()); // print any exceptions if there are any
+            #endif
             Console.ReadKey(intercept: false);
         }
     }
 
     private static void InitConsoleInput()
     {
-        Task.Run(async () =>
-        {
-            Server currentServer = Program.Server;
-            await Task.Delay(2000);
-            while (!shutdownPending)
+        if(!Console.IsInputRedirected)
+            Task.Run(async () =>
             {
-                if (currentServer == null)
-                    break;
+                Server currentServer = Program.Server;
+                await Task.Delay(2000);
+                while (!shutdownPending)
+                {
+                    if (currentServer == null)
+                        break;
 
-                string input = ConsoleIO.ReadLine();
-                await currentServer.ExecuteCommand(input);
-            }
-        });
+                    string input = ConsoleIO.ReadLine();
+                    await currentServer.ExecuteCommand(input);
+                }
+            });
     }
 
     private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
