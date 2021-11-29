@@ -42,6 +42,17 @@ Very early development builds are available over at the [GitHub Actions](https:/
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
 Easy, isn't it?
 
+## Docker 🐟
+You can now run Obsidian using Docker! As of right now, no image is available on DockerHub yet, but it will be sometime soon.
+
+For now, to run Obsidian on Docker you will have to follow the following steps:
+1. Clone Obsidian`git clone https://github.com/ObsidianMC/Obsidian.git`
+2. Go to Obsidian's cloned directory `cd Obsidian`
+3. Build the docker image `docker build . -t obsidian`
+4. Run the container `docker run -d -p YOUR_HOST_PORT:25565 -v YOUR_SERVERFILES_PATH:/files --name YOUR_CONTAINER_NAME obsidian`
+5. Obsidian will pregenerate a config file. Fill it out in `YOUR_SERVERFILES_PATH/config.json`
+6. Start Obsidian's container again. `docker restart YOUR_CONTAINER_NAME`
+
 ## 😎 The Obsidian Team
 - [Naamloos](https://github.com/Naamloos) (creator)
 - [Tides](https://github.com/Tides) (developer)
