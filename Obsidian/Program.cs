@@ -107,7 +107,7 @@ public static class Program
             {
                 Server currentServer = Program.Server;
                 await Task.Delay(2000);
-                while (!shutdownPending)
+                while (!shutdownPending && !ConsoleIO.BasicIO)
                 {
                     if (currentServer == null)
                         break;
