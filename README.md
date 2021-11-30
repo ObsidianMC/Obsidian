@@ -42,7 +42,7 @@ Very early development builds are available over at the [GitHub Actions](https:/
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
 Easy, isn't it?
 
-## Docker 🐟
+## 🐟 Docker
 You can now run Obsidian using Docker! As of right now, no image is available on DockerHub yet, but it will be sometime soon.
 
 For now, to run Obsidian on Docker you will have to follow the following steps:
