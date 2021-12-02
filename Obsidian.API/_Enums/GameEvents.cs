@@ -46,5 +46,5 @@ public enum GameEvents : int
     Splash,
     Step,
     Swim,
-    WolfShaking,
+    WolfShaking
 }

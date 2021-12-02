@@ -5,7 +5,7 @@ namespace Obsidian.API;
 [DebuggerDisplay("{Name,nq}:{Id}")]
 public readonly struct Block : IEquatable<Block>
 {
-    public static Block Air => new Block(0, 0);
+    public static Block Air => new(0, 0);
 
     internal static string[] blockNames;
     internal static MatchTarget[] stateToMatch;
