@@ -19,7 +19,7 @@ public partial class SoundEffect : IClientboundPacket
     [Field(4)]
     public float Pitch { get; }
 
-    public int Id => 0x5C;
+    public int Id => 0x5D;
 
     public SoundEffect(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f)
     {
