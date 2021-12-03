@@ -29,7 +29,7 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
+    public const ProtocolVersion protocol = ProtocolVersion.v1_18;
     public ProtocolVersion Protocol => protocol;
 
     public int Tps { get; private set; }
