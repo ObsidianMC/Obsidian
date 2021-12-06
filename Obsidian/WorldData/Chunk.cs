@@ -15,7 +15,7 @@ public class Chunk
 
     private const int width = 16;
     private const int worldHeight = 320;
-    private const int worldFloor = -65;
+    private const int worldFloor = -64;
 
 
 
