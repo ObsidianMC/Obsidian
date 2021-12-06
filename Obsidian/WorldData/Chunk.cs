@@ -14,9 +14,10 @@ public class Chunk
     public bool isGenerated = false;
 
     private const int width = 16;
-    private const int height = 16;
-    private const int cubesHorizontal = 16 / width;
-    private const int cubesVertical = 384 / height;
+    private const int worldHeight = 320;
+    private const int worldFloor = -65;
+
+
 
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
 
@@ -117,11 +118,11 @@ public class Chunk
     public void CalculateHeightmap()
     {
         Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
-        for (int x = 0; x < cubesHorizontal * width; x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int z = 0; z < cubesHorizontal * width; z++)
+            for (int z = 0; z < width; z++)
             {
-                for (int y = cubesVertical * height - 1; y >= -64; y--)
+                for (int y = worldHeight; y >= worldFloor; y--)
                 {
                     var block = this.GetBlock(x, y, z);
                     if (block.IsAir)

@@ -158,12 +158,13 @@ public class Region
         {
             var sectionCompound = child as NbtCompound;
             var secY = (int)sectionCompound.GetByte("Y");
+            secY = secY > 20 ? secY - 256 : secY;
             var states = sectionCompound["BlockStates"] as NbtArray<long>;//TODO
             var palettes = sectionCompound["Palette"] as NbtList;
 
-            chunk.Sections[secY].BlockStorage.Storage = states.GetArray();
+            chunk.Sections[secY + 4].BlockStorage.Storage = states.GetArray();
 
-            var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY].Palette;
+            var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY + 4].Palette;
             foreach (NbtCompound palette in palettes)
             {
 
