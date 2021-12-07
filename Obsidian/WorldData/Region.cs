@@ -108,9 +108,9 @@ public class Region
         using NbtWriter writer = new(strm, NbtCompression.GZip);
 
         writer.WriteTag(chunkNbt);
-        writer.WriteInt("DataVersion", 2724);// Hardcoded version try to get data version through minecraft data and use data correctly
 
         writer.TryFinish();
+
         regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
     }
 
@@ -156,24 +156,38 @@ public class Region
 
         foreach (var child in chunkCompound["Sections"] as NbtList)
         {
-            var sectionCompound = child as NbtCompound;
+            if (child is not NbtCompound sectionCompound)
+                throw new InvalidOperationException("Nbt Tag is not a compound.");
+
             var secY = (int)sectionCompound.GetByte("Y");
+
             secY = secY > 20 ? secY - 256 : secY;
-            var states = sectionCompound["BlockStates"] as NbtArray<long>;//TODO
-            var palettes = sectionCompound["Palette"] as NbtList;
 
-            chunk.Sections[secY + 4].BlockStorage.Storage = states.GetArray();
+            var statesCompound = sectionCompound["block_states"] as NbtCompound;
+            var blockStatePalette = statesCompound!["Palette"] as NbtList;
+            var data = statesCompound["data"] as NbtArray<long>;
 
-            var chunkSecPalette = (LinearBlockStatePalette)chunk.Sections[secY + 4].Palette;
-            foreach (NbtCompound palette in palettes)
+            var section = chunk.Sections[secY + 4];
+
+            section.BlockStateContainer.DataArray.Storage = data.GetArray();
+
+            var chunkSecPalette = (IndirectBlockStatePalette)section.BlockStateContainer.Palette;
+            foreach (NbtCompound palette in blockStatePalette!)
             {
-
                 var block = new Block(palette.GetInt("Id"));
                 chunkSecPalette.GetIdFromState(block);
             }
-        }
 
-        chunk.BiomeContainer.Biomes = (chunkCompound["Biomes"] as NbtArray<int>).GetArray().ToList();
+            var biomesCompound = sectionCompound["biomes"] as NbtCompound;
+            var biomesPalette = biomesCompound!["Palette"] as NbtList;
+
+            var biomePalette = (IndirectBiomePalette)section.BiomeContainer.Palette;
+            foreach (NbtTag<string> biome in biomesPalette!)
+            {
+                if (Enum.TryParse<Biomes>(biome.Value.TrimMinecraftTag(), true, out var value))
+                    biomePalette.GetIdFromBiome(value);
+            }
+        }
 
         foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
         {
@@ -187,52 +201,73 @@ public class Region
     public static NbtCompound GetNbtFromChunk(Chunk chunk)
     {
         var sectionsCompound = new NbtList(NbtTagType.Compound, "Sections");
+
         foreach (var section in chunk.Sections)
         {
             if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
 
-            var palette = new NbtList(NbtTagType.Compound, "Palette");
-
-            if (section.Palette is LinearBlockStatePalette linear)
+            var biomesCompound = new NbtCompound("biomes");
+            var blockStatesCompound = new NbtCompound("block_states")
             {
-                foreach (var stateId in linear.BlockStateArray)
+                new NbtArray<long>("data", section.BlockStateContainer.DataArray.Storage)
+            };
+
+            if (section.BlockStateContainer.Palette is IndirectBlockStatePalette indirect)
+            {
+                var palette = new NbtList(NbtTagType.Compound, "Palette");
+
+                foreach (var stateId in indirect.BlockStateArray)
                 {
                     if (stateId == 0)
                         continue;
 
                     var block = new Block(stateId);
 
-                    palette.Add(new NbtCompound()//TODO redstone etc... has a lit metadata added when creating the palette
-                            {
-                                new NbtTag<string>("Name", block.UnlocalizedName),
-                                new NbtTag<int>("Id", block.StateId)
-                            });
+                    palette.Add(new NbtCompound
+                    {
+                        new NbtTag<string>("Name", block.UnlocalizedName),
+                        new NbtTag<int>("Id", block.StateId)
+                    });//TODO redstone etc... has a lit metadata added when creating the palette
                 }
+
+                blockStatesCompound.Add(palette);
             }
 
-            var sec = new NbtCompound()
-                    {
-                        new NbtTag<byte>("Y", (byte)section.YBase),
-                        palette,
-                        new NbtArray<long>("BlockStates", section.BlockStorage.Storage)
-                    };
-            sectionsCompound.Add(sec);
+            if (section.BiomeContainer.Palette is IndirectBiomePalette indirectBiomePalette)
+            {
+                var palette = new NbtList(NbtTagType.String, "Palette");
+
+                foreach (var id in indirectBiomePalette.Biomes)
+                {
+                    var biome = (Biomes)id;
+
+                    palette.Add(new NbtTag<string>(string.Empty, $"minecraft:{biome.ToString().ToLower()}"));
+                }
+
+                biomesCompound.Add(palette);
+            }
+
+            sectionsCompound.Add(new NbtCompound
+            {
+                new NbtTag<byte>("Y", (byte)section.YBase),
+                biomesCompound,
+                blockStatesCompound
+            });
         }
 
-        var chunkCompound = new NbtCompound($"Level")
-                {
-                    new NbtTag<int>("xPos", chunk.X),
-                    new NbtTag<int>("zPos", chunk.Z),
-                    new NbtArray<int>("Biomes", chunk.BiomeContainer.Biomes),
-                    new NbtCompound("Heightmaps")
-                    {
-                        new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.Storage),
-                        new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
-                        new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
-                    },
-                    sectionsCompound
-                };
-        return chunkCompound;
+        return new NbtCompound
+        {
+            new NbtTag<int>("xPos", chunk.X),
+            new NbtTag<int>("zPos", chunk.Z),
+            new NbtCompound("Heightmaps")
+            {
+                new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.Storage),
+                new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
+                new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
+            },
+            sectionsCompound,
+            new NbtTag<int>("DataVersion", 2860)// Hardcoded version try to get data version through minecraft data and use data correctly
+        };
     }
     #endregion NBT Ops
 }
