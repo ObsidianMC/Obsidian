@@ -57,7 +57,7 @@ public class OverworldGenerator : WorldGenerator
                     var b = ChunkBiome.GetBiome(worldX, worldZ, terrainGen);
                     for (int y = 0; y < 256; y += 4)
                     {
-                        chunk.BiomeContainer.SetBiome(bx, y, bz, b);
+                        chunk.SetBiome(bx, y, bz, b);
                     }
                 }
             }

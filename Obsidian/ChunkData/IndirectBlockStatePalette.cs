@@ -3,14 +3,14 @@ using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 
-public class LinearBlockStatePalette : IBlockStatePalette
+public class IndirectBlockStatePalette : IBlockStatePalette
 {
     public short[] BlockStateArray { get; set; }
     public int BlockStateCount { get; set; }
 
     public bool IsFull => this.BlockStateArray.Length == this.BlockStateCount;
 
-    public LinearBlockStatePalette(byte bitCount)
+    public IndirectBlockStatePalette(byte bitCount)
     {
         this.BlockStateArray = new short[1 << bitCount];
     }
@@ -62,5 +62,13 @@ public class LinearBlockStatePalette : IBlockStatePalette
             this.BlockStateArray[i] = blockState.StateId;
             this.BlockStateCount++;
         }
+    }
+
+    public void WriteTo(MinecraftStream stream)
+    {
+        stream.WriteVarInt(this.BlockStateCount);
+
+        for (int i = 0; i < this.BlockStateCount; i++)
+            stream.WriteVarInt(this.BlockStateArray[i]);
     }
 }

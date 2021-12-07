@@ -14,4 +14,5 @@ public class GlobalBlockStatePalette : IBlockStatePalette
     public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 
     public Task ReadFromAsync(MinecraftStream stream) => Task.CompletedTask;
+    public void WriteTo(MinecraftStream stream) { }
 }

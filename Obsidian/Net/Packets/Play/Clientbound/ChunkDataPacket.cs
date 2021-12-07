@@ -30,7 +30,7 @@ public partial class ChunkDataPacket : IClientboundPacket
         var bits = new long[1];
         foreach (var section in Chunk.Sections)
         {
-            if (section != null && !section.IsEmpty)
+            if (section != null && !section.BlockStateContainer.IsEmpty)
             {
                 //get index
                 var index = chunkSectionY >> 6;
@@ -38,15 +38,12 @@ public partial class ChunkDataPacket : IClientboundPacket
                 //Set the bit
                 bits[index] |= 1L << chunkSectionY;
 
-                section.WriteTo(dataStream);
+                section.BlockStateContainer.WriteTo(dataStream);
+                section.BiomeContainer.WriteTo(dataStream);
             }
 
             chunkSectionY++;
         }
-
-        stream.WriteVarInt(bits.Length);
-        foreach (var bit in bits)
-            stream.WriteLong(bit);
 
         Chunk.CalculateHeightmap();
         var writer = new NbtWriter(stream, string.Empty);
@@ -54,8 +51,6 @@ public partial class ChunkDataPacket : IClientboundPacket
             writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
 
         writer.EndCompound();
-
-        Chunk.BiomeContainer.WriteTo(stream);
 
         dataStream.Position = 0;
         stream.WriteVarInt((int)dataStream.Length);
