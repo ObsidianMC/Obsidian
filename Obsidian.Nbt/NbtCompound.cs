@@ -86,32 +86,34 @@ public class NbtCompound : INbtTag, IEnumerable<KeyValuePair<string, INbtTag>>
         var sb = new StringBuilder();
         var count = this.Count;
 
-        sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}").AppendLine("{");
+        sb.AppendLine($"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}")
+            .AppendLine("{");
 
         foreach (var (_, tag) in this)
-            sb.AppendLine($"{tag.PrettyString()}");
+            sb.AppendLine(tag.PrettyString());
 
         sb.AppendLine("}");
 
         return sb.ToString();
     }
 
-    public string PrettyString(int depth = 4)
+    public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
         var sb = new StringBuilder();
         var count = this.Count;
 
-        var t = $"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
+        var name = $"TAG_Compound('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
 
-        sb.AppendLine(t.PadLeft(depth + t.Length)).AppendLine("{".PadLeft(depth * 2 + 1));
+        sb.AppendLine(name.PadLeft(name.Length + depth))
+            .AppendLine("{".PadLeft(depth + addBraceDepth));
 
         foreach (var (_, tag) in this)
         {
-            var pretty = tag.PrettyString(depth);
-            sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth * 2));
+            var tagString = tag.PrettyString(depth + 1, addBraceDepth + 2);
+            sb.AppendLine(tagString.PadLeft(tagString.Length + depth));
         }
 
-        sb.AppendLine("}".PadLeft(depth * 2 + 1));
+        sb.AppendLine("}".PadLeft(depth + addBraceDepth));
 
         return sb.ToString();
     }
