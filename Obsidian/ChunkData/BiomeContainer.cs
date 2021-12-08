@@ -1,4 +1,5 @@
 ﻿using Obsidian.Net;
+using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
@@ -21,7 +22,7 @@ public sealed class BiomeContainer : IDataContainer
 
     public bool Set(int x, int y, int z, Biomes biome)
     {
-        y %= 16;
+        y = NumericsHelper.Modulo(y, 16);
 
         var index = this.GetIndex(x, y, z);
 
@@ -35,7 +36,8 @@ public sealed class BiomeContainer : IDataContainer
 
     public Biomes Get(int x, int y, int z)
     {
-        y %= 16;
+        y = NumericsHelper.Modulo(y, 16);
+
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
         return this.Palette.GetBiomeFromIndex(storageId);

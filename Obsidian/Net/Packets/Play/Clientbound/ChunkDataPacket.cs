@@ -9,8 +9,6 @@ public partial class ChunkDataPacket : IClientboundPacket
 
     public int Id => 0x22;
 
-    public int changedSectionFilter = 65535; // 0b1111111111111111;
-
     public ChunkDataPacket(Chunk chunk)
     {
         Chunk = chunk;

@@ -24,7 +24,8 @@ public sealed class BlockStateContainer : IDataContainer
 
     public bool Set(int x, int y, int z, Block blockState)
     {
-        y %= 16;
+        y = NumericsHelper.Modulo(y, 16);
+
         var blockIndex = GetIndex(x, y, z);
 
         int paletteIndex = this.Palette.GetIdFromState(blockState);
@@ -36,7 +37,8 @@ public sealed class BlockStateContainer : IDataContainer
 
     public Block Get(int x, int y, int z)
     {
-        y %= 16;
+        y = NumericsHelper.Modulo(y, 16);
+
         int storageId = this.DataArray[GetIndex(x, y, z)];
 
         return this.Palette.GetStateFromIndex(storageId);
