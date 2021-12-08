@@ -1,0 +1,4 @@
+.github
+.gitignore
+appveyor.yml
+azure-pipelines.yml
