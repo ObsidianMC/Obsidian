@@ -32,7 +32,7 @@ public partial class ChunkDataPacket : IClientboundPacket
             }
         }
 
-        Chunk.CalculateHeightmap();
+        //Chunk.CalculateHeightmap();
         var writer = new NbtWriter(stream, string.Empty);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if(type == ChunkData.HeightmapType.MotionBlocking)

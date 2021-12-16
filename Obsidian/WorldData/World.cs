@@ -688,9 +688,9 @@ public class World : IWorld
                 {
                     for (int bz = 0; bz < 16; bz++)
                     {
-                        var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bx, bz);
+                        var by = c.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
                         Block block = c.GetBlock(bx, by, bz);
-                        if (by > 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
+                        if (by >= 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
                         {
                             if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
                             {

@@ -16,7 +16,7 @@ public static class ChunkBuilder
             {
                 for (int by = 0; by < 256; by++)
                 {
-                    if (by <= bedrockHeightmap[bx, bz])
+                    if (by <= bedrockHeightmap[bx, bz] && by > 0)
                     {
                         chunk.SetBlock(bx, by, bz, bedrock);
                     }

@@ -44,41 +44,43 @@ public class Chunk
 
     public Block GetBlock(int x, int y, int z)
     {
+        var i = SectionIndex(y);
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        return Sections[SectionIndex(y)].GetBlock(x, y, z);
+        return Sections[i].GetBlock(x, y, z);
     }
 
     public Biomes GetBiome(Vector position) => GetBiome(position.X, position.Y, position.Z);
 
     public Biomes GetBiome(int x, int y, int z)
     {
+        var i = SectionIndex(y);
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        return Sections[SectionIndex(y)].GetBiome(x, y, z);
+        return Sections[i].GetBiome(x, y, z);
     }
 
     public void SetBiome(Vector position, Biomes biome) => SetBiome(position.X, position.Y, position.Z, biome);
 
     public void SetBiome(int x, int y, int z, Biomes biome)
     {
-        int secIndex = SectionIndex(y);
+        int i = SectionIndex(y);
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        var success = Sections[secIndex].SetBiome(x, y, z, biome);
+        var success = Sections[i].SetBiome(x, y, z, biome);
 
         // Palette dynamic sizing
         if (!success)
         {
-            var oldSection = Sections[secIndex];
+            var oldSection = Sections[i];
             var bpb = oldSection.BlockStateContainer.BitsPerEntry + 1;
-            var newSection = new ChunkSection((byte)bpb, yBase: secIndex);
+            var newSection = new ChunkSection((byte)bpb, yBase: i);
             for (int sx = 0; sx < 16; sx++)
             {
                 for (int sy = 0; sy < 16; sy++)
@@ -91,7 +93,7 @@ public class Chunk
                 }
             }
 
-            Sections[secIndex] = newSection;
+            Sections[i] = newSection;
             SetBiome(x, y, z, biome);
         }
     }
@@ -100,19 +102,19 @@ public class Chunk
 
     public void SetBlock(int x, int y, int z, Block block)
     {
-        int secIndex = SectionIndex(y);
+        int i = SectionIndex(y);
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        var success = Sections[secIndex].SetBlock(x, y, z, block);
+        var success = Sections[i].SetBlock(x, y, z, block);
 
         // Palette dynamic sizing
         if (!success)
         {
-            var oldSection = Sections[secIndex];
+            var oldSection = Sections[i];
             var bpb = oldSection.BlockStateContainer.BitsPerEntry + 1;
-            var newSection = new ChunkSection((byte)bpb, yBase: secIndex);
+            var newSection = new ChunkSection((byte)bpb, yBase: i);
             for (int sx = 0; sx < 16; sx++)
             {
                 for (int sy = 0; sy < 16; sy++)
@@ -125,7 +127,7 @@ public class Chunk
                 }
             }
 
-            Sections[secIndex] = newSection;
+            Sections[i] = newSection;
             SetBlock(x, y, z, block);
         }
     }
@@ -162,11 +164,19 @@ public class Chunk
         {
             for (int z = 0; z < width; z++)
             {
-                for (int y = worldHeight; y >= worldFloor; y--)
+                for (int y = worldHeight-1; y >= worldFloor; y--)
                 {
-                    var block = this.GetBlock(x, y, z);
-                    if (block.IsAir)
-                        continue;
+                    try
+                    {
+                        var block = this.GetBlock(x, y, z);
+                        if (block.IsAir)
+                            continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        var a = 0;
+                    }
+                    
 
                     target.Set(x, z, value: y);
                     break;
