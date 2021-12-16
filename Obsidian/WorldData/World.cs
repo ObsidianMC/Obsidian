@@ -214,7 +214,7 @@ public class World : IWorld
     public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
     public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
-        .Heightmaps[ChunkData.HeightmapType.WorldSurface]
+        .Heightmaps[ChunkData.HeightmapType.MotionBlocking]
         .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
     public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
