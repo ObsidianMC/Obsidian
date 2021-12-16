@@ -1,9 +1,9 @@
-﻿using System.Globalization;
-using System.IO;
+﻿using Obsidian.Utilities;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Obsidian;
+namespace Obsidian.ConsoleApp;
 
 public static class Program
 {
@@ -20,7 +20,7 @@ public static class Program
     private static async Task Main()
     {
 #if RELEASE
-            string version = "0.1";
+        string version = "0.1";
 #else
         string version = "0.1-DEV";
         string asmpath = Assembly.GetExecutingAssembly().Location;

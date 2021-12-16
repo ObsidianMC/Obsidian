@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Obsidian;
+namespace Obsidian.ConsoleApp;
 
 /// <summary>
 /// Native methods for Windows.

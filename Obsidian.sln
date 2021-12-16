@@ -22,6 +22,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.Console", "Obsidian.Console\Obsidian.Console.csproj", "{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

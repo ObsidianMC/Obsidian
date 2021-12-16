@@ -302,7 +302,7 @@ public partial class Server : IServer
         Flags = flags
     };
 
-    internal async Task ExecuteCommand(string input)
+    public async Task ExecuteCommand(string input)
     {
         var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
         try
@@ -556,7 +556,7 @@ public partial class Server : IServer
         }
     }
 
-    internal void StopServer()
+    public void StopServer()
     {
         cts.Cancel();
         tcpListener.Stop();
