@@ -29,8 +29,8 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
-    public ProtocolVersion Protocol => protocol;
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_17_1;
+    public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }

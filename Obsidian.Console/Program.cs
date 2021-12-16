@@ -38,7 +38,7 @@ public static class Program
         Console.CursorVisible = false;
         Console.WriteLine(asciilogo);
         Console.ResetColor();
-        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
+        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
 
         // Hook into Windows' native console closing events, otherwise use .NET's native event.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

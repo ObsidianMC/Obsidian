@@ -6,40 +6,42 @@ public struct BlockUpdate
 {
     internal readonly World world;
     internal Vector position;
-    internal int delay { get; private set; }
+
+    internal int Delay { get; private set; }
     internal int delayCounter;
-    private Block? _block;
-    internal Block? block
+
+    internal Block? Block
     {
         get => _block;
         set {
             _block = value;
             if (value is Block b)
             {
-                if (Block.GravityAffected.Contains(b.Material))
+                if (API.Block.GravityAffected.Contains(b.Material))
                 {
-                    delay = 1;
+                    Delay = 1;
                 }
                 else if (b.Material == Material.Lava)
                 {
-                    delay = 40;
+                    Delay = 40;
                 }
                 else if (b.Material == Material.Water)
                 {
-                    delay = 5;
+                    Delay = 5;
                 }
             }
-            delayCounter = delay;
+            delayCounter = Delay;
         }
     }
+    private Block? _block;
 
     public BlockUpdate(World w, Vector pos, Block? blk = null)
     {
         world = w;
         position = pos;
-        delay = 0;
-        delayCounter = delay;
+        Delay = 0;
+        delayCounter = Delay;
         _block = null;
-        block = blk;
+        Block = blk;
     }
 }
