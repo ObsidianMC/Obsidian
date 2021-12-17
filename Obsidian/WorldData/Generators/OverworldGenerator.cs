@@ -49,7 +49,7 @@ public class OverworldGenerator : WorldGenerator
                 //chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                 //chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                 rockHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ) - 5;
-                bedrockHeightmap[bx, bz] = 3; // noiseGen.Bedrock(worldX, worldZ) + 1;
+                bedrockHeightmap[bx, bz] = -30; // noiseGen.Bedrock(worldX, worldZ) + 1;
 
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.

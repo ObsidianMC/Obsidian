@@ -14,7 +14,7 @@ public static class ChunkBuilder
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                for (int by = 0; by < 256; by++)
+                for (int by = -32; by < terrainHeightmap[bx, bz]; by++)
                 {
                     if (by <= bedrockHeightmap[bx, bz] && by > 0)
                     {
