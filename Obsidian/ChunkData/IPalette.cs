@@ -1,33 +1,40 @@
 ﻿using Obsidian.Net;
 
 namespace Obsidian.ChunkData;
-public interface IPalette
+public interface IPalette<T>
 {
+    public int[] Values { get; }
+
+    public int Size { get; }
+
     public bool IsFull { get; }
 
-    void WriteTo(MinecraftStream stream);
+    public int GetIdFromValue(T value);
+    public T? GetValueFromIndex(int index);
 
-    Task WriteToAsync(MinecraftStream stream);
+    public void WriteTo(MinecraftStream stream);
 
-    Task ReadFromAsync(MinecraftStream stream);
+    public Task WriteToAsync(MinecraftStream stream);
+
+    public Task ReadFromAsync(MinecraftStream stream);
 }
 
 public static class Palette
 {
-    public static IBlockStatePalette DetermineBlockPalette(this byte bitsPerEntry)
+    public static IPalette<Block> DetermineBlockPalette(this byte bitsPerEntry)
     {
         if (bitsPerEntry <= 4)
-            return new IndirectBlockStatePalette(4);
+            return new IndirectPalette<Block>(4);
         else if (bitsPerEntry > 4 || bitsPerEntry <= 8)
-            return new IndirectBlockStatePalette(bitsPerEntry);
+            return new IndirectPalette<Block>(bitsPerEntry);
 
         return new GlobalBlockStatePalette();
     }
 
-    public static IBiomePalette DetermineBiomePalette(this byte bitsPerEntry)
+    public static IPalette<Biomes> DetermineBiomePalette(this byte bitsPerEntry)
     {
         if (bitsPerEntry <= 3)
-            return new IndirectBiomePalette(bitsPerEntry);
+            return new IndirectPalette<Biomes>(bitsPerEntry);
 
         throw new NotImplementedException("Implement global biome palette");
     }

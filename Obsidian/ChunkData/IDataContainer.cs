@@ -2,9 +2,11 @@
 using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
-public interface IDataContainer
+public interface IDataContainer<T>
 {
     public byte BitsPerEntry { get; }
+
+    public IPalette<T> Palette { get; }
 
     public DataArray DataArray { get; }
 

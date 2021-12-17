@@ -169,30 +169,30 @@ public class Region
 
             var section = chunk.Sections[secY + 4];
 
-            section.BlockStateContainer.DataArray.Storage = data.GetArray();
+            section.BlockStateContainer.DataArray.storage = data.GetArray();
 
-            var chunkSecPalette = (IndirectBlockStatePalette)section.BlockStateContainer.Palette;
+            var chunkSecPalette = section.BlockStateContainer.Palette;
             foreach (NbtCompound palette in blockStatePalette!)
             {
                 var block = new Block(palette.GetInt("Id"));
-                chunkSecPalette.GetIdFromState(block);
+                chunkSecPalette.GetIdFromValue(block);
             }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
             var biomesPalette = biomesCompound!["Palette"] as NbtList;
 
-            var biomePalette = (IndirectBiomePalette)section.BiomeContainer.Palette;
+            var biomePalette = section.BiomeContainer.Palette;
             foreach (NbtTag<string> biome in biomesPalette!)
             {
                 if (Enum.TryParse<Biomes>(biome.Value.TrimMinecraftTag(), true, out var value))
-                    biomePalette.GetIdFromBiome(value);
+                    biomePalette.GetIdFromValue(value);
             }
         }
 
         foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
         {
             var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
-            chunk.Heightmaps[heightmapType].data.Storage = ((NbtArray<long>)heightmap).GetArray();
+            chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
         return chunk;
@@ -209,14 +209,14 @@ public class Region
             var biomesCompound = new NbtCompound("biomes");
             var blockStatesCompound = new NbtCompound("block_states")
             {
-                new NbtArray<long>("data", section.BlockStateContainer.DataArray.Storage)
+                new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
             };
 
-            if (section.BlockStateContainer.Palette is IndirectBlockStatePalette indirect)
+            if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
             {
                 var palette = new NbtList(NbtTagType.Compound, "Palette");
 
-                foreach (var stateId in indirect.BlockStateArray)
+                foreach (var stateId in indirect.Values)
                 {
                     if (stateId == 0)
                         continue;
@@ -233,11 +233,11 @@ public class Region
                 blockStatesCompound.Add(palette);
             }
 
-            if (section.BiomeContainer.Palette is IndirectBiomePalette indirectBiomePalette)
+            if (section.BiomeContainer.Palette is IndirectPalette<Biomes> indirectBiomePalette)
             {
                 var palette = new NbtList(NbtTagType.String, "Palette");
 
-                foreach (var id in indirectBiomePalette.Biomes)
+                foreach (var id in indirectBiomePalette.Values)
                 {
                     var biome = (Biomes)id;
 
@@ -261,7 +261,7 @@ public class Region
             new NbtTag<int>("zPos", chunk.Z),
             new NbtCompound("Heightmaps")
             {
-                new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.Storage),
+                new NbtArray<long>("MOTION_BLOCKING", chunk.Heightmaps[HeightmapType.MotionBlocking].data.storage),
                 //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
                 //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
             },

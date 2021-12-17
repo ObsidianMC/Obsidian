@@ -3,15 +3,15 @@ using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BlockStateContainer : IDataContainer
+public sealed class BlockStateContainer : IDataContainer<Block>
 {
     public byte BitsPerEntry { get; }
 
     public DataArray DataArray { get; }
 
-    public IBlockStatePalette Palette { get; internal set; }
+    public IPalette<Block> Palette { get; internal set; }
 
-    public bool IsEmpty => this.DataArray.Storage.Length <= 0;
+    public bool IsEmpty => this.DataArray.storage.Length <= 0;
 
     internal BlockStateContainer(byte bitsPerEntry = 4)
     {
@@ -26,7 +26,7 @@ public sealed class BlockStateContainer : IDataContainer
     {
         var blockIndex = GetIndex(x, y, z);
 
-        int paletteIndex = this.Palette.GetIdFromState(blockState);
+        int paletteIndex = this.Palette.GetIdFromValue(blockState);
         if (paletteIndex == -1) { return false; }
 
         this.DataArray[blockIndex] = paletteIndex;
@@ -37,10 +37,11 @@ public sealed class BlockStateContainer : IDataContainer
     {
         int storageId = this.DataArray[GetIndex(x, y, z)];
 
-        return this.Palette.GetStateFromIndex(storageId);
+        return this.Palette.GetValueFromIndex(storageId);
     }
 
-    public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+    public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
+    //public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
     public async Task WriteToAsync(MinecraftStream stream)
     {
@@ -51,8 +52,8 @@ public sealed class BlockStateContainer : IDataContainer
 
         await this.Palette.WriteToAsync(stream);
 
-        await stream.WriteVarIntAsync(this.DataArray.Storage.Length);
-        await stream.WriteLongArrayAsync(this.DataArray.Storage);
+        await stream.WriteVarIntAsync(this.DataArray.storage.Length);
+        await stream.WriteLongArrayAsync(this.DataArray.storage);
     }
 
     public void WriteTo(MinecraftStream stream)
@@ -64,9 +65,9 @@ public sealed class BlockStateContainer : IDataContainer
 
         Palette.WriteTo(stream);
 
-        stream.WriteVarInt(DataArray.Storage.Length);
+        stream.WriteVarInt(DataArray.storage.Length);
 
-        long[] storage = DataArray.Storage;
+        long[] storage = DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
     }

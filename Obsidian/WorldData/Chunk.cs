@@ -75,14 +75,14 @@ public class Chunk
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        var success = Sections[i].SetBiome(x, y, z, biome);
+        var success = Sections[i].SetBiome(x, y, z , biome);
 
         // Palette dynamic sizing
         if (!success)
         {
             var oldSection = Sections[i];
             var bpb = oldSection.BiomeContainer.BitsPerEntry + 1;
-            var newSection = new ChunkSection((byte)bpb, yBase: i);
+            var newSection = new ChunkSection(4, (byte)bpb, yBase: i);
             for (int sx = 0; sx < 4; sx++)
             {
                 for (int sy = 0; sy < 4; sy++)
@@ -167,7 +167,7 @@ public class Chunk
         {
             for (int z = 0; z < width; z++)
             {
-                for (int y = worldHeight-1; y >= worldFloor; y--)
+                for (int y = worldHeight - 1; y >= worldFloor; y--)
                 {
                     try
                     {
@@ -179,7 +179,7 @@ public class Chunk
                     {
                         var a = 0;
                     }
-                    
+
 
                     target.Set(x, z, value: y);
                     break;

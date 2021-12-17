@@ -3,13 +3,17 @@ using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 
-public class GlobalBlockStatePalette : IBlockStatePalette
+public class GlobalBlockStatePalette : IPalette<Block>
 {
-    public bool IsFull { get { return false; } }
+    public int[] Values => throw new NotImplementedException();
 
-    public int GetIdFromState(Block block) => block.Id;
+    public int Size => throw new NotImplementedException();
 
-    public Block GetStateFromIndex(int index) => Registry.GetBlock(index);
+    public bool IsFull => false;
+
+    public int GetIdFromValue(Block block) => block.Id;
+
+    public Block GetValueFromIndex(int index) => Registry.GetBlock(index);
 
     public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 

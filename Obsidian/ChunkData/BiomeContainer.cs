@@ -1,13 +1,12 @@
 ﻿using Obsidian.Net;
-using Obsidian.Utilities;
 using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BiomeContainer : IDataContainer
+public sealed class BiomeContainer : IDataContainer<Biomes>
 {
-    public byte BitsPerEntry { get; }
-    public IBiomePalette Palette { get; }
+    public byte BitsPerEntry { get; private set; }
+    public IPalette<Biomes> Palette { get; private set; }
 
     public DataArray DataArray { get; set; }
 
@@ -24,7 +23,7 @@ public sealed class BiomeContainer : IDataContainer
     {
         var index = this.GetIndex(x, y, z);
 
-        var paletteIndex = this.Palette.GetIdFromBiome(biome);
+        var paletteIndex = this.Palette.GetIdFromValue(biome);
         if (paletteIndex == -1)
             return false;
 
@@ -36,9 +35,10 @@ public sealed class BiomeContainer : IDataContainer
     {
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
-        return this.Palette.GetBiomeFromIndex(storageId);
+        return this.Palette.GetValueFromIndex(storageId);
     }
 
+    //public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
     public int GetIndex(int x, int y, int z) => ((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3);
 
     public async Task WriteToAsync(MinecraftStream stream)
@@ -47,9 +47,9 @@ public sealed class BiomeContainer : IDataContainer
 
         await this.Palette.WriteToAsync(stream);
 
-        stream.WriteVarInt(this.DataArray.Storage.Length);
+        stream.WriteVarInt(this.DataArray.storage.Length);
 
-        long[] storage = this.DataArray.Storage;
+        long[] storage = this.DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
     }
@@ -60,9 +60,9 @@ public sealed class BiomeContainer : IDataContainer
 
         this.Palette.WriteTo(stream);
 
-        stream.WriteVarInt(this.DataArray.Storage.Length);
+        stream.WriteVarInt(this.DataArray.storage.Length);
 
-        long[] storage = this.DataArray.Storage;
+        long[] storage = this.DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
     }
