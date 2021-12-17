@@ -29,8 +29,8 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
-    public ProtocolVersion Protocol => protocol;
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_17_1;
+    public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }
@@ -302,7 +302,7 @@ public partial class Server : IServer
         Flags = flags
     };
 
-    internal async Task ExecuteCommand(string input)
+    public async Task ExecuteCommand(string input)
     {
         var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
         try
@@ -556,7 +556,7 @@ public partial class Server : IServer
         }
     }
 
-    internal void StopServer()
+    public void StopServer()
     {
         cts.Cancel();
         tcpListener.Stop();
