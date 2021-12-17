@@ -20,7 +20,7 @@
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>Obsidian.API.xml</DocumentationFile>
   </PropertyGroup>
