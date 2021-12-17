@@ -57,6 +57,7 @@ public class Chunk
     public Biomes GetBiome(int x, int y, int z)
     {
         var i = SectionIndex(y);
+
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
@@ -69,6 +70,7 @@ public class Chunk
     public void SetBiome(int x, int y, int z, Biomes biome)
     {
         int i = SectionIndex(y);
+
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
@@ -79,13 +81,13 @@ public class Chunk
         if (!success)
         {
             var oldSection = Sections[i];
-            var bpb = oldSection.BlockStateContainer.BitsPerEntry + 1;
+            var bpb = oldSection.BiomeContainer.BitsPerEntry + 1;
             var newSection = new ChunkSection((byte)bpb, yBase: i);
-            for (int sx = 0; sx < 16; sx++)
+            for (int sx = 0; sx < 4; sx++)
             {
-                for (int sy = 0; sy < 16; sy++)
+                for (int sy = 0; sy < 4; sy++)
                 {
-                    for (int sz = 0; sz < 16; sz++)
+                    for (int sz = 0; sz < 4; sz++)
                     {
                         // Seems to be the safest way to do this. A bit expensive, though...
                         newSection.SetBiome(sx, sy, sz, oldSection.GetBiome(sx, sy, sz));
@@ -103,6 +105,7 @@ public class Chunk
     public void SetBlock(int x, int y, int z, Block block)
     {
         int i = SectionIndex(y);
+
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);

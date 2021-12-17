@@ -97,9 +97,6 @@ public class World : IWorld
             {
                 await c.SendChunkAsync(chunk);
                 c.LoadedChunks.Add((chunk.X, chunk.Z));
-            } else
-            {
-                Console.WriteLine("Null");
             }
         });
     }

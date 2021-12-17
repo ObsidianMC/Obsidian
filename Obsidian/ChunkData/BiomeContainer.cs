@@ -11,7 +11,7 @@ public sealed class BiomeContainer : IDataContainer
 
     public DataArray DataArray { get; set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 3)
+    internal BiomeContainer(byte bitsPerEntry = 2)
     {
         this.BitsPerEntry = bitsPerEntry;
 
@@ -22,8 +22,6 @@ public sealed class BiomeContainer : IDataContainer
 
     public bool Set(int x, int y, int z, Biomes biome)
     {
-        y = NumericsHelper.Modulo(y, 16);
-
         var index = this.GetIndex(x, y, z);
 
         var paletteIndex = this.Palette.GetIdFromBiome(biome);
@@ -36,8 +34,6 @@ public sealed class BiomeContainer : IDataContainer
 
     public Biomes Get(int x, int y, int z)
     {
-        y = NumericsHelper.Modulo(y, 16);
-
         var storageId = this.DataArray[this.GetIndex(x, y, z)];
 
         return this.Palette.GetBiomeFromIndex(storageId);

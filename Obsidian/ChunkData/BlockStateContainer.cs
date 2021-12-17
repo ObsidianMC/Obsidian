@@ -13,7 +13,7 @@ public sealed class BlockStateContainer : IDataContainer
 
     public bool IsEmpty => this.DataArray.Storage.Length <= 0;
 
-    internal BlockStateContainer(byte bitsPerEntry = 6)
+    internal BlockStateContainer(byte bitsPerEntry = 4)
     {
         this.BitsPerEntry = bitsPerEntry;
 
