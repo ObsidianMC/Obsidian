@@ -26,7 +26,6 @@ public partial class ChunkDataPacket : IClientboundPacket
         {
             if (section != null && !section.BlockStateContainer.IsEmpty)
             {
-                dataStream.WriteShort(section.BlockCount);
                 section.BlockStateContainer.WriteTo(dataStream);
                 section.BiomeContainer.WriteTo(dataStream);
             }
