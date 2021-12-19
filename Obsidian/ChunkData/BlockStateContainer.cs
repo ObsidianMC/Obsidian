@@ -40,8 +40,7 @@ public sealed class BlockStateContainer : IDataContainer<Block>
         return this.Palette.GetValueFromIndex(storageId);
     }
 
-    public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
-    //public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+    public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
 
     public async Task WriteToAsync(MinecraftStream stream)
     {

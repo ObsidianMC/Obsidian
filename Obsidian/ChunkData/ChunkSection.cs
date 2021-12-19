@@ -9,7 +9,7 @@ public sealed class ChunkSection
     public BlockStateContainer BlockStateContainer { get; }
     public BiomeContainer BiomeContainer { get; }
 
-    public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
+    public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 1, int? yBase = null)
     {
         this.BlockStateContainer = new(bitsPerBlock);
         this.BiomeContainer = new(bitsPerBiome);

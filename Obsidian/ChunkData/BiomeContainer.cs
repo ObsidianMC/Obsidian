@@ -10,7 +10,7 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
 
     public DataArray DataArray { get; set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2)
+    internal BiomeContainer(byte bitsPerEntry = 1)
     {
         this.BitsPerEntry = bitsPerEntry;
 
@@ -38,7 +38,6 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
         return this.Palette.GetValueFromIndex(storageId);
     }
 
-    //public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
     public int GetIndex(int x, int y, int z) => ((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3);
 
     public async Task WriteToAsync(MinecraftStream stream)

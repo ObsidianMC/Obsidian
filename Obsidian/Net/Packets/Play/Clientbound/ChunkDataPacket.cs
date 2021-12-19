@@ -22,6 +22,15 @@ public partial class ChunkDataPacket : IClientboundPacket
         stream.WriteInt(Chunk.X);
         stream.WriteInt(Chunk.Z);
 
+        //Chunk.CalculateHeightmap();
+        var writer = new NbtWriter(stream, string.Empty);
+        foreach (var (type, heightmap) in Chunk.Heightmaps)
+            if (type == ChunkData.HeightmapType.MotionBlocking)
+                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
+
+        writer.EndCompound();
+        writer.TryFinish();
+
         foreach (var section in Chunk.Sections)
         {
             if (section != null && !section.BlockStateContainer.IsEmpty)
@@ -30,14 +39,6 @@ public partial class ChunkDataPacket : IClientboundPacket
                 section.BiomeContainer.WriteTo(dataStream);
             }
         }
-
-        //Chunk.CalculateHeightmap();
-        var writer = new NbtWriter(stream, string.Empty);
-        foreach (var (type, heightmap) in Chunk.Heightmaps)
-            if(type == ChunkData.HeightmapType.MotionBlocking)
-                writer.WriteTag(new NbtArray<long>(type.ToString().ToSnakeCase().ToUpper(), heightmap.GetDataArray().Cast<long>()));
-
-        writer.EndCompound();
 
         dataStream.Position = 0;
         stream.WriteVarInt((int)dataStream.Length);

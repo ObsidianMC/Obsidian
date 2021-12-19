@@ -75,7 +75,7 @@ public class Chunk
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        var success = Sections[i].SetBiome(x, y, z , biome);
+        var success = Sections[i].SetBiome(x, y, z, biome);
 
         // Palette dynamic sizing
         if (!success)
