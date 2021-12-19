@@ -233,7 +233,7 @@ public class Region
                 blockStatesCompound.Add(palette);
             }
 
-            if (section.BiomeContainer.Palette is IndirectPalette<Biomes> indirectBiomePalette)
+            if (section.BiomeContainer.Palette is BaseIndirectPalette<Biomes> indirectBiomePalette)
             {
                 var palette = new NbtList(NbtTagType.String, "Palette");
 

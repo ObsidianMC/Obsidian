@@ -34,7 +34,7 @@ public static class Palette
     public static IPalette<Biomes> DetermineBiomePalette(this byte bitsPerEntry)
     {
         if (bitsPerEntry <= 3)
-            return new IndirectPalette<Biomes>(bitsPerEntry);
+            return new InternalIndirectPalette<Biomes>(bitsPerEntry);
 
         throw new NotImplementedException("Implement global biome palette");
     }

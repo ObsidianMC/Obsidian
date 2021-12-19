@@ -1,8 +1,8 @@
 ﻿using Obsidian.Net;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.ChunkData;
-
-public sealed class IndirectPalette<T> : IPalette<T> where T : IPaletteValue<T>
+internal sealed class InternalIndirectPalette<T> : IPalette<T> where T : Enum
 {
     public int[] Values { get; }
 
@@ -10,14 +10,14 @@ public sealed class IndirectPalette<T> : IPalette<T> where T : IPaletteValue<T>
 
     public bool IsFull => this.Values.Length == this.Size;
 
-    public IndirectPalette(byte bitCount) => this.Values = new int[1 << bitCount];
+    public InternalIndirectPalette(byte bitCount) => this.Values = new int[1 << bitCount];
 
     public T? GetValueFromIndex(int index)
     {
         if ((uint)index >= (uint)this.Size)
             ThrowHelper.ThrowOutOfRange();
 
-       return T.Construct(this.Values[index]);
+        return Unsafe.As<int, T>(ref this.Values[index]);
     }
 
     public int GetIdFromValue(T value)
