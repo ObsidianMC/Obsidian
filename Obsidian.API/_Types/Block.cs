@@ -3,7 +3,7 @@
 namespace Obsidian.API;
 
 [DebuggerDisplay("{Name,nq}:{Id}")]
-public readonly struct Block : IEquatable<Block>
+public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
 {
     public static Block Air => new(0, 0);
 
@@ -181,6 +181,8 @@ public readonly struct Block : IEquatable<Block>
                 numericToBase[(int)Material.Grindstone],
             };
     }
+
+    public static Block Construct(int value) => new(value);
 }
 
 [DebuggerDisplay("{@base}:{numeric}")]
