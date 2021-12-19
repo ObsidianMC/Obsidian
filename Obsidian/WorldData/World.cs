@@ -84,13 +84,13 @@ public class World : IWorld
             Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
         });
 
-        Parallel.ForEach(clientUnneededChunks, async chunkLoc =>
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
         {
             await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
             c.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        Parallel.ForEach(clientNeededChunks, async chunkLoc =>
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
             var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)
