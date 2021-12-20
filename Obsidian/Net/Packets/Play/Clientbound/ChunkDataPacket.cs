@@ -33,7 +33,7 @@ public partial class ChunkDataPacket : IClientboundPacket
 
         foreach (var section in Chunk.Sections)
         {
-            if (section != null && !section.BlockStateContainer.IsEmpty)
+            if (section is { BlockStateContainer.IsEmpty: false })
             {
                 section.BlockStateContainer.WriteTo(dataStream);
                 section.BiomeContainer.WriteTo(dataStream);

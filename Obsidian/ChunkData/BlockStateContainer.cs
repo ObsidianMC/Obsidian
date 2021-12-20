@@ -65,29 +65,17 @@ public sealed class BlockStateContainer : IDataContainer<Block>
         Palette.WriteTo(stream);
 
         stream.WriteVarInt(DataArray.storage.Length);
-
-        long[] storage = DataArray.storage;
-        for (int i = 0; i < storage.Length; i++)
-            stream.WriteLong(storage[i]);
+        stream.WriteLongArray(DataArray.storage);
     }
 
     private short GetNonAirBlocks()
     {
-        short validBlockCount = 0;
-        for (int x = 0; x < 16; x++)
+        int validBlocksCount = 0;
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    var block = this.Get(x, y, z);
-
-                    if (!block.IsAir)
-                        validBlockCount++;
-                }
-            }
+            if (!Palette.GetValueFromIndex(DataArray[i]).IsAir)
+                validBlocksCount++;
         }
-
-        return validBlockCount;
+        return (short)validBlocksCount;
     }
 }
