@@ -7,7 +7,7 @@ public class GlobalBlockStatePalette : IPalette<Block>
 {
     public int[] Values => throw new NotImplementedException();
 
-    public int Size => throw new NotImplementedException();
+    public int Count => throw new NotImplementedException();
 
     public bool IsFull => false;
 
