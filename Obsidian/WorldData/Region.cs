@@ -175,7 +175,7 @@ public class Region
             foreach (NbtCompound palette in blockStatePalette!)
             {
                 var block = new Block(palette.GetInt("Id"));
-                chunkSecPalette.GetIdFromValue(block);
+                chunkSecPalette.GetOrAddId(block);
             }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
@@ -185,7 +185,7 @@ public class Region
             foreach (NbtTag<string> biome in biomesPalette!)
             {
                 if (Enum.TryParse<Biomes>(biome.Value.TrimMinecraftTag(), true, out var value))
-                    biomePalette.GetIdFromValue(value);
+                    biomePalette.GetOrAddId(value);
             }
         }
 

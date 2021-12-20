@@ -11,7 +11,13 @@ public class GlobalBlockStatePalette : IPalette<Block>
 
     public bool IsFull => false;
 
-    public int GetIdFromValue(Block block) => block.Id;
+    public bool TryGetId(Block block, out int id)
+    {
+        id = block.Id;
+        return true;
+    }
+
+    public int GetOrAddId(Block block) => block.Id;
 
     public Block GetValueFromIndex(int index) => Registry.GetBlock(index);
 

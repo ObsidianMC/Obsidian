@@ -1,5 +1,4 @@
 ﻿using Obsidian.Net;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.ChunkData;
@@ -19,7 +18,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
     public abstract T? GetValueFromIndex(int index);
 
-    public int GetIdFromValue(T value)
+    public bool TryGetId(T value, out int id)
     {
         if (!typeof(T).IsValueType)
         {
@@ -27,14 +26,36 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         }
 
         int valueId = value!.GetHashCode();
+        return TryGetIdImpl(valueId, out id);
+    }
 
+    private bool TryGetIdImpl(int valueId, out int id)
+    {
         ReadOnlySpan<int> valueIds = GetSpan();
-        for (int id = 0; id < valueIds.Length; id++)
+        for (id = 0; id < valueIds.Length; id++)
         {
             if (valueIds[id] == valueId)
-                return id;
+            {
+                return true;
+            }
         }
 
+        return false;
+    }
+
+    public int GetOrAddId(T value)
+    {
+        if (!typeof(T).IsValueType)
+        {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+        }
+
+        // Get
+        int valueId = value!.GetHashCode();
+        if (TryGetIdImpl(valueId, out int id))
+            return id;
+
+        // Add
         if (IsFull)
             return -1;
 

@@ -26,7 +26,7 @@ public sealed class BlockStateContainer : IDataContainer<Block>
     {
         var blockIndex = GetIndex(x, y, z);
 
-        int paletteIndex = this.Palette.GetIdFromValue(blockState);
+        int paletteIndex = this.Palette.GetOrAddId(blockState);
         if (paletteIndex == -1) { return false; }
 
         this.DataArray[blockIndex] = paletteIndex;
@@ -68,12 +68,24 @@ public sealed class BlockStateContainer : IDataContainer<Block>
         stream.WriteLongArray(DataArray.storage);
     }
 
+    private static readonly Block air = Block.Air;
+    private static readonly Block caveAir = new(Material.CaveAir);
+    private static readonly Block voidAir = new(Material.VoidAir);
+
     private short GetNonAirBlocks()
     {
+        if (!Palette.TryGetId(air, out int airIndex))
+            airIndex = -1;
+        if (!Palette.TryGetId(caveAir, out int caveAirIndex))
+            caveAirIndex = -1;
+        if (!Palette.TryGetId(voidAir, out int voidAirIndex))
+            voidAirIndex = -1;
+
         int validBlocksCount = 0;
         for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            if (!Palette.GetValueFromIndex(DataArray[i]).IsAir)
+            int index = DataArray[i];
+            if (index != airIndex && index != caveAirIndex && index != voidAirIndex)
                 validBlocksCount++;
         }
         return (short)validBlocksCount;
