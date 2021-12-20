@@ -1,65 +1,45 @@
 ﻿using Obsidian.Net;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 
 namespace Obsidian.ChunkData;
-public sealed class BaseIndirectPalette<T> : IPalette<T>
+
+public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
     private delegate T Factory(int value);
 
     public int[] Values { get; }
+    public int Count { get; protected set; }
+    public bool IsFull => Count == Values.Length;
 
-    public int Size { get; set; }
-
-    public bool IsFull => this.Values.Length == this.Size;
-
-    public BaseIndirectPalette(byte bitCount) => this.Values = new int[1 << bitCount];
-
-    public T? GetValueFromIndex(int index)
+    public BaseIndirectPalette(byte bitCount)
     {
-        if ((uint)index >= (uint)this.Size)
-            ThrowHelper.ThrowOutOfRange();
-
-        var valueType = typeof(T);
-
-        if (valueType.IsEnum)
-        {
-            return Unsafe.As<int, T>(ref this.Values[index]);
-        }
-        else if (valueType == typeof(Block))
-        {
-            var block = new Block(this.Values[index]);
-
-            return Unsafe.As<Block, T>(ref block);
-        }
-
-        return Build().Invoke(this.Values[index]);
+        Values = new int[1 << bitCount];
     }
+
+    public abstract T? GetValueFromIndex(int index);
 
     public int GetIdFromValue(T value)
     {
-        ArgumentNullException.ThrowIfNull(value, nameof(value));
+        if (!typeof(T).IsValueType)
+        {
+            ArgumentNullException.ThrowIfNull(value, nameof(value));
+        }
 
-        var valueId = value.GetHashCode();
+        int valueId = value!.GetHashCode();
 
-        ReadOnlySpan<int> valueIds = Values.AsSpan(0, Size);
-
+        ReadOnlySpan<int> valueIds = GetSpan();
         for (int id = 0; id < valueIds.Length; id++)
         {
             if (valueIds[id] == valueId)
                 return id;
         }
 
-        if (this.IsFull)
+        if (IsFull)
             return -1;
 
-        var newId = this.Size;
-
-        this.Values[newId] = valueId;
-
-        this.Size++;
-
+        var newId = Count;
+        Values[Count++] = valueId;
         return newId;
     }
 
@@ -71,39 +51,31 @@ public sealed class BaseIndirectPalette<T> : IPalette<T>
         {
             int id = await stream.ReadVarIntAsync();
 
-            this.Values[i] = id;
-            this.Size++;
+            Values[i] = id;
+            Count++;
         }
     }
 
     public async Task WriteToAsync(MinecraftStream stream)
     {
-        await stream.WriteVarIntAsync(this.Size);
+        await stream.WriteVarIntAsync(Count);
 
-        for (int i = 0; i < this.Size; i++)
-            await stream.WriteVarIntAsync(this.Values[i]);
+        for (int i = 0; i < Count; i++)
+            await stream.WriteVarIntAsync(Values[i]);
     }
 
     public void WriteTo(MinecraftStream stream)
     {
-        stream.WriteVarInt(this.Size);
+        stream.WriteVarInt(Count);
 
-        for (int i = 0; i < this.Size; i++)
-            stream.WriteVarInt(this.Values[i]);
+        ReadOnlySpan<int> values = GetSpan();
+        for (int i = 0; i < values.Length; i++)
+            stream.WriteVarInt(values[i]);
     }
 
-    private static Factory Build()
+    protected ReadOnlySpan<int> GetSpan()
     {
-        var ctor = typeof(T).GetConstructor(new[] { typeof(int) });
-        var parameter = Expression.Parameter(typeof(int));
-
-        if (ctor == null)
-            throw new InvalidOperationException();
-
-        var expr = Expression.New(ctor, parameter);
-
-        return Expression.Lambda<Factory>(expr, parameter).Compile();
+        ref int first = ref MemoryMarshal.GetArrayDataReference(Values);
+        return MemoryMarshal.CreateReadOnlySpan(ref first, Count);
     }
 }
-
-
