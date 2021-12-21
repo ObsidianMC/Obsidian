@@ -4,15 +4,19 @@ namespace Obsidian.Logging;
 
 public sealed class LoggerProvider : ILoggerProvider
 {
-    private ConcurrentDictionary<string, Logger> loggers = new();
+    private ConcurrentDictionary<string, ILogger> loggers = new();
+
+    public delegate ILogger LoggerFactoryMethod(string category, LogLevel logLevel);
+    private readonly LoggerFactoryMethod loggerFactory;
 
     private LogLevel MinimumLevel { get; }
 
     private bool disposed = false;
 
-    internal LoggerProvider(LogLevel minLevel = LogLevel.Information)
+    public LoggerProvider(LoggerFactoryMethod loggerFactory, LogLevel minLevel = LogLevel.Information)
     {
         MinimumLevel = minLevel;
+        this.loggerFactory = loggerFactory;
     }
 
     public ILogger CreateLogger(string categoryName)
@@ -20,12 +24,13 @@ public sealed class LoggerProvider : ILoggerProvider
         if (disposed)
             throw new ObjectDisposedException("This logger provider is already disposed.");
 
-        return loggers.GetOrAdd(categoryName, name => new Logger(name, MinimumLevel));
+        return loggers.GetOrAdd(categoryName, loggerFactory(categoryName, MinimumLevel));
     }
 
     public void Dispose()
     {
-        loggers = null;
+        loggers.Clear();
+        loggers = null!;
         disposed = true;
     }
 }

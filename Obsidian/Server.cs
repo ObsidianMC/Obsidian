@@ -74,20 +74,20 @@ public partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-    public Server(Config config, string version, string path)
+    public Server(Config config, string version, string path, LoggerProvider? loggerProvider = null)
     {
         Config = config;
 
         Port = config.Port;
         Version = version;
         ServerFolderPath = path;
+        LoggerProvider = loggerProvider ?? new LoggerProvider((_, _) => new LoggerDummy());
 
         tcpListener = new TcpListener(IPAddress.Any, Port);
 
         Operators = new OperatorList(this);
 
-        LoggerProvider = new LoggerProvider(config.LogLevel);
-        Logger = LoggerProvider.CreateLogger($"Server");
+        Logger = LoggerProvider?.CreateLogger($"Server");
         // This stuff down here needs to be looked into
         Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
         PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
@@ -209,7 +209,7 @@ public partial class Server : IServer
     /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
-    public async Task StartServerAsync()
+    public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
 
@@ -220,7 +220,7 @@ public partial class Server : IServer
         if (Config.MulitplayerDebugMode && Config.OnlineMode)
         {
             Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            StopServer();
+            Stop();
             return;
         }
 
@@ -556,7 +556,7 @@ public partial class Server : IServer
         }
     }
 
-    public void StopServer()
+    public void Stop()
     {
         cts.Cancel();
         tcpListener.Stop();
@@ -637,8 +637,9 @@ public partial class Server : IServer
 
     internal void UpdateStatusConsole()
     {
-        int chunksLoaded = World.Regions.Sum(entry => entry.Value.LoadedChunkCount);
-        var status = $"    tps:{Tps} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
-        ConsoleIO.UpdateStatusLine(status);
+        // TODO
+        //int chunksLoaded = World.Regions.Sum(entry => entry.Value.LoadedChunkCount);
+        //var status = $"    tps:{Tps} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+        //ConsoleIO.UpdateStatusLine(status);
     }
 }

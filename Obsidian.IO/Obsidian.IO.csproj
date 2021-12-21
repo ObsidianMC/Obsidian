@@ -5,36 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</TargetsWindows>
-    <TargetsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</TargetsLinux>
-    <TargetsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</TargetsOSX>
-    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Console\CommandLine.Windows.cs" />
-    <Compile Remove="Console\CommandLine.Unix.cs" />
-    <Compile Remove="Console\CommandLine.NoInput.cs" />
-    <Compile Remove="Console\NativeMethods.cs" />
-  </ItemGroup>
-
-  <!-- Windows -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="Console\CommandLine.Windows.cs" />
-    <Compile Include="Console\NativeMethods.cs" />
-  </ItemGroup>
-  
-  <!-- Unix -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="Console\CommandLine.Unix.cs" />
-  </ItemGroup>
-
-  <!-- Android, iOS, Browser, etc. -->
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(TargetsUnix)' != 'true'">
-    <Compile Include="Console\CommandLine.NoInput.cs" />
-  </ItemGroup>
   
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />

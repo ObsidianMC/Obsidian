@@ -1,13 +1,13 @@
 ﻿using System.Threading;
 
-namespace Obsidian.IO.Console;
+namespace Obsidian.ConsoleApp.IO;
 
 public static partial class CommandLine
 {
     // Reading key in a dedicated loop must check if the exitSemaphore
     // is not null, and if so, release it.
 
-    public static string Title { set => System.Console.Title = value; }
+    public static string Title { set => Console.Title = value; }
 
     public static string CommandPrefix
     {
@@ -21,7 +21,8 @@ public static partial class CommandLine
     public static ConsoleColor ForegroundColor
     {
         get => _foregroundColor;
-        set {
+        set
+        {
             _foregroundColor = value;
             SetForegroundColor(value);
         }
@@ -30,7 +31,8 @@ public static partial class CommandLine
     public static ConsoleColor BackgroundColor
     {
         get => _backgroundColor;
-        set {
+        set
+        {
             _backgroundColor = value;
             SetBackgroundColor(value);
         }
@@ -68,8 +70,7 @@ public static partial class CommandLine
         if (string.IsNullOrWhiteSpace(command))
             throw new FormatException("Command can't be null or empty.");
 
-        if (callback is null)
-            throw new ArgumentNullException(nameof(callback));
+        ArgumentNullException.ThrowIfNull(callback);
 
         commands.Add(new Command(command, callback));
     }

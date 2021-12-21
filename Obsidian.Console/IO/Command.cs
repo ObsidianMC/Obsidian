@@ -1,4 +1,4 @@
-﻿namespace Obsidian.IO.Console;
+﻿namespace Obsidian.ConsoleApp.IO;
 
 public delegate ValueTask CommandCallback(string[] words, ReadOnlyMemory<char> fullArgs);
 
@@ -14,8 +14,8 @@ internal readonly struct Command : IComparable<Command>
         Callback = callback;
 
         var words = new List<ReadOnlyMemory<char>>();
-        int start = 0;
-        for (int i = 0; i < name.Length; i++)
+        var start = 0;
+        for (var i = 0; i < name.Length; i++)
         {
             while (i < name.Length && char.IsWhiteSpace(name[i])) i++;
 
@@ -39,22 +39,20 @@ internal readonly struct Command : IComparable<Command>
         if (input.Length < Words.Length)
             return false;
 
-        for (int i = 0; i < Words.Length; i++)
-        {
+        for (var i = 0; i < Words.Length; i++)
             if (!MemoryExtensions.Equals(input[i], Words[i].Span, StringComparison.Ordinal))
                 return false;
-        }
 
-        int argsStart = 0;
-        for (int i = 0; i < Words.Length; i++)
+        var argsStart = 0;
+        for (var i = 0; i < Words.Length; i++)
         {
             argsStart += Words[i].Length;
             while (argsStart < original.Length && char.IsWhiteSpace(original[argsStart])) argsStart++;
         }
 
-        CommandCallback func = Callback;
-        string[] args = input[Words.Length..];
-        ReadOnlyMemory<char> fullArgs = original.AsMemory(argsStart);
+        var func = Callback;
+        var args = input[Words.Length..];
+        var fullArgs = original.AsMemory(argsStart);
         Task.Run(async () => await func(args, fullArgs));
 
         return true;

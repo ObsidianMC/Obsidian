@@ -10,7 +10,11 @@ public sealed class CommandContext
     public PluginBase? Plugin { get; internal set; }
     internal ReadOnlyMemory<char> Message { get; }
 
-    public CommandContext(ReadOnlyMemory<char> message, ICommandSender commandSender, IPlayer player, IServer server)
+    public CommandContext(string message, ICommandSender commandSender, IPlayer? player, IServer server) : this(message.AsMemory(), commandSender, player, server)
+    {
+    }
+
+    public CommandContext(ReadOnlyMemory<char> message, ICommandSender commandSender, IPlayer? player, IServer server)
     {
         Server = server;
         Sender = commandSender;

@@ -2,10 +2,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Obsidian.IO.Console;
+namespace Obsidian.ConsoleApp.IO;
 
 using ColoredChar = NativeMethods.ColoredChar;
 using Console = System.Console;

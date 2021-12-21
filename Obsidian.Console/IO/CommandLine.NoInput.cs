@@ -1,18 +1,13 @@
 ﻿using System;
 using System.IO;
 
-namespace Obsidian.IO.Console;
+namespace Obsidian.ConsoleApp.IO;
 
 using Console = System.Console;
 
 public static partial class CommandLine
 {
     private static TextWriter consoleOut;
-
-    static CommandLine()
-    {
-        Console.CancelKeyPress += (sender, args) => args.Cancel = CancelKeyPress?.Invoke() ?? false;
-    }
 
     private static partial void TakeControlInternal()
     {

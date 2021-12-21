@@ -1,9 +1,8 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Obsidian.IO.Console;
+namespace Obsidian.ConsoleApp.IO;
 
 internal static class NativeMethods
 {
