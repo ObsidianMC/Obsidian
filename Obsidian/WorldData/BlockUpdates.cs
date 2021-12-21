@@ -4,11 +4,11 @@ internal static class BlockUpdates
 {
     internal static async Task<bool> HandleFallingBlock(BlockUpdate blockUpdate)
     {
-        if (blockUpdate.block is null) { return false; }
+        if (blockUpdate.Block is null) { return false; }
 
         var world = blockUpdate.world;
         var location = blockUpdate.position;
-        var material = blockUpdate.block.Value.Material;
+        var material = blockUpdate.Block.Value.Material;
         if (world.GetBlock(location + Vector.Down) is Block below &&
             (Block.Replaceable.Contains(below.Material) || below.IsFluid))
         {
@@ -22,9 +22,9 @@ internal static class BlockUpdates
 
     internal static Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
     {
-        if (blockUpdate.block is null) { return Task.FromResult(false); }
+        if (blockUpdate.Block is null) { return Task.FromResult(false); }
 
-        var block = blockUpdate.block.Value;
+        var block = blockUpdate.Block.Value;
         var world = blockUpdate.world;
         var location = blockUpdate.position;
         int state = block.State;

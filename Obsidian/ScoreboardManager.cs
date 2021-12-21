@@ -2,7 +2,7 @@
 
 namespace Obsidian;
 
-public class ScoreboardManager : IScoreboardManager
+public sealed class ScoreboardManager : IScoreboardManager
 {
     private readonly Server server;
 

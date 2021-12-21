@@ -56,11 +56,8 @@ internal class AStarPath
         var endNode = new Node(null, targetPos);
 
         // Out of range?
-        var dist = Math.Pow(targetPos.X - startPos.X, 2);
-        dist += Math.Pow(targetPos.Y - startPos.Y, 2);
-        dist += Math.Pow(targetPos.Z - startPos.Z, 2);
-        dist = Math.Sqrt(dist);
-        if (dist > MaxRange)
+        float distanceSquared = (targetPos - startPos).MagnitudeSquared();
+        if (distanceSquared > MaxRange * MaxRange)
             return new List<Vector>();
 
 

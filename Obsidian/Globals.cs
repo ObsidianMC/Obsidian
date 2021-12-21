@@ -9,8 +9,8 @@ namespace Obsidian;
 
 public static class Globals
 {
-    public static HttpClient HttpClient { get; } = new HttpClient();
-    public static XorshiftRandom Random { get; } = XorshiftRandom.Create();
+    public static HttpClient HttpClient { get; } = new();
+    public static XorshiftRandom Random { get; } = new();
     public static ILogger PacketLogger { get; set; }
 
     public static readonly JsonSerializerOptions JsonOptions = new()
