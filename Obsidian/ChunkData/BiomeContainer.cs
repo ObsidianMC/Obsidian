@@ -10,13 +10,13 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
 
     public DataArray DataArray { get; set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 1)
+    internal BiomeContainer(byte bitsPerEntry = 2)
     {
-        this.BitsPerEntry = bitsPerEntry;
+        this.BitsPerEntry = (byte)(bitsPerEntry > 3 ? 6 : bitsPerEntry);
 
         this.Palette = bitsPerEntry.DetermineBiomePalette();
 
-        this.DataArray = new(bitsPerEntry, 64);
+        this.DataArray = new(this.BitsPerEntry, 64);
     }
 
     public bool Set(int x, int y, int z, Biomes biome)
@@ -38,7 +38,7 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
         return this.Palette.GetValueFromIndex(storageId);
     }
 
-    public int GetIndex(int x, int y, int z) => ((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3);
+    public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
     public async Task WriteToAsync(MinecraftStream stream)
     {

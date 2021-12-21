@@ -17,6 +17,6 @@ public static class Palette
         if (bitsPerEntry <= 3)
             return new InternalIndirectPalette<Biomes>(bitsPerEntry);
 
-        throw new NotImplementedException("Implement global biome palette");
+        return new GlobalBiomePalette();
     }
 }
