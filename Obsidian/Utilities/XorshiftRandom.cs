@@ -11,6 +11,10 @@ public struct XorshiftRandom
     private ulong stateA;
     private ulong stateB;
 
+    public XorshiftRandom() : this(Environment.TickCount64 ^ long.MinValue)
+    {
+    }
+
     public XorshiftRandom(long seed)
     {
         stateA = (ulong)seed;
@@ -72,12 +76,6 @@ public struct XorshiftRandom
     {
         ulong step = Step();
         return Unsafe.As<ulong, uint>(ref step);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static XorshiftRandom Create()
-    {
-        return new(Environment.TickCount64 ^ long.MinValue);
     }
 
     /// <summary>

@@ -11,7 +11,7 @@ public class Config : IConfig
 
     public string Generator { get; set; } = "overworld";
 
-    public string Seed { get; set; } = XorshiftRandom.Create().Next().ToString();
+    public string Seed { get; set; } = new XorshiftRandom().Next().ToString();
 
     public string JoinMessage { get; set; } = "§e{0} joined the game";
 
