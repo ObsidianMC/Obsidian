@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace Obsidian.Utilities.Debug;
+namespace Obsidian.Utilities.Debugging;
 
 public static class PacketDebug
 {

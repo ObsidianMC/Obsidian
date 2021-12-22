@@ -1,9 +1,9 @@
-﻿using System.Globalization;
-using System.IO;
+﻿using Obsidian.Utilities;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Obsidian;
+namespace Obsidian.ConsoleApp;
 
 public static class Program
 {
@@ -20,7 +20,7 @@ public static class Program
     private static async Task Main()
     {
 #if RELEASE
-            string version = "0.1";
+        string version = "0.1";
 #else
         string version = "0.1-DEV";
         string asmpath = Assembly.GetExecutingAssembly().Location;
@@ -38,7 +38,7 @@ public static class Program
         Console.CursorVisible = false;
         Console.WriteLine(asciilogo);
         Console.ResetColor();
-        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
+        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
 
         // Hook into Windows' native console closing events, otherwise use .NET's native event.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

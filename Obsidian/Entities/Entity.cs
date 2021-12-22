@@ -205,8 +205,9 @@ public class Entity : IEquatable<Entity>, IEntity
         float pitch = Pitch.Value * DegreesToRadian;
         float yaw = Yaw.Value * DegreesToRadian;
 
-        float cosPitch = MathF.Cos(pitch);
-        return new(-cosPitch * MathF.Sin(yaw), -MathF.Sin(pitch), cosPitch * MathF.Cos(yaw));
+        (float sinPitch, float cosPitch) = MathF.SinCos(pitch);
+        (float sinYaw, float cosYaw) = MathF.SinCos(yaw);
+        return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
     public Task RemoveAsync() => this.World.DestroyEntityAsync(this);

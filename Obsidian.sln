@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31423.177
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian", "Obsidian\Obsidian.csproj", "{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.ConversionUtility", "Obsidian.ConversionUtility\Obsidian.ConversionUtility.csproj", "{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.Tests", "Obsidian.Tests\Obsidian.Tests.csproj", "{4C32F58F-E0EE-470C-8003-A7883105557F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Obsidian.Nbt", "Obsidian.Nbt\Obsidian.Nbt.csproj", "{557E8CD2-EEAE-440A-B65B-D319AE900B37}"
@@ -22,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obsidian.Console", "Obsidian.Console\Obsidian.Console.csproj", "{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,10 +32,6 @@ Global
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCA0F9C3-9DEE-4E3B-8CA8-BA327A8D8A37}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F19A0E8B-9D5F-4DEA-ADF2-D92E3C00D1E5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4C32F58F-E0EE-470C-8003-A7883105557F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4C32F58F-E0EE-470C-8003-A7883105557F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C32F58F-E0EE-470C-8003-A7883105557F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,6 +52,10 @@ Global
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2E66B12-7A4B-429A-9053-8D7C731E28C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9C75F2B-5BC1-4FD8-AA36-42A013E20FCB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

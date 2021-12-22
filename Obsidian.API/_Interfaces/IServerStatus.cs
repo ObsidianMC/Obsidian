@@ -4,7 +4,7 @@ public interface IServerStatus
 {
     public IServerVersion Version { get; set; }
 
-    public IServerPlayers Players { get; set; }
+    public IServerPlayers? Players { get; set; }
 
     public IServerDescription Description { get; set; }
 
@@ -16,9 +16,9 @@ public interface IServerStatus
 
 public interface IServerVersion
 {
-    public string Name { get; set; }
+    public string Name { get; }
 
-    public ProtocolVersion Protocol { get; set; }
+    public ProtocolVersion Protocol { get; }
 }
 
 public interface IServerPlayers

@@ -416,7 +416,7 @@ public class World : IWorld
 
     public void ScheduleBlockUpdate(BlockUpdate bu)
     {
-        bu.block ??= GetBlock(bu.position);
+        bu.Block ??= GetBlock(bu.position);
         var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
 
         r.AddBlockUpdate(bu);
@@ -429,15 +429,15 @@ public class World : IWorld
     /// <returns>Whether to update neighbor blocks.</returns>
     internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
     {
-        if (bu.block is null) { return false; }
+        if (bu.Block is null) { return false; }
 
         // Todo: this better
-        if (Block.GravityAffected.Contains(bu.block.Value.Material))
+        if (Block.GravityAffected.Contains(bu.Block.Value.Material))
         {
             return await BlockUpdates.HandleFallingBlock(bu);
         }
 
-        if (bu.block.Value.IsFluid)
+        if (bu.Block.Value.IsFluid)
         {
             return await BlockUpdates.HandleLiquidPhysics(bu);
         }
@@ -447,8 +447,8 @@ public class World : IWorld
 
     internal void BlockUpdateNeighbors(BlockUpdate bu)
     {
-        bu.block = null;
-        bu.delayCounter = bu.delay;
+        bu.Block = null;
+        bu.delayCounter = bu.Delay;
         var north = bu;
         north.position += Vector.Forwards;
 
