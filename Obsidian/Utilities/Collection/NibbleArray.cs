@@ -42,7 +42,8 @@ public class NibbleArray //: INbtSerializable
     public byte this[int index]
     {
         get => (byte)((this.Data[index / 2] >> (index % 2 * 4)) & 0xF);
-        set {
+        set
+        {
             value &= 0xF;
             this.Data[index / 2] &= (byte)(0xF << ((index + 1) % 2 * 4));
             this.Data[index / 2] |= (byte)(value << (index % 2 * 4));

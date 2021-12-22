@@ -39,7 +39,8 @@ public sealed class DataArray
 
     public int this[int index]
     {
-        get {
+        get
+        {
             int currentIndex = this.GetIndex(index);
             long id = this.storage[currentIndex];
 
@@ -47,7 +48,8 @@ public sealed class DataArray
             return (int)(id >> k & this.maxEntryValue);
         }
 
-        set {
+        set
+        {
             int currentIndex = this.GetIndex(index);
             long id = this.storage[currentIndex];
             int k = (index - currentIndex * this.magicNumber) * this.bitsPerEntry;

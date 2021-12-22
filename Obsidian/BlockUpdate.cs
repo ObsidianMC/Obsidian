@@ -12,7 +12,8 @@ public struct BlockUpdate
     internal Block? block
     {
         get => _block;
-        set {
+        set
+        {
             _block = value;
             if (value is Block b)
             {

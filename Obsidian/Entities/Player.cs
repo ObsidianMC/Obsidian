@@ -56,7 +56,8 @@ public class Player : Living, IPlayer
     public short CurrentSlot
     {
         get => (short)(this.inventorySlot - 36);
-        internal set {
+        internal set
+        {
             if (value < 0 || value > 8)
                 throw new IndexOutOfRangeException("Value must be >= 0 or <= 8");
 

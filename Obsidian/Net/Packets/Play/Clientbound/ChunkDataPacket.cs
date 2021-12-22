@@ -62,7 +62,7 @@ public partial class ChunkDataPacket : IClientboundPacket
         // sky light bitset
         stream.WriteVarInt(0);
         //stream.WriteLong(skyLightMask);
-        
+
         // block light bitset
         stream.WriteVarInt(0);
         //stream.WriteLong(blockLightMask);

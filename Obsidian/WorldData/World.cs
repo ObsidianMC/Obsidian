@@ -327,8 +327,8 @@ public class World : IWorld
         Parallel.ForEach(SpawnChunks, (c) =>
         {
             GetChunk(c.X, c.Z);
-                // Update status occasionally so we're not destroying consoleio
-                if (c.X % 5 == 0)
+            // Update status occasionally so we're not destroying consoleio
+            if (c.X % 5 == 0)
                 Server.UpdateStatusConsole();
         });
 
@@ -504,8 +504,8 @@ public class World : IWorld
             Region region = GetRegionForChunk(job.x, job.z);
             if (region is null)
             {
-                    // Region isn't ready. Try again later
-                    ChunksToGen.Enqueue((job.x, job.z));
+                // Region isn't ready. Try again later
+                ChunksToGen.Enqueue((job.x, job.z));
                 return;
             }
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
@@ -515,9 +515,9 @@ public class World : IWorld
                 c = new Chunk(job.x, job.z)
                 {
                     isGenerated = false // Not necessary; just being explicit.
-                    };
-                    // Set chunk now so that it no longer comes back as null. #threadlyfe
-                    region.SetChunk(c);
+                };
+                // Set chunk now so that it no longer comes back as null. #threadlyfe
+                region.SetChunk(c);
             }
             Generator.GenerateChunk(job.x, job.z, this, c);
             region.SetChunk(c);

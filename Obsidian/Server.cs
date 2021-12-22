@@ -123,7 +123,7 @@ public partial class Server : IServer
                 while (!cts.IsCancellationRequested)
                 {
                     await Task.Delay(1500, cts.Token); // TODO (.NET 6), use PeriodicTimer
-                        byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
                     await udpClient.SendAsync(motd, motd.Length);
                 }
             });

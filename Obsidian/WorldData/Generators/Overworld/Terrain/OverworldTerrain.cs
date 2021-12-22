@@ -63,7 +63,7 @@ public class OverworldTerrain
             { Biomes.LukewarmOcean, ocean.Result },
             { Biomes.LushCaves, plains.Result },
             { Biomes.Meadow, plains.Result },
-            { Biomes.MushroomFields, plains.Result},
+            { Biomes.MushroomFields, plains.Result },
             { Biomes.NetherWastes, plains.Result },
             { Biomes.Ocean, ocean.Result },
             { Biomes.OldGrowthBirchForest, plains.Result },
