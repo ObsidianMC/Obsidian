@@ -1,4 +1,6 @@
-﻿namespace Obsidian.ChunkData;
+﻿using System.Diagnostics;
+
+namespace Obsidian.ChunkData;
 
 public sealed class ChunkSection
 {
@@ -16,7 +18,8 @@ public sealed class ChunkSection
 
         this.YBase = yBase;
 
-        this.FillWithAir();
+        int airIndex = BlockStateContainer.Palette.GetOrAddId(Block.Air);
+        Debug.Assert(airIndex == 0);
     }
 
     public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
@@ -30,19 +33,4 @@ public sealed class ChunkSection
 
     public bool SetBiome(Vector position, Biomes biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
     public bool SetBiome(int x, int y, int z, Biomes biome) => this.BiomeContainer.Set(x, y, z, biome);
-
-    private void FillWithAir()
-    {
-        var air = Block.Air;
-        for (int x = 0; x < 16; x++)
-        {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    this.BlockStateContainer.Set(x, y, z, air);
-                }
-            }
-        }
-    }
 }
