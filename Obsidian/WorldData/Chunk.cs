@@ -73,29 +73,7 @@ public class Chunk
 
         y = (y + 64) % 16 / 4;
 
-        var success = Sections[i].SetBiome(x, y, z, biome);
-
-        // Palette dynamic sizing
-        if (!success)
-        {
-            var oldSection = Sections[i];
-            var bpb = oldSection.BiomeContainer.BitsPerEntry + 1;
-            var newSection = new ChunkSection(4, (byte)bpb, yBase: i);
-            for (int sx = 0; sx < 4; sx++)
-            {
-                for (int sy = 0; sy < 4; sy++)
-                {
-                    for (int sz = 0; sz < 4; sz++)
-                    {
-                        // Seems to be the safest way to do this. A bit expensive, though...
-                        newSection.SetBiome(sx, sy, sz, oldSection.GetBiome(sx, sy, sz));
-                    }
-                }
-            }
-
-            Sections[i] = newSection;
-            SetBiome(x, y, z, biome);
-        }
+        Sections[i].SetBiome(x, y, z, biome);
     }
 
     public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
@@ -108,31 +86,8 @@ public class Chunk
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
 
-        var success = Sections[i].SetBlock(x, y, z, block);
-
-        // Palette dynamic sizing
-        if (!success)
-        {
-            var oldSection = Sections[i];
-            var bpb = oldSection.BlockStateContainer.BitsPerEntry + 1;
-            var newSection = new ChunkSection((byte)bpb, yBase: i);
-            for (int sx = 0; sx < 16; sx++)
-            {
-                for (int sy = 0; sy < 16; sy++)
-                {
-                    for (int sz = 0; sz < 16; sz++)
-                    {
-                        // Seems to be the safest way to do this. A bit expensive, though...
-                        newSection.SetBlock(sx, sy, sz, oldSection.GetBlock(sx, sy, sz));
-                    }
-                }
-            }
-
-            Sections[i] = newSection;
-            SetBlock(x, y, z, block);
-        }
+        Sections[i].SetBlock(x, y, z, block);
     }
-
 
     public BlockMeta GetBlockMeta(int x, int y, int z)
     {

@@ -7,13 +7,15 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
     private delegate T Factory(int value);
 
-    public int[] Values { get; }
+    public int[] Values { get; private set; }
+    public int BitCount { get; private set; }
     public int Count { get; protected set; }
     public bool IsFull => Count == Values.Length;
 
     public BaseIndirectPalette(byte bitCount)
     {
-        Values = new int[1 << bitCount];
+        BitCount = bitCount;
+        Values = GC.AllocateUninitializedArray<int>(1 << bitCount);
     }
 
     public abstract T? GetValueFromIndex(int index);
@@ -57,7 +59,12 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
 
         // Add
         if (IsFull)
-            return -1;
+        {
+            BitCount++;
+            int[] newArray = GC.AllocateUninitializedArray<int>(1 << BitCount);
+            Array.Copy(Values, newArray, Values.Length);
+            Values = newArray;
+        }
 
         var newId = Count;
         Values[Count++] = valueId;
