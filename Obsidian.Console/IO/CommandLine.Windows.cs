@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 namespace Obsidian.ConsoleApp.IO;
 
 using ColoredChar = NativeMethods.ColoredChar;
-using Console = System.Console;
 using Coordinate = NativeMethods.Coordinate;
 using HandlerRoutine = NativeMethods.HandlerRoutine;
 using Rect = NativeMethods.Rect;

@@ -24,7 +24,6 @@ public struct ProtocolReader
     /// </summary>
     public ReadOnlySpan<byte> CurrentSpan => new(buffer, index, length - index);
 
-
     /// <summary>
     /// The reader's current position
     /// </summary>
@@ -43,7 +42,6 @@ public struct ProtocolReader
     private readonly int length;
     private int index;
 
-
     /// <summary>
     /// Creates a <see cref="ProtocolReader"/> using the underlying array of the <see cref="ReadOnlyMemory{T}"/>
     /// </summary>
@@ -53,7 +51,6 @@ public struct ProtocolReader
     {
         if (!MemoryMarshal.TryGetArray(memory, out var segment))
             throw new InvalidOperationException("Cannot get an array from the ReadOnlyMemory");
-
 
         buffer = segment.Array!;
         length = segment.Count;
@@ -95,7 +92,13 @@ public struct ProtocolReader
     private void EnsureSize(int required)
     {
         if (index + required > length)
-            throw new IndexOutOfRangeException("Cannot read past buffer's end");
+            ThrowOutOfRange();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowOutOfRange()
+    {
+        throw new IndexOutOfRangeException("Cannot read past buffer's end");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,7 +202,6 @@ public struct ProtocolReader
         return Unsafe.As<long, double>(ref v);
     }
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ReadVarInt()
     {
@@ -246,7 +248,6 @@ public struct ProtocolReader
         return result;
     }
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public string ReadVarString() => ReadString(ReadVarInt());
 
@@ -291,12 +292,11 @@ public struct ProtocolReader
             span[i] = ReadInt64();
     }
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ref byte GetBufferRef() => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), index);
 
     private readonly string GetDebuggerDisplay()
     {
-        return $"ProtocolReader [{index.ToString()}/{length.ToString()}]";
+        return $"ProtocolReader [{index}/{length}]";
     }
 }

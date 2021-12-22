@@ -318,7 +318,7 @@ public struct ProtocolWriter : IDisposable
 
     #region Writing VarLength types
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void WriteVarInt<T>(T value) where T : Enum
+    public void WriteVarInt<T>(T value) where T : struct, Enum
     {
         WriteVarInt(Unsafe.As<T, int>(ref value));
     }
@@ -364,13 +364,9 @@ public struct ProtocolWriter : IDisposable
 
         index += (Unsafe.ByteOffset(ref source, ref target) + 1).ToInt32();
     }
-
-
     #endregion
 
     #region Utilities
-
-
     /// <summary>
     /// Copies the writer's content to a new <see cref="byte"/>[]
     /// </summary>
@@ -404,7 +400,7 @@ public struct ProtocolWriter : IDisposable
 
     private readonly string GetDebuggerDisplay()
     {
-        return $"ProtocolWriter [{index.ToString()}/{buffer.Length.ToString()}]";
+        return $"ProtocolWriter [{index}/{buffer.Length}]";
     }
     #endregion
 }
