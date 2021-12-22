@@ -23,7 +23,7 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
     {
         var index = this.GetIndex(x, y, z);
 
-        var paletteIndex = this.Palette.GetIdFromValue(biome);
+        var paletteIndex = this.Palette.GetOrAddId(biome);
         if (paletteIndex == -1)
             return false;
 
