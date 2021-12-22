@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Threading;
 
-namespace Obsidian.Utilities.Debug;
+namespace Obsidian.Utilities.Debugging;
 
 public class PacketDebugStream : Stream
 {

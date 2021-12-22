@@ -14,7 +14,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Debug;
+using Obsidian.Utilities.Debugging;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
