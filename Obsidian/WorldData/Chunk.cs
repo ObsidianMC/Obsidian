@@ -71,9 +71,7 @@ public class Chunk
     {
         int i = SectionIndex(y);
 
-        x = NumericsHelper.Modulo(x, 16);
-        y = NumericsHelper.Modulo(y, 16);
-        z = NumericsHelper.Modulo(z, 16);
+        y = (y + 64) % 16 / 4;
 
         var success = Sections[i].SetBiome(x, y, z, biome);
 
