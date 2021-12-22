@@ -19,16 +19,13 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
         this.DataArray = new(this.BitsPerEntry, 64);
     }
 
-    public bool Set(int x, int y, int z, Biomes biome)
+    public void Set(int x, int y, int z, Biomes biome)
     {
         var index = this.GetIndex(x, y, z);
 
         var paletteIndex = this.Palette.GetOrAddId(biome);
-        if (paletteIndex == -1)
-            return false;
 
         this.DataArray[index] = paletteIndex;
-        return true;
     }
 
     public Biomes Get(int x, int y, int z)

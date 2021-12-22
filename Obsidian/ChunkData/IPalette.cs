@@ -6,6 +6,7 @@ public interface IPalette<T>
 {
     public int[] Values { get; }
     public int Count { get; }
+    public int BitCount { get; }
     public bool IsFull { get; }
 
     public bool TryGetId(T value, out int id);
