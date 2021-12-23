@@ -124,17 +124,9 @@ public class Chunk
             {
                 for (int y = worldHeight - 1; y >= worldFloor; y--)
                 {
-                    try
-                    {
-                        var block = this.GetBlock(x, y, z);
-                        if (block.IsAir)
-                            continue;
-                    }
-                    catch (Exception ex)
-                    {
-                        var a = 0;
-                    }
-
+                    var block = this.GetBlock(x, y, z);
+                    if (block.IsAir)
+                        continue;
 
                     target.Set(x, z, value: y);
                     break;
