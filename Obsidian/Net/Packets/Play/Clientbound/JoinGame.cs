@@ -7,8 +7,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public class MixedCodec
 {
-    public CodecCollection<string, DimensionCodec> Dimensions { get; init; }
-    public CodecCollection<string, BiomeCodec> Biomes { get; init; }
+    public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
+    public CodecCollection<int, BiomeCodec> Biomes { get; init; }
 }
 
 public partial class JoinGame : IClientboundPacket

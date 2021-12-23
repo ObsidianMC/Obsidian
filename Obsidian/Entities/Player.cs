@@ -322,7 +322,7 @@ public class Player : Living, IPlayer
 
         this.visiblePlayers.Clear();
 
-        Registry.Dimensions.TryGetValue("minecraft:overworld", out var codec);
+        Registry.Dimensions.TryGetValue(0, out var codec);
 
         await this.client.QueuePacketAsync(new Respawn
         {
@@ -603,7 +603,9 @@ public class Player : Living, IPlayer
         this.HurtTime = compound.GetShort("HurtTime");
         this.SleepTimer = compound.GetShort("SleepTimer");
 
-        this.Dimension = Registry.Dimensions.TryGetValue(compound.GetString("Dimension"), out var dimension) ? dimension.Name : "minecraft:overworld";
+        var dimension = Registry.GetDimensionCodecOrDefault(compound.GetString("Dimension"));
+
+        this.Dimension = dimension != null ? dimension.Name : "minecraft:overworld";
 
         this.FoodLevel = compound.GetInt("foodLevel");
         this.FoodTickTimer = compound.GetInt("foodTickTimer");

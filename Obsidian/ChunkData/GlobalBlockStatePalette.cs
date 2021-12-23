@@ -6,10 +6,15 @@ namespace Obsidian.ChunkData;
 public class GlobalBlockStatePalette : IPalette<Block>
 {
     public int[] Values => throw new NotSupportedException();
-    public int BitCount => 15;
+    public int BitCount { get; }
     public int Count => throw new NotSupportedException();
 
     public bool IsFull => false;
+
+    public GlobalBlockStatePalette(int bitCount)
+    {
+        this.BitCount = bitCount;
+    }
 
     public bool TryGetId(Block block, out int id)
     {
