@@ -5,6 +5,7 @@
     <PreserveCompilationContext>false</PreserveCompilationContext>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <OutputType>Library</OutputType>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

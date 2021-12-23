@@ -14,7 +14,7 @@ using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Debug;
+using Obsidian.Utilities.Debugging;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
@@ -29,8 +29,8 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public const ProtocolVersion protocol = ProtocolVersion.v1_17_1;
-    public ProtocolVersion Protocol => protocol;
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_18;
+    public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }
@@ -123,7 +123,7 @@ public partial class Server : IServer
                 while (!cts.IsCancellationRequested)
                 {
                     await Task.Delay(1500, cts.Token); // TODO (.NET 6), use PeriodicTimer
-                        byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
                     await udpClient.SendAsync(motd, motd.Length);
                 }
             });
@@ -302,7 +302,7 @@ public partial class Server : IServer
         Flags = flags
     };
 
-    internal async Task ExecuteCommand(string input)
+    public async Task ExecuteCommand(string input)
     {
         var context = new CommandContext(CommandsHandler._prefix + input, new CommandSender(CommandIssuers.Console, null, Logger), null, this);
         try
@@ -560,7 +560,7 @@ public partial class Server : IServer
         }
     }
 
-    internal void StopServer()
+    public void StopServer()
     {
         cts.Cancel();
         tcpListener.Stop();

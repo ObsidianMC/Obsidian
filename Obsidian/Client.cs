@@ -24,7 +24,7 @@ namespace Obsidian;
 
 public class Client : IDisposable
 {
-    public event Action<Client> Disconnected;
+    public event Action<Client>? Disconnected;
 
     private byte[] randomToken;
     private byte[] sharedKey;
@@ -43,7 +43,7 @@ public class Client : IDisposable
     private bool compressionEnabled;
     public bool EncryptionEnabled { get; private set; }
 
-    private const int compressionThreshold = 256;
+    private const int CompressionThreshold = 256;
 
     internal TcpClient tcp;
 
@@ -58,14 +58,14 @@ public class Client : IDisposable
 
     public ClientSettings ClientSettings { get; internal set; }
 
-    public CancellationTokenSource Cancellation { get; private set; } = new CancellationTokenSource();
+    public CancellationTokenSource Cancellation { get; private set; } = new();
 
     public ClientState State { get; private set; } = ClientState.Handshaking;
 
     public Server Server { get; private set; }
     public Player Player { get; private set; }
 
-    public ILogger Logger => this.Server.Logger;
+    public ILogger Logger => Server.Logger;
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
@@ -296,7 +296,7 @@ public class Client : IDisposable
     // TODO fix compression (.net 6)
     private void SetCompression()
     {
-        this.SendPacket(new SetCompression(compressionThreshold));
+        this.SendPacket(new SetCompression(CompressionThreshold));
         this.compressionEnabled = true;
         this.Logger.LogDebug("Compression has been enabled.");
     }
@@ -315,7 +315,7 @@ public class Client : IDisposable
 
         this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-        Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec);
+        var codec = Registry.GetDimensionCodecOrDefault(this.Player.Dimension);
 
         await this.QueuePacketAsync(new JoinGame
         {

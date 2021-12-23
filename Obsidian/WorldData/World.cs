@@ -84,13 +84,13 @@ public class World : IWorld
             Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
         });
 
-        Parallel.ForEach(clientUnneededChunks, async chunkLoc =>
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
         {
             await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
             c.LoadedChunks.TryRemove(chunkLoc);
         });
 
-        Parallel.ForEach(clientNeededChunks, async chunkLoc =>
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
             var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)
@@ -213,9 +213,7 @@ public class World : IWorld
 
     public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-    public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
-    .Heightmaps[ChunkData.HeightmapType.WorldSurface]
-    .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+    public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
     public NbtCompound GetTileEntity(Vector blockPosition) => this.GetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
@@ -223,6 +221,8 @@ public class World : IWorld
 
     public void SetTileEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
     public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetTileEntity(x, y, z, tileEntityData);
+        .Heightmaps[ChunkData.HeightmapType.MotionBlocking]
+        .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
     public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 
@@ -334,8 +334,8 @@ public class World : IWorld
         Parallel.ForEach(SpawnChunks, (c) =>
         {
             GetChunk(c.X, c.Z);
-                // Update status occasionally so we're not destroying consoleio
-                if (c.X % 5 == 0)
+            // Update status occasionally so we're not destroying consoleio
+            if (c.X % 5 == 0)
                 Server.UpdateStatusConsole();
         });
 
@@ -423,7 +423,7 @@ public class World : IWorld
 
     public void ScheduleBlockUpdate(BlockUpdate bu)
     {
-        bu.block ??= GetBlock(bu.position);
+        bu.Block ??= GetBlock(bu.position);
         var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
 
         r.AddBlockUpdate(bu);
@@ -436,15 +436,15 @@ public class World : IWorld
     /// <returns>Whether to update neighbor blocks.</returns>
     internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
     {
-        if (bu.block is null) { return false; }
+        if (bu.Block is null) { return false; }
 
         // Todo: this better
-        if (Block.GravityAffected.Contains(bu.block.Value.Material))
+        if (Block.GravityAffected.Contains(bu.Block.Value.Material))
         {
             return await BlockUpdates.HandleFallingBlock(bu);
         }
 
-        if (bu.block.Value.IsFluid)
+        if (bu.Block.Value.IsFluid)
         {
             return await BlockUpdates.HandleLiquidPhysics(bu);
         }
@@ -454,8 +454,8 @@ public class World : IWorld
 
     internal void BlockUpdateNeighbors(BlockUpdate bu)
     {
-        bu.block = null;
-        bu.delayCounter = bu.delay;
+        bu.Block = null;
+        bu.delayCounter = bu.Delay;
         var north = bu;
         north.position += Vector.Forwards;
 
@@ -511,8 +511,8 @@ public class World : IWorld
             Region region = GetRegionForChunk(job.x, job.z);
             if (region is null)
             {
-                    // Region isn't ready. Try again later
-                    ChunksToGen.Enqueue((job.x, job.z));
+                // Region isn't ready. Try again later
+                ChunksToGen.Enqueue((job.x, job.z));
                 return;
             }
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
@@ -522,9 +522,9 @@ public class World : IWorld
                 c = new Chunk(job.x, job.z)
                 {
                     isGenerated = false // Not necessary; just being explicit.
-                    };
-                    // Set chunk now so that it no longer comes back as null. #threadlyfe
-                    region.SetChunk(c);
+                };
+                // Set chunk now so that it no longer comes back as null. #threadlyfe
+                region.SetChunk(c);
             }
             Generator.GenerateChunk(job.x, job.z, this, c);
             region.SetChunk(c);
@@ -695,9 +695,9 @@ public class World : IWorld
                 {
                     for (int bz = 0; bz < 16; bz++)
                     {
-                        var by = c.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(bx, bz);
+                        var by = c.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(bx, bz);
                         Block block = c.GetBlock(bx, by, bz);
-                        if (by > 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
+                        if (by >= 64 && (block.Is(Material.GrassBlock) || block.Is(Material.Sand)))
                         {
                             if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
                             {

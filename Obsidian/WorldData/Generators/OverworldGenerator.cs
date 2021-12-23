@@ -46,18 +46,18 @@ public class OverworldGenerator : WorldGenerator
                 int worldX = bx + (cx << 4);
                 int worldZ = bz + (cz << 4);
                 terrainHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ);
-                chunk.Heightmaps[ChunkData.HeightmapType.WorldSurface].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
-                chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
+                //chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
+                //chunk.Heightmaps[ChunkData.HeightmapType.OceanFloor].Set(bx, bz, (int)terrainHeightmap[bx, bz]);
                 rockHeightmap[bx, bz] = terrainGen.GetValue(worldX, worldZ) - 5;
-                bedrockHeightmap[bx, bz] = 3; // noiseGen.Bedrock(worldX, worldZ) + 1;
+                bedrockHeightmap[bx, bz] = -30; // noiseGen.Bedrock(worldX, worldZ) + 1;
 
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
                     var b = ChunkBiome.GetBiome(worldX, worldZ, terrainGen);
-                    for (int y = 0; y < 256; y += 4)
+                    for (int y = -64; y < 320; y += 4)
                     {
-                        chunk.BiomeContainer.SetBiome(bx, y, bz, b);
+                        chunk.SetBiome(bx, y, bz, b);
                     }
                 }
             }
