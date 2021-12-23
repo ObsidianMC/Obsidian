@@ -213,7 +213,8 @@ public class World : IWorld
 
     public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
-    public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+    public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
+        .Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
     public NbtCompound GetTileEntity(Vector blockPosition) => this.GetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
@@ -221,8 +222,6 @@ public class World : IWorld
 
     public void SetTileEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
     public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetTileEntity(x, y, z, tileEntityData);
-        .Heightmaps[ChunkData.HeightmapType.MotionBlocking]
-        .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
     public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 

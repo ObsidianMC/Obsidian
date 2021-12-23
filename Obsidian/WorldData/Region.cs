@@ -195,7 +195,7 @@ public class Region
             chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
-        foreach (var tileEntityNbt in chunkCompound["TileEntities"] as NbtList)
+        foreach (var tileEntityNbt in chunkCompound["block_entities"] as NbtList)
         {
             var tileEntityCompound = tileEntityNbt as NbtCompound;
 
