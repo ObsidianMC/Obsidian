@@ -24,7 +24,6 @@ jobs:
     - name: Rename executables
       working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
       run: |
-        mv Obsidian.ConsoleApp.exe ObsidianApp.exe
         mv Obsidian.ConsoleApp.dll ObsidianApp.dll
         mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
         mv Obsidian.ConsoleApp.runtimeconfig.json ObsidianApp.runtimeconfig.json
