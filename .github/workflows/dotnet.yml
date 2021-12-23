@@ -20,10 +20,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore --configuration Release --verbosity quiet /p:DebugType=None
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
         name: Obsidian-Nightly-Build
-        path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net6.0/
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
       if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs
