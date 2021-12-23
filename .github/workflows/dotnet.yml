@@ -22,8 +22,8 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release --verbosity quiet /p:DebugType=None
     - name: Rename executables
+      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
       run: |
-        cd /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
         mv Obsidian.ConsoleApp.exe ObsidianApp.exe
         mv Obsidian.ConsoleApp.dll ObsidianApp.dll
         mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
