@@ -65,7 +65,9 @@ public static partial class Extensions
 
     public static string ToSnakeCase(this string str) => string.Join("_", pattern.Matches(str)).ToLower();
 
-    // Trims "minecraft:" from the start and removes '_' characters
+    /// <summary>
+    /// Trims "minecraft:" from the start and removes '_' characters
+    /// </summary>
     public static string TrimMinecraftTag(this string value)
     {
         const int minecraftTagLength = 10; // "minecraft:"

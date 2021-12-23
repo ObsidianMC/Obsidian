@@ -61,7 +61,8 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
     /// at the moment when Count was accessed.</remarks>
     public int Count
     {
-        get {
+        get
+        {
             var count = 0;
             var acquiredLocks = 0;
             try
@@ -89,7 +90,8 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
     /// false.</value>
     public bool IsEmpty
     {
-        get {
+        get
+        {
             var acquiredLocks = 0;
             try
             {

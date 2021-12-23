@@ -9,7 +9,8 @@ internal static class PlatformHelper
 
     internal static int ProcessorCount
     {
-        get {
+        get
+        {
             var now = Environment.TickCount;
             if (_processorCount == 0 || now - _lastProcessorCountRefreshTicks >= ProcessorCountRefreshIntervalMs)
             {

@@ -7,8 +7,8 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public class MixedCodec
 {
-    public CodecCollection<string, DimensionCodec> Dimensions { get; init; }
-    public CodecCollection<string, BiomeCodec> Biomes { get; init; }
+    public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
+    public CodecCollection<int, BiomeCodec> Biomes { get; init; }
 }
 
 public partial class JoinGame : IClientboundPacket
@@ -46,16 +46,19 @@ public partial class JoinGame : IClientboundPacket
     [Field(11), VarLength]
     public int ViewDistance { get; init; } = 32;
 
-    [Field(12)]
-    public bool ReducedDebugInfo { get; init; } = false;
+    [Field(12), VarLength]
+    public int SimulationDistance { get; init; } = 12;
 
     [Field(13)]
-    public bool EnableRespawnScreen { get; init; } = true;
+    public bool ReducedDebugInfo { get; init; } = false;
 
     [Field(14)]
-    public bool Debug { get; init; } = false;
+    public bool EnableRespawnScreen { get; init; } = true;
 
     [Field(15)]
+    public bool Debug { get; init; } = false;
+
+    [Field(16)]
     public bool Flat { get; init; } = false;
 
     public int Id => 0x26;

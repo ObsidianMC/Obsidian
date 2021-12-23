@@ -13,12 +13,11 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (var z1 = 0; z1 < 16; z1++)
             {
-                chunk.SetBlock(x1, 5, z1, Registry.GetBlock(Material.GrassBlock));
-                chunk.SetBlock(x1, 4, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 3, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 2, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 1, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 0, z1, Registry.GetBlock(Material.Bedrock));
+                chunk.SetBlock(x1, -60, z1, Registry.GetBlock(Material.GrassBlock));
+                chunk.SetBlock(x1, -61, z1, Registry.GetBlock(Material.Dirt));
+                chunk.SetBlock(x1, -62, z1, Registry.GetBlock(Material.Dirt));
+                chunk.SetBlock(x1, -63, z1, Registry.GetBlock(Material.Dirt));
+                chunk.SetBlock(x1, -64, z1, Registry.GetBlock(Material.Bedrock));
             }
         }
 
