@@ -3,22 +3,20 @@ using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BlockStateContainer : IDataContainer<Block>
+public sealed class BlockStateContainer : DataContainer<Block>
 {
-    public byte BitsPerEntry { get; }
-    public DataArray DataArray { get; private set; }
-    public IPalette<Block> Palette { get; internal set; }
+    public override IPalette<Block> Palette { get; internal set; }
 
     public bool IsEmpty => DataArray.storage.Length == 0;
+
+    public override DataArray DataArray { get; protected set; }
 
 #if CACHE_VALID_BLOCKS
     private readonly DirtyCache<short> validBlockCount;
 #endif
 
-    internal BlockStateContainer(byte bitsPerEntry = 4)
+    internal BlockStateContainer(byte bitsPerEntry = 4) : base(bitsPerEntry)
     {
-        BitsPerEntry = bitsPerEntry;
-
         DataArray = new DataArray(bitsPerEntry, 4096);
 
         Palette = bitsPerEntry.DetermineBlockPalette();
@@ -49,9 +47,7 @@ public sealed class BlockStateContainer : IDataContainer<Block>
         return Palette.GetValueFromIndex(storageId);
     }
 
-    public int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
-
-    public async Task WriteToAsync(MinecraftStream stream)
+    public override async Task WriteToAsync(MinecraftStream stream)
     {
 #if CACHE_VALID_BLOCKS
         var validBlocks = validBlockCount.GetValue();
@@ -68,7 +64,7 @@ public sealed class BlockStateContainer : IDataContainer<Block>
         await stream.WriteLongArrayAsync(DataArray.storage);
     }
 
-    public void WriteTo(MinecraftStream stream)
+    public override void WriteTo(MinecraftStream stream)
     {
 #if CACHE_VALID_BLOCKS
         var validBlocks = validBlockCount.GetValue();

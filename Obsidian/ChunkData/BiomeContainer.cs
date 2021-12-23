@@ -3,17 +3,14 @@ using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BiomeContainer : IDataContainer<Biomes>
+public sealed class BiomeContainer : DataContainer<Biomes>
 {
-    public byte BitsPerEntry { get; private set; }
-    public IPalette<Biomes> Palette { get; private set; }
+    public override IPalette<Biomes> Palette { get; internal set; }
 
-    public DataArray DataArray { get; set; }
+    public override DataArray DataArray { get; protected set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2)
+    internal BiomeContainer(byte bitsPerEntry = 2) : base((byte)(bitsPerEntry > 3 ? 6 : bitsPerEntry))
     {
-        this.BitsPerEntry = (byte)(bitsPerEntry > 3 ? 6 : bitsPerEntry);
-
         this.Palette = bitsPerEntry.DetermineBiomePalette();
 
         this.DataArray = new(this.BitsPerEntry, 64);
@@ -35,9 +32,7 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
         return this.Palette.GetValueFromIndex(storageId);
     }
 
-    public int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
-
-    public async Task WriteToAsync(MinecraftStream stream)
+    public override async Task WriteToAsync(MinecraftStream stream)
     {
         stream.WriteUnsignedByte(this.BitsPerEntry);
 
@@ -50,7 +45,7 @@ public sealed class BiomeContainer : IDataContainer<Biomes>
             stream.WriteLong(storage[i]);
     }
 
-    public void WriteTo(MinecraftStream stream)
+    public override void WriteTo(MinecraftStream stream)
     {
         stream.WriteUnsignedByte(this.BitsPerEntry);
 
