@@ -72,7 +72,7 @@ public class Heightmap
 
     private int GetIndex(int x, int z) => x + z * 16;
 
-    public long[] GetDataArray() => this.data.Storage;
+    public long[] GetDataArray() => this.data.storage;
 }
 
 public enum HeightmapType

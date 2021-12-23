@@ -1,42 +1,63 @@
 ﻿using Obsidian.Net;
+using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public class BiomeContainer
+public sealed class BiomeContainer : DataContainer<Biomes>
 {
-    public List<int> Biomes { get; set; } = new List<int>(1024);
+    public override IPalette<Biomes> Palette { get; internal set; }
 
-    public BiomeContainer()
+    public override DataArray DataArray { get; protected set; }
+
+    internal BiomeContainer(byte bitsPerEntry = 2) : base(bitsPerEntry)
     {
-        for (int x = 0; x < 1024; x++)
-            Biomes.Add(0);
+        this.Palette = bitsPerEntry.DetermineBiomePalette();
+
+        this.DataArray = new(this.BitsPerEntry, 64);
     }
 
-    public void SetBiome(int bx, int by, int bz, Biomes biome)
+    public void Set(int x, int y, int z, Biomes biome)
     {
-        Biomes[GetIndex(bx, by, bz)] = (int)biome;
+        var index = this.GetIndex(x, y, z);
+
+        var paletteIndex = this.Palette.GetOrAddId(biome);
+
+        if (Palette.BitCount > DataArray.BitsPerEntry)
+            DataArray = DataArray.Grow(Palette.BitCount);
+
+        this.DataArray[index] = paletteIndex;
     }
 
-    public Biomes GetBiome(int bx, int by, int bz)
+    public Biomes Get(int x, int y, int z)
     {
-        return (Biomes)Biomes[GetIndex(bx, by, bz)];
+        var storageId = this.DataArray[this.GetIndex(x, y, z)];
+
+        return this.Palette.GetValueFromIndex(storageId);
     }
 
-    private int GetIndex(int x, int y, int z) => ((y >> 2) & 63) << 4 | ((z >> 2) & 3) << 2 | ((x >> 2) & 3);
-
-    public async Task WriteToAsync(MinecraftStream stream)
+    public override async Task WriteToAsync(MinecraftStream stream)
     {
-        await stream.WriteVarIntAsync(1024);
+        stream.WriteUnsignedByte(this.BitsPerEntry);
 
-        foreach (var biome in this.Biomes)
-            await stream.WriteVarIntAsync(biome);
+        await this.Palette.WriteToAsync(stream);
+
+        stream.WriteVarInt(this.DataArray.storage.Length);
+
+        long[] storage = this.DataArray.storage;
+        for (int i = 0; i < storage.Length; i++)
+            stream.WriteLong(storage[i]);
     }
 
-    public void WriteTo(MinecraftStream stream)
+    public override void WriteTo(MinecraftStream stream)
     {
-        stream.WriteVarInt(1024);
+        stream.WriteUnsignedByte(this.BitsPerEntry);
 
-        foreach (var biome in Biomes)
-            stream.WriteVarInt(biome);
+        this.Palette.WriteTo(stream);
+
+        stream.WriteVarInt(this.DataArray.storage.Length);
+
+        long[] storage = this.DataArray.storage;
+        for (int i = 0; i < storage.Length; i++)
+            stream.WriteLong(storage[i]);
     }
 }

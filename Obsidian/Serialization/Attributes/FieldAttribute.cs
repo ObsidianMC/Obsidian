@@ -6,4 +6,4 @@ public sealed class FieldAttribute : Attribute
     public FieldAttribute(int order)
     {
     }
-}    
+}

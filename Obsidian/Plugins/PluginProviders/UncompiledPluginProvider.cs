@@ -12,7 +12,8 @@ public class UncompiledPluginProvider : IPluginProvider
     private static WeakReference<PortableExecutableReference[]> _metadataReferences = new WeakReference<PortableExecutableReference[]>(null);
     internal static PortableExecutableReference[] MetadataReferences
     {
-        get {
+        get
+        {
             if (_metadataReferences.TryGetTarget(out var value) && value != null)
                 return value;
             var references = GetPortableExecutableReferences();

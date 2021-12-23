@@ -3,90 +3,160 @@ using Obsidian.Utilities.Collection;
 
 namespace Obsidian.ChunkData;
 
-public abstract class BlockStateContainer
+public sealed class BlockStateContainer : DataContainer<Block>
 {
-    public abstract byte BitsPerBlock { get; }
+    public override IPalette<Block> Palette { get; internal set; }
 
-    public abstract DataArray BlockStorage { get; }
+    public bool IsEmpty => DataArray.storage.Length == 0;
 
-    public abstract IBlockStatePalette Palette { get; internal set; }
+    public override DataArray DataArray { get; protected set; }
 
-    protected bool Set(int x, int y, int z, Block blockState)
+#if CACHE_VALID_BLOCKS
+    private readonly DirtyCache<short> validBlockCount;
+#endif
+
+    internal BlockStateContainer(byte bitsPerEntry = 4) : base(bitsPerEntry)
     {
-        y %= 16;
+        DataArray = new DataArray(bitsPerEntry, 4096);
+
+        Palette = bitsPerEntry.DetermineBlockPalette();
+
+#if CACHE_VALID_BLOCKS
+        validBlockCount = new(GetNonAirBlocks);
+#endif
+    }
+
+    public void Set(int x, int y, int z, Block blockState)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
         var blockIndex = GetIndex(x, y, z);
 
-        int paletteIndex = this.Palette.GetIdFromState(blockState);
-        if (paletteIndex == -1) { return false; }
+        int paletteId = Palette.GetOrAddId(blockState);
 
-        this.BlockStorage[blockIndex] = paletteIndex;
-        return true;
+        if (Palette.BitCount > DataArray.BitsPerEntry)
+            DataArray = DataArray.Grow(Palette.BitCount);
+
+        DataArray[blockIndex] = paletteId;
     }
 
-    protected Block Get(int x, int y, int z)
+    public Block Get(int x, int y, int z)
     {
-        y %= 16;
-        int storageId = this.BlockStorage[GetIndex(x, y, z)];
+        int storageId = DataArray[GetIndex(x, y, z)];
 
-        return this.Palette.GetStateFromIndex(storageId);
+        return Palette.GetValueFromIndex(storageId);
     }
 
-    public static int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
-
-    public async Task WriteToAsync(MinecraftStream stream)
+    public override async Task WriteToAsync(MinecraftStream stream)
     {
-        short validBlockCount = 0;
-        for (int x = 0; x < 16; x++)
-        {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    var block = this.Get(x, y, z);
+#if CACHE_VALID_BLOCKS
+        var validBlocks = validBlockCount.GetValue();
+#else
+        var validBlocks = GetNonAirBlocks();
+#endif
 
-                    if (!block.IsAir)
-                        validBlockCount++;
-                }
-            }
-        }
+        await stream.WriteShortAsync(validBlocks);
+        await stream.WriteUnsignedByteAsync(BitsPerEntry);
 
-        await stream.WriteShortAsync(validBlockCount);
-        await stream.WriteUnsignedByteAsync(this.BitsPerBlock);
+        await Palette.WriteToAsync(stream);
 
-        await this.Palette.WriteToAsync(stream);
-
-        await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
-        await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
+        await stream.WriteVarIntAsync(DataArray.storage.Length);
+        await stream.WriteLongArrayAsync(DataArray.storage);
     }
 
-    public void WriteTo(MinecraftStream stream)
+    public override void WriteTo(MinecraftStream stream)
     {
-        short validBlockCount = 0;
-        for (int x = 0; x < 16; x++)
+#if CACHE_VALID_BLOCKS
+        var validBlocks = validBlockCount.GetValue();
+#else
+        var validBlocks = GetNonAirBlocks();
+#endif
+
+        stream.WriteShort(validBlocks);
+        stream.WriteUnsignedByte(BitsPerEntry);
+
+        Palette.WriteTo(stream);
+
+        stream.WriteVarInt(DataArray.storage.Length);
+        stream.WriteLongArray(DataArray.storage);
+    }
+
+    public void Fill(Block block)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        int index = Palette.GetOrAddId(block);
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    var block = this.Get(x, y, z);
-
-                    if (!block.IsAir)
-                        validBlockCount++;
-                }
-            }
+            DataArray[i] = index;
         }
+    }
 
-        stream.WriteShort(validBlockCount);
-        stream.WriteUnsignedByte(BitsPerBlock);
+    private static readonly Block air = Block.Air;
+    private static readonly Block caveAir = new(Material.CaveAir);
+    private static readonly Block voidAir = new(Material.VoidAir);
 
-        Palette.WriteToAsync(stream);
+    private short GetNonAirBlocks()
+    {
+        int validBlocksCount = 0;
+        int indexOne, indexTwo, indexThree;
 
-        stream.WriteVarInt(BlockStorage.Storage.Length);
+        if (!Palette.TryGetId(air, out indexOne))
+            goto NO_AIR;
+        if (!Palette.TryGetId(caveAir, out indexTwo))
+            goto NO_CAVE;
+        if (!Palette.TryGetId(voidAir, out indexThree))
+            goto TWO_INDEXES;
 
-        long[] storage = BlockStorage.Storage;
-        for (int i = 0; i < storage.Length; i++)
+        // 1 1 1
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            stream.WriteLong(storage[i]);
+            int index = DataArray[i];
+            if (index != indexOne && index != indexTwo && index != indexThree)
+                validBlocksCount++;
         }
+        return (short)validBlocksCount;
+
+    // 0 ? ?
+    NO_AIR:
+        if (!Palette.TryGetId(caveAir, out indexOne))
+            goto NO_AIR_CAVE;
+        if (!Palette.TryGetId(voidAir, out indexTwo))
+            goto ONE_INDEX;
+        goto TWO_INDEXES;
+
+    // 1 0 ?
+    NO_CAVE:
+        if (!Palette.TryGetId(voidAir, out indexTwo))
+            goto ONE_INDEX;
+        goto TWO_INDEXES;
+
+    // 0 0 ?
+    NO_AIR_CAVE:
+        if (!Palette.TryGetId(voidAir, out indexOne))
+            return 0;
+        // Fall through to ONE_INDEX
+
+        // 1 0 0
+        ONE_INDEX:
+        for (int i = 0; i < 16 * 16 * 16; i++)
+        {
+            int index = DataArray[i];
+            if (index != indexOne)
+                validBlocksCount++;
+        }
+        return (short)validBlocksCount;
+
+    // 1 1 0
+    TWO_INDEXES:
+        for (int i = 0; i < 16 * 16 * 16; i++)
+        {
+            int index = DataArray[i];
+            if (index != indexOne && index != indexTwo)
+                validBlocksCount++;
+        }
+        return (short)validBlocksCount;
     }
 }

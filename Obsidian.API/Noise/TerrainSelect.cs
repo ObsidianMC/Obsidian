@@ -4,7 +4,7 @@ namespace Obsidian.API.Noise;
 
 public class TerrainSelect : SharpNoise.Modules.Blend
 {
-    internal Dictionary<int, Module> TerrainModules { get; set; } = new();
+    internal Dictionary<Biomes, Module> TerrainModules { get; set; } = new();
 
     public Module BiomeSelector { get; set; }
 
@@ -17,7 +17,7 @@ public class TerrainSelect : SharpNoise.Modules.Blend
     public override double GetValue(double x, double y, double z)
     {
         var b = (int)BiomeSelector.GetValue(x, y, z);
-        Source0 = TerrainModules[b];
+        Source0 = Enum.IsDefined(typeof(Biomes), b) ? TerrainModules[(Biomes)b] : new Constant { ConstantValue = 0 };
         return base.GetValue(x, y, z);
     }
 }

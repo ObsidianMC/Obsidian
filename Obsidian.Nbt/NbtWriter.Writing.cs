@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Buffers.Binary;
+using System.Text;
 
 namespace Obsidian.Nbt;
 
@@ -20,15 +21,11 @@ public partial class NbtWriter
         this.WriteShortInternal((short)buffer.Length);
         this.BaseStream.Write(buffer);
     }
-
     internal void WriteShortInternal(short value)
     {
         Span<byte> buffer = stackalloc byte[2];
 
-        BitConverter.TryWriteBytes(buffer, value);
-
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
+        BinaryPrimitives.WriteInt16BigEndian(buffer, value);
 
         this.BaseStream.Write(buffer);
     }
@@ -37,10 +34,7 @@ public partial class NbtWriter
     {
         Span<byte> buffer = stackalloc byte[4];
 
-        BitConverter.TryWriteBytes(buffer, value);
-
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
+        BinaryPrimitives.WriteInt32BigEndian(buffer, value);
 
         this.BaseStream.Write(buffer);
     }
@@ -49,10 +43,7 @@ public partial class NbtWriter
     {
         Span<byte> buffer = stackalloc byte[4];
 
-        BitConverter.TryWriteBytes(buffer, value);
-
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
+        BinaryPrimitives.WriteSingleBigEndian(buffer, value);
 
         this.BaseStream.Write(buffer);
     }
@@ -61,10 +52,7 @@ public partial class NbtWriter
     {
         Span<byte> buffer = stackalloc byte[8];
 
-        BitConverter.TryWriteBytes(buffer, value);
-
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
+        BinaryPrimitives.WriteInt64BigEndian(buffer, value);
 
         this.BaseStream.Write(buffer);
     }
@@ -73,10 +61,7 @@ public partial class NbtWriter
     {
         Span<byte> buffer = stackalloc byte[8];
 
-        BitConverter.TryWriteBytes(buffer, value);
-
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
+        BinaryPrimitives.WriteDoubleBigEndian(buffer, value);
 
         this.BaseStream.Write(buffer);
     }

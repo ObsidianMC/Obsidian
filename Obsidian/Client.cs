@@ -322,7 +322,7 @@ public class Client : IDisposable
 
         this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-        Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec);
+        var codec = Registry.GetDimensionCodecOrDefault(this.Player.Dimension);
 
         await this.QueuePacketAsync(new JoinGame
         {

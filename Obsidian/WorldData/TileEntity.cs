@@ -5,7 +5,8 @@ public abstract class TileEntity
     //[NbtIgnore]
     public VectorF Position
     {
-        get {
+        get
+        {
             return new VectorF(X, Y, Z);
         }
     }
