@@ -22,11 +22,12 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release --verbosity quiet /p:DebugType=None
     - name: Rename executables
-      run: cd /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
-      run: mv Obsidian.ConsoleApp.exe ObsidianApp.exe
-      run: mv Obsidian.ConsoleApp.dll ObsidianApp.dll
-      run: mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
-      run: mv Obsidian.ConsoleApp.runtimeconfig.json ObsidianApp.runtimeconfig.json
+      run: |
+        cd /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
+        mv Obsidian.ConsoleApp.exe ObsidianApp.exe
+        mv Obsidian.ConsoleApp.dll ObsidianApp.dll
+        mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
+        mv Obsidian.ConsoleApp.runtimeconfig.json ObsidianApp.runtimeconfig.json
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
