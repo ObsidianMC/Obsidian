@@ -17,4 +17,3 @@ public abstract class DataContainer<T>
     public abstract Task WriteToAsync(MinecraftStream stream);
     public abstract void WriteTo(MinecraftStream stream);
 }
-

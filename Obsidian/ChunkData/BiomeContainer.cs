@@ -9,7 +9,7 @@ public sealed class BiomeContainer : DataContainer<Biomes>
 
     public override DataArray DataArray { get; protected set; }
 
-    internal BiomeContainer(byte bitsPerEntry = 2) : base((byte)(bitsPerEntry > 3 ? 6 : bitsPerEntry))
+    internal BiomeContainer(byte bitsPerEntry = 2) : base(bitsPerEntry)
     {
         this.Palette = bitsPerEntry.DetermineBiomePalette();
 
@@ -21,6 +21,9 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         var index = this.GetIndex(x, y, z);
 
         var paletteIndex = this.Palette.GetOrAddId(biome);
+
+        if (Palette.BitCount > DataArray.BitsPerEntry)
+            DataArray = DataArray.Grow(Palette.BitCount);
 
         this.DataArray[index] = paletteIndex;
     }

@@ -37,6 +37,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 
         if (Palette.BitCount > DataArray.BitsPerEntry)
             DataArray = DataArray.Grow(Palette.BitCount);
+
         DataArray[blockIndex] = paletteId;
     }
 
