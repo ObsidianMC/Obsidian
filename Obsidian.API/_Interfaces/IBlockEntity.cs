@@ -4,7 +4,7 @@ public interface IBlockEntity
 {
     public string Id { get; }
 
-    public Vector BlockPosition { get; set; }
+    public Vector BlockPosition { get; }
 
     public void ToNbt();
 

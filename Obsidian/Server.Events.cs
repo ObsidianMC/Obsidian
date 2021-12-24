@@ -32,14 +32,15 @@ public partial class Server
 
         if (block.HasValue)
         {
+            if (e.BlockLocation is not Vector blockPosition)
+                return;
             var interactedBlock = block.Value;
-            var blockPosition = (Vector)e.BlockLocation;
 
             player.LastClickedBlock = interactedBlock;
 
             var type = interactedBlock.Material;
 
-            BaseContainer container = type switch
+            BaseContainer? container = type switch
             {
                 Material.Anvil or Material.SmithingTable => new AnvilContainer(type.ToString().ToSnakeCase())
                 {
