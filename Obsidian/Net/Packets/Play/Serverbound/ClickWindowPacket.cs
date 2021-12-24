@@ -188,7 +188,7 @@ public partial class ClickWindowPacket : IServerboundPacket
                 }
         }
 
-        if (container is ITileEntity tileEntityContainer)
+        if (container is IBlockEntity tileEntityContainer)
         {
             var blockEntity = server.World.GetBlockEntity(tileEntityContainer.BlockPosition);
 
