@@ -216,12 +216,12 @@ public class World : IWorld
     public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
         .Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
 
-    public NbtCompound GetTileEntity(Vector blockPosition) => this.GetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
+    public NbtCompound GetBlockEntity(Vector blockPosition) => this.GetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
-    public NbtCompound GetTileEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetTileEntity(x, y, z);
+    public NbtCompound GetBlockEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlockEntity(x, y, z);
 
-    public void SetTileEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetTileEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
-    public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetTileEntity(x, y, z, tileEntityData);
+    public void SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetBlockEntity(x, y, z, tileEntityData);
 
     public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 

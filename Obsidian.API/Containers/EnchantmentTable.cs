@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Containers;
 
-public sealed class EnchantmentTable : BaseContainer, ITileEntity
+public sealed class EnchantmentTable : BaseContainer, IBlockEntity
 {
     public string Id => "enchantment_table";
 

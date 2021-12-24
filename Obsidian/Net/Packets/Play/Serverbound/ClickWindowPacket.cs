@@ -190,12 +190,12 @@ public partial class ClickWindowPacket : IServerboundPacket
 
         if (container is ITileEntity tileEntityContainer)
         {
-            var tileEntity = server.World.GetTileEntity(tileEntityContainer.BlockPosition);
+            var blockEntity = server.World.GetBlockEntity(tileEntityContainer.BlockPosition);
 
-            if (tileEntity is null)
+            if (blockEntity is null)
                 return;
 
-            if (tileEntity.TryGetTag("Items", out var list))
+            if (blockEntity.TryGetTag("Items", out var list))
             {
                 var items = list as NbtList;
 
@@ -212,7 +212,7 @@ public partial class ClickWindowPacket : IServerboundPacket
 
                 this.FillNbtList(items, container);
 
-                tileEntity.Add(items);
+                blockEntity.Add(items);
             }
         }
     }

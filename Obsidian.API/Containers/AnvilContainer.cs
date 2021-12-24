@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Containers;
 
-public sealed class AnvilContainer : ResultContainer, ITileEntity
+public sealed class AnvilContainer : ResultContainer, IBlockEntity
 {
     public string Id { get; }
 

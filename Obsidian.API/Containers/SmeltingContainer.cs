@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Containers;
 
-public class SmeltingContainer : ResultContainer, ITileEntity
+public class SmeltingContainer : ResultContainer, IBlockEntity
 {
     public string Id { get; }
 

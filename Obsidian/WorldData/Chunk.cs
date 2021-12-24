@@ -17,7 +17,7 @@ public class Chunk
 
     //TODO try and do some temp caching
     public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
-    public Dictionary<short, NbtCompound> TileEntities { get; private set; } = new Dictionary<short, NbtCompound>();
+    public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
     public ChunkSection[] Sections { get; private set; } = new ChunkSection[24];
     public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
@@ -78,26 +78,26 @@ public class Chunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public NbtCompound GetTileEntity(Vector position) => this.GetTileEntity(position.X, position.Y, position.Z);
+    public NbtCompound GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
 
-    public NbtCompound GetTileEntity(int x, int y, int z)
+    public NbtCompound GetBlockEntity(int x, int y, int z)
     {
         x = NumericsHelper.Modulo(x, 16);
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        return this.TileEntities.GetValueOrDefault(value);
+        return this.BlockEntities.GetValueOrDefault(value);
     }
 
-    public void SetTileEntity(Vector position, NbtCompound tileEntityData) => this.SetTileEntity(position.X, position.Y, position.Z, tileEntityData);
+    public void SetBlockEntity(Vector position, NbtCompound tileEntityData) => this.SetBlockEntity(position.X, position.Y, position.Z, tileEntityData);
 
-    public void SetTileEntity(int x, int y, int z, NbtCompound tileEntityData)
+    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
     {
         x = NumericsHelper.Modulo(x, 16);
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        this.TileEntities[value] = tileEntityData;
+        this.BlockEntities[value] = tileEntityData;
     }
     
     public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);

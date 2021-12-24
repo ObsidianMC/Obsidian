@@ -163,15 +163,15 @@ public partial class Server
                 //TODO open lectern??
             }
 
-            if (container is ITileEntity)
+            if (container is IBlockEntity)
             {
-                var tileEntity = server.World.GetTileEntity(blockPosition);
+                var tileEntity = server.World.GetBlockEntity(blockPosition);
 
                 if (tileEntity == null)
                 {
                     tileEntity = new NbtCompound()
                     {
-                        new NbtTag<string>("id", (container as ITileEntity).Id),
+                        new NbtTag<string>("id", (container as IBlockEntity).Id),
 
                         new NbtTag<int>("x", blockPosition.X),
                         new NbtTag<int>("y", blockPosition.Y),
@@ -180,7 +180,7 @@ public partial class Server
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    server.World.SetTileEntity(blockPosition, tileEntity);
+                    server.World.SetBlockEntity(blockPosition, tileEntity);
                 }
                 else if (tileEntity is NbtCompound dataCompound)
                 {

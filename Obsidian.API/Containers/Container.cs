@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public sealed class Container : BaseContainer, ITileEntity
+public sealed class Container : BaseContainer, IBlockEntity
 {
     internal int StateId { get; set; }
 

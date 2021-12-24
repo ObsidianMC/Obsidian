@@ -13,7 +13,7 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        if (WindowId == 0 || (player.OpenedContainer is not ITileEntity tileEntity))
+        if (WindowId == 0 || (player.OpenedContainer is not IBlockEntity tileEntity))
             return;
 
         var position = tileEntity.BlockPosition;

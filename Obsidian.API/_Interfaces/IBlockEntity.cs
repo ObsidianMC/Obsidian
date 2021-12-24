@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public interface ITileEntity
+public interface IBlockEntity
 {
     public string Id { get; }
 
