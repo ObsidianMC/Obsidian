@@ -5,7 +5,7 @@ public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
     /// <summary>
     /// Gets the clicked container
     /// </summary>
-    public BaseContainer container { get; }
+    public BaseContainer Container { get; }
 
     /// <summary>
     /// Gets the current item that was clicked
@@ -21,7 +21,7 @@ public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
 
     internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
     {
-        this.container = container;
+        this.Container = container;
         this.Item = item;
     }
 }

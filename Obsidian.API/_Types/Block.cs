@@ -96,7 +96,7 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
         Material.Scaffolding
     };
 
-    internal static readonly List<string> BlockEntities = new()
+    internal static readonly List<string> BlockEntityIds = new()
     {
         "minecraft:furnace",
         "minecraft:chest",

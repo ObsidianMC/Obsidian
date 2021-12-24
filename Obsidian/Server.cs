@@ -463,10 +463,7 @@ public partial class Server : IServer
                         Entity = item
                     });
 
-                    if (player.Sneaking)
-                        player.Inventory.RemoveItem(player.inventorySlot, 64);//TODO get max stack size for the item
-                    else
-                        player.Inventory.RemoveItem(player.inventorySlot, 1);
+                    player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
 
                     player.client.SendPacket(new SetSlot
                     {

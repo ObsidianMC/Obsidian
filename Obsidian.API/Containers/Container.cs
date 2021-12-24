@@ -26,8 +26,7 @@ public sealed class Container : BaseContainer, IBlockEntity
 
     public override int AddItem(ItemStack item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         if (this.IsPlayerInventory)
         {
@@ -60,7 +59,6 @@ public sealed class Container : BaseContainer, IBlockEntity
 
         return -1;
     }
-
 
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();

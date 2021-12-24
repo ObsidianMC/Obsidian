@@ -7,6 +7,6 @@ public sealed class CartographyTable : ResultContainer
         this.Title = "Cartography Table";
     }
 
-    public override ItemStack? GetResult() => throw new NotImplementedException();
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
+    public override ItemStack? GetResult() => throw new NotImplementedException();
 }

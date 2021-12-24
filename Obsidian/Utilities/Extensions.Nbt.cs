@@ -4,7 +4,7 @@ namespace Obsidian.Utilities;
 
 public partial class Extensions
 {
-    public static NbtCompound ToNbt(this ItemStack value)
+    public static NbtCompound ToNbt(this ItemStack? value)
     {
         value ??= new ItemStack(0, 0) { Present = true };
 
@@ -42,9 +42,9 @@ public partial class Extensions
             if (meta.Name is not null)
             {
                 var displayCompound = new NbtCompound("display")
-                        {
-                            new NbtTag<string>("Name", new List<ChatMessage> { meta.Name }.ToJson())
-                        };
+                {
+                    new NbtTag<string>("Name", new List<ChatMessage> { meta.Name }.ToJson())
+                };
 
                 if (meta.Lore is not null)
                 {
@@ -61,9 +61,9 @@ public partial class Extensions
             else if (meta.Lore is not null)
             {
                 var displayCompound = new NbtCompound("display")
-                        {
-                            new NbtTag<string>("Name", new List<ChatMessage> { meta.Name }.ToJson())
-                        };
+                {
+                    new NbtTag<string>("Name", new List<ChatMessage> { meta.Name }.ToJson())
+                };
 
                 var list = new NbtList(NbtTagType.String, "Lore");
 
@@ -79,7 +79,7 @@ public partial class Extensions
         return compound;
     }
 
-    public static ItemStack ItemFromNbt(this NbtCompound item)
+    public static ItemStack? ItemFromNbt(this NbtCompound? item)
     {
         if (item is null)
             return null;

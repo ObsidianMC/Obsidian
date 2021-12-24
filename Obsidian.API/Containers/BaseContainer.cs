@@ -30,8 +30,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     //TODO match item meta
     public virtual int AddItem(ItemStack item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         for (int i = 0; i < this.Size; i++)
         {
@@ -73,7 +72,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return true;
     }
 
-    public virtual bool RemoveItem(int slot, short amount)
+    public virtual bool RemoveItem(int slot, int amount)
     {
         var item = this.items[slot];
 
@@ -102,7 +101,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return this.RemoveItem(slot);
     }
 
-    public virtual bool RemoveItem(int slot, short amount, out ItemStack? removedItem)
+    public virtual bool RemoveItem(int slot, int amount, out ItemStack? removedItem)
     {
         var item = this.items[slot];
 
