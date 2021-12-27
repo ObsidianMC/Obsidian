@@ -50,7 +50,7 @@ public class World : IWorld
             Directory.CreateDirectory(playerDataPath);
     }
 
-    public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
+    public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
     public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
     {
@@ -544,7 +544,7 @@ public class World : IWorld
         {
             Type = EntityType.FallingBlock,
             Position = position,
-            EntityId = TotalLoadedEntities() + 1,
+            EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
             BlockMaterial = mat
         };
@@ -585,7 +585,7 @@ public class World : IWorld
             {
                 Type = type,
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Server = this.Server
             };
 
@@ -613,7 +613,7 @@ public class World : IWorld
             entity = new Living
             {
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Type = type
             };
 

@@ -282,7 +282,7 @@ public partial class Server : IServer
             var tcp = await tcpListener.AcceptTcpClientAsync();
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-            var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.TotalLoadedEntities()), this);
+            var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.GetTotalLoadedEntities()), this);
             clients.Add(client);
 
             client.Disconnected += client => clients.TryRemove(client);
@@ -432,7 +432,7 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.TotalLoadedEntities() + 1,
+                        EntityId = player + World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.AsItem().Id,
                         Glowing = true,
@@ -521,7 +521,7 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.TotalLoadedEntities() + 1,
+                        EntityId = player + World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.Id,
                         Glowing = true,

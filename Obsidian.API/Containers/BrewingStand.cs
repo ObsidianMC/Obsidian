@@ -12,7 +12,6 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
         this.Title = "Brewing Stand";
     }
 
-
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
     public override ItemStack? GetResult() => throw new NotImplementedException();
     public void ToNbt() => throw new NotImplementedException();
