@@ -26,6 +26,8 @@ public class GlobalBlockStatePalette : IPalette<Block>
 
     public Block GetValueFromIndex(int index) => Registry.GetBlock(index);
 
+    public IPalette<Block> Clone() => this;
+
     public Task WriteToAsync(MinecraftStream stream) => Task.CompletedTask;
 
     public Task ReadFromAsync(MinecraftStream stream) => Task.CompletedTask;

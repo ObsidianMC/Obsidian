@@ -6,11 +6,22 @@ public sealed class IndirectPalette<T> : BaseIndirectPalette<T>, IPalette<T> whe
     {
     }
 
+    private IndirectPalette(int[] values, int bitCount, int count) : base(values, bitCount, count)
+    {
+    }
+
     public override T? GetValueFromIndex(int index)
     {
         if ((uint)index >= (uint)Count)
             ThrowHelper.ThrowOutOfRange();
 
         return T.Construct(Values[index]);
+    }
+
+    public override IPalette<T> Clone()
+    {
+        int[] valuesCopy = GC.AllocateUninitializedArray<int>(Values.Length);
+        Array.Copy(Values, valuesCopy, Count);
+        return new IndirectPalette<T>(valuesCopy, BitCount, Count);
     }
 }

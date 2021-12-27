@@ -41,6 +41,20 @@ public sealed class DataArray
         this.storage = initializeStorage ? new long[storageSize] : GC.AllocateUninitializedArray<long>(storageSize);
     }
 
+    private DataArray(long[] storage, int size, int shift, int add, int mul, int bitsPerEntry, int magicNumber, long mulIndex, long addIndex, long maxEntryValue)
+    {
+        this.storage = storage;
+        this.size = size;
+        this.shift = shift;
+        this.add = add;
+        this.mul = mul;
+        this.bitsPerEntry = bitsPerEntry;
+        this.magicNumber = magicNumber;
+        this.mulIndex = mulIndex;
+        this.addIndex = addIndex;
+        this.maxEntryValue = maxEntryValue;
+    }
+
     public int this[int index]
     {
         get
@@ -72,6 +86,13 @@ public sealed class DataArray
             @new[i] = this[i];
         }
         return @new;
+    }
+
+    public DataArray Clone()
+    {
+        long[] storageCopy = GC.AllocateUninitializedArray<long>(storage.Length);
+        Array.Copy(storage, storageCopy, storage.Length);
+        return new DataArray(storageCopy, size, shift, add, mul, bitsPerEntry, magicNumber, mulIndex, addIndex, maxEntryValue);
     }
 
     private int GetIndex(long index) => (int)(index * this.mulIndex + this.addIndex >> 32 >> this.shift);

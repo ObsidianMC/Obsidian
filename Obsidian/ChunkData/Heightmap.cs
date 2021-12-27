@@ -4,12 +4,11 @@ using Obsidian.WorldData;
 namespace Obsidian.ChunkData;
 
 //TODO make better impl of heightmaps
-public class Heightmap
+public sealed class Heightmap
 {
-    public const string MOTION_BLOCKING = "MOTION_BLOCKING";
-    public HeightmapType HeightmapType { get; set; }
+    public HeightmapType HeightmapType { get; }
 
-    internal DataArray data = new DataArray(9, 256);
+    internal DataArray data;
 
     private Chunk chunk;
 
@@ -17,11 +16,26 @@ public class Heightmap
 
     public Heightmap(HeightmapType type, Chunk chunk)
     {
-        this.HeightmapType = type;
+        HeightmapType = type;
         this.chunk = chunk;
+        data = new DataArray(9, 256);
 
         if (type == HeightmapType.MotionBlocking)
-            this.Predicate = (block) => !block.IsAir || !block.IsFluid;
+            Predicate = (block) => !block.IsAir || !block.IsFluid;
+        else
+            Predicate = _ => false;
+    }
+
+    private Heightmap(HeightmapType type, Chunk chunk, DataArray data)
+    {
+        HeightmapType = type;
+        this.chunk = chunk;
+        this.data = data;
+
+        if (type == HeightmapType.MotionBlocking)
+            Predicate = (block) => !block.IsAir || !block.IsFluid;
+        else
+            Predicate = _ => false;
     }
 
     public bool Update(int x, int y, int z, Block blockState)
@@ -73,6 +87,16 @@ public class Heightmap
     private int GetIndex(int x, int z) => x + z * 16;
 
     public long[] GetDataArray() => this.data.storage;
+
+    public Heightmap Clone()
+    {
+        return Clone(chunk);
+    }
+
+    public Heightmap Clone(Chunk chunk)
+    {
+        return new Heightmap(HeightmapType, chunk, data.Clone());
+    }
 }
 
 public enum HeightmapType
