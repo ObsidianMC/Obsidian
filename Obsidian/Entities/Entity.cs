@@ -164,7 +164,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public void UpdatePosition(VectorF pos, bool onGround = true)
     {
-        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Y / 16f), false);
+        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
@@ -175,7 +175,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public void UpdatePosition(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
     {
-        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Y / 16f), false);
+        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
