@@ -18,21 +18,18 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (int z = 0; z < 16; z++)
             {
-                model.SetBlock(x, 64, z, grass);
-                model.SetBlock(x, 63, z, dirt);
-                model.SetBlock(x, 62, z, dirt);
-                model.SetBlock(x, 61, z, dirt);
-                model.SetBlock(x, 60, z, bedrock);
-            }
-        }
+                model.SetBlock(x, -60, z, grass);
+                model.SetBlock(x, -61, z, dirt);
+                model.SetBlock(x, -62, z, dirt);
+                model.SetBlock(x, -63, z, dirt);
+                model.SetBlock(x, -64, z, bedrock);
 
-        for (int x = 0; x < 16; x += 4)
-        {
-            for (int z = 0; z < 16; z += 4)
-            {
-                for (int y = -64; y < 320; y += 4)
+                if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
-                    model.SetBiome(x, y, z, Biomes.Plains);
+                    for (int y = -64; y < 320; y += 4)
+                    {
+                        model.SetBiome(x, y, z, Biomes.Plains);
+                    }
                 }
             }
         }
@@ -42,7 +39,9 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                motionBlockingHeightmap.Set(bx, bz, 64);
+                motionBlockingHeightmap.Set(bx, bz, -64);
+
+                Console.WriteLine(motionBlockingHeightmap.GetHeight(bx, bz));
             }
         }
 

@@ -78,9 +78,9 @@ public sealed class Heightmap
         return false;
     }
 
-    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value;
+    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value - 384;
 
-    public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z));
+    public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z)) - 128;
 
     private int GetHeight(int value) => this.data[value];
 
