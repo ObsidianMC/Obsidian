@@ -40,8 +40,6 @@ public class SuperflatGenerator : WorldGenerator
             for (int bz = 0; bz < 16; bz++)
             {
                 motionBlockingHeightmap.Set(bx, bz, -64);
-
-                Console.WriteLine(motionBlockingHeightmap.GetHeight(bx, bz));
             }
         }
 
