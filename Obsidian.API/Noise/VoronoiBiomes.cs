@@ -385,6 +385,9 @@ public class VoronoiBiomes : Module
             // So variant will be b/w 0 => 99
             int variant = (int)(noise * 1000.0) % 100;
 
+            // The two decimals after that to determine if it's a rare-type biome.
+            int rarity = (int)(noise * 100000.0) % 100;
+
             // 4 base overworld types but we want the ratio to be
             // 2 parts medium, 2 parts cold, 1 part frozen, 1 part dry
             noise *= 6.0;
@@ -392,13 +395,13 @@ public class VoronoiBiomes : Module
             return val switch
             {
                 // 18% chance for a rare medium biome.
-                0 or 1 => variant <= 18 ? (BaseBiome.MediumRare, variant) : (BaseBiome.Medium, variant),
+                0 or 1 => rarity <= 18 ? (BaseBiome.MediumRare, variant) : (BaseBiome.Medium, variant),
                 // 15% chance for a rare cold biome.
-                2 or 3 => variant <= 15 ? (BaseBiome.ColdRare, variant) : (BaseBiome.Cold, variant),
+                2 or 3 => rarity <= 15 ? (BaseBiome.ColdRare, variant) : (BaseBiome.Cold, variant),
                 // There are no frozen rare biomes.
                 4 => (BaseBiome.Frozen, variant),
                 // 10% chance for a rare dry biome.
-                5 => variant <= 10 ? (BaseBiome.DryRare, variant) : (BaseBiome.Dry, variant),
+                5 => rarity <= 10 ? (BaseBiome.DryRare, variant) : (BaseBiome.Dry, variant),
                 _ => (BaseBiome.Medium, variant),
             };
         }
