@@ -22,6 +22,13 @@ public sealed class ChunkSection
         Debug.Assert(airIndex == 0);
     }
 
+    private ChunkSection(BlockStateContainer blockContainer, BiomeContainer biomeContainer, int? yBase)
+    {
+        BlockStateContainer = blockContainer;
+        BiomeContainer = biomeContainer;
+        YBase = yBase;
+    }
+
     public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
     public Block GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
@@ -33,4 +40,9 @@ public sealed class ChunkSection
 
     public void SetBiome(Vector position, Biomes biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
     public void SetBiome(int x, int y, int z, Biomes biome) => this.BiomeContainer.Set(x, y, z, biome);
+
+    public ChunkSection Clone()
+    {
+        return new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
+    }
 }

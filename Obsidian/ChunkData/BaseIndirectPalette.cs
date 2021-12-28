@@ -5,8 +5,6 @@ namespace Obsidian.ChunkData;
 
 public abstract class BaseIndirectPalette<T> : IPalette<T>
 {
-    private delegate T Factory(int value);
-
     public int[] Values { get; private set; }
     public int BitCount { get; private set; }
     public int Count { get; protected set; }
@@ -16,6 +14,13 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
     {
         BitCount = bitCount;
         Values = GC.AllocateUninitializedArray<int>(1 << bitCount);
+    }
+
+    protected BaseIndirectPalette(int[] values, int bitCount, int count)
+    {
+        Values = values;
+        BitCount = bitCount;
+        Count = count;
     }
 
     public abstract T? GetValueFromIndex(int index);
@@ -69,6 +74,11 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         var newId = Count;
         Values[Count++] = valueId;
         return newId;
+    }
+
+    public virtual IPalette<T> Clone()
+    {
+        throw new NotSupportedException();
     }
 
     public async Task ReadFromAsync(MinecraftStream stream)

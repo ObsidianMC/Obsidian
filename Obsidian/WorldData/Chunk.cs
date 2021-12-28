@@ -15,29 +15,39 @@ public class Chunk
     private const int worldHeight = 320;
     private const int worldFloor = -64;
 
-    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
+    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new();
 
-    public ChunkSection[] Sections { get; private set; } = new ChunkSection[24];
-    public List<INbtTag> BlockEntities { get; private set; } = new List<INbtTag>();
+    public ChunkSection[] Sections { get; private set; }
+    public List<INbtTag> BlockEntities { get; private set; } = new();
 
-    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
+    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; }
 
     public Chunk(int x, int z)
     {
-        this.X = x;
-        this.Z = z;
+        X = x;
+        Z = z;
 
-        this.Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
-        this.Heightmaps.Add(HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this));
-        this.Heightmaps.Add(HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this));
+        Heightmaps = new();
+        Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
+        Heightmaps.Add(HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this));
+        Heightmaps.Add(HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this));
 
-        this.Init();
+        Sections = new ChunkSection[24];
+        for (int i = 0; i < Sections.Length; i++)
+        {
+            Sections[i] = new ChunkSection(4, yBase: i - 4);
+        }
     }
 
-    private void Init()
+    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps, bool isGenerated)
     {
-        for (int i = -4; i < 20; i++)
-            this.Sections[i + 4] = new ChunkSection(4, yBase: i);
+        X = x;
+        Z = z;
+
+        Heightmaps = heightmaps;
+        Sections = sections;
+
+        this.isGenerated = isGenerated;
     }
 
     public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
@@ -45,6 +55,7 @@ public class Chunk
     public Block GetBlock(int x, int y, int z)
     {
         var i = SectionIndex(y);
+
         x = NumericsHelper.Modulo(x, 16);
         y = NumericsHelper.Modulo(y, 16);
         z = NumericsHelper.Modulo(z, 16);
@@ -72,8 +83,8 @@ public class Chunk
         int i = SectionIndex(y);
 
         x = NumericsHelper.Modulo(x, 16);
-        z = NumericsHelper.Modulo(z, 16);
         y = (y + 64) % 16 / 4;
+        z = NumericsHelper.Modulo(z, 16);
 
         Sections[i].SetBiome(x, y, z, biome);
     }
@@ -98,10 +109,10 @@ public class Chunk
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        return this.BlockMetaStore.GetValueOrDefault(value);
+        return BlockMetaStore.GetValueOrDefault(value);
     }
 
-    public BlockMeta GetBlockMeta(Vector position) => this.GetBlockMeta(position.X, position.Y, position.Z);
+    public BlockMeta GetBlockMeta(Vector position) => GetBlockMeta(position.X, position.Y, position.Z);
 
     public void SetBlockMeta(int x, int y, int z, BlockMeta meta)
     {
@@ -110,10 +121,10 @@ public class Chunk
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        this.BlockMetaStore[value] = meta;
+        BlockMetaStore[value] = meta;
     }
 
-    public void SetBlockMeta(Vector position, BlockMeta meta) => this.SetBlockMeta(position.X, position.Y, position.Z, meta);
+    public void SetBlockMeta(Vector position, BlockMeta meta) => SetBlockMeta(position.X, position.Y, position.Z, meta);
 
     public void CalculateHeightmap()
     {
@@ -124,7 +135,7 @@ public class Chunk
             {
                 for (int y = worldHeight - 1; y >= worldFloor; y--)
                 {
-                    var block = this.GetBlock(x, y, z);
+                    var block = GetBlock(x, y, z);
                     if (block.IsAir)
                         continue;
 
@@ -133,6 +144,31 @@ public class Chunk
                 }
             }
         }
+    }
+
+    public Chunk Clone()
+    {
+        return Clone(X, Z);
+    }
+
+    public Chunk Clone(int x, int z)
+    {
+        var sections = new ChunkSection[Sections.Length];
+        for (int i = 0; i < sections.Length; i++)
+        {
+            sections[i] = Sections[i].Clone();
+        }
+
+        var heightmaps = new Dictionary<HeightmapType, Heightmap>();
+
+        var chunk = new Chunk(x, z, sections, heightmaps, isGenerated);
+
+        foreach (var (type, heightmap) in Heightmaps)
+        {
+            heightmaps.Add(type, heightmap.Clone(chunk));
+        }
+
+        return chunk;
     }
 
     private static int SectionIndex(int y) => (y >> 4) + 4;
