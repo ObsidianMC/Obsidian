@@ -1,5 +1,6 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Noise;
 
@@ -48,11 +49,11 @@ public class VoronoiBiomes : Module
 
     }
 
+    [SkipLocalsInit]
     public override double GetValue(double x, double y, double z)
     {
         x *= Frequency;
         z *= Frequency;
-
 
         var xint = (x > 0D) ? (int)x : (int)x - 1;
         var zint = (z > 0D) ? (int)z : (int)z - 1;
@@ -69,7 +70,8 @@ public class VoronoiBiomes : Module
                 var xDist = xPos - x;
                 var zDist = zPos - z;
                 double dist = Math.Max(Math.Abs(xDist), Math.Abs(zDist));
-                var cell = new VoronoiCell
+
+                cells[index++] = new VoronoiCell
                 {
                     Index = (xCur, zCur),
                     DistanceToPoint = dist,
@@ -79,22 +81,50 @@ public class VoronoiBiomes : Module
                     BaseBiome = 0.0,
                     Biome = 0
                 };
-
-                cells[index++] = cell;
             }
         }
 
-        MemoryExtensions.Sort(cells, (a, b) => { return a.DistanceToPoint > b.DistanceToPoint ? 1 : -1; });
-        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[0].Point.x), 0, (int)Math.Floor(cells[0].Point.z));
-        (cells[0].BaseBiome, cells[0].Variant) = GetBaseBiome(meVal);
-        var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[1].Point.x), 0, (int)Math.Floor(cells[1].Point.z));
-        (cells[1].BaseBiome, cells[1].Variant) = GetBaseBiome(nearestVal);
+        VoronoiCell me, nearest;
+        Unsafe.SkipInit(out me);
+        Unsafe.SkipInit(out nearest);
+        GetMin(cells, ref me, ref nearest);
 
+        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(me.Point.x), 0, (int)Math.Floor(me.Point.z));
+        (me.BaseBiome, me.Variant) = GetBaseBiome(meVal);
+        var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(nearest.Point.x), 0, (int)Math.Floor(nearest.Point.z));
+        (nearest.BaseBiome, nearest.Variant) = GetBaseBiome(nearestVal);
 
-        return (double)ProcessBiomeRules(cells[0], cells[1]);
+        return (double)ProcessBiomeRules(me, nearest);
     }
 
-    private Biomes ProcessVariants(VoronoiCell me, double averageDistance)
+    private static void GetMin(ReadOnlySpan<VoronoiCell> cells, ref VoronoiCell min, ref VoronoiCell secondMin)
+    {
+        if (cells[1].DistanceToPoint > cells[0].DistanceToPoint)
+        {
+            min = cells[0];
+            secondMin = cells[1];
+        }
+        else
+        {
+            min = cells[1];
+            secondMin = cells[0];
+        }
+
+        for (int i = 2; i < cells.Length; i++)
+        {
+            if (cells[i].DistanceToPoint < min.DistanceToPoint)
+            {
+                secondMin = min;
+                min = cells[i];
+            }
+            else if (cells[i].DistanceToPoint < secondMin.DistanceToPoint)
+            {
+                secondMin = cells[i];
+            }
+        }
+    }
+
+    private static Biomes ProcessVariants(VoronoiCell me, double averageDistance)
     {
         if ((int)me.BaseBiome < 0) // if ocean
         {
@@ -203,7 +233,7 @@ public class VoronoiBiomes : Module
         }
     }
 
-    private VoronoiCell ProcessNeighborRules(VoronoiCell me, VoronoiCell neighbor, double averageDistance)
+    private static VoronoiCell ProcessNeighborRules(VoronoiCell me, VoronoiCell neighbor, double averageDistance)
     {
         // Only run neighbor logic for outter 20% of a biome
         // Should save a lot of CPU cycles if we bail out now.
@@ -255,7 +285,7 @@ public class VoronoiBiomes : Module
         }
     }
 
-    private VoronoiCell ProcessBiomeCenterRules(VoronoiCell me, double averageDistance)
+    private static VoronoiCell ProcessBiomeCenterRules(VoronoiCell me, double averageDistance)
     {
         if (me.DistanceToPoint > averageDistance * 0.40) { return me; }
 
@@ -336,7 +366,7 @@ public class VoronoiBiomes : Module
         return me.Biome;
     }
 
-    private (BaseBiome, int) GetBaseBiome(double noise)
+    private static (BaseBiome, int) GetBaseBiome(double noise)
     {
         // Shift the whole map up by 1/2 for more land than sea.
         noise += 0.5;

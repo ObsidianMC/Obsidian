@@ -519,7 +519,7 @@ public class World : IWorld
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            Generator.GenerateChunk(job.x, job.z, this, c);
+            c = Generator.GenerateChunk(job.x, job.z, this, c);
             region.SetChunk(c);
         });
     }
