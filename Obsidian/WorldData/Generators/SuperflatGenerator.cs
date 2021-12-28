@@ -10,7 +10,7 @@ public class SuperflatGenerator : WorldGenerator
     {
         model = new Chunk(0, 0);
 
-        Block grass = new(Material.GrassBlock);
+        Block grass = new(Material.GrassBlock, 1);
         Block dirt = new(Material.Dirt);
         Block bedrock = new(Material.Bedrock);
 
@@ -18,11 +18,11 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (int z = 0; z < 16; z++)
             {
-                model.SetBlock(x, -60, z, grass);
-                model.SetBlock(x, -61, z, dirt);
-                model.SetBlock(x, -62, z, dirt);
-                model.SetBlock(x, -63, z, dirt);
-                model.SetBlock(x, -64, z, bedrock);
+                model.SetBlock(x, 64, z, grass);
+                model.SetBlock(x, 63, z, dirt);
+                model.SetBlock(x, 62, z, dirt);
+                model.SetBlock(x, 61, z, dirt);
+                model.SetBlock(x, 60, z, bedrock);
             }
         }
 
@@ -42,7 +42,7 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                motionBlockingHeightmap.Set(bx, bz, -60);
+                motionBlockingHeightmap.Set(bx, bz, 64);
             }
         }
 

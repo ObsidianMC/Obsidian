@@ -39,13 +39,15 @@ public class Chunk
         }
     }
 
-    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps)
+    private Chunk(int x, int z, ChunkSection[] sections, Dictionary<HeightmapType, Heightmap> heightmaps, bool isGenerated)
     {
         X = x;
         Z = z;
 
         Heightmaps = heightmaps;
         Sections = sections;
+
+        this.isGenerated = isGenerated;
     }
 
     public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
@@ -158,7 +160,7 @@ public class Chunk
 
         var heightmaps = new Dictionary<HeightmapType, Heightmap>();
 
-        var chunk = new Chunk(x, z, sections, heightmaps);
+        var chunk = new Chunk(x, z, sections, heightmaps, isGenerated);
 
         foreach (var (type, heightmap) in Heightmaps)
         {
