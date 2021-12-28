@@ -20,6 +20,7 @@
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <NoWarn>1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
