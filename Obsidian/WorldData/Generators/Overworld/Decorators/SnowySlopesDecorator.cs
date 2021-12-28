@@ -4,9 +4,9 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class SnowyTundraDecorator : BaseDecorator
+public class SnowySlopesDecorator : BaseDecorator
 {
-    public SnowyTundraDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public SnowySlopesDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(DarkOakTree)));
     }

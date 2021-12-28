@@ -263,7 +263,7 @@ public class VoronoiBiomes : Module
         {
             Biomes.Plains => me.Variant < 30 ? Biomes.SunflowerPlains : me.Variant < 60 ? Biomes.WindsweptHills : Biomes.Forest,
             Biomes.Desert => Biomes.WindsweptGravellyHills,
-            Biomes.JaggedPeaks => me.BaseBiome == BaseBiome.Cold ? Biomes.FrozenPeaks : Biomes.StonyPeaks,
+            Biomes.FrozenPeaks or Biomes.StonyPeaks or Biomes.JaggedPeaks => Biomes.Grove,
             Biomes.Forest => me.BaseBiome == BaseBiome.Cold ? Biomes.WindsweptHills : Biomes.FlowerForest,
             Biomes.Taiga => Biomes.WindsweptHills,
             Biomes.Swamp => Biomes.WindsweptHills,
