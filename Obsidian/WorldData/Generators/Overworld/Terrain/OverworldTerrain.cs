@@ -13,127 +13,117 @@ public class OverworldTerrain
 
     public readonly OverworldTerrainSettings settings;
 
-    private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
+    private readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
-    private readonly BaseCarver cave;
+    private readonly Module cave;
 
     private Module FinalBiomes;
 
     public OverworldTerrain(bool isUnitTest = false)
     {
         settings = OverworldGenerator.GeneratorSettings;
-        ocean = new OceanTerrain();
-        deepocean = new DeepOceanTerrain();
-        plains = new PlainsTerrain();
-        hills = new HillsTerrain();
-        badlands = new BadlandsTerrain();
-        mountains = new MountainsTerrain();
-        rivers = new RiverTerrain();
-        cave = new CavesCarver();
+        ocean = new OceanTerrain().Result;
+        deepocean = new DeepOceanTerrain().Result;
+        plains = new PlainsTerrain().Result;
+        hills = new HillsTerrain().Result;
+        badlands = new BadlandsTerrain().Result;
+        mountains = new MountainsTerrain().Result;
+        rivers = new RiverTerrain().Result;
+        cave = new CavesCarver().Result;
 
         Dictionary<Biomes, Module> biomesTerrainMap = new()
         {
-            { Biomes.Badlands, badlands.Result },
-            { Biomes.BambooJungle, plains.Result },
-            { Biomes.BasaltDeltas, plains.Result },
-            { Biomes.Beach, plains.Result },
-            { Biomes.BirchForest, plains.Result },
-            { Biomes.ColdOcean, ocean.Result },
-            { Biomes.CrimsonForest, plains.Result },
-            { Biomes.DarkForest, plains.Result },
-            { Biomes.DeepColdOcean, deepocean.Result },
-            { Biomes.DeepFrozenOcean, deepocean.Result },
-            { Biomes.DeepLukewarmOcean, deepocean.Result },
-            { Biomes.DeepOcean, deepocean.Result },
-            { Biomes.Desert, plains.Result },
-            { Biomes.DripstoneCaves, plains.Result },
-            { Biomes.EndBarrens, plains.Result },
-            { Biomes.EndHighlands, plains.Result },
-            { Biomes.EndMidlands, plains.Result },
-            { Biomes.ErodedBadlands, badlands.Result },
-            { Biomes.FlowerForest, plains.Result },
-            { Biomes.Forest, plains.Result },
-            { Biomes.FrozenOcean, ocean.Result },
-            { Biomes.FrozenPeaks, mountains.Result },
-            { Biomes.FrozenRiver, rivers.Result },
-            { Biomes.Grove, hills.Result },
-            { Biomes.IceSpikes, badlands.Result },
-            { Biomes.JaggedPeaks, mountains.Result },
-            { Biomes.Jungle, hills.Result },
-            { Biomes.LukewarmOcean, ocean.Result },
-            { Biomes.LushCaves, plains.Result },
-            { Biomes.Meadow, plains.Result },
-            { Biomes.MushroomFields, plains.Result },
-            { Biomes.NetherWastes, plains.Result },
-            { Biomes.Ocean, ocean.Result },
-            { Biomes.OldGrowthBirchForest, plains.Result },
-            { Biomes.OldGrowthPineTaiga, plains.Result },
-            { Biomes.OldGrowthSpruceTaiga, plains.Result },
-            { Biomes.Plains, plains.Result },
-            { Biomes.River, rivers.Result },
-            { Biomes.Savanna, plains.Result },
-            { Biomes.SavannaPlateau, hills.Result },
-            { Biomes.SmallEndIslands, plains.Result },
-            { Biomes.SnowyBeach, plains.Result },
-            { Biomes.SnowyPlains, plains.Result },
-            { Biomes.SnowySlopes, hills.Result },
-            { Biomes.SnowyTaiga, plains.Result },
-            { Biomes.SoulSandValley, plains.Result },
-            { Biomes.SparseJungle, plains.Result },
-            { Biomes.StonyPeaks, mountains.Result },
-            { Biomes.StonyShore, plains.Result },
-            { Biomes.SunflowerPlains, plains.Result },
-            { Biomes.Swamp, badlands.Result },
-            { Biomes.Taiga, hills.Result },
-            { Biomes.TheEnd, plains.Result },
-            { Biomes.TheVoid, plains.Result },
-            { Biomes.WarmOcean, ocean.Result },
-            { Biomes.WarpedForest, plains.Result },
-            { Biomes.WindsweptForest, plains.Result },
-            { Biomes.WindsweptGravellyHills, hills.Result },
-            { Biomes.WindsweptHills, hills.Result },
-            { Biomes.WindsweptSavanna, plains.Result },
-            { Biomes.WoodedBadlands, badlands.Result }
+            { Biomes.Badlands, badlands },
+            { Biomes.BambooJungle, plains },
+            { Biomes.BasaltDeltas, plains },
+            { Biomes.Beach, plains },
+            { Biomes.BirchForest, plains },
+            { Biomes.ColdOcean, ocean },
+            { Biomes.CrimsonForest, plains },
+            { Biomes.DarkForest, plains },
+            { Biomes.DeepColdOcean, deepocean },
+            { Biomes.DeepFrozenOcean, deepocean },
+            { Biomes.DeepLukewarmOcean, deepocean },
+            { Biomes.DeepOcean, deepocean },
+            { Biomes.Desert, plains },
+            { Biomes.DripstoneCaves, plains },
+            { Biomes.EndBarrens, plains },
+            { Biomes.EndHighlands, plains },
+            { Biomes.EndMidlands, plains },
+            { Biomes.ErodedBadlands, badlands },
+            { Biomes.FlowerForest, plains },
+            { Biomes.Forest, plains },
+            { Biomes.FrozenOcean, ocean },
+            { Biomes.FrozenPeaks, mountains },
+            { Biomes.FrozenRiver, rivers },
+            { Biomes.Grove, hills },
+            { Biomes.IceSpikes, badlands },
+            { Biomes.JaggedPeaks, mountains },
+            { Biomes.Jungle, hills },
+            { Biomes.LukewarmOcean, ocean },
+            { Biomes.LushCaves, plains },
+            { Biomes.Meadow, plains },
+            { Biomes.MushroomFields, plains },
+            { Biomes.NetherWastes, plains },
+            { Biomes.Ocean, ocean },
+            { Biomes.OldGrowthBirchForest, plains },
+            { Biomes.OldGrowthPineTaiga, plains },
+            { Biomes.OldGrowthSpruceTaiga, plains },
+            { Biomes.Plains, plains },
+            { Biomes.River, rivers },
+            { Biomes.Savanna, plains },
+            { Biomes.SavannaPlateau, hills },
+            { Biomes.SmallEndIslands, plains },
+            { Biomes.SnowyBeach, plains },
+            { Biomes.SnowyPlains, plains },
+            { Biomes.SnowySlopes, hills },
+            { Biomes.SnowyTaiga, plains },
+            { Biomes.SoulSandValley, plains },
+            { Biomes.SparseJungle, plains },
+            { Biomes.StonyPeaks, mountains },
+            { Biomes.StonyShore, plains },
+            { Biomes.SunflowerPlains, plains },
+            { Biomes.Swamp, badlands },
+            { Biomes.Taiga, hills },
+            { Biomes.TheEnd, plains },
+            { Biomes.TheVoid, plains },
+            { Biomes.WarmOcean, ocean },
+            { Biomes.WarpedForest, plains },
+            { Biomes.WindsweptForest, plains },
+            { Biomes.WindsweptGravellyHills, hills },
+            { Biomes.WindsweptHills, hills },
+            { Biomes.WindsweptSavanna, plains },
+            { Biomes.WoodedBadlands, badlands }
         };
 
         FinalBiomes = VoronoiBiomeNoise.Instance.result;
 
-        var biomeTransitionSel2 = new Cache
+        var biomeTerrain = new TerrainSelect(FinalBiomes)
         {
-            Source0 = new TransitionMap(FinalBiomes, 5)
+            Control = new TransitionMap(FinalBiomes, 10),
+            TerrainModules = biomesTerrainMap
         };
 
-        Module scaled = new Blend(
-            new TerrainSelect(FinalBiomes)
-            {
-                Control = biomeTransitionSel2,
-                TerrainModules = biomesTerrainMap
-            })
+        Module blendPass1 = new Blend(biomeTerrain)
+        {
+            Distance = 5
+        };
+
+        Module blendPass2 = new Blend(blendPass1)
         {
             Distance = 2
         };
 
-        if (isUnitTest)
+        var scaledWorld = new SplitScaleBias()
         {
-            scaled = new ScaleBias
-            {
-                Source0 = FinalBiomes,
-                Scale = 1 / 85.0,
-                //Bias = -1
-            };
-        }
-
-        // Scale bias scales the verical output (usually -1.0 to +1.0) to
-        // Minecraft values. If MinElev is 40 (leaving room for caves under oceans)
-        // and MaxElev is 168, a value of -1 becomes 40, and a value of 1 becomes 168.
-        var biased = new ScaleBias
-        {
-            Scale = (settings.MaxElev - settings.MinElev) / 2.0,
-            Bias = settings.MinElev + ((settings.MaxElev - settings.MinElev) / 2.0),
-            Source0 = scaled
+            Source0 = blendPass2,
+            Center = 0,
+            AboveCenterScale = 256, // world height minus sea level
+            BelowCenterScale = 128, // sea level + abs(world floor)
+            Bias = 64 // sea level
         };
 
-        Result = isUnitTest ? scaled : biased;
+        Result = isUnitTest ? blendPass2 : scaledWorld;
 
     }
 
@@ -149,7 +139,7 @@ public class OverworldTerrain
 
     public bool IsCave(double x, double y, double z)
     {
-        var val = cave.Result.GetValue(x, y, z);
+        var val = cave.GetValue(x, y, z);
         return val > -0.5;
     }
 }

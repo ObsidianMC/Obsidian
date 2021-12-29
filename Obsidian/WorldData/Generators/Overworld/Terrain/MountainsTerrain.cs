@@ -32,10 +32,9 @@ public class MountainsTerrain : BaseTerrain
                         ZScale = 1 / 0.9,
                         Source0 = new Clamp
                         {
-                            UpperBound = 1.33,
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.65, // Amplification of terrain
+                                Scale = 0.25, // Amplification of terrain
                                 Bias = 0.55, // lowest level is above sea level (0)
                                 Source0 = MountainsBase()
                             }
