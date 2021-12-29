@@ -71,20 +71,22 @@ public class RegionFile : IAsyncDisposable
 
     public DateTimeOffset GetChunkTimestamp(Vector relativeChunkLocation) => DateTimeOffset.FromUnixTimeSeconds(timestampTable.GetTimestampAtIndex(GetChunkTableIndex(relativeChunkLocation)));
 
-    public byte[] GetChunkCompressedBytes(Vector relativeChunkLocation)
+    public ReadOnlyMemory<byte> GetChunkCompressedBytes(Vector relativeChunkLocation)
     {
-        // Sanity check
         if (locationTable is null || timestampTable is null)
         {
-            return null;
+            return ReadOnlyMemory<byte>.Empty;
         }
-        var chunkIndex = GetChunkTableIndex(relativeChunkLocation);
-        var (offset, size) = locationTable.GetOffsetSizeAtIndex(chunkIndex);
-        if (size == 0) { return null; }
-        Memory<byte> memAlloc = fileCache.Memory.Slice(offset, size);
-        var chunkAllocation = new ChunkAllocation(memAlloc);
 
-        return chunkAllocation.GetChunkBytes();
+        int chunkIndex = GetChunkTableIndex(relativeChunkLocation);
+        (int offset, int size) = locationTable.GetOffsetSizeAtIndex(chunkIndex);
+        if (size == 0)
+        {
+            return ReadOnlyMemory<byte>.Empty;
+        }
+
+        ReadOnlyMemory<byte> memory = fileCache.Memory.Slice(offset, size);
+        return ChunkAllocation.GetChunkBytes(memory);
     }
 
     public void SetChunkCompressedBytes(Vector relativeChunkLocation, byte[] compressedNbtBytes)
@@ -177,14 +179,14 @@ public class RegionFile : IAsyncDisposable
             compressedNbtBytes.CopyTo(memAllocation.Slice(5, blobSize));
         }
 
-        public byte[] GetChunkBytes()
+        public static ReadOnlyMemory<byte> GetChunkBytes(ReadOnlyMemory<byte> chunkMemory)
         {
             // First 5 bytes are a header.
             // First 4 are filesize.
             // Fifth is compression scheme. We're always going to use gzip and probably just ignore this.
-            var filesize = BitConverter.ToInt32(memAllocation.Slice(0, 4).ToArray());
+            var filesize = BitConverter.ToInt32(chunkMemory.Span[0..4]);
             // var compression = (int)chunkBytes.Span[4];
-            return memAllocation.Slice(5, filesize).ToArray();
+            return chunkMemory.Slice(5, filesize);
         }
     }
 
