@@ -209,7 +209,7 @@ public partial class Server : IServer
     /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
-    public async Task StartServerAsync()
+    public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
 
@@ -220,7 +220,7 @@ public partial class Server : IServer
         if (Config.MulitplayerDebugMode && Config.OnlineMode)
         {
             Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            StopServer();
+            Stop();
             return;
         }
 
@@ -265,21 +265,41 @@ public partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
-        _ = Task.Run(LoopAsync);
-
-        _ = Task.Run(ServerSaveAsync);
-
-        Logger.LogInformation($"Listening for new clients...");
-
         loadTimeStopwatch.Stop();
-
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
+        Logger.LogInformation($"Listening for new clients...");
+        try
+        {
+            await Task.WhenAll(AcceptClientsAsync(), LoopAsync(), ServerSaveAsync());
+        }
+        catch (TaskCanceledException)
+        {
+        }
+
+        Logger.LogDebug("Flushing regions");
+        await World.FlushRegionsAsync();
+
+        Logger.LogWarning("Server is shutting down...");
+    }
+
+    private async Task AcceptClientsAsync()
+    {
         tcpListener.Start();
 
         while (!cts.IsCancellationRequested)
         {
-            var tcp = await tcpListener.AcceptTcpClientAsync();
+            TcpClient tcp;
+            try
+            {
+                tcp = await tcpListener.AcceptTcpClientAsync();
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Listening for clients encountered an exception");
+                break;
+            }
+
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
             var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.TotalLoadedEntities()), this);
@@ -289,8 +309,6 @@ public partial class Server : IServer
 
             _ = Task.Run(client.StartConnectionAsync);
         }
-
-        Logger.LogWarning("Server is shutting down...");
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -556,7 +574,7 @@ public partial class Server : IServer
         }
     }
 
-    public void StopServer()
+    public void Stop()
     {
         cts.Cancel();
         tcpListener.Stop();
@@ -570,7 +588,7 @@ public partial class Server : IServer
     {
         while (!cts.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(5));
+            await Task.Delay(TimeSpan.FromMinutes(5), cts.Token);
             await World.FlushRegionsAsync();
         }
     }
@@ -622,8 +640,6 @@ public partial class Server : IServer
             await World.ManageChunksAsync();
             UpdateStatusConsole();
         }
-
-        await World.FlushRegionsAsync();
     }
 
     /// <summary>
