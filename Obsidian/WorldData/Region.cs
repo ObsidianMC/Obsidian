@@ -52,17 +52,7 @@ public class Region
 
     internal async Task FlushAsync()
     {
-        foreach (Chunk c in loadedChunks)
-        { 
-            try
-            {
-                SerializeChunk(c);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-        }
+        foreach (Chunk c in loadedChunks) { SerializeChunk(c); }
         await regionFile.FlushToDiskAsync();
     }
 

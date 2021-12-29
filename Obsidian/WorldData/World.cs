@@ -328,8 +328,7 @@ public class World : IWorld
         for (var cx = x - radius; cx < x + radius; cx++)
             for (var cz = z - radius; cz < z + radius; cz++)
                 SpawnChunks.Add((cx, cz));
-        var opts = new ParallelOptions() { MaxDegreeOfParallelism = 8 };
-        Parallel.ForEach(SpawnChunks, (c, opts) =>
+        Parallel.ForEach(SpawnChunks, (c) =>
         {
             GetChunk(c.X, c.Z);
             // Update status occasionally so we're not destroying consoleio
@@ -403,21 +402,25 @@ public class World : IWorld
         }
 
         var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
-        if (!await region.InitAsync()) 
+        if (await region.InitAsync()) 
+        {
+            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
+            this.Regions[value] = region;
+            return region;
+        }
+        else
         {
             // Failed to load the region file because of IO lock.
             // Probably already loaded on another thread.
-            Server.Logger.LogError($"Failed to load region {regionX}, {regionZ}.");
             if (Regions.ContainsKey(regionZ))
                 return this.Regions[value];
+            else
+            {
+                // If not, try again (shouldn't happen).
+                // Log it should it infinite loop
+                return await LoadRegionAsync(regionX, regionZ);
+            }
         }
-
-        if (region is not null)
-            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
-
-        this.Regions[value] = region;
-
-        return region;
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)

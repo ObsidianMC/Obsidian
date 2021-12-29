@@ -561,7 +561,6 @@ public partial class Server : IServer
         cts.Cancel();
         tcpListener.Stop();
         WorldGenerators.Clear();
-
         foreach (var client in clients)
             client.Disconnect();
     }
@@ -622,7 +621,7 @@ public partial class Server : IServer
             await World.ManageChunksAsync();
             UpdateStatusConsole();
         }
-
+        Logger.LogInformation("Saving World...");
         await World.FlushRegionsAsync();
     }
 
