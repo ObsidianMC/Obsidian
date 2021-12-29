@@ -639,11 +639,6 @@ public partial class Server : IServer
             await World.ManageChunksAsync();
             UpdateStatusConsole();
         }
-<<<<<<< HEAD
-        Logger.LogInformation("Saving World...");
-        await World.FlushRegionsAsync();
-=======
->>>>>>> origin/server-loop-rework
     }
 
     /// <summary>
