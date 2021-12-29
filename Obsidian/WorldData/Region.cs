@@ -48,11 +48,21 @@ public class Region
         }
     }
 
-    internal Task InitAsync() => regionFile.InitializeAsync();
+    internal Task<bool> InitAsync() => regionFile.InitializeAsync();
 
     internal async Task FlushAsync()
     {
-        foreach (Chunk c in loadedChunks) { SerializeChunk(c); }
+        foreach (Chunk c in loadedChunks)
+        { 
+            try
+            {
+                SerializeChunk(c);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
         await regionFile.FlushToDiskAsync();
     }
 
