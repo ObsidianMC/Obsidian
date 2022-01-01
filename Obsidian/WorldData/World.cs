@@ -155,22 +155,14 @@ public class World : IWorld
             }
             // Can't wait for the region to be loaded b/c we want a partial chunk,
             // so just load it now and hold up execution.
-            try
+            var task = LoadRegionAsync(rX, rZ);
+            region = task.Result;
+            if (region is null) 
             {
-                var task = LoadRegionAsync(rX, rZ);
-                region = task.Result;
-                if (region is null) 
-                {
-                    Server.Logger.LogError($"Failed to load region {rX}, {rZ}. Trying again...");
-                    GetChunk(chunkX, chunkZ, scheduleGeneration);
-                }
-                Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
+                Server.Logger.LogError($"Failed to load region {rX}, {rZ}. Trying again...");
+                return null;
             }
-            catch (Exception e)
-            {
-                Server.Logger.LogError(e.Message);
-                GetChunk(chunkX, chunkZ, scheduleGeneration);
-            }
+            Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
         }
 
         (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -406,21 +398,8 @@ public class World : IWorld
         {
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
             this.Regions[value] = region;
-            return region;
         }
-        else
-        {
-            // Failed to load the region file because of IO lock.
-            // Probably already loaded on another thread.
-            if (Regions.ContainsKey(regionZ))
-                return this.Regions[value];
-            else
-            {
-                // If not, try again (shouldn't happen).
-                // Log it should it infinite loop
-                return await LoadRegionAsync(regionX, regionZ);
-            }
-        }
+        return this.Regions[value];
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)
