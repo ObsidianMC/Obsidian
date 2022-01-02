@@ -386,10 +386,15 @@ public class Client : IDisposable
             StateId = this.Player.Inventory.StateId++,
             CarriedItem = this.Player.GetHeldItem(),
         });
+
+        await this.SendTimeUpdateAsync();
+        await this.QueuePacketAsync(new ChangeGameState(this.Server.World.Data.Raining? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
     }
 
     #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
+
+    internal Task SendTimeUpdateAsync() => Task.Run(() => SendPacket(new TimeUpdate(this.Server.World.Data.Time, this.Server.World.Data.DayTime)));
 
     internal void ProcessKeepAlive(long id)
     {

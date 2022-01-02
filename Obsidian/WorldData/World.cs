@@ -279,6 +279,48 @@ public class World : IWorld
 
     public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
+    /// <summary>
+    /// Method that handles world-specific tick behavior.
+    /// </summary>
+    /// <returns></returns>
+    public async Task DoWorldTickAsync()
+    {
+        this.Data.Time += this.Server.Config.TimeTickSpeedMultiplier;
+        this.Data.RainTime--;
+
+        if(Data.RainTime < 1)
+        {
+            // Raintime passed, toggle weather
+            Data.Raining = !Data.Raining;
+
+            int rainTime;
+
+            // amount of ticks in a day is 24000
+            if (Data.Raining)
+            {
+                rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
+                this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.BeginRaining));
+            }
+            else
+            {
+                rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
+                this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.EndRaining));
+            }
+
+            Data.RainTime = rainTime;
+
+            // TODO send weather change to all players on this world
+            this.Server.Logger.LogInformation($"Toggled rain: {this.Data.Raining} for {this.Data.RainTime} ticks.");
+        }
+
+        if(this.Data.Time % 20 == 0)
+        {
+            // debug: every log 20 ticks
+            this.Server.Logger.LogDebug($"Hit {this.Data.Time} world ticks.");
+            this.Server.BroadcastPacket(new TimeUpdate(this.Data.Time, this.Data.Time % 24000));
+        }
+    }
+
     #region world loading/saving
 
     public async Task<bool> LoadAsync()

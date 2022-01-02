@@ -78,7 +78,18 @@ public class Level
     /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0. 
     /// This value keeps counting past 24000 and does not reset to 0.
     /// </summary>
-    public int DayTime { get; set; }
+    public int DayTime 
+    { 
+        get 
+        { 
+            return (int)(this.Time % 24000); // day time is based on server time
+        } 
+        set 
+        {
+            var startOfDay = this.Time - (this.Time % 24000);
+            this.Time = startOfDay + value;
+        } 
+    }
 
     /// <summary>
     /// The current difficulty
@@ -147,12 +158,12 @@ public class Level
     /// <summary>
     /// true if the level is currently experiencing rain, snow, and cloud cover.
     /// </summary>
-    public bool Raining { get; set; }
+    public bool Raining { get; set; } = false; // start a world without rain
 
     /// <summary>
     /// The number of ticks before "raining" is toggled and this value gets set to another random value.
     /// </summary>
-    public int RainTime { get; set; }
+    public int RainTime { get; set; } = Globals.Random.Next(12000, 180000); // first 0.5 - 7.5 days no rain
 
     /// <summary>
     /// The random level seed used to generate consistent terrain.
