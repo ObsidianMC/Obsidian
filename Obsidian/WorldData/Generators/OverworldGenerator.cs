@@ -64,8 +64,8 @@ public class OverworldGenerator : WorldGenerator
         }
 
         ChunkBuilder.FillChunk(chunk, terrainHeightmap, bedrockHeightmap);
-        ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
         OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen, world);
+        ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
 
 
         for (int bx = 0; bx < 16; bx++)

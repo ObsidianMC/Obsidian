@@ -39,7 +39,7 @@ public static class ChunkBuilder
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                int tY = Math.Min((int)rhm[bx, bz], 64);
+                int tY = Math.Min((int)rhm[bx, bz], 64)+ 20;
                 int brY = (int)bhm[bx, bz];
                 for (int by = brY; by < tY; by++)
                 {

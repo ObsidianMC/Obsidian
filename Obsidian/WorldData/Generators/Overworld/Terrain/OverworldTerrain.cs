@@ -13,6 +13,8 @@ public class OverworldTerrain
 
     public readonly OverworldTerrainSettings settings;
 
+    private readonly VoronoiCaves caves;
+
     private readonly BaseTerrain ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
     private readonly BaseCarver cave;
@@ -30,6 +32,11 @@ public class OverworldTerrain
         mountains = new MountainsTerrain();
         rivers = new RiverTerrain();
         cave = new CavesCarver();
+        caves = new VoronoiCaves()
+        {
+            Frequency = 0.01023456,
+            Seed = settings.Seed
+        };
 
         Dictionary<Biomes, Module> biomesTerrainMap = new()
         {
@@ -149,7 +156,6 @@ public class OverworldTerrain
 
     public bool IsCave(double x, double y, double z)
     {
-        var val = cave.Result.GetValue(x, y, z);
-        return val > -0.5;
+        return caves.GetValue(x, y, z) > 0;// || cave.Result.GetValue(x, y, z) > -0.5;
     }
 }
