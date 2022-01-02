@@ -12,7 +12,7 @@ public class MinecraftEventHandler
     public AsyncEvent<PlayerTeleportEventArgs> PlayerTeleported;
     public AsyncEvent<PermissionGrantedEventArgs> PermissionGranted;
     public AsyncEvent<PermissionRevokedEventArgs> PermissionRevoked;
-    public AsyncEvent<InventoryClickEventArgs> ClickEvent;
+    public AsyncEvent<ContainerClickEventArgs> ClickEvent;
     public AsyncEvent<BlockBreakEventArgs> BlockBreak;
     public AsyncEvent<IncomingChatMessageEventArgs> IncomingChatMessage;
     public AsyncEvent<ServerStatusRequestEventArgs> ServerStatusRequest;
@@ -32,7 +32,7 @@ public class MinecraftEventHandler
         ServerTick = new("ServerTick", HandleException);
         PermissionGranted = new("PermissionGranted", HandleException);
         PermissionRevoked = new("PermissionRevoked", HandleException);
-        ClickEvent = new("InventoryClick", HandleException);
+        ClickEvent = new("ContainerClick", HandleException);
         BlockBreak = new("BlockBreak", HandleException);
         IncomingChatMessage = new("IncomingChatMessage", HandleException);
         PlayerTeleported = new("PlayerTeleported", HandleException);
@@ -56,7 +56,7 @@ public class MinecraftEventHandler
         return eventArgs;
     }
 
-    internal async ValueTask<InventoryClickEventArgs> InvokeInventoryClickAsync(InventoryClickEventArgs eventArgs)
+    internal async ValueTask<ContainerClickEventArgs> InvokeContainerClickAsync(ContainerClickEventArgs eventArgs)
     {
         await ClickEvent.InvokeAsync(eventArgs);
         return eventArgs;

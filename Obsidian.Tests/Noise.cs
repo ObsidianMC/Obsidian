@@ -1,5 +1,4 @@
 ﻿using Obsidian.WorldData.Generators;
-using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise;
 using SharpNoise.Builders;

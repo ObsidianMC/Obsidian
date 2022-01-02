@@ -2,11 +2,13 @@
 
 public class ItemStack : IEquatable<ItemStack>
 {
-    public readonly static ItemStack Air = new ItemStack(Material.Air, 0);
+    public readonly static ItemStack Air = new(Material.Air, 0);
+
+    internal int Slot { get; set; }
 
     internal bool Present { get; set; }
 
-    public short Count { get; internal set; }
+    public int Count { get; internal set; }
 
     public ItemMeta ItemMeta { get; internal set; }
 
@@ -27,7 +29,17 @@ public class ItemStack : IEquatable<ItemStack>
         if (item.Count <= 0)
             return Air;
 
-        item.Count -= (short)value;
+        item.Count = Math.Max(0, item.Count - value);
+
+        return item;
+    }
+
+    public static ItemStack operator +(ItemStack item, int value)
+    {
+        if (item.Count >= 64)//TODO use max stack size
+            return item;
+
+        item.Count = Math.Min(64, item.Count + value);
 
         return item;
     }
@@ -45,17 +57,7 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public static ItemStack operator +(ItemStack item, int value)
-    {
-        if (item.Count >= 64)
-            return item;
-
-        item.Count += (short)value;
-
-        return item;
-    }
-
-    public bool Equals(ItemStack? other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
+    public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
 
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 

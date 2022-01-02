@@ -44,7 +44,7 @@ public partial class Server : IServer
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
     public ConcurrentDictionary<string, World> Worlds { get; } = new();
     public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
-    internal ConcurrentDictionary<Guid, Inventory> CachedWindows { get; } = new();
+
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
 
@@ -282,7 +282,7 @@ public partial class Server : IServer
             var tcp = await tcpListener.AcceptTcpClientAsync();
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-            var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.TotalLoadedEntities()), this);
+            var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.GetTotalLoadedEntities()), this);
             clients.Add(client);
 
             client.Disconnected += client => clients.TryRemove(client);
@@ -432,7 +432,7 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.TotalLoadedEntities() + 1,
+                        EntityId = player + World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.AsItem().Id,
                         Glowing = true,
@@ -463,18 +463,19 @@ public partial class Server : IServer
                         Entity = item
                     });
 
+                    player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
+
                     player.client.SendPacket(new SetSlot
                     {
                         Slot = player.inventorySlot,
 
                         WindowId = 0,
 
-                        SlotData = player.Inventory.GetItem(player.inventorySlot) - 1,
+                        SlotData = player.GetHeldItem(),
 
                         StateId = player.Inventory.StateId++
                     });
 
-                    player.Inventory.RemoveItem(player.inventorySlot);
                     break;
                 }
             case DiggingStatus.StartedDigging:
@@ -520,7 +521,7 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.TotalLoadedEntities() + 1,
+                        EntityId = player + World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.Id,
                         Glowing = true,

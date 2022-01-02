@@ -200,6 +200,13 @@ public class Region
             chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
+        foreach (var tileEntityNbt in chunkCompound["block_entities"] as NbtList)
+        {
+            var tileEntityCompound = tileEntityNbt as NbtCompound;
+
+            chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
+        }
+
         return chunk;
     }
 
@@ -260,6 +267,10 @@ public class Region
             });
         }
 
+        var blockEntities = new NbtList(NbtTagType.Compound, "block_entities");
+        foreach (var (_, blockEntity) in chunk.BlockEntities)
+            blockEntities.Add(blockEntity);
+
         return new NbtCompound
         {
             new NbtTag<int>("xPos", chunk.X),
@@ -270,6 +281,7 @@ public class Region
                 //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
                 //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
             },
+            blockEntities,
             sectionsCompound,
             new NbtTag<int>("DataVersion", 2860)// Hardcoded version try to get data version through minecraft data and use data correctly
         };

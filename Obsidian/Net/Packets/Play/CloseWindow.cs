@@ -13,10 +13,10 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        if (WindowId == 0 || !player.OpenedInventory.BlockPosition.HasValue)
+        if (WindowId == 0 || (player.OpenedContainer is not IBlockEntity tileEntity))
             return;
 
-        var position = player.OpenedInventory.BlockPosition.Value;
+        var position = tileEntity.BlockPosition;
 
         var b = server.World.GetBlock(position);
 
@@ -47,6 +47,6 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
             await player.SendSoundAsync(Sounds.BlockEnderChestClose, position.SoundPosition);
         }
 
-        player.OpenedInventory = null;
+        player.OpenedContainer = null;
     }
 }

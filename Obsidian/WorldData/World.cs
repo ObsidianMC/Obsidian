@@ -50,7 +50,7 @@ public class World : IWorld
             Directory.CreateDirectory(playerDataPath);
     }
 
-    public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
+    public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
     public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
     {
@@ -214,8 +214,14 @@ public class World : IWorld
     public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
 
     public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
-        .Heightmaps[ChunkData.HeightmapType.MotionBlocking]
-        .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+        .Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+
+    public NbtCompound GetBlockEntity(Vector blockPosition) => this.GetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+    public NbtCompound GetBlockEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlockEntity(x, y, z);
+
+    public void SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetBlockEntity(x, y, z, tileEntityData);
 
     public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
 
@@ -538,7 +544,7 @@ public class World : IWorld
         {
             Type = EntityType.FallingBlock,
             Position = position,
-            EntityId = TotalLoadedEntities() + 1,
+            EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
             BlockMaterial = mat
         };
@@ -579,7 +585,7 @@ public class World : IWorld
             {
                 Type = type,
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Server = this.Server
             };
 
@@ -607,7 +613,7 @@ public class World : IWorld
             entity = new Living
             {
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Type = type
             };
 
