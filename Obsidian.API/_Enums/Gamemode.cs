@@ -1,11 +1,10 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum Gamemode : byte
 {
-    public enum Gamemode : byte
-    {
-        Survival,
-        Creative,
-        Adventure,
-        Spectator,
-        Hardcore = 0x8,
-    }
+    Survival,
+    Creative,
+    Adventure,
+    Spectator,
+    Hardcore = 0x8,
 }

@@ -1,24 +1,24 @@
 ﻿using SharpNoise.Modules;
-using System.Collections.Generic;
 
-namespace Obsidian.API.Noise
+namespace Obsidian.API.Noise;
+
+public class TerrainSelect : SharpNoise.Modules.Blend
 {
-    public class TerrainSelect : SharpNoise.Modules.Blend
+    private static readonly Constant zero = new() { ConstantValue = 0 };
+
+    public Module BiomeSelector { get; set; }
+    internal Dictionary<Biomes, Module> TerrainModules { get; set; } = new();
+
+    public TerrainSelect(Module biomeSelector)
     {
-        internal Dictionary<int, Module> TerrainModules { get; set; } = new();
+        Source1 = zero;
+        BiomeSelector = biomeSelector;
+    }
 
-        public Module BiomeSelector { get; set; }
-
-        public TerrainSelect()
-        {
-            Source1 = new Constant { ConstantValue = 0 };
-        }
-
-        public override double GetValue(double x, double y, double z)
-        {
-            var b = (int)BiomeSelector.GetValue(x, y, z);
-            Source0 = TerrainModules[b];
-            return base.GetValue(x, y, z);
-        }
+    public override double GetValue(double x, double y, double z)
+    {
+        var b = (int)BiomeSelector.GetValue(x, y, z);
+        Source0 = TerrainModules.TryGetValue((Biomes)b, out Module? terrainModule) ? terrainModule : zero;
+        return base.GetValue(x, y, z);
     }
 }

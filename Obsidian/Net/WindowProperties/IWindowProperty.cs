@@ -1,11 +1,8 @@
-﻿namespace Obsidian.Net.WindowProperties
+﻿namespace Obsidian.Net.WindowProperties;
+
+public interface IWindowProperty
 {
-    public interface IWindowProperty
-    {
-        public short Property { get; }
+    public short Property { get; }
 
-        public short Value { get; }
-    }
-
-    
+    public short Value { get; }
 }

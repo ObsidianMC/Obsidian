@@ -1,26 +1,23 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿namespace Obsidian.SourceGenerators.Packets.Attributes;
 
-namespace Obsidian.SourceGenerators.Packets.Attributes
+internal sealed class DataFormatBehavior : AttributeBehaviorBase
 {
-    internal sealed class DataFormatBehavior : AttributeBehaviorBase
+    public override string Name => Vocabulary.DataFormatAttribute;
+    public override AttributeFlags Flag => AttributeFlags.DataFormat;
+
+    public string Type { get; }
+
+    public DataFormatBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
     {
-        public override string Name => Vocabulary.DataFormatAttribute;
-        public override AttributeFlags Flag => AttributeFlags.DataFormat;
+        TryEvaluateTypeArgument(out string type);
 
-        public string Type { get; }
+        Type = type;
+    }
 
-        public DataFormatBehavior(AttributeSyntax attributeSyntax) : base(attributeSyntax)
-        {
-            TryEvaluateTypeArgument(out string type);
-
-            Type = type;
-        }
-
-        public override bool Matches(AttributeOwner other)
-        {
-            return other.Flags.HasFlag(Flag) &&
-                other.TryGetAttribute(out DataFormatBehavior format) &&
-                format.Type == Type;
-        }
+    public override bool Matches(AttributeOwner other)
+    {
+        return other.Flags.HasFlag(Flag) &&
+            other.TryGetAttribute(out DataFormatBehavior format) &&
+            format.Type == Type;
     }
 }

@@ -1,43 +1,42 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public enum EntityMetadataType : int
 {
-    public enum EntityMetadataType : int
-    {
-        Byte,
+    Byte,
 
-        VarInt,
+    VarInt,
 
-        Float,
+    Float,
 
-        String,
+    String,
 
-        Chat,
+    Chat,
 
-        OptChat,
+    OptChat,
 
-        Slot,
+    Slot,
 
-        Boolean,
+    Boolean,
 
-        Rotation,
+    Rotation,
 
-        Position,
+    Position,
 
-        OptPosition,
+    OptPosition,
 
-        Direction,
+    Direction,
 
-        OptUuid,
+    OptUuid,
 
-        OptBlockId,
+    OptBlockId,
 
-        Nbt,
+    Nbt,
 
-        Particle,
+    Particle,
 
-        VillagerData,
+    VillagerData,
 
-        OptVarInt,
+    OptVarInt,
 
-        Pose
-    }
+    Pose
 }

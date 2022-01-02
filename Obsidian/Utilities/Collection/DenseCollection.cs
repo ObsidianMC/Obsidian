@@ -1,30 +1,44 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 
-namespace Obsidian.Utilities.Collection
+namespace Obsidian.Utilities.Collection;
+
+public class DenseCollection<T> : IEnumerable<T> where T : class
 {
-    public class DenseCollection<T> : IEnumerable<T> where T : class
+    private readonly object lockObject = new object();
+
+    private readonly T[] source;
+
+    public int Count { get; private set; } = 0;
+
+    public int Width { get; }
+
+    public int Height { get; }
+
+    public DenseCollection(int width, int height)
     {
-        private readonly object lockObject = new object();
+        Width = width;
+        Height = height;
+        source = new T[width * height];
+    }
 
-        private readonly T[] source;
-
-        public int Count { get; private set; } = 0;
-
-        public int Width { get; }
-
-        public int Height { get; }
-
-        public DenseCollection(int width, int height)
+    public T this[int x, int z]
+    {
+        get
         {
-            Width = width;
-            Height = height;
-            source = new T[width * height];
+            x %= Width;
+            z %= Width;
+
+            if (x < 0)
+                x = Width + x;
+            if (z < 0)
+                z = Width + z;
+
+            return source[x + z * Width];
         }
 
-        public T this[int x, int z]
+        set
         {
-            get
+            lock (lockObject)
             {
                 x %= Width;
                 z %= Width;
@@ -34,42 +48,26 @@ namespace Obsidian.Utilities.Collection
                 if (z < 0)
                     z = Width + z;
 
-                return source[x + z * Width];
-            }
+                int index = x + z * Width;
 
-            set
-            {
-                lock (lockObject)
-                {
-                    x %= Width;
-                    z %= Width;
+                if (value != null && source[index] == null)
+                    Count++;
+                else if (value == null && source[index] != null)
+                    Count--;
 
-                    if (x < 0)
-                        x = Width + x;
-                    if (z < 0)
-                        z = Width + z;
-
-                    int index = x + z * Width;
-
-                    if (value != null && source[index] == null)
-                        Count++;
-                    else if (value == null && source[index] != null)
-                        Count--;
-
-                    source[index] = value;
-                }
+                source[index] = value;
             }
         }
+    }
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public IEnumerator<T> GetEnumerator()
+    public IEnumerator<T> GetEnumerator()
+    {
+        for (int i = 0; i < source.Length; i++)
         {
-            for (int i = 0; i < source.Length; i++)
-            {
-                if (source[i] != null)
-                    yield return source[i];
-            }
+            if (source[i] != null)
+                yield return source[i];
         }
     }
 }

@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum InteractionType
 {
-    public enum InteractionType
-    {
-        Interact,
-        Attack,
-        InteractAt
-    }
+    Interact,
+    Attack,
+    InteractAt
 }

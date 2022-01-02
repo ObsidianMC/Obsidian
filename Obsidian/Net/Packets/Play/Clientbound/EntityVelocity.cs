@@ -1,16 +1,14 @@
-﻿using Obsidian.API;
-using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+public partial class EntityVelocity : IClientboundPacket
 {
-    public partial class EntityVelocity : IClientboundPacket
-    {
-        [Field(0), VarLength]
-        public int EntityId { get; init; }
+    [Field(0), VarLength]
+    public int EntityId { get; init; }
 
-        [Field(1)]
-        public Velocity Velocity { get; init; }
+    [Field(1)]
+    public Velocity Velocity { get; init; }
 
-        public int Id => 0x4F;
-    }
+    public int Id => 0x4F;
 }

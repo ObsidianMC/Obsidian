@@ -1,53 +1,43 @@
-﻿using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Web;
 
-namespace Obsidian.Utilities.Mojang
+namespace Obsidian.Utilities.Mojang;
+
+public class MinecraftAPI
 {
-    public class MinecraftAPI
+    private static readonly HttpClient httpClient = Globals.HttpClient;
+
+    public static async Task<List<MojangUser>?> GetUsersAsync(params string[] usernames)
     {
-        private static readonly HttpClient Http = Globals.HttpClient;
-
-        public static async Task<List<MojangUser>> GetUsersAsync(string[] usernames)
+        List<string> escapedUsernames = new();
+        for (int i = 0; i < usernames.Length; i++)
         {
-            var escaped_usernames = new List<string>();
-
-            for (int i = 0; i < usernames.Length; i++)
-                escaped_usernames.Add(HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(usernames[i])));
-
-            using HttpResponseMessage response = await Http.PostAsync("https://api.mojang.com/profiles/minecraft", new StringContent(JsonSerializer.Serialize(escaped_usernames), Encoding.UTF8, "application/json"));
-
-            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<List<MojangUser>>() : null;
+            escapedUsernames.Add(HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(usernames[i])));
         }
 
-        public static async Task<MojangUser> GetUserAsync(string username)
-        {
-            var escaped_username = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(username));
-            var users = await GetUsersAsync(new[] { escaped_username });
+        using HttpResponseMessage response = await httpClient.PostAsJsonAsync("https://api.mojang.com/profiles/minecraft", escapedUsernames);
+        return response.IsSuccessStatusCode ? (await response.Content.ReadFromJsonAsync<List<MojangUser>>(Globals.JsonOptions)) : null;
+    }
 
-            return (users == null || users.Count <= 0) ? null : users.FirstOrDefault();
-        }
+    public static async Task<MojangUser?> GetUserAsync(string username)
+    {
+        string escapedUsername = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(username));
+        List<MojangUser>? users = await GetUsersAsync(escapedUsername);
+        return users?.FirstOrDefault();
+    }
 
-        public static async Task<MojangUser> GetUserAndSkinAsync(string uuid)
-        {
-            var escaped_uuid = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(uuid)); 
-            // I'm fairly sure this is not exploitable, but good practice and consistency are two important factors imo
-            using HttpResponseMessage response = await Http.GetAsync("https://sessionserver.mojang.com/session/minecraft/profile/" + escaped_uuid);
+    public static async Task<MojangUser?> GetUserAndSkinAsync(string uuid)
+    {
+        string escapedUuid = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(uuid));
+        return await httpClient.GetFromJsonAsync<MojangUser>($"https://sessionserver.mojang.com/session/minecraft/profile/{escapedUuid}", Globals.JsonOptions);
+    }
 
-            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<MojangUser>() : null;
-        }
-
-        public static async Task<JoinedResponse> HasJoined(string username, string serverId)
-        {
-            var escaped_username = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(username));
-            var escaped_serverid = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(serverId));
-            using HttpResponseMessage response = await Http.GetAsync($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={escaped_username}&serverId={escaped_serverid}");
-
-            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).FromJson<JoinedResponse>() : null;
-        }
+    public static async Task<JoinedResponse?> HasJoined(string username, string serverId)
+    {
+        string escapedUsername = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(username));
+        string escapedServerId = HttpUtility.UrlEncode(Encoding.UTF8.GetBytes(serverId));
+        return await httpClient.GetFromJsonAsync<JoinedResponse>($"https://sessionserver.mojang.com/session/minecraft/hasJoined?username={escapedUsername}&serverId={escapedServerId}", Globals.JsonOptions);
     }
 }

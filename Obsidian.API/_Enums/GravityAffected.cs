@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum GravityAffected
 {
-    public enum GravityAffected
-    {
-        Sand = Material.Sand,
-        RedSand = Material.RedSand,
-        Gravel = Material.Gravel
-    }
+    Sand = Material.Sand,
+    RedSand = Material.RedSand,
+    Gravel = Material.Gravel
 }

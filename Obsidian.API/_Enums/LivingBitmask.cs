@@ -1,14 +1,11 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+[Flags]
+public enum LivingBitMask : byte
 {
-    [Flags]
-    public enum LivingBitMask : byte
-    {
-        None = 0x00,
+    None = 0x00,
 
-        HandActive = 0x01,
-        ActiveHand = 0x02,
-        InRiptideSpinAttack = 0x04
-    }
+    HandActive = 0x01,
+    ActiveHand = 0x02,
+    InRiptideSpinAttack = 0x04
 }

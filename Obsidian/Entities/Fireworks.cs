@@ -1,10 +1,7 @@
-﻿using Obsidian.API;
+﻿namespace Obsidian.Entities;
 
-namespace Obsidian.Entities
+public class Fireworks : Entity
 {
-    public class Fireworks : Entity
-    {
-        public ItemStack Item { get; private set; }
-        public int Rotation { get; private set; }
-    }
+    public ItemStack Item { get; private set; }
+    public int Rotation { get; private set; }
 }

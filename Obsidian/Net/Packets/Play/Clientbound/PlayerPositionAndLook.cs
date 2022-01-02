@@ -1,40 +1,37 @@
-﻿using Obsidian.API;
-using Obsidian.Serialization.Attributes;
-using System;
+﻿using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound
+namespace Obsidian.Net.Packets.Play.Clientbound;
+
+[Flags]
+public enum PositionFlags : sbyte
 {
-    [Flags]
-    public enum PositionFlags : sbyte
-    {
-        X = 0x01,
-        Y = 0x02,
-        Z = 0x04,
-        RotationY = 0x08,
-        RotationX = 0x10,
-        None = 0x00
-    }
+    X = 0x01,
+    Y = 0x02,
+    Z = 0x04,
+    RotationY = 0x08,
+    RotationX = 0x10,
+    None = 0x00
+}
 
-    public partial class PlayerPositionAndLook : IClientboundPacket
-    {
-        [Field(0), DataFormat(typeof(double))]
-        public VectorF Position { get; init; }
+public partial class PlayerPositionAndLook : IClientboundPacket
+{
+    [Field(0), DataFormat(typeof(double))]
+    public VectorF Position { get; init; }
 
-        [Field(1), DataFormat(typeof(float))]
-        public Angle Yaw { get; init; }
+    [Field(1), DataFormat(typeof(float))]
+    public Angle Yaw { get; init; }
 
-        [Field(2), DataFormat(typeof(float))]
-        public Angle Pitch { get; init; }
+    [Field(2), DataFormat(typeof(float))]
+    public Angle Pitch { get; init; }
 
-        [Field(3), ActualType(typeof(sbyte))]
-        public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
+    [Field(3), ActualType(typeof(sbyte))]
+    public PositionFlags Flags { get; init; } = PositionFlags.X | PositionFlags.Y | PositionFlags.Z;
 
-        [Field(4), VarLength]
-        public int TeleportId { get; init; }
+    [Field(4), VarLength]
+    public int TeleportId { get; init; }
 
-        [Field(5)]
-        public bool DismountVehicle { get; init; }
+    [Field(5)]
+    public bool DismountVehicle { get; init; }
 
-        public int Id => 0x38;
-    }
+    public int Id => 0x38;
 }

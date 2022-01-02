@@ -1,48 +1,48 @@
-﻿using Obsidian.API;
-using Obsidian.WorldData;
+﻿using Obsidian.WorldData;
 
-namespace Obsidian
+namespace Obsidian;
+
+public struct BlockUpdate
 {
-    public struct BlockUpdate
-    {
-        internal readonly World world;
-        internal Vector position;
-        internal int delay { get; private set; }
-        internal int delayCounter;
-        private Block? _block;
-        internal Block? block
-        {
-            get => _block;
-            set 
-            {
-                _block = value;
-                if (value is Block b)
-                {
-                    if (Block.GravityAffected.Contains(b.Material))
-                    {
-                        delay = 1;
-                    }
-                    else if (b.Material == Material.Lava)
-                    {
-                        delay = 40;
-                    }
-                    else if (b.Material == Material.Water)
-                    {
-                        delay = 5;
-                    }
-                }
-                delayCounter = delay;
-            }
-        }
+    internal readonly World world;
+    internal Vector position;
 
-        public BlockUpdate(World w, Vector pos, Block? blk = null)
+    internal int Delay { get; private set; }
+    internal int delayCounter;
+
+    internal Block? Block
+    {
+        get => _block;
+        set
         {
-            world = w;
-            position = pos;
-            delay = 0;
-            delayCounter = delay;
-            _block = null;
-            block = blk;
+            _block = value;
+            if (value is Block b)
+            {
+                if (API.Block.GravityAffected.Contains(b.Material))
+                {
+                    Delay = 1;
+                }
+                else if (b.Material == Material.Lava)
+                {
+                    Delay = 40;
+                }
+                else if (b.Material == Material.Water)
+                {
+                    Delay = 5;
+                }
+            }
+            delayCounter = Delay;
         }
+    }
+    private Block? _block;
+
+    public BlockUpdate(World w, Vector pos, Block? blk = null)
+    {
+        world = w;
+        position = pos;
+        Delay = 0;
+        delayCounter = Delay;
+        _block = null;
+        Block = blk;
     }
 }

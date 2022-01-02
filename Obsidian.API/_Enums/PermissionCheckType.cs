@@ -1,8 +1,7 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum PermissionCheckType
 {
-    public enum PermissionCheckType
-    {
-        All,
-        Any
-    }
+    All,
+    Any
 }

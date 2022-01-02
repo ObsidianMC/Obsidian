@@ -1,16 +1,15 @@
-﻿namespace Obsidian.Items
-{
-    public enum ItemType
-    {
-        Sword,
-        Shovel,
-        PickAxe,
-        Axe,
-        Item,
+﻿namespace Obsidian.Items;
 
-        Helmet,
-        Chestplate,
-        Leggings,
-        Boots
-    }
+public enum ItemType
+{
+    Sword,
+    Shovel,
+    PickAxe,
+    Axe,
+    Item,
+
+    Helmet,
+    Chestplate,
+    Leggings,
+    Boots
 }

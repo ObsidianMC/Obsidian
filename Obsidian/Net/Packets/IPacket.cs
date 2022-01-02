@@ -1,7 +1,6 @@
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets;
+
+public interface IPacket
 {
-    public interface IPacket
-    {
-        public int Id { get; }
-    }
+    public int Id { get; }
 }

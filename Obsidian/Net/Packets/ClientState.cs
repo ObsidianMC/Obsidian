@@ -1,11 +1,10 @@
-namespace Obsidian.Net.Packets
+namespace Obsidian.Net.Packets;
+
+public enum ClientState
 {
-    public enum ClientState
-    {
-        Handshaking = 0,
-        Status = 1,
-        Login = 2,
-        Play = 3,
-        Closed = -1,
-    }
+    Handshaking = 0,
+    Status = 1,
+    Login = 2,
+    Play = 3,
+    Closed = -1,
 }

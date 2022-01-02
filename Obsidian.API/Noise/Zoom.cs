@@ -1,21 +1,21 @@
 ﻿using SharpNoise.Modules;
 
-namespace Obsidian.API.Noise
+namespace Obsidian.API.Noise;
+
+public class Zoom : Module
 {
-    public class Zoom : Module
+    public Module Source0 { get; set; }
+
+    public double Amount { get; set; }
+
+    public Zoom(Module source0, double amount) : base(1)
     {
-        public Module Source0 { get; set; }
+        Source0 = source0;
+        Amount = amount;
+    }
 
-        public double Amount { get; set; }
-
-        public Zoom() : base(1)
-        {
-
-        }
-
-        public override double GetValue(double x, double y, double z)
-        {
-            return Source0.GetValue(x / Amount, y / Amount, z / Amount);
-        }
+    public override double GetValue(double x, double y, double z)
+    {
+        return Source0.GetValue(x / Amount, y / Amount, z / Amount);
     }
 }

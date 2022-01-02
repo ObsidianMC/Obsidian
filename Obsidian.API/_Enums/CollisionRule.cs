@@ -1,12 +1,11 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public enum CollisionRule
 {
-    public enum CollisionRule
-    {
-        Always,
+    Always,
 
-        PushOtherTeams,
-        PushOwnTeam,
+    PushOtherTeams,
+    PushOwnTeam,
 
-        Never
-    }
+    Never
 }

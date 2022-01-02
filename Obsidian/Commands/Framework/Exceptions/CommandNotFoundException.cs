@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
-namespace Obsidian.Commands.Framework.Exceptions
+public class CommandNotFoundException : Exception
 {
-    public class CommandNotFoundException : Exception
+    public CommandNotFoundException(string message) : base(message)
     {
-        public CommandNotFoundException(string message) : base(message)
-        {
 
-        }
     }
 }

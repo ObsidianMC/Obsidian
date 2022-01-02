@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API.Particles
-{
-    public class BlockParticle : IParticle
-    {
-        public int Id => 4;
+﻿namespace Obsidian.API.Particles;
 
-        public int BlockState { get; set; }
-    }
+public class BlockParticle : IParticle
+{
+    public int Id => 4;
+
+    public int BlockState { get; set; }
 }

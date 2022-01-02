@@ -1,15 +1,14 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Fluids : int
 {
-    public enum Fluids : int
-    {
-        Empty,
+    Empty,
 
-        FlowingWater,
+    FlowingWater,
 
-        Water,
+    Water,
 
-        FlowingLava,
+    FlowingLava,
 
-        Lava
-    }
+    Lava
 }

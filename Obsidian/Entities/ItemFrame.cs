@@ -1,9 +1,8 @@
-﻿namespace Obsidian.Entities
-{
-    public class ItemFrame : Entity
-    {
-        public object Item { get; private set; }
+﻿namespace Obsidian.Entities;
 
-        public int Rotation { get; private set; }
-    }
+public class ItemFrame : Entity
+{
+    public object Item { get; private set; }
+
+    public int Rotation { get; private set; }
 }

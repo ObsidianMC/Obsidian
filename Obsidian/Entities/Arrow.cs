@@ -1,8 +1,7 @@
-﻿namespace Obsidian.Entities
+﻿namespace Obsidian.Entities;
+
+public class Arrow : Entity
 {
-    public class Arrow : Entity
-    {
-        public bool Crit { get; private set; }
-        public bool NoClip { get; private set; }
-    }
+    public bool Crit { get; private set; }
+    public bool NoClip { get; private set; }
 }

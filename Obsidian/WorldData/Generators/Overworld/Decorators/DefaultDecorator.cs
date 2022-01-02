@@ -1,21 +1,19 @@
-﻿using Obsidian.API;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
+﻿using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
-namespace Obsidian.WorldData.Generators.Overworld.Decorators
+namespace Obsidian.WorldData.Generators.Overworld.Decorators;
+
+public class DefaultDecorator : BaseDecorator
 {
-    public class DefaultDecorator : BaseDecorator
+    public DefaultDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
-        public DefaultDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
-        {
-        }
+    }
 
-        public override void Decorate()
+    public override void Decorate()
+    {
+        if (pos.Y < noise.settings.WaterLevel)
         {
-            if (pos.Y < noise.settings.WaterLevel)
-            {
-                FillWater();
-                return;
-            }
+            FillWater();
+            return;
         }
     }
 }

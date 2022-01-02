@@ -1,95 +1,176 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Utilities.Collection;
-using System.Threading.Tasks;
 
-namespace Obsidian.ChunkData
+namespace Obsidian.ChunkData;
+
+public sealed class BlockStateContainer : DataContainer<Block>
 {
-    public abstract class BlockStateContainer
+    public override IPalette<Block> Palette { get; internal set; }
+
+    public bool IsEmpty => DataArray.storage.Length == 0;
+
+    public override DataArray DataArray { get; protected set; }
+
+#if CACHE_VALID_BLOCKS
+    private readonly DirtyCache<short> validBlockCount;
+#endif
+
+    internal BlockStateContainer(byte bitsPerEntry = 4) : base(bitsPerEntry)
     {
-        public abstract byte BitsPerBlock { get; }
+        DataArray = new DataArray(bitsPerEntry, 4096);
+        Palette = bitsPerEntry.DetermineBlockPalette();
 
-        public abstract DataArray BlockStorage { get; }
+#if CACHE_VALID_BLOCKS
+        validBlockCount = new(GetNonAirBlocks);
+#endif
+    }
 
-        public abstract IBlockStatePalette Palette { get; internal set; }
+    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
+    {
+        Palette = palette;
+        DataArray = dataArray;
 
-        protected bool Set(int x, int y, int z, Block blockState)
+#if CACHE_VALID_BLOCKS
+        validBlockCount = new(GetNonAirBlocks);
+#endif
+    }
+
+    public void Set(int x, int y, int z, Block blockState)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        var blockIndex = GetIndex(x, y, z);
+
+        int paletteId = Palette.GetOrAddId(blockState);
+
+        if (Palette.BitCount > DataArray.BitsPerEntry)
+            DataArray = DataArray.Grow(Palette.BitCount);
+
+        DataArray[blockIndex] = paletteId;
+    }
+
+    public Block Get(int x, int y, int z)
+    {
+        int storageId = DataArray[GetIndex(x, y, z)];
+
+        return Palette.GetValueFromIndex(storageId);
+    }
+
+    public override async Task WriteToAsync(MinecraftStream stream)
+    {
+#if CACHE_VALID_BLOCKS
+        var validBlocks = validBlockCount.GetValue();
+#else
+        var validBlocks = GetNonAirBlocks();
+#endif
+
+        await stream.WriteShortAsync(validBlocks);
+        await stream.WriteUnsignedByteAsync(BitsPerEntry);
+
+        await Palette.WriteToAsync(stream);
+
+        await stream.WriteVarIntAsync(DataArray.storage.Length);
+        await stream.WriteLongArrayAsync(DataArray.storage);
+    }
+
+    public override void WriteTo(MinecraftStream stream)
+    {
+#if CACHE_VALID_BLOCKS
+        var validBlocks = validBlockCount.GetValue();
+#else
+        var validBlocks = GetNonAirBlocks();
+#endif
+
+        stream.WriteShort(validBlocks);
+        stream.WriteUnsignedByte(BitsPerEntry);
+
+        Palette.WriteTo(stream);
+
+        stream.WriteVarInt(DataArray.storage.Length);
+        stream.WriteLongArray(DataArray.storage);
+    }
+
+    public void Fill(Block block)
+    {
+#if CACHE_VALID_BLOCKS
+        validBlockCount.SetDirty();
+#endif
+        int index = Palette.GetOrAddId(block);
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            y %= 16;
-            var blockIndex = GetIndex(x, y, z);
-
-            int paletteIndex = this.Palette.GetIdFromState(blockState);
-            if (paletteIndex == -1) { return false; }
-
-            this.BlockStorage[blockIndex] = paletteIndex;
-            return true;
+            DataArray[i] = index;
         }
+    }
 
-        protected Block Get(int x, int y, int z)
+    private static readonly Block air = Block.Air;
+    private static readonly Block caveAir = new(Material.CaveAir);
+    private static readonly Block voidAir = new(Material.VoidAir);
+
+    private short GetNonAirBlocks()
+    {
+        int validBlocksCount = 0;
+        int indexOne, indexTwo, indexThree;
+
+        if (!Palette.TryGetId(air, out indexOne))
+            goto NO_AIR;
+        if (!Palette.TryGetId(caveAir, out indexTwo))
+            goto NO_CAVE;
+        if (!Palette.TryGetId(voidAir, out indexThree))
+            goto TWO_INDEXES;
+
+        // 1 1 1
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            y %= 16;
-            int storageId = this.BlockStorage[GetIndex(x, y, z)];
-
-            return this.Palette.GetStateFromIndex(storageId);
+            int index = DataArray[i];
+            if (index != indexOne && index != indexTwo && index != indexThree)
+                validBlocksCount++;
         }
+        return (short)validBlocksCount;
 
-        public static int GetIndex(int x, int y, int z) => ((y * 16) + z) * 16 + x;
+    // 0 ? ?
+    NO_AIR:
+        if (!Palette.TryGetId(caveAir, out indexOne))
+            goto NO_AIR_CAVE;
+        if (!Palette.TryGetId(voidAir, out indexTwo))
+            goto ONE_INDEX;
+        goto TWO_INDEXES;
 
-        public async Task WriteToAsync(MinecraftStream stream)
+    // 1 0 ?
+    NO_CAVE:
+        if (!Palette.TryGetId(voidAir, out indexTwo))
+            goto ONE_INDEX;
+        goto TWO_INDEXES;
+
+    // 0 0 ?
+    NO_AIR_CAVE:
+        if (!Palette.TryGetId(voidAir, out indexOne))
+            return 0;
+        // Fall through to ONE_INDEX
+
+        // 1 0 0
+        ONE_INDEX:
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            short validBlockCount = 0;
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        var block = this.Get(x, y, z);
-
-                        if (!block.IsAir)
-                            validBlockCount++;
-                    }
-                }
-            }
-
-            await stream.WriteShortAsync(validBlockCount);
-            await stream.WriteUnsignedByteAsync(this.BitsPerBlock);
-
-            await this.Palette.WriteToAsync(stream);
-
-            await stream.WriteVarIntAsync(this.BlockStorage.Storage.Length);
-            await stream.WriteLongArrayAsync(this.BlockStorage.Storage);
+            int index = DataArray[i];
+            if (index != indexOne)
+                validBlocksCount++;
         }
+        return (short)validBlocksCount;
 
-        public void WriteTo(MinecraftStream stream)
+    // 1 1 0
+    TWO_INDEXES:
+        for (int i = 0; i < 16 * 16 * 16; i++)
         {
-            short validBlockCount = 0;
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        var block = this.Get(x, y, z);
-
-                        if (!block.IsAir)
-                            validBlockCount++;
-                    }
-                }
-            }
-
-            stream.WriteShort(validBlockCount);
-            stream.WriteUnsignedByte(BitsPerBlock);
-
-            Palette.WriteToAsync(stream);
-
-            stream.WriteVarInt(BlockStorage.Storage.Length);
-
-            long[] storage = BlockStorage.Storage;
-            for (int i = 0; i < storage.Length; i++)
-            {
-                stream.WriteLong(storage[i]);
-            }
+            int index = DataArray[i];
+            if (index != indexOne && index != indexTwo)
+                validBlocksCount++;
         }
+        return (short)validBlocksCount;
+    }
+
+    public BlockStateContainer Clone()
+    {
+        return new BlockStateContainer(Palette.Clone(), DataArray.Clone(), BitsPerEntry);
     }
 }

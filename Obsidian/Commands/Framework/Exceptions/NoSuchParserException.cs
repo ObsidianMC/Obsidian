@@ -1,12 +1,9 @@
-﻿using System;
+﻿namespace Obsidian.Commands.Framework.Exceptions;
 
-namespace Obsidian.Commands.Framework.Exceptions
+public class NoSuchParserException : Exception
 {
-    public class NoSuchParserException : Exception
+    public NoSuchParserException(string message) : base(message)
     {
-        public NoSuchParserException(string message) : base(message)
-        {
 
-        }
     }
 }

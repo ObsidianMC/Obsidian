@@ -1,87 +1,68 @@
-﻿using System;
-using System.Linq;
+﻿using System.Buffers.Binary;
 using System.Text;
 
-namespace Obsidian.Nbt
+namespace Obsidian.Nbt;
+
+public partial class NbtWriter
 {
-    public partial class NbtWriter
+    internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+
+    internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+
+    internal void WriteStringInternal(string value)
     {
-        internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+        ArgumentNullException.ThrowIfNull(value);
 
-        internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+        if (value.Length > short.MaxValue)
+            throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
 
-        internal void WriteStringInternal(string value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+        var buffer = Encoding.UTF8.GetBytes(value);
 
-            if (value.Length > short.MaxValue)
-                throw new InvalidOperationException($"value length must be less than {short.MaxValue}");
+        this.WriteShortInternal((short)buffer.Length);
+        this.BaseStream.Write(buffer);
+    }
+    internal void WriteShortInternal(short value)
+    {
+        Span<byte> buffer = stackalloc byte[2];
 
-            var buffer = Encoding.UTF8.GetBytes(value);
+        BinaryPrimitives.WriteInt16BigEndian(buffer, value);
 
-            this.WriteShortInternal((short)buffer.Length);
-            this.BaseStream.Write(buffer);
-        }
+        this.BaseStream.Write(buffer);
+    }
 
-        internal void WriteShortInternal(short value)
-        {
-            Span<byte> buffer = stackalloc byte[2];
+    internal void WriteIntInternal(int value)
+    {
+        Span<byte> buffer = stackalloc byte[4];
 
-            BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteInt32BigEndian(buffer, value);
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+        this.BaseStream.Write(buffer);
+    }
 
-            this.BaseStream.Write(buffer);
-        }
+    internal void WriteFloatInternal(float value)
+    {
+        Span<byte> buffer = stackalloc byte[4];
 
-        internal void WriteIntInternal(int value)
-        {
-            Span<byte> buffer = stackalloc byte[4];
+        BinaryPrimitives.WriteSingleBigEndian(buffer, value);
 
-            BitConverter.TryWriteBytes(buffer, value);
+        this.BaseStream.Write(buffer);
+    }
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+    internal void WriteLongInternal(long value)
+    {
+        Span<byte> buffer = stackalloc byte[8];
 
-            this.BaseStream.Write(buffer);
-        }
+        BinaryPrimitives.WriteInt64BigEndian(buffer, value);
 
-        internal void WriteFloatInternal(float value)
-        {
-            Span<byte> buffer = stackalloc byte[4];
+        this.BaseStream.Write(buffer);
+    }
 
-            BitConverter.TryWriteBytes(buffer, value);
+    internal void WriteDoubleInternal(double value)
+    {
+        Span<byte> buffer = stackalloc byte[8];
 
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
+        BinaryPrimitives.WriteDoubleBigEndian(buffer, value);
 
-            this.BaseStream.Write(buffer);
-        }
-
-        internal void WriteLongInternal(long value)
-        {
-            Span<byte> buffer = stackalloc byte[8];
-
-            BitConverter.TryWriteBytes(buffer, value);
-
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
-
-            this.BaseStream.Write(buffer);
-        }
-
-        internal void WriteDoubleInternal(double value)
-        {
-            Span<byte> buffer = stackalloc byte[8];
-
-            BitConverter.TryWriteBytes(buffer, value);
-
-            if (BitConverter.IsLittleEndian)
-                buffer.Reverse();
-
-            this.BaseStream.Write(buffer);
-        }
+        this.BaseStream.Write(buffer);
     }
 }

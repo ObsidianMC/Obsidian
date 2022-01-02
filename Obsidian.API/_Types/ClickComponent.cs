@@ -1,11 +1,17 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public class ClickComponent
 {
-    public class ClickComponent
+    public EClickAction Action { get; set; }
+
+    public string Value { get; set; }
+
+    public string Translate { get; set; }
+
+    public ClickComponent(EClickAction action, string value, string translate = "")
     {
-        public EClickAction Action { get; set; }
-
-        public string Value { get; set; }
-
-        public string Translate { get; set; }
+        Action = action;
+        Value = value;
+        Translate = translate;
     }
 }

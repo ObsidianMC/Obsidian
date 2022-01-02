@@ -1,37 +1,36 @@
-﻿namespace Obsidian.Utilities.Registry.Enums
+﻿namespace Obsidian.Utilities.Registry.Enums;
+
+public enum Instruments
 {
-    public enum Instruments
-    {
-        Harp,
+    Harp,
 
-        Basedrum,
+    Basedrum,
 
-        Snare,
+    Snare,
 
-        Hat,
+    Hat,
 
-        Bass,
+    Bass,
 
-        Flute,
+    Flute,
 
-        Bell,
+    Bell,
 
-        Guitar,
+    Guitar,
 
-        Chime,
+    Chime,
 
-        Xylophone,
+    Xylophone,
 
-        IronXylophone,
+    IronXylophone,
 
-        CowBell,
+    CowBell,
 
-        Didgeridoo,
+    Didgeridoo,
 
-        Bit,
+    Bit,
 
-        Banjo,
+    Banjo,
 
-        Pling
-    }
+    Pling
 }

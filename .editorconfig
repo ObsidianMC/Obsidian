@@ -27,7 +27,7 @@ csharp_new_line_before_members_in_anonymous_types = true
 #require members of object intializers to be on separate lines
 csharp_new_line_before_members_in_object_initializers = true
 #require braces to be on a new line for properties, control_blocks, types, lambdas, object_collection_array_initializers, anonymous_types, and methods (also known as "Allman" style)
-csharp_new_line_before_open_brace = properties, control_blocks, types, lambdas, object_collection_array_initializers, anonymous_types, methods
+csharp_new_line_before_open_brace =all
 
 #Formatting - organize using options
 
@@ -144,6 +144,8 @@ dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion
 #prefer properties not to be prefaced with this. or Me. in Visual Basic
 dotnet_style_qualification_for_property = false:suggestion
+csharp_style_namespace_declarations=file_scoped:silent
+insert_final_newline=true
 
 [*.{cs,vb}]
 dotnet_style_prefer_simplified_boolean_expressions=true:warning

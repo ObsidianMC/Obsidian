@@ -1,70 +1,65 @@
-﻿using System;
+﻿namespace Obsidian.API;
 
-namespace Obsidian.API
+public sealed class Container : BaseContainer, IBlockEntity
 {
-    public sealed class Container : BaseContainer, ITileEntity
+    internal int StateId { get; set; }
+
+    public string Id { get; set; }
+
+    public Vector BlockPosition { get; set; }
+
+    public Guid Owner { get; set; }
+
+    public bool IsPlayerInventory { get; internal init; }
+
+    public Container(InventoryType type = InventoryType.Generic) : this(9 * 3, type) { }
+
+    public Container(int size, InventoryType type = InventoryType.Generic) : base(size, type)
     {
-        internal int StateId { get; set; }
+        if (type is not InventoryType.Generic or InventoryType.ShulkerBox)
+            throw new InvalidOperationException("Inventory type can only be Generic or ShulkerBox");
+        if (size % 9 is not 0 && size is not 46 or 5)
+            throw new InvalidOperationException("Size must be divisble by 9");
+        if (size > 9 * 6)
+            throw new InvalidOperationException($"Size must be <= {9 * 6}");
+    }
 
-        public string Id { get; set; }
+    public override int AddItem(ItemStack item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
 
-        public Vector BlockPosition { get; set; }
-
-        public Guid Owner { get; set; }
-
-        public bool IsPlayerInventory { get; internal init; }
-
-        public Container(InventoryType type = InventoryType.Generic) : this(9 * 3, type) { }
-
-        public Container(int size, InventoryType type = InventoryType.Generic) : base(size, type)
+        if (this.IsPlayerInventory)
         {
-            if (type is not InventoryType.Generic or InventoryType.ShulkerBox)
-                throw new InvalidOperationException("Inventory type can only be Generic or ShulkerBox");
-            if (size % 9 != 0 && (size != 46 || size != 5))
-                throw new InvalidOperationException("Size must be divisble by 9");
-            if (size > 9 * 6)
-                throw new InvalidOperationException($"Size must be <= {9 * 6}");
-        }
-
-        public override int AddItem(ItemStack item)
-        {
-            if (item is null)
-                throw new ArgumentNullException(nameof(item));
-
-            if (this.IsPlayerInventory)
+            for (int i = 45; i > 8; i--)
             {
-                for (int i = 45; i > 8; i--)
+                var invItem = this.items[i];
+
+                if (invItem?.Type == item.Type)
                 {
-                    var invItem = this.items[i];
+                    if (invItem.Count >= 64)
+                        continue;
 
-                    if (invItem?.Type == item.Type)
-                    {
-                        if (invItem.Count >= 64)
-                            continue;
+                    invItem.Count += item.Count;
 
-                        invItem.Count += item.Count;
+                    return i;
+                }
 
-                        return i;
-                    }
+                if (invItem == null)
+                {
+                    this.items[i] = item;
 
-                    if (invItem == null)
-                    {
-                        this.items[i] = item;
-
-                        return i;
-                    }
+                    return i;
                 }
             }
-            else
-            {
-                return base.AddItem(item);
-            }
-
-            return -1;
+        }
+        else
+        {
+            return base.AddItem(item);
         }
 
-
-        public void ToNbt() => throw new NotImplementedException();
-        public void FromNbt() => throw new NotImplementedException();
+        return -1;
     }
+
+    public void ToNbt() => throw new NotImplementedException();
+    public void FromNbt() => throw new NotImplementedException();
 }

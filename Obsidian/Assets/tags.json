@@ -10,6 +10,14 @@
       "minecraft:stripped_acacia_wood"
     ]
   },
+  "blocks/animals_spawnable_on": {
+    "name": "animals_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass_block"
+    ]
+  },
   "blocks/anvil": {
     "name": "anvil",
     "replace": false,
@@ -18,6 +26,36 @@
       "minecraft:anvil",
       "minecraft:chipped_anvil",
       "minecraft:damaged_anvil"
+    ]
+  },
+  "blocks/axolotls_spawnable_on": {
+    "name": "axolotls_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:clay"
+    ]
+  },
+  "blocks/azalea_grows_on": {
+    "name": "azalea_grows_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "#minecraft:dirt",
+      "#minecraft:sand",
+      "#minecraft:terracotta",
+      "minecraft:snow_block",
+      "minecraft:powder_snow"
+    ]
+  },
+  "blocks/azalea_root_replaceable": {
+    "name": "azalea_root_replaceable",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "#minecraft:lush_ground_replaceable",
+      "#minecraft:terracotta",
+      "minecraft:red_sand"
     ]
   },
   "blocks/bamboo_plantable_on": {
@@ -147,6 +185,16 @@
     "values": [
       "minecraft:bee_nest",
       "minecraft:beehive"
+    ]
+  },
+  "blocks/big_dripleaf_placeable": {
+    "name": "big_dripleaf_placeable",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "#minecraft:small_dripleaf_placeable",
+      "#minecraft:dirt",
+      "minecraft:farmland"
     ]
   },
   "blocks/birch_logs": {
@@ -587,6 +635,18 @@
       "minecraft:flowering_azalea"
     ]
   },
+  "blocks/foxes_spawnable_on": {
+    "name": "foxes_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass_block",
+      "minecraft:snow",
+      "minecraft:snow_block",
+      "minecraft:podzol",
+      "minecraft:coarse_dirt"
+    ]
+  },
   "blocks/geode_invalid_blocks": {
     "name": "geode_invalid_blocks",
     "replace": false,
@@ -598,6 +658,19 @@
       "minecraft:ice",
       "minecraft:packed_ice",
       "minecraft:blue_ice"
+    ]
+  },
+  "blocks/goats_spawnable_on": {
+    "name": "goats_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:stone",
+      "minecraft:snow",
+      "minecraft:powder_snow",
+      "minecraft:snow_block",
+      "minecraft:packed_ice",
+      "minecraft:gravel"
     ]
   },
   "blocks/gold_ores": {
@@ -737,8 +810,8 @@
       "minecraft:deepslate_lapis_ore"
     ]
   },
-  "blocks/lava_pool_stone_replaceables": {
-    "name": "lava_pool_stone_replaceables",
+  "blocks/lava_pool_stone_cannot_replace": {
+    "name": "lava_pool_stone_cannot_replace",
     "replace": false,
     "type": "blocks",
     "values": [
@@ -869,7 +942,6 @@
       "minecraft:wheat",
       "#minecraft:banners",
       "#minecraft:fence_gates",
-      "#minecraft:flowers",
       "#minecraft:logs",
       "#minecraft:planks",
       "#minecraft:saplings",
@@ -1237,7 +1309,8 @@
       "#minecraft:shulker_boxes",
       "#minecraft:anvil",
       "#minecraft:cauldrons",
-      "#minecraft:rails"
+      "#minecraft:rails",
+      "minecraft:conduit"
     ]
   },
   "blocks/mineable/shovel": {
@@ -1277,6 +1350,14 @@
       "minecraft:black_concrete_powder",
       "minecraft:soul_soil",
       "minecraft:rooted_dirt"
+    ]
+  },
+  "blocks/mooshrooms_spawnable_on": {
+    "name": "mooshrooms_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:mycelium"
     ]
   },
   "blocks/moss_replaceable": {
@@ -1446,6 +1527,17 @@
       "#minecraft:wool"
     ]
   },
+  "blocks/parrots_spawnable_on": {
+    "name": "parrots_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass_block",
+      "minecraft:air",
+      "#minecraft:leaves",
+      "#minecraft:logs"
+    ]
+  },
   "blocks/piglin_repellents": {
     "name": "piglin_repellents",
     "replace": false,
@@ -1471,6 +1563,14 @@
       "minecraft:dark_oak_planks",
       "minecraft:crimson_planks",
       "minecraft:warped_planks"
+    ]
+  },
+  "blocks/polar_bears_spawnable_on_in_frozen_ocean": {
+    "name": "polar_bears_spawnable_on_in_frozen_ocean",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:ice"
     ]
   },
   "blocks/portals": {
@@ -1502,6 +1602,17 @@
       "#minecraft:rails"
     ]
   },
+  "blocks/rabbits_spawnable_on": {
+    "name": "rabbits_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass_block",
+      "minecraft:snow",
+      "minecraft:snow_block",
+      "minecraft:sand"
+    ]
+  },
   "blocks/rails": {
     "name": "rails",
     "replace": false,
@@ -1520,6 +1631,25 @@
     "values": [
       "minecraft:redstone_ore",
       "minecraft:deepslate_redstone_ore"
+    ]
+  },
+  "blocks/replaceable_plants": {
+    "name": "replaceable_plants",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass",
+      "minecraft:fern",
+      "minecraft:dead_bush",
+      "minecraft:vine",
+      "minecraft:glow_lichen",
+      "minecraft:sunflower",
+      "minecraft:lilac",
+      "minecraft:rose_bush",
+      "minecraft:peony",
+      "minecraft:tall_grass",
+      "minecraft:large_fern",
+      "minecraft:hanging_roots"
     ]
   },
   "blocks/sand": {
@@ -1812,6 +1942,30 @@
       "minecraft:rose_bush"
     ]
   },
+  "blocks/terracotta": {
+    "name": "terracotta",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:terracotta",
+      "minecraft:white_terracotta",
+      "minecraft:orange_terracotta",
+      "minecraft:magenta_terracotta",
+      "minecraft:light_blue_terracotta",
+      "minecraft:yellow_terracotta",
+      "minecraft:lime_terracotta",
+      "minecraft:pink_terracotta",
+      "minecraft:gray_terracotta",
+      "minecraft:light_gray_terracotta",
+      "minecraft:cyan_terracotta",
+      "minecraft:purple_terracotta",
+      "minecraft:blue_terracotta",
+      "minecraft:brown_terracotta",
+      "minecraft:green_terracotta",
+      "minecraft:red_terracotta",
+      "minecraft:black_terracotta"
+    ]
+  },
   "blocks/trapdoors": {
     "name": "trapdoors",
     "replace": false,
@@ -1962,6 +2116,16 @@
     "values": [
       "minecraft:soul_sand",
       "minecraft:soul_soil"
+    ]
+  },
+  "blocks/wolves_spawnable_on": {
+    "name": "wolves_spawnable_on",
+    "replace": false,
+    "type": "blocks",
+    "values": [
+      "minecraft:grass_block",
+      "minecraft:snow",
+      "minecraft:snow_block"
     ]
   },
   "blocks/wooden_buttons": {
@@ -2551,6 +2715,20 @@
       "minecraft:deepslate_diamond_ore"
     ]
   },
+  "items/dirt": {
+    "name": "dirt",
+    "replace": false,
+    "type": "items",
+    "values": [
+      "minecraft:dirt",
+      "minecraft:grass_block",
+      "minecraft:podzol",
+      "minecraft:coarse_dirt",
+      "minecraft:mycelium",
+      "minecraft:rooted_dirt",
+      "minecraft:moss_block"
+    ]
+  },
   "items/doors": {
     "name": "doors",
     "replace": false,
@@ -2723,7 +2901,8 @@
     "type": "items",
     "values": [
       "#minecraft:creeper_drop_music_discs",
-      "minecraft:music_disc_pigstep"
+      "minecraft:music_disc_pigstep",
+      "minecraft:music_disc_otherside"
     ]
   },
   "items/non_flammable_wood": {
@@ -3083,6 +3262,30 @@
       "minecraft:lilac",
       "minecraft:peony",
       "minecraft:rose_bush"
+    ]
+  },
+  "items/terracotta": {
+    "name": "terracotta",
+    "replace": false,
+    "type": "items",
+    "values": [
+      "minecraft:terracotta",
+      "minecraft:white_terracotta",
+      "minecraft:orange_terracotta",
+      "minecraft:magenta_terracotta",
+      "minecraft:light_blue_terracotta",
+      "minecraft:yellow_terracotta",
+      "minecraft:lime_terracotta",
+      "minecraft:pink_terracotta",
+      "minecraft:gray_terracotta",
+      "minecraft:light_gray_terracotta",
+      "minecraft:cyan_terracotta",
+      "minecraft:purple_terracotta",
+      "minecraft:blue_terracotta",
+      "minecraft:brown_terracotta",
+      "minecraft:green_terracotta",
+      "minecraft:red_terracotta",
+      "minecraft:black_terracotta"
     ]
   },
   "items/trapdoors": {

@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
+﻿namespace Obsidian.API;
+
+public struct Rotation
 {
-    public struct Rotation
-    {
-        public double X;
-        public double Y;
-        public double Z;
-    }
+    public double X;
+    public double Y;
+    public double Z;
 }

@@ -1,46 +1,42 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities;
-using System.Threading.Tasks;
 
-namespace Obsidian.Net.Packets.Play.Serverbound
+namespace Obsidian.Net.Packets.Play.Serverbound;
+
+public partial class CreativeInventoryAction : IServerboundPacket
 {
-    public partial class CreativeInventoryAction : IServerboundPacket
+    [Field(0)]
+    public short ClickedSlot { get; private set; }
+
+    [Field(1)]
+    public ItemStack ClickedItem { get; private set; }
+
+    public int Id => 0x28;
+
+    public async ValueTask HandleAsync(Server server, Player player)
     {
-        [Field(0)]
-        public short ClickedSlot { get; private set; }
+        var inventory = player.OpenedContainer ?? player.Inventory;
 
-        [Field(1)]
-        public ItemStack ClickedItem { get; private set; }
+        var (slot, isForPlayer) = inventory.GetDifference(ClickedSlot);
 
-        public int Id => 0x28;
+        if (isForPlayer)
+            inventory = player.Inventory;
 
-        public async ValueTask HandleAsync(Server server, Player player)
+        inventory.SetItem(slot, ClickedItem);
+
+        player.LastClickedItem = ClickedItem;
+
+        if (player.inventorySlot == ClickedSlot)
         {
-            var inventory = player.OpenedContainer ?? player.Inventory;
+            var heldItem = player.GetHeldItem();
 
-            var (slot, isForPlayer) = inventory.GetDifference(ClickedSlot);
-
-            if (isForPlayer)
-                inventory = player.Inventory;
-
-            inventory.SetItem(slot, ClickedItem);
-
-            player.LastClickedItem = ClickedItem;
-
-            if (player.inventorySlot == ClickedSlot)
+            await server.QueueBroadcastPacketAsync(new EntityEquipment
             {
-                var heldItem = player.GetHeldItem();
-
-                await server.QueueBroadcastPacketAsync(new EntityEquipment
-                {
-                    EntityId = player.EntityId,
-                    Slot = ESlot.MainHand,
-                    Item = heldItem
-                }, player);
-            }
+                EntityId = player.EntityId,
+                Slot = ESlot.MainHand,
+                Item = heldItem
+            }, player);
         }
     }
 }

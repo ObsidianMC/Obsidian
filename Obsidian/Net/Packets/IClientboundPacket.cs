@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Net.Packets
+﻿namespace Obsidian.Net.Packets;
+
+public interface IClientboundPacket : IPacket
 {
-    public interface IClientboundPacket : IPacket
-    {
-        public void Serialize(MinecraftStream stream);
-    }
+    public void Serialize(MinecraftStream stream);
 }

@@ -1,9 +1,8 @@
-﻿namespace Obsidian.API
-{
-    public interface IScoreboardManager
-    {
-        public IScoreboard DefaultScoreboard { get; }
+﻿namespace Obsidian.API;
 
-        public IScoreboard CreateScoreboard(string name);
-    }
+public interface IScoreboardManager
+{
+    public IScoreboard DefaultScoreboard { get; }
+
+    public IScoreboard CreateScoreboard(string name);
 }

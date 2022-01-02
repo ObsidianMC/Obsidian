@@ -1,15 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
-namespace Obsidian.Plugins.PluginProviders
+namespace Obsidian.Plugins.PluginProviders;
+
+public interface IPluginProvider
 {
-    public interface IPluginProvider
-    {
-        public PluginContainer GetPlugin(string path, ILogger logger);
+    public PluginContainer GetPlugin(string path, ILogger logger);
 
-        public async Task<PluginContainer> GetPluginAsync(string path, ILogger logger)
-        {
-            return await Task.FromResult(GetPlugin(path, logger));
-        }
+    public async Task<PluginContainer> GetPluginAsync(string path, ILogger logger)
+    {
+        return await Task.FromResult(GetPlugin(path, logger));
     }
 }

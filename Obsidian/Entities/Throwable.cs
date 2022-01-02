@@ -1,7 +1,6 @@
-﻿namespace Obsidian.Entities
-{
-    public class Throwable : Entity
-    {
+﻿namespace Obsidian.Entities;
 
-    }
+public class Throwable : Entity
+{
+
 }

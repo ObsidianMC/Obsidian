@@ -16,14 +16,20 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore --configuration Release /p:DebugType=None
+    - name: Rename executables
+      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
+      run: |
+        mv Obsidian.ConsoleApp.dll ObsidianApp.dll
+        mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
+        mv Obsidian.ConsoleApp.runtimeconfig.json ObsidianApp.runtimeconfig.json
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
         name: Obsidian-Nightly-Build
-        path: /home/runner/work/Obsidian/Obsidian/Obsidian/bin/Debug/net5.0/
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
       if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs

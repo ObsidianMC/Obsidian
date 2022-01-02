@@ -1,23 +1,17 @@
-﻿using Obsidian.API;
-using Obsidian.Entities;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using Obsidian.Entities;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 
 #nullable enable
 
-namespace Obsidian.Utilities
+namespace Obsidian.Utilities;
+
+public static partial class Extensions
 {
-    public static partial class Extensions
-    {
-        internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
+    internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
                 EntityType.DragonFireball,
@@ -53,65 +47,64 @@ namespace Obsidian.Utilities
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder};
 
-        public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
+    public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
 
-        internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
+    internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 
-        public static Item AsItem(this ItemStack itemStack) => Registry.Registry.GetItem(itemStack.Type);
+    public static Item AsItem(this ItemStack itemStack) => Registry.Registry.GetItem(itemStack.Type);
 
-        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids) => 
-            source.Where(x => !uuids.Contains(x.Value.Uuid));
+    public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Guid[] uuids) =>
+        source.Where(x => !uuids.Contains(x.Value.Uuid));
 
-        public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
+    public static IEnumerable<KeyValuePair<Guid, Player>> Except(this ConcurrentDictionary<Guid, Player> source, params Player[] players)
+    {
+        var newDict = new Dictionary<Guid, Player>();
+        foreach ((Guid uuid, Player player) in source)
         {
-            var newDict = new Dictionary<Guid, Player>();
-            foreach ((Guid uuid, Player player) in source)
-            {
-                if (players.Any(x => x.Uuid == uuid))
-                    continue;
+            if (players.Any(x => x.Uuid == uuid))
+                continue;
 
-                newDict.Add(uuid, player);
-            }
-
-            return newDict;
+            newDict.Add(uuid, player);
         }
 
-        public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
-        {
-            foreach (T t in collection)
-            {
-                action(t);
-            }
-        }
-
-        // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
-        public static string MinecraftShaDigest(this byte[] data)
-        {
-            var hash = new SHA1Managed().ComputeHash(data);
-            // Reverse the bytes since BigInteger uses little endian
-            Array.Reverse(hash);
-
-            var b = new BigInteger(hash);
-            // very annoyingly, BigInteger in C# tries to be smart and puts in
-            // a leading 0 when formatting as a hex number to allow roundtripping 
-            // of negative numbers, thus we have to trim it off.
-            if (b < 0)
-            {
-                // toss in a negative sign if the interpreted number is negative
-                return $"-{(-b).ToString("x").TrimStart('0')}";
-            }
-            else
-            {
-                return b.ToString("x").TrimStart('0');
-            }
-        }
-
-        public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
-        public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
-
-        public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => 
-            JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
-        public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) => 
-            JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
+        return newDict;
     }
+
+    public static void ForEach<T>(this IEnumerable<T> collection, Action<T> action)
+    {
+        foreach (T t in collection)
+        {
+            action(t);
+        }
+    }
+
+    // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
+    public static string MinecraftShaDigest(this byte[] data)
+    {
+        var hash = new SHA1Managed().ComputeHash(data);
+        // Reverse the bytes since BigInteger uses little endian
+        Array.Reverse(hash);
+
+        var b = new BigInteger(hash);
+        // very annoyingly, BigInteger in C# tries to be smart and puts in
+        // a leading 0 when formatting as a hex number to allow roundtripping 
+        // of negative numbers, thus we have to trim it off.
+        if (b < 0)
+        {
+            // toss in a negative sign if the interpreted number is negative
+            return $"-{(-b).ToString("x").TrimStart('0')}";
+        }
+        else
+        {
+            return b.ToString("x").TrimStart('0');
+        }
+    }
+
+    public static string ToJson(this object? value, JsonSerializerOptions? options = null) => JsonSerializer.Serialize(value, options ?? Globals.JsonOptions);
+    public static T? FromJson<T>(this string value) => JsonSerializer.Deserialize<T>(value, Globals.JsonOptions);
+
+    public static ValueTask<TValue?> FromJsonAsync<TValue>(this Stream stream, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) =>
+        JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
+    public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
+        JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
 }

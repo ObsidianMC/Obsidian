@@ -1,11 +1,8 @@
-﻿using Obsidian.API;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees
+public class JungleTree : BaseTree
 {
-    public class JungleTree : BaseTree
+    public JungleTree(World world) : base(world, Material.JungleLeaves, Material.JungleLog, 10)
     {
-        public JungleTree(World world) : base(world, Material.JungleLeaves, Material.JungleLog, 10)
-        {
-        }
     }
 }

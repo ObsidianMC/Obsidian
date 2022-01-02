@@ -1,35 +1,31 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿namespace Obsidian.Net.Actions.BossBar;
 
-namespace Obsidian.Net.Actions.BossBar
+public class BossBarAction
 {
-    public class BossBarAction
+    public Guid Uuid { get; set; }
+
+    public int Action { get; }
+
+    public BossBarAction(int action)
     {
-        public Guid Uuid { get; set; }
+        this.Action = action;
+    }
 
-        public int Action { get; }
+    public virtual void WriteTo(MinecraftStream stream)
+    {
+        if (this.Uuid == default)
+            throw new InvalidOperationException("Uuid must be assigned a value.");
 
-        public BossBarAction(int action)
-        {
-            this.Action = action;
-        }
+        stream.WriteUuid(this.Uuid);
+        stream.WriteVarInt(this.Action);
+    }
 
-        public virtual void WriteTo(MinecraftStream stream)
-        {
-            if (this.Uuid == default)
-                throw new InvalidOperationException("Uuid must be assigned a value.");
+    public virtual async Task WriteToAsync(MinecraftStream stream)
+    {
+        if (this.Uuid == default)
+            throw new InvalidOperationException("Uuid must be assigned a value.");
 
-            stream.WriteUuid(this.Uuid);
-            stream.WriteVarInt(this.Action);
-        }
-
-        public virtual async Task WriteToAsync(MinecraftStream stream)
-        {
-            if (this.Uuid == default)
-                throw new InvalidOperationException("Uuid must be assigned a value.");
-
-            await stream.WriteUuidAsync(this.Uuid);
-            await stream.WriteVarIntAsync(this.Action);
-        }
+        await stream.WriteUuidAsync(this.Uuid);
+        await stream.WriteVarIntAsync(this.Action);
     }
 }
