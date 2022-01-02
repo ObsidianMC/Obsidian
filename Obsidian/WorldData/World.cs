@@ -331,6 +331,8 @@ public class World : IWorld
             // Update client time every second / 20 ticks
             this.Server.BroadcastPacket(new TimeUpdate(this.Data.Time, this.Data.Time % 24000));
         }
+
+        await this.ManageChunksAsync();
     }
 
     #region world loading/saving

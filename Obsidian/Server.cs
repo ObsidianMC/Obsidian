@@ -622,7 +622,6 @@ public partial class Server : IServer
             tpsMeasure.PushMeasurement(elapsedTicks);
             Tps = tpsMeasure.Tps;
 
-            await World.ManageChunksAsync();
             UpdateStatusConsole();
         }
 
