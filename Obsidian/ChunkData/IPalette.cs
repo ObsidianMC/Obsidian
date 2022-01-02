@@ -13,6 +13,8 @@ public interface IPalette<T>
     public int GetOrAddId(T value);
     public T? GetValueFromIndex(int index);
 
+    public IPalette<T> Clone();
+
     public void WriteTo(MinecraftStream stream);
     public Task WriteToAsync(MinecraftStream stream);
     public Task ReadFromAsync(MinecraftStream stream);

@@ -11,6 +11,7 @@ public class Region
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
+    private const NbtCompression UsedCompression = NbtCompression.GZip;
 
     public int X { get; }
     public int Z { get; }
@@ -71,14 +72,18 @@ public class Region
         return chunk;
     }
 
-    private Chunk GetChunkFromFile(Vector relativePosition)
+    private Chunk? GetChunkFromFile(Vector relativePosition)
     {
-        var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
-        if (compressedBytes is null) { return null; }
-        using Stream strm = new MemoryStream(compressedBytes);
-        NbtReader reader = new(strm, NbtCompression.GZip);
-        NbtCompound chunkNbt = reader.ReadNextTag() as NbtCompound;
-        return GetChunkFromNbt(chunkNbt);
+        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
+        if (compressedBytes.IsEmpty)
+        {
+            return null;
+        }
+
+        var bytesStream = new ReadOnlyStream(compressedBytes);
+        var nbtReader = new NbtReader(bytesStream, UsedCompression);
+        var chunkCompound = (NbtCompound)nbtReader.ReadNextTag();
+        return GetChunkFromNbt(chunkCompound);
     }
 
     internal IEnumerable<Chunk> GeneratedChunks()

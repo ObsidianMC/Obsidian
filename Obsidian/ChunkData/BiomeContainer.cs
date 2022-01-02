@@ -12,8 +12,13 @@ public sealed class BiomeContainer : DataContainer<Biomes>
     internal BiomeContainer(byte bitsPerEntry = 2) : base(bitsPerEntry)
     {
         this.Palette = bitsPerEntry.DetermineBiomePalette();
-
         this.DataArray = new(this.BitsPerEntry, 64);
+    }
+
+    private BiomeContainer(IPalette<Biomes> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
+    {
+        Palette = palette;
+        DataArray = dataArray;
     }
 
     public void Set(int x, int y, int z, Biomes biome)
@@ -59,5 +64,10 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         long[] storage = this.DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
+    }
+
+    public BiomeContainer Clone()
+    {
+        return new BiomeContainer(Palette.Clone(), DataArray.Clone(), BitsPerEntry);
     }
 }

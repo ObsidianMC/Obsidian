@@ -18,8 +18,17 @@ public sealed class BlockStateContainer : DataContainer<Block>
     internal BlockStateContainer(byte bitsPerEntry = 4) : base(bitsPerEntry)
     {
         DataArray = new DataArray(bitsPerEntry, 4096);
-
         Palette = bitsPerEntry.DetermineBlockPalette();
+
+#if CACHE_VALID_BLOCKS
+        validBlockCount = new(GetNonAirBlocks);
+#endif
+    }
+
+    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
+    {
+        Palette = palette;
+        DataArray = dataArray;
 
 #if CACHE_VALID_BLOCKS
         validBlockCount = new(GetNonAirBlocks);
@@ -158,5 +167,10 @@ public sealed class BlockStateContainer : DataContainer<Block>
                 validBlocksCount++;
         }
         return (short)validBlocksCount;
+    }
+
+    public BlockStateContainer Clone()
+    {
+        return new BlockStateContainer(Palette.Clone(), DataArray.Clone(), BitsPerEntry);
     }
 }

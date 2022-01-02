@@ -37,8 +37,8 @@ Find out about plugin development [here](https://github.com/ObsidianMC/Documenta
 ## 🔥 Development builds
 Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
 - Ensure you have [.NET 6 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0) installed
-- Find the latest `.NET Build` action and scroll to the bottom of the page to find the artifacts.
-- Unzip the artifact and run `dotnet Obsidian.dll` to start the server.
+- Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3Amaster) and scroll to the bottom of the page to find the artifacts.
+- Unzip the artifact and run `dotnet ObsidianApp.dll` to start the server.
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
 Easy, isn't it?
 
