@@ -318,11 +318,11 @@ public class World : IWorld
         else if (Data.Raining && this.rainLevel < 1f)
             this.rainLevel += 0.01f;
 
-        if(oldLevel != this.rainLevel)
+        if (oldLevel != this.rainLevel)
         {
             // send new level if updated
             this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.RainLevelChange, this.rainLevel));
-            if(rainLevel == 0.2f)
+            if (rainLevel == 0.2f)
                 this.Server.BroadcastPacket(new ChangeGameState(this.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         }
 

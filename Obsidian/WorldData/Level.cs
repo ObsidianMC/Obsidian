@@ -75,8 +75,7 @@ public class Level
     public List<object> DataPacks { get; set; } = new List<object>();
 
     /// <summary>
-    /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0. 
-    /// This value keeps counting past 24000 and does not reset to 0.
+    /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0.
     /// </summary>
     public int DayTime 
     { 
