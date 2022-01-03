@@ -18,7 +18,7 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
 
         var position = player.OpenedInventory.BlockPosition.Value;
 
-        var b = server.World.GetBlock(position);
+        var b = server.World.GetBlockAsync(position);
 
         if (!b.HasValue)
             return;

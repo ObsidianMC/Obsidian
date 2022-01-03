@@ -73,13 +73,13 @@ public class LargeOakTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    world.SetBlockUntracked(origin + (x, y, z), new Block(trunk, 1));
+                    world.SetBlockUntrackedAsync(origin + (x, y, z), new Block(trunk, 1));
                 }
 
                 // Fill in any air gaps under the trunk
-                if (world.GetBlock(origin + (x, -1, z)).Value.IsAir)
+                if (world.GetBlockAsync(origin + (x, -1, z)).Value.IsAir)
                 {
-                    world.SetBlockUntracked(origin + (x, -1, z), new Block(trunk, 1));
+                    world.SetBlockUntrackedAsync(origin + (x, -1, z), new Block(trunk, 1));
                 }
             }
         }
@@ -93,8 +93,8 @@ public class LargeOakTree : BaseTree
                 {
                     for (int y = -2; y < 2; y++)
                     {
-                        if ((Material)world.GetBlock(origin + (x - 4, y, z - 4)).Value.Id == Material.GrassBlock)
-                            world.SetBlockUntracked(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
+                        if ((Material)world.GetBlockAsync(origin + (x - 4, y, z - 4)).Value.Id == Material.GrassBlock)
+                            world.SetBlockUntrackedAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
                     }
                 }
             }
@@ -122,7 +122,7 @@ public class LargeOakTree : BaseTree
                 {
                     if (leaves[x, z])
                     {
-                        world.SetBlockUntracked(origin + (x - 4, y - level, z - 4), new Block(leaf));
+                        world.SetBlockUntrackedAsync(origin + (x - 4, y - level, z - 4), new Block(leaf));
                     }
                 }
             }

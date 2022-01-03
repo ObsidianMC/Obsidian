@@ -68,7 +68,7 @@ public abstract class BaseFlora
     {
         if (GrowHeight(placeVector) >= height && ValidSurface(placeVector))
         {
-            world.SetBlockUntracked(placeVector, new Block(FloraMat));
+            world.SetBlockUntrackedAsync(placeVector, new Block(FloraMat));
             return true;
         }
         return false;
@@ -79,7 +79,7 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
-    protected virtual bool ValidSurface(Vector loc) => world.GetBlock(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
+    protected virtual bool ValidSurface(Vector loc) => world.GetBlockAsync(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
 
     /// <summary>
     /// Check free space above grow location.
@@ -91,7 +91,7 @@ public abstract class BaseFlora
         int freeSpace = 0;
         for (int y = 0; y < height; y++)
         {
-            if (world.GetBlock(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
+            if (world.GetBlockAsync(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
             {
                 freeSpace++;
             }

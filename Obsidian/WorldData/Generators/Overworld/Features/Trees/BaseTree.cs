@@ -47,12 +47,12 @@ public abstract class BaseTree
                     {
                         if (x != origin.X - 2 && x != origin.X + 2 && z != origin.Z - 2 && z != origin.Z + 2)
                         {
-                            world.SetBlockUntracked(x, y, z, new Block(leaf));
+                            world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                         }
                     }
                     else
                     {
-                        world.SetBlockUntracked(x, y, z, new Block(leaf));
+                        world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                     }
                 }
             }
@@ -64,26 +64,26 @@ public abstract class BaseTree
         int topY = trunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
         {
-            world.SetBlockUntracked(origin + (0, y, 0), new Block(trunk, 1));
+            world.SetBlockUntrackedAsync(origin + (0, y, 0), new Block(trunk, 1));
         }
-        world.SetBlockUntracked(origin, new Block(Material.Dirt));
+        world.SetBlockUntrackedAsync(origin, new Block(Material.Dirt));
     }
 
     protected virtual bool TreeCanGrow(Vector origin)
     {
-        var surfaceBlock = (Block)world.GetBlock(origin);
+        var surfaceBlock = (Block)world.GetBlockAsync(origin);
         bool surfaceValid = ValidSourceBlocks.Contains(surfaceBlock.Material);
 
         bool plentyOfRoom =
-            ((Block)world.GetBlock(origin + (-1, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (-1, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (-1, 2, 1))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, 1))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, 1))).IsAir;
+            ((Block)world.GetBlockAsync(origin + (-1, 2, -1))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (-1, 2, 0))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (-1, 2, 1))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (0, 2, -1))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (0, 2, 0))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (0, 2, 1))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (1, 2, -1))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (1, 2, 0))).IsAir &&
+            ((Block)world.GetBlockAsync(origin + (1, 2, 1))).IsAir;
 
 
         return surfaceValid && plentyOfRoom;

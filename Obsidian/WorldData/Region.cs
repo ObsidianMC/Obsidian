@@ -139,7 +139,7 @@ public class Region
                 }
             }
             delayed.ForEach(i => AddBlockUpdate(i));
-            neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
+            neighborUpdates.ForEach(u => u.world.BlockUpdateNeighborsAsync(u));
         }
     }
 

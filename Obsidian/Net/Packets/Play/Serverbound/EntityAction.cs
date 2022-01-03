@@ -19,7 +19,7 @@ public partial class EntityAction : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var block = player.World.GetBlock((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
+        var block = player.World.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);
 
         switch (Action)
         {

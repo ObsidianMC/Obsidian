@@ -20,7 +20,7 @@ public class AcaciaTree : BaseTree
                     {
                         if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                         {
-                            world.SetBlockUntracked(x, y, z, new Block(leaf));
+                            world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                         }
                     }
                     else if (!(
@@ -30,7 +30,7 @@ public class AcaciaTree : BaseTree
                         (x == origin.X + 3 && z == origin.Z + 3)
                         ))
                     {
-                        world.SetBlockUntracked(x, y, z, new Block(leaf));
+                        world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                     }
                 }
             }
