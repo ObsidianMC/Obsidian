@@ -33,6 +33,8 @@ public class World : IWorld
 
     public Gamemode GameType => Data.GameType;
 
+    private float rainLevel = 0f;
+
     internal World(string name, Server server)
     {
         this.Data = new Level
@@ -278,6 +280,60 @@ public class World : IWorld
     public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
 
     public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
+
+    /// <summary>
+    /// Method that handles world-specific tick behavior.
+    /// </summary>
+    /// <returns></returns>
+    public async Task DoWorldTickAsync()
+    {
+        this.Data.Time += this.Server.Config.TimeTickSpeedMultiplier;
+        this.Data.RainTime -= this.Server.Config.TimeTickSpeedMultiplier;
+
+        if (Data.RainTime < 1)
+        {
+            // Raintime passed, toggle weather
+            Data.Raining = !Data.Raining;
+
+            int rainTime;
+            // amount of ticks in a day is 24000
+            if (Data.Raining)
+            {
+                rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
+            }
+            else
+            {
+                rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
+            }
+            Data.RainTime = rainTime;
+
+            this.Server.Logger.LogInformation($"Toggled rain: {this.Data.Raining} for {this.Data.RainTime} ticks.");
+        }
+
+        // Gradually increase and decrease rain levels based on
+        // whether value is in range and what weather is active
+        var oldLevel = this.rainLevel;
+        if (!Data.Raining && this.rainLevel > 0f)
+            this.rainLevel -= 0.01f;
+        else if (Data.Raining && this.rainLevel < 1f)
+            this.rainLevel += 0.01f;
+
+        if (oldLevel != this.rainLevel)
+        {
+            // send new level if updated
+            this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.RainLevelChange, this.rainLevel));
+            if (rainLevel < 0.3f && rainLevel > 0.1f)
+                this.Server.BroadcastPacket(new ChangeGameState(this.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        }
+
+        if (this.Data.Time % (20 * this.Server.Config.TimeTickSpeedMultiplier) == 0)
+        {
+            // Update client time every second / 20 ticks
+            this.Server.BroadcastPacket(new TimeUpdate(this.Data.Time, this.Data.Time % 24000));
+        }
+
+        await this.ManageChunksAsync();
+    }
 
     #region world loading/saving
 

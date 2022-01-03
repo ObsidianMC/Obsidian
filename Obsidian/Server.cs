@@ -615,12 +615,13 @@ public partial class Server : IServer
                 }
             }
 
+            await this.World.DoWorldTickAsync();
+
             long elapsedTicks = stopwatch.ElapsedTicks;
             stopwatch.Restart();
             tpsMeasure.PushMeasurement(elapsedTicks);
             Tps = tpsMeasure.Tps;
 
-            await World.ManageChunksAsync();
             UpdateStatusConsole();
         }
 
