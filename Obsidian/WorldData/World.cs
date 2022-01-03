@@ -31,6 +31,8 @@ public class World : IWorld
 
     public Gamemode GameType => Data.GameType;
 
+    private float rainLevel = 0f;
+
     internal World(string name, Server server)
     {
         this.Data = new Level
@@ -48,7 +50,7 @@ public class World : IWorld
             Directory.CreateDirectory(playerDataPath);
     }
 
-    public int TotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
+    public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
     public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
     {
@@ -207,6 +209,21 @@ public class World : IWorld
         .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
+    public async Task<NbtCompound?> GetBlockEntityAsync(Vector blockPosition) => await this.GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+    public async Task<NbtCompound?> GetBlockEntityAsync(int x, int y, int z)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        return c?.GetBlockEntity(x, y, z);
+    }
+
+    public async Task SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => await this.SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public async Task SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        c?.SetBlockEntity(x, y, z, tileEntityData);
+    }
+
     public async Task SetBlockAsync(int x, int y, int z, Block block) => await SetBlockAsync(new Vector(x, y, z), block);
 
     public async Task SetBlockAsync(Vector location, Block block)
@@ -215,9 +232,9 @@ public class World : IWorld
         Server.BroadcastBlockChange(block, location);
     }
 
-    public async Task SetBlock(int x, int y, int z, Block block, bool doBlockUpdate) => await SetBlock(new Vector(x, y, z), block, doBlockUpdate);
+    public async Task SetBlockAsync(int x, int y, int z, Block block, bool doBlockUpdate) => await SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
 
-    public async Task SetBlock(Vector location, Block block, bool doBlockUpdate)
+    public async Task SetBlockAsync(Vector location, Block block, bool doBlockUpdate)
     {
         await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
         Server.BroadcastBlockChange(block, location);
@@ -271,6 +288,60 @@ public class World : IWorld
     public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
 
     public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
+
+    /// <summary>
+    /// Method that handles world-specific tick behavior.
+    /// </summary>
+    /// <returns></returns>
+    public async Task DoWorldTickAsync()
+    {
+        this.Data.Time += this.Server.Config.TimeTickSpeedMultiplier;
+        this.Data.RainTime -= this.Server.Config.TimeTickSpeedMultiplier;
+
+        if (Data.RainTime < 1)
+        {
+            // Raintime passed, toggle weather
+            Data.Raining = !Data.Raining;
+
+            int rainTime;
+            // amount of ticks in a day is 24000
+            if (Data.Raining)
+            {
+                rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
+            }
+            else
+            {
+                rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
+            }
+            Data.RainTime = rainTime;
+
+            this.Server.Logger.LogInformation($"Toggled rain: {this.Data.Raining} for {this.Data.RainTime} ticks.");
+        }
+
+        // Gradually increase and decrease rain levels based on
+        // whether value is in range and what weather is active
+        var oldLevel = this.rainLevel;
+        if (!Data.Raining && this.rainLevel > 0f)
+            this.rainLevel -= 0.01f;
+        else if (Data.Raining && this.rainLevel < 1f)
+            this.rainLevel += 0.01f;
+
+        if (oldLevel != this.rainLevel)
+        {
+            // send new level if updated
+            this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.RainLevelChange, this.rainLevel));
+            if (rainLevel < 0.3f && rainLevel > 0.1f)
+                this.Server.BroadcastPacket(new ChangeGameState(this.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        }
+
+        if (this.Data.Time % (20 * this.Server.Config.TimeTickSpeedMultiplier) == 0)
+        {
+            // Update client time every second / 20 ticks
+            this.Server.BroadcastPacket(new TimeUpdate(this.Data.Time, this.Data.Time % 24000));
+        }
+
+        await this.ManageChunksAsync();
+    }
 
     #region world loading/saving
 
@@ -521,7 +592,7 @@ public class World : IWorld
         {
             Type = EntityType.FallingBlock,
             Position = position,
-            EntityId = TotalLoadedEntities() + 1,
+            EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
             BlockMaterial = mat
         };
@@ -562,7 +633,7 @@ public class World : IWorld
             {
                 Type = type,
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Server = this.Server
             };
 
@@ -590,7 +661,7 @@ public class World : IWorld
             entity = new Living
             {
                 Position = position,
-                EntityId = this.TotalLoadedEntities() + 1,
+                EntityId = this.GetTotalLoadedEntities() + 1,
                 Type = type
             };
 

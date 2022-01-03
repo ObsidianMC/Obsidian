@@ -26,26 +26,8 @@ public partial class PlayerBlockPlacement : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var currentItem = player.GetHeldItem();
-
-        var itemType = currentItem.Type;
-
-        // TODO: this better
-        if (itemType == Material.WaterBucket)
-            itemType = Material.Water;
-        if (itemType == Material.LavaBucket)
-            itemType = Material.Lava;
-
-        Block block;
-        try
-        {
-            block = Registry.GetBlock(itemType);
-        }
-        catch //item is not a block so just return
-        {
-            return;
-        }
-
+        //Get main hand first return offhand if null
+        var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
         var b = await server.World.GetBlockAsync(position);
@@ -57,7 +39,7 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         {
             await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
             {
-                Item = player.MainHand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
+                Item = currentItem,
                 Block = interactedBlock,
                 BlockLocation = this.Position,
             });
@@ -65,8 +47,34 @@ public partial class PlayerBlockPlacement : IServerboundPacket
             return;
         }
 
+        var itemType = currentItem != null ? currentItem.Type : Material.Air;
+
+        switch (itemType)
+        {
+            case Material.WaterBucket:
+                itemType = Material.Water;
+                break;
+            case Material.LavaBucket:
+                itemType = Material.Lava;
+                break;
+            case Material.Air:
+                return;
+            default:
+                break;
+        }
+
+        Block block;
+        try
+        {
+            block = Registry.GetBlock(itemType);
+        }
+        catch //item is not a block so just return
+        {
+            return;
+        }
+
         if (player.Gamemode != Gamemode.Creative)
-            player.Inventory.RemoveItem(player.inventorySlot);
+            player.Inventory.RemoveItem(player.inventorySlot, 1);
 
         switch (Face) // TODO fix this for logs
         {
@@ -99,6 +107,6 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         }
 
         // TODO calculate the block state
-        server.World.SetBlock(position, block, doBlockUpdate: true);
+        await server.World.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }

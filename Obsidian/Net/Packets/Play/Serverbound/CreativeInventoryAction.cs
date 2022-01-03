@@ -16,9 +16,9 @@ public partial class CreativeInventoryAction : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var inventory = player.OpenedInventory ?? player.Inventory;
+        var inventory = player.OpenedContainer ?? player.Inventory;
 
-        var (slot, isForPlayer) = ClickedSlot.GetDifference(inventory.Size);
+        var (slot, isForPlayer) = inventory.GetDifference(ClickedSlot);
 
         if (isForPlayer)
             inventory = player.Inventory;

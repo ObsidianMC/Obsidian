@@ -11,6 +11,7 @@ public class Region
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
+    private const NbtCompression UsedCompression = NbtCompression.GZip;
 
     public int X { get; }
     public int Z { get; }
@@ -71,14 +72,18 @@ public class Region
         return chunk;
     }
 
-    private Chunk GetChunkFromFile(Vector relativePosition)
+    private Chunk? GetChunkFromFile(Vector relativePosition)
     {
-        var compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
-        if (compressedBytes is null) { return null; }
-        using Stream strm = new MemoryStream(compressedBytes);
-        NbtReader reader = new(strm, NbtCompression.GZip);
-        NbtCompound chunkNbt = reader.ReadNextTag() as NbtCompound;
-        return GetChunkFromNbt(chunkNbt);
+        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
+        if (compressedBytes.IsEmpty)
+        {
+            return null;
+        }
+
+        var bytesStream = new ReadOnlyStream(compressedBytes);
+        var nbtReader = new NbtReader(bytesStream, UsedCompression);
+        var chunkCompound = (NbtCompound)nbtReader.ReadNextTag();
+        return GetChunkFromNbt(chunkCompound);
     }
 
     internal IEnumerable<Chunk> GeneratedChunks()
@@ -195,6 +200,13 @@ public class Region
             chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
+        foreach (var tileEntityNbt in chunkCompound["block_entities"] as NbtList)
+        {
+            var tileEntityCompound = tileEntityNbt as NbtCompound;
+
+            chunk.SetBlockEntity(tileEntityCompound.GetInt("x"), tileEntityCompound.GetInt("y"), tileEntityCompound.GetInt("z"), tileEntityCompound);
+        }
+
         return chunk;
     }
 
@@ -255,6 +267,10 @@ public class Region
             });
         }
 
+        var blockEntities = new NbtList(NbtTagType.Compound, "block_entities");
+        foreach (var (_, blockEntity) in chunk.BlockEntities)
+            blockEntities.Add(blockEntity);
+
         return new NbtCompound
         {
             new NbtTag<int>("xPos", chunk.X),
@@ -265,6 +281,7 @@ public class Region
                 //new NbtArray<long>("OCEAN_FLOOR", chunk.Heightmaps[HeightmapType.OceanFloor].data.Storage),
                 //new NbtArray<long>("WORLD_SURFACE", chunk.Heightmaps[HeightmapType.WorldSurface].data.Storage),
             },
+            blockEntities,
             sectionsCompound,
             new NbtTag<int>("DataVersion", 2860)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
