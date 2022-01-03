@@ -652,7 +652,7 @@ public partial class Server : IServer
 
     internal void UpdateStatusConsole()
     {
-        int chunksLoaded = World.Regions.Sum(entry => entry.Value.LoadedChunkCount);
+        int chunksLoaded = World.Regions.Where(r => r.Value is not null).Sum(r => r.Value.LoadedChunkCount);
         var status = $"    tps:{Tps} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.Regions.Count}";
         ConsoleIO.UpdateStatusLine(status);
     }

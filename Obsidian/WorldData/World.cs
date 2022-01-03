@@ -140,9 +140,15 @@ public class World : IWorld
     public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         var region = this.GetRegionForChunk(chunkX, chunkZ);
+        
         if (region is null)
         {
             region = await LoadRegionAsync(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+        }
+        
+        if (region is null)
+        {
+            return null;
         }
 
         (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -371,13 +377,13 @@ public class World : IWorld
     }
     #endregion
 
-    public async Task<Region> LoadRegionByChunkAsync(int chunkX, int chunkZ)
+    public async Task<Region?> LoadRegionByChunkAsync(int chunkX, int chunkZ)
     {
         int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
         return await LoadRegionAsync(regionX, regionZ);
     }
 
-    public async Task<Region> LoadRegionAsync(int regionX, int regionZ)
+    public async Task<Region?> LoadRegionAsync(int regionX, int regionZ)
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
