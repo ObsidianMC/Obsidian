@@ -360,6 +360,13 @@ public class Player : Living, IPlayer
             CopyMetadata = false
         });
 
+        this.client.LoadedChunks.Clear();
+        this.visiblePlayers.Clear();
+
+        // Gotta send chunks again
+        // Sending them non-blocking.
+        await this.World.UpdateClientChunksAsync(this.client, true);
+
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
             Position = this.World.Data.SpawnPosition,
@@ -368,13 +375,6 @@ public class Player : Living, IPlayer
             Flags = PositionFlags.None,
             TeleportId = 0
         });
-
-        this.client.LoadedChunks.Clear();
-        this.visiblePlayers.Clear();
-
-        // Gotta send chunks again
-        // Sending them non-blocking.
-        await this.World.UpdateClientChunksAsync(this.client, true);
 
         this.Position = this.World.Data.SpawnPosition;
     }
