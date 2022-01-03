@@ -26,7 +26,7 @@ public class OverworldGenerator : WorldGenerator
         terrainGen = new OverworldTerrain();
     }
 
-    public override Chunk GenerateChunk(int cx, int cz, World world, Chunk chunk = null)
+    public override async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
     {
         if (chunk is null)
             chunk = new Chunk(cx, cz);
@@ -65,7 +65,7 @@ public class OverworldGenerator : WorldGenerator
 
         ChunkBuilder.FillChunk(chunk, terrainHeightmap, bedrockHeightmap);
         ChunkBuilder.CarveCaves(terrainGen, chunk, rockHeightmap, bedrockHeightmap);
-        OverworldDecorator.Decorate(chunk, terrainHeightmap, terrainGen, world);
+        await OverworldDecorator.DecorateAsync(chunk, terrainHeightmap, terrainGen, world);
 
 
         for (int bx = 0; bx < 16; bx++)

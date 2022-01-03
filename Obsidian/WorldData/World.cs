@@ -21,8 +21,6 @@ public class World : IWorld
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-    public ConcurrentQueue<(int X, int Z)> RegionsToLoad { get; private set; } = new();
-
     public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
 
     public string Name { get; }
@@ -469,18 +467,6 @@ public class World : IWorld
 
     public async Task ManageChunksAsync()
     {
-        // Load regions. Load no more than 4 at a time b/c it's an expensive operation.
-        // Regions that are in the process of being loaded will appear in
-        // this.Regions, but will be null.
-        if (!RegionsToLoad.IsEmpty && Regions.Values.Count(r => r is null) < 4)
-        {
-            if (RegionsToLoad.TryDequeue(out var job))
-            {
-                if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.X, job.Z))) // Sanity check
-                    await LoadRegionAsync(job.X, job.Z);
-            }
-        }
-
         if (ChunksToGen.IsEmpty) { return; }
 
         // Pull some jobs out of the queue
@@ -491,15 +477,14 @@ public class World : IWorld
                 jobs.Add(job);
         }
 
-        Parallel.ForEach(jobs, (job) =>
+        await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
             Region region = GetRegionForChunk(job.x, job.z);
             if (region is null)
             {
-                // Region isn't ready. Try again later
-                ChunksToGen.Enqueue((job.x, job.z));
-                return;
+                region = await LoadRegionByChunkAsync(job.x, job.z);
             }
+
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
             Chunk c = region.GetChunk(chunkIndex);
             if (c is null)
@@ -511,7 +496,7 @@ public class World : IWorld
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            c = Generator.GenerateChunk(job.x, job.z, this, c);
+            c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
             region.SetChunk(c);
         });
     }
