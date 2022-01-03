@@ -20,7 +20,7 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [ ] Usable storage and crafting blocks
 - [x] Low memory usage
 - [x] Inventory management
-- [ ] Daylight and weather cycle
+- [x] Daylight and weather cycle
 - [ ] Complete world generation
 - [ ] Liquid physics
 - [ ] Mobs AI & pathfinding
