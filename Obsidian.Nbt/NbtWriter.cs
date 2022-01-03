@@ -5,6 +5,8 @@ namespace Obsidian.Nbt;
 
 public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 {
+    private Stream compressedStream;
+
     private NbtTagType? expectedListType;
 
     private Stack<Node> rootNodes = new();
@@ -19,36 +21,23 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
     public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
         if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+            this.compressedStream = new GZipStream(outstream, CompressionMode.Compress);
         else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+            this.compressedStream = new ZLibStream(outstream, CompressionMode.Compress);
+
+        this.BaseStream = new MemoryStream();
     }
 
-    public NbtWriter(Stream outstream, string name)
-    {
-        this.BaseStream = outstream;
-
-        this.Write(NbtTagType.Compound);
-        this.WriteStringInternal(name);
-
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
-    }
-
-    public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
+    public NbtWriter(Stream outstream, string name, NbtCompression compressionMode = NbtCompression.None)
     {
         if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+            this.compressedStream = new GZipStream(outstream, CompressionMode.Compress);
         else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+            this.compressedStream = new ZLibStream(outstream, CompressionMode.Compress);
 
-        this.Write(NbtTagType.Compound);
-        this.WriteStringInternal(name);
+        this.BaseStream = new MemoryStream();
 
-        this.AddRootTag(new Node { Type = NbtTagType.Compound });
+        this.WriteCompoundStart(name);
     }
 
     private void AddRootTag(Node node)
@@ -64,7 +53,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public void WriteCompoundStart(string name = "")
     {
-        if(this.rootNodes.Count > 0)
+        if (this.rootNodes.Count > 0)
             this.Validate(name, NbtTagType.Compound);
 
         if (this.RootType == NbtTagType.List)
@@ -454,6 +443,11 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
 
         this.BaseStream.Flush();
+
+        this.BaseStream.Position = 0;
+
+        if (this.compressedStream != null)
+            this.BaseStream.CopyTo(this.compressedStream);
     }
 
     public async Task TryFinishAsync()
@@ -462,10 +456,25 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("Unable to close writer. Some tags have yet to be closed.");//TODO maybe more info here??
 
         await this.BaseStream.FlushAsync();
+
+        this.BaseStream.Position = 0;
+
+        if (this.compressedStream != null)
+            await this.BaseStream.CopyToAsync(this.compressedStream);
     }
 
-    public ValueTask DisposeAsync() => this.BaseStream.DisposeAsync();
-    public void Dispose() => this.BaseStream.Dispose();
+    public async ValueTask DisposeAsync()
+    {
+        await this.BaseStream.DisposeAsync();
+
+        if (this.compressedStream != null)
+            await this.compressedStream.DisposeAsync();
+    }
+    public void Dispose()
+    {
+        this.BaseStream.Dispose();
+        this.compressedStream?.Dispose();
+    }
 
     private class Node
     {

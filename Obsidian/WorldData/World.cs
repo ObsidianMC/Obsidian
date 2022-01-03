@@ -4,6 +4,7 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.IO;
+using System.IO.Compression;
 
 namespace Obsidian.WorldData;
 
@@ -347,9 +348,14 @@ public class World : IWorld
     {
         var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
 
-        using var fs = worldFile.OpenWrite();
+        if (worldFile.Exists)
+        {
+            worldFile.CopyTo(Path.Join(Server.ServerFolderPath, Name, "level.dat.bak"), true);
+            worldFile.Delete();
+        }
 
-        var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        using var fs = worldFile.Create();
+        using var writer = new NbtWriter(fs, "", NbtCompression.GZip);
 
         writer.WriteBool("hardcore", false);
         writer.WriteBool("MapFeatures", true);

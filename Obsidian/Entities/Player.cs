@@ -515,7 +515,7 @@ public class Player : Living, IPlayer
 
         await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
 
-        using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        using var writer = new NbtWriter(playerFileStream, "", NbtCompression.GZip);
 
         writer.WriteInt("DataVersion", 2724);
         writer.WriteInt("playerGameType", (int)this.Gamemode);
