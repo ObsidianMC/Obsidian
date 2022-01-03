@@ -36,7 +36,7 @@ public partial class Server
 
             player.LastClickedBlock = interactedBlock;
 
-            var meta = this.World.GetBlockMeta(blockPosition);
+            var meta = await this.World.GetBlockMeta(blockPosition);
 
             if (meta is not null && meta.Value.InventoryId != Guid.Empty)
             {

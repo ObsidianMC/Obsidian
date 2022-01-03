@@ -431,7 +431,7 @@ public partial class Server : IServer
 
     private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-    internal void BroadcastPlayerDig(PlayerDiggingStore store, Block block)
+    internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store, Block block)
     {
         var digging = store.Packet;
 
@@ -507,7 +507,7 @@ public partial class Server : IServer
 
                     if (player.Gamemode == Gamemode.Creative)
                     {
-                        World.SetBlockAsync(digging.Position, Block.Air);
+                        await World.SetBlockAsync(digging.Position, Block.Air);
                     }
                 }
                 break;

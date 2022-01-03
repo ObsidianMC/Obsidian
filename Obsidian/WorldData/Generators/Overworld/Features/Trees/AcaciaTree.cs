@@ -6,7 +6,7 @@ public class AcaciaTree : BaseTree
     {
     }
 
-    protected override void GenerateLeaves(Vector origin, int heightOffset)
+    protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         int topY = origin.Y + trunkHeight + heightOffset + 1;
         for (int y = topY; y >= topY - 1; y--)
@@ -20,7 +20,7 @@ public class AcaciaTree : BaseTree
                     {
                         if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                         {
-                            world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
+                            await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                         }
                     }
                     else if (!(
@@ -30,7 +30,7 @@ public class AcaciaTree : BaseTree
                         (x == origin.X + 3 && z == origin.Z + 3)
                         ))
                     {
-                        world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
+                        await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                     }
                 }
             }

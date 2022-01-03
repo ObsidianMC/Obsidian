@@ -33,7 +33,7 @@ public abstract class BaseFlora
     /// <param name="seed">World Seed.</param>
     /// <param name="radius">Radius of circular patch.</param>
     /// <param name="density">less dense: 1 < density < 10 :more dense.</param>
-    public virtual void GenerateFlora(Vector origin, int seed, int radius, int density)
+    public virtual async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {
         density = Math.Max(1, 10 - density);
         var seedRand = new Random(seed + origin.GetHashCode());
@@ -46,13 +46,13 @@ public abstract class BaseFlora
                 {
                     int x = origin.X - radius + rx;
                     int z = origin.Z - radius + rz;
-                    int y = world.GetWorldSurfaceHeight(x, z) ?? -1;
+                    int y = await world.GetWorldSurfaceHeightAsync(x, z) ?? -1;
                     if (y == -1) { continue; }
                     bool isFlora = seedRand.Next(10) % density == 0;
                     var placeVec = new Vector(x, y + 1, z);
                     if (isFlora)
                     {
-                        TryPlaceFlora(placeVec);
+                        await TryPlaceFloraAsync(placeVec);
                     }
                 }
             }
@@ -64,11 +64,11 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="placeVector">The position above the surface block.</param>
     /// <returns>Whether plant was planted.</returns>
-    public virtual bool TryPlaceFlora(Vector placeVector)
+    public virtual async Task<bool> TryPlaceFloraAsync(Vector placeVector)
     {
-        if (GrowHeight(placeVector) >= height && ValidSurface(placeVector))
+        if (await GetGrowHeightAsync(placeVector) >= height && await GetValidSurfaceAsync(placeVector))
         {
-            world.SetBlockUntrackedAsync(placeVector, new Block(FloraMat));
+            await world.SetBlockUntrackedAsync(placeVector, new Block(FloraMat));
             return true;
         }
         return false;
@@ -79,19 +79,19 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
-    protected virtual bool ValidSurface(Vector loc) => world.GetBlockAsync(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
+    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await world.GetBlockAsync(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
 
     /// <summary>
     /// Check free space above grow location.
     /// </summary>
     /// <param name="loc">Location to sample.</param>
     /// <returns>Count of vertical free space above plant.</returns>
-    protected virtual int GrowHeight(Vector loc)
+    protected virtual async Task<int> GetGrowHeightAsync(Vector loc)
     {
         int freeSpace = 0;
         for (int y = 0; y < height; y++)
         {
-            if (world.GetBlockAsync(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
+            if (await world.GetBlockAsync(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
             {
                 freeSpace++;
             }

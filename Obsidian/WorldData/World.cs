@@ -196,7 +196,7 @@ public class World : IWorld
         return c?.GetBlock(x, y, z);
     }
 
-    public async Task<int?> GetWorldSurfaceHeight(int x, int z)
+    public async Task<int?> GetWorldSurfaceHeightAsync(int x, int z)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         return c?.Heightmaps[ChunkData.HeightmapType.MotionBlocking]
@@ -431,7 +431,7 @@ public class World : IWorld
 
         if (bu.Block.Value.IsFluid)
         {
-            return await BlockUpdates.HandleLiquidPhysics(bu);
+            return await BlockUpdates.HandleLiquidPhysicsAsync(bu);
         }
 
         return false;
@@ -627,7 +627,7 @@ public class World : IWorld
         Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
         this.Generator = gen;
         await GenerateWorld();
-        SetWorldSpawn();
+        await SetWorldSpawn();
     }
 
     internal async Task GenerateWorld()
@@ -668,7 +668,7 @@ public class World : IWorld
         await FlushRegionsAsync();
     }
 
-    internal void SetWorldSpawn()
+    internal async Task SetWorldSpawn()
     {
         if (Data.SpawnPosition.Y != 0) { return; }
 
@@ -696,7 +696,7 @@ public class World : IWorld
                                 {
                                     for (int z = c.Z - Server.Config.PregenerateChunkRange; z < c.Z + Server.Config.PregenerateChunkRange; z++)
                                     {
-                                        GetChunkAsync(x, z);
+                                        await GetChunkAsync(x, z);
                                     }
                                 }
 

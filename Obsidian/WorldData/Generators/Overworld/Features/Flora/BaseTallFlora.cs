@@ -17,20 +17,20 @@ public abstract class BaseTallFlora : BaseFlora
     /// </summary>
     /// <param name="placeVector">The position above the surface block.</param>
     /// <returns>Whether plant was planted.</returns>
-    public override bool TryPlaceFlora(Vector placeVector)
+    public override async Task<bool> TryPlaceFloraAsync(Vector placeVector)
     {
-        if (!ValidSurface(placeVector)) { return false; }
-        int growHeight = GrowHeight(placeVector);
+        if (!await GetValidSurfaceAsync(placeVector)) { return false; }
+        int growHeight = await GetGrowHeightAsync(placeVector);
         if (growHeight == 0) { return false; }
 
         // Grow base
         for (int y = 0; y < growHeight - 1; y++)
         {
-            world.SetBlockUntrackedAsync(placeVector + (0, y, 0), new Block(FloraMat, lowerState));
+            await world.SetBlockUntrackedAsync(placeVector + (0, y, 0), new Block(FloraMat, lowerState));
         }
 
         // Top
-        world.SetBlockUntrackedAsync(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState));
+        await world.SetBlockUntrackedAsync(placeVector + (0, growHeight - 1, 0), new Block(FloraMat, upperState));
         return true;
     }
 }

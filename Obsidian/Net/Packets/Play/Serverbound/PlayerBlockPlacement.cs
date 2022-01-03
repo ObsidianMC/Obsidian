@@ -48,7 +48,7 @@ public partial class PlayerBlockPlacement : IServerboundPacket
 
         var position = this.Position;
 
-        var b = server.World.GetBlockAsync(position);
+        var b = await server.World.GetBlockAsync(position);
         if (b is null) { return; }
         var interactedBlock = (Block)b;
 

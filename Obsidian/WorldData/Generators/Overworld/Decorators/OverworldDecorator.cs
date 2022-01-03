@@ -39,7 +39,7 @@ public static class OverworldDecorator
             bool isFlora = noiseVal > 0.9 && noiseVal <= freq + 0.9;
             if (!isFlora) { continue; }
 
-            floraInstance.GenerateFlora(pos, noise.settings.Seed, flora.Radius, flora.Density);
+            floraInstance.GenerateFloraAsync(pos, noise.settings.Seed, flora.Radius, flora.Density);
         }
     }
 
@@ -50,7 +50,7 @@ public static class OverworldDecorator
             offset = new Random().Next(-2, 2);
         else
             offset = (int)heightOffset;
-        tree.TryGenerateTree(position, offset);
+        tree.TryGenerateTreeAsync(position, offset);
     }
 
     private static void GenerateTrees(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)

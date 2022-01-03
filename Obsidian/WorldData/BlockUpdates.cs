@@ -9,10 +9,10 @@ internal static class BlockUpdates
         var world = blockUpdate.world;
         var location = blockUpdate.position;
         var material = blockUpdate.Block.Value.Material;
-        if (world.GetBlockAsync(location + Vector.Down) is Block below &&
+        if (await world.GetBlockAsync(location + Vector.Down) is Block below &&
             (Block.Replaceable.Contains(below.Material) || below.IsFluid))
         {
-            world.SetBlockAsync(location, Block.Air);
+            await world.SetBlockAsync(location, Block.Air);
             world.SpawnFallingBlock(location, material);
             return true;
         }
@@ -20,9 +20,9 @@ internal static class BlockUpdates
         return false;
     }
 
-    internal static Task<bool> HandleLiquidPhysics(BlockUpdate blockUpdate)
+    internal static async Task<bool> HandleLiquidPhysicsAsync(BlockUpdate blockUpdate)
     {
-        if (blockUpdate.Block is null) { return Task.FromResult(false); }
+        if (blockUpdate.Block is null) { return false; }
 
         var block = blockUpdate.Block.Value;
         var world = blockUpdate.world;
@@ -45,10 +45,10 @@ internal static class BlockUpdates
 
             foreach (var pathLoc in paths)
             {
-                if (world.GetBlockAsync(pathLoc) is Block pathSide &&
+                if (await world.GetBlockAsync(pathLoc) is Block pathSide &&
                     (Block.Replaceable.Contains(pathSide.Material) || pathSide.IsFluid))
                 {
-                    var pathBelow = world.GetBlockAsync(pathLoc + Vector.Down);
+                    var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
                     if (pathBelow is Block pBelow &&
                         (Block.Replaceable.Contains(pBelow.Material) || pBelow.IsFluid))
                     {
@@ -62,46 +62,46 @@ internal static class BlockUpdates
             {
                 var path = validPaths[0];
                 var newBlock = new Block(block.BaseId, state + 1);
-                world.SetBlockAsync(path, newBlock);
+                await world.SetBlockAsync(path, newBlock);
                 var neighborUpdate = new BlockUpdate(world, path, newBlock);
-                world.ScheduleBlockUpdate(neighborUpdate);
-                return Task.FromResult(false);
+                await world.ScheduleBlockUpdateAsync(neighborUpdate);
+                return false;
             }
         }
 
         if (state >= 8) // Falling water
         {
             // If above me is no longer water, than I should disappear too
-            if (world.GetBlockAsync(location + Vector.Up) is Block up && !up.IsFluid)
+            if (await world.GetBlockAsync(location + Vector.Up) is Block up && !up.IsFluid)
             {
-                world.SetBlockAsync(location, Block.Air);
-                world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos));
-                return Task.FromResult(false);
+                await world.SetBlockAsync(location, Block.Air);
+                await world.ScheduleBlockUpdateAsync(new BlockUpdate(world, belowPos));
+                return false;
             }
 
             // Keep falling
-            if (world.GetBlockAsync(belowPos) is Block below && Block.Replaceable.Contains(below.Material))
+            if (await world.GetBlockAsync(belowPos) is Block below && Block.Replaceable.Contains(below.Material))
             {
                 var newBlock = new Block(block.BaseId, state);
-                world.SetBlockAsync(belowPos, newBlock);
-                world.ScheduleBlockUpdate(new BlockUpdate(world, belowPos, newBlock));
-                return Task.FromResult(false);
+                await world.SetBlockAsync(belowPos, newBlock);
+                await world.ScheduleBlockUpdateAsync(new BlockUpdate(world, belowPos, newBlock));
+                return false;
             }
             else
             {
                 // Falling water has hit something solid. Change state to spread.
                 state = 1;
-                world.SetBlockUntrackedAsync(location, new Block(block.BaseId, state));
+                await world.SetBlockUntrackedAsync(location, new Block(block.BaseId, state));
             }
         }
 
         if (state < 8)
         {
             var horizontalNeighbors = new Dictionary<Vector, Block?>() {
-                    {location + Vector.Forwards, world.GetBlockAsync(location + Vector.Forwards)},
-                    {location + Vector.Backwards, world.GetBlockAsync(location + Vector.Backwards)},
-                    {location + Vector.Left, world.GetBlockAsync(location + Vector.Left)},
-                    {location + Vector.Right, world.GetBlockAsync(location + Vector.Right)}
+                    {location + Vector.Forwards, await world.GetBlockAsync(location + Vector.Forwards)},
+                    {location + Vector.Backwards, await world.GetBlockAsync(location + Vector.Backwards)},
+                    {location + Vector.Left, await world.GetBlockAsync(location + Vector.Left)},
+                    {location + Vector.Right, await world.GetBlockAsync(location + Vector.Right)}
                 };
 
             // Check infinite source blocks
@@ -121,8 +121,8 @@ internal static class BlockUpdates
                 if (sourceNeighborCount > 1)
                 {
                     var newBlock = new Block(Material.Water);
-                    world.SetBlockAsync(location, newBlock);
-                    return Task.FromResult(true);
+                    await world.SetBlockAsync(location, newBlock);
+                    return true;
                 }
             }
 
@@ -137,30 +137,30 @@ internal static class BlockUpdates
                 }
 
                 // If not, turn to air and update neighbors.
-                if (lowestState >= state &&
-                    world.GetBlockAsync(location + Vector.Up).Value.Material != block.Material)
+                var bUp = await world.GetBlockAsync(location + Vector.Up);
+                if (lowestState >= state && bUp.Value.Material != block.Material)
                 {
-                    world.SetBlockAsync(location, Block.Air);
-                    return Task.FromResult(true);
+                    await world.SetBlockAsync(location, Block.Air);
+                    return true;
                 }
             }
 
-            if (world.GetBlockAsync(belowPos) is Block below)
+            if (await world.GetBlockAsync(belowPos) is Block below)
             {
-                if (below.Material == block.Material) { return Task.FromResult(false); }
+                if (below.Material == block.Material) { return false; }
 
                 if (Block.Replaceable.Contains(below.Material))
                 {
                     var newBlock = new Block(block.BaseId, state + 8);
-                    world.SetBlockAsync(belowPos, newBlock);
+                    await world.SetBlockAsync(belowPos, newBlock);
                     var neighborUpdate = new BlockUpdate(world, belowPos, newBlock);
-                    world.ScheduleBlockUpdate(neighborUpdate);
-                    return Task.FromResult(false);
+                    await world.ScheduleBlockUpdateAsync(neighborUpdate);
+                    return false;
                 }
             }
 
             // the lowest level of water can only go down, so bail now.
-            if (state == 7) { return Task.FromResult(false); }
+            if (state == 7) { return false; }
 
             foreach (var (loc, neighborBlock) in horizontalNeighbors)
             {
@@ -171,13 +171,13 @@ internal static class BlockUpdates
                     (neighbor.Material == block.Material && neighbor.State > state + 1))
                 {
                     var newBlock = new Block(block.BaseId, state + 1);
-                    world.SetBlockAsync(loc, newBlock);
+                    await world.SetBlockAsync(loc, newBlock);
                     var neighborUpdate = new BlockUpdate(world, loc, newBlock);
-                    world.ScheduleBlockUpdate(neighborUpdate);
+                    await world.ScheduleBlockUpdateAsync(neighborUpdate);
                 }
             }
         }
 
-        return Task.FromResult(false);
+        return false;
     }
 }
