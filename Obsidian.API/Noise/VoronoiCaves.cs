@@ -61,23 +61,20 @@ public class VoronoiCaves : Module
         Unsafe.SkipInit(out tertiary);
         GetMin(cells, ref primary, ref secondary, ref tertiary);
 
-        var retVal = 0;
-
         if (primary.DistanceToPoint < 0.123)
-            retVal++;
+            return 1.0;
 
         var distA = secondary.Point - primary.Point;
         var lenA = Math.Sqrt(distA.X * distA.X + distA.Y * distA.Y + distA.Z * distA.Z);
         if (primary.DistanceToPoint + secondary.DistanceToPoint <= lenA * (1.0 + Frequency))
-            retVal++;
+            return 1.0;
 
-/*        var distB = tertiary.Point - secondary.Point;
+        var distB = tertiary.Point - primary.Point;
         var lenB = Math.Sqrt(distB.X * distB.X + distB.Y * distB.Y + distB.Z * distB.Z);
         if (primary.DistanceToPoint + tertiary.DistanceToPoint <= lenB * (1.0 + Frequency))
-            retVal++;
+            return 1.0;
 
-*/
-        return retVal;
+        return 0;
     }
 
     private static void GetMin(ReadOnlySpan<VoronoiCell> cells, ref VoronoiCell min, ref VoronoiCell secondMin)

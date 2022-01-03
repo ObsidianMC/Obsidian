@@ -34,7 +34,7 @@ public class OverworldTerrain
         cave = new CavesCarver();
         caves = new VoronoiCaves()
         {
-            Frequency = 0.01023456,
+            Frequency = 0.0123456,
             Seed = settings.Seed
         };
 
@@ -156,6 +156,19 @@ public class OverworldTerrain
 
     public bool IsCave(double x, double y, double z)
     {
-        return caves.GetValue(x, y, z) > 0;// || cave.Result.GetValue(x, y, z) > -0.5;
+        var c = new Turbulence()
+        {
+            Frequency = 0.1234,
+            Power = 1,
+            Roughness = 3,
+            Seed = settings.Seed,
+            Source0 = new Max()
+            {
+                Source0 = caves,
+                Source1 = cave.Result
+            }
+        };
+
+        return c.GetValue(x, y, z) > 0;
     }
 }
