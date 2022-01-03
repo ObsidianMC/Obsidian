@@ -206,7 +206,7 @@ public class Client : IDisposable
 
                                 this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this)
                                 {
-                                    World = this.Server.World
+                                    World = this.Server.DefaultWorld as World
                                 };
 
                                 this.packetCryptography.GenerateKeyPair();
@@ -222,7 +222,7 @@ public class Client : IDisposable
 
                             this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
                             {
-                                World = this.Server.World
+                                World = this.Server.DefaultWorld as World
                             };
 
                             //await this.SetCompression();
@@ -394,9 +394,9 @@ public class Client : IDisposable
     #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
-    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Server.World.Data.Time, this.Server.World.Data.DayTime));
+    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Player.World.Data.Time, this.Player.World.Data.DayTime));
     internal Task SendWeatherUpdateAsync() => 
-        this.QueuePacketAsync(new ChangeGameState(this.Server.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        this.QueuePacketAsync(new ChangeGameState(this.Player.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {

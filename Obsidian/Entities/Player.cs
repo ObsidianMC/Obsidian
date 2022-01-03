@@ -7,6 +7,7 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 using System.IO;
 
 namespace Obsidian.Entities;
@@ -272,7 +273,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.client.Server.World.ResendBaseChunksAsync(this.client);
+        await this.client.Player.World.ResendBaseChunksAsync(this.client);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -297,7 +298,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = to.Position;
-        await this.client.Server.World.ResendBaseChunksAsync(this.client);
+        await this.client.Player.World.ResendBaseChunksAsync(this.client);
         var tid = Globals.Random.Next(0, 999);
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -323,14 +324,33 @@ public class Player : Living, IPlayer
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
-    public async Task RespawnAsync()
+    public async Task SwitchWorldAsync(World world)
     {
-        if (this.Alive)
-            return;
+        this.World.RemovePlayer(this);
+        this.World = world;
+        this.client.LoadedChunks.Clear();
+        await RespawnAsync(false);
+        world.AddPlayer(this);
+    }
 
+    public async Task RespawnAsync(bool unload = true)
+    {
         this.visiblePlayers.Clear();
 
         Registry.Dimensions.TryGetValue(0, out var codec);
+        Registry.Dimensions.TryGetValue(1, out var codec2);
+
+        await this.client.QueuePacketAsync(new Respawn
+        {
+            Dimension = codec2,
+            WorldName = "minecraft:" + Math.Abs(Globals.Random.Next()),
+            Gamemode = this.Gamemode,
+            PreviousGamemode = this.Gamemode,
+            HashedSeed = 0,
+            IsFlat = false,
+            IsDebug = false,
+            CopyMetadata = false
+        });
 
         await this.client.QueuePacketAsync(new Respawn
         {
@@ -344,19 +364,19 @@ public class Player : Living, IPlayer
             CopyMetadata = false
         });
 
-        //Gotta send chunks again
-        await this.World.ResendBaseChunksAsync(this.client);
-
-        this.Position = this.server.World.Data.SpawnPosition;
-
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
-            Position = this.server.World.Data.SpawnPosition,
+            Position = this.World.Data.SpawnPosition,
             Yaw = 0,
             Pitch = 0,
             Flags = PositionFlags.None,
             TeleportId = 0
         });
+
+        //Gotta send chunks again
+        await this.World.UpdateClientChunksAsync(this.client, unload);
+
+        this.Position = this.World.Data.SpawnPosition;
 
 
         this.Health = 20f;

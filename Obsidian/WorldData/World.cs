@@ -230,7 +230,7 @@ public class World : IWorld
     public void SetBlock(Vector location, Block block)
     {
         SetBlockUntracked(location.X, location.Y, location.Z, block);
-        Server.BroadcastBlockChange(block, location);
+        Server.BroadcastBlockChange(this, block, location);
     }
 
     public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlock(new Vector(x, y, z), block, doBlockUpdate);
@@ -238,7 +238,7 @@ public class World : IWorld
     public void SetBlock(Vector location, Block block, bool doBlockUpdate)
     {
         SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
-        Server.BroadcastBlockChange(block, location);
+        Server.BroadcastBlockChange(this, block, location);
     }
 
     public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
@@ -596,7 +596,7 @@ public class World : IWorld
         // offset position so it spawns in the right spot
         position.X += 0.5f;
         position.Z += 0.5f;
-        FallingBlock entity = new()
+        FallingBlock entity = new(this)
         {
             Type = EntityType.FallingBlock,
             Position = position,

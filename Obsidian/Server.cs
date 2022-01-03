@@ -42,7 +42,6 @@ public partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public ConcurrentDictionary<string, World> Worlds { get; } = new();
     public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
@@ -56,8 +55,8 @@ public partial class Server : IServer
     public string Version { get; }
     public int Port { get; }
 
-    public World World { get; private set; }
-    public IWorld DefaultWorld => World;
+    public WorldManager WorldManager { get; private set; }
+    public IWorld DefaultWorld => WorldManager.GetWorld(0);
     public IEnumerable<IPlayer> Players => GetPlayers();
 
     public string ServerFolderPath { get; }
@@ -107,6 +106,8 @@ public partial class Server : IServer
 
         Logger.LogDebug("Registering command context type...");
         Logger.LogDebug("Done registering commands.");
+
+        WorldManager = new WorldManager(this, Logger);
 
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
@@ -248,17 +249,7 @@ public partial class Server : IServer
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-        World = new World("overworld", this);
-        if (!await World.LoadAsync())
-        {
-            if (!WorldGenerators.TryGetValue(Config.Generator, out WorldGenerator value))
-                Logger.LogWarning($"Unknown generator type {Config.Generator}");
-
-            var gen = value ?? new SuperflatGenerator();
-            Logger.LogInformation($"Creating new {gen.Id} ({gen}) world...");
-            await World.Init(gen);
-            World.Save();
-        }
+        await WorldManager.LoadWorldsAsync();
 
         if (!Config.OnlineMode)
             Logger.LogInformation($"Starting in offline mode...");
@@ -282,7 +273,7 @@ public partial class Server : IServer
             var tcp = await tcpListener.AcceptTcpClientAsync();
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
-            var client = new Client(tcp, Config, Math.Max(0, clients.Count + World.GetTotalLoadedEntities()), this);
+            var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.GetWorld(0).GetTotalLoadedEntities()), this);
             clients.Add(client);
 
             client.Disconnected += client => clients.TryRemove(client);
@@ -315,21 +306,21 @@ public partial class Server : IServer
         }
     }
 
-    internal IEnumerable<Player> PlayersInRange(Vector worldPosition) => World.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
+    internal IEnumerable<Player> PlayersInRange(World world, Vector worldPosition) => world.Players.Select(entry => entry.Value).Where(player => player.client.LoadedChunks.Contains(worldPosition.ToChunkCoord()));
 
-    internal void BroadcastBlockChange(Block block, Vector location)
+    internal void BroadcastBlockChange(World world, Block block, Vector location)
     {
         var packet = new BlockChange(location, block.StateId);
-        foreach (Player player in PlayersInRange(location))
+        foreach (Player player in PlayersInRange(world, location))
         {
             player.client.SendPacket(packet);
         }
     }
 
-    internal void BroadcastBlockChange(Player initiator, Block block, Vector location)
+    internal void BroadcastBlockChange(World world, Player initiator, Block block, Vector location)
     {
         var packet = new BlockChange(location, block.StateId);
-        foreach (Player player in PlayersInRange(location))
+        foreach (Player player in PlayersInRange(world, location))
         {
             if (player == initiator)
                 continue;
@@ -432,11 +423,11 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.GetTotalLoadedEntities() + 1,
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.AsItem().Id,
                         Glowing = true,
-                        World = World,
+                        World = player.World,
                         Position = loc
                     };
 
@@ -490,7 +481,7 @@ public partial class Server : IServer
 
                     if (player.Gamemode == Gamemode.Creative)
                     {
-                        World.SetBlock(digging.Position, Block.Air);
+                        player.World.SetBlock(digging.Position, Block.Air);
                     }
                 }
                 break;
@@ -521,11 +512,11 @@ public partial class Server : IServer
 
                     var item = new ItemEntity
                     {
-                        EntityId = player + World.GetTotalLoadedEntities() + 1,
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
                         Count = 1,
                         Id = droppedItem.Id,
                         Glowing = true,
-                        World = World,
+                        World = player.World,
                         Position = digging.Position,
                         Server = this
                     };
@@ -572,7 +563,7 @@ public partial class Server : IServer
         while (!cts.IsCancellationRequested)
         {
             await Task.Delay(TimeSpan.FromMinutes(5));
-            await World.FlushRegionsAsync();
+            await WorldManager.FlushLoadedWorldsAsync();
         }
     }
 
@@ -615,7 +606,7 @@ public partial class Server : IServer
                 }
             }
 
-            await this.World.DoWorldTickAsync();
+            await this.WorldManager.TickWorldsAsync();
 
             long elapsedTicks = stopwatch.ElapsedTicks;
             stopwatch.Restart();
@@ -625,7 +616,7 @@ public partial class Server : IServer
             UpdateStatusConsole();
         }
 
-        await World.FlushRegionsAsync();
+        await WorldManager.FlushLoadedWorldsAsync();
     }
 
     /// <summary>
@@ -639,8 +630,7 @@ public partial class Server : IServer
 
     internal void UpdateStatusConsole()
     {
-        int chunksLoaded = World.Regions.Sum(entry => entry.Value.LoadedChunkCount);
-        var status = $"    tps:{Tps} c:{World.ChunksToGen.Count}/{chunksLoaded} r:{World.RegionsToLoad.Count}/{World.Regions.Count}";
+        var status = $"    tps:{Tps} c:{WorldManager.ChunksToGen}/{WorldManager.ChunksLoaded} r:{WorldManager.RegionsToLoad}/{WorldManager.RegionsLoaded}";
         ConsoleIO.UpdateStatusLine(status);
     }
 }

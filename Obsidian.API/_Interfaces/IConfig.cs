@@ -13,11 +13,6 @@ public interface IConfig
     public int Port { get; set; }
 
     /// <summary>
-    /// Name of the world generator to be used.
-    /// </summary>
-    public string Generator { get; set; }
-
-    /// <summary>
     /// Seed supplied to the world generator.
     /// </summary>
     public string Seed { get; set; }

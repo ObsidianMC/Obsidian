@@ -2,6 +2,7 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 using System.Data;
 using System.Diagnostics;
 
@@ -164,8 +165,8 @@ public class MainCommandModule
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync(CommandContext Context)
     {
-        var server = (Server)Context.Server;
-        var world = server.World;
+        var player = (Player)Context.Player;
+        var world = player.World;
         await world.FlushRegionsAsync();
     }
 
@@ -175,9 +176,8 @@ public class MainCommandModule
     public async Task ForceChunkReloadAsync(CommandContext Context)
     {
         var player = (Player)Context.Player;
-        var server = (Server)Context.Server;
         var c = player.client;
-        var world = server.World;
+        var world = player.World;
 
         await world.UpdateClientChunksAsync(c, true);
     }
@@ -374,8 +374,8 @@ public class MainCommandModule
     [CommandOverload]
     public async Task TimeAsync(CommandContext Context, int time)
     {
-        var server = Context.Server as Server;
-        server.World.Data.DayTime = time;
+        var player = Context.Player as Player;
+        player.World.Data.DayTime = time;
         await Context.Player.SendMessageAsync($"Time set to {time}");
     }
 
@@ -429,9 +429,25 @@ public class MainCommandModule
     [RequirePermission(permissions: "obsidian.weather")]
     public async Task WeatherAsync(CommandContext ctx)
     {
-        var server = (Server)ctx.Server;
-        server.World.Data.RainTime = 0;
+        var player = (Player)ctx.Player;
+        player.World.Data.RainTime = 0;
         await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
+    }
+
+    [Command("world")]
+    [RequirePermission(permissions: "obsidian.world")]
+    public async Task SwitchWorld(CommandContext ctx, int index)
+    {
+        var server = (Server)ctx.Server;
+        if(server.WorldManager.TryGetWorld(index, out World world))
+        {
+            var player = ctx.Player as Player;
+            await player.SwitchWorldAsync(world);
+            await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
+            return;
+        }
+
+        await ctx.Player.SendMessageAsync($"World with index {index} not found!");
     }
 
 #if DEBUG
