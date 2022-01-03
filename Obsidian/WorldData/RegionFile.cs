@@ -28,14 +28,21 @@ public class RegionFile : IAsyncDisposable
         fileCache = MemoryPool<byte>.Shared.Rent(minCacheSize);
     }
 
-    public async Task InitializeAsync()
+    public async Task<bool> InitializeAsync()
     {
         if (!File.Exists(filePath))
         {
             await InitializeNewFileAsync();
         }
 
-        regionFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+        try
+        {
+            regionFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
 
         // Load file into memory
         await regionFileStream.ReadAsync(fileCache.Memory);
@@ -59,6 +66,7 @@ public class RegionFile : IAsyncDisposable
                 }
             }
         }
+        return true;
     }
 
     public async Task FlushToDiskAsync()

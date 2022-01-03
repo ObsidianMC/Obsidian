@@ -166,7 +166,7 @@ public partial class Server
 
             if (container is IBlockEntity)
             {
-                var tileEntity = player.World.GetBlockEntity(blockPosition);
+                var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {

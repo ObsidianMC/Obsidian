@@ -18,7 +18,7 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
 
         var position = tileEntity.BlockPosition;
 
-        var b = player.World.GetBlock(position);
+        var b = await player.World.GetBlockAsync(position);
 
         if (!b.HasValue)
             return;

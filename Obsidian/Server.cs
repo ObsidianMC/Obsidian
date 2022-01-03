@@ -210,7 +210,7 @@ public partial class Server : IServer
     /// <summary>
     /// Starts this server asynchronously.
     /// </summary>
-    public async Task StartServerAsync()
+    public async Task RunAsync()
     {
         StartTime = DateTimeOffset.Now;
 
@@ -221,7 +221,7 @@ public partial class Server : IServer
         if (Config.MulitplayerDebugMode && Config.OnlineMode)
         {
             Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            StopServer();
+            Stop();
             return;
         }
 
@@ -256,21 +256,41 @@ public partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
-        _ = Task.Run(LoopAsync);
-
-        _ = Task.Run(ServerSaveAsync);
-
-        Logger.LogInformation($"Listening for new clients...");
-
         loadTimeStopwatch.Stop();
-
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
+        Logger.LogInformation($"Listening for new clients...");
+        try
+        {
+            await Task.WhenAll(AcceptClientsAsync(), LoopAsync(), ServerSaveAsync());
+        }
+        catch (TaskCanceledException)
+        {
+        }
+
+        Logger.LogDebug("Flushing regions");
+        await WorldManager.FlushLoadedWorldsAsync();
+
+        Logger.LogWarning("Server is shutting down...");
+    }
+
+    private async Task AcceptClientsAsync()
+    {
         tcpListener.Start();
 
         while (!cts.IsCancellationRequested)
         {
-            var tcp = await tcpListener.AcceptTcpClientAsync();
+            TcpClient tcp;
+            try
+            {
+                tcp = await tcpListener.AcceptTcpClientAsync();
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "Listening for clients encountered an exception");
+                break;
+            }
+
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
             var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.GetWorld(0).GetTotalLoadedEntities()), this);
@@ -280,8 +300,6 @@ public partial class Server : IServer
 
             _ = Task.Run(client.StartConnectionAsync);
         }
-
-        Logger.LogWarning("Server is shutting down...");
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -404,7 +422,7 @@ public partial class Server : IServer
 
     private bool TryAddEntity(World world, Entity entity) => world.TryAddEntity(entity);
 
-    internal void BroadcastPlayerDig(PlayerDiggingStore store, Block block)
+    internal async Task BroadcastPlayerDigAsync(PlayerDiggingStore store, Block block)
     {
         var digging = store.Packet;
 
@@ -481,7 +499,7 @@ public partial class Server : IServer
 
                     if (player.Gamemode == Gamemode.Creative)
                     {
-                        player.World.SetBlock(digging.Position, Block.Air);
+                        await player.World.SetBlockAsync(digging.Position, Block.Air);
                     }
                 }
                 break;
@@ -548,12 +566,11 @@ public partial class Server : IServer
         }
     }
 
-    public void StopServer()
+    public void Stop()
     {
         cts.Cancel();
         tcpListener.Stop();
         WorldGenerators.Clear();
-
         foreach (var client in clients)
             client.Disconnect();
     }
@@ -562,7 +579,7 @@ public partial class Server : IServer
     {
         while (!cts.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(5));
+            await Task.Delay(TimeSpan.FromMinutes(5), cts.Token);
             await WorldManager.FlushLoadedWorldsAsync();
         }
     }
@@ -615,7 +632,6 @@ public partial class Server : IServer
 
             UpdateStatusConsole();
         }
-
         await WorldManager.FlushLoadedWorldsAsync();
     }
 
@@ -630,7 +646,7 @@ public partial class Server : IServer
 
     internal void UpdateStatusConsole()
     {
-        var status = $"    tps:{Tps} c:{WorldManager.ChunksToGen}/{WorldManager.ChunksLoaded} r:{WorldManager.RegionsToLoad}/{WorldManager.RegionsLoaded}";
+        var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
         ConsoleIO.UpdateStatusLine(status);
     }
 }

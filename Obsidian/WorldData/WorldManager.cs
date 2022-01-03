@@ -9,13 +9,11 @@ namespace Obsidian.WorldData;
 
 public class WorldManager
 {
-    public int ChunksToGen => worlds.Sum(x => x.ChunksToGen.Count());
+    public int GeneratingChunkCount => worlds.SelectMany(x => x.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
 
-    public int RegionsLoaded => worlds.Sum(x => x.Regions.Count());
+    public int RegionCount => worlds.Sum(x => x.Regions.Count());
 
-    public int RegionsToLoad => worlds.Sum(x => x.RegionsToLoad.Count());
-
-    public int ChunksLoaded => worlds.Sum(x => x.Regions.Sum(x => x.Value.LoadedChunkCount));
+    public int LoadedChunkCount => worlds.Sum(x => x.Regions.Sum(x => x.Value.LoadedChunkCount));
 
     public World Primary => this.GetWorld(0);
 
