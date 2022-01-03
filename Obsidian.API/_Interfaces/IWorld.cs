@@ -8,10 +8,10 @@ public interface IWorld
     public long Time { get; }
     public Gamemode GameType { get; }
 
-    public Block? GetBlock(Vector location);
-    public Block? GetBlock(int x, int y, int z);
-    public void SetBlock(Vector location, Block block);
-    public void SetBlock(int x, int y, int z, Block block);
+    public Task<Block?> GetBlockAsync(Vector location);
+    public Task<Block?> GetBlockAsync(int x, int y, int z);
+    public Task SetBlockAsync(Vector location, Block block);
+    public Task SetBlockAsync(int x, int y, int z, Block block);
 
     public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type);
     public Task SpawnExperienceOrbs(VectorF position, short count);

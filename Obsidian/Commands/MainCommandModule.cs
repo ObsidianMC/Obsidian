@@ -362,7 +362,7 @@ public class MainCommandModule
         server.BroadcastMessage($"Server stopped by {ChatColor.Red}{Context.Player?.Username ?? Context.Sender.ToString()}{ChatColor.Reset}.");
         await Task.Run(() =>
         {
-            server.StopServer();
+            server.Stop();
         });
     }
 

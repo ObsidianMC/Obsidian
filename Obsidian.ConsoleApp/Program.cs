@@ -80,11 +80,10 @@ public static class Program
             return;
         }
 
-        Program.Server = new Server(config, version, serverDir);
-
-        var serverTask = Program.Server.StartServerAsync();
         InitConsoleInput();
-        await Task.WhenAny(cancelKeyPress.Task, serverTask);
+
+        Server = new Server(config, version, serverDir);
+        await Server.RunAsync();
 
         if (!shutdownPending)
         {
@@ -130,8 +129,7 @@ public static class Program
     private static void StopProgram()
     {
         shutdownPending = true;
-
-        Server.StopServer();
+        Server.Stop();
     }
 
     // Cool startup console logo because that's cool

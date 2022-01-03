@@ -65,7 +65,7 @@ public class Entity : IEquatable<Entity>, IEntity
     }
 
     #region Update methods
-    internal virtual Task UpdateAsync(VectorF position, bool onGround)
+    internal virtual async Task UpdateAsync(VectorF position, bool onGround)
     {
         var isNewLocation = position != this.Position;
 
@@ -82,14 +82,12 @@ public class Entity : IEquatable<Entity>, IEntity
                 OnGround = onGround
             }, this.EntityId);
 
-            this.UpdatePosition(position, onGround);
+            await this.UpdatePositionAsync(position, onGround);
         }
-
-        return Task.CompletedTask;
     }
 
 
-    internal virtual Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    internal virtual async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
     {
         var isNewLocation = position != this.Position;
         var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
@@ -130,10 +128,8 @@ public class Entity : IEquatable<Entity>, IEntity
                 }, this.EntityId);
             }
 
-            this.UpdatePosition(position, yaw, pitch, onGround);
+            await this.UpdatePositionAsync(position, yaw, pitch, onGround);
         }
-
-        return Task.CompletedTask;
     }
 
 
@@ -162,9 +158,9 @@ public class Entity : IEquatable<Entity>, IEntity
         return Task.CompletedTask;
     }
 
-    public void UpdatePosition(VectorF pos, bool onGround = true)
+    public async Task UpdatePositionAsync(VectorF pos, bool onGround = true)
     {
-        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
@@ -173,9 +169,9 @@ public class Entity : IEquatable<Entity>, IEntity
         this.OnGround = onGround;
     }
 
-    public void UpdatePosition(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
+    public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
     {
-        Chunk chunk = this.World.GetChunk((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
             this.Position = pos;
@@ -186,9 +182,9 @@ public class Entity : IEquatable<Entity>, IEntity
         this.OnGround = onGround;
     }
 
-    public void UpdatePosition(float x, float y, float z, bool onGround = true)
+    public async Task UpdatePositionAsync(float x, float y, float z, bool onGround = true)
     {
-        this.UpdatePosition(new VectorF(x, y, z), onGround);
+        await this.UpdatePositionAsync(new VectorF(x, y, z), onGround);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)

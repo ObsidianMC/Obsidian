@@ -21,8 +21,6 @@ public class World : IWorld
 
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
-    public ConcurrentQueue<(int X, int Z)> RegionsToLoad { get; private set; } = new();
-
     public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
 
     public string Name { get; }
@@ -94,7 +92,7 @@ public class World : IWorld
 
         await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
         {
-            var chunk = this.GetChunk(chunkLoc.X, chunkLoc.Z);
+            var chunk = await this.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)
             {
                 await c.SendChunkAsync(chunk);
@@ -141,33 +139,18 @@ public class World : IWorld
     /// Whether to enqueue a job to generate the chunk if it doesn't exist and return null.
     /// When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public Chunk GetChunk(int chunkX, int chunkZ, bool scheduleGeneration = true)
+    public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         var region = this.GetRegionForChunk(chunkX, chunkZ);
-
+        
         if (region is null)
         {
-            // region hasn't been loaded yet
-            var (rX, rZ) = (chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
-            if (scheduleGeneration)
-            {
-                if (!RegionsToLoad.Contains((rX, rZ)))
-                    RegionsToLoad.Enqueue((rX, rZ));
-                return null;
-            }
-            // Can't wait for the region to be loaded b/c we want a partial chunk,
-            // so just load it now and hold up execution.
-            try
-            {
-                var task = LoadRegionAsync(rX, rZ);
-                region = task.Result;
-                Regions[NumericsHelper.IntsToLong(rX, rZ)] = region;
-            }
-            catch (Exception e)
-            {
-                Server.Logger.LogError(e.Message);
-                GetChunk(chunkX, chunkZ, scheduleGeneration);
-            }
+            region = await LoadRegionAsync(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
+        }
+        
+        if (region is null)
+        {
+            return null;
         }
 
         (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
@@ -209,57 +192,82 @@ public class World : IWorld
     /// </summary>
     /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public Chunk GetChunk(Vector worldLocation, bool scheduleGeneration = true) => this.GetChunk(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
+    public async Task<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => await GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
-    public Block? GetBlock(Vector location) => GetBlock(location.X, location.Y, location.Z);
+    public async Task<Block?> GetBlockAsync(Vector location) => await GetBlockAsync(location.X, location.Y, location.Z);
 
-    public Block? GetBlock(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlock(x, y, z);
-
-    public int? GetWorldSurfaceHeight(int x, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?
-        .Heightmaps[ChunkData.HeightmapType.WorldSurface].GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
-
-    public NbtCompound GetBlockEntity(Vector blockPosition) => this.GetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z);
-
-    public NbtCompound GetBlockEntity(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.GetBlockEntity(x, y, z);
-
-    public void SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => this.SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
-    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false)?.SetBlockEntity(x, y, z, tileEntityData);
-
-    public void SetBlock(int x, int y, int z, Block block) => SetBlock(new Vector(x, y, z), block);
-
-    public void SetBlock(Vector location, Block block)
+    public async Task<Block?> GetBlockAsync(int x, int y, int z)
     {
-        SetBlockUntracked(location.X, location.Y, location.Z, block);
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        return c?.GetBlock(x, y, z);
+    }
+
+    public async Task<int?> GetWorldSurfaceHeightAsync(int x, int z)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        return c?.Heightmaps[ChunkData.HeightmapType.MotionBlocking]
+        .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
+    }
+
+    public async Task<NbtCompound?> GetBlockEntityAsync(Vector blockPosition) => await this.GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+
+    public async Task<NbtCompound?> GetBlockEntityAsync(int x, int y, int z)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        return c?.GetBlockEntity(x, y, z);
+    }
+
+    public async Task SetBlockEntity(Vector blockPosition, NbtCompound tileEntityData) => await this.SetBlockEntity(blockPosition.X, blockPosition.Y, blockPosition.Z, tileEntityData);
+    public async Task SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        c?.SetBlockEntity(x, y, z, tileEntityData);
+    }
+
+    public async Task SetBlockAsync(int x, int y, int z, Block block) => await SetBlockAsync(new Vector(x, y, z), block);
+
+    public async Task SetBlockAsync(Vector location, Block block)
+    {
+        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block);
         Server.BroadcastBlockChange(block, location);
     }
 
-    public void SetBlock(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlock(new Vector(x, y, z), block, doBlockUpdate);
+    public async Task SetBlockAsync(int x, int y, int z, Block block, bool doBlockUpdate) => await SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
 
-    public void SetBlock(Vector location, Block block, bool doBlockUpdate)
+    public async Task SetBlockAsync(Vector location, Block block, bool doBlockUpdate)
     {
-        SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+        await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
         Server.BroadcastBlockChange(block, location);
     }
 
-    public void SetBlockUntracked(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntracked(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public async Task SetBlockUntrackedAsync(Vector location, Block block, bool doBlockUpdate = false) => await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
-    public void SetBlockUntracked(int x, int y, int z, Block block, bool doBlockUpdate = false)
+    public async Task SetBlockUntrackedAsync(int x, int y, int z, Block block, bool doBlockUpdate = false)
     {
         if (doBlockUpdate)
         {
-            ScheduleBlockUpdate(new BlockUpdate(this, new Vector(x, y, z), block));
-            BlockUpdateNeighbors(new BlockUpdate(this, new Vector(x, y, z), block));
+            await ScheduleBlockUpdateAsync(new BlockUpdate(this, new Vector(x, y, z), block));
+            await BlockUpdateNeighborsAsync(new BlockUpdate(this, new Vector(x, y, z), block));
         }
-        GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlock(x, y, z, block);
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        c?.SetBlock(x, y, z, block);
     }
 
-    public void SetBlockMeta(int x, int y, int z, BlockMeta meta) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord(), false).SetBlockMeta(x, y, z, meta);
+    public async Task SetBlockMeta(int x, int y, int z, BlockMeta meta)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
+        c?.SetBlockMeta(x, y, z, meta);
+    }
 
-    public void SetBlockMeta(Vector location, BlockMeta meta) => this.SetBlockMeta(location.X, location.Y, location.Z, meta);
+    public async Task SetBlockMeta(Vector location, BlockMeta meta) => await this.SetBlockMeta(location.X, location.Y, location.Z, meta);
 
-    public BlockMeta? GetBlockMeta(int x, int y, int z) => GetChunk(x.ToChunkCoord(), z.ToChunkCoord())?.GetBlockMeta(x, y, z);
+    public async Task<BlockMeta?> GetBlockMeta(int x, int y, int z)
+    {
+        var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord());
+        return c?.GetBlockMeta(x, y, z);
+    }
 
-    public BlockMeta? GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
+    public async Task<BlockMeta?> GetBlockMeta(Vector location) => await this.GetBlockMeta(location.X, location.Y, location.Z);
 
     public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
     {
@@ -385,10 +393,9 @@ public class World : IWorld
         for (var cx = x - radius; cx < x + radius; cx++)
             for (var cz = z - radius; cz < z + radius; cz++)
                 SpawnChunks.Add((cx, cz));
-
-        Parallel.ForEach(SpawnChunks, (c) =>
+        await Parallel.ForEachAsync(SpawnChunks, async (c, cts) =>
         {
-            GetChunk(c.X, c.Z);
+            await GetChunkAsync(c.X, c.Z);
             // Update status occasionally so we're not destroying consoleio
             if (c.X % 5 == 0)
                 Server.UpdateStatusConsole();
@@ -441,13 +448,13 @@ public class World : IWorld
     }
     #endregion
 
-    public async Task<Region> LoadRegionByChunkAsync(int chunkX, int chunkZ)
+    public async Task<Region?> LoadRegionByChunkAsync(int chunkX, int chunkZ)
     {
         int regionX = chunkX >> Region.cubicRegionSizeShift, regionZ = chunkZ >> Region.cubicRegionSizeShift;
         return await LoadRegionAsync(regionX, regionZ);
     }
 
-    public async Task<Region> LoadRegionAsync(int regionX, int regionZ)
+    public async Task<Region?> LoadRegionAsync(int regionX, int regionZ)
     {
         long value = NumericsHelper.IntsToLong(regionX, regionZ);
 
@@ -460,13 +467,12 @@ public class World : IWorld
         }
 
         var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
-        await region.InitAsync();
-
-        _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
-
-        this.Regions[value] = region;
-
-        return region;
+        if (await region.InitAsync()) 
+        {
+            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
+            this.Regions[value] = region;
+        }
+        return this.Regions[value];
     }
 
     public async Task UnloadRegionAsync(int regionX, int regionZ)
@@ -476,11 +482,10 @@ public class World : IWorld
             await r.FlushAsync();
     }
 
-    public void ScheduleBlockUpdate(BlockUpdate bu)
+    public async Task ScheduleBlockUpdateAsync(BlockUpdate bu)
     {
-        bu.Block ??= GetBlock(bu.position);
+        bu.Block ??= await GetBlockAsync(bu.position);
         var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
-
         r.AddBlockUpdate(bu);
     }
 
@@ -501,13 +506,13 @@ public class World : IWorld
 
         if (bu.Block.Value.IsFluid)
         {
-            return await BlockUpdates.HandleLiquidPhysics(bu);
+            return await BlockUpdates.HandleLiquidPhysicsAsync(bu);
         }
 
         return false;
     }
 
-    internal void BlockUpdateNeighbors(BlockUpdate bu)
+    internal async Task BlockUpdateNeighborsAsync(BlockUpdate bu)
     {
         bu.Block = null;
         bu.delayCounter = bu.Delay;
@@ -529,28 +534,16 @@ public class World : IWorld
         var down = bu;
         down.position += Vector.Down;
 
-        ScheduleBlockUpdate(north);
-        ScheduleBlockUpdate(south);
-        ScheduleBlockUpdate(west);
-        ScheduleBlockUpdate(east);
-        ScheduleBlockUpdate(up);
-        ScheduleBlockUpdate(down);
+        await ScheduleBlockUpdateAsync(north);
+        await ScheduleBlockUpdateAsync(south);
+        await ScheduleBlockUpdateAsync(west);
+        await ScheduleBlockUpdateAsync(east);
+        await ScheduleBlockUpdateAsync(up);
+        await ScheduleBlockUpdateAsync(down);
     }
 
     public async Task ManageChunksAsync()
     {
-        // Load regions. Load no more than 4 at a time b/c it's an expensive operation.
-        // Regions that are in the process of being loaded will appear in
-        // this.Regions, but will be null.
-        if (!RegionsToLoad.IsEmpty && Regions.Values.Count(r => r is null) < 4)
-        {
-            if (RegionsToLoad.TryDequeue(out var job))
-            {
-                if (!this.Regions.ContainsKey(NumericsHelper.IntsToLong(job.X, job.Z))) // Sanity check
-                    await LoadRegionAsync(job.X, job.Z);
-            }
-        }
-
         if (ChunksToGen.IsEmpty) { return; }
 
         // Pull some jobs out of the queue
@@ -561,15 +554,14 @@ public class World : IWorld
                 jobs.Add(job);
         }
 
-        Parallel.ForEach(jobs, (job) =>
+        await Parallel.ForEachAsync(jobs, async (job, _) =>
         {
             Region region = GetRegionForChunk(job.x, job.z);
             if (region is null)
             {
-                // Region isn't ready. Try again later
-                ChunksToGen.Enqueue((job.x, job.z));
-                return;
+                region = await LoadRegionByChunkAsync(job.x, job.z);
             }
+
             (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
             Chunk c = region.GetChunk(chunkIndex);
             if (c is null)
@@ -581,7 +573,7 @@ public class World : IWorld
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            c = Generator.GenerateChunk(job.x, job.z, this, c);
+            c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
             region.SetChunk(c);
         });
     }
@@ -697,7 +689,7 @@ public class World : IWorld
         Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
         this.Generator = gen;
         await GenerateWorld();
-        SetWorldSpawn();
+        await SetWorldSpawn();
     }
 
     internal async Task GenerateWorld()
@@ -738,7 +730,7 @@ public class World : IWorld
         await FlushRegionsAsync();
     }
 
-    internal void SetWorldSpawn()
+    internal async Task SetWorldSpawn()
     {
         if (Data.SpawnPosition.Y != 0) { return; }
 
@@ -766,7 +758,7 @@ public class World : IWorld
                                 {
                                     for (int z = c.Z - Server.Config.PregenerateChunkRange; z < c.Z + Server.Config.PregenerateChunkRange; z++)
                                     {
-                                        GetChunk(x, z);
+                                        await GetChunkAsync(x, z);
                                     }
                                 }
 

@@ -64,7 +64,7 @@ public class LargeSpruceTree : BaseTree
             {V, V, V, V, X, X, V, V, V, V}
     };
 
-    protected override void GenerateTrunk(Vector origin, int heightOffset)
+    protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
         int topY = trunkHeight + heightOffset;
         for (int x = 0; x < 2; x++)
@@ -73,13 +73,14 @@ public class LargeSpruceTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    world.SetBlockUntracked(origin + (x, y, z), new Block(trunk, 1));
+                    await world.SetBlockUntrackedAsync(origin + (x, y, z), new Block(trunk, 1));
                 }
 
                 // Fill in any air gaps under the trunk
-                if (world.GetBlock(origin + (x, -1, z)).Value.IsAir)
+                var b = await world.GetBlockAsync(origin + (x, -1, z));
+                if (b.Value.IsAir)
                 {
-                    world.SetBlockUntracked(origin + (x, -1, z), new Block(trunk, 1));
+                    await world.SetBlockUntrackedAsync(origin + (x, -1, z), new Block(trunk, 1));
                 }
             }
         }
@@ -93,15 +94,16 @@ public class LargeSpruceTree : BaseTree
                 {
                     for (int y = -2; y < 2; y++)
                     {
-                        if ((Material)world.GetBlock(origin + (x - 4, y, z - 4)).Value.Id == Material.GrassBlock)
-                            world.SetBlockUntracked(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
+                        var b = await world.GetBlockAsync(origin + (x - 4, y, z - 4));
+                        if ((Material)b.Value.Id == Material.GrassBlock)
+                            await world.SetBlockUntrackedAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1));
                     }
                 }
             }
         }
     }
 
-    protected override void GenerateLeaves(Vector origin, int heightOffset)
+    protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         int minDistToGround = 4;
         int topY = trunkHeight + heightOffset;
@@ -125,7 +127,7 @@ public class LargeSpruceTree : BaseTree
                     {
                         if (leaves[x, z])
                         {
-                            world.SetBlockUntracked(origin + (x - 4, y - level, z - 4), new Block(leaf));
+                            await world.SetBlockUntrackedAsync(origin + (x - 4, y - level, z - 4), new Block(leaf));
                         }
                     }
                 }

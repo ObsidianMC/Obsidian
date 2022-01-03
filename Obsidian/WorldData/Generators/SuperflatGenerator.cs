@@ -50,7 +50,7 @@ public class SuperflatGenerator : WorldGenerator
     {
     }
 
-    public override Chunk GenerateChunk(int x, int z, World world, Chunk? chunk = null)
+    public override async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
     {
         if (chunk is { isGenerated: true })
             return chunk;

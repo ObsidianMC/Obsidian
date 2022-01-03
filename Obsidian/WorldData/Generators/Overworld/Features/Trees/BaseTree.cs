@@ -25,15 +25,15 @@ public abstract class BaseTree
         this.trunkHeight = trunkHeight;
     }
 
-    public virtual bool TryGenerateTree(Vector origin, int heightOffset)
+    public virtual async Task<bool> TryGenerateTreeAsync(Vector origin, int heightOffset)
     {
-        if (!TreeCanGrow(origin)) { return false; }
-        GenerateLeaves(origin, heightOffset);
-        GenerateTrunk(origin, heightOffset);
+        if (!await TreeCanGrowAsync(origin)) { return false; }
+        await GenerateLeavesAsync(origin, heightOffset);
+        await GenerateTrunkAsync(origin, heightOffset);
         return true;
     }
 
-    protected virtual void GenerateLeaves(Vector origin, int heightOffset)
+    protected virtual async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
         int topY = origin.Y + trunkHeight + heightOffset + 1;
         for (int y = topY; y >= topY - 3; y--)
@@ -47,43 +47,43 @@ public abstract class BaseTree
                     {
                         if (x != origin.X - 2 && x != origin.X + 2 && z != origin.Z - 2 && z != origin.Z + 2)
                         {
-                            world.SetBlockUntracked(x, y, z, new Block(leaf));
+                            await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                         }
                     }
                     else
                     {
-                        world.SetBlockUntracked(x, y, z, new Block(leaf));
+                        await world.SetBlockUntrackedAsync(x, y, z, new Block(leaf));
                     }
                 }
             }
         }
     }
 
-    protected virtual void GenerateTrunk(Vector origin, int heightOffset)
+    protected virtual async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
         int topY = trunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
         {
-            world.SetBlockUntracked(origin + (0, y, 0), new Block(trunk, 1));
+            await world.SetBlockUntrackedAsync(origin + (0, y, 0), new Block(trunk, 1));
         }
-        world.SetBlockUntracked(origin, new Block(Material.Dirt));
+        await world.SetBlockUntrackedAsync(origin, new Block(Material.Dirt));
     }
 
-    protected virtual bool TreeCanGrow(Vector origin)
+    protected virtual async Task<bool> TreeCanGrowAsync(Vector origin)
     {
-        var surfaceBlock = (Block)world.GetBlock(origin);
+        var surfaceBlock = (Block) await world.GetBlockAsync(origin);
         bool surfaceValid = ValidSourceBlocks.Contains(surfaceBlock.Material);
 
         bool plentyOfRoom =
-            ((Block)world.GetBlock(origin + (-1, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (-1, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (-1, 2, 1))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (0, 2, 1))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, -1))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, 0))).IsAir &&
-            ((Block)world.GetBlock(origin + (1, 2, 1))).IsAir;
+            ((Block) await world.GetBlockAsync(origin + (-1, 2, -1))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (-1, 2, 0))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (-1, 2, 1))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (0, 2, -1))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (0, 2, 0))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (0, 2, 1))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (1, 2, -1))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (1, 2, 0))).IsAir &&
+            ((Block) await world.GetBlockAsync(origin + (1, 2, 1))).IsAir;
 
 
         return surfaceValid && plentyOfRoom;
