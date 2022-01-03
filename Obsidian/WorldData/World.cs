@@ -281,6 +281,34 @@ public class World : IWorld
 
     public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
+    public async Task JoinWorldAsync(Player player)
+    {
+        player.World.RemovePlayer(player);
+        player.World = this;
+        AddPlayer(player);
+
+        // send world spawn stuff
+        await player.RespawnAsync();
+
+        // reload player data from relevant world file
+        await player.LoadAsync();
+
+        await player.client.SendPlayerInfoAsync();
+        await player.client.SendTimeUpdateAsync();
+        await player.client.SendWeatherUpdateAsync();
+        await player.client.QueuePacketAsync(new SpawnPosition(this.Data.SpawnPosition));
+
+        //Initialize inventory
+        await player.client.QueuePacketAsync(new WindowItems(0, player.Inventory.ToList())
+        {
+            StateId = player.Inventory.StateId++,
+            CarriedItem = player.GetHeldItem(),
+        });
+
+        var (chunkX, chunkZ) = player.Position.ToChunkCoord();
+        await player.client.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
+    }
+
     /// <summary>
     /// Method that handles world-specific tick behavior.
     /// </summary>

@@ -326,20 +326,16 @@ public class Player : Living, IPlayer
 
     public async Task SwitchWorldAsync(World world)
     {
-        this.World.RemovePlayer(this);
-        this.World = world;
-        this.client.LoadedChunks.Clear();
-        await RespawnAsync(false);
-        world.AddPlayer(this);
+        await world.JoinWorldAsync(this);
     }
 
-    public async Task RespawnAsync(bool unload = true)
+    public async Task RespawnAsync()
     {
-        this.visiblePlayers.Clear();
-
         Registry.Dimensions.TryGetValue(0, out var codec);
         Registry.Dimensions.TryGetValue(1, out var codec2);
 
+
+        // workaround for rejoining same dimension
         await this.client.QueuePacketAsync(new Respawn
         {
             Dimension = codec2,
@@ -355,7 +351,7 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(new Respawn
         {
             Dimension = codec,
-            WorldName = "minecraft:world",
+            WorldName = "minecraft:" + this.World.Name,
             Gamemode = this.Gamemode,
             PreviousGamemode = this.Gamemode,
             HashedSeed = 0,
@@ -373,13 +369,14 @@ public class Player : Living, IPlayer
             TeleportId = 0
         });
 
-        //Gotta send chunks again
-        await this.World.UpdateClientChunksAsync(this.client, unload);
+        this.client.LoadedChunks.Clear();
+        this.visiblePlayers.Clear();
+
+        // Gotta send chunks again
+        // Sending them non-blocking.
+        await this.World.UpdateClientChunksAsync(this.client, true);
 
         this.Position = this.World.Data.SpawnPosition;
-
-
-        this.Health = 20f;
     }
 
     //TODO make IDamageSource 

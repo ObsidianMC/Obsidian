@@ -309,7 +309,6 @@ public class Client : IDisposable
         this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
         this.State = ClientState.Play;
-        this.Player.Health = 20f;
 
         await this.Player.LoadAsync();
 
@@ -359,36 +358,11 @@ public class Client : IDisposable
             SecondRecipeIds = Registry.Recipes.Keys.ToList()
         });
 
-        await this.SendPlayerInfoAsync();
         await this.SendPlayerListDecoration();
 
         await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-        await this.Player.World.ResendBaseChunksAsync(this);
-
-        var (chunkX, chunkZ) = this.Player.Position.ToChunkCoord();
-
-        await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
-        await this.QueuePacketAsync(new SpawnPosition(this.Player.Position));
-
-        await this.QueuePacketAsync(new PlayerPositionAndLook
-        {
-            Position = this.Player.Position,
-            Yaw = 0,
-            Pitch = 0,
-            Flags = PositionFlags.None,
-            TeleportId = 0
-        });
-
-        //Initialize inventory
-        await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
-        {
-            StateId = this.Player.Inventory.StateId++,
-            CarriedItem = this.Player.GetHeldItem(),
-        });
-
-        await this.SendTimeUpdateAsync();
-        await this.SendWeatherUpdateAsync();
+        await this.Player.World.JoinWorldAsync(this.Player);
     }
 
     #region Packet sending
