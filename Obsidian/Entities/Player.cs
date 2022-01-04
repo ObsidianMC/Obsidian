@@ -331,6 +331,13 @@ public class Player : Living, IPlayer
 
     public async Task RespawnAsync()
     {
+        if (!Alive)
+        {
+            // if unalive, reset health and set location to world spawn
+            this.Health = 20f;
+            this.Position = this.World.Data.SpawnPosition;
+        }
+
         Registry.Dimensions.TryGetValue(0, out var codec);
         Registry.Dimensions.TryGetValue(1, out var codec2);
 
@@ -375,8 +382,6 @@ public class Player : Living, IPlayer
             Flags = PositionFlags.None,
             TeleportId = 0
         });
-
-        this.Position = this.World.Data.SpawnPosition;
     }
 
     //TODO make IDamageSource 
