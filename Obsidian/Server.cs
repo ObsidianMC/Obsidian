@@ -642,6 +642,7 @@ public partial class Server : IServer
     {
         Register(new SuperflatGenerator());
         Register(new OverworldGenerator(Config.Seed));
+        Register(new EmptyWorldGenerator());
     }
 
     internal void UpdateStatusConsole()
