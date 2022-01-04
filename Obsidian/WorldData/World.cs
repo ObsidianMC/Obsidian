@@ -296,11 +296,11 @@ public class World : IWorld
         player.World = this;
         AddPlayer(player);
 
-        // send world spawn stuff
-        await player.RespawnAsync();
-
         // reload player data from relevant world file
         await player.LoadAsync();
+
+        // send world spawn stuff
+        await player.RespawnAsync();
 
         await player.client.SendPlayerInfoAsync();
         await player.client.SendTimeUpdateAsync();
