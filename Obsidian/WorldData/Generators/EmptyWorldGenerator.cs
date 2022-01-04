@@ -52,7 +52,7 @@ public class EmptyWorldGenerator : WorldGenerator
         spawn.isGenerated = true;
     }
 
-    public EmptyWorldGenerator() : base("classic")
+    public EmptyWorldGenerator() : base("obby-classic")
     {
     }
 
