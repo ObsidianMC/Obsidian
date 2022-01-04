@@ -53,6 +53,11 @@ public class WorldManager
         return worlds[index];
     }
 
+    public IReadOnlyCollection<World> GetAvailableWorlds()
+    {
+        return this.worlds.AsReadOnly();
+    }
+
     public bool TryGetWorldByName(string name, out World? world)
     {
         world = this.worlds.FirstOrDefault(x => x.Name == name);
