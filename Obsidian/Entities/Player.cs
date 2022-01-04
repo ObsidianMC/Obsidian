@@ -369,7 +369,7 @@ public class Player : Living, IPlayer
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
-            Position = this.World.Data.SpawnPosition,
+            Position = this.Position,
             Yaw = 0,
             Pitch = 0,
             Flags = PositionFlags.None,

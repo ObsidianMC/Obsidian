@@ -291,6 +291,7 @@ public class World : IWorld
 
     public async Task JoinWorldAsync(Player player)
     {
+        await player.SaveAsync();
         player.World.RemovePlayer(player);
         player.World = this;
         AddPlayer(player);
