@@ -434,6 +434,19 @@ public class MainCommandModule
         await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
     }
 
+    [CommandOverload]
+    public async Task SwitchWorld(CommandContext ctx, string worldname)
+    {
+        var server = (Server)ctx.Server;
+        if (server.WorldManager.TryGetWorldByName(worldname, out World world))
+        {
+            await worldSwitch(ctx, world);
+            return;
+        }
+
+        await ctx.Player.SendMessageAsync($"World with name {worldname} not found!");
+    }
+
     [Command("world")]
     [RequirePermission(permissions: "obsidian.world")]
     public async Task SwitchWorld(CommandContext ctx, int index)
@@ -441,13 +454,19 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         if(server.WorldManager.TryGetWorld(index, out World world))
         {
-            var player = ctx.Player as Player;
-            await player.SwitchWorldAsync(world);
-            await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
+            await worldSwitch(ctx, world);
             return;
         }
 
         await ctx.Player.SendMessageAsync($"World with index {index} not found!");
+    }
+
+    private async Task worldSwitch(CommandContext ctx, World? world)
+    {
+        var player = ctx.Player as Player;
+
+        await player.SwitchWorldAsync(world);
+        await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
     }
 
 #if DEBUG

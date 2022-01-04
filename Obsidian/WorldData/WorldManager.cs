@@ -53,6 +53,13 @@ public class WorldManager
         return worlds[index];
     }
 
+    public bool TryGetWorldByName(string name, out World? world)
+    {
+        world = this.worlds.FirstOrDefault(x => x.Name == name);
+
+        return world != null;
+    }
+
     public bool TryGetWorld(int index, out World? world)
     {
         if (index >= worlds.Count || index < 0)
