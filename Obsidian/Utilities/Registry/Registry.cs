@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Crafting;
+using Obsidian.API.Registry.Codecs;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities.Registry.Codecs;
-using Obsidian.Utilities.Registry.Codecs.Biomes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;

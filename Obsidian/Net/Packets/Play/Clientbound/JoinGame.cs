@@ -1,7 +1,7 @@
-﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry.Codecs;
-using Obsidian.Utilities.Registry.Codecs.Biomes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
+﻿using Obsidian.API.Registry.Codecs;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

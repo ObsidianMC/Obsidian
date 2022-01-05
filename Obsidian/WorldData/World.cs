@@ -142,12 +142,12 @@ public class World : IWorld
     public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
         var region = this.GetRegionForChunk(chunkX, chunkZ);
-        
+
         if (region is null)
         {
             region = await LoadRegionAsync(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
         }
-        
+
         if (region is null)
         {
             return null;
@@ -496,7 +496,7 @@ public class World : IWorld
         }
 
         var region = new Region(regionX, regionZ, Path.Join(Server.ServerFolderPath, Name));
-        if (await region.InitAsync()) 
+        if (await region.InitAsync())
         {
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
             this.Regions[value] = region;

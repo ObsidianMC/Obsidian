@@ -1,5 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
+﻿using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 

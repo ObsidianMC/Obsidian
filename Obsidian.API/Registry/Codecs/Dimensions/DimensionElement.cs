@@ -1,6 +1,6 @@
-﻿namespace Obsidian.Utilities.Registry.Codecs.Dimensions;
+﻿namespace Obsidian.API.Registry.Codecs.Dimensions;
 
-public class DimensionElement
+public sealed class DimensionElement
 {
     /// <summary>
     /// Whether piglins shake and transform to zombified piglins.
@@ -61,7 +61,7 @@ public class DimensionElement
     /// <summary>
     /// Maximum Height.
     /// </summary>
-    public int Height { get; set; } = 512;
+    public int Height { get; set; } = 256;
 
     /// <summary>
     /// The maximum height to which chorus fruits and nether portals can bring players within this dimension.
