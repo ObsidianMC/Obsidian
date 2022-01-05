@@ -96,15 +96,11 @@ public static class Program
     {
         Task.Run(async () =>
         {
-            Server currentServer = Program.Server;
             await Task.Delay(2000);
             while (!shutdownPending)
             {
-                if (currentServer == null)
-                    break;
-
                 string input = ConsoleIO.ReadLine();
-                await currentServer.ExecuteCommand(input);
+                await Server.ExecuteCommand(input);
             }
         });
     }
