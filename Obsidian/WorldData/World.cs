@@ -25,6 +25,8 @@ public class World : IWorld
 
     public string Name { get; }
 
+    public string Seed { get; }
+
     public bool Loaded { get; private set; }
 
     public long Time => Data.Time;
@@ -33,7 +35,7 @@ public class World : IWorld
 
     private float rainLevel = 0f;
 
-    internal World(string name, Server server)
+    internal World(string name, string seed, Server server)
     {
         this.Data = new Level
         {
@@ -43,6 +45,7 @@ public class World : IWorld
         };
 
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
+        this.Seed = seed ?? throw new ArgumentNullException(nameof(seed));
         this.Server = server;
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
@@ -404,12 +407,13 @@ public class World : IWorld
             LevelName = levelcompound.GetString("LevelName")
         };
 
-        if (!Server.WorldGenerators.TryGetValue(this.Data.GeneratorName, out WorldGenerator value))
+        if (!Server.WorldGenerators.TryGetValue(this.Data.GeneratorName, out Type value))
         {
             Server.Logger.LogWarning($"Unknown generator type {this.Data.GeneratorName}");
             return false;
         }
-        this.Generator = value;
+
+        this.Generator = (WorldGenerator)Activator.CreateInstance(value, this.Seed);
 
         Server.Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
@@ -712,11 +716,10 @@ public class World : IWorld
         return entity;
     }
 
-    internal async Task Init(WorldGenerator gen)
+    internal async Task Init()
     {
         // Make world directory
         Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
-        this.Generator = gen;
         await GenerateWorld();
         await SetWorldSpawn();
     }

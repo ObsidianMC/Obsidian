@@ -2,6 +2,7 @@
 
 namespace Obsidian.WorldData.Generators;
 
+[WorldGenerator("superflat")]
 public class SuperflatGenerator : WorldGenerator
 {
     private static readonly Chunk model;
@@ -46,7 +47,7 @@ public class SuperflatGenerator : WorldGenerator
         model.isGenerated = true;
     }
 
-    public SuperflatGenerator() : base("superflat")
+    public SuperflatGenerator(string seed) : base()
     {
     }
 

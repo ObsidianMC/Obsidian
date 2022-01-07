@@ -9,8 +9,6 @@ public class Config : IConfig
 
     public int Port { get; set; } = 25565;
 
-    public string Seed { get; set; } = new XorshiftRandom().Next().ToString();
-
     public string JoinMessage { get; set; } = "§e{0} joined the game";
 
     public string LeaveMessage { get; set; } = "§e{0} left the game";
@@ -61,6 +59,8 @@ public class ServerWorld
 {
     public string Name { get; set; } = "overworld";
     public string Generator { get; set; } = "overworld";
+
+    public string Seed { get; set; } = new Random().Next().ToString();
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

@@ -1,5 +1,7 @@
 ﻿namespace Obsidian.API;
 
+// TODO ADD NEW WORLD FORMAT
+
 public interface IConfig
 {
     /// <summary>
@@ -11,11 +13,6 @@ public interface IConfig
     /// The port on which to listen for incoming connection attempts.
     /// </summary>
     public int Port { get; set; }
-
-    /// <summary>
-    /// Seed supplied to the world generator.
-    /// </summary>
-    public string Seed { get; set; }
 
     /// <summary>
     /// Message, that is sent to the chat when player successfully joins the server.

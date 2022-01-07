@@ -6,13 +6,14 @@ using System.Text;
 
 namespace Obsidian.WorldData.Generators;
 
+[WorldGenerator("overworld")]
 public class OverworldGenerator : WorldGenerator
 {
     public static OverworldTerrainSettings GeneratorSettings { get; private set; }
 
     private readonly OverworldTerrain terrainGen;
 
-    public OverworldGenerator(string seed) : base("overworld")
+    public OverworldGenerator(string seed) : base()
     {
         // If the seed provided is numeric, just use it.
         // Naam asked me to do this a long time ago and I

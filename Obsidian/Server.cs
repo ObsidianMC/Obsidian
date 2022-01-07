@@ -42,7 +42,7 @@ public partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
+    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
@@ -196,9 +196,15 @@ public partial class Server : IServer
         {
             switch (item)
             {
-                case WorldGenerator generator:
-                    Logger.LogDebug($"Registering {generator.Id}...");
-                    WorldGenerators.Add(generator.Id, generator);
+                case Type generatorType:
+                    var id = ((WorldGeneratorAttribute)(generatorType.GetCustomAttributes(typeof(WorldGeneratorAttribute), false)[0])).Id;
+                    Logger.LogDebug($"Registering {id}...");
+
+                    // TODO for real, figure out a better way lol
+                    if (!generatorType.GetConstructors().Any(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(string)))
+                        throw new Exception($"World Generator with type {generatorType.Name} does not have a constructor argument that only takes a (seed) string!");
+
+                    WorldGenerators.Add(id, generatorType);
                     break;
 
                 default:
@@ -640,9 +646,9 @@ public partial class Server : IServer
     /// </summary>
     private void RegisterDefaults()
     {
-        Register(new SuperflatGenerator());
-        Register(new OverworldGenerator(Config.Seed));
-        Register(new EmptyWorldGenerator());
+        Register(typeof(SuperflatGenerator));
+        Register(typeof(OverworldGenerator));
+        Register(typeof(EmptyWorldGenerator));
     }
 
     internal void UpdateStatusConsole()

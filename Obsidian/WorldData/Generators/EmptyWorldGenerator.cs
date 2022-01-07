@@ -2,6 +2,7 @@
 
 namespace Obsidian.WorldData.Generators;
 
+[WorldGenerator("obby-classic")]
 public class EmptyWorldGenerator : WorldGenerator
 {
     private static readonly Chunk empty;
@@ -52,7 +53,7 @@ public class EmptyWorldGenerator : WorldGenerator
         spawn.isGenerated = true;
     }
 
-    public EmptyWorldGenerator() : base("obby-classic")
+    public EmptyWorldGenerator(string seed) : base()
     {
     }
 
