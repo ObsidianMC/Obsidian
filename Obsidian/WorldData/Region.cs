@@ -144,7 +144,7 @@ public class Region
                 }
             }
             delayed.ForEach(i => AddBlockUpdate(i));
-            neighborUpdates.ForEach(u => u.world.BlockUpdateNeighborsAsync(u));
+            neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
         }
     }
 
