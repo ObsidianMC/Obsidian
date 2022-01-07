@@ -1,5 +1,6 @@
 ﻿using SharpNoise;
 using SharpNoise.Modules;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Noise;
 
@@ -36,7 +37,6 @@ public class VoronoiBiomes : Module
         Biomes.DeepFrozenOcean,
         Biomes.DeepColdOcean,
         Biomes.DeepLukewarmOcean,
-        Biomes.DeepWarmOcean,
         Biomes.FrozenOcean,
         Biomes.ColdOcean,
         Biomes.LukewarmOcean,
@@ -49,11 +49,11 @@ public class VoronoiBiomes : Module
 
     }
 
+    [SkipLocalsInit]
     public override double GetValue(double x, double y, double z)
     {
         x *= Frequency;
         z *= Frequency;
-
 
         var xint = (x > 0D) ? (int)x : (int)x - 1;
         var zint = (z > 0D) ? (int)z : (int)z - 1;
@@ -70,7 +70,8 @@ public class VoronoiBiomes : Module
                 var xDist = xPos - x;
                 var zDist = zPos - z;
                 double dist = Math.Max(Math.Abs(xDist), Math.Abs(zDist));
-                var cell = new VoronoiCell
+
+                cells[index++] = new VoronoiCell
                 {
                     Index = (xCur, zCur),
                     DistanceToPoint = dist,
@@ -80,22 +81,50 @@ public class VoronoiBiomes : Module
                     BaseBiome = 0.0,
                     Biome = 0
                 };
-
-                cells[index++] = cell;
             }
         }
 
-        MemoryExtensions.Sort(cells, (a, b) => { return a.DistanceToPoint > b.DistanceToPoint ? 1 : -1; });
-        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[0].Point.x), 0, (int)Math.Floor(cells[0].Point.z));
-        (cells[0].BaseBiome, cells[0].Variant) = GetBaseBiome(meVal);
-        var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(cells[1].Point.x), 0, (int)Math.Floor(cells[1].Point.z));
-        (cells[1].BaseBiome, cells[1].Variant) = GetBaseBiome(nearestVal);
+        VoronoiCell me, nearest;
+        Unsafe.SkipInit(out me);
+        Unsafe.SkipInit(out nearest);
+        GetMin(cells, ref me, ref nearest);
 
+        var meVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(me.Point.x), 0, (int)Math.Floor(me.Point.z));
+        (me.BaseBiome, me.Variant) = GetBaseBiome(meVal);
+        var nearestVal = NoiseGenerator.ValueNoise3D((int)Math.Floor(nearest.Point.x), 0, (int)Math.Floor(nearest.Point.z));
+        (nearest.BaseBiome, nearest.Variant) = GetBaseBiome(nearestVal);
 
-        return (double)ProcessBiomeRules(cells[0], cells[1]);
+        return (double)ProcessBiomeRules(me, nearest);
     }
 
-    private Biomes ProcessVariants(VoronoiCell me, double averageDistance)
+    private static void GetMin(ReadOnlySpan<VoronoiCell> cells, ref VoronoiCell min, ref VoronoiCell secondMin)
+    {
+        if (cells[1].DistanceToPoint > cells[0].DistanceToPoint)
+        {
+            min = cells[0];
+            secondMin = cells[1];
+        }
+        else
+        {
+            min = cells[1];
+            secondMin = cells[0];
+        }
+
+        for (int i = 2; i < cells.Length; i++)
+        {
+            if (cells[i].DistanceToPoint < min.DistanceToPoint)
+            {
+                secondMin = min;
+                min = cells[i];
+            }
+            else if (cells[i].DistanceToPoint < secondMin.DistanceToPoint)
+            {
+                secondMin = cells[i];
+            }
+        }
+    }
+
+    private static Biomes ProcessVariants(VoronoiCell me, double averageDistance)
     {
         if ((int)me.BaseBiome < 0) // if ocean
         {
@@ -114,7 +143,7 @@ public class VoronoiBiomes : Module
                 }
                 else if (me.DistanceToPoint < averageDistance * 0.19)
                 {
-                    return Biomes.MushroomFieldShore;
+                    return Biomes.MushroomFields;
                 }
             }
 
@@ -125,7 +154,7 @@ public class VoronoiBiomes : Module
                 BaseBiome.DeepFrozenOcean => Biomes.DeepFrozenOcean,
                 BaseBiome.DeepColdOcean => Biomes.DeepColdOcean,
                 BaseBiome.DeepLukewarmOcean => Biomes.DeepLukewarmOcean,
-                BaseBiome.DeepWarmOcean => Biomes.DeepWarmOcean,
+                BaseBiome.DeepWarmOcean => Biomes.WarmOcean,
                 BaseBiome.FrozenOcean => Biomes.FrozenOcean,
                 BaseBiome.ColdOcean => Biomes.ColdOcean,
                 BaseBiome.LukewarmOcean => Biomes.LukewarmOcean,
@@ -149,9 +178,9 @@ public class VoronoiBiomes : Module
                 case BaseBiome.DryRare:
                     {
                         if (me.Variant < 33)
-                            return Biomes.BadlandsPlateau;
+                            return Biomes.ErodedBadlands;
                         else
-                            return Biomes.WoodedBadlandsPlateau;
+                            return Biomes.WoodedBadlands;
                     }
                 case BaseBiome.Medium:
                     {
@@ -162,7 +191,7 @@ public class VoronoiBiomes : Module
                         if (me.Variant < 60)
                             return Biomes.BirchForest;
                         if (me.Variant < 80)
-                            return Biomes.Mountains;
+                            return Biomes.JaggedPeaks;
                         if (me.Variant < 90)
                             return Biomes.Swamp;
                         else
@@ -175,9 +204,9 @@ public class VoronoiBiomes : Module
                 case BaseBiome.Cold:
                     {
                         if (me.Variant < 25)
-                            return Biomes.GiantSpruceTaiga;
+                            return Biomes.OldGrowthSpruceTaiga;
                         if (me.Variant < 50)
-                            return Biomes.Mountains;
+                            return Biomes.FrozenPeaks;
                         if (me.Variant < 75)
                             return Biomes.Taiga;
                         else
@@ -185,12 +214,12 @@ public class VoronoiBiomes : Module
                     }
                 case BaseBiome.ColdRare:
                     {
-                        return Biomes.GiantTreeTaiga;
+                        return Biomes.SnowyTaiga;
                     }
                 case BaseBiome.Frozen:
                     {
                         if (me.Variant < 75)
-                            return Biomes.SnowyTundra;
+                            return Biomes.SnowyPlains;
                         else
                             return Biomes.SnowyTaiga;
                     }
@@ -204,7 +233,7 @@ public class VoronoiBiomes : Module
         }
     }
 
-    private VoronoiCell ProcessNeighborRules(VoronoiCell me, VoronoiCell neighbor, double averageDistance)
+    private static VoronoiCell ProcessNeighborRules(VoronoiCell me, VoronoiCell neighbor, double averageDistance)
     {
         // Only run neighbor logic for outter 20% of a biome
         // Should save a lot of CPU cycles if we bail out now.
@@ -219,38 +248,36 @@ public class VoronoiBiomes : Module
             case Biomes.DeepFrozenOcean:
             case Biomes.ColdOcean:
             case Biomes.DeepColdOcean:
-                if (neighbor.Biome == Biomes.WarmOcean ||
-                    neighbor.Biome == Biomes.DeepWarmOcean)
+                if (neighbor.Biome == Biomes.WarmOcean)
                     me.Biome = Biomes.LukewarmOcean;
                 return me;
 
             // Badlands plateau and wooded badlands plateau generate
             // regular badlands on all edges.
-            case Biomes.WoodedBadlandsPlateau:
-            case Biomes.BadlandsPlateau:
+            case Biomes.WoodedBadlands:
+            case Biomes.ErodedBadlands:
                 me.Biome = Biomes.Badlands;
                 return me;
 
             // Giant tree taiga generates the regular taiga on all edges,
             // unless there is a pre-existing snowy Taiga or taiga bordering it.
-            case Biomes.GiantTreeTaiga:
+            case Biomes.OldGrowthSpruceTaiga:
                 if (neighbor.Biome != Biomes.SnowyTaiga)
                     me.Biome = Biomes.Taiga;
                 return me;
             // If a desert borders a snowy tundra, a wooded mountain generates.
             case Biomes.Desert:
-                if (neighbor.Biome == Biomes.SnowyTundra)
-                    me.Biome = Biomes.WoodedMountains;
+                if (neighbor.Biome == Biomes.SnowyPlains)
+                    me.Biome = Biomes.FrozenPeaks;
                 return me;
             // If a swamp borders a jungle, a jungle edge generate.
             // If a swamp borders a desert, snowy taiga, or snowy tundra,
             // a plains biome generates.
             case Biomes.Swamp:
                 if (neighbor.Biome == Biomes.Jungle)
-                    me.Biome = Biomes.JungleEdge;
+                    me.Biome = Biomes.SparseJungle;
                 else if (neighbor.Biome == Biomes.Desert ||
-                    neighbor.Biome == Biomes.SnowyTaiga ||
-                    neighbor.Biome == Biomes.SnowyTundra)
+                    neighbor.Biome == Biomes.SnowyTaiga)
                     me.Biome = Biomes.Plains;
                 return me;
             default:
@@ -258,28 +285,26 @@ public class VoronoiBiomes : Module
         }
     }
 
-    private VoronoiCell ProcessBiomeCenterRules(VoronoiCell me, double averageDistance)
+    private static VoronoiCell ProcessBiomeCenterRules(VoronoiCell me, double averageDistance)
     {
         if (me.DistanceToPoint > averageDistance * 0.40) { return me; }
 
         me.Biome = me.Biome switch
         {
-            Biomes.Plains => me.Variant < 30 ? Biomes.SunflowerPlains : me.Variant < 60 ? Biomes.WoodedHills : Biomes.Forest,
-            Biomes.Desert => Biomes.DesertHills,
-            Biomes.Mountains => me.BaseBiome == BaseBiome.Cold ? Biomes.SnowyMountains : Biomes.GravellyMountains,
-            Biomes.Forest => me.BaseBiome == BaseBiome.Cold ? Biomes.WoodedHills : Biomes.FlowerForest,
-            Biomes.Taiga => Biomes.TaigaHills,
-            Biomes.Swamp => Biomes.SwampHills,
-            Biomes.SnowyTundra => Biomes.SnowyMountains,
-            Biomes.Jungle => me.Variant < 50 ? Biomes.JungleHills : Biomes.BambooJungle,
-            Biomes.BirchForest => Biomes.BirchForestHills,
+            Biomes.Plains => me.Variant < 30 ? Biomes.SunflowerPlains : me.Variant < 60 ? Biomes.WindsweptHills : Biomes.Forest,
+            Biomes.Desert => Biomes.WindsweptGravellyHills,
+            Biomes.JaggedPeaks => me.BaseBiome == BaseBiome.Cold ? Biomes.FrozenPeaks : Biomes.StonyPeaks,
+            Biomes.Forest => me.BaseBiome == BaseBiome.Cold ? Biomes.WindsweptHills : Biomes.FlowerForest,
+            Biomes.Taiga => Biomes.WindsweptHills,
+            Biomes.Swamp => Biomes.WindsweptHills,
+            Biomes.SnowyTaiga => Biomes.SnowySlopes,
+            Biomes.Jungle => me.Variant < 50 ? Biomes.SparseJungle : Biomes.BambooJungle,
+            Biomes.BirchForest => Biomes.WindsweptHills,
             Biomes.DarkForest => Biomes.Plains,
-            Biomes.SnowyTaiga => Biomes.SnowyTaigaHills,
-            Biomes.GiantTreeTaiga => Biomes.GiantTreeTaigaHills,
+            Biomes.OldGrowthPineTaiga => Biomes.WindsweptHills,
             Biomes.Savanna => Biomes.SavannaPlateau,
-            Biomes.WoodedBadlandsPlateau => Biomes.Badlands,
-            Biomes.BadlandsPlateau => Biomes.Badlands,
-            Biomes.GiantSpruceTaiga => Biomes.GiantSpruceTaigaHills,
+            Biomes.WoodedBadlands => Biomes.Badlands,
+            Biomes.OldGrowthSpruceTaiga => Biomes.WindsweptHills,
             _ => me.Biome
         };
         return me;
@@ -313,7 +338,7 @@ public class VoronoiBiomes : Module
                 me.Biome = me.Biome switch
                 {
                     Biomes.FrozenOcean or Biomes.DeepFrozenOcean => Biomes.SnowyBeach,
-                    Biomes.SnowyMountains => Biomes.StoneShore,
+                    Biomes.SnowySlopes => Biomes.StonyShore,
                     _ => Biomes.Beach
                 };
             }
@@ -341,7 +366,7 @@ public class VoronoiBiomes : Module
         return me.Biome;
     }
 
-    private (BaseBiome, int) GetBaseBiome(double noise)
+    private static (BaseBiome, int) GetBaseBiome(double noise)
     {
         // Shift the whole map up by 1/2 for more land than sea.
         noise += 0.5;

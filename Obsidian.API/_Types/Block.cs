@@ -3,9 +3,9 @@
 namespace Obsidian.API;
 
 [DebuggerDisplay("{Name,nq}:{Id}")]
-public readonly struct Block : IEquatable<Block>
+public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
 {
-    public static Block Air => new Block(0, 0);
+    public static Block Air => new(0, 0);
 
     internal static string[] blockNames;
     internal static MatchTarget[] stateToMatch;
@@ -96,6 +96,44 @@ public readonly struct Block : IEquatable<Block>
         Material.Scaffolding
     };
 
+    internal static readonly List<string> BlockEntityIds = new()
+    {
+        "minecraft:furnace",
+        "minecraft:chest",
+        "minecraft:trapped_chest",
+        "minecraft:ender_chest",
+        "minecraft:jukebox",
+        "minecraft:dispenser",
+        "minecraft:dropper",
+        "minecraft:sign",
+        "minecraft:mob_spawner",
+        "minecraft:piston",
+        "minecraft:brewing_stand",
+        "minecraft:enchanting_table",
+        "minecraft:end_portal",
+        "minecraft:beacon",
+        "minecraft:skull",
+        "minecraft:daylight_detector",
+        "minecraft:hopper",
+        "minecraft:comparator",
+        "minecraft:banner",
+        "minecraft:structure_block",
+        "minecraft:end_gateway",
+        "minecraft:command_block",
+        "minecraft:shulker_box",
+        "minecraft:bed",
+        "minecraft:conduit",
+        "minecraft:barrel",
+        "minecraft:smoker",
+        "minecraft:blast_furnace",
+        "minecraft:lectern",
+        "minecraft:bell",
+        "minecraft:jigsaw",
+        "minecraft:campfire",
+        "minecraft:beehive",
+        "minecraft:sculk_sensor",
+    };
+
     public Block(int stateId) : this((short)stateId)
     {
     }
@@ -181,6 +219,8 @@ public readonly struct Block : IEquatable<Block>
                 numericToBase[(int)Material.Grindstone],
             };
     }
+
+    public static Block Construct(int value) => new(value);
 }
 
 [DebuggerDisplay("{@base}:{numeric}")]

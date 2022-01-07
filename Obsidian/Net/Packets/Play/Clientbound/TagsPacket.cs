@@ -8,7 +8,7 @@ public partial class TagsPacket : IClientboundPacket
     [Field(0)]
     public IDictionary<string, List<Tag>> Tags { get; }
 
-    public int Id => 0x66;
+    public int Id => 0x67;
 
     public static readonly TagsPacket FromRegistry = new(Registry.Tags);
 

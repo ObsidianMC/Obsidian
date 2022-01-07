@@ -32,12 +32,6 @@ public class NbtTag<T> : INbtTag
         };
     }
 
-    public string PrettyString(int depth = 4)
-    {
-        var t = $"{this}";
-        return t.PadLeft(depth + t.Length);
-    }
-
     public override string ToString()
     {
         switch (this.Type)
@@ -54,6 +48,26 @@ public class NbtTag<T> : INbtTag
                 throw new NotSupportedException("Only generic types are supported.");
         }
     }
+
+    public string PrettyString(int depth = 2, int addBraceDepth = 1)
+    {
+        switch (this.Type)
+        {
+            case NbtTagType.Byte:
+            case NbtTagType.Short:
+            case NbtTagType.Int:
+            case NbtTagType.Long:
+            case NbtTagType.Float:
+            case NbtTagType.Double:
+            case NbtTagType.String:
+                {
+                    var name = $"TAG_{this.Type}('{this.Name}'): {this.Value}";
+                    return name.PadLeft(name.Length + depth);
+                }
+            default:
+                throw new NotSupportedException("Only generic types are supported.");
+        }
+    }
 }
 
 public interface INbtTag
@@ -64,5 +78,5 @@ public interface INbtTag
 
     public INbtTag Parent { get; set; }
 
-    public string PrettyString(int depth = 4);
+    public string PrettyString(int depth = 2, int addBraceDepth = 1);
 }

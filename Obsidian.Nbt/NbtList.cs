@@ -51,27 +51,6 @@ public class NbtList : INbtTag, IList<INbtTag>
 
     IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    public string PrettyString(int depth = 4)
-    {
-        var sb = new StringBuilder();
-        var count = this.Count;
-
-        var t = $"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
-
-        sb.AppendLine(t.PadLeft(depth + t.Length))
-            .AppendLine("{".PadLeft(depth * 2 + 1));
-
-        foreach (var tag in this)
-        {
-            var pretty = tag.PrettyString(depth);
-            sb.AppendLine($"{pretty}".PadLeft(pretty.Length + depth * 2));
-        }
-
-        sb.AppendLine("}".PadLeft(depth * 2 + 1));
-
-        return sb.ToString();
-    }
-
     public override string ToString()
     {
         var sb = new StringBuilder();
@@ -83,6 +62,27 @@ public class NbtList : INbtTag, IList<INbtTag>
             sb.AppendLine($"{tag.PrettyString()}");
 
         sb.AppendLine("}");
+
+        return sb.ToString();
+    }
+
+    public string PrettyString(int depth = 2, int addBraceDepth = 1)
+    {
+        var sb = new StringBuilder();
+        var count = this.Count;
+
+        var name = $"TAG_List('{this.Name}'): {count} {(count > 1 ? "entries" : "entry")}";
+
+        sb.AppendLine(name.PadLeft(name.Length + depth))
+            .AppendLine("{".PadLeft(depth + addBraceDepth));
+
+        foreach (var tag in this)
+        {
+            var tagString = tag.PrettyString(depth + 1, addBraceDepth + 2);
+            sb.AppendLine(tagString.PadLeft(tagString.Length + depth));
+        }
+
+        sb.AppendLine("}".PadLeft(depth + addBraceDepth));
 
         return sb.ToString();
     }

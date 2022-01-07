@@ -12,5 +12,5 @@ public abstract class WorldGenerator
         this.Id = id;
     }
 
-    public abstract Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null);
+    public abstract Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk chunk = null);
 }

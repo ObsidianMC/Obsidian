@@ -1,27 +1,60 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.ChunkData;
 
 namespace Obsidian.WorldData.Generators;
 
 public class SuperflatGenerator : WorldGenerator
 {
-    public SuperflatGenerator() : base("superflat") { }
+    private static readonly Chunk model;
 
-    public override Chunk GenerateChunk(int x, int z, World world, Chunk chunk = null)
+    static SuperflatGenerator()
     {
-        chunk = new Chunk(x, z);
-        for (var x1 = 0; x1 < 16; x1++)
+        model = new Chunk(0, 0);
+
+        Block grass = new(Material.GrassBlock, 1);
+        Block dirt = new(Material.Dirt);
+        Block bedrock = new(Material.Bedrock);
+
+        for (int x = 0; x < 16; x++)
         {
-            for (var z1 = 0; z1 < 16; z1++)
+            for (int z = 0; z < 16; z++)
             {
-                chunk.SetBlock(x1, 5, z1, Registry.GetBlock(Material.GrassBlock));
-                chunk.SetBlock(x1, 4, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 3, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 2, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 1, z1, Registry.GetBlock(Material.Dirt));
-                chunk.SetBlock(x1, 0, z1, Registry.GetBlock(Material.Bedrock));
+                model.SetBlock(x, -60, z, grass);
+                model.SetBlock(x, -61, z, dirt);
+                model.SetBlock(x, -62, z, dirt);
+                model.SetBlock(x, -63, z, dirt);
+                model.SetBlock(x, -64, z, bedrock);
+
+                if (x % 4 == 0 && z % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
+                {
+                    for (int y = -64; y < 320; y += 4)
+                    {
+                        model.SetBiome(x, y, z, Biomes.Plains);
+                    }
+                }
             }
         }
 
-        return chunk;
+        Heightmap motionBlockingHeightmap = model.Heightmaps[HeightmapType.MotionBlocking];
+        for (int bx = 0; bx < 16; bx++)
+        {
+            for (int bz = 0; bz < 16; bz++)
+            {
+                motionBlockingHeightmap.Set(bx, bz, -64);
+            }
+        }
+
+        model.isGenerated = true;
+    }
+
+    public SuperflatGenerator() : base("superflat")
+    {
+    }
+
+    public override async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
+    {
+        if (chunk is { isGenerated: true })
+            return chunk;
+
+        return model.Clone(x, z);
     }
 }

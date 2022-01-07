@@ -1212,6 +1212,7 @@ public enum Material
     MusicDiscWard,
     MusicDisc11,
     MusicDiscWait,
+    MusicDiscOtherside,
     MusicDiscPigstep,
     Trident,
     PhantomMembrane,

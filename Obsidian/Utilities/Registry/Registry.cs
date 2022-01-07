@@ -8,6 +8,7 @@ using Obsidian.Utilities.Registry.Codecs;
 using Obsidian.Utilities.Registry.Codecs.Biomes;
 using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -29,8 +30,11 @@ public static partial class Registry
     internal static readonly string[] BlockNames = new string[898]; // 897 - block count
     internal static readonly short[] NumericToBase = new short[898]; // 897 - highest block numeric id
 
-    public static CodecCollection<string, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
-    public static CodecCollection<string, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
+    public static int GlobalBitsPerBlocks { get; internal set; }
+    public static int GlobalBitsPerBiomes { get; internal set; }
+
+    public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
+    public static CodecCollection<int, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
 
     private static readonly string mainDomain = "Obsidian.Assets";
 
@@ -96,6 +100,8 @@ public static partial class Registry
         Block.stateToMatch = StateToMatch;
         Block.blockNames = BlockNames;
 
+        GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToMatch.Length));
+
         Logger?.LogDebug($"Successfully registered {registered} blocks...");
     }
 
@@ -128,10 +134,12 @@ public static partial class Registry
         int registered = 0;
         foreach (var codec in baseCodec.Value)
         {
-            Biomes.TryAdd(codec.Name, codec);
+            Biomes.TryAdd(codec.Id, codec);
 
             registered++;
         }
+
+        GlobalBitsPerBiomes = (int)Math.Ceiling(Math.Log2(registered));
 
         Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
@@ -144,12 +152,13 @@ public static partial class Registry
         {
             foreach (var codec in values)
             {
-                Dimensions.TryAdd(codec.Name, codec);
+                Dimensions.TryAdd(codec.Id, codec);
 
                 Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
                 registered++;
             }
         }
+
         Logger?.LogDebug($"Successfully registered {registered} dimensions...");
     }
 
@@ -410,6 +419,10 @@ public static partial class Registry
     public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
 
     public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Type, 1, meta);
+
+    public static DimensionCodec? GetDimensionCodecOrDefault(string name) => Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
+
+    public static BiomeCodec? GetBiomeCodecOrDefault(string name) => Biomes.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
 
     private class BaseRegistryJson
     {

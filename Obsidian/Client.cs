@@ -24,7 +24,7 @@ namespace Obsidian;
 
 public class Client : IDisposable
 {
-    public event Action<Client> Disconnected;
+    public event Action<Client>? Disconnected;
 
     private byte[] randomToken;
     private byte[] sharedKey;
@@ -43,7 +43,7 @@ public class Client : IDisposable
     private bool compressionEnabled;
     public bool EncryptionEnabled { get; private set; }
 
-    private const int compressionThreshold = 256;
+    private const int CompressionThreshold = 256;
 
     internal TcpClient tcp;
 
@@ -58,14 +58,14 @@ public class Client : IDisposable
 
     public ClientSettings ClientSettings { get; internal set; }
 
-    public CancellationTokenSource Cancellation { get; private set; } = new CancellationTokenSource();
+    public CancellationTokenSource Cancellation { get; private set; } = new();
 
     public ClientState State { get; private set; } = ClientState.Handshaking;
 
     public Server Server { get; private set; }
     public Player Player { get; private set; }
 
-    public ILogger Logger => this.Server.Logger;
+    public ILogger Logger => Server.Logger;
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
@@ -141,17 +141,10 @@ public class Client : IDisposable
             switch (this.State)
             {
                 case ClientState.Status: // Server ping/list
-                    if (this.config.ServerListQuery == ServerListQuery.Disabled)
-                    {
-                        if (this.config.VerboseExceptionLogging)
-                            this.Logger.LogInformation("Closing connection, querying is disabled.");
-                        this.Disconnect();
-                        break;
-                    }
                     switch (id)
                     {
                         case 0x00:
-                            var status = new ServerStatus(Server, config.ServerListQuery != ServerListQuery.Full); // last boolean will ignore player lsit when true.
+                            var status = new ServerStatus(Server);
 
                             await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
 
@@ -303,7 +296,7 @@ public class Client : IDisposable
     // TODO fix compression (.net 6)
     private void SetCompression()
     {
-        this.SendPacket(new SetCompression(compressionThreshold));
+        this.SendPacket(new SetCompression(CompressionThreshold));
         this.compressionEnabled = true;
         this.Logger.LogDebug("Compression has been enabled.");
     }
@@ -322,7 +315,7 @@ public class Client : IDisposable
 
         this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-        Registry.Dimensions.TryGetValue(this.Player.Dimension, out var codec);
+        var codec = Registry.GetDimensionCodecOrDefault(this.Player.Dimension);
 
         await this.QueuePacketAsync(new JoinGame
         {
@@ -388,15 +381,22 @@ public class Client : IDisposable
         });
 
         //Initialize inventory
-        await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
+        await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
         {
             StateId = this.Player.Inventory.StateId++,
             CarriedItem = this.Player.GetHeldItem(),
         });
+
+        await this.SendTimeUpdateAsync();
+        await this.SendWeatherUpdateAsync();
     }
 
     #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
+
+    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Server.World.Data.Time, this.Server.World.Data.DayTime));
+    internal Task SendWeatherUpdateAsync() => 
+        this.QueuePacketAsync(new ChangeGameState(this.Server.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {

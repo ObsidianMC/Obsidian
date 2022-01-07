@@ -1,9 +1,9 @@
-﻿using System.Globalization;
-using System.IO;
+﻿using Obsidian.Utilities;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Obsidian;
+namespace Obsidian.ConsoleApp;
 
 public static class Program
 {
@@ -21,7 +21,7 @@ public static class Program
     {
 
 #if RELEASE
-            string version = "0.1";
+        string version = "0.1";
 #else
         string version = "0.1-DEV";
         string asmpath = Assembly.GetExecutingAssembly().Location;
@@ -42,7 +42,7 @@ public static class Program
         Console.CursorVisible = false;
         Console.WriteLine(asciilogo);
         Console.ResetColor();
-        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.protocol.GetDescription()}");
+        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
 
         // Hook into Windows' native console closing events, otherwise use .NET's native event.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -84,11 +84,10 @@ public static class Program
             return;
         }
 
-        Program.Server = new Server(config, version, serverDir);
-
-        var serverTask = Program.Server.StartServerAsync();
         InitConsoleInput();
-        await Task.WhenAny(cancelKeyPress.Task, serverTask);
+
+        Server = new Server(config, version, serverDir);
+        await Server.RunAsync();
 
         if (!shutdownPending)
         {
@@ -102,20 +101,15 @@ public static class Program
 
     private static void InitConsoleInput()
     {
-        if(!Console.IsInputRedirected)
-            Task.Run(async () =>
+        Task.Run(async () =>
+        {
+            await Task.Delay(2000);
+            while (!shutdownPending)
             {
-                Server currentServer = Program.Server;
-                await Task.Delay(2000);
-                while (!shutdownPending && !ConsoleIO.BasicIO)
-                {
-                    if (currentServer == null)
-                        break;
-
-                    string input = ConsoleIO.ReadLine();
-                    await currentServer.ExecuteCommand(input);
-                }
-            });
+                string input = ConsoleIO.ReadLine();
+                await Server.ExecuteCommand(input);
+            }
+        });
     }
 
     private static void OnConsoleCancelKeyPressed(object sender, ConsoleCancelEventArgs e)
@@ -138,8 +132,7 @@ public static class Program
     private static void StopProgram()
     {
         shutdownPending = true;
-
-        Server.StopServer();
+        Server.Stop();
     }
 
     // Cool startup console logo because that's cool

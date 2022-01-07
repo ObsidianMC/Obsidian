@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Buffers.Binary;
+using System.IO;
 using System.IO.Compression;
 using System.Text;
 
@@ -14,7 +15,12 @@ public class NbtReader
 
     public NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
     {
-        this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(input, CompressionMode.Decompress) : input;//TODO support other compression modes
+        if (compressionMode == NbtCompression.GZip)
+            this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
+        else if (compressionMode == NbtCompression.ZLib)
+            this.BaseStream = new ZLibStream(input, CompressionMode.Decompress);
+        else
+            this.BaseStream = input;
     }
 
     public NbtTagType ReadTagType()
@@ -140,19 +146,20 @@ public class NbtReader
             case NbtTagType.End:
                 return null;
             case NbtTagType.Byte:
-                break;
             case NbtTagType.Short:
-                break;
             case NbtTagType.Int:
-                break;
             case NbtTagType.Long:
-                break;
             case NbtTagType.Float:
-                break;
             case NbtTagType.Double:
-                break;
             case NbtTagType.String:
-                break;
+                {
+                    var tag = this.GetCurrentTag(firstType, !readName);
+
+                    if (readName)
+                        tag.Name = tagName;
+
+                    return tag;
+                }
             case NbtTagType.List:
                 var listType = this.ReadTagType();
 
@@ -166,21 +173,9 @@ public class NbtReader
                 for (var i = 0; i < length; i++)
                     list.Add(this.GetCurrentTag(listType, false));
 
-                break;
+                return list;
             case NbtTagType.Compound:
-                {
-                    var compound = new NbtCompound(tagName);
-
-                    NbtTagType type;
-                    while ((type = this.ReadTagType()) != NbtTagType.End)
-                    {
-                        var tag = this.GetCurrentTag(type);
-
-                        compound.Add(tag);
-                    }
-
-                    return compound;
-                }
+                return this.ReadCompoundTag(tagName);
             case NbtTagType.ByteArray:
                 return this.ReadArray(tagName, firstType);
             case NbtTagType.IntArray:
@@ -219,10 +214,7 @@ public class NbtReader
         Span<byte> buffer = stackalloc byte[2];
         this.BaseStream.Read(buffer);
 
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
-
-        return BitConverter.ToInt16(buffer);
+        return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
     public int ReadInt32()
@@ -230,10 +222,7 @@ public class NbtReader
         Span<byte> buffer = stackalloc byte[4];
         this.BaseStream.Read(buffer);
 
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
-
-        return BitConverter.ToInt32(buffer);
+        return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
     public long ReadInt64()
@@ -241,10 +230,7 @@ public class NbtReader
         Span<byte> buffer = stackalloc byte[8];
         this.BaseStream.Read(buffer);
 
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
-
-        return BitConverter.ToInt64(buffer);
+        return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
     public float ReadSingle()
@@ -252,10 +238,7 @@ public class NbtReader
         Span<byte> buffer = stackalloc byte[4];
         this.BaseStream.Read(buffer);
 
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
-
-        return BitConverter.ToSingle(buffer);
+        return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
     public double ReadDouble()
@@ -263,10 +246,7 @@ public class NbtReader
         Span<byte> buffer = stackalloc byte[8];
         this.BaseStream.Read(buffer);
 
-        if (BitConverter.IsLittleEndian)
-            buffer.Reverse();
-
-        return BitConverter.ToDouble(buffer);
+        return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
     #endregion
 }
