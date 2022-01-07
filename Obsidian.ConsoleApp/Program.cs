@@ -92,9 +92,6 @@ public static class Program
         if (!shutdownPending)
         {
             Console.WriteLine("Server killed. Press any key to return...");
-            #if DEBUG
-            Console.WriteLine(serverTask.Exception?.ToString()); // print any exceptions if there are any
-            #endif
             Console.ReadKey(intercept: false);
         }
     }
