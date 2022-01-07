@@ -10,4 +10,4 @@ COPY --from=build /src/Obsidian.ConsoleApp/bin/Release/net6.0/linux-musl-x64/pub
 RUN apk upgrade --update-cache --available && apk add openssl libstdc++ && rm -rf /var/cache/apk/*
 
 WORKDIR /files
-ENTRYPOINT DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /app/Obsidian
+ENTRYPOINT DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 /app/Obsidian.ConsoleApp
