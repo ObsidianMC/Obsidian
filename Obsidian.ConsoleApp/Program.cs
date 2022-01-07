@@ -103,8 +103,9 @@ public static class Program
             await Task.Delay(2000);
             while (!shutdownPending)
             {
-                string input = ConsoleIO.ReadLine();
-                await Server.ExecuteCommand(input);
+                string? input = ConsoleIO.ReadLine();
+                if(!string.IsNullOrEmpty(input))
+                    await Server.ExecuteCommand(input);
             }
         });
     }
