@@ -199,7 +199,7 @@ public class MainCommandModule
     [Command("uptime", "up")]
     [CommandInfo("Gets current uptime", "/uptime")]
     public Task UptimeAsync(CommandContext Context)
-        => Context.Player.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
+        => Context.Sender.SendMessageAsync($"Uptime: {DateTimeOffset.Now.Subtract(Context.Server.StartTime)}");
 
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
@@ -224,7 +224,7 @@ public class MainCommandModule
         var args = args_.Contains(" ") ? args_.Split(" ").ToList() : new List<string> { args_ };
         if (args.Count == 1)
         {
-            if (args[0].ToLower() == "creative" || args[0].ToLower() == "survival" || args[0].ToLower() == "spectator" || args[0].ToLower() == "adventure")
+            if (new[] { "creative", "survival", "spectator", "adventure" }.Contains(args[0].ToLowerInvariant()))
             {
                 try
                 {
@@ -273,7 +273,8 @@ public class MainCommandModule
 
         Context.Server.Operators.AddOperator(player);
 
-        await Context.Player.SendMessageAsync($"Made {player} a server operator");
+        await Context.Sender.SendMessageAsync($"Made {player} a server operator");
+        await player.SendMessageAsync($"{(Context.IsPlayer ? Context.Player!.Username : "Console")} made you a server operator");
     }
 
     [Command("deop")]
@@ -286,7 +287,9 @@ public class MainCommandModule
 
         Context.Server.Operators.RemoveOperator(player);
 
-        await Context.Player.SendMessageAsync($"Made {player} no longer a server operator");
+        await Context.Sender.SendMessageAsync($"Made {player} no longer a server operator");
+        await player.SendMessageAsync($"{(Context.IsPlayer ? Context.Player!.Username : "Console")} made you no longer a server operator");
+
     }
 
     [Command("oprequest", "opreq")]
@@ -324,7 +327,7 @@ public class MainCommandModule
     [CommandInfo("Shows obsidian popup", "/obsidian")]
     public async Task ObsidianAsync(CommandContext Context)
     {
-        await Context.Player.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
+        await Context.Sender.SendMessageAsync("§dWelcome to Obsidian Test Build. §l§4<3", MessageType.ActionBar);
     }
 
     [Command("title")]
@@ -339,6 +342,7 @@ public class MainCommandModule
 
     [Command("spawnentity")]
     [CommandInfo("Spawns an entity", "/spawnentity [entityType]")]
+    [IssuerScope(CommandIssuers.Client)]
     public async Task SpawnEntityAsync(CommandContext context, string entityType)
     {
         var player = context.Player;
@@ -368,7 +372,6 @@ public class MainCommandModule
 
     [Command("time")]
     [CommandInfo("Sets declared time", "/time <timeOfDay>")]
-    [IssuerScope(CommandIssuers.Client)]
     public async Task TimeAsync(CommandContext Context) => await TimeAsync(Context, 1337);
 
     [CommandOverload]

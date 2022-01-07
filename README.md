@@ -21,8 +21,8 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [x] Low memory usage
 - [x] Inventory management
 - [x] Daylight and weather cycle
-- [ ] Complete world generation
-- [ ] Liquid physics
+- [x] World generation
+- [x] Liquid physics
 - [ ] Mobs AI & pathfinding
 - [ ] Redstone circuits
 
