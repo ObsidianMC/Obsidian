@@ -15,11 +15,11 @@ public class MountainsTerrain : BaseTerrain
     // terrain group.
     public MountainsTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new Max
             {
-                Source0 = new PlainsTerrain().Result,
+                Source0 = new PlainsTerrain(),
                 Source1 = new ScalePoint
                 {
                     XScale = 1 / 140.103,
@@ -34,8 +34,8 @@ public class MountainsTerrain : BaseTerrain
                         {
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.55, // Amplification of terrain
-                                Bias = 0.45, // lowest level is above sea level (0)
+                                Scale = 0.25, // Amplification of terrain
+                                Bias = 0.55, // lowest level is above sea level (0)
                                 Source0 = MountainsBase()
                             }
                         }

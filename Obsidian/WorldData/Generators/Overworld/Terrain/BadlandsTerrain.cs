@@ -15,7 +15,7 @@ public class BadlandsTerrain : BaseTerrain
     // terrain group.
     public BadlandsTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             // Sanity check to force results b/w -1.0<y<1.0
             Source0 = new ScalePoint

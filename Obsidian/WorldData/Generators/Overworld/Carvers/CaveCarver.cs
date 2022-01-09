@@ -7,7 +7,7 @@ public class CavesCarver : BaseCarver
 {
     public CavesCarver() : base()
     {
-        var thing = new Curve
+        var stretched = new Curve
         {
             ControlPoints = new List<ControlPoint>()
                 {
@@ -27,12 +27,12 @@ public class CavesCarver : BaseCarver
             }
         };
 
-        this.Result = new ScalePoint
+        result = new ScalePoint
         {
             XScale = 1 / 1024.0,
             YScale = 1 / 384.0,
             ZScale = 1 / 1024.0,
-            Source0 = thing
+            Source0 = stretched
         };
     }
 }

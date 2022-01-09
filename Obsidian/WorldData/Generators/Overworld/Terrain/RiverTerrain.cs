@@ -9,7 +9,7 @@ public class RiverTerrain : BaseTerrain
     // Outputs will be between -0.3 and -0.1
     public RiverTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new ScalePoint
             {

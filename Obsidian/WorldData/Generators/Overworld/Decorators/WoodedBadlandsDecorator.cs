@@ -4,9 +4,9 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class WoodedBadlandsPlateauDecorator : BaseDecorator
+public class WoodedBadlandsDecorator : BaseDecorator
 {
-    public WoodedBadlandsPlateauDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public WoodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(2, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, typeof(DarkOakTree)));
