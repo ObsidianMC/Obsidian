@@ -195,6 +195,12 @@ public class Client : IDisposable
                             var loginStart = LoginStart.Deserialize(data);
 
                             string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
+                            
+                            if (config.WhitelistEnabled && !config.WhitelistedNicknames.Contains(username))
+                            {
+                                await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
+                                return;
+                            }
 
                             this.Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
