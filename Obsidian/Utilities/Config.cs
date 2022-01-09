@@ -53,6 +53,8 @@ public class Config : IConfig
     public bool VerboseExceptionLogging { get; set; } = false;
 
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
+
+    public int TimeTickSpeedMultiplier { get; set; } = 1;
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

@@ -15,7 +15,7 @@ public class HillsTerrain : BaseTerrain
     // terrain group.
     public HillsTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new ScalePoint
             {

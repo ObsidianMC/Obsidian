@@ -5,12 +5,12 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class TallBirchForestDecorator : BaseDecorator
+public class OldGrowthBirchForestDecorator : BaseDecorator
 {
-    public TallBirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public OldGrowthBirchForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(3, typeof(BirchTree)));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(TallBirchTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(BirchTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(TallBirchTree)));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(DandelionFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(2, typeof(PoppyFlora), 4, 3));
         Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(LilyFlora), 4, 3));
@@ -40,6 +40,5 @@ public class TallBirchForestDecorator : BaseDecorator
         var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
-
     }
 }

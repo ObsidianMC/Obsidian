@@ -4,9 +4,9 @@ using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class GiantTreeTaigaDecorator : BaseDecorator
+public class OldGrowthSpruceTaigaDecorator : BaseDecorator
 {
-    public GiantTreeTaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public OldGrowthSpruceTaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(SpruceTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(LargeSpruceTree)));

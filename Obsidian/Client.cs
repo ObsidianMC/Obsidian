@@ -141,17 +141,10 @@ public class Client : IDisposable
             switch (this.State)
             {
                 case ClientState.Status: // Server ping/list
-                    if (this.config.ServerListQuery == ServerListQuery.Disabled)
-                    {
-                        if (this.config.VerboseExceptionLogging)
-                            this.Logger.LogInformation("Closing connection, querying is disabled.");
-                        this.Disconnect();
-                        break;
-                    }
                     switch (id)
                     {
                         case 0x00:
-                            var status = new ServerStatus(Server, config.ServerListQuery != ServerListQuery.Full); // last boolean will ignore player lsit when true.
+                            var status = new ServerStatus(Server);
 
                             await this.Server.Events.InvokeServerStatusRequest(new ServerStatusRequestEventArgs(this.Server, status));
 
@@ -388,15 +381,22 @@ public class Client : IDisposable
         });
 
         //Initialize inventory
-        await this.QueuePacketAsync(new WindowItems(this.Player.Inventory.Id, this.Player.Inventory.Items.ToList())
+        await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
         {
             StateId = this.Player.Inventory.StateId++,
             CarriedItem = this.Player.GetHeldItem(),
         });
+
+        await this.SendTimeUpdateAsync();
+        await this.SendWeatherUpdateAsync();
     }
 
     #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
+
+    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Server.World.Data.Time, this.Server.World.Data.DayTime));
+    internal Task SendWeatherUpdateAsync() => 
+        this.QueuePacketAsync(new ChangeGameState(this.Server.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {

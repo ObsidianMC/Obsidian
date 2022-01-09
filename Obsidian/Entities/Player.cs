@@ -31,8 +31,10 @@ public class Player : Living, IPlayer
     /// <summary>
     /// The players inventory.
     /// </summary>
-    public Inventory Inventory { get; }
-    public Inventory OpenedInventory { get; set; }
+    public Container Inventory { get; }
+    public Container EnderInventory { get; }
+
+    public BaseContainer OpenedContainer { get; set; }
 
     public ItemStack LastClickedItem { get; internal set; }
 
@@ -95,15 +97,19 @@ public class Player : Living, IPlayer
         this.Username = username;
         this.client = client;
         this.EntityId = client.id;
-        this.Inventory = new Inventory(9 * 5)
+        this.Inventory = new Container(9 * 5 + 1, InventoryType.Generic)
         {
-            Id = 0,
-            Owner = uuid
+            Owner = uuid,
+            IsPlayerInventory = true
         };
+
+        this.EnderInventory = new Container
+        {
+            Title = "Ender Chest"
+        };
+
         this.Server = client.Server;
         this.Type = EntityType.Player;
-
-        _ = Task.Run(this.LoadPermsAsync);
     }
 
     internal async override Task UpdateAsync(VectorF position, bool onGround)
@@ -250,14 +256,16 @@ public class Player : Living, IPlayer
         });
     }
 
-    public async Task OpenInventoryAsync(Inventory inventory)
+    public async Task OpenInventoryAsync(BaseContainer container)
     {
-        this.OpenedInventory = inventory;
+        this.OpenedContainer = container;
 
-        await this.client.QueuePacketAsync(new OpenWindow(inventory));
+        var nextId = this.GetNextContainerId();
 
-        if (inventory.HasItems())
-            await this.client.QueuePacketAsync(new WindowItems(inventory.Id, inventory.Items.ToList()));
+        await this.client.QueuePacketAsync(new OpenWindow(container, nextId));
+
+        if (container.HasItems())
+            await this.client.QueuePacketAsync(new WindowItems(nextId, container.ToList()));
     }
 
     public async Task TeleportAsync(VectorF pos)
@@ -541,11 +549,21 @@ public class Player : Living, IPlayer
 
         writer.EndList();
 
-        var items = this.Inventory.Items.Select((item, slot) => (item, slot));
+        this.WriteItems(writer);
+        this.WriteItems(writer, false);
+
+        writer.EndCompound();
+
+        await writer.TryFinishAsync();
+    }
+
+    private void WriteItems(NbtWriter writer, bool inventory = true)
+    {
+        var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
 
         var nonNullItems = items.Where(x => x.item != null);
 
-        writer.WriteListStart("Inventory", NbtTagType.Compound, nonNullItems.Count());
+        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
 
         foreach (var (item, slot) in nonNullItems)
         {
@@ -571,15 +589,13 @@ public class Player : Living, IPlayer
             writer.Write(NbtTagType.End);
 
         writer.EndList();
-
-        writer.EndCompound();
-
-        await writer.TryFinishAsync();
     }
 
-    public async ValueTask LoadAsync()
+    public async Task LoadAsync()
     {
         var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+
+        await this.LoadPermsAsync();
 
         if (!playerFile.Exists)
         {
@@ -657,11 +673,11 @@ public class Player : Living, IPlayer
 
                 var itemMetaBuilder = new ItemMetaBuilder()
                     .WithDurability(itemCompound.GetInt("Damage"))
-                    .IsUnbreakable(itemCompound.GetBool("Unbreakable"))
-                    .WithSlot(slot);
+                    .IsUnbreakable(itemCompound.GetBool("Unbreakable"));
 
                 var item = Registry.GetSingleItem(itemCompound.GetString("id"), itemMetaBuilder.Build());
                 item.Count = itemCompound.GetByte("Count");
+                item.Slot = slot;
 
                 this.Inventory.SetItem(slot, item);
             }

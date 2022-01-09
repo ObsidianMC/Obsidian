@@ -1,15 +1,4 @@
-﻿using Obsidian.API;
-using Obsidian.Net;
-using Obsidian.Net.Packets;
-using Obsidian.Net.Packets.Handshaking;
-using Obsidian.Net.Packets.Login;
-using Obsidian.Net.Packets.Play;
-using Obsidian.Net.Packets.Play.Clientbound;
-using Obsidian.Net.Packets.Play.Serverbound;
-using System.Threading.Tasks;
-using Xunit;
-
-namespace Obsidian.Tests;
+﻿namespace Obsidian.Tests;
 
 public class Deserialization
 {
