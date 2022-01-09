@@ -61,7 +61,7 @@ public static class ConsoleIO
     /// </summary>
     public static string ReadLine()
     {
-        if (BasicIO)
+        if (BasicIO || Console.IsInputRedirected)
         {
             return Console.ReadLine();
         }
@@ -186,22 +186,33 @@ public static class ConsoleIO
     /// <param name="text">Status text.</param>
     internal static void UpdateStatusLine(string text)
     {
-        lock (io_lock)
+        if (!BasicIO)
         {
-            // Update server stats on console
-            var oldPos = Console.GetCursorPosition();
-            var curWidth = Console.WindowWidth;
-            var curHeight = Console.WindowHeight;
-            var topLine = Math.Max(oldPos.Top - curHeight, 0) + 1;
-            var lineHorzOffset = curWidth - text.Length - 1;
+            try
+            {
+                lock (io_lock)
+                {
+                    // Update server stats on console
+                    var oldPos = Console.GetCursorPosition();
+                    var curWidth = Console.WindowWidth;
+                    var curHeight = Console.WindowHeight;
+                    var topLine = Math.Max(oldPos.Top - curHeight, 0) + 1;
+                    var lineHorzOffset = curWidth - text.Length - 1;
 
-            Console.SetCursorPosition(lineHorzOffset, topLine);
-            Console.Write(new string(' ', text.Length)); // clear the line
+                    Console.SetCursorPosition(lineHorzOffset, topLine);
+                    Console.Write(new string(' ', text.Length)); // clear the line
 
-            Console.SetCursorPosition(lineHorzOffset, topLine);
-            Console.Write(text);
+                    Console.SetCursorPosition(lineHorzOffset, topLine);
+                    Console.Write(text);
 
-            Console.SetCursorPosition(oldPos.Left, oldPos.Top);
+                    Console.SetCursorPosition(oldPos.Left, oldPos.Top);
+                }
+            }
+            catch (Exception)
+            {
+                // disable status line
+                BasicIO = true;
+            }
         }
     }
 
@@ -210,7 +221,7 @@ public static class ConsoleIO
     /// </summary>
     public static void Write(string text)
     {
-        if (!BasicIO)
+        if (!BasicIO && !Console.IsOutputRedirected)
         {
             lock (io_lock)
             {
