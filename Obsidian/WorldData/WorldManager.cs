@@ -27,12 +27,12 @@ public class WorldManager
     {
         foreach(var configWorld in this.server.Config.Worlds)
         {
-            var world = new World(configWorld.Name, configWorld.Seed, this.server);
+            if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out Type value))
+                logger.LogWarning($"Unknown generator type {configWorld.Generator}");
+
+            var world = new World(configWorld.Name, configWorld.Seed, this.server, value);
             if (!await world.LoadAsync())
             {
-                if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out Type value))
-                    logger.LogWarning($"Unknown generator type {configWorld.Generator}");
-
                 logger.LogInformation($"Creating new world: {configWorld.Name}...");
                 await world.Init();
                 world.Save();
