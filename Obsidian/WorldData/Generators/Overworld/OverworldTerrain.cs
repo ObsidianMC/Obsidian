@@ -8,9 +8,9 @@ using Blend = Obsidian.API.Noise.Blend;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public class OverworldTerrain
+public class OverworldTerrain : Module
 {
-    public Module Result { get; set; }
+    public Module result;
 
     public readonly OverworldTerrainSettings settings;
 
@@ -20,17 +20,17 @@ public class OverworldTerrain
 
     private Module FinalBiomes;
 
-    public OverworldTerrain(bool isUnitTest = false)
+    public OverworldTerrain(bool isUnitTest = false) : base(0)
     {
         settings = OverworldGenerator.GeneratorSettings;
-        ocean = new OceanTerrain().Result;
-        deepocean = new DeepOceanTerrain().Result;
-        plains = new PlainsTerrain().Result;
-        hills = new HillsTerrain().Result;
-        badlands = new BadlandsTerrain().Result;
-        mountains = new MountainsTerrain().Result;
-        rivers = new RiverTerrain().Result;
-        cave = new CavesCarver().Result;
+        ocean = new OceanTerrain();
+        deepocean = new DeepOceanTerrain();
+        plains = new PlainsTerrain();
+        hills = new HillsTerrain();
+        badlands = new BadlandsTerrain();
+        mountains = new MountainsTerrain();
+        rivers = new RiverTerrain();
+        cave = new CavesCarver();
 
         Dictionary<Biomes, Module> biomesTerrainMap = new()
         {
@@ -124,7 +124,7 @@ public class OverworldTerrain
             Bias = 64 // sea level
         };
 
-        Result = isUnitTest ? blendPass2 : scaledWorld;
+        result = isUnitTest ? blendPass2 : scaledWorld;
 
     }
 
@@ -133,9 +133,9 @@ public class OverworldTerrain
         return (BaseBiome)FinalBiomes.GetValue(x, y, z);
     }
 
-    public double GetValue(double x, double z, double y = 0)
+    public override double GetValue(double x, double z, double y = 0)
     {
-        return Result.GetValue(x, y, z);
+        return result.GetValue(x, y, z);
     }
 
     public bool IsCave(double x, double y, double z)

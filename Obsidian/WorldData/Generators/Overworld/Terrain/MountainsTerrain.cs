@@ -15,11 +15,11 @@ public class MountainsTerrain : BaseTerrain
     // terrain group.
     public MountainsTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new Max
             {
-                Source0 = new PlainsTerrain().Result,
+                Source0 = new PlainsTerrain(),
                 Source1 = new ScalePoint
                 {
                     XScale = 1 / 140.103,

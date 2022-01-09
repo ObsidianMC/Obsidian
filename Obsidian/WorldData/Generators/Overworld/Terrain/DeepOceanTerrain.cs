@@ -9,7 +9,7 @@ public class DeepOceanTerrain : BaseTerrain
     // Outputs will be between -0.02 and -0.5
     public DeepOceanTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new ScalePoint
             {

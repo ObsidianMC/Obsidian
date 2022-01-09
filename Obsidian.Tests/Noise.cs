@@ -21,7 +21,7 @@ public class Noise
             var map = new NoiseMap();
 
             PlaneNoiseMapBuilder builder =
-                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.Result };
+                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen };
 
             var image = new SharpNoise.Utilities.Imaging.Image();
             var renderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
