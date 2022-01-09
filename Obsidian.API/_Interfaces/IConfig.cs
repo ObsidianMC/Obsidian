@@ -68,4 +68,26 @@ public interface IConfig
     /// Paths of plugins that are loaded at the starttime.
     /// </summary>
     public string[] DownloadPlugins { get; set; }
+
+    /// <summary>
+    /// Enabled Remote Console operation
+    /// </summary>
+    /// <remarks>See more at https://wiki.vg/RCON</remarks>
+    public bool EnableRcon { get; set; }
+
+    /// <summary>
+    /// Password to access the RCON
+    /// </summary>
+    /// <remarks>The password is (currently) sent over plain text, as is all RCON communication</remarks>
+    public string RconPassword { get; set; }
+
+    /// <summary>
+    /// Port on which RCON server listens
+    /// </summary>
+    public ushort RconPort { get; set; }
+
+    /// <summary>
+    /// Whether the RCON commands should be sent to currently online Operators
+    /// </summary>
+    public bool BroadcastRconToOps { get; set; }
 }

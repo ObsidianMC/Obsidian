@@ -37,6 +37,14 @@ public class Config : IConfig
 
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
 
+    public bool EnableRcon { get; set; } = false;
+    
+    public string RconPassword { get; set; } = string.Empty;
+
+    public ushort RconPort { get; set; } = 25575;
+
+    public bool BroadcastRconToOps { get; set; } = true;
+
     public bool UDPBroadcast = false;
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
