@@ -25,12 +25,12 @@ public class SplitScaleBias : Module
     /// <summary>
     /// Scaling to apply above centerpoint.
     /// </summary>
-    public double AboveCenterScale = 1.0D;
+    public double AboveCenterScale { get; set; } = 1.0D;
 
     /// <summary>
     /// Scaling to apply below and including centerpoint.
     /// </summary>
-    public double BelowCenterScale = 1.0D;
+    public double BelowCenterScale { get; set; } = 1.0D;
 
     /// <summary>
     /// ctor.
