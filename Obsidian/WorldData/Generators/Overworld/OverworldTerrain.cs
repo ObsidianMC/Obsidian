@@ -1,11 +1,12 @@
 ﻿using Obsidian.API.Noise;
 using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Carvers;
+using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise.Modules;
 using static Obsidian.API.Noise.VoronoiBiomes;
 using Blend = Obsidian.API.Noise.Blend;
 
-namespace Obsidian.WorldData.Generators.Overworld.Terrain;
+namespace Obsidian.WorldData.Generators.Overworld;
 
 public class OverworldTerrain
 {
