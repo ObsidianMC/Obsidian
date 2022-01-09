@@ -20,9 +20,9 @@ Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious
 - [ ] Usable storage and crafting blocks
 - [x] Low memory usage
 - [x] Inventory management
-- [ ] Daylight and weather cycle
-- [ ] Complete world generation
-- [ ] Liquid physics
+- [x] Daylight and weather cycle
+- [x] World generation
+- [x] Liquid physics
 - [ ] Mobs AI & pathfinding
 - [ ] Redstone circuits
 

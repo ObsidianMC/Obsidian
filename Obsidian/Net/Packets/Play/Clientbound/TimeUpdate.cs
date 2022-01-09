@@ -10,7 +10,7 @@ public partial class TimeUpdate : IClientboundPacket
     [Field(1)]
     public long TimeOfDay { get; }
 
-    public int Id => 0x58;
+    public int Id => 0x59;
 
     public TimeUpdate(long worldAge, long timeOfDay)
     {

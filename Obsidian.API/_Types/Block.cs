@@ -96,6 +96,44 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
         Material.Scaffolding
     };
 
+    internal static readonly List<string> BlockEntityIds = new()
+    {
+        "minecraft:furnace",
+        "minecraft:chest",
+        "minecraft:trapped_chest",
+        "minecraft:ender_chest",
+        "minecraft:jukebox",
+        "minecraft:dispenser",
+        "minecraft:dropper",
+        "minecraft:sign",
+        "minecraft:mob_spawner",
+        "minecraft:piston",
+        "minecraft:brewing_stand",
+        "minecraft:enchanting_table",
+        "minecraft:end_portal",
+        "minecraft:beacon",
+        "minecraft:skull",
+        "minecraft:daylight_detector",
+        "minecraft:hopper",
+        "minecraft:comparator",
+        "minecraft:banner",
+        "minecraft:structure_block",
+        "minecraft:end_gateway",
+        "minecraft:command_block",
+        "minecraft:shulker_box",
+        "minecraft:bed",
+        "minecraft:conduit",
+        "minecraft:barrel",
+        "minecraft:smoker",
+        "minecraft:blast_furnace",
+        "minecraft:lectern",
+        "minecraft:bell",
+        "minecraft:jigsaw",
+        "minecraft:campfire",
+        "minecraft:beehive",
+        "minecraft:sculk_sensor",
+    };
+
     public Block(int stateId) : this((short)stateId)
     {
     }

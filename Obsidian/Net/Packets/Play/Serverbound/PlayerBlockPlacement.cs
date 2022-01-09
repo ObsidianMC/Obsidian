@@ -26,15 +26,42 @@ public partial class PlayerBlockPlacement : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var currentItem = player.GetHeldItem();
+        //Get main hand first return offhand if null
+        var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
+        var position = this.Position;
 
-        var itemType = currentItem.Type;
+        var b = await server.World.GetBlockAsync(position);
+        if (b is null) { return; }
+        var interactedBlock = (Block)b;
 
-        // TODO: this better
-        if (itemType == Material.WaterBucket)
-            itemType = Material.Water;
-        if (itemType == Material.LavaBucket)
-            itemType = Material.Lava;
+        //TODO check if a player can place a block if they can't then call the player interact event
+        if (interactedBlock.IsInteractable && !player.Sneaking)
+        {
+            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
+            {
+                Item = currentItem,
+                Block = interactedBlock,
+                BlockLocation = this.Position,
+            });
+
+            return;
+        }
+
+        var itemType = currentItem != null ? currentItem.Type : Material.Air;
+
+        switch (itemType)
+        {
+            case Material.WaterBucket:
+                itemType = Material.Water;
+                break;
+            case Material.LavaBucket:
+                itemType = Material.Lava;
+                break;
+            case Material.Air:
+                return;
+            default:
+                break;
+        }
 
         Block block;
         try
@@ -46,27 +73,8 @@ public partial class PlayerBlockPlacement : IServerboundPacket
             return;
         }
 
-        var position = this.Position;
-
-        var b = server.World.GetBlock(position);
-        if (b is null) { return; }
-        var interactedBlock = (Block)b;
-
-        //TODO check if a player can place a block if they can't then call the player interact event
-        if (interactedBlock.IsInteractable && !player.Sneaking)
-        {
-            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-            {
-                Item = player.MainHand == Hand.MainHand ? player.GetHeldItem() : player.GetOffHandItem(),
-                Block = interactedBlock,
-                BlockLocation = this.Position,
-            });
-
-            return;
-        }
-
         if (player.Gamemode != Gamemode.Creative)
-            player.Inventory.RemoveItem(player.inventorySlot);
+            player.Inventory.RemoveItem(player.inventorySlot, 1);
 
         switch (Face) // TODO fix this for logs
         {
@@ -99,6 +107,6 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         }
 
         // TODO calculate the block state
-        server.World.SetBlock(position, block, doBlockUpdate: true);
+        await server.World.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }

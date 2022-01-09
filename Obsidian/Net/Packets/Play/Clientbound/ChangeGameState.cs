@@ -17,6 +17,12 @@ public partial class ChangeGameState : IClientboundPacket
         Reason = reason;
     }
 
+    public ChangeGameState(ChangeGameStateReason reason, float value)
+    {
+        Reason = reason;
+        Value = value;
+    }
+
     public ChangeGameState(Gamemode gamemode)
     {
         Reason = ChangeGameStateReason.ChangeGamemode;

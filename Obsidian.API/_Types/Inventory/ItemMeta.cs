@@ -2,8 +2,6 @@
 
 public struct ItemMeta : IEquatable<ItemMeta>
 {
-    internal byte Slot { get; set; }
-
     internal int CustomModelData { get; set; }
 
     public ChatMessage Name { get; internal set; }
@@ -24,8 +22,8 @@ public struct ItemMeta : IEquatable<ItemMeta>
     public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
 
     public bool Equals(ItemMeta other) =>
-        (this.Slot, this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore) ==
-        (other.Slot, other.CustomModelData, other.Name, other.RepairAmount, other.Durability, other.Unbreakable, other.Enchantments, other.StoredEnchantments, other.CanDestroy, other.Lore);
+        (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore) ==
+        (other.CustomModelData, other.Name, other.RepairAmount, other.Durability, other.Unbreakable, other.Enchantments, other.StoredEnchantments, other.CanDestroy, other.Lore);
 
     public override bool Equals(object? obj) => obj is ItemMeta meta && Equals(meta);
 
@@ -34,5 +32,5 @@ public struct ItemMeta : IEquatable<ItemMeta>
     public static bool operator !=(ItemMeta left, ItemMeta right) => !(left == right);
 
     public override int GetHashCode() =>
-        (this.Slot, this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
+        (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
 }

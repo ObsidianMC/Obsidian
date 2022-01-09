@@ -1,7 +1,10 @@
-﻿using Obsidian.API.Events;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
+using System.Text.Json;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -42,7 +45,7 @@ public partial class ClickWindowPacket : IServerboundPacket
     public InventoryOperationMode Mode { get; private set; }
 
     [Field(5)]
-    public IDictionary<short, ItemStack> Slots { get; private set; }
+    public IDictionary<short, ItemStack> SlotsUpdated { get; private set; }
 
     /// <summary>
     /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
@@ -50,22 +53,23 @@ public partial class ClickWindowPacket : IServerboundPacket
     [Field(6)]
     public ItemStack ClickedItem { get; private set; }
 
+    private bool IsPlayerInventory => this.WindowId == 0;
+
     public int Id => 0x08;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        var inventory = player.OpenedInventory ?? player.Inventory;
+        var container = player.OpenedContainer ?? player.Inventory;
 
-        var (value, forPlayer) = ClickedSlot.GetDifference(inventory.Size);
+        var (slot, forPlayer) = container.GetDifference(ClickedSlot);
 
-        //Uhh this isn't supposed to be like this 😅
-        if (WindowId == 0 && player.LastClickedBlock.Is(Material.EnderChest) && ClickedSlot >= 27 && ClickedSlot <= 62 || forPlayer)
-            inventory = player.Inventory;
+        if (this.IsPlayerInventory || forPlayer)
+            container = player.Inventory;
 
         switch (Mode)
         {
             case InventoryOperationMode.MouseClick:
-                await HandleMouseClick(inventory, server, player, value);
+                await HandleMouseClick(container, server, player, slot);
                 break;
 
             case InventoryOperationMode.ShiftMouseClick:
@@ -73,8 +77,8 @@ public partial class ClickWindowPacket : IServerboundPacket
                     if (ClickedItem == null)
                         return;
 
-                    inventory.RemoveItem(value);
-                    player.Inventory.AddItem(ClickedItem);
+                    //TODO implement shift click
+
                     break;
                 }
 
@@ -86,19 +90,19 @@ public partial class ClickWindowPacket : IServerboundPacket
 
                     if (currentItem.IsAir() && ClickedItem != null)
                     {
-                        inventory.RemoveItem(value);
+                        container.RemoveItem(slot);
 
                         player.Inventory.SetItem(localSlot, ClickedItem);
                     }
                     else if (!currentItem.IsAir() && ClickedItem != null)
                     {
-                        inventory.SetItem(value, currentItem);
+                        container.SetItem(slot, currentItem);
 
                         player.Inventory.SetItem(localSlot, ClickedItem);
                     }
                     else
                     {
-                        inventory.SetItem(value, currentItem);
+                        container.SetItem(slot, currentItem);
 
                         player.Inventory.RemoveItem(localSlot);
                     }
@@ -113,11 +117,11 @@ public partial class ClickWindowPacket : IServerboundPacket
                 {
                     if (ClickedSlot != Outsideinventory)
                     {
-                        ItemStack removedItem = null;
+                        ItemStack? removedItem;
                         if (Button == 0)
-                            inventory.TryRemoveItem(value, out removedItem);
+                            container.RemoveItem(slot, 1, out removedItem);
                         else
-                            inventory.TryRemoveItem(value, 64, out removedItem);
+                            container.RemoveItem(slot, 64, out removedItem);
 
                         if (removedItem == null)
                             return;
@@ -126,7 +130,7 @@ public partial class ClickWindowPacket : IServerboundPacket
 
                         var item = new ItemEntity
                         {
-                            EntityId = player + player.World.TotalLoadedEntities() + 1,
+                            EntityId = player + player.World.GetTotalLoadedEntities() + 1,
                             Count = 1,
                             Id = removedItem.AsItem().Id,
                             Glowing = true,
@@ -134,8 +138,10 @@ public partial class ClickWindowPacket : IServerboundPacket
                             Position = loc
                         };
 
-                        player.World.TryAddEntity(item);
+                        var lookDir = player.GetLookDirection();
+                        var vel = Velocity.FromDirection(loc, lookDir);
 
+                        //TODO Get this shooting out from the player properly.
                         server.BroadcastPacket(new SpawnEntityPacket
                         {
                             EntityId = item.EntityId,
@@ -145,12 +151,8 @@ public partial class ClickWindowPacket : IServerboundPacket
                             Pitch = 0,
                             Yaw = 0,
                             Data = 1,
-                            Velocity = Velocity.FromVector(player.Position + new VectorF(
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                                (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                            Velocity = vel
                         });
-
                         server.BroadcastPacket(new EntityMetadata
                         {
                             EntityId = item.EntityId,
@@ -159,9 +161,8 @@ public partial class ClickWindowPacket : IServerboundPacket
                     }
                     break;
                 }
-
             case InventoryOperationMode.MouseDrag:
-                HandleDragClick(inventory, player, value);
+                HandleDragClick(container, player, slot);
                 break;
 
             case InventoryOperationMode.DoubleClick:
@@ -169,56 +170,111 @@ public partial class ClickWindowPacket : IServerboundPacket
                     if (ClickedItem == null || ClickedItem.Count >= 64)
                         return;
 
-                    var item = ClickedItem;
-
-                    (ItemStack item, int index) selectedItem = (null, 0);
-
-                    var items = inventory.Items
-                        .Select((item, index) => (item, index))
-                        .Where(tuple => tuple.item.Type == item.Type)
-                        .OrderByDescending(x => x.index);
-
-                    foreach (var (invItem, index) in items)
-                    {
-                        if (invItem != item)
-                            continue;
-
-                        var copyItem = invItem;
-
-                        var finalCount = item.Count + copyItem.Count;
-
-                        if (finalCount <= 64)
-                        {
-                            item += copyItem.Count;
-
-                            copyItem -= finalCount;
-                        }
-                        else if (finalCount > 64)
-                        {
-                            var difference = finalCount - 64;
-
-                            copyItem -= difference;
-
-                            item += difference;
-                        }
-
-                        selectedItem = (copyItem, index);
-                        break;
-                    }
-
-                    inventory.SetItem((short)selectedItem.index, selectedItem.item);
+                    TakeFromContainer(container, player.Inventory);
                     break;
                 }
         }
+
+        if (container is IBlockEntity tileEntityContainer)
+        {
+            var blockEntity = await server.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
+
+            if (blockEntity is null)
+                return;
+
+            if (blockEntity.TryGetTag("Items", out var list))
+            {
+                var items = list as NbtList;
+
+                var itemsToBeRemoved = new HashSet<int>();
+                var itemsToBeUpdated = new HashSet<NbtCompound>();
+
+                items!.Clear();
+
+                this.FillNbtList(items, container);
+            }
+            else
+            {
+                var items = new NbtList(NbtTagType.Compound, "Items");
+
+                this.FillNbtList(items, container);
+
+                blockEntity.Add(items);
+            }
+        }
     }
 
-    private async Task HandleMouseClick(Inventory inventory, Server server, Player player, int value)
+    private void TakeFromContainer(BaseContainer container, BaseContainer playerContainer)
+    {
+        int amountNeeded = 64 - ClickedItem.Count; // TODO use max item count
+        if (amountNeeded == 0)
+            return;
+
+        for (int i = 0; i < container.Size; i++)
+        {
+            ItemStack? item = container[i];
+            if (item is null || item != ClickedItem)
+                continue;
+
+            int amountTaken = Math.Min(item.Count, amountNeeded);
+            item.Count -= amountTaken;
+
+            if (item.Count == 0)
+                container.RemoveItem(i);
+
+            ClickedItem.Count += amountTaken;
+            amountNeeded -= amountTaken;
+
+            if (amountNeeded == 0)
+                break;
+        }
+
+        //Try the player inventory
+        if (amountNeeded > 0 && !this.IsPlayerInventory)
+        {
+            for (int i = 0; i < playerContainer.Size; i++)
+            {
+                ItemStack? item = playerContainer[i];
+                if (item is null || item != ClickedItem)
+                    continue;
+
+                int amountTaken = Math.Min(item.Count, amountNeeded);
+                item.Count -= amountTaken;
+
+                if (item.Count == 0)
+                    playerContainer.RemoveItem(i);
+
+                ClickedItem.Count += amountTaken;
+                amountNeeded -= amountTaken;
+
+                if (amountNeeded == 0)
+                    break;
+            }
+        }
+    }
+
+    private void FillNbtList(NbtList items, BaseContainer container)
+    {
+        for (int i = 0; i < container.Size; i++)
+        {
+            var item = container[i];
+
+            if (item is null)
+                continue;
+
+            item.Slot = i;
+
+            items.Add(item.ToNbt());
+        }
+    }
+
+    private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
     {
         if (!ClickedItem.IsAir())
         {
-            var @event = await server.Events.InvokeInventoryClickAsync(new InventoryClickEventArgs(player, inventory, ClickedItem)
+            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, ClickedItem)
             {
-                Slot = value
+                Slot = slot
             });
 
             if (@event.Cancel)
@@ -226,32 +282,27 @@ public partial class ClickWindowPacket : IServerboundPacket
 
             player.LastClickedItem = ClickedItem;
 
-            inventory.SetItem(value, null);
+            container.RemoveItem(slot);
         }
         else
         {
             if (Button == 0)
             {
-                inventory.SetItem(value, player.LastClickedItem);
-
-                // if (!inventory.OwnedByPlayer)
-                //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+                server.Logger.LogDebug("Placed: {} in container: {}", player.LastClickedItem?.Type, container.Title?.Text);
+                container.SetItem(slot, player.LastClickedItem);
 
                 player.LastClickedItem = ClickedItem;
             }
             else
             {
-                inventory.SetItem(value, player.LastClickedItem);
-
-                // if (!inventory.OwnedByPlayer)
-                //    Globals.PacketLogger.LogDebug($"{(inventory.HasItems() ? JsonConvert.SerializeObject(inventory.Items.Where(x => x != null), Formatting.Indented) : "No Items")}");
+                container.SetItem(slot, player.LastClickedItem);
 
                 player.LastClickedItem = ClickedItem;
             }
         }
     }
 
-    private void HandleDragClick(Inventory inventory, Player player, int value)
+    private void HandleDragClick(BaseContainer container, Player player, int value)
     {
         if (ClickedSlot == Outsideinventory)
         {
@@ -267,7 +318,7 @@ public partial class ClickWindowPacket : IServerboundPacket
                 if (Button != 9)
                     return;
 
-                inventory.SetItem(value, ClickedItem);
+                container.SetItem(value, ClickedItem);
             }
             else
             {
@@ -276,7 +327,7 @@ public partial class ClickWindowPacket : IServerboundPacket
                 if (Button != 1 || Button != 5)
                     return;
 
-                inventory.SetItem(value, ClickedItem);
+                container.SetItem(value, ClickedItem);
             }
         }
     }

@@ -15,12 +15,13 @@ public class Chunk
     private const int worldHeight = 320;
     private const int worldFloor = -64;
 
-    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new();
+    //TODO try and do some temp caching
+    public Dictionary<short, BlockMeta> BlockMetaStore { get; private set; } = new Dictionary<short, BlockMeta>();
+    public Dictionary<short, NbtCompound> BlockEntities { get; private set; } = new Dictionary<short, NbtCompound>();
 
-    public ChunkSection[] Sections { get; private set; }
-    public List<INbtTag> BlockEntities { get; private set; } = new();
+    public ChunkSection[] Sections { get; private set; } = new ChunkSection[24];
+    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; } = new Dictionary<HeightmapType, Heightmap>();
 
-    public Dictionary<HeightmapType, Heightmap> Heightmaps { get; private set; }
 
     public Chunk(int x, int z)
     {
@@ -89,6 +90,28 @@ public class Chunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
+    public NbtCompound GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
+
+    public NbtCompound GetBlockEntity(int x, int y, int z)
+    {
+        x = NumericsHelper.Modulo(x, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        var value = (short)((x << 8) | (z << 4) | y);
+
+        return this.BlockEntities.GetValueOrDefault(value);
+    }
+
+    public void SetBlockEntity(Vector position, NbtCompound tileEntityData) => this.SetBlockEntity(position.X, position.Y, position.Z, tileEntityData);
+
+    public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
+    {
+        x = NumericsHelper.Modulo(x, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        var value = (short)((x << 8) | (z << 4) | y);
+
+        this.BlockEntities[value] = tileEntityData;
+    }
+    
     public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
     public void SetBlock(int x, int y, int z, Block block)
