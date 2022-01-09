@@ -14,7 +14,7 @@ public partial class BlockEntityData : IClientboundPacket
     [Field(2)]
     public INbtTag NBTData;
 
-    public int Id => 0x09;
+    public int Id => 0x0A;
 }
 
 // https://wiki.vg/Protocol#Block_Entity_Data

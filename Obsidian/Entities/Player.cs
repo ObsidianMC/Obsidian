@@ -745,6 +745,9 @@ public class Player : Living, IPlayer
 
     public bool HasPermission(string permissionNode)
     {
+        if (this.PlayerPermissions.Children.Count == 0)
+            return false;
+
         var permissions = permissionNode.ToLower().Trim().Split('.');
 
         var parent = this.PlayerPermissions;
