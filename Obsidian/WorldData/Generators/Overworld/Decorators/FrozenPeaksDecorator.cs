@@ -3,9 +3,9 @@ using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class SnowyMountainsDecorator : BaseDecorator
+public class FrozenPeaksDecorator : BaseDecorator
 {
-    public SnowyMountainsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public FrozenPeaksDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
     }
 

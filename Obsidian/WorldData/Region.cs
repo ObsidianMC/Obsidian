@@ -49,7 +49,7 @@ public class Region
         }
     }
 
-    internal Task InitAsync() => regionFile.InitializeAsync();
+    internal Task<bool> InitAsync() => regionFile.InitializeAsync();
 
     internal async Task FlushAsync()
     {
@@ -144,7 +144,7 @@ public class Region
                 }
             }
             delayed.ForEach(i => AddBlockUpdate(i));
-            neighborUpdates.ForEach(u => u.world.BlockUpdateNeighbors(u));
+            neighborUpdates.ForEach(async u => await u.world.BlockUpdateNeighborsAsync(u));
         }
     }
 
