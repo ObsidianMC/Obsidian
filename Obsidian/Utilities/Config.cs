@@ -34,8 +34,8 @@ public class Config : IConfig
     public bool? Baah { get; set; }
     public bool WhitelistEnabled { get; set; }
     public bool IpWhitelistEnabled { get; set; }
-    public string[] WhitelistedIPs { get; set; } = Array.Empty<string>();
-    public string[] WhitelistedNicknames { get; set; } = Array.Empty<string>();
+    public List<string> WhitelistedIPs { get; set; } = new();
+    public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
     public int MaxMissedKeepAlives { get; set; } = 15;
 
