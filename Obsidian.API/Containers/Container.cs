@@ -30,27 +30,12 @@ public sealed class Container : BaseContainer, IBlockEntity
 
         if (this.IsPlayerInventory)
         {
-            for (int i = 45; i > 8; i--)
-            {
-                var invItem = this.items[i];
+            int player_hotbar_start = 36, player_hotbar_end = player_hotbar_start + 8;
+            int player_main_inventory_start = 9, player_main_inventory_end = player_hotbar_start - 1;
 
-                if (invItem?.Type == item.Type)
-                {
-                    if (invItem.Count >= 64)
-                        continue;
-
-                    invItem.Count += item.Count;
-
-                    return i;
-                }
-
-                if (invItem == null)
-                {
-                    this.items[i] = item;
-
-                    return i;
-                }
-            }
+            int? slot = InventoryItem(item, player_hotbar_start, player_hotbar_end);
+            if (slot is null) slot = InventoryItem(item, player_main_inventory_start, player_main_inventory_end);
+            if (slot is not null) return slot.Value;
         }
         else
         {
@@ -60,6 +45,31 @@ public sealed class Container : BaseContainer, IBlockEntity
         return -1;
     }
 
+    private int? InventoryItem(ItemStack item, int start, int end)
+    {
+        for (int i = start; i <= end; i++)
+        {
+            var invItem = this.items[i];
+
+            if (invItem?.Type == item.Type)
+            {
+                if (invItem.Count >= 64)
+                    continue;
+
+                invItem.Count += item.Count;
+
+                return i;
+            }
+
+            if (invItem == null)
+            {
+                this.items[i] = item;
+
+                return i;
+            }
+        }
+        return null;
+    }
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();
 }
