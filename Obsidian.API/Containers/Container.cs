@@ -2,6 +2,11 @@
 
 public sealed class Container : BaseContainer, IBlockEntity
 {
+    private const int PLAYER_HOTBAR_START = 36;
+    private const int PLAYER_HOTBAR_END = PLAYER_HOTBAR_START + 8;
+    private const int PLAYER_MAIN_INVENTORY_START = 9;
+    private const int PLAYER_MAIN_INVENTORY_END = PLAYER_HOTBAR_START - 1;
+
     internal int StateId { get; set; }
 
     public string Id { get; set; }
@@ -30,11 +35,8 @@ public sealed class Container : BaseContainer, IBlockEntity
 
         if (this.IsPlayerInventory)
         {
-            int player_hotbar_start = 36, player_hotbar_end = player_hotbar_start + 8;
-            int player_main_inventory_start = 9, player_main_inventory_end = player_hotbar_start - 1;
-
-            int? slot = InventoryItem(item, player_hotbar_start, player_hotbar_end);
-            if (slot is null) slot = InventoryItem(item, player_main_inventory_start, player_main_inventory_end);
+            int? slot = InventoryItem(item, PLAYER_HOTBAR_START, PLAYER_HOTBAR_END);
+            if (slot is null) slot = InventoryItem(item, PLAYER_MAIN_INVENTORY_START, PLAYER_MAIN_INVENTORY_END);
             if (slot is not null) return slot.Value;
         }
         else
