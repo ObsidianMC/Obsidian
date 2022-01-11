@@ -438,7 +438,6 @@ public class MainCommandModule
     }
 
     [Command("world")]
-    [RequirePermission(permissions: "obsidian.world")]
     public async Task WorldAsync(CommandContext ctx, string worldname)
     {
         var server = (Server)ctx.Server;
@@ -453,7 +452,6 @@ public class MainCommandModule
     }
 
     [Command("listworld")]
-    [RequirePermission(permissions: "obsidian.world")]
     public async Task ListAsync(CommandContext ctx)
     {
         var server = (Server)ctx.Server;
