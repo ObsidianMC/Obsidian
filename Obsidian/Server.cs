@@ -52,14 +52,16 @@ public partial class Server : IServer
 
     public ILogger Logger { get; }
     public LoggerProvider LoggerProvider { get; }
+
     public string Version { get; }
+    public string ServerFolderPath { get; }
+    public string PersistentDataPath { get; }
+
     public int Port { get; }
 
     public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.GetWorld(0);
     public IEnumerable<IPlayer> Players => GetPlayers();
-
-    public string ServerFolderPath { get; }
 
     private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
@@ -114,7 +116,10 @@ public partial class Server : IServer
         Events.PlayerAttackEntity += PlayerAttack;
         Events.PlayerInteract += OnPlayerInteract;
 
+        PersistentDataPath = Path.Combine(ServerFolderPath, "persistentdata");
+
         Directory.CreateDirectory(PermissionPath);
+        Directory.CreateDirectory(PersistentDataPath);
 
         if (Config.UDPBroadcast)
         {

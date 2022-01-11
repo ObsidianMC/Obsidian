@@ -92,6 +92,12 @@ public class Player : Living, IPlayer
     // As minecraft might just ignore them.
     public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
+    public string PlayerDataFile { get; }
+    public string PlayerDataBackupFile { get; }
+
+    public string PersistentDataFile { get; }
+    public string PersistentDataBackupFile { get; }
+
     internal Player(Guid uuid, string username, Client client)
     {
         this.Uuid = uuid;
@@ -111,6 +117,12 @@ public class Player : Living, IPlayer
 
         this.Server = client.Server;
         this.Type = EntityType.Player;
+
+        this.PlayerDataFile = Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat");
+        this.PlayerDataBackupFile = Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat.old");
+
+        this.PersistentDataFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat");
+        this.PersistentDataBackupFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat.old");
     }
 
     internal async override Task UpdateAsync(VectorF position, bool onGround)
@@ -144,11 +156,10 @@ public class Player : Living, IPlayer
 
     private async Task TrySpawnPlayerAsync(VectorF position)
     {
-        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.client.ClientSettings.ViewDistance))
+        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= (x.Value.client.ClientSettings?.ViewDistance ?? 10)))
         {
-            if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
+            if (player.Alive && !this.visiblePlayers.Contains(player.EntityId))
             {
-                this.server.Logger.LogDebug($"Added back: {player.Username}");
                 this.visiblePlayers.Add(player.EntityId);
 
                 await this.client.QueuePacketAsync(new SpawnPlayer
@@ -162,7 +173,11 @@ public class Player : Living, IPlayer
             }
         }
 
-        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
+        var removed = this.visiblePlayers.Where(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x)).ToArray();
+        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x));
+
+        if (removed.Length > 0)
+            await this.client.QueuePacketAsync(new DestroyEntities(removed));
     }
 
     private async Task PickupNearbyItemsAsync(float distance = 0.5f)
@@ -324,10 +339,7 @@ public class Player : Living, IPlayer
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
-    public async Task SwitchWorldAsync(World world)
-    {
-        await world.JoinWorldAsync(this);
-    }
+    public Task SwitchWorldAsync(World world) => world.JoinWorldAsync(this);
 
     public async Task RespawnAsync()
     {
@@ -339,21 +351,8 @@ public class Player : Living, IPlayer
         }
 
         Registry.Dimensions.TryGetValue(0, out var codec);
-        Registry.Dimensions.TryGetValue(1, out var codec2);
 
-
-        // workaround for rejoining same dimension
-        await this.client.QueuePacketAsync(new Respawn
-        {
-            Dimension = codec2,
-            WorldName = "minecraft:" + Math.Abs(Globals.Random.Next()),
-            Gamemode = this.Gamemode,
-            PreviousGamemode = this.Gamemode,
-            HashedSeed = 0,
-            IsFlat = false,
-            IsDebug = false,
-            CopyMetadata = false
-        });
+        this.server.Logger.LogDebug("Loading into world: {}", this.World.Name);
 
         await this.client.QueuePacketAsync(new Respawn
         {
@@ -367,8 +366,8 @@ public class Player : Living, IPlayer
             CopyMetadata = false
         });
 
-        this.client.LoadedChunks.Clear();
         this.visiblePlayers.Clear();
+        this.client.LoadedChunks.Clear();
 
         // Gotta send chunks again
         // Sending them non-blocking.
@@ -533,11 +532,32 @@ public class Player : Living, IPlayer
 
     public async Task SaveAsync()
     {
-        var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+        var playerDataFile = new FileInfo(this.PlayerDataFile);
+        var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
-        await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+        if (playerDataFile.Exists)
+        {
+            playerDataFile.CopyTo(this.PlayerDataBackupFile, true);
+            playerDataFile.Delete();
+        }
 
-        using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        if (persistentDataFile.Exists)
+        {
+            persistentDataFile.CopyTo(this.PersistentDataBackupFile, true);
+            persistentDataFile.Delete();
+        }
+
+        await using var persistentDataStream = persistentDataFile.Create();
+        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
+
+        persistentDataWriter.WriteString("worldName", this.World.Name);
+        //TODO make sure to save inventory in the right location if has using global data set to true
+
+        persistentDataWriter.EndCompound();
+        await persistentDataWriter.TryFinishAsync();
+
+        await using var playerFileStream = playerDataFile.Create();
+        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
 
         writer.WriteInt("DataVersion", 2724);
         writer.WriteInt("playerGameType", (int)this.Gamemode);
@@ -579,56 +599,36 @@ public class Player : Living, IPlayer
         await writer.TryFinishAsync();
     }
 
-    private void WriteItems(NbtWriter writer, bool inventory = true)
-    {
-        var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
-
-        var nonNullItems = items.Where(x => x.item != null);
-
-        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
-
-        foreach (var (item, slot) in nonNullItems)
-        {
-            writer.WriteCompoundStart();
-
-            writer.WriteByte("Count", (byte)item.Count);
-            writer.WriteByte("Slot", (byte)slot);
-
-            writer.WriteString("id", item.AsItem().UnlocalizedName);
-
-            writer.WriteCompoundStart("tag");
-
-            writer.WriteInt("Damage", item.ItemMeta.Durability);
-            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
-
-            //TODO: item attributes
-
-            writer.EndCompound();
-            writer.EndCompound();
-        }
-
-        if (!nonNullItems.Any())
-            writer.Write(NbtTagType.End);
-
-        writer.EndList();
-    }
-
     public async Task LoadAsync()
     {
-        var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+        var playerDataFile = new FileInfo(this.PlayerDataFile);
+        var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
         await this.LoadPermsAsync();
 
-        if (!playerFile.Exists)
+        if (!playerDataFile.Exists)
         {
             this.Position = this.World.Data.SpawnPosition;
             this.Dimension = "minecraft:overworld";
             return;
         }
 
-        await using var playerFileStream = playerFile.OpenRead();
+        await using var persistentDataStream = playerDataFile.OpenRead();
 
-        var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+        var reader = new NbtReader(persistentDataStream, NbtCompression.GZip);
+
+        //TODO use inventory if has using global data set to true
+        if (reader.ReadNextTag() is NbtCompound persistentDataCompound)
+        {
+            var worldName = persistentDataCompound.GetString("worldName");
+
+            if (this.server.WorldManager.TryGetWorldByName(worldName, out var world))
+                this.World = world;
+        }
+
+        await using var playerFileStream = playerDataFile.OpenRead();
+
+        reader = new NbtReader(playerFileStream, NbtCompression.GZip);
 
         var compound = reader.ReadNextTag() as NbtCompound;
 
@@ -771,6 +771,9 @@ public class Player : Living, IPlayer
 
         var parent = this.PlayerPermissions;
 
+        if (parent.Children.Count <= 0)
+            return false;
+
         foreach (var permission in permissions)
         {
             if (parent.Children.Any(x => x.Name == Permission.Wildcard) || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
@@ -794,4 +797,39 @@ public class Player : Living, IPlayer
     }
 
     public override string ToString() => this.Username;
+
+    private void WriteItems(NbtWriter writer, bool inventory = true)
+    {
+        var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
+
+        var nonNullItems = items.Where(x => x.item != null);
+
+        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
+
+        foreach (var (item, slot) in nonNullItems)
+        {
+            writer.WriteCompoundStart();
+
+            writer.WriteByte("Count", (byte)item.Count);
+            writer.WriteByte("Slot", (byte)slot);
+
+            writer.WriteString("id", item.AsItem().UnlocalizedName);
+
+            writer.WriteCompoundStart("tag");
+
+            writer.WriteInt("Damage", item.ItemMeta.Durability);
+            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+
+            //TODO: item attributes
+
+            writer.EndCompound();
+            writer.EndCompound();
+        }
+
+        if (!nonNullItems.Any())
+            writer.Write(NbtTagType.End);
+
+        writer.EndList();
+    }
+
 }

@@ -26,6 +26,7 @@ public class World : IWorld
     public string Name { get; }
 
     public string Seed { get; }
+    public string FolderPath { get; }
 
     public bool Loaded { get; private set; }
 
@@ -47,6 +48,8 @@ public class World : IWorld
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
         this.Seed = seed ?? throw new ArgumentNullException(nameof(seed));
         this.Server = server;
+
+        this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
         if (!Directory.Exists(playerDataPath))
@@ -294,16 +297,16 @@ public class World : IWorld
 
     public async Task JoinWorldAsync(Player player)
     {
-        await player.SaveAsync();
         player.World.RemovePlayer(player);
         player.World = this;
-        AddPlayer(player);
 
-        // reload player data from relevant world file
-        await player.LoadAsync();
+        AddPlayer(player);
 
         // send world spawn stuff
         await player.RespawnAsync();
+
+        // reload player data from relevant world file
+        await player.LoadAsync();
 
         await player.client.SendPlayerInfoAsync();
         await player.client.SendTimeUpdateAsync();

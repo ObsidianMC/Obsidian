@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
 
@@ -52,7 +53,7 @@ public class WorldManager
         return this.worlds.AsReadOnly();
     }
 
-    public bool TryGetWorldByName(string name, out World? world)
+    public bool TryGetWorldByName(string name, [NotNullWhen(true)]out World? world)
     {
         world = this.worlds.FirstOrDefault(x => x.Name == name);
 
