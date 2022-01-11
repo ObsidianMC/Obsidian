@@ -15,19 +15,21 @@ public class Noise
     {
         await Task.Run(() =>
         {
-            OverworldGenerator og = new OverworldGenerator("1");
-            OverworldTerrain noiseGen = new OverworldTerrain(true);
+            var og = new OverworldGenerator();
+            og.Init("1");
+
+            var noiseGen = new OverworldTerrain(true);
 
             var map = new NoiseMap();
 
-            PlaneNoiseMapBuilder builder =
+            var builder =
                 new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.Result };
 
             var image = new SharpNoise.Utilities.Imaging.Image();
             var renderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
 
-                //renderer.BuildGrayscaleGradient();
-                renderer.BuildTerrainGradient();
+            //renderer.BuildGrayscaleGradient();
+            renderer.BuildTerrainGradient();
 
             builder.SetBounds(-2000, 2000, -2000, 2000);
             builder.SetDestSize(4000, 4000);
