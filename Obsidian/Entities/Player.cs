@@ -92,13 +92,10 @@ public class Player : Living, IPlayer
     // As minecraft might just ignore them.
     public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
-    public string PlayerDataFile { get; }
-    public string PlayerDataBackupFile { get; }
-
     public string PersistentDataFile { get; }
     public string PersistentDataBackupFile { get; }
 
-    internal Player(Guid uuid, string username, Client client)
+    internal Player(Guid uuid, string username, Client client, World world)
     {
         this.Uuid = uuid;
         this.Username = username;
@@ -109,17 +106,14 @@ public class Player : Living, IPlayer
             Owner = uuid,
             IsPlayerInventory = true
         };
-
         this.EnderInventory = new Container
         {
             Title = "Ender Chest"
         };
 
+        this.World = world;
         this.Server = client.Server;
         this.Type = EntityType.Player;
-
-        this.PlayerDataFile = Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat");
-        this.PlayerDataBackupFile = Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat.old");
 
         this.PersistentDataFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat");
         this.PersistentDataBackupFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat.old");
@@ -339,7 +333,7 @@ public class Player : Living, IPlayer
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
-    public Task SwitchWorldAsync(World world) => world.JoinWorldAsync(this);
+    public Task SwitchWorldAsync(World world) => world.JoinAsync(this);
 
     public async Task RespawnAsync()
     {
@@ -532,12 +526,12 @@ public class Player : Living, IPlayer
 
     public async Task SaveAsync()
     {
-        var playerDataFile = new FileInfo(this.PlayerDataFile);
+        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
         var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
         if (playerDataFile.Exists)
         {
-            playerDataFile.CopyTo(this.PlayerDataBackupFile, true);
+            playerDataFile.CopyTo(this.GetPlayerDataPath(true), true);
             playerDataFile.Delete();
         }
 
@@ -601,7 +595,7 @@ public class Player : Living, IPlayer
 
     public async Task LoadAsync()
     {
-        var playerDataFile = new FileInfo(this.PlayerDataFile);
+        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
         var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
         await this.LoadPermsAsync();
@@ -832,4 +826,6 @@ public class Player : Living, IPlayer
         writer.EndList();
     }
 
+    private string GetPlayerDataPath(bool isOld = false) =>
+        !isOld ? Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat") : Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat.old");
 }

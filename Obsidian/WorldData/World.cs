@@ -296,18 +296,20 @@ public class World : IWorld
 
     public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
-    public async Task JoinWorldAsync(Player player)
+    public async Task JoinAsync(Player player)
     {
+        await player.SaveAsync();
+
         player.World.RemovePlayer(player);
         player.World = this;
 
         AddPlayer(player);
 
-        // send world spawn stuff
-        await player.RespawnAsync();
-
         // reload player data from relevant world file
         await player.LoadAsync();
+
+        // send world spawn stuff
+        await player.RespawnAsync();
 
         await player.client.SendPlayerInfoAsync();
         await player.client.SendTimeUpdateAsync();

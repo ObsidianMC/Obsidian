@@ -200,14 +200,12 @@ public class Client : IDisposable
 
                             await this.Server.DisconnectIfConnectedAsync(username);
 
+                            var world = this.Server.DefaultWorld as World;
                             if (this.config.OnlineMode)
                             {
                                 var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
 
-                                this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this)
-                                {
-                                    World = this.Server.DefaultWorld as World
-                                };
+                                this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
 
                                 this.packetCryptography.GenerateKeyPair();
 
@@ -220,10 +218,7 @@ public class Client : IDisposable
                                 break;
                             }
 
-                            this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
-                            {
-                                World = this.Server.DefaultWorld as World
-                            };
+                            this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
 
                             //await this.SetCompression();
                             await this.ConnectAsync();
@@ -362,7 +357,7 @@ public class Client : IDisposable
 
         await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
 
-        await this.Player.World.JoinWorldAsync(this.Player);
+        await this.Player.World.JoinAsync(this.Player);
     }
 
     #region Packet sending
