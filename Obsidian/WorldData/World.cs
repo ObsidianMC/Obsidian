@@ -36,7 +36,7 @@ public class World : IWorld
 
     private float rainLevel = 0f;
 
-    internal World(string name, string seed, Server server)
+    internal World(string name, string seed, Server server, Type generator)
     {
         this.Data = new Level
         {
@@ -50,6 +50,7 @@ public class World : IWorld
         this.Server = server;
 
         this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
+        this.Generator = (WorldGenerator)Activator.CreateInstance(generator, this.Seed);
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
         if (!Directory.Exists(playerDataPath))
@@ -409,14 +410,6 @@ public class World : IWorld
             GeneratorName = levelcompound.GetString("generatorName"),
             LevelName = levelcompound.GetString("LevelName")
         };
-
-        if (!Server.WorldGenerators.TryGetValue(this.Data.GeneratorName, out Type value))
-        {
-            Server.Logger.LogWarning($"Unknown generator type {this.Data.GeneratorName}");
-            return false;
-        }
-
-        this.Generator = (WorldGenerator)Activator.CreateInstance(value, this.Seed);
 
         Server.Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
