@@ -4,13 +4,13 @@ using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Noise;
 
-public class VoronoiCaves : Module
+public class VoronoiTunnels : Module
 {
     public int Seed { get; set; }
 
     public double Frequency { get; set; }
 
-    public VoronoiCaves() : base(0)
+    public VoronoiTunnels() : base(0)
     {
 
     }
