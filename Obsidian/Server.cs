@@ -13,6 +13,7 @@ using Obsidian.Logging;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
 using Obsidian.Utilities.Debugging;
 using Obsidian.Utilities.Registry;
@@ -65,6 +66,8 @@ public partial class Server : IServer
     private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
+    
+    private RconServer rconServer;
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
@@ -265,13 +268,21 @@ public partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
+        if (Config.EnableRcon)
+        {
+            if (string.IsNullOrWhiteSpace(Config.RconPassword))
+                Logger.LogError("RCON password must not be empty");
+            else
+                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config.RconPort, Config.RconPassword);
+        }
+        
         loadTimeStopwatch.Stop();
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
         Logger.LogInformation($"Listening for new clients...");
         try
         {
-            await Task.WhenAll(AcceptClientsAsync(), LoopAsync(), ServerSaveAsync());
+            await Task.WhenAll(AcceptClientsAsync(), LoopAsync(), ServerSaveAsync(), rconServer?.RunAsync(cts.Token) ?? Task.CompletedTask);
         }
         catch (TaskCanceledException)
         {
