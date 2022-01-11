@@ -36,7 +36,7 @@ public class World : IWorld
 
     private float rainLevel = 0f;
 
-    internal World(string name, string seed, Server server, Type generator)
+    internal World(string name, string seed, Server server, WorldGenerator generator)
     {
         this.Data = new Level
         {
@@ -50,7 +50,9 @@ public class World : IWorld
         this.Server = server;
 
         this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
-        this.Generator = (WorldGenerator)Activator.CreateInstance(generator, this.Seed);
+
+        this.Generator = generator;
+        this.Generator.Init(seed);
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
         if (!Directory.Exists(playerDataPath))

@@ -28,7 +28,7 @@ public class WorldManager
     {
         foreach(var configWorld in this.server.Config.Worlds)
         {
-            if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out Type value))
+            if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {configWorld.Generator}");
 
             var world = new World(configWorld.Name, configWorld.Seed, this.server, value);

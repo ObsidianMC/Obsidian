@@ -42,7 +42,7 @@ public partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, Type> WorldGenerators { get; } = new();
+    public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
@@ -191,30 +191,17 @@ public partial class Server : IServer
     }
 
     /// <summary>
-    /// Registers a new entity to the server.
+    /// Registers new world generator(s) to the server.
     /// </summary>
-    /// <param name="input">A compatible entry.</param>
-    /// <exception cref="Exception">Thrown if unknown/unhandable type has been passed.</exception>
-    public void Register(params object[] input)
+    /// <param name="entries">A compatible list of entries.</param>
+    public void RegisterWorldGenerators(params WorldGenerator[] entries)
     {
-        foreach (object item in input)
+        foreach (var generator in entries)
         {
-            switch (item)
-            {
-                case Type generatorType:
-                    var id = ((WorldGeneratorAttribute)(generatorType.GetCustomAttributes(typeof(WorldGeneratorAttribute), false)[0])).Id;
-                    Logger.LogDebug($"Registering {id}...");
-
-                    // TODO for real, figure out a better way lol
-                    if (!generatorType.GetConstructors().Any(c => c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(string)))
-                        throw new Exception($"World Generator with type {generatorType.Name} does not have a constructor argument that only takes a (seed) string!");
-
-                    WorldGenerators.Add(id, generatorType);
-                    break;
-
-                default:
-                    throw new Exception($"Objects of type '{item.GetType().Name}' can't be registered.");
-            }
+            if (this.WorldGenerators.TryAdd(generator.Id, generator))
+                this.Logger.LogDebug($"Registered {generator.Id}...");
+            else
+                this.Logger.LogCritical($"Generator: {generator.Id} has already been registered.");
         }
     }
 
@@ -442,138 +429,138 @@ public partial class Server : IServer
         switch (digging.Status)
         {
             case DiggingStatus.DropItem:
+            {
+                var droppedItem = player.GetHeldItem();
+
+                if (droppedItem is null or { Type: Material.Air })
+                    return;
+
+                var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+
+                var item = new ItemEntity
                 {
-                    var droppedItem = player.GetHeldItem();
+                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                    Count = 1,
+                    Id = droppedItem.AsItem().Id,
+                    Glowing = true,
+                    World = player.World,
+                    Position = loc
+                };
 
-                    if (droppedItem is null or { Type: Material.Air })
-                        return;
+                TryAddEntity(player.World, item);
 
-                    var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
+                var lookDir = player.GetLookDirection();
 
-                    var item = new ItemEntity
-                    {
-                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                        Count = 1,
-                        Id = droppedItem.AsItem().Id,
-                        Glowing = true,
-                        World = player.World,
-                        Position = loc
-                    };
+                var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                    TryAddEntity(player.World, item);
-
-                    var lookDir = player.GetLookDirection();
-
-                    var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
-
-                    BroadcastPacket(new SpawnEntityPacket
-                    {
-                        EntityId = item.EntityId,
-                        Uuid = item.Uuid,
-                        Type = EntityType.Item,
-                        Position = item.Position,
-                        Pitch = 0,
-                        Yaw = 0,
-                        Data = 1,
-                        Velocity = vel
-                    });
-                    BroadcastPacket(new EntityMetadata
-                    {
-                        EntityId = item.EntityId,
-                        Entity = item
-                    });
-
-                    player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
-
-                    player.client.SendPacket(new SetSlot
-                    {
-                        Slot = player.inventorySlot,
-
-                        WindowId = 0,
-
-                        SlotData = player.GetHeldItem(),
-
-                        StateId = player.Inventory.StateId++
-                    });
-
-                    break;
-                }
-            case DiggingStatus.StartedDigging:
+                BroadcastPacket(new SpawnEntityPacket
                 {
-                    BroadcastPacket(new AcknowledgePlayerDigging
-                    {
-                        Position = digging.Position,
-                        Block = block.StateId,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                    EntityId = item.EntityId,
+                    Uuid = item.Uuid,
+                    Type = EntityType.Item,
+                    Position = item.Position,
+                    Pitch = 0,
+                    Yaw = 0,
+                    Data = 1,
+                    Velocity = vel
+                });
+                BroadcastPacket(new EntityMetadata
+                {
+                    EntityId = item.EntityId,
+                    Entity = item
+                });
 
-                    if (player.Gamemode == Gamemode.Creative)
-                    {
-                        await player.World.SetBlockAsync(digging.Position, Block.Air);
-                    }
-                }
+                player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
+
+                player.client.SendPacket(new SetSlot
+                {
+                    Slot = player.inventorySlot,
+
+                    WindowId = 0,
+
+                    SlotData = player.GetHeldItem(),
+
+                    StateId = player.Inventory.StateId++
+                });
+
                 break;
+            }
+            case DiggingStatus.StartedDigging:
+            {
+                BroadcastPacket(new AcknowledgePlayerDigging
+                {
+                    Position = digging.Position,
+                    Block = block.StateId,
+                    Status = digging.Status,
+                    Successful = true
+                });
+
+                if (player.Gamemode == Gamemode.Creative)
+                {
+                    await player.World.SetBlockAsync(digging.Position, Block.Air);
+                }
+            }
+            break;
             case DiggingStatus.CancelledDigging:
                 break;
             case DiggingStatus.FinishedDigging:
+            {
+                BroadcastPacket(new AcknowledgePlayerDigging
                 {
-                    BroadcastPacket(new AcknowledgePlayerDigging
-                    {
-                        Position = digging.Position,
-                        Block = block.StateId,
-                        Status = digging.Status,
-                        Successful = true
-                    });
+                    Position = digging.Position,
+                    Block = block.StateId,
+                    Status = digging.Status,
+                    Successful = true
+                });
 
-                    BroadcastPacket(new BlockBreakAnimation
-                    {
-                        EntityId = player,
-                        Position = digging.Position,
-                        DestroyStage = -1
-                    });
+                BroadcastPacket(new BlockBreakAnimation
+                {
+                    EntityId = player,
+                    Position = digging.Position,
+                    DestroyStage = -1
+                });
 
-                    BroadcastPacket(new BlockChange(digging.Position, 0));
+                BroadcastPacket(new BlockChange(digging.Position, 0));
 
-                    var droppedItem = Registry.GetItem(block.Material);
+                var droppedItem = Registry.GetItem(block.Material);
 
-                    if (droppedItem.Id == 0) { break; }
+                if (droppedItem.Id == 0) { break; }
 
-                    var item = new ItemEntity
-                    {
-                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                        Count = 1,
-                        Id = droppedItem.Id,
-                        Glowing = true,
-                        World = player.World,
-                        Position = digging.Position,
-                        Server = this
-                    };
+                var item = new ItemEntity
+                {
+                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                    Count = 1,
+                    Id = droppedItem.Id,
+                    Glowing = true,
+                    World = player.World,
+                    Position = digging.Position,
+                    Server = this
+                };
 
-                    TryAddEntity(player.World, item);
+                TryAddEntity(player.World, item);
 
-                    BroadcastPacket(new SpawnEntityPacket
-                    {
-                        EntityId = item.EntityId,
-                        Uuid = item.Uuid,
-                        Type = EntityType.Item,
-                        Position = item.Position,
-                        Pitch = 0,
-                        Yaw = 0,
-                        Data = 1,
-                        Velocity = Velocity.FromVector(digging.Position + new VectorF(
-                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                            (Globals.Random.NextFloat() * 0.5f) + 0.25f))
-                    });
+                BroadcastPacket(new SpawnEntityPacket
+                {
+                    EntityId = item.EntityId,
+                    Uuid = item.Uuid,
+                    Type = EntityType.Item,
+                    Position = item.Position,
+                    Pitch = 0,
+                    Yaw = 0,
+                    Data = 1,
+                    Velocity = Velocity.FromVector(digging.Position + new VectorF(
+                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                        (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                });
 
-                    BroadcastPacket(new EntityMetadata
-                    {
-                        EntityId = item.EntityId,
-                        Entity = item
-                    });
-                    break;
-                }
+                BroadcastPacket(new EntityMetadata
+                {
+                    EntityId = item.EntityId,
+                    Entity = item
+                });
+                break;
+            }
         }
     }
 
@@ -649,11 +636,10 @@ public partial class Server : IServer
     /// <summary>
     /// Registers the "obsidian-vanilla" entities and objects.
     /// </summary>
+    /// Might be used for more stuff later so I'll leave this here - tides 
     private void RegisterDefaults()
     {
-        Register(typeof(SuperflatGenerator));
-        Register(typeof(OverworldGenerator));
-        Register(typeof(EmptyWorldGenerator));
+        RegisterWorldGenerators(new SuperflatGenerator(), new OverworldGenerator(), new EmptyWorldGenerator());
     }
 
     internal void UpdateStatusConsole()
