@@ -22,10 +22,9 @@ public class Noise
 
             var map = new NoiseMap();
 
-            var builder =
-                new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.Result };
+            var builder = new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.Result };
 
-            var image = new SharpNoise.Utilities.Imaging.Image();
+            var image = new Image();
             var renderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
 
             //renderer.BuildGrayscaleGradient();
