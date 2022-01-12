@@ -6,26 +6,13 @@ using System.Text;
 
 namespace Obsidian.WorldData.Generators;
 
-[WorldGenerator("overworld")]
 public class OverworldGenerator : WorldGenerator
 {
     public static OverworldTerrainSettings GeneratorSettings { get; private set; }
 
-    private readonly OverworldTerrain terrainGen;
+    private OverworldTerrain terrainGen;
 
-    public OverworldGenerator(string seed) : base()
-    {
-        // If the seed provided is numeric, just use it.
-        // Naam asked me to do this a long time ago and I
-        // bet he thought that I forgot - Jonpro03
-        if (!int.TryParse(seed, out int seedHash))
-        {
-            seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
-        }
-        GeneratorSettings = new();
-        GeneratorSettings.Seed = seedHash;
-        terrainGen = new OverworldTerrain();
-    }
+    public OverworldGenerator() : base("overworld") { }
 
     public override async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
     {
@@ -79,5 +66,19 @@ public class OverworldGenerator : WorldGenerator
 
         chunk.isGenerated = true;
         return chunk;
+    }
+
+    public override void Init(string seed)
+    {
+        // If the seed provided is numeric, just use it.
+        // Naam asked me to do this a long time ago and I
+        // bet he thought that I forgot - Jonpro03
+        if (!int.TryParse(seed, out int seedHash))
+            seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+
+        GeneratorSettings = new();
+        GeneratorSettings.Seed = seedHash;
+
+        terrainGen = new OverworldTerrain();
     }
 }

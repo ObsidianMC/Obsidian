@@ -2,7 +2,6 @@
 
 namespace Obsidian.WorldData.Generators;
 
-[WorldGenerator("obby-classic")]
 public class EmptyWorldGenerator : WorldGenerator
 {
     private static readonly Chunk empty;
@@ -53,17 +52,17 @@ public class EmptyWorldGenerator : WorldGenerator
         spawn.isGenerated = true;
     }
 
-    public EmptyWorldGenerator(string seed) : base()
-    {
-    }
+    public EmptyWorldGenerator() : base("obby-classic") { }
 
     public override async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
     {
         if (chunk is { isGenerated: true })
             return chunk;
 
-        if(x == 0 && z == 0)
+        if (x == 0 && z == 0)
             return spawn.Clone(x, z);
         return empty.Clone(x, z);
     }
+
+    public override void Init(string seed) { }
 }

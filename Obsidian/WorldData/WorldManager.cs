@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
 
-public class WorldManager
+public sealed class WorldManager
 {
     public int GeneratingChunkCount => worlds.SelectMany(x => x.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
 
@@ -27,32 +28,26 @@ public class WorldManager
     {
         foreach(var configWorld in this.server.Config.Worlds)
         {
-            if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out Type value))
+            if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {configWorld.Generator}");
 
             var world = new World(configWorld.Name, configWorld.Seed, this.server, value);
             if (!await world.LoadAsync())
             {
                 logger.LogInformation($"Creating new world: {configWorld.Name}...");
-                await world.Init();
-                world.Save();
+                await world.InitAsync();
+                await world.SaveAsync();
             }
 
             this.worlds.Add(world);
         }
     }
 
-    public World GetWorld(int index)
-    {
-        return worlds[index];
-    }
+    public World GetWorld(int index) => worlds[index];
 
-    public IReadOnlyCollection<World> GetAvailableWorlds()
-    {
-        return this.worlds.AsReadOnly();
-    }
+    public IReadOnlyCollection<World> GetAvailableWorlds() => this.worlds.AsReadOnly();
 
-    public bool TryGetWorldByName(string name, out World? world)
+    public bool TryGetWorldByName(string name, [NotNullWhen(true)]out World? world)
     {
         world = this.worlds.FirstOrDefault(x => x.Name == name);
 

@@ -213,7 +213,7 @@ public partial class Server
 
         await player.SaveAsync();
 
-        player.World.RemovePlayer(player);
+        player.World.TryRemovePlayer(player);
 
         var destroy = new DestroyEntities(player.EntityId);
 
@@ -234,7 +234,7 @@ public partial class Server
     {
         var joined = e.Player as Player;
 
-        WorldManager.Primary.AddPlayer(joined); // TODO Add the player to the last world they were in
+        WorldManager.Primary.TryAddPlayer(joined); // TODO Add the player to the last world they were in
 
         BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
         foreach (Player other in Players)

@@ -438,12 +438,18 @@ public class MainCommandModule
     }
 
     [Command("world")]
-    [RequirePermission(permissions: "obsidian.world")]
     public async Task WorldAsync(CommandContext ctx, string worldname)
     {
         var server = (Server)ctx.Server;
+        var player = ctx.Player;
         if (server.WorldManager.TryGetWorldByName(worldname, out World world))
         {
+            if(player.WorldLocation.Name.EqualsIgnoreCase(worldname))
+            {
+                await player.SendMessageAsync("You can't switch to a world you're already in!");
+                return;
+            }
+
             await worldSwitch(ctx, world);
             return;
         }
@@ -453,7 +459,6 @@ public class MainCommandModule
     }
 
     [Command("listworld")]
-    [RequirePermission(permissions: "obsidian.world")]
     public async Task ListAsync(CommandContext ctx)
     {
         var server = (Server)ctx.Server;
