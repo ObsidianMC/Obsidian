@@ -1,20 +1,19 @@
 ﻿using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Obsidian.WorldData.Generators;
 
-public class OverworldGenerator : WorldGenerator
+public class OverworldGenerator : IWorldGenerator
 {
     public static OverworldTerrainSettings GeneratorSettings { get; private set; }
 
     private OverworldTerrain terrainGen;
 
-    public OverworldGenerator() : base("overworld") { }
+    public string Id => "overworld";
 
-    public override async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
     {
         if (chunk is null)
             chunk = new Chunk(cx, cz);
@@ -68,7 +67,7 @@ public class OverworldGenerator : WorldGenerator
         return chunk;
     }
 
-    public override void Init(string seed)
+    public void Init(string seed)
     {
         // If the seed provided is numeric, just use it.
         // Naam asked me to do this a long time ago and I

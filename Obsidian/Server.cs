@@ -20,6 +20,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
 using System.Diagnostics;
 using System.IO;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -42,7 +43,7 @@ public partial class Server : IServer
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
-    public Dictionary<string, WorldGenerator> WorldGenerators { get; } = new();
+    public Dictionary<string, Type> WorldGenerators { get; } = new();
 
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
@@ -194,15 +195,14 @@ public partial class Server : IServer
     /// Registers new world generator(s) to the server.
     /// </summary>
     /// <param name="entries">A compatible list of entries.</param>
-    public void RegisterWorldGenerators(params WorldGenerator[] entries)
+    public void RegisterWorldGenerator<T>() where T : IWorldGenerator, new()
     {
-        foreach (var generator in entries)
-        {
-            if (this.WorldGenerators.TryAdd(generator.Id, generator))
-                this.Logger.LogDebug($"Registered {generator.Id}...");
-            else
-                this.Logger.LogCritical($"Generator: {generator.Id} has already been registered.");
-        }
+        var gen = new T();
+        if (string.IsNullOrWhiteSpace(gen.Id))
+            throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
+
+        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
+            this.Logger.LogDebug($"Registered {gen.Id}...");
     }
 
     /// <summary>
@@ -639,7 +639,9 @@ public partial class Server : IServer
     /// Might be used for more stuff later so I'll leave this here - tides 
     private void RegisterDefaults()
     {
-        RegisterWorldGenerators(new SuperflatGenerator(), new OverworldGenerator(), new EmptyWorldGenerator());
+        this.RegisterWorldGenerator<SuperflatGenerator>();
+        this.RegisterWorldGenerator<OverworldGenerator>();
+        this.RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()

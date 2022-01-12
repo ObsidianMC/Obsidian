@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -13,7 +14,7 @@ public class World : IWorld
 
     public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
 
-    public WorldGenerator Generator { get; internal set; }
+    public IWorldGenerator Generator { get; internal set; }
 
     public Server Server { get; }
 
@@ -22,6 +23,8 @@ public class World : IWorld
     public ConcurrentQueue<(int X, int Z)> ChunksToGen { get; private set; } = new();
 
     public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
+
+    public ConcurrentDictionary<int, DimensionCodec> Dimensions { get; private set; } = new();
 
     public string Name { get; }
 
@@ -37,7 +40,7 @@ public class World : IWorld
 
     private float rainLevel = 0f;
 
-    internal World(string name, string seed, Server server, WorldGenerator generator)
+    internal World(string name, string seed, Server server, Type generatorType)
     {
         this.Data = new Level
         {
@@ -53,7 +56,7 @@ public class World : IWorld
         this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
         this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
-        this.Generator = generator;
+        this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         this.Generator.Init(seed);
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
@@ -472,8 +475,8 @@ public class World : IWorld
         writer.WriteLong("RandomSeed", this.Data.RandomSeed);
         writer.WriteLong("Time", this.Time);
 
-        writer.WriteString("generatorName", Generator.Id);
-        writer.WriteString("LevelName", Name);
+        writer.WriteString("generatorName", this.Generator.GetType().GetProperty("Id")?.GetValue(this.Generator)?.ToString());
+        writer.WriteString("LevelName", this.Name);
 
         writer.EndCompound();
 
