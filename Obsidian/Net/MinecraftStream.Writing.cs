@@ -1198,4 +1198,12 @@ public partial class MinecraftStream
                 break;
         }
     }
+
+    [WriteMethod]
+    public void WriteMatchItem(MatchItem matchItem)
+    {
+        WriteString(matchItem.Match);
+        WriteBoolean(matchItem.HasTooltip);
+        if (matchItem.HasTooltip && matchItem.Tooltip is not null) WriteChat(matchItem.Tooltip);
+    }
 }

@@ -26,7 +26,7 @@ public class ClientHandler
         //Packets.TryAdd(0x03, new IncomingChatMessage()); !
         //Packets.TryAdd(0x04, ClientStatus);
         //Packets.TryAdd(0x05, new ClientSettings()); !
-        //Packets.TryAdd(0x06, TabComplete);
+        //Packets.TryAdd(0x06, new TabComplete());
         //Packets.TryAdd(0x07, new WindowConfirmation()); !
         //Packets.TryAdd(0x08, new ClickWindowButton()); !
         //Packets.TryAdd(0x09, new ClickWindow()); !
@@ -85,6 +85,10 @@ public class ClientHandler
                 break;
             case 0x05:
                 await HandleFromPoolAsync<ClientSettings>(data, client);
+                break;
+                
+            case 0x06:
+                await HandleFromPoolAsync<TabCompleteRequest>(data, client);
                 break;
 
             case 0x07:
