@@ -3,9 +3,9 @@ using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
-public class BadlandsPlateauDecorator : BaseDecorator
+public class ErodedBadlandsDecorator : BaseDecorator
 {
-    public BadlandsPlateauDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public ErodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
     }
 

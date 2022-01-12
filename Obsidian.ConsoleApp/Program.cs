@@ -17,8 +17,9 @@ public static class Program
     private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
     private const string globalConfigFile = "global_config.json";
 
-    private static async Task Main()
+    private static async Task Main(params string[] args)
     {
+
 #if RELEASE
         string version = "0.1";
 #else
@@ -27,7 +28,10 @@ public static class Program
         //This will strip just the working path name:
         //C:\Program Files\MyApplication
         string asmdir = Path.GetDirectoryName(asmpath);
+
         Environment.CurrentDirectory = asmdir;
+        if (args.Length > 0)
+            Environment.CurrentDirectory = string.Join(' ', args);
 #endif
         // Kept for consistant number parsing
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -99,8 +103,9 @@ public static class Program
             await Task.Delay(2000);
             while (!shutdownPending)
             {
-                string input = ConsoleIO.ReadLine();
-                await Server.ExecuteCommand(input);
+                string? input = ConsoleIO.ReadLine();
+                if(!string.IsNullOrEmpty(input))
+                    await Server.ExecuteCommand(input);
             }
         });
     }

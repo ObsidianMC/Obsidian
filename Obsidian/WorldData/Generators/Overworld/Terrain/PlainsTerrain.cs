@@ -9,7 +9,7 @@ public class PlainsTerrain : BaseTerrain
     // Outputs will be between 0 and 1
     public PlainsTerrain() : base()
     {
-        this.Result = new Cache
+        result = new Cache
         {
             Source0 = new ScalePoint
             {
