@@ -17,9 +17,9 @@ public sealed class ChunkSection
     public bool HasBlockLight { get; private set; } = false;
     public ReadOnlyMemory<byte> BlockLightArray => blockLight.AsMemory();
 
-    private byte[] skyLight = new byte[2048];
+    private readonly byte[] skyLight = new byte[2048];
 
-    private byte[] blockLight = new byte[2048];
+    private readonly byte[] blockLight = new byte[2048];
 
     public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
     {
@@ -63,6 +63,15 @@ public sealed class ChunkSection
         HasSkyLight = true;
     }
 
+    public int GetSkyLightLevel(Vector position) => GetSkyLightLevel(position.X, position.Y, position.Z);
+    public int GetSkyLightLevel(int x, int y, int z)
+    {
+        var index = (y << 8) | (z << 4) | x;
+        var mask = 0xF << (index & 1);
+        index /= 2;
+        return skyLight[index] & mask;
+    }
+
     public void SetBlockLight(Vector position, int light) => this.SetBlockLight(position.X, position.Y, position.Z, light);
     public void SetBlockLight(int x, int y, int z, int light)
     {
@@ -74,13 +83,13 @@ public sealed class ChunkSection
         HasBlockLight = true;
     }
 
-    public int GetSkyLightLevel(Vector position) => GetSkyLightLevel(position.X, position.Y, position.Z);
-    public int GetSkyLightLevel(int x, int y, int z)
+    public int GetBlockLightLevel(Vector position) => GetBlockLightLevel(position.X, position.Y, position.Z);
+    public int GetBlockLightLevel(int x, int y, int z)
     {
         var index = (y << 8) | (z << 4) | x;
         var mask = 0xF << (index & 1);
         index /= 2;
-        return skyLight[index] & mask;
+        return blockLight[index] & mask;
     }
 
     public ChunkSection Clone()

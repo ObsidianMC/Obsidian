@@ -23,6 +23,7 @@ public partial class ChunkDataPacket : IClientboundPacket
         stream.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
+        Chunk.CalculateSkyLight();
         var writer = new NbtWriter(stream, string.Empty);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == ChunkData.HeightmapType.MotionBlocking)
@@ -51,7 +52,6 @@ public partial class ChunkDataPacket : IClientboundPacket
         stream.WriteBoolean(true);
 
         // Lighting
-        long skyLightMask = 0L;
         long blockLightMask = 0L;
         long emptySkyLightMask = long.MaxValue;
         long emptyBlockLightMask = long.MaxValue;
@@ -60,23 +60,21 @@ public partial class ChunkDataPacket : IClientboundPacket
         int blockLightArrayCount = 0;
 
         // sky light bitset
-        stream.WriteVarInt(0);
-        //stream.WriteLong(skyLightMask);
+        Chunk.WriteSkyLightMaskTo(stream);
 
         // block light bitset
         stream.WriteVarInt(0);
         //stream.WriteLong(blockLightMask);
 
         // empty sky light bitset
-        stream.WriteVarInt(1);
-        stream.WriteLong(emptySkyLightMask);
+        Chunk.WriteEmptySkyLightMaskTo(stream);
 
         // empty block light bitset
         stream.WriteVarInt(1);
         stream.WriteLong(emptyBlockLightMask);
 
         // sky light arrays
-        stream.WriteVarInt(skyLightArrayCount);
+        Chunk.WriteSkyLightTo(stream);
 
         // block light arrays
         stream.WriteVarInt(blockLightArrayCount);

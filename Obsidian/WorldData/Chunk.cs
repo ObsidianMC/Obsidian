@@ -1,6 +1,8 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API._Types;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
+using Obsidian.Net;
 
 namespace Obsidian.WorldData;
 
@@ -181,9 +183,76 @@ public class Chunk
                     if (block.IsAir)
                         continue;
 
-                    target.Set(x, z, value: y);
+                    var i = SectionIndex(y);
+                    x = NumericsHelper.Modulo(x, 16);
+                    y = NumericsHelper.Modulo(y, 16);
+                    z = NumericsHelper.Modulo(z, 16);
+                    var sec = Sections[i];
+                    sec.SetSkyLight(x, y, z, 15);
                     break;
                 }
+            }
+        }
+    }
+
+    public void WriteSkyLightMaskTo(MinecraftStream stream)
+    {
+        /*
+         * BitSet containing bits for each section in the world + 2. 
+         * Each set bit indicates that the corresponding 16×16×16 chunk section 
+         * has data in the Sky Light array below. 
+         * The least significant bit is for blocks 16 blocks to 1 block below 
+         * the min world height (one section below the world), 
+         * while the most significant bit covers blocks 1 to 16 blocks 
+         * above the max world height (one section above the world). 
+         * */
+        var bs = new BitSet();
+        for (int i = 0; i < Sections.Length + 2; i++)
+        {
+            if (i == 0 || i == Sections.Length + 1)
+            {
+                bs.SetBit(i, false);
+            }
+            else
+            {
+                bs.SetBit(i, Sections[i - 1].HasBlockLight);
+            }
+        }
+
+        stream.WriteLongArray(bs.DataStorage.ToArray());
+    }
+
+    public void WriteEmptySkyLightMaskTo(MinecraftStream stream)
+    {
+        var bs = new BitSet();
+        for (int i = 0; i < Sections.Length + 2; i++)
+        {
+            if (i == 0 || i == Sections.Length + 1)
+            {
+                bs.SetBit(i, true);
+            }
+            else
+            {
+                bs.SetBit(i, !Sections[i - 1].HasBlockLight);
+            }
+        }
+
+        stream.WriteLongArray(bs.DataStorage.ToArray());
+    }
+
+    public void WriteSkyLightTo(MinecraftStream stream)
+    {
+        // Sanity check
+        var litSections = Sections.Count(s => s.HasSkyLight);
+        if (litSections == 0) { return; }
+
+        stream.WriteVarInt(litSections);
+        for (int a = 0; a < Sections.Length; a++)
+        {
+            if (Sections[a].HasSkyLight)
+            {
+                stream.WriteVarInt(Sections[a].SkyLightArray.Length);
+                stream.WriteByteArray(Sections[a].SkyLightArray.ToArray());
             }
         }
     }
