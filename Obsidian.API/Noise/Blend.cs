@@ -35,13 +35,11 @@ public class Blend : Module
         double distance = Distance;
 
         return (
-
             self +
             Source0.GetValue(x, y, z + distance) +
             Source0.GetValue(x, y, z - distance) +
             Source0.GetValue(x + distance, y, z) +
             Source0.GetValue(x - distance, y, z)
-
             ) / 5d;
     }
 }
