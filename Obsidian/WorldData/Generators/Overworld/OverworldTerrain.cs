@@ -14,11 +14,13 @@ public class OverworldTerrain : Module
 
     public readonly OverworldTerrainSettings settings;
 
-    private readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
+    public readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
-    private readonly Module cave;
+    public readonly Module caves, tunnels;
 
-    private Module FinalBiomes;
+    public readonly Module transitions, biomeTerrain, blendPass1, blendPass2, selectiveBlend;
+
+    public Module FinalBiomes;
 
     public OverworldTerrain(bool isUnitTest = false) : base(0)
     {
@@ -30,14 +32,19 @@ public class OverworldTerrain : Module
         badlands = new BadlandsTerrain();
         mountains = new MountainsTerrain();
         rivers = new RiverTerrain();
-        cave = new CavesCarver();
+        caves = new CavesCarver();
+        tunnels = new VoronoiTunnels()
+        {
+            Frequency = 0.0123456,
+            Seed = settings.Seed
+        };
 
         Dictionary<Biomes, Module> biomesTerrainMap = new()
         {
             { Biomes.Badlands, badlands },
             { Biomes.BambooJungle, plains },
             { Biomes.BasaltDeltas, plains },
-            { Biomes.Beach, plains },
+            { Biomes.Beach, new Constant() { ConstantValue = 0 } },
             { Biomes.BirchForest, plains },
             { Biomes.ColdOcean, ocean },
             { Biomes.CrimsonForest, plains },
@@ -57,7 +64,7 @@ public class OverworldTerrain : Module
             { Biomes.FrozenOcean, ocean },
             { Biomes.FrozenPeaks, mountains },
             { Biomes.FrozenRiver, rivers },
-            { Biomes.Grove, hills },
+            { Biomes.Grove, plains },
             { Biomes.IceSpikes, badlands },
             { Biomes.JaggedPeaks, mountains },
             { Biomes.Jungle, hills },
@@ -75,7 +82,7 @@ public class OverworldTerrain : Module
             { Biomes.Savanna, plains },
             { Biomes.SavannaPlateau, hills },
             { Biomes.SmallEndIslands, plains },
-            { Biomes.SnowyBeach, plains },
+            { Biomes.SnowyBeach, new Constant() { ConstantValue = 0 } },
             { Biomes.SnowyPlains, plains },
             { Biomes.SnowySlopes, hills },
             { Biomes.SnowyTaiga, plains },
@@ -99,32 +106,62 @@ public class OverworldTerrain : Module
 
         FinalBiomes = VoronoiBiomeNoise.Instance.result;
 
-        var biomeTerrain = new TerrainSelect(FinalBiomes)
+        // For debugging, we can override the biome here
+        // which is usefull for developing a biome
+        // FinalBiomes = new Constant() { ConstantValue = (int)Biomes.StonyPeaks };
+
+        transitions = new Blend(new TransitionMap(FinalBiomes, 9))
         {
-            Control = new TransitionMap(FinalBiomes, 10),
-            TerrainModules = biomesTerrainMap
+            Distance = 3
         };
 
-        Module blendPass1 = new Blend(biomeTerrain)
+        biomeTerrain = new Cache()
         {
-            Distance = 5
+            Source0 = new TerrainSelect(FinalBiomes)
+            {
+                Control = transitions,
+                TerrainModules = biomesTerrainMap
+            }
         };
 
-        Module blendPass2 = new Blend(blendPass1)
+        blendPass1 = new Blend(biomeTerrain)
         {
             Distance = 2
         };
 
+        blendPass2 = new Blend(blendPass1)
+        {
+            Distance = 2
+        };
+
+        // Only blend on transitions for performance
+        selectiveBlend = new Select()
+        {
+            Source0 = biomeTerrain,
+            Source1 = blendPass1,
+            Control = transitions,
+            LowerBound = -0.9,
+            UpperBound = 1.0,
+            EdgeFalloff = 0
+        };
+
         var scaledWorld = new SplitScaleBias()
         {
-            Source0 = blendPass2,
+            Source0 = selectiveBlend,
             Center = 0,
             AboveCenterScale = 256, // world height minus sea level
             BelowCenterScale = 128, // sea level + abs(world floor)
             Bias = 64 // sea level
         };
 
-        result = isUnitTest ? blendPass2 : scaledWorld;
+        var mapScaledBiomes = new ScaleBias()
+        {
+            Scale = 1 / 30.0,
+            Bias = -1,
+            Source0 = FinalBiomes
+        };
+
+        result = isUnitTest ? FinalBiomes : scaledWorld;
 
     }
 
@@ -140,7 +177,19 @@ public class OverworldTerrain : Module
 
     public bool IsCave(double x, double y, double z)
     {
-        var val = cave.GetValue(x, y, z);
-        return val > -0.5;
+        var c = new Turbulence()
+        {
+            Frequency = 0.1234,
+            Power = 1,
+            Roughness = 3,
+            Seed = settings.Seed,
+            Source0 = new Max()
+            {
+                Source0 = tunnels,
+                Source1 = caves
+            }
+        };
+
+        return c.GetValue(x, y, z) > 0;
     }
 }

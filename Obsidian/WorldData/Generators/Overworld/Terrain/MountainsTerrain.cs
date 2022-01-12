@@ -34,8 +34,8 @@ public class MountainsTerrain : BaseTerrain
                         {
                             Source0 = new ScaleBias
                             {
-                                Scale = 0.25, // Amplification of terrain
-                                Bias = 0.55, // lowest level is above sea level (0)
+                                Scale = 0.22, // Amplification of terrain
+                                Bias = 0.15, // lowest level is above sea level (0)
                                 Source0 = MountainsBase()
                             }
                         }

@@ -196,6 +196,7 @@ public class Client : IDisposable
 
                             string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
+
                             this.Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
                             await this.Server.DisconnectIfConnectedAsync(username);
@@ -204,6 +205,17 @@ public class Client : IDisposable
                             {
                                 var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
 
+                                if (config.WhitelistEnabled)
+                                {
+                                    var wlEntry = this.config.Whitelisted.FirstOrDefault(x => x.UUID == user.Id);
+
+                                    if (wlEntry is null)
+                                    {
+                                        await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
+                                        break;
+                                    }
+
+                                }
                                 this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this)
                                 {
                                     World = this.Server.World
@@ -220,11 +232,15 @@ public class Client : IDisposable
                                 break;
                             }
 
+                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x=>x.Nickname == username))
+                            {
+                                await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
+                                break;
+                            }
                             this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
                             {
                                 World = this.Server.World
                             };
-
                             //await this.SetCompression();
                             await this.ConnectAsync();
                             break;
