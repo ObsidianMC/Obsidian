@@ -54,11 +54,12 @@ public sealed class ChunkSection
     public void SetSkyLight(Vector position, int light) => this.SetSkyLight(position.X, position.Y, position.Z, light);
     public void SetSkyLight(int x, int y, int z, int light)
     {
-        var index = (y << 8) | (z << 4) | x;
         // each value is 4 bits. So upper 4 bits will be odd, lower even
-        light <<= (index & 1) << 2;
+        var index = (y << 8) | (z << 4) | x;
+        int shift = (index & 1) << 2;
         index /= 2;
-        skyLight[index] |= (byte)light;
+        skyLight[index] &= (byte)(0xF0 >> shift);
+        skyLight[index] |= (byte)(light << shift);
         HasSkyLight = true;
     }
 
@@ -66,19 +67,20 @@ public sealed class ChunkSection
     public void SetBlockLight(int x, int y, int z, int light)
     {
         var index = (y << 8) | (z << 4) | x;
-        light <<= (index & 1) << 2;
+        int shift = (index & 1) << 2;
         index /= 2;
-        blockLight[index] |= (byte)light;
+        blockLight[index] &= (byte)(0xF0 >> shift);
+        blockLight[index] |= (byte)(light << shift);
         HasBlockLight = true;
     }
 
-    public int GetLightLevel(Vector position) => GetLightLevel(position.X, position.Y, position.Z);
-    public int GetLightLevel(int x, int y, int z)
+    public int GetSkyLightLevel(Vector position) => GetSkyLightLevel(position.X, position.Y, position.Z);
+    public int GetSkyLightLevel(int x, int y, int z)
     {
         var index = (y << 8) | (z << 4) | x;
-        var mask = index % 2 == 0 ? 0x0F : 0xF0;
+        var mask = 0xF << (index & 1);
         index /= 2;
-        return (skyLight[index] & mask) | (blockLight[index] & mask);
+        return skyLight[index] & mask;
     }
 
     public ChunkSection Clone()

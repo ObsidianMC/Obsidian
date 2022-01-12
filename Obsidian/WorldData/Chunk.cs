@@ -169,6 +169,25 @@ public class Chunk
         }
     }
 
+    public void CalculateSkyLight()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < width; z++)
+            {
+                for (int y = worldHeight - 1; y >= worldFloor; y--)
+                {
+                    var block = GetBlock(x, y, z);
+                    if (block.IsAir)
+                        continue;
+
+                    target.Set(x, z, value: y);
+                    break;
+                }
+            }
+        }
+    }
+
     public Chunk Clone()
     {
         return Clone(X, Z);
