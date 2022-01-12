@@ -49,7 +49,7 @@ public class ClientHandler
         //Packets.TryAdd(0x1C, new EntityAction()); !
         //Packets.TryAdd(0x1D, SteerVehicle);
         //Packets.TryAdd(0x1E, new SetDisplayedRecipe()); !
-        //Packets.TryAdd(0x1F, SetRecipeBookState);
+        //Packets.TryAdd(0x1F, new SetRecipeBookState()); !
         //Packets.TryAdd(0x20, new NameItem()); !
         //Packets.TryAdd(0x21, ResourcePackStatus);
         //Packets.TryAdd(0x22, AdvancementTab);
@@ -123,6 +123,10 @@ public class ClientHandler
 
             case 0x1B:
                 await HandleFromPoolAsync<EntityAction>(data, client);
+                break;
+
+            case 0x1E:
+                await HandleFromPoolAsync<SetRecipeBookState>(data, client);
                 break;
 
             case 0x1F:
