@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.WorldData;
 
-public class WorldManager
+public sealed class WorldManager
 {
     public int GeneratingChunkCount => worlds.SelectMany(x => x.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
 
@@ -35,23 +35,17 @@ public class WorldManager
             if (!await world.LoadAsync())
             {
                 logger.LogInformation($"Creating new world: {configWorld.Name}...");
-                await world.Init();
-                world.Save();
+                await world.InitAsync();
+                await world.SaveAsync();
             }
 
             this.worlds.Add(world);
         }
     }
 
-    public World GetWorld(int index)
-    {
-        return worlds[index];
-    }
+    public World GetWorld(int index) => worlds[index];
 
-    public IReadOnlyCollection<World> GetAvailableWorlds()
-    {
-        return this.worlds.AsReadOnly();
-    }
+    public IReadOnlyCollection<World> GetAvailableWorlds() => this.worlds.AsReadOnly();
 
     public bool TryGetWorldByName(string name, [NotNullWhen(true)]out World? world)
     {

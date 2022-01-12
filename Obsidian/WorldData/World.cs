@@ -27,6 +27,7 @@ public class World : IWorld
 
     public string Seed { get; }
     public string FolderPath { get; }
+    public string LevelDataFilePath { get; }
 
     public bool Loaded { get; private set; }
 
@@ -50,6 +51,7 @@ public class World : IWorld
         this.Server = server;
 
         this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
+        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
         this.Generator = generator;
         this.Generator.Init(seed);
@@ -135,10 +137,7 @@ public class World : IWorld
         return this.Regions.SingleOrDefault(x => x.Key == value).Value;
     }
 
-    public Region GetRegionForChunk(Vector location)
-    {
-        return this.GetRegionForChunk(location.X, location.Z);
-    }
+    public Region GetRegionForChunk(Vector location) => this.GetRegionForChunk(location.X, location.Z);
 
     /// <summary>
     /// Gets a Chunk from a Region.
@@ -201,9 +200,9 @@ public class World : IWorld
     /// </summary>
     /// <param name="scheduleGeneration">When set to false, a partial Chunk is returned.</param>
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
-    public async Task<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => await GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
+    public Task<Chunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true) => GetChunkAsync(worldLocation.X.ToChunkCoord(), worldLocation.Z.ToChunkCoord(), scheduleGeneration);
 
-    public async Task<Block?> GetBlockAsync(Vector location) => await GetBlockAsync(location.X, location.Y, location.Z);
+    public Task<Block?> GetBlockAsync(Vector location) => GetBlockAsync(location.X, location.Y, location.Z);
 
     public async Task<Block?> GetBlockAsync(int x, int y, int z)
     {
@@ -218,7 +217,7 @@ public class World : IWorld
         .GetHeight(NumericsHelper.Modulo(x, 16), NumericsHelper.Modulo(z, 16));
     }
 
-    public async Task<NbtCompound?> GetBlockEntityAsync(Vector blockPosition) => await this.GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
+    public Task<NbtCompound?> GetBlockEntityAsync(Vector blockPosition) => this.GetBlockEntityAsync(blockPosition.X, blockPosition.Y, blockPosition.Z);
 
     public async Task<NbtCompound?> GetBlockEntityAsync(int x, int y, int z)
     {
@@ -233,7 +232,7 @@ public class World : IWorld
         c?.SetBlockEntity(x, y, z, tileEntityData);
     }
 
-    public async Task SetBlockAsync(int x, int y, int z, Block block) => await SetBlockAsync(new Vector(x, y, z), block);
+    public Task SetBlockAsync(int x, int y, int z, Block block) => SetBlockAsync(new Vector(x, y, z), block);
 
     public async Task SetBlockAsync(Vector location, Block block)
     {
@@ -241,7 +240,7 @@ public class World : IWorld
         Server.BroadcastBlockChange(this, block, location);
     }
 
-    public async Task SetBlockAsync(int x, int y, int z, Block block, bool doBlockUpdate) => await SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
+    public Task SetBlockAsync(int x, int y, int z, Block block, bool doBlockUpdate) => SetBlockAsync(new Vector(x, y, z), block, doBlockUpdate);
 
     public async Task SetBlockAsync(Vector location, Block block, bool doBlockUpdate)
     {
@@ -249,7 +248,7 @@ public class World : IWorld
         Server.BroadcastBlockChange(this, block, location);
     }
 
-    public async Task SetBlockUntrackedAsync(Vector location, Block block, bool doBlockUpdate = false) => await SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
+    public Task SetBlockUntrackedAsync(Vector location, Block block, bool doBlockUpdate = false) => SetBlockUntrackedAsync(location.X, location.Y, location.Z, block, doBlockUpdate);
 
     public async Task SetBlockUntrackedAsync(int x, int y, int z, Block block, bool doBlockUpdate = false)
     {
@@ -262,13 +261,13 @@ public class World : IWorld
         c?.SetBlock(x, y, z, block);
     }
 
-    public async Task SetBlockMeta(int x, int y, int z, BlockMeta meta)
+    public async Task SetBlockMetaAsync(int x, int y, int z, BlockMeta meta)
     {
         var c = await GetChunkAsync(x.ToChunkCoord(), z.ToChunkCoord(), false);
         c?.SetBlockMeta(x, y, z, meta);
     }
 
-    public async Task SetBlockMeta(Vector location, BlockMeta meta) => await this.SetBlockMeta(location.X, location.Y, location.Z, meta);
+    public Task SetBlockMetaAsync(Vector location, BlockMeta meta) => this.SetBlockMetaAsync(location.X, location.Y, location.Z, meta);
 
     public async Task<BlockMeta?> GetBlockMeta(int x, int y, int z)
     {
@@ -276,7 +275,7 @@ public class World : IWorld
         return c?.GetBlockMeta(x, y, z);
     }
 
-    public async Task<BlockMeta?> GetBlockMeta(Vector location) => await this.GetBlockMeta(location.X, location.Y, location.Z);
+    public Task<BlockMeta?> GetBlockMeta(Vector location) => this.GetBlockMeta(location.X, location.Y, location.Z);
 
     public IEnumerable<Entity> GetEntitiesNear(VectorF location, float distance = 10f)
     {
@@ -294,18 +293,18 @@ public class World : IWorld
         return selected;
     }
 
-    public bool AddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
+    public bool TryAddPlayer(Player player) => this.Players.TryAdd(player.Uuid, player);
 
-    public bool RemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
+    public bool TryRemovePlayer(Player player) => this.Players.TryRemove(player.Uuid, out _);
 
     public async Task JoinAsync(Player player)
     {
         await player.SaveAsync();
 
-        player.World.RemovePlayer(player);
+        player.World.TryRemovePlayer(player);
         player.World = this;
 
-        AddPlayer(player);
+        TryAddPlayer(player);
 
         // reload player data from relevant world file
         await player.LoadAsync();
@@ -415,6 +414,9 @@ public class World : IWorld
             LevelName = levelcompound.GetString("LevelName")
         };
 
+        if (levelcompound.TryGetTag("Version", out var tag))
+            this.Data.VersionData = tag as NbtCompound;
+
         Server.Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
             for (int rz = -1; rz < 1; rz++)
@@ -439,30 +441,35 @@ public class World : IWorld
     }
 
     //TODO save world generator settings properly
-    public void Save()
+    public async Task SaveAsync()
     {
-        var worldFile = new FileInfo(Path.Join(Server.ServerFolderPath, Name, "level.dat"));
+        var worldFile = new FileInfo(this.LevelDataFilePath);
 
-        using var fs = worldFile.OpenWrite();
+        if (worldFile.Exists)
+        {
+            worldFile.CopyTo($"{this.LevelDataFilePath }.old");
+            worldFile.Delete();
+        }
 
-        var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        using var fs = worldFile.Create();
+        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
-        writer.WriteBool("hardcore", false);
-        writer.WriteBool("MapFeatures", true);
-        writer.WriteBool("raining", false);
-        writer.WriteBool("thundering", false);
+        writer.WriteBool("hardcore", this.Data.Hardcore);
+        writer.WriteBool("MapFeatures", this.Data.MapFeatures);
+        writer.WriteBool("raining", this.Data.Raining);
+        writer.WriteBool("thundering", this.Data.Thundering);
 
-        writer.WriteInt("GameType", (int)Gamemode.Creative);
-        writer.WriteInt("generatorVersion", 1);
-        writer.WriteInt("rainTime", 0);
+        writer.WriteInt("GameType", (int)this.Data.GameType);
+        writer.WriteInt("generatorVersion", this.Data.GeneratorVersion);
+        writer.WriteInt("rainTime", this.Data.RainTime);
         writer.WriteInt("SpawnX", (int)Data.SpawnPosition.X);
         writer.WriteInt("SpawnY", (int)Data.SpawnPosition.Y);
         writer.WriteInt("SpawnZ", (int)Data.SpawnPosition.Z);
-        writer.WriteInt("thunderTime", 0);
-        writer.WriteInt("version", 19133);
+        writer.WriteInt("thunderTime", this.Data.ThunderTime);
+        writer.WriteInt("version", this.Data.Version);
 
         writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
-        writer.WriteLong("RandomSeed", 1);
+        writer.WriteLong("RandomSeed", this.Data.RandomSeed);
         writer.WriteLong("Time", this.Time);
 
         writer.WriteString("generatorName", Generator.Id);
@@ -470,7 +477,7 @@ public class World : IWorld
 
         writer.EndCompound();
 
-        writer.TryFinish();
+        await writer.TryFinishAsync();
     }
 
     public async Task UnloadPlayerAsync(Guid uuid)
@@ -611,10 +618,7 @@ public class World : IWorld
         });
     }
 
-    public async Task FlushRegionsAsync()
-    {
-        await Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
-    }
+    public Task FlushRegionsAsync() => Task.WhenAll(Regions.Select(pair => pair.Value.FlushAsync()));
 
     public IEntity SpawnFallingBlock(VectorF position, Material mat)
     {
@@ -716,15 +720,15 @@ public class World : IWorld
         return entity;
     }
 
-    internal async Task Init()
+    internal async Task InitAsync()
     {
         // Make world directory
         Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
-        await GenerateWorld();
-        await SetWorldSpawn();
+        await GenerateWorldAsync();
+        await SetWorldSpawnAsync();
     }
 
-    internal async Task GenerateWorld()
+    internal async Task GenerateWorldAsync()
     {
         this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Config.PregenerateChunkRange})");
         int pregenerationRange = Server.Config.PregenerateChunkRange;
@@ -762,7 +766,7 @@ public class World : IWorld
         await FlushRegionsAsync();
     }
 
-    internal async Task SetWorldSpawn()
+    internal async Task SetWorldSpawnAsync()
     {
         if (Data.SpawnPosition.Y != 0) { return; }
 
@@ -815,10 +819,8 @@ public class World : IWorld
         return region.Entities.TryAdd(entity.EntityId, entity);
     }
 
-    public async Task SpawnExperienceOrbs(VectorF position, short count = 1)
-    {
-        await this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
-    }
+    public Task SpawnExperienceOrbs(VectorF position, short count = 1) =>
+        this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
 
     public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
     {

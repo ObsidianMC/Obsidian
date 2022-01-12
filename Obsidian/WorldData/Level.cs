@@ -1,11 +1,13 @@
 // This is the data about one world. It gets saved as level.dat.
 
+using Obsidian.Nbt;
+
 namespace Obsidian.WorldData;
 
 /// <summary>
 /// https://minecraft.gamepedia.com/Java_Edition_level_format
 /// </summary>
-public class Level
+public sealed class Level
 {
     public const int DataVersion = 2230;
 
@@ -67,27 +69,27 @@ public class Level
     /// <summary>
     ///  A collection of bossbars.
     /// </summary>
-    public List<object> CustomBossEvents { get; set; } = new List<object>();
+    public List<NbtCompound> CustomBossEvents { get; set; } = new();
 
     /// <summary>
     /// Options for datapacks.
     /// </summary>
-    public List<object> DataPacks { get; set; } = new List<object>();
+    public List<NbtCompound> DataPacks { get; set; } = new();
 
     /// <summary>
     /// The time of day. 0 is sunrise, 6000 is mid day, 12000 is sunset, 18000 is mid night, 24000 is the next day's 0.
     /// </summary>
-    public int DayTime 
-    { 
-        get 
-        { 
+    public int DayTime
+    {
+        get
+        {
             return (int)(this.Time % 24000); // day time is based on server time
-        } 
-        set 
+        }
+        set
         {
             var startOfDay = this.Time - (this.Time % 24000);
             this.Time = startOfDay + value;
-        } 
+        }
     }
 
     /// <summary>
@@ -103,12 +105,12 @@ public class Level
     /// <summary>
     /// This contains level data specific to certain dimensions.
     /// </summary>
-    public object DimensionData { get; set; }
+    public NbtCompound DimensionData { get; set; }
 
     /// <summary>
     /// The gamerules used in the world.
     /// </summary>
-    public List<object> GameRules { get; set; }
+    public List<NbtCompound> GameRules { get; set; }
 
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
@@ -189,17 +191,17 @@ public class Level
     /// <summary>
     /// The NBT version of the level
     /// </summary>
-    public int Vversion { get; private set; } = 19133;
+    public int Version { get; set; } = 19133;
 
     /// <summary>
     /// Information about the Minecraft version the world was saved in.
     /// </summary>
-    public object Version { get; set; }
+    public NbtCompound VersionData { get; set; }
 
     /// <summary>
     /// The UUID of the current wandering trader in the world saved as four ints.
     /// </summary>
-    public List<int> WanderingTraderId { get; set; }
+    public Guid WanderingTraderId { get; set; }
 
     /// <summary>
     /// The current chance of the wandering trader spawning next attempt; 
@@ -211,5 +213,5 @@ public class Level
     /// <summary>
     /// The amount of ticks until another wandering trader is attempted to spawn
     /// </summary>
-    public int WanderingTraderSpawnnChance { get; set; }
+    public int WanderingTraderSpawnDelay { get; set; }
 }
