@@ -86,7 +86,7 @@ public class ClientHandler
                 break;
                 
             case 0x10:
-                await HandleFromPoolAsync<LockDifficulty> (data, client);
+                await HandleFromPoolAsync<LockDifficulty> (data, client); // TODO: Not finished
                 break;
 
             //case 0x11:
@@ -153,12 +153,8 @@ public class ClientHandler
                 await HandleFromPoolAsync<UpdateJigsawBlock>(data, client); // TODO: Not finished
                 break;
                 
-            case 0x2A:
-                await HandleFromPoolAsync<AnimationPacket>(data, client);
-                break;
-                
             case 0x2B:
-                await HandleFromPoolAsync<UpdateSign> (data, client);
+                await HandleFromPoolAsync<UpdateSign>(data, client); // TODO: Not finished
                 break;
                 
             case 0x2C:
