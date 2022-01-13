@@ -215,10 +215,10 @@ public class Chunk
             }
             else
             {
-                bs.SetBit(i, Sections[i - 1].HasBlockLight);
+                bs.SetBit(i, Sections[i - 1].HasSkyLight);
             }
         }
-
+        stream.WriteVarInt(bs.DataStorage.Length);
         stream.WriteLongArray(bs.DataStorage.ToArray());
     }
 
@@ -233,10 +233,10 @@ public class Chunk
             }
             else
             {
-                bs.SetBit(i, !Sections[i - 1].HasBlockLight);
+                bs.SetBit(i, !Sections[i - 1].HasSkyLight);
             }
         }
-
+        stream.WriteVarInt(bs.DataStorage.Length);
         stream.WriteLongArray(bs.DataStorage.ToArray());
     }
 
@@ -244,9 +244,10 @@ public class Chunk
     {
         // Sanity check
         var litSections = Sections.Count(s => s.HasSkyLight);
+        stream.WriteVarInt(litSections);
+        
         if (litSections == 0) { return; }
 
-        stream.WriteVarInt(litSections);
         for (int a = 0; a < Sections.Length; a++)
         {
             if (Sections[a].HasSkyLight)

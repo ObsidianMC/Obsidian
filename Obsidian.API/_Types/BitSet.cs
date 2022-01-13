@@ -10,7 +10,7 @@ public sealed class BitSet
     {
         (var arrayIndex, var mask) = GetBitLoc(bitIndex);
         if (arrayIndex >= data.Length)
-            Array.Resize(ref data, arrayIndex);
+            Array.Resize(ref data, arrayIndex + 1);
 
         if (value)
             data[arrayIndex] |= 1L << mask;
