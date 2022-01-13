@@ -47,7 +47,7 @@ internal class PackDict
         { "0x27", "UpdateCommandBlockMinecart" },
         { "0x28", "CreativeInventoryAction" },
         { "0x29", "UpdateJigsawBlock" },
-        { "0x2A", "UpdateStructureBlock" },
+        { "0x2A", "AnimationPacket" },
         { "0x2B", "UpdateSign" },
         { "0x2C", "Animation" },
         { "0x2D", "Spectate" },
