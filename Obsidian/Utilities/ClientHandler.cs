@@ -84,6 +84,10 @@ public class ClientHandler
             case 0x0F:
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
+                
+            case 0x10:
+                await HandleFromPoolAsync<LockDifficulty> (data, client);
+                break;
 
             //case 0x11:
             //case 0x12:
@@ -138,13 +142,32 @@ public class ClientHandler
                 await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
                 break;
                 
+            case 0x29:
+                await HandleFromPoolAsync<UpdateJigsawBlock>(data, client); // TODO: Not finished
+                break;
+                
+            case 0x2A:
+                await HandleFromPoolAsync<AnimationPacket>(data, client);
+                break;
+                
+            case 0x2B:
+                await HandleFromPoolAsync<UpdateSign> (data, client);
+                break;
+                
             case 0x2C:
                 await HandleFromPoolAsync<AnimationPacket>(data, client);
+                break;
+                
+            case 0x2D:
+                await HandleFromPoolAsync<Spectate>(data, client); // TODO: Not finished
                 break;
 
             case 0x2E:
                 await HandleFromPoolAsync<PlayerBlockPlacement>(data, client);
                 break;
+
+            //case 0x2F:
+            //    break;
 
             default:
                 if (!Packets.TryGetValue(id, out var packet))

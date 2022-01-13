@@ -4,18 +4,12 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class VehicleMove : IServerboundPacket
+public partial class Spectate : IServerboundPacket
 {
-    [Field(0), DataFormat(typeof(double))]
-    public VectorF Position { get; set; }
+    [Field(0)]
+    public Guid TargetPlayer { get; set; }
 
-    [Field(1)]
-    public float Yaw { get; set; }
-
-    [Field(2)]
-    public float Pitch { get; set; }
-
-    public int Id => 0x15;
+    public int Id => 0x2D;
 
     public ValueTask HandleAsync(Server server, Player player)
     {

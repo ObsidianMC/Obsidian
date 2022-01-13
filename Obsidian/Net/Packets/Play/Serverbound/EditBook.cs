@@ -12,7 +12,7 @@ public partial class EditBook : IServerboundPacket
     [Field(1), VarLength]
     public int Count { get; set; }
     
-    [Field(2)]
+    [Field(2), ActualType(typeof(string))]
     public List<string> Entries { get; set; }
     
     [Field(3)]
