@@ -92,7 +92,7 @@ public class ClientHandler
             //case 0x11:
             //case 0x12:
             //case 0x13:
-            //  break;
+            //    break;
 
             case 0x14:
                 await HandleFromPoolAsync<PlayerMovement>(data, client); // TODO: Not finished
@@ -137,6 +137,13 @@ public class ClientHandler
             case 0x23:
                 await HandleFromPoolAsync<SelectTrade>(data, client);
                 break;
+                
+            case 0x24:
+                await HandleFromPoolAsync<SetBeaconEffect>(data, client); // TODO: Not finished
+                break;
+
+            //case 0x25:
+            //    break;
 
             case 0x28:
                 await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
