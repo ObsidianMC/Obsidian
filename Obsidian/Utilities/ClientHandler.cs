@@ -64,18 +64,44 @@ public class ClientHandler
             case 0x0A:
                 await HandleFromPoolAsync<ServerboundPluginMessage>(data, client);
                 break;
-            case 0x0F:
-                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
-                break;
 
+            case 0x0B:
+                await HandleFromPoolAsync<EditBook>(data, client); // TODO: Not finished
+                break;
+                
+            case 0x0C:
+                await HandleFromPoolAsync<QueryEntityNbt>(data, client); // TODO: Not finished
+                break;
+                
             case 0x0D:
                 await HandleFromPoolAsync<InteractEntity>(data, client);
                 break;
 
-            //case 0x14:
-            //    await HandleFromPoolAsync<PlayerMovement> (data, client);
-            //    break;
+            case 0x0E:
+                await HandleFromPoolAsync<GenerateStructure>(data, client); // TODO: Not finished
+                break;
                 
+            case 0x0F:
+                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
+                break;
+
+            //case 0x11:
+            //case 0x12:
+            //case 0x13:
+            //  break;
+
+            case 0x14:
+                await HandleFromPoolAsync<PlayerMovement>(data, client); // TODO: Not finished
+                break;
+
+            case 0x15:
+                await HandleFromPoolAsync<VehicleMove>(data, client);
+                break;
+                
+            case 0x16:
+                await HandleFromPoolAsync<SteerBoat>(data, client); // TODO: Not finished
+                break;
+
             case 0x17:
                 await HandleFromPoolAsync<PickItem>(data, client);
                 break;
@@ -104,10 +130,14 @@ public class ClientHandler
                 await HandleFromPoolAsync<NameItem>(data, client);
                 break;
 
+            case 0x23:
+                await HandleFromPoolAsync<SelectTrade>(data, client);
+                break;
+
             case 0x28:
                 await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
                 break;
-
+                
             case 0x2C:
                 await HandleFromPoolAsync<AnimationPacket>(data, client);
                 break;
