@@ -15,5 +15,5 @@ public partial class SelectTrade : IServerboundPacket
 
     public int Id => 0x23;
 
-    public ValueTask HandleAsync(Server server, Player player) => throw new NotImplementedException();
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }
