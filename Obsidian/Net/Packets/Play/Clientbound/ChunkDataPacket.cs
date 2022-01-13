@@ -74,7 +74,7 @@ public partial class ChunkDataPacket : IClientboundPacket
 
 
         minecraftStream.Lock.Wait();
-        //minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
+        minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
         minecraftStream.WriteVarInt(Id);
         stream.Position = 0;
         stream.CopyTo(minecraftStream);
