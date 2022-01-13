@@ -35,7 +35,7 @@ public class ClientHandler
         //Packets.TryAdd(0x0C, EditBook);
         //Packets.TryAdd(0x0E, InteractEntity);
         //Packets.TryAdd(0x0F, GenerateStructure);
-        //Packets.TryAdd(0x11, LockDifficulty);
+        //Packets.TryAdd(0x10, LockDifficulty);
         Packets.TryAdd(0x11, new PlayerPosition());
         Packets.TryAdd(0x12, new PlayerPositionAndRotation());
         Packets.TryAdd(0x13, new PlayerRotation());
@@ -70,6 +70,7 @@ public class ClientHandler
 
     public async Task HandlePlayPackets(int id, byte[] data, Client client)
     {
+        bool missing = false;
         switch (id)
         {
             case 0x00:
@@ -109,6 +110,10 @@ public class ClientHandler
                 await HandleFromPoolAsync<InteractEntity>(data, client);
                 break;
 
+            //case 0x14:
+            //    await HandleFromPoolAsync<PlayerMovement> (data, client);
+            //    break;
+                
             case 0x17:
                 await HandleFromPoolAsync<PickItem>(data, client);
                 break;
@@ -151,7 +156,10 @@ public class ClientHandler
 
             default:
                 if (!Packets.TryGetValue(id, out var packet))
-                    return;
+                {
+                    missing = true;
+                    break;
+                }
 
                 try
                 {
@@ -164,6 +172,14 @@ public class ClientHandler
                         Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                 }
                 break;
+        }
+        if (!missing)
+        {
+            //Globals.PacketLogger.LogDebug($"{id.ToPacketName()})");
+        }
+        else
+        {
+            Globals.PacketLogger.LogWarning($"{id.ToPacketName()}");
         }
     }
 
