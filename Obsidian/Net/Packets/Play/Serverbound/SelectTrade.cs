@@ -13,7 +13,7 @@ public partial class SelectTrade : IServerboundPacket
     [Field(0), VarLength]
     public int SelectedSlot { get; set; }
 
-    public int Id => throw new NotImplementedException();
+    public int Id => 0x23;
 
     public ValueTask HandleAsync(Server server, Player player) => throw new NotImplementedException();
 }
