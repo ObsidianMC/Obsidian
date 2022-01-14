@@ -28,6 +28,10 @@ public class Config : IConfig
     public string Footer { get; set; } = "§l( §cU §dw §cU §r§l)";
 
     public bool? Baah { get; set; }
+    public bool WhitelistEnabled { get; set; }
+    public bool IpWhitelistEnabled { get; set; }
+    public List<string> WhitelistedIPs { get; set; } = new();
+    public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
     public int MaxMissedKeepAlives { get; set; } = 15;
 

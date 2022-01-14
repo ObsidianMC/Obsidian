@@ -291,7 +291,15 @@ public partial class Server : IServer
 
             Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
 
+            var ip = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
+            {
+                Logger.LogInformation($"{ip} is not whitelisted. Closing connection");
+                tcp.Client.Disconnect(false);
+                return;
+            }
             var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.GetWorld(0).GetTotalLoadedEntities()), this);
+
             clients.Add(client);
 
             client.Disconnected += client => clients.TryRemove(client);

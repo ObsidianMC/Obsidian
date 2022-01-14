@@ -196,6 +196,7 @@ public class Client : IDisposable
 
                             string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
+
                             this.Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
                             await this.Server.DisconnectIfConnectedAsync(username);
@@ -204,6 +205,18 @@ public class Client : IDisposable
                             if (this.config.OnlineMode)
                             {
                                 var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
+
+                                if (config.WhitelistEnabled)
+                                {
+                                    var wlEntry = this.config.Whitelisted.FirstOrDefault(x => x.UUID == user.Id);
+
+                                    if (wlEntry is null)
+                                    {
+                                        await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
+                                        break;
+                                    }
+
+                                }
 
                                 this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
 
@@ -215,6 +228,12 @@ public class Client : IDisposable
 
                                 this.SendPacket(new EncryptionRequest(values.publicKey, this.randomToken));
 
+                                break;
+                            }
+
+                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x=>x.Nickname == username))
+                            {
+                                await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                                 break;
                             }
 
