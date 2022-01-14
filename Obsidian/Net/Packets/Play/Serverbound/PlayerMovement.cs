@@ -18,24 +18,8 @@ public partial class PlayerMovement : IServerboundPacket
 
     public ValueTask HandleAsync(Server server, Player player)
     {
-        server.Logger.LogDebug(this.AsString());
-        return ValueTask.CompletedTask;
-    }
-}
-
-public partial class SetBeaconEffect : IServerboundPacket
-{
-    [Field(0), VarLength]
-    public int PrimaryEffect { get; set; }
-    
-    [Field(1), VarLength]
-    public int SecondaryEffect { get; set; }
-
-    public int Id => 0x24;
-
-    public ValueTask HandleAsync(Server server, Player player)
-    {
-        server.Logger.LogDebug(this.AsString());
+        //var fallDistance = player.LastPosition.Z - player.Position.Z;
+        //await player.DamageAsync(null, MathF.Max(0, fallDistance - 3f));
         return ValueTask.CompletedTask;
     }
 }

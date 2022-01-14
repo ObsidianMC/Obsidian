@@ -24,6 +24,7 @@ public sealed class RegistryAssetsGenerator : ISourceGenerator
         ParseItems(GetJson("items.json"), source);
         ParseRecipes(GetJson("recipes.json"), source);
         ParseTags(GetJson("tags.json"), source);
+        ParsePacketDebug(GetJson("packet_debug.json"), source);
 
         source.EndScope(); // EOF type
         source.EndScope(); // EOF namespace
@@ -67,6 +68,11 @@ public sealed class RegistryAssetsGenerator : ISourceGenerator
     }
 
     private static void ParseTags(string json, CodeBuilder source)
+    {
+
+    }
+    
+    private static void ParsePacketDebug(string json, CodeBuilder source)
     {
 
     }

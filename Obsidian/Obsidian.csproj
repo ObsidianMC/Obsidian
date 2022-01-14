@@ -52,6 +52,7 @@
 		<None Remove="Assets\default_dimensions.xaml" />
 		<None Remove="Assets\entity_types.json" />
 		<None Remove="Assets\fluids.json" />
+		<None Remove="Assets\packet_debug.json" />
 		<None Remove="Assets\tags.json" />
 		<None Remove="Serializer\Attributes\NewFile1.txt" />
 		<None Remove="Serializer\Enums\NewFile1.txt" />
@@ -103,6 +104,9 @@
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\items.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\packet_debug.json">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\tags.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>

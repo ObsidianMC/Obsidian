@@ -1,4 +1,5 @@
-﻿using Obsidian.Entities;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -29,6 +30,7 @@ public partial class PlayerRotation : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
+        if(!OnGround) Globals.PacketLogger.LogDebug(this.AsString());
         await player.UpdateAsync(Yaw, Pitch, OnGround);
     }
 }

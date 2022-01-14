@@ -1,0 +1,992 @@
+[
+  {
+    "state": "Handshaking",
+    "bound_to": "Server",
+    "id": "0x00",
+    "name": "Handshake"
+  },
+  {
+    "state": "Status",
+    "bound_to": "Client",
+    "id": "0x00",
+    "name": "StatusReponse"
+  },
+  {
+    "state": "Status",
+    "bound_to": "Client",
+    "id": "0x01",
+    "name": "StatusPong"
+  },
+  {
+    "state": "Status",
+    "bound_to": "Server",
+    "id": "0x00",
+    "name": "StatusRequest"
+  },
+  {
+    "state": "Status",
+    "bound_to": "Server",
+    "id": "0x01",
+    "name": "StatusPing"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Client",
+    "id": "0x00",
+    "name": "Disconnect"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Client",
+    "id": "0x01",
+    "name": "EncryptionRequest"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Client",
+    "id": "0x02",
+    "name": "LoginSuccess"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Client",
+    "id": "0x03",
+    "name": "SetCompression"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Client",
+    "id": "0x04",
+    "name": "LoginPluginRequest"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Server",
+    "id": "0x00",
+    "name": "LoginStart"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Server",
+    "id": "0x01",
+    "name": "EncryptionResponse"
+  },
+  {
+    "state": "Login",
+    "bound_to": "Server",
+    "id": "0x02",
+    "name": "LoginPluginResponse"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x00",
+    "name": "SpawnEntity"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x01",
+    "name": "SpawnExperienceOrb"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x02",
+    "name": "SpawnLivingEntity"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x03",
+    "name": "SpawnPainting"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x04",
+    "name": "SpawnPlayer"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x05",
+    "name": "SculkVibrationSignal"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x06",
+    "name": "EntityAnimation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x07",
+    "name": "Statistics"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x08",
+    "name": "AcknowledgePlayerDigging"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x09",
+    "name": "BlockBreakAnimation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0A",
+    "name": "BlockEntityData"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0B",
+    "name": "BlockAction"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0C",
+    "name": "BlockChange"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0D",
+    "name": "BossBar"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0E",
+    "name": "ServerDifficulty"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x0F",
+    "name": "ChatMessage"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x10",
+    "name": "ClearTitles"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x11",
+    "name": "Tab-Complete"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x12",
+    "name": "DeclareCommands"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x13",
+    "name": "CloseWindow"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x14",
+    "name": "WindowItems"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x15",
+    "name": "WindowProperty"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x16",
+    "name": "SetSlot"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x17",
+    "name": "SetCooldown"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x18",
+    "name": "PluginMessage"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x19",
+    "name": "NamedSoundEffect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1A",
+    "name": "Disconnect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1B",
+    "name": "EntityStatus"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1C",
+    "name": "Explosion"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1D",
+    "name": "UnloadChunk"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1E",
+    "name": "ChangeGameState"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x1F",
+    "name": "OpenHorseWindow"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x20",
+    "name": "InitializeWorldBorder"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x21",
+    "name": "KeepAlive"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x22",
+    "name": "ChunkDataAndUpdateLight"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x23",
+    "name": "Effect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x24",
+    "name": "Particle"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x25",
+    "name": "UpdateLight"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x26",
+    "name": "JoinGame"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x27",
+    "name": "MapData"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x28",
+    "name": "TradeList"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x29",
+    "name": "EntityPosition"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2A",
+    "name": "EntityPositionAndRotation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2B",
+    "name": "EntityRotation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2C",
+    "name": "VehicleMove"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2D",
+    "name": "OpenBook"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2E",
+    "name": "OpenWindow"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x2F",
+    "name": "OpenSignEditor"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x30",
+    "name": "Ping"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x31",
+    "name": "CraftRecipeResponse"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x32",
+    "name": "PlayerAbilities"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x33",
+    "name": "EndCombatEvent"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x34",
+    "name": "EnterCombatEvent"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x35",
+    "name": "DeathCombatEvent"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x36",
+    "name": "PlayerInfo"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x37",
+    "name": "FacePlayer"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x38",
+    "name": "PlayerPositionAndLook"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x39",
+    "name": "UnlockRecipes"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3A",
+    "name": "DestroyEntities"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3B",
+    "name": "RemoveEntityEffect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3C",
+    "name": "ResourcePackSend"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3D",
+    "name": "Respawn"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3E",
+    "name": "EntityHeadLook"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x3F",
+    "name": "MultiBlockChange"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x40",
+    "name": "SelectAdvancementTab"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x41",
+    "name": "ActionBar"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x42",
+    "name": "WorldBorderCenter"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x43",
+    "name": "WorldBorderLerpSize"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x44",
+    "name": "WorldBorderSize"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x45",
+    "name": "WorldBorderWarningDelay"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x46",
+    "name": "WorldBorderWarningReach"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x47",
+    "name": "Camera"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x48",
+    "name": "HeldItemChange"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x49",
+    "name": "UpdateViewPosition"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4A",
+    "name": "UpdateViewDistance"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4B",
+    "name": "SpawnPosition"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4C",
+    "name": "Display Scoreboard"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4D",
+    "name": "EntityMetadata"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4E",
+    "name": "AttachEntity"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x4F",
+    "name": "EntityVelocity"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x50",
+    "name": "EntityEquipment"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x51",
+    "name": "SetExperience"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x52",
+    "name": "UpdateHealth"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x53",
+    "name": "ScoreboardObjective"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x54",
+    "name": "SetPassengers"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x55",
+    "name": "Teams"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x56",
+    "name": "UpdateScore"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x57",
+    "name": "UpdateSimulationDistance"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x58",
+    "name": "SetTitleSubTitle"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x59",
+    "name": "TimeUpdate"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5A",
+    "name": "SetTitleText"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5B",
+    "name": "SetTitleTimes"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5C",
+    "name": "EntitySoundEffect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5D",
+    "name": "Sound Effect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5E",
+    "name": "StopSound"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x5F",
+    "name": "PlayerListHeaderAndFooter"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x60",
+    "name": "NbtQueryResponse"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x61",
+    "name": "CollectItem"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x62",
+    "name": "EntityTeleport"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x63",
+    "name": "Advancements"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x64",
+    "name": "EntityProperties"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x65",
+    "name": "EntityEffect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x66",
+    "name": "DeclareRecipes"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Client",
+    "id": "0x67",
+    "name": "Tags"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x00",
+    "name": "TeleportConfirm"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x01",
+    "name": "QueryBlockNBT"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x02",
+    "name": "SetDifficulty"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x03",
+    "name": "IncomingChatMessage"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x04",
+    "name": "ClientStatus"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x05",
+    "name": "ClientSettings"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x06",
+    "name": "TabComplete"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x07",
+    "name": "ClickWindowButton"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x08",
+    "name": "ClickWindow"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x09",
+    "name": "CloseWindow"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0A",
+    "name": "PluginMessage"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0B",
+    "name": "EditBook"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0C",
+    "name": "QueryEntityNbt"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0D",
+    "name": "InteractEntity"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0E",
+    "name": "ServerDifficulty"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x0F",
+    "name": "KeepAlive"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x10",
+    "name": "LockDifficulty"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x11",
+    "name": "PlayerPosition"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x12",
+    "name": "PlayerPositionAndRotation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x13",
+    "name": "PlayerRotation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x14",
+    "name": "PlayerMovement"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x15",
+    "name": "VehicleMove"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x16",
+    "name": "SteerBoat"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x17",
+    "name": "PickItem"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x18",
+    "name": "CraftRecipeRequest"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x19",
+    "name": "PlayerAbilities"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1A",
+    "name": "PlayerDigging"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1B",
+    "name": "EntityAction"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1C",
+    "name": "SteerVehicle"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1D",
+    "name": "Pong"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1E",
+    "name": "SetRecipeBookState"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x1F",
+    "name": "SetDisplayedRecipe"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x20",
+    "name": "NameItem"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x21",
+    "name": "ResourcePackStatus"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x22",
+    "name": "AdvancementTab"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x23",
+    "name": "SelectTrade"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x24",
+    "name": "SetBeaconEffect"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x25",
+    "name": "HeldItemChange"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x26",
+    "name": "UpdateCommandBlock"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x27",
+    "name": "UpdateCommandBlockMinecart"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x28",
+    "name": "CreativeInventoryAction"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x29",
+    "name": "UpdateJigsawBlock"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2A",
+    "name": "AnimationPacket"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2B",
+    "name": "UpdateSign"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2C",
+    "name": "Animation"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2D",
+    "name": "Spectate"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2E",
+    "name": "PlayerBlockPlacement"
+  },
+  {
+    "state": "Play",
+    "bound_to": "Server",
+    "id": "0x2F",
+    "name": "UseItem"
+  }
+]

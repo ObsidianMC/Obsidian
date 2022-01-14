@@ -115,6 +115,8 @@ public partial class Server : IServer
 
         Directory.CreateDirectory(PermissionPath);
 
+        Globals.PacketDebugHandler = new();
+
         if (Config.UDPBroadcast)
         {
             _ = Task.Run(async () =>

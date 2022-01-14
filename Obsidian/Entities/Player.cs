@@ -5,6 +5,7 @@ using Obsidian.API.Events;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
+using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
 using System.IO;
@@ -112,11 +113,15 @@ public class Player : Living, IPlayer
         this.Type = EntityType.Player;
     }
 
+    internal async Task UpdateAsync(bool onGround) => await base.UpdateAsync(Position, onGround);
+
     internal async override Task UpdateAsync(VectorF position, bool onGround)
     {
         await base.UpdateAsync(position, onGround);
 
         this.HeadY = position.Y + 1.62f;
+
+        await this.UpdateFallDamageAsync(!onGround ? position : null);
 
         await this.TrySpawnPlayerAsync(position);
 
@@ -128,6 +133,8 @@ public class Player : Living, IPlayer
         await base.UpdateAsync(position, yaw, pitch, onGround);
 
         this.HeadY = position.Y + 1.62f;
+
+        await this.UpdateFallDamageAsync(!onGround ? position : null);
 
         await this.TrySpawnPlayerAsync(position);
 
@@ -193,6 +200,36 @@ public class Player : Living, IPlayer
                 await item.RemoveAsync();
             }
         }
+    }
+
+    private async Task UpdateFallDamageAsync(VectorF? position)
+    {
+        var og = !OnGround && position is not null;
+        if (og && Alive)
+        {
+            var fallDistance = (position is null) ? 0f : -(this.LastPosition.Y - position?.Y) ?? 0;
+            FallDistance = MathF.Max(0, fallDistance - 3f);
+            if (FallDistance > 0)
+            {
+                await this.DamageAsync(null, FallDistance);
+                Globals.PacketLogger.LogWarning($"Player {Username} fell from {FallDistance}.");
+                FallDistance = 0f;
+                if (Health <= 0)
+                {
+                    //Health = 20;
+                    Globals.PacketLogger.LogWarning($"Player BedBlockPosition{{{BedBlockPosition.AsString().Split("{")[1]};  SpawnPosition{{{server.World.Data.SpawnPosition.AsString().Split("{")[1]}.");
+                    await UpdateAsync(BedBlockPosition != Vector.Zero ? new VectorF(BedBlockPosition.X + 0f, BedBlockPosition.Y + 0f, BedBlockPosition.Z + 0f) : server.World.Data.SpawnPosition, true);
+                    //UpdateHealthAsync(20);
+                }
+            }
+        }
+
+    }
+
+    private async Task UpdateHealthAsync(int health)
+    {
+        this.client.SendPacket(new UpdateHealth(health, FoodLevel, FoodSaturationLevel));
+        Health = health;
     }
 
     public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -365,13 +402,13 @@ public class Player : Living, IPlayer
     //TODO make IDamageSource 
     public async override Task KillAsync(IEntity source, ChatMessage deathMessage)
     {
-        //await this.client.QueuePacketAsync(new PlayerDied
-        //{
-        //    PlayerId = this.EntityId,
-        //    EntityId = source != null ? source.EntityId : -1,
-        //    Message = deathMessage as ChatMessage
-        //});
-        // TODO implement new death packets
+        await this.client.QueuePacketAsync(new DeathCombatEvent
+        {
+            PlayerId = this.EntityId,
+            EntityId = source != null ? source.EntityId : -1,
+            Message = deathMessage as ChatMessage
+        });
+        //TODO implement new death packets
 
         await this.client.QueuePacketAsync(new ChangeGameState(RespawnReason.EnableRespawnScreen));
         await this.RemoveAsync();

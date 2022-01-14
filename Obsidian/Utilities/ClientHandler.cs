@@ -35,6 +35,10 @@ public class ClientHandler
                 await HandleFromPoolAsync<TeleportConfirm>(data, client);
                 break;
 
+            //case 0x02: // Only used on internal server
+            //    await HandleFromPoolAsync<SetDifficulty>(data, client);
+            //    break;
+
             case 0x03:
                 await HandleFromPoolAsync<IncomingChatMessage>(data, client);
                 break;
@@ -197,7 +201,7 @@ public class ClientHandler
         }
         else
         {
-            Globals.PacketLogger.LogWarning($"{id.ToPacketName()}");
+            //Globals.PacketLogger.LogWarning($"{id.ToPacketName()}");
         }
     }
 

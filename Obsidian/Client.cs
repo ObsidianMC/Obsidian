@@ -289,7 +289,7 @@ public class Client : IDisposable
                     }
                     break;
             }
-
+            //Globals.PacketLogger.LogDebug(Globals.PacketDebugHandler.GetPacket(State, PacketType.Server, id));
             //await Task.Delay(50);
         }
 
