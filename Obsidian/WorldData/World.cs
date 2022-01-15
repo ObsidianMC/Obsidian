@@ -33,6 +33,8 @@ public class World : IWorld
 
     private float rainLevel = 0f;
 
+    private WorldLight worldLight;
+
     internal World(string name, Server server)
     {
         this.Data = new Level
@@ -48,6 +50,8 @@ public class World : IWorld
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
         if (!Directory.Exists(playerDataPath))
             Directory.CreateDirectory(playerDataPath);
+
+        worldLight = new(this);
     }
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -182,7 +186,6 @@ public class World : IWorld
             isGenerated = false // Not necessary; just being explicit.
         };
         region.SetChunk(chunk);
-
         return chunk;
     }
 
@@ -574,6 +577,7 @@ public class World : IWorld
                 region.SetChunk(c);
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
+            await worldLight.ProcessSkyLightForChunk(c);
             region.SetChunk(c);
         });
     }

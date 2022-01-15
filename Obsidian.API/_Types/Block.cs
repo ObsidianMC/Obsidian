@@ -20,6 +20,7 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
     public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
     public bool IsAir => baseId == 0 || baseId == 9915 || baseId == 9916;
     public bool IsFluid => StateId > 33 && StateId < 66;
+    public bool IsTransparent => Material is Material.Glass || IsFluid || IsAir || Replaceable.Contains(Material) || (baseId >= 4164 && baseId <= 4179);
     public int Id => stateToMatch[baseId].numeric;
     public short StateId => (short)(baseId + state);
     public int State => state;

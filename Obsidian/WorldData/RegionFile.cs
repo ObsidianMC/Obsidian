@@ -149,7 +149,16 @@ public class RegionFile : IAsyncDisposable
             var assignedOffset = nextAvailableOffset;
             Interlocked.Add(ref nextAvailableOffset, allocationSize);
             locationTable.SetOffsetSizeAtIndex(tableIndex, assignedOffset, allocationSize);
-            return fileCache.Memory.Slice(assignedOffset, allocationSize);
+            var slice = new Memory<byte>();
+            try
+            {
+                slice = fileCache.Memory.Slice(assignedOffset, allocationSize);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            return slice;
         }
     }
 

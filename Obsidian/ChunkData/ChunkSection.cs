@@ -17,7 +17,7 @@ public sealed class ChunkSection
     public bool HasBlockLight { get; private set; } = false;
     public ReadOnlyMemory<byte> BlockLightArray => blockLight.AsMemory();
 
-    private readonly byte[] skyLight = new byte[2048];
+    private byte[] skyLight = new byte[2048];
 
     private readonly byte[] blockLight = new byte[2048];
 
@@ -51,46 +51,30 @@ public sealed class ChunkSection
     public void SetBiome(Vector position, Biomes biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
     public void SetBiome(int x, int y, int z, Biomes biome) => this.BiomeContainer.Set(x, y, z, biome);
 
-    public void SetSkyLight(Vector position, int light) => this.SetSkyLight(position.X, position.Y, position.Z, light);
-    public void SetSkyLight(int x, int y, int z, int light)
+    public void SetLightLevel(Vector position, LightType lt, int level) => this.SetLightLevel(position.X, position.Y, position.Z, lt, level);
+    public void SetLightLevel(int x, int y, int z, LightType lt, int level)
     {
         // each value is 4 bits. So upper 4 bits will be odd, lower even
         var index = (y << 8) | (z << 4) | x;
         int shift = (index & 1) << 2;
         index /= 2;
-        skyLight[index] &= (byte)(0xF0 >> shift);
-        skyLight[index] |= (byte)(light << shift);
-        HasSkyLight = true;
+        var data = lt == LightType.Sky ? skyLight : blockLight;
+        data[index] &= (byte)(0xF0 >> shift);
+        data[index] |= (byte)(level << shift);
+        HasSkyLight |= lt == LightType.Sky;
+        HasBlockLight |= lt == LightType.Block;
     }
 
-    public int GetSkyLightLevel(Vector position) => GetSkyLightLevel(position.X, position.Y, position.Z);
-    public int GetSkyLightLevel(int x, int y, int z)
+    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
+    public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var index = (y << 8) | (z << 4) | x;
         var mask = 0xF << (index & 1);
         index /= 2;
-        return skyLight[index] & mask;
+        return lt == LightType.Sky ? skyLight[index] & mask : blockLight[index] & mask;
     }
 
-    public void SetBlockLight(Vector position, int light) => this.SetBlockLight(position.X, position.Y, position.Z, light);
-    public void SetBlockLight(int x, int y, int z, int light)
-    {
-        var index = (y << 8) | (z << 4) | x;
-        int shift = (index & 1) << 2;
-        index /= 2;
-        blockLight[index] &= (byte)(0xF0 >> shift);
-        blockLight[index] |= (byte)(light << shift);
-        HasBlockLight = true;
-    }
-
-    public int GetBlockLightLevel(Vector position) => GetBlockLightLevel(position.X, position.Y, position.Z);
-    public int GetBlockLightLevel(int x, int y, int z)
-    {
-        var index = (y << 8) | (z << 4) | x;
-        var mask = 0xF << (index & 1);
-        index /= 2;
-        return blockLight[index] & mask;
-    }
+    internal void SetSkyLight(byte[] data) => skyLight = data;
 
     public ChunkSection Clone()
     {

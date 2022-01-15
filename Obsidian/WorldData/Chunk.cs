@@ -151,6 +151,26 @@ public class Chunk
 
     public void SetBlockMeta(Vector position, BlockMeta meta) => SetBlockMeta(position.X, position.Y, position.Z, meta);
 
+    public void SetLightLevel(Vector position, LightType lt, int light) => this.SetLightLevel(position.X, position.Y, position.Z, lt, light);
+    public void SetLightLevel(int x, int y, int z, LightType lt, int level)
+    {
+        var sec = Sections[SectionIndex(y)];
+        x = NumericsHelper.Modulo(x, 16);
+        y = NumericsHelper.Modulo(y, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        sec.SetLightLevel(x, y, z, lt, level);
+    }
+
+    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
+    public int GetLightLevel(int x, int y, int z, LightType lt)
+    {
+        var sec = Sections[SectionIndex(y)];
+        x = NumericsHelper.Modulo(x, 16);
+        y = NumericsHelper.Modulo(y, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        return sec.GetLightLevel(x, y, z, lt);
+    }
+
     public void CalculateHeightmap()
     {
         Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
@@ -165,30 +185,6 @@ public class Chunk
                         continue;
 
                     target.Set(x, z, value: y);
-                    break;
-                }
-            }
-        }
-    }
-
-    public void CalculateSkyLight()
-    {
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < width; z++)
-            {
-                for (int y = worldHeight - 1; y >= worldFloor; y--)
-                {
-                    var block = GetBlock(x, y, z);
-                    if (block.IsAir)
-                        continue;
-
-                    var i = SectionIndex(y);
-                    x = NumericsHelper.Modulo(x, 16);
-                    y = NumericsHelper.Modulo(y, 16);
-                    z = NumericsHelper.Modulo(z, 16);
-                    var sec = Sections[i];
-                    sec.SetSkyLight(x, y, z, 15);
                     break;
                 }
             }

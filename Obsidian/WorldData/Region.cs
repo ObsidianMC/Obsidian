@@ -192,6 +192,8 @@ public class Region
                 if (Enum.TryParse<Biomes>(biome.Value.TrimMinecraftTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
             }
+
+            //section.SetSkyLight(sectionCompound["SkyLight"])
         }
 
         foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
@@ -259,11 +261,13 @@ public class Region
                 biomesCompound.Add(palette);
             }
 
+
             sectionsCompound.Add(new NbtCompound
             {
                 new NbtTag<byte>("Y", (byte)section.YBase),
+                blockStatesCompound,
                 biomesCompound,
-                blockStatesCompound
+                new NbtArray<byte>("SkyLight", section.SkyLightArray.ToArray())
             });
         }
 

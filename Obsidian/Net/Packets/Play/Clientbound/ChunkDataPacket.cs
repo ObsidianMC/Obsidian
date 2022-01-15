@@ -23,7 +23,6 @@ public partial class ChunkDataPacket : IClientboundPacket
         stream.WriteInt(Chunk.Z);
 
         //Chunk.CalculateHeightmap();
-        Chunk.CalculateSkyLight();
         var writer = new NbtWriter(stream, string.Empty);
         foreach (var (type, heightmap) in Chunk.Heightmaps)
             if (type == ChunkData.HeightmapType.MotionBlocking)
