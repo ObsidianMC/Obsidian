@@ -2,6 +2,7 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -69,7 +70,7 @@ public class Player : Living, IPlayer
     }
 
     public int Ping => this.client.ping;
-    public string Dimension { get; set; }
+    public string Dimension { get; set; } = "minecraft:overworld";
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -341,7 +342,7 @@ public class Player : Living, IPlayer
         {
             // if unalive, reset health and set location to world spawn
             this.Health = 20f;
-            this.Position = this.World.Data.SpawnPosition;
+            this.Position = this.World.LevelData.SpawnPosition;
         }
 
         Registry.Dimensions.TryGetValue(0, out var codec);
@@ -602,7 +603,7 @@ public class Player : Living, IPlayer
 
         if (!playerDataFile.Exists)
         {
-            this.Position = this.World.Data.SpawnPosition;
+            this.Position = this.World.LevelData.SpawnPosition;
             this.Dimension = "minecraft:overworld";
             return;
         }
@@ -635,9 +636,9 @@ public class Player : Living, IPlayer
         this.HurtTime = compound.GetShort("HurtTime");
         this.SleepTimer = compound.GetShort("SleepTimer");
 
-        var dimension = Registry.GetDimensionCodecOrDefault(compound.GetString("Dimension"));
-
-        this.Dimension = dimension != null ? dimension.Name : "minecraft:overworld";
+        var dimensionId = compound.GetString("Dimension");
+        if (!string.IsNullOrWhiteSpace(dimensionId) && Registry.GetDimensionCodecOrDefault(dimensionId) is DimensionCodec codec)
+            this.Dimension = codec.Name;
 
         this.FoodLevel = compound.GetInt("foodLevel");
         this.FoodTickTimer = compound.GetInt("foodTickTimer");
@@ -662,7 +663,7 @@ public class Player : Living, IPlayer
             this.Position = new VectorF(x, y, z);
         }
         else
-            this.Position = this.World.Data.SpawnPosition;
+            this.Position = this.World.LevelData.SpawnPosition;
 
         if (compound.TryGetTag("Rotation", out var rotationTag))
         {

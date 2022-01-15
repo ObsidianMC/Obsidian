@@ -31,11 +31,13 @@ public sealed class WorldManager
             if (!server.WorldGenerators.TryGetValue(configWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {configWorld.Generator}");
 
-            var world = new World(configWorld.Name, configWorld.Seed, this.server, value);
+            var world = new World(configWorld.Name, this.server, configWorld.Seed, value);
             if (!await world.LoadAsync())
             {
                 logger.LogInformation($"Creating new world: {configWorld.Name}...");
-                await world.InitAsync();
+
+                await world.InitAsync(0);
+
                 await world.SaveAsync();
             }
 

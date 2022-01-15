@@ -1,16 +1,18 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Blocks;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Utilities.Registry;
 using System.IO;
 
 namespace Obsidian.WorldData;
 
 public class World : IWorld
 {
-    public Level Data { get; internal set; }
+    private float rainLevel = 0f;
+
+    public Level LevelData { get; internal set; }
 
     public ConcurrentDictionary<Guid, Player> Players { get; private set; } = new();
 
@@ -24,40 +26,36 @@ public class World : IWorld
 
     public ConcurrentBag<(int X, int Z)> SpawnChunks { get; private set; } = new();
 
-    public ConcurrentDictionary<int, DimensionCodec> Dimensions { get; private set; } = new();
+    /// <summary>
+    /// A list of dimensions this world has access to not including itself.
+    /// </summary>
+    public HashSet<int> Dimensions { get; private set; } = new();
 
     public string Name { get; }
-
     public string Seed { get; }
     public string FolderPath { get; }
     public string LevelDataFilePath { get; }
 
     public bool Loaded { get; private set; }
 
-    public long Time => Data.Time;
+    public long Time => LevelData.Time;
 
-    public Gamemode GameType => Data.GameType;
+    public Gamemode DefaultGamemode => LevelData.DefaultGamemode;
 
-    private float rainLevel = 0f;
+    public int DimensionId { get; private set; }
 
-    internal World(string name, string seed, Server server, Type generatorType)
+    internal World(string name, Server server, string seed, Type generatorType)
     {
-        this.Data = new Level
-        {
-            Time = 1200,
-            GameType = (int)Gamemode.Survival,
-            GeneratorName = WorldType.Default.ToString()
-        };
-
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
-        this.Seed = seed ?? throw new ArgumentNullException(nameof(seed));
         this.Server = server;
 
-        this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
-        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
+        this.Seed = seed ?? throw new ArgumentNullException(nameof(seed));
 
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         this.Generator.Init(seed);
+
+        this.FolderPath = Path.Combine(server.ServerFolderPath, this.Name);
+        this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
 
         var playerDataPath = Path.Combine(this.Server.ServerFolderPath, this.Name, "playerdata");
         if (!Directory.Exists(playerDataPath))
@@ -318,7 +316,7 @@ public class World : IWorld
         await player.client.SendPlayerInfoAsync();
         await player.client.SendTimeUpdateAsync();
         await player.client.SendWeatherUpdateAsync();
-        await player.client.QueuePacketAsync(new SpawnPosition(this.Data.SpawnPosition));
+        await player.client.QueuePacketAsync(new SpawnPosition(this.LevelData.SpawnPosition));
 
         //Initialize inventory
         await player.client.QueuePacketAsync(new WindowItems(0, player.Inventory.ToList())
@@ -337,17 +335,17 @@ public class World : IWorld
     /// <returns></returns>
     public async Task DoWorldTickAsync()
     {
-        this.Data.Time += this.Server.Config.TimeTickSpeedMultiplier;
-        this.Data.RainTime -= this.Server.Config.TimeTickSpeedMultiplier;
+        this.LevelData.Time += this.Server.Config.TimeTickSpeedMultiplier;
+        this.LevelData.RainTime -= this.Server.Config.TimeTickSpeedMultiplier;
 
-        if (Data.RainTime < 1)
+        if (LevelData.RainTime < 1)
         {
             // Raintime passed, toggle weather
-            Data.Raining = !Data.Raining;
+            LevelData.Raining = !LevelData.Raining;
 
             int rainTime;
             // amount of ticks in a day is 24000
-            if (Data.Raining)
+            if (LevelData.Raining)
             {
                 rainTime = Globals.Random.Next(12000, 24000); // rain lasts 0.5 - 1 day
             }
@@ -355,17 +353,17 @@ public class World : IWorld
             {
                 rainTime = Globals.Random.Next(12000, 180000); // clear lasts 0.5 - 7.5 day
             }
-            Data.RainTime = rainTime;
+            LevelData.RainTime = rainTime;
 
-            this.Server.Logger.LogInformation($"Toggled rain: {this.Data.Raining} for {this.Data.RainTime} ticks.");
+            this.Server.Logger.LogInformation($"Toggled rain: {this.LevelData.Raining} for {this.LevelData.RainTime} ticks.");
         }
 
         // Gradually increase and decrease rain levels based on
         // whether value is in range and what weather is active
         var oldLevel = this.rainLevel;
-        if (!Data.Raining && this.rainLevel > 0f)
+        if (!LevelData.Raining && this.rainLevel > 0f)
             this.rainLevel -= 0.01f;
-        else if (Data.Raining && this.rainLevel < 1f)
+        else if (LevelData.Raining && this.rainLevel < 1f)
             this.rainLevel += 0.01f;
 
         if (oldLevel != this.rainLevel)
@@ -373,13 +371,13 @@ public class World : IWorld
             // send new level if updated
             this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.RainLevelChange, this.rainLevel));
             if (rainLevel < 0.3f && rainLevel > 0.1f)
-                this.Server.BroadcastPacket(new ChangeGameState(this.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+                this.Server.BroadcastPacket(new ChangeGameState(this.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         }
 
-        if (this.Data.Time % (20 * this.Server.Config.TimeTickSpeedMultiplier) == 0)
+        if (this.LevelData.Time % (20 * this.Server.Config.TimeTickSpeedMultiplier) == 0)
         {
             // Update client time every second / 20 ticks
-            this.Server.BroadcastPacket(new TimeUpdate(this.Data.Time, this.Data.Time % 24000));
+            this.Server.BroadcastPacket(new TimeUpdate(this.LevelData.Time, this.LevelData.Time % 24000));
         }
 
         await this.ManageChunksAsync();
@@ -398,13 +396,13 @@ public class World : IWorld
         var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
 
         var levelcompound = reader.ReadNextTag() as NbtCompound;
-        this.Data = new Level()
+        this.LevelData = new Level()
         {
             Hardcore = levelcompound.GetBool("hardcore"),
             MapFeatures = levelcompound.GetBool("MapFeatures"),
             Raining = levelcompound.GetBool("raining"),
             Thundering = levelcompound.GetBool("thundering"),
-            GameType = (Gamemode)levelcompound.GetInt("GameType"),
+            DefaultGamemode = (Gamemode)levelcompound.GetInt("GameType"),
             GeneratorVersion = levelcompound.GetInt("generatorVersion"),
             RainTime = levelcompound.GetInt("rainTime"),
             SpawnPosition = new VectorF(levelcompound.GetInt("SpawnX"), levelcompound.GetInt("SpawnY"), levelcompound.GetInt("SpawnZ")),
@@ -418,7 +416,7 @@ public class World : IWorld
         };
 
         if (levelcompound.TryGetTag("Version", out var tag))
-            this.Data.VersionData = tag as NbtCompound;
+            this.LevelData.VersionData = tag as NbtCompound;
 
         Server.Logger.LogInformation($"Loading spawn chunks into memory...");
         for (int rx = -1; rx < 1; rx++)
@@ -427,7 +425,7 @@ public class World : IWorld
 
         // spawn chunks are radius 12 from spawn,
         var radius = 12;
-        var (x, z) = this.Data.SpawnPosition.ToChunkCoord();
+        var (x, z) = this.LevelData.SpawnPosition.ToChunkCoord();
         for (var cx = x - radius; cx < x + radius; cx++)
             for (var cz = z - radius; cz < z + radius; cz++)
                 SpawnChunks.Add((cx, cz));
@@ -457,22 +455,22 @@ public class World : IWorld
         using var fs = worldFile.Create();
         using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
 
-        writer.WriteBool("hardcore", this.Data.Hardcore);
-        writer.WriteBool("MapFeatures", this.Data.MapFeatures);
-        writer.WriteBool("raining", this.Data.Raining);
-        writer.WriteBool("thundering", this.Data.Thundering);
+        writer.WriteBool("hardcore", this.LevelData.Hardcore);
+        writer.WriteBool("MapFeatures", this.LevelData.MapFeatures);
+        writer.WriteBool("raining", this.LevelData.Raining);
+        writer.WriteBool("thundering", this.LevelData.Thundering);
 
-        writer.WriteInt("GameType", (int)this.Data.GameType);
-        writer.WriteInt("generatorVersion", this.Data.GeneratorVersion);
-        writer.WriteInt("rainTime", this.Data.RainTime);
-        writer.WriteInt("SpawnX", (int)Data.SpawnPosition.X);
-        writer.WriteInt("SpawnY", (int)Data.SpawnPosition.Y);
-        writer.WriteInt("SpawnZ", (int)Data.SpawnPosition.Z);
-        writer.WriteInt("thunderTime", this.Data.ThunderTime);
-        writer.WriteInt("version", this.Data.Version);
+        writer.WriteInt("GameType", (int)this.LevelData.DefaultGamemode);
+        writer.WriteInt("generatorVersion", this.LevelData.GeneratorVersion);
+        writer.WriteInt("rainTime", this.LevelData.RainTime);
+        writer.WriteInt("SpawnX", (int)LevelData.SpawnPosition.X);
+        writer.WriteInt("SpawnY", (int)LevelData.SpawnPosition.Y);
+        writer.WriteInt("SpawnZ", (int)LevelData.SpawnPosition.Z);
+        writer.WriteInt("thunderTime", this.LevelData.ThunderTime);
+        writer.WriteInt("version", this.LevelData.Version);
 
         writer.WriteLong("LastPlayed", DateTimeOffset.Now.ToUnixTimeMilliseconds());
-        writer.WriteLong("RandomSeed", this.Data.RandomSeed);
+        writer.WriteLong("RandomSeed", this.LevelData.RandomSeed);
         writer.WriteLong("Time", this.Time);
 
         writer.WriteString("generatorName", this.Generator.GetType().GetProperty("Id")?.GetValue(this.Generator)?.ToString());
@@ -537,7 +535,7 @@ public class World : IWorld
     /// </summary>
     /// <param name="worldLoc"></param>
     /// <returns>Whether to update neighbor blocks.</returns>
-    internal async Task<bool> HandleBlockUpdate(BlockUpdate bu)
+    internal async Task<bool> HandleBlockUpdateAsync(BlockUpdate bu)
     {
         if (bu.Block is null) { return false; }
 
@@ -723,10 +721,24 @@ public class World : IWorld
         return entity;
     }
 
-    internal async Task InitAsync()
+    internal async Task InitAsync(int dimensionId)
     {
+        if (!Registry.TryGetDimensionCodec(dimensionId, out var codec))
+            throw new ArgumentException($"Failed to find dimension with ID {dimensionId}");
+
+        this.DimensionId = dimensionId;
+
+        //TODO configure all dim data
+        this.LevelData = new Level
+        {
+            Time = codec.Element.FixedTime ?? 0,
+            DefaultGamemode = Gamemode.Survival,
+            GeneratorName = this.Generator.Id
+        };
+
         // Make world directory
-        Directory.CreateDirectory(Path.Join(Server.ServerFolderPath, Name));
+        Directory.CreateDirectory(this.FolderPath);
+
         await GenerateWorldAsync();
         await SetWorldSpawnAsync();
     }
@@ -771,7 +783,7 @@ public class World : IWorld
 
     internal async Task SetWorldSpawnAsync()
     {
-        if (Data.SpawnPosition.Y != 0) { return; }
+        if (LevelData.SpawnPosition.Y != 0) { return; }
 
         foreach (var r in Regions.Values)
         {
@@ -788,7 +800,7 @@ public class World : IWorld
                             if (c.GetBlock(bx, by + 1, bz).IsAir && c.GetBlock(bx, by + 2, bz).IsAir)
                             {
                                 var worldPos = new VectorF(bx + 0.5f + (c.X * 16), by + 1, bz + 0.5f + (c.Z * 16));
-                                this.Data.SpawnPosition = worldPos;
+                                this.LevelData.SpawnPosition = worldPos;
                                 this.Server.Logger.LogInformation($"World Spawn set to {worldPos}");
 
                                 // Should spawn be far from (0,0), queue up chunks in generation range.
@@ -825,7 +837,7 @@ public class World : IWorld
     public Task SpawnExperienceOrbs(VectorF position, short count = 1) =>
         this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
 
-    public async Task SpawnPainting(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
+    public async Task SpawnPaintingAsync(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default)
     {
         if (uuid == Guid.Empty) uuid = Guid.NewGuid();
         await this.Server.QueueBroadcastPacketAsync(new SpawnPainting(uuid, painting.Id, position, direction));

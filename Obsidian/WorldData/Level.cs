@@ -1,5 +1,3 @@
-// This is the data about one world. It gets saved as level.dat.
-
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData;
@@ -115,7 +113,7 @@ public sealed class Level
     /// <summary>
     /// The default game mode for the singleplayer player when they initially spawn.
     /// </summary>
-    public Gamemode GameType { get; set; }
+    public Gamemode DefaultGamemode { get; set; }
 
     /// <summary>
     /// Used in 1.15 and below. The name of the world generator.

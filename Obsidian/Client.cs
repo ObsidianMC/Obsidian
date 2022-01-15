@@ -346,7 +346,7 @@ public class Client : IDisposable
 
             Dimension = codec,
 
-            WorldName = "minecraft:world",
+            DimensionName = this.Player.Dimension,
 
             HashedSeed = 0,
 
@@ -382,9 +382,9 @@ public class Client : IDisposable
     #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
-    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Player.World.Data.Time, this.Player.World.Data.DayTime));
+    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Player.World.LevelData.Time, this.Player.World.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => 
-        this.QueuePacketAsync(new ChangeGameState(this.Player.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        this.QueuePacketAsync(new ChangeGameState(this.Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {

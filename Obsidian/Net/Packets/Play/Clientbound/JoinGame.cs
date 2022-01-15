@@ -35,7 +35,7 @@ public partial class JoinGame : IClientboundPacket
     public DimensionCodec Dimension { get; init; }
 
     [Field(8)]
-    public string WorldName { get; init; }
+    public string DimensionName { get; init; }
 
     [Field(9)]
     public long HashedSeed { get; init; }

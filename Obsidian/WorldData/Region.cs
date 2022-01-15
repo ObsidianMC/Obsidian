@@ -139,7 +139,7 @@ public class Region
                 }
                 else
                 {
-                    bool updateNeighbor = await bu.world.HandleBlockUpdate(bu);
+                    bool updateNeighbor = await bu.world.HandleBlockUpdateAsync(bu);
                     if (updateNeighbor) { neighborUpdates.Add(bu); }
                 }
             }

@@ -378,7 +378,7 @@ public class MainCommandModule
     public async Task TimeAsync(CommandContext Context, int time)
     {
         var player = Context.Player as Player;
-        player.World.Data.DayTime = time;
+        player.World.LevelData.DayTime = time;
         await Context.Player.SendMessageAsync($"Time set to {time}");
     }
 
@@ -433,7 +433,7 @@ public class MainCommandModule
     public async Task WeatherAsync(CommandContext ctx)
     {
         var player = (Player)ctx.Player;
-        player.World.Data.RainTime = 0;
+        player.World.LevelData.RainTime = 0;
         await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
     }
 
