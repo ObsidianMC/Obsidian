@@ -16,10 +16,14 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public Stream BaseStream { get; }
 
-    public NbtWriter(Stream stream, NbtCompression compressionMode = NbtCompression.None)
+    public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
-        //TODO ZLib compression
-        this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(stream, CompressionMode.Compress) : stream;
+        if (compressionMode == NbtCompression.GZip)
+            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+        else if (compressionMode == NbtCompression.ZLib)
+            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
+        else
+            this.BaseStream = outstream;
     }
 
     public NbtWriter(Stream outstream, string name)
@@ -34,8 +38,12 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
     {
-        //TODO ZLib compression
-        this.BaseStream = compressionMode == NbtCompression.GZip ? new GZipStream(outstream, CompressionMode.Compress) : outstream;
+        if (compressionMode == NbtCompression.GZip)
+            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+        else if (compressionMode == NbtCompression.ZLib)
+            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
+        else
+            this.BaseStream = outstream;
 
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);
@@ -56,7 +64,8 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public void WriteCompoundStart(string name = "")
     {
-        this.Validate(name, NbtTagType.Compound);
+        if(this.rootNodes.Count > 0)
+            this.Validate(name, NbtTagType.Compound);
 
         if (this.RootType == NbtTagType.List)
         {
@@ -70,7 +79,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         this.WriteStringInternal(name);
     }
 
-    public void WriteListStart(string name, NbtTagType listType, int length)
+    public void WriteListStart(string name, NbtTagType listType, int length, bool writeName = true)
     {
         this.Validate(name, NbtTagType.List);
 
@@ -80,7 +89,10 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         this.expectedListType = listType;
 
         this.Write(NbtTagType.List);
-        this.WriteStringInternal(name);
+
+        if (writeName)
+            this.WriteStringInternal(name);
+
         this.Write(listType);
         this.WriteIntInternal(length);
     }
@@ -174,12 +186,77 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
                 this.WriteListStart(name, list.ListType, list.Count);
 
                 foreach (var child in list)
-                    this.WriteTag(child);
+                    this.WriteListTag(child);
 
                 this.EndList();
                 break;
             case NbtTagType.Compound:
                 this.WriteCompoundStart(name);
+
+                foreach (var (_, child) in (NbtCompound)tag)
+                    this.WriteTag(child);
+
+                this.EndCompound();
+                break;
+            case NbtTagType.ByteArray:
+            case NbtTagType.IntArray:
+            case NbtTagType.LongArray:
+                this.WriteArray(tag);
+                break;
+            case NbtTagType.Unknown:
+            default:
+                throw new InvalidOperationException("Unknown tag type");
+        }
+    }
+
+    public void WriteListTag(INbtTag tag)
+    {
+        var name = tag.Name;
+
+        switch (tag.Type)
+        {
+            case NbtTagType.End:
+                throw new InvalidOperationException("Use writer.EndCompound() instead.");
+            case NbtTagType.Byte:
+                if (tag is NbtTag<byte> byteTag)
+                {
+                    this.WriteByte(byteTag.Value);
+                }
+                else if (tag is NbtTag<bool> boolValue)
+                {
+                    this.WriteByte((byte)(boolValue.Value ? 1 : 0));
+                }
+                break;
+            case NbtTagType.Short:
+                this.WriteShort(((NbtTag<short>)tag).Value);
+                break;
+            case NbtTagType.Int:
+                this.WriteInt(((NbtTag<int>)tag).Value);
+                break;
+            case NbtTagType.Long:
+                this.WriteLong(((NbtTag<long>)tag).Value);
+                break;
+            case NbtTagType.Float:
+                this.WriteFloat(((NbtTag<float>)tag).Value);
+                break;
+            case NbtTagType.Double:
+                this.WriteDouble(((NbtTag<double>)tag).Value);
+                break;
+            case NbtTagType.String:
+                this.WriteString(((NbtTag<string>)tag).Value);
+                break;
+            case NbtTagType.List:
+                var list = (NbtList)tag;
+
+                this.WriteListStart(name, list.ListType, list.Count, false);
+
+                foreach (var child in list)
+                    this.WriteListTag(child);
+
+                this.EndList();
+                break;
+            case NbtTagType.Compound:
+                this.WriteCompoundStart();
 
                 foreach (var (_, child) in (NbtCompound)tag)
                     this.WriteTag(child);
@@ -232,7 +309,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public void WriteString(string value)
     {
-        this.Validate(null, NbtTagType.Double);
+        this.Validate(null, NbtTagType.String);
         this.WriteStringInternal(value);
     }
 

@@ -7,7 +7,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public static class OverworldDecorator
 {
-    public static void Decorate(Chunk chunk, double[,] terrainHeightMap, OverworldTerrain ot, World world)
+    public static async Task DecorateAsync(Chunk chunk, double[,] terrainHeightMap, OverworldTerrain ot, World world)
     {
         var noise = new TerrainNoise(ot.settings);
         for (int x = 0; x < 16; x++)
@@ -19,14 +19,14 @@ public static class OverworldDecorator
                 IDecorator decorator = DecoratorFactory.GetDecorator(b, chunk, blockPos, noise);
 
                 decorator.Decorate();
-                GenerateTrees(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
-                GenerateFlora(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+                await GenerateTreesAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+                await GenerateFloraAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
 
             }
         }
     }
 
-    private static void GenerateFlora(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)
+    private static async Task GenerateFloraAsync(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)
     {
         foreach (var (flora, index) in features.Flora.Select((value, i) => (value, i)))
         {
@@ -39,21 +39,21 @@ public static class OverworldDecorator
             bool isFlora = noiseVal > 0.9 && noiseVal <= freq + 0.9;
             if (!isFlora) { continue; }
 
-            floraInstance.GenerateFlora(pos, noise.settings.Seed, flora.Radius, flora.Density);
+            await floraInstance.GenerateFloraAsync(pos, noise.settings.Seed, flora.Radius, flora.Density);
         }
     }
 
-    public static void GrowTree(Vector position, BaseTree tree, int? heightOffset = null)
+    public static async Task GrowTreeAsync(Vector position, BaseTree tree, int? heightOffset = null)
     {
         int offset;
         if (heightOffset is null)
             offset = new Random().Next(-2, 2);
         else
             offset = (int)heightOffset;
-        tree.TryGenerateTree(position, offset);
+        await tree.TryGenerateTreeAsync(position, offset);
     }
 
-    private static void GenerateTrees(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)
+    private static async Task GenerateTreesAsync(World world, Vector pos, DecoratorFeatures features, TerrainNoise noise)
     {
         foreach (var (tree, index) in features.Trees.Select((value, i) => (value, i)))
         {
@@ -67,7 +67,7 @@ public static class OverworldDecorator
             if (!isTree) { continue; }
 
             int heightVariance = (int)(((noiseVal - 0.8) * 100) - (freq / 2));
-            GrowTree(pos, treeInstance, heightVariance);
+            await GrowTreeAsync(pos, treeInstance, heightVariance);
         }
     }
 }

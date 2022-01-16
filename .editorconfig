@@ -145,6 +145,7 @@ dotnet_style_qualification_for_method = false:suggestion
 #prefer properties not to be prefaced with this. or Me. in Visual Basic
 dotnet_style_qualification_for_property = false:suggestion
 csharp_style_namespace_declarations=file_scoped:silent
+insert_final_newline=true
 
 [*.{cs,vb}]
 dotnet_style_prefer_simplified_boolean_expressions=true:warning

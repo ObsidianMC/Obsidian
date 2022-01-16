@@ -66,10 +66,20 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
         }
     }
 
-    public string PrettyString(int depth = 4)
+    public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
-        var t = $"{this}";
-        return t.PadLeft(depth + t.Length);
+        switch (this.type)
+        {
+            case NbtTagType.ByteArray:
+            case NbtTagType.IntArray:
+            case NbtTagType.LongArray:
+                {
+                    var name = $"TAG_{this.Type}('{this.Name}'): {this.Count} Values";
+                    return name.PadLeft(name.Length + depth);
+                }
+            default:
+                throw new InvalidOperationException();
+        }
     }
 
     private void SetType()

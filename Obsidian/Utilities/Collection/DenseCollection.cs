@@ -23,7 +23,8 @@ public class DenseCollection<T> : IEnumerable<T> where T : class
 
     public T this[int x, int z]
     {
-        get {
+        get
+        {
             x %= Width;
             z %= Width;
 
@@ -35,7 +36,8 @@ public class DenseCollection<T> : IEnumerable<T> where T : class
             return source[x + z * Width];
         }
 
-        set {
+        set
+        {
             lock (lockObject)
             {
                 x %= Width;

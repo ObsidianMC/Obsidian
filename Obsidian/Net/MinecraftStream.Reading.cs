@@ -541,7 +541,7 @@ public partial class MinecraftStream
         {
             var item = Registry.GetItem((short)ReadVarInt());
 
-            var slot = new ItemStack(item.Type, ReadUnsignedByte())
+            var itemStack = new ItemStack(item.Type, ReadUnsignedByte())
             {
                 Present = present
             };
@@ -598,7 +598,7 @@ public partial class MinecraftStream
                                 {
                                     var byteTag = (NbtTag<byte>)child;
 
-                                    itemMetaBuilder.WithSlot(byteTag.Value);
+                                    itemStack.Slot = byteTag.Value;
                                     //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                     break;
                                 }
@@ -636,10 +636,10 @@ public partial class MinecraftStream
                     }
                 }
 
-                slot.ItemMeta = itemMetaBuilder.Build();
+                itemStack.ItemMeta = itemMetaBuilder.Build();
             }
 
-            return slot;
+            return itemStack;
         }
 
         return null;
@@ -653,7 +653,7 @@ public partial class MinecraftStream
         {
             var item = Registry.GetItem((short)await this.ReadVarIntAsync());
 
-            var slot = new ItemStack(item.Type, await this.ReadByteAsync())
+            var itemStack = new ItemStack(item.Type, await this.ReadByteAsync())
             {
                 Present = present
             };
@@ -708,7 +708,7 @@ public partial class MinecraftStream
                                 {
                                     var byteTag = (NbtTag<byte>)child;
 
-                                    itemMetaBuilder.WithSlot(byteTag.Value);
+                                    itemStack.Slot = byteTag.Value;
                                     //Console.WriteLine($"Setting slot: {itemMetaBuilder.Slot}");
                                     break;
                                 }
@@ -753,10 +753,10 @@ public partial class MinecraftStream
                     //slot.ItemNbt.RepairCost = compound.Get<NbtInt>("RepairCost").Value;
                 }
 
-                slot.ItemMeta = itemMetaBuilder.Build();
+                itemStack.ItemMeta = itemMetaBuilder.Build();
             }
 
-            return slot;
+            return itemStack;
         }
 
         return null;

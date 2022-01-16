@@ -1,50 +1,48 @@
-﻿using Obsidian.Utilities.Collection;
+﻿using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
 
-public class ChunkSection : BlockStateContainer
+public sealed class ChunkSection
 {
     public bool Overworld = true;
 
     public int? YBase { get; }
-    public override byte BitsPerBlock { get; }
-    public override DataArray BlockStorage { get; }
 
-    public override IBlockStatePalette Palette { get; internal set; }
+    public BlockStateContainer BlockStateContainer { get; }
+    public BiomeContainer BiomeContainer { get; }
 
-    public ChunkSection(byte bitsPerBlock = 6, int? yBase = null)
+    public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
     {
-        this.BitsPerBlock = bitsPerBlock;
-
-        this.BlockStorage = new DataArray(bitsPerBlock, 4096);
-
-        this.Palette = bitsPerBlock.DeterminePalette();
+        this.BlockStateContainer = new(bitsPerBlock);
+        this.BiomeContainer = new(bitsPerBiome);
 
         this.YBase = yBase;
 
-        this.FillWithAir();
+        int airIndex = BlockStateContainer.Palette.GetOrAddId(Block.Air);
+        Debug.Assert(airIndex == 0);
+    }
+
+    private ChunkSection(BlockStateContainer blockContainer, BiomeContainer biomeContainer, int? yBase)
+    {
+        BlockStateContainer = blockContainer;
+        BiomeContainer = biomeContainer;
+        YBase = yBase;
     }
 
     public Block GetBlock(Vector position) => this.GetBlock(position.X, position.Y, position.Z);
-    public Block GetBlock(int x, int y, int z) => this.Get(x, y, z);
+    public Block GetBlock(int x, int y, int z) => this.BlockStateContainer.Get(x, y, z);
 
-    public bool SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
-    public bool SetBlock(int x, int y, int z, Block block) => this.Set(x, y, z, block);
+    public Biomes GetBiome(Vector position) => this.GetBiome(position.X, position.Y, position.Z);
+    public Biomes GetBiome(int x, int y, int z) => this.BiomeContainer.Get(x, y, z);
 
-    public bool IsEmpty => this.BlockStorage.Storage.Length <= 0;
+    public void SetBlock(Vector position, Block block) => this.SetBlock(position.X, position.Y, position.Z, block);
+    public void SetBlock(int x, int y, int z, Block block) => this.BlockStateContainer.Set(x, y, z, block);
 
-    private void FillWithAir()
+    public void SetBiome(Vector position, Biomes biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
+    public void SetBiome(int x, int y, int z, Biomes biome) => this.BiomeContainer.Set(x, y, z, biome);
+
+    public ChunkSection Clone()
     {
-        var air = Block.Air;
-        for (int x = 0; x < 16; x++)
-        {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int z = 0; z < 16; z++)
-                {
-                    this.Set(x, y, z, air);
-                }
-            }
-        }
+        return new ChunkSection(BlockStateContainer.Clone(), BiomeContainer.Clone(), YBase);
     }
 }

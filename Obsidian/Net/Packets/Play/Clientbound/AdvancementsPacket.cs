@@ -14,7 +14,7 @@ public partial class AdvancementsPacket : IClientboundPacket
     [Field(2)]
     public List<string> RemovedAdvancements { get; set; }
 
-    public int Id => 0x62;
+    public int Id => 0x63;
 
     public void Serialize(MinecraftStream stream)
     {

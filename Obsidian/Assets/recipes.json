@@ -3902,7 +3902,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_from_copper_block_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:copper_block",
@@ -3930,7 +3930,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_slab_from_copper_block_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:copper_block",
@@ -3970,7 +3970,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "cut_copper_stairs_from_copper_block_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:copper_block",
@@ -6149,7 +6149,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_from_exposed_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:exposed_copper",
@@ -6177,7 +6177,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_slab_from_exposed_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:exposed_copper",
@@ -6217,7 +6217,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "exposed_cut_copper_stairs_from_exposed_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:exposed_copper",
@@ -12089,7 +12089,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_from_oxidized_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:oxidized_copper",
@@ -12117,7 +12117,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_slab_from_oxidized_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:oxidized_copper",
@@ -12157,7 +12157,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "oxidized_cut_copper_stairs_from_oxidized_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:oxidized_copper",
@@ -17497,7 +17497,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_cut_copper_from_waxed_copper_block_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_copper_block",
@@ -17543,7 +17543,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_cut_copper_slab_from_waxed_copper_block_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_copper_block",
@@ -17601,7 +17601,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_cut_copper_stairs_from_waxed_copper_block_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_copper_block",
@@ -17675,7 +17675,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_exposed_cut_copper_from_waxed_exposed_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_exposed_copper",
@@ -17721,7 +17721,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_exposed_cut_copper_slab_from_waxed_exposed_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_exposed_copper",
@@ -17779,7 +17779,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_exposed_cut_copper_stairs_from_waxed_exposed_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_exposed_copper",
@@ -17853,7 +17853,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_oxidized_cut_copper_from_waxed_oxidized_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_oxidized_copper",
@@ -17899,7 +17899,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_oxidized_cut_copper_slab_from_waxed_oxidized_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_oxidized_copper",
@@ -17957,7 +17957,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_oxidized_cut_copper_stairs_from_waxed_oxidized_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_oxidized_copper",
@@ -18031,7 +18031,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_weathered_cut_copper_from_waxed_weathered_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_weathered_copper",
@@ -18077,7 +18077,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_weathered_cut_copper_slab_from_waxed_weathered_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_weathered_copper",
@@ -18135,7 +18135,7 @@
     "type": "minecraft:crafting_shapeless"
   },
   "waxed_weathered_cut_copper_stairs_from_waxed_weathered_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:waxed_weathered_copper",
@@ -18174,7 +18174,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_from_weathered_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:weathered_copper",
@@ -18202,7 +18202,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_slab_from_weathered_copper_stonecutting": {
-    "count": 2,
+    "count": 8,
     "ingredient": {
       "count": 1,
       "item": "minecraft:weathered_copper",
@@ -18242,7 +18242,7 @@
     "type": "minecraft:crafting_shaped"
   },
   "weathered_cut_copper_stairs_from_weathered_copper_stonecutting": {
-    "count": 1,
+    "count": 4,
     "ingredient": {
       "count": 1,
       "item": "minecraft:weathered_copper",

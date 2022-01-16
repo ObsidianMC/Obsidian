@@ -250,6 +250,16 @@ public partial class MinecraftStream
     /// </summary>
     public async Task WriteVarIntAsync(Enum value) => await WriteVarIntAsync(Convert.ToInt32(value));
 
+    public void WriteLongArray(long[] values)
+    {
+        Span<byte> buffer = stackalloc byte[8];
+        for (int i = 0; i < values.Length; i++)
+        {
+            BinaryPrimitives.WriteInt64BigEndian(buffer, values[i]);
+            BaseStream.Write(buffer);
+        }
+    }
+
     public async Task WriteLongArrayAsync(long[] values)
     {
         foreach (var value in values)

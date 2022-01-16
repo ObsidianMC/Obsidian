@@ -10,7 +10,7 @@ public partial class PlayerListHeaderFooter : IClientboundPacket
     [Field(1)]
     public ChatMessage Footer { get; }
 
-    public int Id => 0x5E;
+    public int Id => 0x5F;
 
     public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer)
     {

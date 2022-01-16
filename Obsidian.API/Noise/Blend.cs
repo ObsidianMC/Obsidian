@@ -32,15 +32,14 @@ public class Blend : Module
     public override double GetValue(double x, double y, double z)
     {
         var self = Source0.GetValue(x, y, z);
-        var values = new double[5]
-        {
-                self,
-                Source0.GetValue(x, y, z + Distance),
-                Source0.GetValue(x, y, z - Distance),
-                Source0.GetValue(x + Distance, y, z),
-                Source0.GetValue(x - Distance, y, z),
-        };
+        double distance = Distance;
 
-        return values.Average();
+        return (
+            self +
+            Source0.GetValue(x, y, z + distance) +
+            Source0.GetValue(x, y, z - distance) +
+            Source0.GetValue(x + distance, y, z) +
+            Source0.GetValue(x - distance, y, z)
+            ) / 5d;
     }
 }

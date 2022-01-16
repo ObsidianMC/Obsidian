@@ -4,12 +4,11 @@ using Obsidian.WorldData;
 namespace Obsidian.ChunkData;
 
 //TODO make better impl of heightmaps
-public class Heightmap
+public sealed class Heightmap
 {
-    public const string MOTION_BLOCKING = "MOTION_BLOCKING";
-    public HeightmapType HeightmapType { get; set; }
+    public HeightmapType HeightmapType { get; }
 
-    internal DataArray data = new DataArray(9, 256);
+    internal DataArray data;
 
     private Chunk chunk;
 
@@ -17,11 +16,26 @@ public class Heightmap
 
     public Heightmap(HeightmapType type, Chunk chunk)
     {
-        this.HeightmapType = type;
+        HeightmapType = type;
         this.chunk = chunk;
+        data = new DataArray(9, 256);
 
         if (type == HeightmapType.MotionBlocking)
-            this.Predicate = (block) => !block.IsAir || !block.IsFluid;
+            Predicate = (block) => !block.IsAir || !block.IsFluid;
+        else
+            Predicate = _ => false;
+    }
+
+    private Heightmap(HeightmapType type, Chunk chunk, DataArray data)
+    {
+        HeightmapType = type;
+        this.chunk = chunk;
+        this.data = data;
+
+        if (type == HeightmapType.MotionBlocking)
+            Predicate = (block) => !block.IsAir || !block.IsFluid;
+        else
+            Predicate = _ => false;
     }
 
     public bool Update(int x, int y, int z, Block blockState)
@@ -64,15 +78,25 @@ public class Heightmap
         return false;
     }
 
-    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value;
+    public void Set(int x, int z, int value) => this.data[this.GetIndex(x, z)] = value - -64;
 
     public int GetHeight(int x, int z) => this.GetHeight(this.GetIndex(x, z));
 
-    private int GetHeight(int value) => this.data[value];
+    private int GetHeight(int value) => this.data[value] + -64;
 
     private int GetIndex(int x, int z) => x + z * 16;
 
-    public long[] GetDataArray() => this.data.Storage;
+    public long[] GetDataArray() => this.data.storage;
+
+    public Heightmap Clone()
+    {
+        return Clone(chunk);
+    }
+
+    public Heightmap Clone(Chunk chunk)
+    {
+        return new Heightmap(HeightmapType, chunk, data.Clone());
+    }
 }
 
 public enum HeightmapType

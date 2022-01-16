@@ -4,57 +4,58 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<DefineConstants>TRACE</DefineConstants>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <Company>Obsidian Team</Company>
-    <Authors>Obsidian Team</Authors>
-    <PackageLicenseExpression></PackageLicenseExpression>
-    <Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
-    <PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
-    <PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<Company>Obsidian Team</Company>
+		<Authors>Obsidian Team</Authors>
+		<PackageLicenseExpression></PackageLicenseExpression>
+		<Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
+		<PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
+		<PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="PluginMessages\**" />
-    <Compile Remove="Sounds\**" />
-    <EmbeddedResource Remove="PluginMessages\**" />
-    <EmbeddedResource Remove="Sounds\**" />
-    <None Remove="PluginMessages\**" />
-    <None Remove="Sounds\**" />
-    <None Include="..\.editorconfig" Link=".editorconfig" />
-    <None Include="..\LICENSE">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="PluginMessages\**" />
+		<Compile Remove="Sounds\**" />
+		<EmbeddedResource Remove="PluginMessages\**" />
+		<EmbeddedResource Remove="Sounds\**" />
+		<None Remove="PluginMessages\**" />
+		<None Remove="Sounds\**" />
+		<None Include="..\.editorconfig" Link=".editorconfig" />
+		<None Include="..\LICENSE">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Serializer\Enums\FieldType.cs" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Serializer\Enums\FieldType.cs" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\biome_codec.json" />
-    <None Remove="Assets\default_dimensions.json" />
-    <None Remove="Assets\default_dimensions.xaml" />
-    <None Remove="Assets\entity_types.json" />
-    <None Remove="Assets\fluids.json" />
-    <None Remove="Assets\tags.json" />
-    <None Remove="Serializer\Attributes\NewFile1.txt" />
-    <None Remove="Serializer\Enums\NewFile1.txt" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\biome_codec.json" />
+		<None Remove="Assets\default_dimensions.json" />
+		<None Remove="Assets\default_dimensions.xaml" />
+		<None Remove="Assets\entity_types.json" />
+		<None Remove="Assets\fluids.json" />
+		<None Remove="Assets\tags.json" />
+		<None Remove="Serializer\Attributes\NewFile1.txt" />
+		<None Remove="Serializer\Enums\NewFile1.txt" />
+	</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BouncyCastle.NetCoreSdk" Version="1.9.3.1" />
@@ -64,19 +65,19 @@
     <PackageReference Include="SharpNoise" Version="0.12.1.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Assets/*.*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Remove="Assets\default_dimensions.xaml" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Page Include="Assets\default_dimensions.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
+	<ItemGroup>
+		<Page Include="Assets\default_dimensions.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" />
@@ -85,27 +86,27 @@
     <ProjectReference Include="..\Obsidian.Nbt\Obsidian.Nbt.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Assets\biome_codec.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\blocks.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\default_dimensions.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\entity_types.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\fluids.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\items.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-    <EmbeddedResource Update="Assets\tags.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Assets\biome_codec.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\blocks.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\default_dimensions.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\entity_types.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\fluids.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\items.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\tags.json">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+	</ItemGroup>
 </Project>

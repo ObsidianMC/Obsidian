@@ -7,6 +7,8 @@ public sealed class CommandContext
     public IPlayer? Player { get; private set; }
     public IServer Server { get; private set; }
     public ICommandSender Sender { get; }
+    public bool IsPlayer => Player != null;
+
     public PluginBase? Plugin { get; internal set; }
     internal ReadOnlyMemory<char> Message { get; }
 
