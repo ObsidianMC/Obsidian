@@ -22,7 +22,7 @@ public class Region
 
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-    public int LoadedChunkCount => loadedChunks.Count;
+    public int LoadedChunkCount => loadedChunks.Count(c => c.isGenerated);
 
     private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
 
@@ -159,7 +159,7 @@ public class Region
             isGenerated = true
         };
 
-        foreach (var child in chunkCompound["Sections"] as NbtList)
+        foreach (var child in (NbtList)chunkCompound["Sections"])
         {
             if (child is not NbtCompound sectionCompound)
                 throw new InvalidOperationException("Nbt Tag is not a compound.");
@@ -193,16 +193,16 @@ public class Region
                     biomePalette.GetOrAddId(value);
             }
 
-            //section.SetSkyLight(sectionCompound["SkyLight"])
+            section.SetSkyLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray());
         }
 
-        foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
+        foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
         {
             var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
             chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
-        foreach (var tileEntityNbt in chunkCompound["block_entities"] as NbtList)
+        foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])
         {
             var tileEntityCompound = tileEntityNbt as NbtCompound;
 

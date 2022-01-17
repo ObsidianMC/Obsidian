@@ -74,7 +74,18 @@ public sealed class ChunkSection
         return lt == LightType.Sky ? skyLight[index] & mask : blockLight[index] & mask;
     }
 
-    internal void SetSkyLight(byte[] data) => skyLight = data;
+    internal void SetSkyLight(byte[] data)
+    {
+        foreach (var b in data)
+        {
+            if (b != 0)
+            {
+                HasSkyLight = true;
+                break;
+            }
+        }
+        skyLight = data;
+    }
 
     public ChunkSection Clone()
     {

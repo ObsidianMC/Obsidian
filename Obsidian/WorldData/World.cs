@@ -56,30 +56,30 @@ public class World : IWorld
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
-    public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false)
+    public async Task UpdateClientChunksAsync(Client client, bool unloadAll = false)
     {
         if (unloadAll)
         {
-            foreach (var (X, Z) in c.LoadedChunks)
+            foreach (var (X, Z) in client.LoadedChunks)
             {
-                await c.UnloadChunkAsync(X, Z);
+                await client.UnloadChunkAsync(X, Z);
             }
-            c.LoadedChunks.Clear();
+            client.LoadedChunks.Clear();
         }
 
         List<(int X, int Z)> clientNeededChunks = new();
-        List<(int X, int Z)> clientUnneededChunks = new(c.LoadedChunks);
+        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
 
-        (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
-        (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
+        (int playerChunkX, int playerChunkZ) = client.Player.Position.ToChunkCoord();
+        (int lastPlayerChunkX, int lastPlayerChunkZ) = client.Player.LastPosition.ToChunkCoord();
 
-        int dist = (c.ClientSettings?.ViewDistance ?? 14) - 2;
+        int dist = client.ClientSettings?.ViewDistance ?? 4;
         for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
             for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
                 clientNeededChunks.Add((x, z));
 
         clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-        clientNeededChunks = clientNeededChunks.Except(c.LoadedChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
         clientNeededChunks.Sort((chunk1, chunk2) =>
         {
             return Math.Abs(playerChunkX - chunk1.X) +
@@ -90,8 +90,8 @@ public class World : IWorld
 
         await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
         {
-            await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
-            c.LoadedChunks.TryRemove(chunkLoc);
+            await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+            client.LoadedChunks.TryRemove(chunkLoc);
         });
 
         await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
@@ -99,8 +99,8 @@ public class World : IWorld
             var chunk = await this.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
             if (chunk is not null)
             {
-                await c.SendChunkAsync(chunk);
-                c.LoadedChunks.Add((chunk.X, chunk.Z));
+                await client.SendChunkAsync(chunk);
+                client.LoadedChunks.Add((chunk.X, chunk.Z));
             }
         });
     }
@@ -577,8 +577,8 @@ public class World : IWorld
                 region.SetChunk(c);
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
-            await worldLight.ProcessSkyLightForChunk(c);
             region.SetChunk(c);
+            await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 

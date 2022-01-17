@@ -34,6 +34,7 @@ public class OverworldGenerator : WorldGenerator
         if (chunk.isGenerated)
             return chunk;
 
+
         // Build terrain map for this chunk
         var terrainHeightmap = new double[16, 16];
         var rockHeightmap = new double[16, 16];
