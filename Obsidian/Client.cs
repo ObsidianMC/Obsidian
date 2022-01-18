@@ -542,7 +542,6 @@ public class Client : IDisposable
     {
         if (chunk is null) { return; }
         await this.QueuePacketAsync(new ChunkDataPacket(chunk));
-        await this.QueuePacketAsync(new UpdateLightPacket(chunk));
     } 
 
     public Task UnloadChunkAsync(int x, int z) => this.LoadedChunks.Contains((x, z)) ? this.QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
