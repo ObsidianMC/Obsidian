@@ -24,7 +24,8 @@ public sealed class BitSet
         (var arrayIndex, var mask) = GetBitLoc(bitIndex);
         if (arrayIndex >= data.Length)
             return false;
-        return ((data[arrayIndex] >> mask) & 1L) == 1L;
+        return (data[arrayIndex] & (1L << mask)) != 0;
+        // return ((data[arrayIndex] >> mask) & 1L) == 1L;
     }
     private static (int arrayIndex, int mask) GetBitLoc(int bitIndex) => (bitIndex / 64, bitIndex % 64);
 }

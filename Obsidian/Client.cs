@@ -538,7 +538,12 @@ public class Client : IDisposable
         //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk != null ? this.QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    internal async Task SendChunkAsync(Chunk chunk)
+    {
+        if (chunk is null) { return; }
+        await this.QueuePacketAsync(new ChunkDataPacket(chunk));
+        await this.QueuePacketAsync(new UpdateLightPacket(chunk));
+    } 
 
     public Task UnloadChunkAsync(int x, int z) => this.LoadedChunks.Contains((x, z)) ? this.QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
 

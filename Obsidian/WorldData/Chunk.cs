@@ -191,7 +191,7 @@ public class Chunk
         }
     }
 
-    public void WriteSkyLightMaskTo(MinecraftStream stream)
+    public void WriteLightMaskTo(MinecraftStream stream, LightType lt)
     {
         /*
          * BitSet containing bits for each section in the world + 2. 
@@ -207,49 +207,58 @@ public class Chunk
         {
             if (i == 0 || i == Sections.Length + 1)
             {
-                bs.SetBit(i, false);
+                continue;
             }
             else
             {
-                bs.SetBit(i, Sections[i - 1].HasSkyLight);
+                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                bs.SetBit(i, hasLight);
             }
         }
         stream.WriteVarInt(bs.DataStorage.Length);
-        stream.WriteLongArray(bs.DataStorage.ToArray());
+        if (bs.DataStorage.Length != 0)
+            stream.WriteLongArray(bs.DataStorage.ToArray());
     }
 
-    public void WriteEmptySkyLightMaskTo(MinecraftStream stream)
+    public void WriteEmptyLightMaskTo(MinecraftStream stream, LightType lt)
     {
         var bs = new BitSet();
         for (int i = 0; i < Sections.Length + 2; i++)
         {
             if (i == 0 || i == Sections.Length + 1)
             {
-                bs.SetBit(i, true);
+                continue;
             }
             else
             {
-                bs.SetBit(i, !Sections[i - 1].HasSkyLight);
+                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                bs.SetBit(i, !hasLight);
             }
         }
         stream.WriteVarInt(bs.DataStorage.Length);
-        stream.WriteLongArray(bs.DataStorage.ToArray());
+        if (bs.DataStorage.Length != 0)
+            stream.WriteLongArray(bs.DataStorage.ToArray());
     }
 
-    public void WriteSkyLightTo(MinecraftStream stream)
+    public void WriteLightTo(MinecraftStream stream, LightType lt)
     {
         // Sanity check
-        var litSections = Sections.Count(s => s.HasSkyLight);
+        var litSections = Sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
         stream.WriteVarInt(litSections);
         
         if (litSections == 0) { return; }
 
         for (int a = 0; a < Sections.Length; a++)
         {
-            if (Sections[a].HasSkyLight)
+            if (lt == LightType.Sky && Sections[a].HasSkyLight)
             {
                 stream.WriteVarInt(Sections[a].SkyLightArray.Length);
                 stream.WriteByteArray(Sections[a].SkyLightArray.ToArray());
+            }
+            else if (lt == LightType.Block && Sections[a].HasBlockLight)
+            {
+                stream.WriteVarInt(Sections[a].BlockLightArray.Length);
+                stream.WriteByteArray(Sections[a].BlockLightArray.ToArray());
             }
         }
     }

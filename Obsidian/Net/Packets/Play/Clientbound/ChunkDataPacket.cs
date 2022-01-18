@@ -47,30 +47,27 @@ public partial class ChunkDataPacket : IClientboundPacket
         // Num block entities
         stream.WriteVarInt(0);
 
+        // Lighting
         // Trust edges
         stream.WriteBoolean(true);
 
-        // Lighting
-
         // Sky Light Mask
-        Chunk.WriteSkyLightMaskTo(stream);
+        Chunk.WriteLightMaskTo(stream, LightType.Sky);
 
         // Block Light Mask
-        stream.WriteVarInt(0);
+        Chunk.WriteLightMaskTo(stream, LightType.Block);
 
         // Empty Sky Light Mask
-        Chunk.WriteEmptySkyLightMaskTo(stream);
+        Chunk.WriteEmptyLightMaskTo(stream, LightType.Sky);
 
         // Empty Block Light Mask
-        stream.WriteVarInt(1);
-        stream.WriteLong(long.MaxValue);
+        Chunk.WriteEmptyLightMaskTo(stream, LightType.Block);
 
         // sky light arrays
-        Chunk.WriteSkyLightTo(stream);
+        Chunk.WriteLightTo(stream, LightType.Sky);
 
         // block light arrays
-        stream.WriteVarInt(0);
-
+        Chunk.WriteLightTo(stream, LightType.Block);
 
         minecraftStream.Lock.Wait();
         minecraftStream.WriteVarInt(Id.GetVarIntLength() + (int)stream.Length);
