@@ -72,7 +72,7 @@ public class ChatMessage
     /// </summary>
     /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
     /// <returns>The created <see cref="ChatMessage"/> object.</returns>
-    public static ChatMessage SimpleBukkit(string text) => new() { Text = ReformatAmpersandPrefixes(text) };
+    public static ChatMessage SimpleLegacy(string text) => new() { Text = ReformatAmpersandPrefixes(text) };
     
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
@@ -92,7 +92,7 @@ public class ChatMessage
     /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
     /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/>.</param>
     /// <returns>The created <see cref="ChatMessage"/> object.</returns>
-    public static ChatMessage SimpleBukkit(string text, ChatColor color) => new()
+    public static ChatMessage SimpleLegacy(string text, ChatColor color) => new()
     {
         Text = $"{color}{ReformatAmpersandPrefixes(text)}"
     };
