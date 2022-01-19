@@ -1,10 +1,13 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace Obsidian.API;
 
 public class ChatMessage
 {
+    private const string AndFormattingCodesPattern = "&(?<code>[a-g0-9k-or])";
+    
     public string Text { get; set; }
 
     public HexColor Color { get; set; }
@@ -41,11 +44,91 @@ public class ChatMessage
         }
     }
 
+    public static implicit operator ChatMessage(string text) => Simple(text);
+
+    /// <summary>
+    /// Adds the the right <see cref="ChatMessage"/> to the <see cref="Extra"/> of the left <see cref="ChatMessage"/>.
+    /// </summary>
+    /// <param name="a">The left chat message on which the right one gets appended</param>
+    /// <param name="b">The right chat message which will be appended</param>
+    /// <returns>The current chat message. Equally to the left chat message</returns>
+    public static ChatMessage operator +(ChatMessage a, ChatMessage b) => a.AddExtra(b);
+
+    /// <summary>
+    /// Adds the given <see cref="ChatColor"/> to the text of the given <see cref="ChatMessage"/>.
+    /// </summary>
+    /// <param name="a">The message on which the chat color gets appended</param>
+    /// <param name="b">The chat color which will be appended</param>
+    /// <returns>The current chat message. Equally to the given chat message</returns>
+    public static ChatMessage operator +(ChatMessage a, ChatColor b) => a.AppendColor(b);
+
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
-    public static ChatMessage Simple(string text) => new() { Text = text.Replace('&', '§') };
-    public static ChatMessage Simple(string text, ChatColor color) => new() { Text = $"{color}{text}" };
+    /// <param name="text">The text of the <see cref="ChatMessage"/></param>
+    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatFormattingPrefixes"/> or not</param>
+    /// <returns>The created <see cref="ChatMessage"/> object</returns>
+    public static ChatMessage Simple(string text, bool reformat = true) => new() { Text = reformat ? ReformatFormattingPrefixes(text) : text };
+    
+    /// <summary>
+    /// Creates a new <see cref="ChatMessage"/> object with plain text.
+    /// </summary>
+    /// <param name="text">The text of the <see cref="ChatMessage"/></param>
+    /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/></param>
+    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatFormattingPrefixes"/> or not</param>
+    /// <returns>The created <see cref="ChatMessage"/> object</returns>
+    public static ChatMessage Simple(string text, ChatColor color, bool reformat = true) => new()
+    {
+        Text = $"{color}{(reformat ? ReformatFormattingPrefixes(text) : text)}"
+    };
+
+    /// <summary>
+    /// Appends an underlying <see cref="ClickEvent"/> (<see cref="ClickComponent"/>) to the given <see cref="ChatMessage"/>.
+    /// </summary>
+    /// <param name="message">The message which will hold the <see cref="ClickComponent"/></param>
+    /// <param name="action">The action which will be executed when clicking</param>
+    /// <param name="value">The value which will be executed with the action</param>
+    /// <param name="translate">The translate value</param>
+    /// <returns>The given <see cref="ChatMessage"/></returns>
+    public static ChatMessage Click(ChatMessage message, EClickAction action, string value, string translate = "")
+    {
+        message.ClickEvent = new ClickComponent(action, value, translate);
+        return message;
+    }
+
+    /// <summary>
+    /// Appends an underlying <see cref="HoverEvent"/> (<see cref="HoverComponent"/>) to the given <see cref="ChatMessage"/>.
+    /// </summary>
+    /// <param name="message">The message which will hold the <see cref="HoverComponent"/></param>
+    /// <param name="action">The action which will be executed when clicking</param>
+    /// <param name="contents">The contents which will be executed with the action</param>
+    /// <param name="translate">The translate value</param>
+    /// <returns>The given <see cref="ChatMessage"/></returns>
+    public static ChatMessage Hover(ChatMessage message, EHoverAction action, object contents, string translate = "")
+    {
+        message.HoverEvent = new HoverComponent(action, contents, translate);
+        return message;
+    }
+
+    /// <summary>
+    /// Converts all formatting codes which are using '&' to there respective '§' formatting code.
+    /// </summary>
+    /// <param name="text">The text to be reformatted</param>
+    /// <returns>The formatted text</returns>
+    public static string ReformatFormattingPrefixes(string text)
+    {
+        var matches = Regex.Matches(text, AndFormattingCodesPattern);
+
+        foreach (Match match in matches)
+        {
+            var code = match.Groups["code"].Value;
+            var oldValue = match.Value;
+
+            text = ReplaceFirst(text, oldValue, "§" + code);
+        }
+
+        return text;
+    }
 
     public ChatMessage AddExtra(ChatMessage message)
     {
@@ -86,6 +169,20 @@ public class ChatMessage
         return this;
     }
 
+    public ChatMessage AppendColor(ChatColor color)
+    {
+        if (Text is null)
+        {
+            Text = color.ToString();
+        }
+        else
+        {
+            Text += color.ToString();
+        }
+
+        return this;
+    }
+
     public ChatMessage AppendText(string text, ChatColor color)
     {
         if (Text is null)
@@ -101,7 +198,11 @@ public class ChatMessage
 
     public static ChatMessage Empty => Simple(string.Empty);
 
-    public static implicit operator ChatMessage(string text) => Simple(text);
-
     public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
+    
+    private static string ReplaceFirst(string s, string search, string replace)
+    {
+        int pos = s.IndexOf(search, StringComparison.Ordinal);
+        return pos < 0 ? s : string.Concat(s.AsSpan(0, pos), replace, s.AsSpan(pos + search.Length));
+    }
 }
