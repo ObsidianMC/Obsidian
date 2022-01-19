@@ -46,47 +46,65 @@ public class ChatMessage
     /// <summary>
     /// Adds the right <see cref="ChatMessage"/> to the <see cref="Extra"/> of the left <see cref="ChatMessage"/>.
     /// </summary>
-    /// <param name="a">The left chat message on which the right one gets appended</param>
-    /// <param name="b">The right chat message which will be appended</param>
-    /// <returns>The modified chat message</returns>
+    /// <param name="a">The left chat message on which the right one gets appended.</param>
+    /// <param name="b">The right chat message which will be appended.</param>
+    /// <returns>The modified chat message.</returns>
     public static ChatMessage operator +(ChatMessage a, ChatMessage b) => a.AddExtra(b);
 
     /// <summary>
     /// Adds the given <see cref="ChatColor"/> to the text of the given <see cref="ChatMessage"/>.
     /// </summary>
-    /// <param name="a">The message on which the chat color gets appended</param>
-    /// <param name="b">The chat color which will be appended</param>
-    /// <returns>The modified chat message</returns>
+    /// <param name="a">The message on which the chat color gets appended.</param>
+    /// <param name="b">The chat color which will be appended.</param>
+    /// <returns>The modified chat message.</returns>
     public static ChatMessage operator +(ChatMessage a, ChatColor b) => a.AppendColor(b);
 
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
-    /// <param name="text">The text of the <see cref="ChatMessage"/></param>
-    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatAmpersandPrefixes"/> or not</param>
-    /// <returns>The created <see cref="ChatMessage"/> object</returns>
-    public static ChatMessage Simple(string text, bool reformat = true) => new() { Text = reformat ? ReformatAmpersandPrefixes(text) : text };
+    /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
+    /// <returns>The created <see cref="ChatMessage"/> object.</returns>
+    public static ChatMessage Simple(string text) => new() { Text = text };
+
+    /// <summary>
+    /// Creates a new <see cref="ChatMessage"/> object with plain text. The text will be reformatted by using
+    /// the <see cref="ReformatAmpersandPrefixes"/> method.
+    /// </summary>
+    /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
+    /// <returns>The created <see cref="ChatMessage"/> object.</returns>
+    public static ChatMessage SimpleBukkit(string text) => new() { Text = ReformatAmpersandPrefixes(text) };
     
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
-    /// <param name="text">The text of the <see cref="ChatMessage"/></param>
-    /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/></param>
-    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatAmpersandPrefixes"/> or not</param>
-    /// <returns>The created <see cref="ChatMessage"/> object</returns>
-    public static ChatMessage Simple(string text, ChatColor color, bool reformat = true) => new()
+    /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
+    /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/>.</param>
+    /// <returns>The created <see cref="ChatMessage"/> object.</returns>
+    public static ChatMessage Simple(string text, ChatColor color) => new()
     {
-        Text = $"{color}{(reformat ? ReformatAmpersandPrefixes(text) : text)}"
+        Text = $"{color}{text}"
+    };
+    
+    /// <summary>
+    /// Creates a new <see cref="ChatMessage"/> object with plain text. The text will be reformatted by using
+    /// the <see cref="ReformatAmpersandPrefixes"/> method.
+    /// </summary>
+    /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
+    /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/>.</param>
+    /// <returns>The created <see cref="ChatMessage"/> object.</returns>
+    public static ChatMessage SimpleBukkit(string text, ChatColor color) => new()
+    {
+        Text = $"{color}{ReformatAmpersandPrefixes(text)}"
     };
 
     /// <summary>
     /// Appends an underlying <see cref="ClickEvent"/> (<see cref="ClickComponent"/>) to the given <see cref="ChatMessage"/>.
     /// </summary>
-    /// <param name="message">The message which will hold the <see cref="ClickComponent"/></param>
-    /// <param name="action">The action which will be executed when clicking</param>
-    /// <param name="value">The value which will be executed with the action</param>
-    /// <param name="translate">The translate value</param>
-    /// <returns>The given <see cref="ChatMessage"/></returns>
+    /// <param name="message">The message which will hold the <see cref="ClickComponent"/>.</param>
+    /// <param name="action">The action which will be executed when clicking.</param>
+    /// <param name="value">The value which will be executed with the action.</param>
+    /// <param name="translate">The translate value.</param>
+    /// <returns>The given <see cref="ChatMessage"/>.</returns>
     public static ChatMessage Click(ChatMessage message, EClickAction action, string value, string translate = "")
     {
         message.ClickEvent = new ClickComponent(action, value, translate);
@@ -96,11 +114,11 @@ public class ChatMessage
     /// <summary>
     /// Appends an underlying <see cref="HoverEvent"/> (<see cref="HoverComponent"/>) to the given <see cref="ChatMessage"/>.
     /// </summary>
-    /// <param name="message">The message which will hold the <see cref="HoverComponent"/></param>
-    /// <param name="action">The action which will be executed when clicking</param>
-    /// <param name="contents">The contents which will be executed with the action</param>
-    /// <param name="translate">The translate value</param>
-    /// <returns>The given <see cref="ChatMessage"/></returns>
+    /// <param name="message">The message which will hold the <see cref="HoverComponent"/>.</param>
+    /// <param name="action">The action which will be executed when clicking.</param>
+    /// <param name="contents">The contents which will be executed with the action.</param>
+    /// <param name="translate">The translate value.</param>
+    /// <returns>The given <see cref="ChatMessage"/>.</returns>
     public static ChatMessage Hover(ChatMessage message, EHoverAction action, object contents, string translate = "")
     {
         message.HoverEvent = new HoverComponent(action, contents, translate);
@@ -110,8 +128,8 @@ public class ChatMessage
     /// <summary>
     /// Converts all formatting codes which are using '&' to their respective '§' formatting code.
     /// </summary>
-    /// <param name="originalText">The text to be reformatted</param>
-    /// <returns>The formatted text</returns>
+    /// <param name="originalText">The text to be reformatted.</param>
+    /// <returns>The formatted text.</returns>
     public static string ReformatAmpersandPrefixes(string originalText)
     {
         return string.Create(originalText.Length, originalText, (span, text) =>
