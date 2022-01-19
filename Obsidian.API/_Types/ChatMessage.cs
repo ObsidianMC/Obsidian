@@ -1,13 +1,10 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 namespace Obsidian.API;
 
 public class ChatMessage
 {
-    private const string AndFormattingCodesPattern = "&(?<code>[a-g0-9k-or])";
-    
     public string Text { get; set; }
 
     public HexColor Color { get; set; }
@@ -47,11 +44,11 @@ public class ChatMessage
     public static implicit operator ChatMessage(string text) => Simple(text);
 
     /// <summary>
-    /// Adds the the right <see cref="ChatMessage"/> to the <see cref="Extra"/> of the left <see cref="ChatMessage"/>.
+    /// Adds the right <see cref="ChatMessage"/> to the <see cref="Extra"/> of the left <see cref="ChatMessage"/>.
     /// </summary>
     /// <param name="a">The left chat message on which the right one gets appended</param>
     /// <param name="b">The right chat message which will be appended</param>
-    /// <returns>The current chat message. Equally to the left chat message</returns>
+    /// <returns>The modified chat message</returns>
     public static ChatMessage operator +(ChatMessage a, ChatMessage b) => a.AddExtra(b);
 
     /// <summary>
@@ -59,27 +56,27 @@ public class ChatMessage
     /// </summary>
     /// <param name="a">The message on which the chat color gets appended</param>
     /// <param name="b">The chat color which will be appended</param>
-    /// <returns>The current chat message. Equally to the given chat message</returns>
+    /// <returns>The modified chat message</returns>
     public static ChatMessage operator +(ChatMessage a, ChatColor b) => a.AppendColor(b);
 
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
     /// <param name="text">The text of the <see cref="ChatMessage"/></param>
-    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatFormattingPrefixes"/> or not</param>
+    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatAmpersandPrefixes"/> or not</param>
     /// <returns>The created <see cref="ChatMessage"/> object</returns>
-    public static ChatMessage Simple(string text, bool reformat = true) => new() { Text = reformat ? ReformatFormattingPrefixes(text) : text };
+    public static ChatMessage Simple(string text, bool reformat = true) => new() { Text = reformat ? ReformatAmpersandPrefixes(text) : text };
     
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
     /// <param name="text">The text of the <see cref="ChatMessage"/></param>
     /// <param name="color">The <see cref="ChatColor"/> of the <see cref="ChatMessage"/></param>
-    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatFormattingPrefixes"/> or not</param>
+    /// <param name="reformat">Whether to reformat the text via <see cref="ReformatAmpersandPrefixes"/> or not</param>
     /// <returns>The created <see cref="ChatMessage"/> object</returns>
     public static ChatMessage Simple(string text, ChatColor color, bool reformat = true) => new()
     {
-        Text = $"{color}{(reformat ? ReformatFormattingPrefixes(text) : text)}"
+        Text = $"{color}{(reformat ? ReformatAmpersandPrefixes(text) : text)}"
     };
 
     /// <summary>
@@ -111,23 +108,29 @@ public class ChatMessage
     }
 
     /// <summary>
-    /// Converts all formatting codes which are using '&' to there respective '§' formatting code.
+    /// Converts all formatting codes which are using '&' to their respective '§' formatting code.
     /// </summary>
-    /// <param name="text">The text to be reformatted</param>
+    /// <param name="originalText">The text to be reformatted</param>
     /// <returns>The formatted text</returns>
-    public static string ReformatFormattingPrefixes(string text)
+    public static string ReformatAmpersandPrefixes(string originalText)
     {
-        var matches = Regex.Matches(text, AndFormattingCodesPattern);
-
-        foreach (Match match in matches)
+        return string.Create(originalText.Length, originalText, (span, text) =>
         {
-            var code = match.Groups["code"].Value;
-            var oldValue = match.Value;
+            for (int i = 0; i < span.Length; i++)
+            {
+                char c = text[i];
+                span[i] = c;
 
-            text = ReplaceFirst(text, oldValue, "§" + code);
-        }
-
-        return text;
+                if (c == '&' && i + 1 < text.Length)
+                {
+                    c = text[i + 1];
+                    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'e') || (c >= 'k' && c <= 'o') || c == 'r')
+                    {
+                        span[i] = '§';
+                    }
+                }
+            }
+        });
     }
 
     public ChatMessage AddExtra(ChatMessage message)
@@ -199,10 +202,4 @@ public class ChatMessage
     public static ChatMessage Empty => Simple(string.Empty);
 
     public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
-    
-    private static string ReplaceFirst(string s, string search, string replace)
-    {
-        int pos = s.IndexOf(search, StringComparison.Ordinal);
-        return pos < 0 ? s : string.Concat(s.AsSpan(0, pos), replace, s.AsSpan(pos + search.Length));
-    }
 }
