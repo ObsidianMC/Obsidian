@@ -519,25 +519,58 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(actionBarPacket);
     }
 
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count);
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
 
-    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ) =>
-        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ);
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
 
 
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count)
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0)
     {
-        var particlePacket = new Particle(particle, pos, count);
+        var particlePacket = new Particle(particle, pos, count)
+        {
+            ParticleData = extra
+        };
 
         await this.client.QueuePacketAsync(particlePacket);
     }
 
-    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY, float offsetZ)
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY, float offsetZ, float extra = 0)
     {   
         var particlePacket = new Particle(particle, pos, count)
         {
-            Offset = new VectorF(offsetX, offsetY, offsetZ)
+            Offset = new VectorF(offsetX, offsetY, offsetZ),
+            ParticleData = extra
+        };
+
+        await this.client.QueuePacketAsync(particlePacket);
+    }
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
+    
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ, ParticleData data, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data, float extra = 0)
+    {
+        var particlePacket = new Particle(particle, pos, count)
+        {
+            Data = data,
+            ParticleData = extra
+        };
+
+        await this.client.QueuePacketAsync(particlePacket);
+    }
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY, float offsetZ, ParticleData data, float extra = 0)
+    {
+        var particlePacket = new Particle(particle, pos, count)
+        {
+            Data = data,
+            Offset = new VectorF(offsetX, offsetY, offsetZ),
+            ParticleData = extra
         };
 
         await this.client.QueuePacketAsync(particlePacket);
