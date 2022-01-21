@@ -1,4 +1,6 @@
-﻿public sealed class DataArray
+﻿namespace Obsidian.Utilities.Collection;
+
+public sealed class DataArray
 {
     public int BitsPerEntry => bitsPerEntry;
     public int Capacity => entriesCount;
@@ -21,7 +23,7 @@
         entryMask = (1 << bitsPerEntry) - 1;
         entriesPerStorageElement = StorageElementSize / bitsPerEntry;
 
-        int storageSize = (entriesCount + entriesPerStorageElement - 1) / entriesPerStorageElement;
+        var storageSize = (entriesCount + entriesPerStorageElement - 1) / entriesPerStorageElement;
         storage = initializeStorage ? new long[storageSize] : GC.AllocateUninitializedArray<long>(storageSize);
     }
 
@@ -38,21 +40,21 @@
     {
         get
         {
-            int storageIndex = index / entriesPerStorageElement;
-            long element = storage[storageIndex];
+            var storageIndex = index / entriesPerStorageElement;
+            var element = storage[storageIndex];
 
-            int offset = (index - (storageIndex * entriesPerStorageElement)) * bitsPerEntry;
+            var offset = (index - storageIndex * entriesPerStorageElement) * bitsPerEntry;
             return (int)(element >> offset & entryMask);
         }
 
         set
         {
-            int storageIndex = index / entriesPerStorageElement;
-            long element = storage[storageIndex];
+            var storageIndex = index / entriesPerStorageElement;
+            var element = storage[storageIndex];
 
-            int offset = (index - (storageIndex * entriesPerStorageElement)) * bitsPerEntry;
+            var offset = (index - storageIndex * entriesPerStorageElement) * bitsPerEntry;
             element &= ~(entryMask << offset);
-            storage[storageIndex] = element | ((long)value << offset);
+            storage[storageIndex] = element | (long)value << offset;
         }
     }
 
@@ -62,16 +64,14 @@
             return this;
 
         var @new = new DataArray(minBitsPerEntry, entriesCount, false);
-        for (int i = 0; i < entriesCount; i++)
-        {
+        for (var i = 0; i < entriesCount; i++)
             @new[i] = this[i];
-        }
         return @new;
     }
 
     public DataArray Clone()
     {
-        long[] storageCopy = GC.AllocateUninitializedArray<long>(storage.Length);
+        var storageCopy = GC.AllocateUninitializedArray<long>(storage.Length);
         Array.Copy(storage, storageCopy, storage.Length);
         return new DataArray(storageCopy, entriesCount, bitsPerEntry, entryMask, entriesPerStorageElement);
     }
