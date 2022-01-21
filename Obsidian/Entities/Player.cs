@@ -509,6 +509,40 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(titleTimesPacket);
     }
 
+    public async Task SendActionBarAsync(string text)
+    {
+        var actionBarPacket = new ActionBarPacket
+        {
+            Text = text
+        };
+
+        await this.client.QueuePacketAsync(actionBarPacket);
+    }
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count);
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ);
+
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count)
+    {
+        var particlePacket = new Particle(particle, pos, count);
+
+        await this.client.QueuePacketAsync(particlePacket);
+    }
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY, float offsetZ)
+    {   
+        var particlePacket = new Particle(particle, pos, count)
+        {
+            Offset = new VectorF(offsetX, offsetY, offsetZ)
+        };
+
+        await this.client.QueuePacketAsync(particlePacket);
+    }
+
     public async Task SaveAsync()
     {
         var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
