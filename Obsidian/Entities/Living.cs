@@ -1,4 +1,5 @@
 ﻿using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
@@ -15,6 +16,77 @@ public class Living : Entity, ILiving
     public int AbsorbtionAmount { get; set; }
 
     public Vector BedBlockPosition { get; set; }
+
+    public IReadOnlyList<PotionEffect> ActivePotionEffects => PotionEffectDurations.Select(pair => pair.Key).ToList().AsReadOnly();
+
+    public ConcurrentDictionary<PotionEffect, int> PotionEffectDurations { get; }
+
+    public Living()
+    {
+        PotionEffectDurations = new ConcurrentDictionary<PotionEffect, int>();
+    }
+
+    public async override Task TickAsync()
+    {
+        foreach (var (potion, duration) in PotionEffectDurations)
+        {
+            var newDuration = duration - 1;
+            if (newDuration <= 0)
+            {
+                await RemovePotionEffectAsync(potion);
+            }
+            else
+            {
+                PotionEffectDurations[potion] = newDuration;
+            }
+        }
+    }
+
+    public bool HasPotionEffect(PotionEffect potion)
+    {
+        return PotionEffectDurations.Any(pair => pair.Key == potion);
+    }
+
+    public async Task ClearPotionEffects()
+    {
+        foreach (var (potion, _) in PotionEffectDurations)
+        {
+            await RemovePotionEffectAsync(potion);
+        }
+    }
+    
+    public Task AddPotionEffectAsync(PotionEffect potion, int duration) => AddPotionEffectAsync(potion, duration, 0);
+
+    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier) =>
+        AddPotionEffectAsync(potion, duration, amplifier, true, true, false);
+
+    public async Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier, bool showParticles,
+        bool showIcon, bool isAmbient)
+    {
+        byte flags = 0;
+        if (isAmbient)
+            flags |= 0x01;
+        if (showParticles)
+            flags |= 0x02;
+        if (showIcon)
+            flags |= 0x04;
+
+        await this.server.QueueBroadcastPacketAsync(new EntityEffectPacket(EntityId, (byte) potion, duration)
+        {
+            Amplifier = amplifier,
+            Flags = flags
+        });
+
+        PotionEffectDurations.AddOrUpdate(potion, _ => duration, (_, _) => duration);
+    }
+
+    public async Task RemovePotionEffectAsync(PotionEffect potion)
+    {
+        await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (byte) potion));
+        PotionEffectDurations.TryRemove(potion, out _);
+    }
+
+
     public bool Alive => this.Health > 0f;
 
     public override async Task WriteAsync(MinecraftStream stream)
