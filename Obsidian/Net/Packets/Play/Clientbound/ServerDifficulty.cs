@@ -7,11 +7,15 @@ public partial class ServerDifficulty : IClientboundPacket
 {
     [Field(0), ActualType(typeof(byte))]
     public Difficulty Difficulty { get; }
+    
+    [Field(1)]
+    public bool DifficultyLocked { get; }
 
     public int Id => 0x0E;
 
     public ServerDifficulty(Difficulty difficulty)
     {
         Difficulty = difficulty;
+        DifficultyLocked = true;
     }
 }
