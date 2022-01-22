@@ -1198,4 +1198,20 @@ public partial class MinecraftStream
                 break;
         }
     }
+
+    [WriteMethod]
+    public async void WriteTrade(Trade trade)
+    {
+        await WriteSlotAsync(trade.InputItem1);
+        await WriteSlotAsync(trade.OutputItem);
+        WriteBoolean(trade.HasSecondItem);
+        if (trade.HasSecondItem && trade.InputItem2 is not null) await WriteSlotAsync(trade.InputItem2);
+        WriteBoolean(trade.TradeDisabled);
+        WriteInt(trade.NumberOfTradeUses);
+        WriteInt(trade.MaximumNumberOfTradeUses);
+        WriteInt(trade.Xp);
+        WriteInt(trade.SpecialPrice);
+        WriteFloat(trade.PriceMultiplier);
+        WriteInt(trade.Demand);
+    }
 }
