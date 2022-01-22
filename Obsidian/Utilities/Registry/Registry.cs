@@ -55,12 +55,12 @@ public static partial class Registry
                 new DefaultEnumConverter<MinecraftType>(),
                 new DefaultEnumConverter<Attachment>(),
                 new DefaultEnumConverter<Mode>(),
-            },
+            }
     };
 
     private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
     {
-        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
+        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance
     };
 
     public static async Task RegisterBlocksAsync()

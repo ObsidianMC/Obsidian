@@ -1,5 +1,9 @@
-﻿namespace Obsidian.API.Registry.Codecs.Dimensions;
+﻿using Obsidian.API.Registry.Converters;
+using System.Text.Json.Serialization;
 
+namespace Obsidian.API.Registry.Codecs.Dimensions;
+
+[JsonConverter(typeof(DimensionElementConverter))]
 public sealed class DimensionElement
 {
     /// <summary>
@@ -8,25 +12,36 @@ public sealed class DimensionElement
     public bool PiglinSafe { get; set; }
 
     /// <summary>
-    /// When false, compasses spin randomly. When true, nether portals can spawn zombified piglins.
+    /// Whether this dimension is considered natural.
     /// </summary>
+    /// <remarks>
+    /// When false, compasses spin randomly, and using a bed to set the respawn point or sleep, is disabled. When true, nether portals can spawn zombified piglins.
+    /// </remarks>
     public bool Natural { get; set; }
 
     /// <summary>
-    /// How much light the dimension has. 0.0 to 1.0
+    /// How much light the dimension has.
     /// </summary>
+    /// <remarks>
+    /// Can be 0.0 to 1.0.
+    /// </remarks>
     public float AmbientLight { get; set; } = 0.0f;
 
     /// <summary>
-    /// If this is set to a number, the time of the day is the specified value. 
-    /// false, or 0 to 24000
+    /// the time of the day is the specified value.
     /// </summary>
+    /// <remarks>
+    /// Can be anything from 0 to 24000. If the value is not set this will cause the world to have constant sunrise. 
+    /// </remarks>
     public long? FixedTime { get; set; }
 
     /// <summary>
     /// A resource location defining what block tag to use for infiniburn.
     /// </summary>
-    public string Infiniburn { get; set; }
+    /// <remarks>
+    /// If undefined, the value will be automatically set to "minecraft:infiniburn_overworld" .
+    /// </remarks>
+    public string Infiniburn { get; set; } = "minecraft:infiniburn_overworld";
 
     /// <summary>
     /// Whether players can charge and use respawn anchors.
@@ -41,12 +56,21 @@ public sealed class DimensionElement
     /// <summary>
     /// Whether players can use a bed to sleep.
     /// </summary>
+    /// <remarks>
+    /// When false, the bed blows up when trying to sleep.
+    /// </remarks>
     public bool BedWorks { get; set; }
 
     /// <summary>
-    /// ?
+    /// Determines the dimension effect used for this dimension. 
     /// </summary>
-    public string Effects { get; set; }
+    /// <remarks>
+    /// Setting to overworld makes the dimension have clouds, sun, stars and moon. 
+    /// Setting to the nether makes the dimension have thick fog blocking that sight, similar to the nether. 
+    /// Setting to the end makes the dimension have dark spotted sky similar to the end, ignoring the sky and fog color. 
+    /// If undefined, the value will be automatically set to "minecraft:overworld".
+    /// </remarks>
+    public string Effects { get; set; } = "minecraft:overworld";
 
     /// <summary>
     /// Whether players with the Bad Omen effect can cause a raid.
@@ -54,33 +78,50 @@ public sealed class DimensionElement
     public bool HasRaids { get; set; }
 
     /// <summary>
-    /// Minimum Y level.
+    /// The minimum height in which blocks can exist within this dimension. 
     /// </summary>
-    public int MinY { get; set; } = 0;
+    /// <remarks>
+    /// Should be between -2032 and 2031 and be a multiple of 16 (effectively making 2016 the maximum).
+    /// Setting it lower than -2048 will only allow the temporary placement of blocks below it as they won't be saved. 
+    /// Furthermore, lighting won't work correctly at Y-coordinate -2048 and below.
+    /// </remarks>
+    public int MinY { get; set; } = -64;
 
     /// <summary>
-    /// Maximum Height.
+    /// The total height in which blocks can exist within this dimension.
     /// </summary>
-    public int Height { get; set; } = 256;
+    /// <remarks>
+    /// Should be between 0 and 4064 and be a multiple of 16. 
+    /// It can be set higher than the maximum by the same amount of temporary layers + 16. Max y = min y + height, and may not be more than 2032.
+    /// </remarks>
+    public int Height { get; set; } = 384;
 
     /// <summary>
-    /// The maximum height to which chorus fruits and nether portals can bring players within this dimension.
+    /// The maximum height to which chorus fruits and nether portals can bring players within this dimension. 
     /// </summary>
-    public int LogicalHeight { get; set; }
+    /// <remarks> 
+    /// This excludes portals that were already built above the limit as they still connect normally.
+    /// May not be greater than height.
+    /// </remarks>
+    public int LogicalHeight { get; set; } = 384;
 
     /// <summary>
-    /// The multiplier applied to coordinates when traveling to the dimension.
+    ///  The multiplier applied to coordinates when leaving the dimension.
     /// </summary>
-    public float CoordinateScale { get; set; }
+    public float CoordinateScale { get; set; } = 1.0f;
 
     /// <summary>
     /// Whether the dimensions behaves like the nether (water evaporates and sponges dry) or not.
-    /// Also causes lava to spread thinner.
     /// </summary>
+    /// <remarks>
+    ///  Also lets stalactites drip lava and causes lava to spread faster and thinner.
+    /// </remarks>
     public bool Ultrawarm { get; set; }
 
     /// <summary>
-    /// Whether the dimension has a bedrock ceiling or not. When true, causes lava to spread faster.
+    /// Whether the dimension has a bedrock ceiling or not.
     /// </summary>
     public bool HasCeiling { get; set; }
+
+    internal DimensionElement() { }
 }
