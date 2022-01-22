@@ -34,6 +34,10 @@ public class ClientHandler
                 await HandleFromPoolAsync<TeleportConfirm>(data, client);
                 break;
 
+            case 0x02:
+                // Only used on integrated server
+                break;
+
             case 0x03:
                 await HandleFromPoolAsync<IncomingChatMessage>(data, client);
                 break;
@@ -42,6 +46,10 @@ public class ClientHandler
                 break;
             case 0x05:
                 await HandleFromPoolAsync<ClientSettings>(data, client);
+                break;
+
+            case 0x06:
+                await HandleFromPoolAsync<TabCompleteRequest>(data, client);
                 break;
 
             case 0x07:
@@ -59,12 +67,41 @@ public class ClientHandler
             case 0x0A:
                 await HandleFromPoolAsync<ServerboundPluginMessage>(data, client);
                 break;
-            case 0x0F:
-                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
+
+            case 0x0B:
+                await HandleFromPoolAsync<EditBook>(data, client); // TODO: Not finished
+                break;
+
+            case 0x0C:
+                await HandleFromPoolAsync<QueryEntityNbt>(data, client); // TODO: Not finished
                 break;
 
             case 0x0D:
                 await HandleFromPoolAsync<InteractEntity>(data, client);
+                break;
+
+            case 0x0E:
+                await HandleFromPoolAsync<GenerateStructure>(data, client); // TODO: Not finished
+                break;
+
+            case 0x0F:
+                await HandleFromPoolAsync<KeepAlivePacket>(data, client);
+                break;
+
+            case 0x10:
+                await HandleFromPoolAsync<LockDifficulty>(data, client); // TODO: Not finished
+                break;
+
+            case 0x14:
+                await HandleFromPoolAsync<PlayerMovement>(data, client); // TODO: Not finished
+                break;
+
+            case 0x15:
+                await HandleFromPoolAsync<VehicleMove>(data, client);
+                break;
+
+            case 0x16:
+                await HandleFromPoolAsync<SteerBoat>(data, client); // TODO: Not finished
                 break;
 
             case 0x17:
@@ -83,6 +120,10 @@ public class ClientHandler
                 await HandleFromPoolAsync<EntityAction>(data, client);
                 break;
 
+            case 0x1E:
+                await HandleFromPoolAsync<SetRecipeBookState>(data, client);
+                break;
+
             case 0x1F:
                 await HandleFromPoolAsync<SetDisplayedRecipe>(data, client);
                 break;
@@ -91,12 +132,32 @@ public class ClientHandler
                 await HandleFromPoolAsync<NameItem>(data, client);
                 break;
 
+            case 0x23:
+                await HandleFromPoolAsync<SelectTrade>(data, client);
+                break;
+                
+            case 0x24:
+                await HandleFromPoolAsync<SetBeaconEffect>(data, client);
+                break;
+
             case 0x28:
                 await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
                 break;
 
+            case 0x29:
+                await HandleFromPoolAsync<UpdateJigsawBlock>(data, client); // TODO: Not finished
+                break;
+
+            case 0x2B:
+                await HandleFromPoolAsync<UpdateSign>(data, client); // TODO: Not finished
+                break;
+
             case 0x2C:
                 await HandleFromPoolAsync<AnimationPacket>(data, client);
+                break;
+
+            case 0x2D:
+                await HandleFromPoolAsync<Spectate>(data, client); // TODO: Not finished
                 break;
 
             case 0x2E:
