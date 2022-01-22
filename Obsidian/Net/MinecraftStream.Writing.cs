@@ -1200,6 +1200,14 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteMatchItem(MatchItem matchItem)
+    {
+        WriteString(matchItem.Match);
+        WriteBoolean(matchItem.HasTooltip);
+        if (matchItem.HasTooltip && matchItem.Tooltip is not null) WriteChat(matchItem.Tooltip);
+    }
+
+    [WriteMethod]
     public async void WriteTrade(Trade trade)
     {
         await WriteSlotAsync(trade.InputItem1);
