@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API._Types;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
@@ -17,39 +18,36 @@ public class Living : Entity, ILiving
 
     public Vector BedBlockPosition { get; set; }
 
-    public IReadOnlyList<PotionEffect> ActivePotionEffects => PotionEffectDurations.Select(pair => pair.Key).ToList().AsReadOnly();
+    public IDictionary<PotionEffect, PotionEffectData> ActivePotionEffects => _activePotionEffects;
 
-    public ConcurrentDictionary<PotionEffect, int> PotionEffectDurations { get; }
+    private readonly ConcurrentDictionary<PotionEffect, PotionEffectData> _activePotionEffects;
 
     public Living()
     {
-        PotionEffectDurations = new ConcurrentDictionary<PotionEffect, int>();
+        _activePotionEffects = new ConcurrentDictionary<PotionEffect, PotionEffectData>();
     }
 
     public async override Task TickAsync()
     {
-        foreach (var (potion, duration) in PotionEffectDurations)
+        foreach (var (potion, data) in _activePotionEffects)
         {
-            var newDuration = duration - 1;
-            if (newDuration <= 0)
+            data.CurrentDuration--;
+            
+            if (data.CurrentDuration <= 0)
             {
                 await RemovePotionEffectAsync(potion);
-            }
-            else
-            {
-                PotionEffectDurations[potion] = newDuration;
             }
         }
     }
 
     public bool HasPotionEffect(PotionEffect potion)
     {
-        return PotionEffectDurations.Any(pair => pair.Key == potion);
+        return _activePotionEffects.ContainsKey(potion);
     }
 
     public async Task ClearPotionEffects()
     {
-        foreach (var (potion, _) in PotionEffectDurations)
+        foreach (var (potion, _) in _activePotionEffects)
         {
             await RemovePotionEffectAsync(potion);
         }
@@ -77,13 +75,14 @@ public class Living : Entity, ILiving
             Flags = flags
         });
 
-        PotionEffectDurations.AddOrUpdate(potion, _ => duration, (_, _) => duration);
+        var data = new PotionEffectData(duration, amplifier, flags);
+        _activePotionEffects.AddOrUpdate(potion, _ => data, (_, _) => data);
     }
 
     public async Task RemovePotionEffectAsync(PotionEffect potion)
     {
         await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (byte) potion));
-        PotionEffectDurations.TryRemove(potion, out _);
+        _activePotionEffects.TryRemove(potion, out _);
     }
 
 

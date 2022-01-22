@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API._Types;
+
+namespace Obsidian.API;
 
 public interface ILiving : IEntity
 {
@@ -18,9 +20,9 @@ public interface ILiving : IEntity
     public Vector BedBlockPosition { get; set; }
     
     /// <summary>
-    /// The list containing all currently active <see cref="PotionEffect"/>s.
+    /// The dictionary containing all active <see cref="PotionEffect"/> with their respective <see cref="PotionEffectData"/>.
     /// </summary>
-    public IReadOnlyList<PotionEffect> ActivePotionEffects { get; }
+    public IDictionary<PotionEffect, PotionEffectData> ActivePotionEffects { get; }
 
     /// <summary>
     /// Whether the entity has the given <see cref="PotionEffect"/> or not.
