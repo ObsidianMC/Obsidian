@@ -2,7 +2,7 @@
 
 public class MatchItem
 {
-    public MatchItem(string match, bool hasTooltip, ChatMessage? tooltip=null)
+    public MatchItem(string match, bool hasTooltip, ChatMessage? tooltip = null)
     {
         Match = match;
         HasTooltip = hasTooltip;

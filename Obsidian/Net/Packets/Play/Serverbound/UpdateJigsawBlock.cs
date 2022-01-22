@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -8,13 +7,13 @@ public partial class UpdateJigsawBlock : IServerboundPacket
 {
     [Field(0)]
     public VectorF Location { get; set; }
-    
+
     [Field(1)]
     public string Name { get; set; }
-    
+
     [Field(2)]
     public string Target { get; set; }
-    
+
     [Field(3)]
     public string Pool { get; set; }
 

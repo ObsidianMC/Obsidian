@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -11,7 +10,7 @@ public partial class GenerateStructure : IServerboundPacket
 
     [Field(1), VarLength]
     public int Levels { get; set; }
-    
+
     [Field(2)]
     public bool KeepJigsaws { get; set; }
 

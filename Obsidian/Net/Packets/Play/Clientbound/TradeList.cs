@@ -1,10 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Serialization.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -35,10 +29,10 @@ public partial class TradeList : IClientboundPacket
 
     [Field(4), VarLength]
     public int Experience { get; init; }
-    
+
     [Field(5)]
     public bool IsRegularVillager { get; init; }
-    
+
     [Field(6)]
     public bool CanRestock { get; init; }
 

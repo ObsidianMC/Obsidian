@@ -2,7 +2,7 @@
 
 public class Trade
 {
-    public Trade(ItemStack inputItem1, ItemStack outputItem, bool hasSecondItem, ItemStack inputItem2, bool tradeDisabled, int numberOfTradeUses, int maximumNumberOfTradeUses, int xp, int specialPrice, float priceMultiplier, int demand): base()
+    public Trade(ItemStack inputItem1, ItemStack outputItem, bool hasSecondItem, ItemStack inputItem2, bool tradeDisabled, int numberOfTradeUses, int maximumNumberOfTradeUses, int xp, int specialPrice, float priceMultiplier, int demand) : base()
     {
         InputItem1 = inputItem1;
         OutputItem = outputItem;
