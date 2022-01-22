@@ -11,9 +11,5 @@ public partial class LockDifficulty : IServerboundPacket
 
     public int Id => 0x10;
 
-    public ValueTask HandleAsync(Server server, Player player)
-    {
-        server.Logger.LogDebug(this.AsString());
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }
