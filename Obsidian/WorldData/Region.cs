@@ -30,11 +30,11 @@ public class Region
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldRegionsPath)
+    internal Region(int x, int z, string worldFolderPath)
     {
         X = x;
         Z = z;
-        RegionFolder = Path.Join(worldRegionsPath, "regions");
+        RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
         regionFile = new RegionFile(filePath, cubicRegionSize);
@@ -189,7 +189,7 @@ public class Region
             var biomePalette = section.BiomeContainer.Palette;
             foreach (NbtTag<string> biome in biomesPalette!)
             {
-                if (Enum.TryParse<Biomes>(biome.Value.TrimMinecraftTag(), true, out var value))
+                if (Enum.TryParse<Biomes>(biome.Value.TrimResourceTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
             }
         }
