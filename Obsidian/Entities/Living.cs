@@ -18,18 +18,18 @@ public class Living : Entity, ILiving
 
     public Vector BedBlockPosition { get; set; }
 
-    public IDictionary<PotionEffect, PotionEffectData> ActivePotionEffects => _activePotionEffects;
+    public IReadOnlyDictionary<PotionEffect, PotionEffectData> ActivePotionEffects => activePotionEffects;
 
-    private readonly ConcurrentDictionary<PotionEffect, PotionEffectData> _activePotionEffects;
+    private readonly ConcurrentDictionary<PotionEffect, PotionEffectData> activePotionEffects;
 
     public Living()
     {
-        _activePotionEffects = new ConcurrentDictionary<PotionEffect, PotionEffectData>();
+        activePotionEffects = new ConcurrentDictionary<PotionEffect, PotionEffectData>();
     }
 
     public async override Task TickAsync()
     {
-        foreach (var (potion, data) in _activePotionEffects)
+        foreach (var (potion, data) in activePotionEffects)
         {
             data.CurrentDuration--;
             
@@ -42,12 +42,12 @@ public class Living : Entity, ILiving
 
     public bool HasPotionEffect(PotionEffect potion)
     {
-        return _activePotionEffects.ContainsKey(potion);
+        return activePotionEffects.ContainsKey(potion);
     }
 
     public async Task ClearPotionEffects()
     {
-        foreach (var (potion, _) in _activePotionEffects)
+        foreach (var (potion, _) in activePotionEffects)
         {
             await RemovePotionEffectAsync(potion);
         }
@@ -76,13 +76,13 @@ public class Living : Entity, ILiving
         });
 
         var data = new PotionEffectData(duration, amplifier, flags);
-        _activePotionEffects.AddOrUpdate(potion, _ => data, (_, _) => data);
+        activePotionEffects.AddOrUpdate(potion, _ => data, (_, _) => data);
     }
 
     public async Task RemovePotionEffectAsync(PotionEffect potion)
     {
         await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (byte) potion));
-        _activePotionEffects.TryRemove(potion, out _);
+        activePotionEffects.TryRemove(potion, out _);
     }
 
 

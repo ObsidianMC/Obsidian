@@ -22,7 +22,7 @@ public interface ILiving : IEntity
     /// <summary>
     /// The dictionary containing all active <see cref="PotionEffect"/> with their respective <see cref="PotionEffectData"/>.
     /// </summary>
-    public IDictionary<PotionEffect, PotionEffectData> ActivePotionEffects { get; }
+    public IReadOnlyDictionary<PotionEffect, PotionEffectData> ActivePotionEffects { get; }
 
     /// <summary>
     /// Whether the entity has the given <see cref="PotionEffect"/> or not.
