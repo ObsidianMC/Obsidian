@@ -3,6 +3,7 @@
 public class ItemStack : IEquatable<ItemStack>
 {
     public readonly static ItemStack Air = new(Material.Air, 0);
+    public readonly static int MaxStackSize = 64;
 
     internal int Slot { get; set; }
 
@@ -36,10 +37,10 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static ItemStack operator +(ItemStack item, int value)
     {
-        if (item.Count >= 64)//TODO use max stack size
+        if (item.Count >= MaxStackSize)//TODO use max stack size
             return item;
 
-        item.Count = Math.Min(64, item.Count + value);
+        item.Count = Math.Min(MaxStackSize, item.Count + value);
 
         return item;
     }

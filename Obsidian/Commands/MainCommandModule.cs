@@ -493,4 +493,57 @@ public class MainCommandModule
         commands.AddExtra(usage);
         return commands;
     }
+
+    [Command("give")]
+    [CommandInfo("Give an item for a specific player", "/give <player> <block> [<amount>]")]
+    public async Task GiveAsync(CommandContext ctx, string player, string block) => await GiveAsync(ctx, player, block, 1);
+
+    [CommandOverload]
+    public async Task GiveAsync(CommandContext ctx, string player, string block, short amount)
+    {
+        try
+        {
+            IReadOnlyList<Player> players = new List<Player>();
+            if(player.EqualsIgnoreCase("@a")) players = ctx.Server.Players.Select(p=>p as Player).ToList();
+            if(!player.StartsWith("@") /*&& player.IsValidUsername()*/) players = new List<Player> { ctx.Server.GetPlayer(player, StringComparison.OrdinalIgnoreCase) as Player };
+            
+            var prefix = block.Contains(":") ? block.Split(":")[0] : "minecraft";
+
+            if (block.StartsWith("minecraft:"))
+            {
+                block = block[prefix.Length..];
+            }
+            else if (block.Contains(":"))
+            {
+                await ctx.Sender.SendMessageAsync($"{ChatColor.Red}Only vanilla items are supported.");
+                return;
+            }
+
+            if (!Enum.TryParse<Material>(block.Replace("_", ""), true, out var material))
+            {
+                if (int.TryParse(block, out var materialId))
+                {
+                    material = (Material)materialId;
+                }
+                else
+                {
+                    await ctx.Sender.SendMessageAsync($"{ChatColor.Red}Specified item {block} not found.");
+                    return;
+                }
+            }
+            players.ForEach(player => player.GiveItemAsync(new ItemStack(material, amount)));
+            string msg;
+            if (amount > ItemStack.MaxStackSize * 100) msg = $"Can't give more than {ItemStack.MaxStackSize * 100} of {material}";
+            else msg = players.Count == 1
+                ? $"Gave {amount} {prefix}:{material.ToString().ToSnakeCase()} to {players.First().Username}"
+                : $"Gave {amount} {prefix}:{material.ToString().ToSnakeCase()} to {players.Count} players";
+
+            await ctx.Sender.SendMessageAsync(ChatMessage.Simple(msg));
+        }
+        catch (Exception ex)
+        {
+            await ctx.Sender.SendMessageAsync($"Error occurred. Error: {ex.Message}"); // TODO: More verbose message.
+        }
+    }
+
 }
