@@ -259,7 +259,7 @@ public class MainCommandModule
     public async Task TeleportAsync(CommandContext Context, [Remaining] VectorF location)
     {
         var player = Context.Player;
-        await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
+        await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
         await player.TeleportAsync(location);
     }
 
@@ -442,7 +442,7 @@ public class MainCommandModule
     {
         var server = (Server)ctx.Server;
         var player = ctx.Player;
-        if (server.WorldManager.TryGetWorldByName(worldname, out World world))
+        if (server.WorldManager.TryGetWorld(worldname, out World world))
         {
             if(player.WorldLocation.Name.EqualsIgnoreCase(worldname))
             {
@@ -450,7 +450,8 @@ public class MainCommandModule
                 return;
             }
 
-            await worldSwitch(ctx, world);
+            await player.TeleportAsync(world);
+            await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
             return;
         }
 
@@ -464,14 +465,6 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         string available = string.Join("§r, §a", server.WorldManager.GetAvailableWorlds().Select(x => x.Name));
         await ctx.Player.SendMessageAsync($"Available worlds: §a{available}§r");
-    }
-
-    private async Task worldSwitch(CommandContext ctx, World? world)
-    {
-        var player = ctx.Player as Player;
-
-        await player.SwitchWorldAsync(world);
-        await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
     }
 
 #if DEBUG

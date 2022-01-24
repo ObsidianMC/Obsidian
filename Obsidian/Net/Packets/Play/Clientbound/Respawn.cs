@@ -9,7 +9,7 @@ public partial class Respawn : IClientboundPacket
     public DimensionCodec Dimension { get; init; }
 
     [Field(1)]
-    public string WorldName { get; init; }
+    public string DimensionName { get; init; }
 
     [Field(2)]
     public long HashedSeed { get; init; }

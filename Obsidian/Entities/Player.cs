@@ -2,7 +2,6 @@
 // https://wiki.vg/Map_Format
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
 using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
@@ -15,6 +14,8 @@ namespace Obsidian.Entities;
 
 public class Player : Living, IPlayer
 {
+    private byte containerId = 0;
+
     internal readonly Client client;
 
     internal HashSet<int> visiblePlayers = new();
@@ -24,7 +25,7 @@ public class Player : Living, IPlayer
 
     internal bool isDragging;
 
-    private byte containerId = 0;
+    internal int TeleportId { get; set; }
 
     public bool IsOperator => Server.Operators.IsOperator(this);
 
@@ -70,7 +71,6 @@ public class Player : Living, IPlayer
     }
 
     public int Ping => this.client.ping;
-    public string Dimension { get; set; } = "minecraft:overworld";
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -279,7 +279,7 @@ public class Player : Living, IPlayer
             await this.client.QueuePacketAsync(new WindowItems(nextId, container.ToList()));
     }
 
-    public async Task TeleportAsync(VectorF pos)
+    public async override Task TeleportAsync(VectorF pos)
     {
         this.LastPosition = this.Position;
         this.Position = pos;
@@ -304,19 +304,50 @@ public class Player : Living, IPlayer
         this.TeleportId = tid;
     }
 
-    public async Task TeleportAsync(IPlayer to)
+    public async override Task TeleportAsync(IEntity to)
     {
         this.LastPosition = this.Position;
         this.Position = to.Position;
+
         await this.client.Player.World.ResendBaseChunksAsync(this.client);
-        var tid = Globals.Random.Next(0, 999);
+
+        this.TeleportId = Globals.Random.Next(0, 999);
+
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
             Position = to.Position,
             Flags = PositionFlags.None,
-            TeleportId = tid
+            TeleportId = this.TeleportId
         });
-        this.TeleportId = tid;
+
+    }
+
+    public async override Task TeleportAsync(IWorld world)
+    {
+        if (world is not World w)
+        {
+            await base.TeleportAsync(world);
+            return;
+        }
+
+        // save current world/persistent data 
+        await this.SaveAsync();
+
+        this.World.TryRemovePlayer(this);
+        w.TryAddPlayer(this);
+
+        this.World = w;
+
+        // resync player data
+        await this.LoadAsync(false);
+
+        // reload world stuff and send rest of the info
+        await w.UpdateClientChunksAsync(this.client, true);
+
+        await this.client.SendInfoAsync();
+
+        var (chunkX, chunkZ) = this.Position.ToChunkCoord();
+        await this.client.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
     }
 
     public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
@@ -334,9 +365,7 @@ public class Player : Living, IPlayer
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
-    public Task SwitchWorldAsync(World world) => world.JoinAsync(this);
-
-    public async Task RespawnAsync()
+    public async Task RespawnAsync(bool copyMetadata = false)
     {
         if (!Alive)
         {
@@ -345,28 +374,25 @@ public class Player : Living, IPlayer
             this.Position = this.World.LevelData.SpawnPosition;
         }
 
-        Registry.Dimensions.TryGetValue(0, out var codec);
+        Registry.TryGetDimensionCodec(this.World.DimensionName, out var codec);
 
         this.server.Logger.LogDebug("Loading into world: {}", this.World.Name);
 
         await this.client.QueuePacketAsync(new Respawn
         {
             Dimension = codec,
-            WorldName = "minecraft:" + this.World.Name,
+            DimensionName = this.World.DimensionName,
             Gamemode = this.Gamemode,
             PreviousGamemode = this.Gamemode,
             HashedSeed = 0,
             IsFlat = false,
             IsDebug = false,
-            CopyMetadata = false
+            CopyMetadata = copyMetadata
         });
 
         this.visiblePlayers.Clear();
-        this.client.LoadedChunks.Clear();
 
-        // Gotta send chunks again
-        // Sending them non-blocking.
-        await this.World.UpdateClientChunksAsync(this.client, true);
+        await this.World.UpdateClientChunksAsync(this.client, true, true);
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -545,7 +571,7 @@ public class Player : Living, IPlayer
         await using var persistentDataStream = persistentDataFile.Create();
         await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
 
-        persistentDataWriter.WriteString("worldName", this.World.Name);
+        persistentDataWriter.WriteString("worldName", this.World.ParentWorldName ?? this.World.Name);
         //TODO make sure to save inventory in the right location if has using global data set to true
 
         persistentDataWriter.EndCompound();
@@ -569,7 +595,7 @@ public class Player : Living, IPlayer
         writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
-        writer.WriteString("Dimension", this.Dimension);
+        writer.WriteString("Dimension", this.World.DimensionName);
 
         writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -594,36 +620,46 @@ public class Player : Living, IPlayer
         await writer.TryFinishAsync();
     }
 
-    public async Task LoadAsync()
+    public async Task LoadAsync(bool loadFromPersistentWorld = true)
     {
-        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
+        // Read persistent data first
         var persistentDataFile = new FileInfo(this.PersistentDataFile);
+
+        if (persistentDataFile.Exists)
+        {
+            await using var persistentDataStream = persistentDataFile.OpenRead();
+
+            var persistentDataReader = new NbtReader(persistentDataStream, NbtCompression.GZip);
+
+            //TODO use inventory if has using global data set to true
+            if (persistentDataReader.ReadNextTag() is NbtCompound persistentDataCompound)
+            {
+                var worldName = persistentDataCompound.GetString("worldName");
+
+                this.server.Logger.LogInformation($"persistent world: {worldName}");
+
+                if (loadFromPersistentWorld && this.server.WorldManager.TryGetWorld(worldName, out var world))
+                {
+                    this.World = world;
+                    this.server.Logger.LogInformation($"Loading from persistent world: {worldName}");
+                }
+            }
+        }
+
+        // Then read player data
+        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
 
         await this.LoadPermsAsync();
 
         if (!playerDataFile.Exists)
         {
             this.Position = this.World.LevelData.SpawnPosition;
-            this.Dimension = "minecraft:overworld";
             return;
-        }
-
-        await using var persistentDataStream = playerDataFile.OpenRead();
-
-        var reader = new NbtReader(persistentDataStream, NbtCompression.GZip);
-
-        //TODO use inventory if has using global data set to true
-        if (reader.ReadNextTag() is NbtCompound persistentDataCompound)
-        {
-            var worldName = persistentDataCompound.GetString("worldName");
-
-            if (this.server.WorldManager.TryGetWorldByName(worldName, out var world))
-                this.World = world;
         }
 
         await using var playerFileStream = playerDataFile.OpenRead();
 
-        reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+        var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
 
         var compound = reader.ReadNextTag() as NbtCompound;
 
@@ -635,11 +671,6 @@ public class Player : Living, IPlayer
         this.Health = compound.GetFloat("Health");
         this.HurtTime = compound.GetShort("HurtTime");
         this.SleepTimer = compound.GetShort("SleepTimer");
-
-        var dimensionId = compound.GetString("Dimension");
-        if (!string.IsNullOrWhiteSpace(dimensionId) && Registry.GetDimensionCodecOrDefault(dimensionId) is DimensionCodec codec)
-            this.Dimension = codec.Name;
-
         this.FoodLevel = compound.GetInt("foodLevel");
         this.FoodTickTimer = compound.GetInt("foodTickTimer");
         this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
@@ -649,6 +680,12 @@ public class Player : Living, IPlayer
         this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
         this.XpP = compound.GetInt("XpP");
+
+        var dimensionName = compound.GetString("Dimension");
+        if (!string.IsNullOrWhiteSpace(dimensionName) && Registry.TryGetDimensionCodec(dimensionName, out var codec))
+        {
+            //TODO load into dimension ^ ^
+        }
 
         if (compound.TryGetTag("Pos", out var posTag))
         {
@@ -831,5 +868,5 @@ public class Player : Living, IPlayer
     }
 
     private string GetPlayerDataPath(bool isOld = false) =>
-        !isOld ? Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat") : Path.Join(this.World.FolderPath, "playerdata", $"{this.Uuid}.dat.old");
+        !isOld ? Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat") : Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat.old");
 }

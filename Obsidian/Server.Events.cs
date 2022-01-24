@@ -234,7 +234,7 @@ public partial class Server
     {
         var joined = e.Player as Player;
 
-        WorldManager.Primary.TryAddPlayer(joined); // TODO Add the player to the last world they were in
+        joined.World.TryAddPlayer(joined);
 
         BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
         foreach (Player other in Players)

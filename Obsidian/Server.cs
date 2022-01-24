@@ -60,7 +60,7 @@ public partial class Server : IServer
     public int Port { get; }
 
     public WorldManager WorldManager { get; private set; }
-    public IWorld DefaultWorld => WorldManager.GetWorld(0);
+    public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
     private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
@@ -75,7 +75,7 @@ public partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-    public Server(Config config, string version, string path)
+    public Server(Config config, string version, string path, List<ServerWorld> serverWorlds)
     {
         Config = config;
 
@@ -109,7 +109,7 @@ public partial class Server : IServer
         Logger.LogDebug("Registering command context type...");
         Logger.LogDebug("Done registering commands.");
 
-        WorldManager = new WorldManager(this, Logger);
+        WorldManager = new WorldManager(this, Logger, serverWorlds);
 
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
@@ -297,7 +297,9 @@ public partial class Server : IServer
                 tcp.Client.Disconnect(false);
                 return;
             }
-            var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.GetWorld(0).GetTotalLoadedEntities()), this);
+
+            //TODO ENTITY IDS NEED TO BE UNIQUE ON THE ENTIRE SERVER NOT PER WORLD
+            var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
             clients.Add(client);
 

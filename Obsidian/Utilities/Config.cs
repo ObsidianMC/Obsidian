@@ -55,16 +55,20 @@ public class Config : IConfig
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     public int TimeTickSpeedMultiplier { get; set; } = 1;
-
-    public ServerWorld[] Worlds { get; set; } = new ServerWorld[1] { new ServerWorld() };
 }
 
-public class ServerWorld
+public sealed class ServerWorld
 {
     public string Name { get; set; } = "overworld";
     public string Generator { get; set; } = "overworld";
 
-    public string Seed { get; set; } = new Random().Next().ToString();
+    public string Seed { get; set; } = Globals.Random.Next().ToString();
+
+    public bool Default { get; set; }
+
+    public string DefaultDimension { get; set; } = "minecraft:overworld";
+
+    public List<string> ChildDimensions { get; set; } = new();
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

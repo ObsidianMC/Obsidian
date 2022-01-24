@@ -16,8 +16,6 @@ public class Entity : IEquatable<Entity>, IEntity
     public IWorld WorldLocation => World;
 
     #region Location properties
-    internal int TeleportId { get; set; }
-
     public VectorF LastPosition { get; set; }
 
     public VectorF Position { get; set; }
@@ -342,4 +340,9 @@ public class Entity : IEquatable<Entity>, IEntity
     public static bool operator !=(Entity a, Entity b) => !(a == b);
 
     public override int GetHashCode() => this.EntityId.GetHashCode();
+
+    //TODO IMPLEMENT THESE
+    public virtual Task TeleportAsync(IWorld world) => Task.CompletedTask;
+    public virtual Task TeleportAsync(IEntity to) => Task.CompletedTask;
+    public virtual Task TeleportAsync(VectorF pos) => Task.CompletedTask;
 }

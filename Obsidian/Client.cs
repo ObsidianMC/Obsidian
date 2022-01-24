@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -231,7 +232,7 @@ public class Client : IDisposable
                                 break;
                             }
 
-                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x=>x.Nickname == username))
+                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
                             {
                                 await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                                 break;
@@ -328,7 +329,8 @@ public class Client : IDisposable
 
         this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-        var codec = Registry.GetDimensionCodecOrDefault(this.Player.Dimension);
+        if (!Registry.TryGetDimensionCodec(this.Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
+            throw new ApplicationException("Failed to retrieve proper dimension for player.");
 
         await this.QueuePacketAsync(new JoinGame
         {
@@ -346,7 +348,7 @@ public class Client : IDisposable
 
             Dimension = codec,
 
-            DimensionName = this.Player.Dimension,
+            DimensionName = codec.Name,
 
             HashedSeed = 0,
 
@@ -358,13 +360,9 @@ public class Client : IDisposable
         });
 
         await this.SendServerBrand();
-
         await this.QueuePacketAsync(TagsPacket.FromRegistry);
-
         await this.SendCommandsAsync();
-
         await this.DeclareRecipesAsync();
-
         await this.QueuePacketAsync(new UnlockRecipes
         {
             Action = UnlockRecipeAction.Init,
@@ -373,17 +371,45 @@ public class Client : IDisposable
         });
 
         await this.SendPlayerListDecoration();
+        await this.SendPlayerInfoAsync();
+
+        await this.Player.World.UpdateClientChunksAsync(this);
+
+        await this.SendInfoAsync();
 
         await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
-
-        await this.Player.World.JoinAsync(this.Player);
     }
 
     #region Packet sending
+    internal async Task SendInfoAsync()
+    {
+        await this.QueuePacketAsync(new SpawnPosition(Player.World.LevelData.SpawnPosition));
+
+        this.Player.TeleportId = Globals.Random.Next(0, 999);
+
+        await this.QueuePacketAsync(new PlayerPositionAndLook
+        {
+            Position = this.Player.Position,
+            Yaw = 0,
+            Pitch = 0,
+            Flags = PositionFlags.None,
+            TeleportId = this.Player.TeleportId
+        });
+
+        await this.SendTimeUpdateAsync();
+        await this.SendWeatherUpdateAsync();
+
+        await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
+        {
+            StateId = this.Player.Inventory.StateId++,
+            CarriedItem = this.Player.GetHeldItem(),
+        });
+    }
+
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
     internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Player.World.LevelData.Time, this.Player.World.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() => 
+    internal Task SendWeatherUpdateAsync() =>
         this.QueuePacketAsync(new ChangeGameState(this.Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)

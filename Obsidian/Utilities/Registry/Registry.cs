@@ -226,7 +226,8 @@ public static partial class Registry
 
             var type = value.GetString();
 
-            if (!Enum.TryParse<CraftingType>(type.TrimMinecraftTag(), true, out var result))
+            var resourceTag = type.TrimResourceTag();
+            if (!Enum.TryParse<CraftingType>(resourceTag, true, out var result))
                 throw new InvalidOperationException("Failed to parse recipe crafting type.");
 
             var json = element.ToString();
@@ -368,11 +369,21 @@ public static partial class Registry
 
     public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new(GetItem(unlocalizedName).Type, 1, meta);
 
-    public static DimensionCodec? GetDimensionCodecOrDefault(string name) => Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
-
     public static bool TryGetDimensionCodec(int id, [MaybeNullWhen(false)] out DimensionCodec codec) => Dimensions.TryGetValue(id, out codec);
+    public static bool TryGetDimensionCodec(string name, [MaybeNullWhen(false)] out DimensionCodec codec)
+    {
+        var (_, value) = Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name));
 
-    public static BiomeCodec? GetBiomeCodecOrDefault(string name) => Biomes.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
+        if (value is not DimensionCodec dimensionCodec)
+        {
+            codec = null;
+            return false;
+        }
+
+        codec = dimensionCodec;
+
+        return true;
+    }
 
     private static void AddTagValues(string tagBase, Tag tag, List<string> values, Dictionary<string, RawTag> dict)
     {
@@ -389,15 +400,15 @@ public static partial class Registry
                     CheckIfNamespace(value, tag, dict);
                     break;
                 case "entity_types":
-                    Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
+                    Enum.TryParse<EntityType>(value.TrimResourceTag(), true, out var type);
                     tag.Entries.Add((int)type);
                     break;
                 case "fluids":
-                    Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
+                    Enum.TryParse<Fluids>(value.TrimResourceTag(), true, out var fluid);
                     tag.Entries.Add((int)fluid);
                     break;
                 case "game_events":
-                    Enum.TryParse<GameEvents>(value.TrimMinecraftTag(), true, out var gameEvent);
+                    Enum.TryParse<GameEvents>(value.TrimResourceTag(), true, out var gameEvent);
                     tag.Entries.Add((int)gameEvent);
                     break;
                 default:

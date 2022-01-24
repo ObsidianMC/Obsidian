@@ -6,7 +6,7 @@ public interface IWorld
 
     public bool Loaded { get; }
 
-    public int DimensionId { get; }
+    public string DimensionName { get; }
 
     public long Time { get; }
 
