@@ -1,6 +1,6 @@
-﻿namespace Obsidian.Utilities.Registry.Codecs.Biomes;
+﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public class BiomeMusicEffect
+public sealed class BiomeMusicEffect
 {
     public bool ReplaceCurrentMusic { get; set; }
 

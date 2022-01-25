@@ -25,7 +25,6 @@ public interface IPlayer : ILiving
     public short CurrentSlot { get; }
 
     public int Ping { get; }
-    public string Dimension { get; set; }
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -38,8 +37,6 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
-    public Task TeleportAsync(VectorF position);
-    public Task TeleportAsync(IPlayer to);
     public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
     public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
     public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);

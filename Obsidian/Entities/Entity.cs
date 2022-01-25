@@ -16,8 +16,6 @@ public class Entity : IEquatable<Entity>, IEntity
     public IWorld WorldLocation => World;
 
     #region Location properties
-    internal int TeleportId { get; set; }
-
     public VectorF LastPosition { get; set; }
 
     public VectorF Position { get; set; }
@@ -342,4 +340,75 @@ public class Entity : IEquatable<Entity>, IEntity
     public static bool operator !=(Entity a, Entity b) => !(a == b);
 
     public override int GetHashCode() => this.EntityId.GetHashCode();
+
+    public virtual Task TeleportAsync(IWorld world) => Task.CompletedTask;
+
+    public async virtual Task TeleportAsync(IEntity to)
+    {
+        this.Position = to.Position;
+
+        if (to.WorldLocation != this.World)
+        {
+            await this.World.DestroyEntityAsync(this);
+
+            this.World = to.WorldLocation as World;
+
+            await this.World.SpawnEntityAsync(to.Position, this.Type);
+
+            return;
+        }
+
+        if (VectorF.Distance(this.Position, to.Position) > 8)
+        {
+            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            {
+                EntityId = this.EntityId,
+                OnGround = this.OnGround,
+                Position = to.Position,
+                Pitch = this.Pitch,
+                Yaw = this.Yaw,
+            });
+
+            return;
+        }
+
+        var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
+
+        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        {
+            EntityId = this.EntityId,
+            Delta = delta,
+            OnGround = this.OnGround,
+            Pitch = this.Pitch,
+            Yaw = this.Yaw
+        });
+    }
+
+    public async virtual Task TeleportAsync(VectorF pos)
+    {
+        if (VectorF.Distance(this.Position, pos) > 8)
+        {
+            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            {
+                EntityId = this.EntityId,
+                OnGround = this.OnGround,
+                Position = pos,
+                Pitch = this.Pitch,
+                Yaw = this.Yaw,
+            });
+
+            return;
+        }
+
+        var delta = (Vector)(pos * 32 - Position * 32) * 128;
+
+        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        {
+            EntityId = this.EntityId,
+            Delta = delta,
+            OnGround = this.OnGround,
+            Pitch = this.Pitch,
+            Yaw = this.Yaw
+        });
+    }
 }

@@ -46,6 +46,10 @@ public interface IEntity
     public Task KillAsync(IEntity source);
     public Task KillAsync(IEntity source, ChatMessage message);
 
+    public Task TeleportAsync(IWorld world);
+    public Task TeleportAsync(IEntity to);
+    public Task TeleportAsync(VectorF pos);
+
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 
     public VectorF GetLookDirection();

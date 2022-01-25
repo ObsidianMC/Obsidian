@@ -1,32 +1,19 @@
 ﻿using Obsidian.WorldData.Generators.Overworld;
 using Obsidian.WorldData.Generators.Overworld.Decorators;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Obsidian.WorldData.Generators;
 
-public class OverworldGenerator : WorldGenerator
+public class OverworldGenerator : IWorldGenerator
 {
     public static OverworldTerrainSettings GeneratorSettings { get; private set; }
 
-    private readonly OverworldTerrain terrainGen;
+    private OverworldTerrain terrainGen;
 
-    public OverworldGenerator(string seed) : base("overworld")
-    {
-        // If the seed provided is numeric, just use it.
-        // Naam asked me to do this a long time ago and I
-        // bet he thought that I forgot - Jonpro03
-        if (!int.TryParse(seed, out int seedHash))
-        {
-            seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
-        }
-        GeneratorSettings = new();
-        GeneratorSettings.Seed = seedHash;
-        terrainGen = new OverworldTerrain();
-    }
+    public string Id => "overworld";
 
-    public override async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int cx, int cz, World world, Chunk chunk = null)
     {
         if (chunk is null)
             chunk = new Chunk(cx, cz);
@@ -78,5 +65,19 @@ public class OverworldGenerator : WorldGenerator
 
         chunk.isGenerated = true;
         return chunk;
+    }
+
+    public void Init(string seed)
+    {
+        // If the seed provided is numeric, just use it.
+        // Naam asked me to do this a long time ago and I
+        // bet he thought that I forgot - Jonpro03
+        if (!int.TryParse(seed, out int seedHash))
+            seedHash = BitConverter.ToInt32(MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(seed)));
+
+        GeneratorSettings = new();
+        GeneratorSettings.Seed = seedHash;
+
+        terrainGen = new OverworldTerrain();
     }
 }
