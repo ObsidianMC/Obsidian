@@ -11,7 +11,7 @@ namespace Obsidian.Tests;
 
 public class Noise
 {
-    private OverworldGenerator og = new OverworldGenerator("jonisawesome");
+    private OverworldGenerator og = new OverworldGenerator();
     private OverworldTerrain noiseGen = new OverworldTerrain(true);
 
     [Fact(DisplayName = "Biomes", Timeout = 100000)]
@@ -91,7 +91,7 @@ public class Noise
     [Fact(DisplayName = "Transitions", Timeout = 100000)]
     public async void TransitionsAsync()
     {
-        OverworldGenerator og = new OverworldGenerator("jonisawesome");
+        OverworldGenerator og = new OverworldGenerator();
         OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {
@@ -117,7 +117,7 @@ public class Noise
     [Fact(DisplayName = "Terrain", Timeout = 100000)]
     public async void TerrainAsync()
     {
-        OverworldGenerator og = new OverworldGenerator("jonisawesome");
+        OverworldGenerator og = new OverworldGenerator();
         OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {
@@ -149,7 +149,7 @@ public class Noise
     [Fact(DisplayName = "Terrain Blending", Timeout = 1000000)]
     public async void TerrainBlendAsync()
     {
-        OverworldGenerator og = new OverworldGenerator("jonisawesome");
+        OverworldGenerator og = new OverworldGenerator();
         OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {

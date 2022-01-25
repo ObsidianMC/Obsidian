@@ -48,10 +48,7 @@ public static partial class Extensions
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (value.IsEmpty())
-            return value;
-
-        if (char.IsUpper(value[0]))
+        if (value.IsEmpty() || char.IsUpper(value[0]))
             return value;
 
         return string.Create(value.Length, value, (span, source) =>
@@ -66,21 +63,32 @@ public static partial class Extensions
     public static string ToSnakeCase(this string str) => string.Join("_", pattern.Matches(str)).ToLower();
 
     /// <summary>
-    /// Trims "minecraft:" from the start and removes '_' characters
+    /// Trims resource tag from the start and removes '_' characters.
     /// </summary>
-    public static string TrimMinecraftTag(this string value)
+    public static string TrimResourceTag(this string value, bool keepUnderscores = false)
     {
-        const int minecraftTagLength = 10; // "minecraft:"
-        int underscoreCount = value.Count(c => c == '_');
-        int length = value.Length - minecraftTagLength - underscoreCount;
+        var values = value.Split(':');
+
+        var resourceLocationLength = values[0].Length + 1;
+
+        int length = value.Length - resourceLocationLength;
+
+        if (!keepUnderscores)
+            length -= value.Count(c => c == '_');
 
         return string.Create(length, value, (span, source) =>
         {
-            int sourceIndex = minecraftTagLength;
+            int sourceIndex = resourceLocationLength;
             for (int i = 0; i < span.Length;)
             {
                 char sourceChar = source[sourceIndex];
-                if (sourceChar != '_')
+
+                if (keepUnderscores)
+                {
+                    span[i] = sourceChar;
+                    i++;
+                }
+                else if(sourceChar != '_')
                 {
                     span[i] = sourceChar;
                     i++;

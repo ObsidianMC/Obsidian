@@ -19,7 +19,6 @@ public static class Program
 
     private static async Task Main(params string[] args)
     {
-
 #if RELEASE
         string version = "0.1";
 #else
@@ -55,38 +54,15 @@ public static class Program
             Console.CancelKeyPress += OnConsoleCancelKeyPressed;
         }
 
-        string serverDir = string.Empty; // This resolves to the binary path by default.
-
-        string configPath = Path.Combine(serverDir, "config.json");
-        Config config;
-
-        var configFile = new FileInfo(configPath);
-
-        if (configFile.Exists)
-        {
-            using var fs = configFile.OpenRead();
-
-            config = await fs.FromJsonAsync<Config>();
-        }
-        else
-        {
-            config = new Config();
-
-            using var fs = configFile.Create();
-
-            await config.ToJsonAsync(fs);
-
-            Console.WriteLine($"Created new configuration file for Server");
-            Console.WriteLine($"Please fill in your config with the values you wish to use for your server.\n");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(configPath);
-            Console.ResetColor();
+        var config = await TryLoadConfigAsync();
+        if (config == null)
             return;
-        }
+
+        var serverWorlds = await TryLoadServerWorldsAsync();
 
         InitConsoleInput();
 
-        Server = new Server(config, version, serverDir);
+        Server = new Server(config, version, string.Empty, serverWorlds);
         await Server.RunAsync();
 
         if (!shutdownPending)
@@ -94,6 +70,62 @@ public static class Program
             Console.WriteLine("Server killed. Press any key to return...");
             Console.ReadKey(intercept: false);
         }
+    }
+
+    private static async Task<List<ServerWorld>> TryLoadServerWorldsAsync()
+    {
+        var worldsFile = new FileInfo("worlds.json");
+
+        if (worldsFile.Exists)
+        {
+            using var worldsFileStream = worldsFile.OpenRead();
+
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>();
+        }
+
+        var worlds = new List<ServerWorld>() 
+        {
+            new()
+            {
+                ChildDimensions =
+                {
+                    "minecraft:the_nether",
+                    "minecraft:the_end"
+                }
+            }
+        };
+
+        using var fs = worldsFile.Create();
+
+        await worlds.ToJsonAsync(fs);
+
+        return worlds;
+    }
+
+    private static async Task<Config?> TryLoadConfigAsync()
+    {
+        var configFile = new FileInfo("config.json");
+
+        if (configFile.Exists)
+        {
+            using var configFileStream = configFile.OpenRead();
+
+            return await configFileStream.FromJsonAsync<Config>();
+        }
+
+        var config = new Config();
+
+        using var fs = configFile.Create();
+
+        await config.ToJsonAsync(fs);
+
+        Console.WriteLine($"Created new configuration file for Server");
+        Console.WriteLine($"Please fill in your config with the values you wish to use for your server.\n");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine(configFile.FullName);
+        Console.ResetColor();
+
+        return null;
     }
 
     private static void InitConsoleInput()
@@ -104,7 +136,7 @@ public static class Program
             while (!shutdownPending)
             {
                 string? input = ConsoleIO.ReadLine();
-                if(!string.IsNullOrEmpty(input))
+                if (!string.IsNullOrEmpty(input))
                     await Server.ExecuteCommand(input);
             }
         });

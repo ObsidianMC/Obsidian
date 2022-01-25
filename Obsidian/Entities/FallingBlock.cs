@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.WorldData;
+
+namespace Obsidian.Entities;
 
 public class FallingBlock : Entity
 {
@@ -16,12 +18,15 @@ public class FallingBlock : Entity
 
     private HashSet<Vector> checkedBlocks = new();
 
-    public FallingBlock() : base()
+    private World world;
+
+    public FallingBlock(World world) : base()
     {
         SpawnPosition = Position;
         LastPosition = Position;
         AliveTime = 0;
         DeltaPosition = new VectorF(0F, 0F, 0F);
+        this.world = world;
     }
 
     public async override Task TickAsync()
@@ -42,7 +47,8 @@ public class FallingBlock : Entity
         if (!checkedBlocks.Contains(upcomingBlockPos))
         {
             checkedBlocks.Add(upcomingBlockPos);
-            var upcomingBlock = await server.World.GetBlockAsync(upcomingBlockPos);
+
+            var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
 
             if (upcomingBlock is Block block &&
                 !block.IsAir &&
@@ -60,10 +66,10 @@ public class FallingBlock : Entity
     private async Task ConvertToBlock(Vector loc)
     {
         var block = new Block(BlockMaterial);
-        server.World.SetBlockUntrackedAsync(loc, block);
+        await world.SetBlockUntrackedAsync(loc, block);
 
-        server.BroadcastBlockChange(block, loc);
+        await world.SetBlockAsync(loc, block);
 
-        await server.World.DestroyEntityAsync(this);
+        await world.DestroyEntityAsync(this);
     }
 }

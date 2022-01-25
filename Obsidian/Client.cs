@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;
@@ -215,6 +216,7 @@ public class Client : IDisposable
 
                             await this.Server.DisconnectIfConnectedAsync(username);
 
+                            var world = this.Server.DefaultWorld as World;
                             if (this.config.OnlineMode)
                             {
                                 var user = await MinecraftAPI.GetUserAsync(loginStart.Username);
@@ -230,10 +232,8 @@ public class Client : IDisposable
                                     }
 
                                 }
-                                this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this)
-                                {
-                                    World = this.Server.World
-                                };
+
+                                this.Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
 
                                 this.packetCryptography.GenerateKeyPair();
 
@@ -246,15 +246,14 @@ public class Client : IDisposable
                                 break;
                             }
 
-                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x=>x.Nickname == username))
+                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
                             {
                                 await this.DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                                 break;
                             }
-                            this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this)
-                            {
-                                World = this.Server.World
-                            };
+
+                            this.Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
+
                             //await this.SetCompression();
                             await this.ConnectAsync();
                             break;
@@ -339,13 +338,13 @@ public class Client : IDisposable
         this.Logger.LogDebug($"Sent Login success to user {this.Player.Username} {this.Player.Uuid}");
 
         this.State = ClientState.Play;
-        this.Player.Health = 20f;
 
         await this.Player.LoadAsync();
 
         this.Server.OnlinePlayers.TryAdd(this.Player.Uuid, this.Player);
 
-        var codec = Registry.GetDimensionCodecOrDefault(this.Player.Dimension);
+        if (!Registry.TryGetDimensionCodec(this.Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
+            throw new ApplicationException("Failed to retrieve proper dimension for player.");
 
         await this.QueuePacketAsync(new JoinGame
         {
@@ -363,7 +362,7 @@ public class Client : IDisposable
 
             Dimension = codec,
 
-            WorldName = "minecraft:world",
+            DimensionName = codec.Name,
 
             HashedSeed = 0,
 
@@ -375,13 +374,9 @@ public class Client : IDisposable
         });
 
         await this.SendServerBrand();
-
         await this.QueuePacketAsync(TagsPacket.FromRegistry);
-
         await this.SendCommandsAsync();
-
         await this.DeclareRecipesAsync();
-
         await this.QueuePacketAsync(new UnlockRecipes
         {
             Action = UnlockRecipeAction.Init,
@@ -389,17 +384,22 @@ public class Client : IDisposable
             SecondRecipeIds = Registry.Recipes.Keys.ToList()
         });
 
-        await this.SendPlayerInfoAsync();
         await this.SendPlayerListDecoration();
+        await this.SendPlayerInfoAsync();
+
+        await this.UpdateChunksAsync();
+
+        await this.SendInfoAsync();
 
         await this.Server.Events.InvokePlayerJoinAsync(new PlayerJoinEventArgs(this.Player, DateTimeOffset.Now));
+    }
 
-        await this.Player.World.ResendBaseChunksAsync(this);
+    #region Packet sending
+    internal async Task SendInfoAsync()
+    {
+        await this.QueuePacketAsync(new SpawnPosition(Player.World.LevelData.SpawnPosition));
 
-        var (chunkX, chunkZ) = this.Player.Position.ToChunkCoord();
-
-        await this.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
-        await this.QueuePacketAsync(new SpawnPosition(this.Player.Position));
+        this.Player.TeleportId = Globals.Random.Next(0, 999);
 
         await this.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -407,26 +407,24 @@ public class Client : IDisposable
             Yaw = 0,
             Pitch = 0,
             Flags = PositionFlags.None,
-            TeleportId = 0
+            TeleportId = this.Player.TeleportId
         });
 
-        //Initialize inventory
+        await this.SendTimeUpdateAsync();
+        await this.SendWeatherUpdateAsync();
+
         await this.QueuePacketAsync(new WindowItems(0, this.Player.Inventory.ToList())
         {
             StateId = this.Player.Inventory.StateId++,
             CarriedItem = this.Player.GetHeldItem(),
         });
-
-        await this.SendTimeUpdateAsync();
-        await this.SendWeatherUpdateAsync();
     }
 
-    #region Packet sending
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, this.State)));
 
-    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Server.World.Data.Time, this.Server.World.Data.DayTime));
-    internal Task SendWeatherUpdateAsync() => 
-        this.QueuePacketAsync(new ChangeGameState(this.Server.World.Data.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    internal Task SendTimeUpdateAsync() => this.QueuePacketAsync(new TimeUpdate(this.Player.World.LevelData.Time, this.Player.World.LevelData.DayTime));
+    internal Task SendWeatherUpdateAsync() =>
+        this.QueuePacketAsync(new ChangeGameState(this.Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {
@@ -551,6 +549,58 @@ public class Client : IDisposable
         await this.packetQueue.SendAsync(packet);
         //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
     }
+
+    internal async Task UpdateChunksAsync(bool unloadAll = false)
+    {
+        if (unloadAll)
+        {
+            if (!this.Player.Respawning)
+            {
+                foreach (var (X, Z) in this.LoadedChunks)
+                    await this.UnloadChunkAsync(X, Z);
+            }
+
+            this.LoadedChunks.Clear();
+        }
+
+        List<(int X, int Z)> clientNeededChunks = new();
+        List<(int X, int Z)> clientUnneededChunks = new(this.LoadedChunks);
+
+        (int playerChunkX, int playerChunkZ) = this.Player.Position.ToChunkCoord();
+        (int lastPlayerChunkX, int lastPlayerChunkZ) = this.Player.LastPosition.ToChunkCoord();
+
+        int dist = (this.ClientSettings?.ViewDistance ?? 14) - 2;
+        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                clientNeededChunks.Add((x, z));
+
+        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(this.LoadedChunks).ToList();
+        clientNeededChunks.Sort((chunk1, chunk2) =>
+        {
+            return Math.Abs(playerChunkX - chunk1.X) +
+            Math.Abs(playerChunkZ - chunk1.Z) <
+            Math.Abs(playerChunkX - chunk2.X) +
+            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+        });
+
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
+        {
+            await this.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+            this.LoadedChunks.TryRemove(chunkLoc);
+        });
+
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+        {
+            var chunk = await this.Player.World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
+            if (chunk is not null)
+            {
+                await this.SendChunkAsync(chunk);
+                this.LoadedChunks.Add((chunk.X, chunk.Z));
+            }
+        });
+    }
+
 
     internal Task SendChunkAsync(Chunk chunk) => chunk != null ? this.QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
 
