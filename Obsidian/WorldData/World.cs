@@ -59,59 +59,6 @@ public class World : IWorld
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
-    public async Task UpdateClientChunksAsync(Client c, bool unloadAll = false, bool respawning = false)
-    {
-        if (unloadAll)
-        {
-            if (!respawning)
-            {
-                foreach (var (X, Z) in c.LoadedChunks)
-                    await c.UnloadChunkAsync(X, Z);
-            }
-
-            c.LoadedChunks.Clear();
-        }
-
-        List<(int X, int Z)> clientNeededChunks = new();
-        List<(int X, int Z)> clientUnneededChunks = new(c.LoadedChunks);
-
-        (int playerChunkX, int playerChunkZ) = c.Player.Position.ToChunkCoord();
-        (int lastPlayerChunkX, int lastPlayerChunkZ) = c.Player.LastPosition.ToChunkCoord();
-
-        int dist = (c.ClientSettings?.ViewDistance ?? 14) - 2;
-        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
-            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
-                clientNeededChunks.Add((x, z));
-
-        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
-        clientNeededChunks = clientNeededChunks.Except(c.LoadedChunks).ToList();
-        clientNeededChunks.Sort((chunk1, chunk2) =>
-        {
-            return Math.Abs(playerChunkX - chunk1.X) +
-            Math.Abs(playerChunkZ - chunk1.Z) <
-            Math.Abs(playerChunkX - chunk2.X) +
-            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
-        });
-
-        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
-        {
-            await c.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
-            c.LoadedChunks.TryRemove(chunkLoc);
-        });
-
-        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
-        {
-            var chunk = await this.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
-            if (chunk is not null)
-            {
-                await c.SendChunkAsync(chunk);
-                c.LoadedChunks.Add((chunk.X, chunk.Z));
-            }
-        });
-    }
-
-    public Task ResendBaseChunksAsync(Client c) => UpdateClientChunksAsync(c, true);
-
     public async Task<bool> DestroyEntityAsync(Entity entity)
     {
         var destroyed = new DestroyEntities(entity);

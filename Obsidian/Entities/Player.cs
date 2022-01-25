@@ -52,6 +52,7 @@ public class Player : Living, IPlayer
 
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
+    public bool Respawning { get; internal set; }
 
     public short AttackTime { get; set; }
     public short DeathTime { get; set; }
@@ -118,92 +119,6 @@ public class Player : Living, IPlayer
 
         this.PersistentDataFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat");
         this.PersistentDataBackupFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat.old");
-    }
-
-    internal async override Task UpdateAsync(VectorF position, bool onGround)
-    {
-        await base.UpdateAsync(position, onGround);
-
-        this.HeadY = position.Y + 1.62f;
-
-        await this.TrySpawnPlayerAsync(position);
-
-        await this.PickupNearbyItemsAsync(1);
-    }
-
-    internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
-    {
-        await base.UpdateAsync(position, yaw, pitch, onGround);
-
-        this.HeadY = position.Y + 1.62f;
-
-        await this.TrySpawnPlayerAsync(position);
-
-        await this.PickupNearbyItemsAsync(0.8f);
-    }
-
-    internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
-    {
-        await base.UpdateAsync(yaw, pitch, onGround);
-
-        await this.PickupNearbyItemsAsync(2);
-    }
-
-    private async Task TrySpawnPlayerAsync(VectorF position)
-    {
-        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= (x.Value.client.ClientSettings?.ViewDistance ?? 10)))
-        {
-            if (player.Alive && !this.visiblePlayers.Contains(player.EntityId))
-            {
-                this.visiblePlayers.Add(player.EntityId);
-
-                await this.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = player.Yaw,
-                    Pitch = player.Pitch
-                });
-            }
-        }
-
-        var removed = this.visiblePlayers.Where(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x)).ToArray();
-        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x));
-
-        if (removed.Length > 0)
-            await this.client.QueuePacketAsync(new DestroyEntities(removed));
-    }
-
-    private async Task PickupNearbyItemsAsync(float distance = 0.5f)
-    {
-        foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
-        {
-            if (entity is ItemEntity item)
-            {
-                this.server.BroadcastPacket(new CollectItem
-                {
-                    CollectedEntityId = item.EntityId,
-                    CollectorEntityId = this.EntityId,
-                    PickupItemCount = item.Count
-                });
-
-                var slot = this.Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
-
-                this.client.SendPacket(new SetSlot
-                {
-                    Slot = (short)slot,
-
-                    WindowId = 0,
-
-                    SlotData = this.Inventory.GetItem(slot),
-
-                    StateId = this.Inventory.StateId++
-                });
-
-                await item.RemoveAsync();
-            }
-        }
     }
 
     public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -283,7 +198,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.client.Player.World.ResendBaseChunksAsync(this.client);
+        await this.client.UpdateChunksAsync(true);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -309,7 +224,7 @@ public class Player : Living, IPlayer
         this.LastPosition = this.Position;
         this.Position = to.Position;
 
-        await this.client.Player.World.ResendBaseChunksAsync(this.client);
+        await this.client.UpdateChunksAsync(true);
 
         this.TeleportId = Globals.Random.Next(0, 999);
 
@@ -319,7 +234,6 @@ public class Player : Living, IPlayer
             Flags = PositionFlags.None,
             TeleportId = this.TeleportId
         });
-
     }
 
     public async override Task TeleportAsync(IWorld world)
@@ -342,7 +256,7 @@ public class Player : Living, IPlayer
         await this.LoadAsync(false);
 
         // reload world stuff and send rest of the info
-        await w.UpdateClientChunksAsync(this.client, true);
+        await this.client.UpdateChunksAsync(true);
 
         await this.client.SendInfoAsync();
 
@@ -392,7 +306,9 @@ public class Player : Living, IPlayer
 
         this.visiblePlayers.Clear();
 
-        await this.World.UpdateClientChunksAsync(this.client, true, true);
+        this.Respawning = true;
+
+        await this.client.UpdateChunksAsync(true);
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -402,6 +318,8 @@ public class Player : Living, IPlayer
             Flags = PositionFlags.None,
             TeleportId = 0
         });
+
+        this.Respawning = false;
     }
 
     //TODO make IDamageSource 
@@ -832,6 +750,92 @@ public class Player : Living, IPlayer
     }
 
     public override string ToString() => this.Username;
+
+    internal async override Task UpdateAsync(VectorF position, bool onGround)
+    {
+        await base.UpdateAsync(position, onGround);
+
+        this.HeadY = position.Y + 1.62f;
+
+        await this.TrySpawnPlayerAsync(position);
+
+        await this.PickupNearbyItemsAsync(1);
+    }
+
+    internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    {
+        await base.UpdateAsync(position, yaw, pitch, onGround);
+
+        this.HeadY = position.Y + 1.62f;
+
+        await this.TrySpawnPlayerAsync(position);
+
+        await this.PickupNearbyItemsAsync(0.8f);
+    }
+
+    internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    {
+        await base.UpdateAsync(yaw, pitch, onGround);
+
+        await this.PickupNearbyItemsAsync(2);
+    }
+
+    private async Task TrySpawnPlayerAsync(VectorF position)
+    {
+        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= (x.Value.client.ClientSettings?.ViewDistance ?? 10)))
+        {
+            if (player.Alive && !this.visiblePlayers.Contains(player.EntityId))
+            {
+                this.visiblePlayers.Add(player.EntityId);
+
+                await this.client.QueuePacketAsync(new SpawnPlayer
+                {
+                    EntityId = player.EntityId,
+                    Uuid = player.Uuid,
+                    Position = player.Position,
+                    Yaw = player.Yaw,
+                    Pitch = player.Pitch
+                });
+            }
+        }
+
+        var removed = this.visiblePlayers.Where(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x)).ToArray();
+        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x));
+
+        if (removed.Length > 0)
+            await this.client.QueuePacketAsync(new DestroyEntities(removed));
+    }
+
+    private async Task PickupNearbyItemsAsync(float distance = 0.5f)
+    {
+        foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
+        {
+            if (entity is ItemEntity item)
+            {
+                this.server.BroadcastPacket(new CollectItem
+                {
+                    CollectedEntityId = item.EntityId,
+                    CollectorEntityId = this.EntityId,
+                    PickupItemCount = item.Count
+                });
+
+                var slot = this.Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
+
+                this.client.SendPacket(new SetSlot
+                {
+                    Slot = (short)slot,
+
+                    WindowId = 0,
+
+                    SlotData = this.Inventory.GetItem(slot),
+
+                    StateId = this.Inventory.StateId++
+                });
+
+                await item.RemoveAsync();
+            }
+        }
+    }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)
     {

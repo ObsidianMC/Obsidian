@@ -373,7 +373,7 @@ public class Client : IDisposable
         await this.SendPlayerListDecoration();
         await this.SendPlayerInfoAsync();
 
-        await this.Player.World.UpdateClientChunksAsync(this);
+        await this.UpdateChunksAsync();
 
         await this.SendInfoAsync();
 
@@ -535,6 +535,58 @@ public class Client : IDisposable
         await this.packetQueue.SendAsync(packet);
         //this.Logger.LogDebug($"Queuing packet: {packet} (0x{packet.Id:X2})");
     }
+
+    internal async Task UpdateChunksAsync(bool unloadAll = false)
+    {
+        if (unloadAll)
+        {
+            if (!this.Player.Respawning)
+            {
+                foreach (var (X, Z) in this.LoadedChunks)
+                    await this.UnloadChunkAsync(X, Z);
+            }
+
+            this.LoadedChunks.Clear();
+        }
+
+        List<(int X, int Z)> clientNeededChunks = new();
+        List<(int X, int Z)> clientUnneededChunks = new(this.LoadedChunks);
+
+        (int playerChunkX, int playerChunkZ) = this.Player.Position.ToChunkCoord();
+        (int lastPlayerChunkX, int lastPlayerChunkZ) = this.Player.LastPosition.ToChunkCoord();
+
+        int dist = (this.ClientSettings?.ViewDistance ?? 14) - 2;
+        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                clientNeededChunks.Add((x, z));
+
+        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(this.LoadedChunks).ToList();
+        clientNeededChunks.Sort((chunk1, chunk2) =>
+        {
+            return Math.Abs(playerChunkX - chunk1.X) +
+            Math.Abs(playerChunkZ - chunk1.Z) <
+            Math.Abs(playerChunkX - chunk2.X) +
+            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+        });
+
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
+        {
+            await this.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+            this.LoadedChunks.TryRemove(chunkLoc);
+        });
+
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+        {
+            var chunk = await this.Player.World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
+            if (chunk is not null)
+            {
+                await this.SendChunkAsync(chunk);
+                this.LoadedChunks.Add((chunk.X, chunk.Z));
+            }
+        });
+    }
+
 
     internal Task SendChunkAsync(Chunk chunk) => chunk != null ? this.QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
 

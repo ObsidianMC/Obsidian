@@ -1,7 +1,5 @@
 ﻿namespace Obsidian.API;
 
-// TODO ADD NEW WORLD FORMAT
-
 public interface IConfig
 {
     /// <summary>

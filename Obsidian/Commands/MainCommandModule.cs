@@ -176,10 +176,8 @@ public class MainCommandModule
     public async Task ForceChunkReloadAsync(CommandContext Context)
     {
         var player = (Player)Context.Player;
-        var c = player.client;
-        var world = player.World;
 
-        await world.UpdateClientChunksAsync(c, true);
+        await player.client.UpdateChunksAsync(true);
     }
 
     [Command("echo")]
