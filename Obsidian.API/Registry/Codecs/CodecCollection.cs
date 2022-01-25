@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Utilities.Registry.Codecs;
+﻿using System.Collections.Concurrent;
+
+namespace Obsidian.API.Registry.Codecs;
 
 public class CodecCollection<K, V> : ConcurrentDictionary<K, V>
 {

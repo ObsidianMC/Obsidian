@@ -166,7 +166,7 @@ public partial class Server
 
             if (container is IBlockEntity)
             {
-                var tileEntity = await server.World.GetBlockEntityAsync(blockPosition);
+                var tileEntity = await player.World.GetBlockEntityAsync(blockPosition);
 
                 if (tileEntity == null)
                 {
@@ -181,7 +181,7 @@ public partial class Server
                         new NbtTag<string>("CustomName", container.Title.ToJson())
                     };
 
-                    server.World.SetBlockEntity(blockPosition, tileEntity);
+                    player.World.SetBlockEntity(blockPosition, tileEntity);
                 }
                 else if (tileEntity is NbtCompound dataCompound)
                 {
@@ -213,7 +213,7 @@ public partial class Server
 
         await player.SaveAsync();
 
-        World.RemovePlayer(player);
+        player.World.TryRemovePlayer(player);
 
         var destroy = new DestroyEntities(player.EntityId);
 
@@ -234,7 +234,7 @@ public partial class Server
     {
         var joined = e.Player as Player;
 
-        World.AddPlayer(joined); // TODO Add the player to the last world they were in
+        joined.World.TryAddPlayer(joined);
 
         BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
         foreach (Player other in Players)

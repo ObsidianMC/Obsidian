@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Crafting;
+using Obsidian.API.Registry.Codecs;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities.Registry.Codecs;
-using Obsidian.Utilities.Registry.Codecs.Biomes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using Obsidian.Utilities.Registry.Enums;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -55,12 +55,12 @@ public static partial class Registry
                 new DefaultEnumConverter<MinecraftType>(),
                 new DefaultEnumConverter<Attachment>(),
                 new DefaultEnumConverter<Mode>(),
-            },
+            }
     };
 
     private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
     {
-        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
+        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance
     };
 
     public static async Task RegisterBlocksAsync()
@@ -162,58 +162,6 @@ public static partial class Registry
         Logger?.LogDebug($"Successfully registered {registered} dimensions...");
     }
 
-    private static void AddTagValues(string tagBase, Tag tag, List<string> values, Dictionary<string, RawTag> dict)
-    {
-        foreach (var value in values)
-        {
-            switch (tagBase)
-            {
-                case "items":
-                    var item = GetItem(value);
-
-                    tag.Entries.Add(item.Id);
-                    break;
-                case "blocks":
-                    CheckIfNamespace(value, tag, dict);
-                    break;
-                case "entity_types":
-                    Enum.TryParse<EntityType>(value.TrimMinecraftTag(), true, out var type);
-                    tag.Entries.Add((int)type);
-                    break;
-                case "fluids":
-                    Enum.TryParse<Fluids>(value.TrimMinecraftTag(), true, out var fluid);
-                    tag.Entries.Add((int)fluid);
-                    break;
-                case "game_events":
-                    Enum.TryParse<GameEvents>(value.TrimMinecraftTag(), true, out var gameEvent);
-                    tag.Entries.Add((int)gameEvent);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private static void CheckIfNamespace(string value, Tag tag, Dictionary<string, RawTag> dict)
-    {
-        if (value.StartsWith('#'))
-        {
-            var sanitizedValue = value.TrimStart('#').Replace(':', '/').Replace("minecraft", "blocks");
-
-            if (dict.TryGetValue(sanitizedValue, out RawTag rawTag))
-            {
-                foreach (var newValue in rawTag.Values)
-                    CheckIfNamespace(newValue, tag, dict);
-
-                return;
-            }
-        }
-
-        var block = GetBlock(value);
-
-        tag.Entries.Add(block.Id);
-    }
-
     public static async Task RegisterTagsAsync()
     {
         int registered = 0;
@@ -278,7 +226,8 @@ public static partial class Registry
 
             var type = value.GetString();
 
-            if (!Enum.TryParse<CraftingType>(type.TrimMinecraftTag(), true, out var result))
+            var resourceTag = type.TrimResourceTag();
+            if (!Enum.TryParse<CraftingType>(resourceTag, true, out var result))
                 throw new InvalidOperationException("Failed to parse recipe crafting type.");
 
             var json = element.ToString();
@@ -404,25 +353,90 @@ public static partial class Registry
         DeclareCommandsPacket.AddNode(node);
     }
 
-    public static Block GetBlock(Material material) => new Block(material);
+    public static Block GetBlock(Material material) => new(material);
 
-    public static Block GetBlock(int id) => new Block(id);
+    public static Block GetBlock(int id) => new(id);
 
     public static Block GetBlock(string unlocalizedName) =>
-        new Block(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
+        new(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
 
     public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item GetItem(Material mat) => Items.GetValueOrDefault(mat);
     public static Item GetItem(string unlocalizedName) =>
         Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
-    public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new ItemStack(mat, 1, meta);
+    public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new(mat, 1, meta);
 
-    public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new ItemStack(GetItem(unlocalizedName).Type, 1, meta);
+    public static ItemStack GetSingleItem(string unlocalizedName, ItemMeta? meta = null) => new(GetItem(unlocalizedName).Type, 1, meta);
 
-    public static DimensionCodec? GetDimensionCodecOrDefault(string name) => Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
+    public static bool TryGetDimensionCodec(int id, [MaybeNullWhen(false)] out DimensionCodec codec) => Dimensions.TryGetValue(id, out codec);
+    public static bool TryGetDimensionCodec(string name, [MaybeNullWhen(false)] out DimensionCodec codec)
+    {
+        var (_, value) = Dimensions.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name));
 
-    public static BiomeCodec? GetBiomeCodecOrDefault(string name) => Biomes.FirstOrDefault(x => x.Value.Name.EqualsIgnoreCase(name)).Value;
+        if (value is not DimensionCodec dimensionCodec)
+        {
+            codec = null;
+            return false;
+        }
+
+        codec = dimensionCodec;
+
+        return true;
+    }
+
+    private static void AddTagValues(string tagBase, Tag tag, List<string> values, Dictionary<string, RawTag> dict)
+    {
+        foreach (var value in values)
+        {
+            switch (tagBase)
+            {
+                case "items":
+                    var item = GetItem(value);
+
+                    tag.Entries.Add(item.Id);
+                    break;
+                case "blocks":
+                    CheckIfNamespace(value, tag, dict);
+                    break;
+                case "entity_types":
+                    Enum.TryParse<EntityType>(value.TrimResourceTag(), true, out var type);
+                    tag.Entries.Add((int)type);
+                    break;
+                case "fluids":
+                    Enum.TryParse<Fluids>(value.TrimResourceTag(), true, out var fluid);
+                    tag.Entries.Add((int)fluid);
+                    break;
+                case "game_events":
+                    Enum.TryParse<GameEvents>(value.TrimResourceTag(), true, out var gameEvent);
+                    tag.Entries.Add((int)gameEvent);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private static void CheckIfNamespace(string value, Tag tag, Dictionary<string, RawTag> dict)
+    {
+        if (value.StartsWith('#'))
+        {
+            var sanitizedValue = value.TrimStart('#').Replace(':', '/').Replace("minecraft", "blocks");
+
+            if (dict.TryGetValue(sanitizedValue, out RawTag rawTag))
+            {
+                foreach (var newValue in rawTag.Values)
+                    CheckIfNamespace(newValue, tag, dict);
+
+                return;
+            }
+        }
+
+        var block = GetBlock(value);
+
+        tag.Entries.Add(block.Id);
+    }
+
 
     private class BaseRegistryJson
     {
