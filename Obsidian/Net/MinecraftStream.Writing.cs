@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
+using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -9,7 +10,6 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -627,32 +627,28 @@ public partial class MinecraftStream
         var list = new NbtList(NbtTagType.Compound, "value");
 
         foreach (var (_, codec) in value.Dimensions)
-        {
             codec.Write(list);
-        }
 
         var dimensions = new NbtCompound(value.Dimensions.Name)
-            {
-                new NbtTag<string>("type", value.Dimensions.Name),
+        {
+            new NbtTag<string>("type", value.Dimensions.Name),
 
-                list
-            };
+            list
+        };
 
         #region biomes
 
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
         foreach (var (_, biome) in value.Biomes)
-        {
             biome.Write(biomes);
-        }
 
         var biomeCompound = new NbtCompound(value.Biomes.Name)
-            {
-                new NbtTag<string>("type", value.Biomes.Name),
+        {
+            new NbtTag<string>("type", value.Biomes.Name),
 
-                biomes
-            };
+            biomes
+        };
         #endregion
 
         writer.WriteTag(dimensions);
@@ -667,7 +663,7 @@ public partial class MinecraftStream
     {
         var writer = new NbtWriter(this, "");
 
-        value.TransferTags(writer);
+        value.WriteElement(writer);
 
         writer.EndCompound();
         writer.TryFinish();

@@ -2,6 +2,7 @@ using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 using System.Data;
 using System.Diagnostics;
 
@@ -164,8 +165,8 @@ public class MainCommandModule
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync(CommandContext Context)
     {
-        var server = (Server)Context.Server;
-        var world = server.World;
+        var player = (Player)Context.Player;
+        var world = player.World;
         await world.FlushRegionsAsync();
     }
 
@@ -175,11 +176,8 @@ public class MainCommandModule
     public async Task ForceChunkReloadAsync(CommandContext Context)
     {
         var player = (Player)Context.Player;
-        var server = (Server)Context.Server;
-        var c = player.client;
-        var world = server.World;
 
-        await world.UpdateClientChunksAsync(c, true);
+        await player.client.UpdateChunksAsync(true);
     }
 
     [Command("echo")]
@@ -259,7 +257,7 @@ public class MainCommandModule
     public async Task TeleportAsync(CommandContext Context, [Remaining] VectorF location)
     {
         var player = Context.Player;
-        await player.SendMessageAsync($"ight homie tryna tp you (and sip dicks) {location.X} {location.Y} {location.Z}");
+        await player.SendMessageAsync($"Teleporting to {location.X} {location.Y} {location.Z}");
         await player.TeleportAsync(location);
     }
 
@@ -377,9 +375,9 @@ public class MainCommandModule
     [CommandOverload]
     public async Task TimeAsync(CommandContext Context, int time)
     {
-        var server = Context.Server as Server;
-        server.World.Data.DayTime = time;
-        await Context.Sender.SendMessageAsync($"Time set to {time}");
+        var player = Context.Player as Player;
+        player.World.LevelData.DayTime = time;
+        await Context.Player.SendMessageAsync($"Time set to {time}");
     }
 
     [CommandGroup("permission")]
@@ -432,9 +430,39 @@ public class MainCommandModule
     [RequirePermission(permissions: "obsidian.weather")]
     public async Task WeatherAsync(CommandContext ctx)
     {
-        var server = (Server)ctx.Server;
-        server.World.Data.RainTime = 0;
+        var player = (Player)ctx.Player;
+        player.World.LevelData.RainTime = 0;
         await ctx.Sender.SendMessageAsync("Toggled weather for this world.");
+    }
+
+    [Command("world")]
+    public async Task WorldAsync(CommandContext ctx, string worldname)
+    {
+        var server = (Server)ctx.Server;
+        var player = ctx.Player;
+        if (server.WorldManager.TryGetWorld(worldname, out World world))
+        {
+            if(player.WorldLocation.Name.EqualsIgnoreCase(worldname))
+            {
+                await player.SendMessageAsync("You can't switch to a world you're already in!");
+                return;
+            }
+
+            await player.TeleportAsync(world);
+            await ctx.Player.SendMessageAsync($"Switched to world {world.Name}.");
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(worldname))
+            await ctx.Player.SendMessageAsync($"No such world with name §4{worldname}§r! Try running §a/listworld§r");
+    }
+
+    [Command("listworld")]
+    public async Task ListAsync(CommandContext ctx)
+    {
+        var server = (Server)ctx.Server;
+        string available = string.Join("§r, §a", server.WorldManager.GetAvailableWorlds().Select(x => x.Name));
+        await ctx.Player.SendMessageAsync($"Available worlds: §a{available}§r");
     }
 
 #if DEBUG

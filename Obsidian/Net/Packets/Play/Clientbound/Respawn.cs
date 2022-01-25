@@ -1,5 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
+﻿using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -9,7 +9,7 @@ public partial class Respawn : IClientboundPacket
     public DimensionCodec Dimension { get; init; }
 
     [Field(1)]
-    public string WorldName { get; init; }
+    public string DimensionName { get; init; }
 
     [Field(2)]
     public long HashedSeed { get; init; }

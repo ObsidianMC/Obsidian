@@ -13,7 +13,7 @@ public class DefaultEnumConverter<T> : JsonConverter<T>
         var value = reader.GetString();
 
         if (value.StartsWith("minecraft:"))
-            value = value.TrimMinecraftTag();
+            value = value.TrimResourceTag();
 
         return Enum.TryParse(typeof(T), value.Replace("_", ""), true, out var result) ? (T)result : throw new InvalidOperationException($"Failed to deserialize: {value}");
     }
@@ -25,7 +25,7 @@ public class CraftingTypeConverter : JsonConverter<CraftingType>
 {
     public override CraftingType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var value = reader.GetString().TrimMinecraftTag();
+        var value = reader.GetString().TrimResourceTag();
 
         return Enum.TryParse<CraftingType>(value, true, out var result) ? result : throw new InvalidOperationException($"Failed to deserialize: {value}");
     }
