@@ -47,15 +47,6 @@ public class World : IWorld
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
-    internal World(string name, Server server)
-    {
-        this.Data = new Level
-        {
-            Time = 1200,
-            GameType = (int)Gamemode.Survival,
-            GeneratorName = WorldType.Default.ToString()
-        };
-
     internal World(string name, Server server, string seed, Type generatorType)
     {
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -66,7 +57,7 @@ public class World : IWorld
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         this.Generator.Init(seed);
         worldLight = new(this);
-        }
+    }
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
 
