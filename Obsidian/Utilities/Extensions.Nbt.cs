@@ -1,7 +1,10 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Nbt;
 
 namespace Obsidian.Utilities;
 
+//TODO MAKE NBT DE/SERIALIZERS PLEASE
 public partial class Extensions
 {
     public static NbtCompound ToNbt(this ItemStack? value)
@@ -93,73 +96,73 @@ public partial class Extensions
             switch (name.ToUpperInvariant())
             {
                 case "ENCHANTMENTS":
+                {
+                    var enchantments = (NbtList)child;
+
+                    foreach (var enchant in enchantments)
                     {
-                        var enchantments = (NbtList)child;
-
-                        foreach (var enchant in enchantments)
+                        if (enchant is NbtCompound compound)
                         {
-                            if (enchant is NbtCompound compound)
-                            {
-                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                            }
+                            itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                         }
-
-                        break;
                     }
+
+                    break;
+                }
 
                 case "STOREDENCHANTMENTS":
+                {
+                    var enchantments = (NbtList)child;
+
+                    foreach (var enchantment in enchantments)
                     {
-                        var enchantments = (NbtList)child;
-
-                        foreach (var enchantment in enchantments)
+                        if (enchantment is NbtCompound compound)
                         {
-                            if (enchantment is NbtCompound compound)
-                            {
-                                compound.TryGetTag("id", out var id);
-                                compound.TryGetTag("lvl", out var lvl);
+                            compound.TryGetTag("id", out var id);
+                            compound.TryGetTag("lvl", out var lvl);
 
-                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                            }
+                            itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
                         }
-                        break;
                     }
+                    break;
+                }
 
                 case "SLOT":
-                    {
-                        var byteTag = (NbtTag<byte>)child;
+                {
+                    var byteTag = (NbtTag<byte>)child;
 
-                        itemStack.Slot = byteTag.Value;
-                        break;
-                    }
+                    itemStack.Slot = byteTag.Value;
+                    break;
+                }
 
                 case "DAMAGE":
-                    {
-                        var intTag = (NbtTag<int>)child;
+                {
+                    var intTag = (NbtTag<int>)child;
 
-                        itemMetaBuilder.WithDurability(intTag.Value);
-                        break;
-                    }
+                    itemMetaBuilder.WithDurability(intTag.Value);
+                    break;
+                }
 
                 case "DISPLAY":
+                {
+                    var display = (NbtCompound)child;
+
+                    foreach (var (displayTagName, displayTag) in display)
                     {
-                        var display = (NbtCompound)child;
-
-                        foreach (var (displayTagName, displayTag) in display)
+                        if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
                         {
-                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                            {
-                                itemMetaBuilder.WithName(stringTag.Value);
-                            }
-                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                            {
-                                var loreTag = (NbtList)displayTag;
-
-                                foreach (NbtTag<string> lore in loreTag)
-                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
-                            }
+                            itemMetaBuilder.WithName(stringTag.Value);
                         }
-                        break;
+                        else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                        {
+                            var loreTag = (NbtList)displayTag;
+
+                            foreach (NbtTag<string> lore in loreTag)
+                                itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                        }
                     }
+                    break;
+                }
             }
         }
 
@@ -167,4 +170,206 @@ public partial class Extensions
 
         return itemStack;
     }
+
+    #region Dimension Codec Writing
+    public static NbtCompound WriteElement(this DimensionCodec value)
+    {
+        var compound = new NbtCompound("element")
+        {
+            new NbtTag<bool>("piglin_safe", value.Element.PiglinSafe),
+
+            new NbtTag<bool>("natural", value.Element.Natural),
+
+            new NbtTag<float>("ambient_light", value.Element.AmbientLight),
+
+            new NbtTag<string>("infiniburn", value.Element.Infiniburn),
+
+            new NbtTag<bool>("respawn_anchor_works", value.Element.RespawnAnchorWorks),
+            new NbtTag<bool>("has_skylight", value.Element.HasSkylight),
+            new NbtTag<bool>("bed_works", value.Element.BedWorks),
+
+            new NbtTag<string>("effects", value.Element.Effects),
+
+            new NbtTag<bool>("has_raids", value.Element.HasRaids),
+
+            new NbtTag<int>("min_y", value.Element.MinY),
+
+            new NbtTag<int>("height", value.Element.Height),
+
+            new NbtTag<int>("logical_height", value.Element.LogicalHeight),
+
+            new NbtTag<float>("coordinate_scale", value.Element.CoordinateScale),
+
+            new NbtTag<bool>("ultrawarm", value.Element.Ultrawarm),
+            new NbtTag<bool>("has_ceiling", value.Element.HasCeiling)
+        };
+
+        if (value.Element.FixedTime.HasValue)
+            compound.Add(new NbtTag<long>("fixed_time", value.Element.FixedTime.Value));
+
+        return compound;
+    }
+
+    public static void Write(this DimensionCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static void WriteElement(this DimensionCodec value, NbtWriter writer)
+    {
+        writer.WriteBool("piglin_safe", value.Element.PiglinSafe);
+        writer.WriteBool("natural", value.Element.Natural);
+
+        writer.WriteFloat("ambient_light", value.Element.AmbientLight);
+
+        if (value.Element.FixedTime.HasValue)
+            writer.WriteLong("fixed_time", value.Element.FixedTime.Value);
+
+        writer.WriteString("infiniburn", value.Element.Infiniburn);
+
+        writer.WriteBool("respawn_anchor_works", value.Element.RespawnAnchorWorks);
+        writer.WriteBool("has_skylight", value.Element.HasSkylight);
+        writer.WriteBool("bed_works", value.Element.BedWorks);
+
+        writer.WriteString("effects", value.Element.Effects);
+
+        writer.WriteBool("has_raids", value.Element.HasRaids);
+
+        writer.WriteInt("min_y", value.Element.MinY);
+
+        writer.WriteInt("height", value.Element.Height);
+
+        writer.WriteInt("logical_height", value.Element.LogicalHeight);
+
+        writer.WriteFloat("coordinate_scale", value.Element.CoordinateScale);
+
+        writer.WriteBool("ultrawarm", value.Element.Ultrawarm);
+        writer.WriteBool("has_ceiling", value.Element.HasCeiling);
+    }
+    #endregion
+
+    #region Biome Codec Writing
+    public static void Write(this BiomeCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<string>("name", value.Name),
+            new NbtTag<int>("id", value.Id),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this BiomeCodec value)
+    {
+        var elements = new NbtCompound("element")
+        {
+            new NbtTag<string>("precipitation", value.Element.Precipitation),
+            new NbtTag<string>("category", value.Element.Category),
+
+            new NbtTag<float>("depth", value.Element.Depth),
+            new NbtTag<float>("temperature", value.Element.Temperature),
+            new NbtTag<float>("scale", value.Element.Scale),
+            new NbtTag<float>("downfall", value.Element.Downfall)
+        };
+
+        value.Element.Effects.WriteEffect(elements);
+
+        if (!value.Element.TemperatureModifier.IsNullOrEmpty())
+            elements.Add(new NbtTag<string>("temperature_modifier", value.Element.TemperatureModifier));
+
+        return elements;
+    }
+
+    public static void WriteEffect(this BiomeEffect value, NbtCompound compound)
+    {
+        var effects = new NbtCompound("effects")
+        {
+            new NbtTag<int>("fog_color", value.FogColor),
+            new NbtTag<int>("sky_color", value.SkyColor),
+            new NbtTag<int>("water_color", value.WaterColor),
+            new NbtTag<int>("water_fog_color", value.WaterFogColor)
+        };
+
+        if (value.FoliageColor > 0)
+            effects.Add(new NbtTag<int>("foliage_color", value.FoliageColor));
+
+        if (value.GrassColor > 0)
+            effects.Add(new NbtTag<int>("grass_color", value.GrassColor));
+
+        if (!value.GrassColorModifier.IsNullOrEmpty())
+            effects.Add(new NbtTag<string>("grass_color_modifier", value.GrassColorModifier));
+
+        if (value.AdditionsSound != null)
+            value.AdditionsSound.WriteAdditionSound(effects);
+
+        if (value.MoodSound != null)
+            value.MoodSound.WriteMoodSound(effects);
+
+        if (!value.AmbientSound.IsNullOrEmpty())
+            effects.Add(new NbtTag<string>("ambient_sound", value.AmbientSound));
+
+        if (value.Particle != null)
+            value.Particle.WriteParticle(compound);
+
+        compound.Add(effects);
+    }
+
+    public static void WriteAdditionSound(this BiomeAdditionSound value, NbtCompound compound)
+    {
+        var additions = new NbtCompound("additions_sound")
+        {
+            new NbtTag<string>("sound", value.Sound),
+            new NbtTag<double>("tick_chance", value.TickChance)
+        };
+
+        compound.Add(additions);
+    }
+
+    public static void WriteMoodSound(this BiomeMoodSound value, NbtCompound compound)
+    {
+        var mood = new NbtCompound("mood_sound")
+        {
+            new NbtTag<string>("sound", value.Sound),
+
+            new NbtTag<double>("offset", value.Offset),
+
+            new NbtTag<int>("tick_delay", value.TickDelay),
+            new NbtTag<int>("block_search_extent", value.BlockSearchExtent)
+        };
+
+        compound.Add(mood);
+    }
+
+    public static void WriteParticle(this BiomeParticle value, NbtCompound compound)
+    {
+        var particle = new NbtCompound("particle")
+        {
+            new NbtTag<float>("probability", value.Probability)
+        };
+
+        if (value.Options != null)
+        {
+            var options = new NbtCompound("options")
+            {
+                new NbtTag<string>("type", value.Options.Type)
+            };
+
+            particle.Add(options);
+        }
+
+        compound.Add(particle);
+    }
+    #endregion
 }
