@@ -41,27 +41,12 @@ public interface ILiving : IEntity
     /// </summary>
     /// <param name="potion">The potion effect to be added.</param>
     /// <param name="duration">The duration of the potion in ticks.</param>
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration);
-
-    /// <summary>
-    /// Adds the given <see cref="PotionEffect"/> to the entity.
-    /// </summary>
-    /// <param name="potion">The potion effect to be added.</param>
-    /// <param name="duration">The duration of the potion in ticks.</param>
-    /// <param name="amplifier">The amplifier of the effect. The given amplifier + 1 will be displayed in the HUD.</param>
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier);
-
-    /// <summary>
-    /// Adds the given <see cref="PotionEffect"/> to the entity.
-    /// </summary>
-    /// <param name="potion">The potion effect to be added.</param>
-    /// <param name="duration">The duration of the potion in ticks.</param>
     /// <param name="amplifier">The amplifier of the effect. The given amplifier + 1 will be displayed in the HUD.</param>
     /// <param name="showParticles">Whether to show the particles or not.</param>
     /// <param name="showIcon">Whether to show the icon on the client or not.</param>
     /// <param name="isAmbient">Whether the potion is emitted by ambient source e.g. the beacon. The icon has a blue border in the HUD if its ambient.</param>
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier, bool showParticles,
-        bool showIcon, bool isAmbient);
+    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
+        bool showIcon = true, bool isAmbient = false);
 
     /// <summary>
     /// Removes the given <see cref="PotionEffect"/> from the entity.

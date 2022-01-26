@@ -52,14 +52,9 @@ public class Living : Entity, ILiving
             await RemovePotionEffectAsync(potion);
         }
     }
-    
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration) => AddPotionEffectAsync(potion, duration, 0);
 
-    public Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier) =>
-        AddPotionEffectAsync(potion, duration, amplifier, true, true, false);
-
-    public async Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier, bool showParticles,
-        bool showIcon, bool isAmbient)
+    public async Task AddPotionEffectAsync(PotionEffect potion, int duration, byte amplifier = 0, bool showParticles = true,
+        bool showIcon = true, bool isAmbient = false)
     {
         byte flags = 0;
         if (isAmbient)
