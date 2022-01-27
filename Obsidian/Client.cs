@@ -58,7 +58,7 @@ public sealed class Client : IDisposable
 
     public ClientSettings ClientSettings { get; internal set; }
 
-    public CancellationTokenSource Cancellation { get; private set; } = new();
+    private CancellationTokenSource Cancellation { get; set; } = new();
 
     public ClientState State { get; private set; } = ClientState.Handshaking;
 
