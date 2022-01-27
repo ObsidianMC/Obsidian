@@ -407,9 +407,12 @@ public sealed class Client : IDisposable
 
     internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, State)));
 
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() =>
-        QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    private Task SendTimeUpdateAsync() => QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
+
+    private Task SendWeatherUpdateAsync() =>
+        QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining
+            ? ChangeGameStateReason.BeginRaining
+            : ChangeGameStateReason.EndRaining));
 
     internal void ProcessKeepAlive(long id)
     {
