@@ -49,7 +49,7 @@ public sealed class Client : IDisposable
 
     internal int ping;
     internal int missedKeepalives;
-    internal int id;
+    internal readonly int id;
 
     /// <summary>
     /// The client brand.
