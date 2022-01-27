@@ -218,7 +218,7 @@ public sealed class Client : IDisposable
 
                                 }
 
-                                Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
+                                Player = new Player(Guid.Parse(user?.Id), loginStart.Username, this, world);
 
                                 packetCryptography.GenerateKeyPair();
 
