@@ -17,6 +17,10 @@ public partial class EntityAction : IServerboundPacket
 
     public int Id => 0x1B;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var block = await player.World.GetBlockAsync((int)player.Position.X, (int)player.HeadY, (int)player.Position.Z);

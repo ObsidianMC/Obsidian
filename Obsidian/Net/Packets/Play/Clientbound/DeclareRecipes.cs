@@ -10,6 +10,7 @@ public partial class DeclareRecipes : IClientboundPacket
     public IDictionary<string, IRecipe> Recipes { get; }
 
     public int Id => 0x66;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public static readonly DeclareRecipes FromRegistry = new(Registry.Recipes);
 

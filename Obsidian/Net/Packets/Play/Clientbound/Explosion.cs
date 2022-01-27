@@ -17,6 +17,7 @@ public partial class Explosion : IClientboundPacket
     public VectorF PlayerMotion { get; init; }
 
     public int Id => 0x1C;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public readonly struct ExplosionRecord

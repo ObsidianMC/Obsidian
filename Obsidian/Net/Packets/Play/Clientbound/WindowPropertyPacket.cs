@@ -12,4 +12,5 @@ public partial class WindowPropertyPacket : IClientboundPacket
     public IWindowProperty WindowProperty { get; init; }
 
     public int Id => 0x15;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

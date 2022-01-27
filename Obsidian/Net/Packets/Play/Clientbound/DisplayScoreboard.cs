@@ -11,4 +11,5 @@ public partial class DisplayScoreboard : IClientboundPacket
     public string ScoreName { get; init; }
 
     public int Id => 0x4C;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

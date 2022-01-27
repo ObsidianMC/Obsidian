@@ -2,7 +2,7 @@
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play.Clientbound;
+namespace Obsidian.Net.Packets.Play;
 
 public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
 {
@@ -10,6 +10,7 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
     public long KeepAliveId { get; private set; }
 
     public int Id => 0x21;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public KeepAlivePacket()
     {
@@ -19,6 +20,10 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
     {
         KeepAliveId = id;
     }
+
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
 
     public ValueTask HandleAsync(Server server, Player player)
     {

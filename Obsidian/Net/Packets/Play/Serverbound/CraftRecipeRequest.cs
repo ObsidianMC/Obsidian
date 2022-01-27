@@ -17,6 +17,10 @@ public partial class CraftRecipeRequest : IServerboundPacket
 
     public int Id => 0x18;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await player.client.QueuePacketAsync(new CraftRecipeResponse(WindowId, RecipeId));

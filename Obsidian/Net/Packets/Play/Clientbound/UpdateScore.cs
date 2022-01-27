@@ -29,4 +29,5 @@ public partial class UpdateScore : IClientboundPacket
     public int Value { get; init; }
 
     public int Id => 0x56;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

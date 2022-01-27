@@ -14,6 +14,7 @@ public partial class ChatMessagePacket : IClientboundPacket
     public Guid Sender { get; }
 
     public int Id => 0x0F;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public ChatMessagePacket(ChatMessage message, MessageType type) : this(message, type, Guid.Empty)
     {

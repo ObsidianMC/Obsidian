@@ -11,6 +11,7 @@ public partial class EntityAnimationPacket : IClientboundPacket
     public EntityAnimationType Animation { get; init; }
 
     public int Id => 0x06;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public enum EntityAnimationType : byte

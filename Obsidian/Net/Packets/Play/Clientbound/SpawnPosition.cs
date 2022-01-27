@@ -11,6 +11,7 @@ public partial class SpawnPosition : IClientboundPacket
     public Angle Angle { get; set; }
 
     public int Id => 0x4B;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SpawnPosition(VectorF position)
     {

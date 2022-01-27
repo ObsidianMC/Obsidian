@@ -10,5 +10,9 @@ public partial class NameItem : IServerboundPacket
 
     public int Id => 0x20;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

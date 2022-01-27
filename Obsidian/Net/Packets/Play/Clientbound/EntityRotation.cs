@@ -17,4 +17,5 @@ public partial class EntityRotation : IClientboundPacket
     public bool OnGround { get; init; }
 
     public int Id => 0x2B;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

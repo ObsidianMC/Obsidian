@@ -11,6 +11,7 @@ public partial class LoginSuccess : IClientboundPacket
     public string Username { get; }
 
     public int Id => 0x02;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public LoginSuccess(Guid uuid, string username)
     {

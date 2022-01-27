@@ -8,4 +8,5 @@ public partial class OpenBookPacket : IClientboundPacket
     public Hand Hand { get; set; }
 
     public int Id => 0x2D;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

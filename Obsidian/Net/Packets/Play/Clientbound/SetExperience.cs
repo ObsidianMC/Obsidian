@@ -14,6 +14,7 @@ public partial class SetExperience : IClientboundPacket
     public int TotalExperience { get; }
 
     public int Id => 0x51;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SetExperience(float experienceBar, int level, int totalExperience)
     {

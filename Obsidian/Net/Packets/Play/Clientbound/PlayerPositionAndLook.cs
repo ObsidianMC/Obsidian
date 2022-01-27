@@ -34,4 +34,5 @@ public partial class PlayerPositionAndLook : IClientboundPacket
     public bool DismountVehicle { get; init; }
 
     public int Id => 0x38;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

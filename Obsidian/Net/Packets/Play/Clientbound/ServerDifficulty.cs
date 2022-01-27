@@ -9,6 +9,7 @@ public partial class ServerDifficulty : IClientboundPacket
     public Difficulty Difficulty { get; }
 
     public int Id => 0x0E;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public ServerDifficulty(Difficulty difficulty)
     {

@@ -14,6 +14,7 @@ public partial class UpdateHealth : IClientboundPacket
     public float FoodSaturation { get; }
 
     public int Id => 0x52;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public UpdateHealth(float health, int food, float foodSaturation)
     {

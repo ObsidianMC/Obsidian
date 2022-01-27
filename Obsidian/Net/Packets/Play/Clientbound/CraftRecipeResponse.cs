@@ -11,6 +11,7 @@ public partial class CraftRecipeResponse : IClientboundPacket
     public string RecipeId { get; }
 
     public int Id => 0x31;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public CraftRecipeResponse(sbyte windowId, string recipeId)
     {

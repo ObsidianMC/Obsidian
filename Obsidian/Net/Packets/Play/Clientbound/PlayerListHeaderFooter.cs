@@ -11,6 +11,7 @@ public partial class PlayerListHeaderFooter : IClientboundPacket
     public ChatMessage Footer { get; }
 
     public int Id => 0x5F;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer)
     {

@@ -17,6 +17,10 @@ public partial class PlayerDigging : IServerboundPacket
 
     public int Id => 0x1A;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         Block? b = await player.World.GetBlockAsync(Position);

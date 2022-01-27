@@ -17,6 +17,7 @@ public partial class WindowItems : IClientboundPacket
     public ItemStack CarriedItem { get; set; }
 
     public int Id => 0x14;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public WindowItems(byte windowId, List<ItemStack> items)
     {

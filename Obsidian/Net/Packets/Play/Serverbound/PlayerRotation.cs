@@ -27,6 +27,10 @@ public partial class PlayerRotation : IServerboundPacket
         OnGround = onGround;
     }
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await player.UpdateAsync(Yaw, Pitch, OnGround);

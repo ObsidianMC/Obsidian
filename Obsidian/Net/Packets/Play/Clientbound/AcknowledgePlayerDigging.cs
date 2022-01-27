@@ -18,4 +18,5 @@ public partial class AcknowledgePlayerDigging : IClientboundPacket
     public bool Successful { get; set; }
 
     public int Id => 0x08;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

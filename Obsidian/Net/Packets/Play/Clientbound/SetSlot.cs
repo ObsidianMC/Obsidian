@@ -26,4 +26,5 @@ public partial class SetSlot : IClientboundPacket
     public ItemStack SlotData { get; init; }
 
     public int Id => 0x16;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

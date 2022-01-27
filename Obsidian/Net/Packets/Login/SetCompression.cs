@@ -10,6 +10,7 @@ public partial class SetCompression : IClientboundPacket
     public bool Enabled => Threshold < 0;
 
     public int Id => 0x03;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SetCompression(int threshold)
     {

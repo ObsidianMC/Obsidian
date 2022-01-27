@@ -12,6 +12,7 @@ public partial class PlayerInfoPacket : IClientboundPacket
     public List<InfoAction> Actions { get; set; } = new();
 
     public int Id => 0x36;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public PlayerInfoPacket(PlayerInfoAction action, List<InfoAction> infoActions)
     {

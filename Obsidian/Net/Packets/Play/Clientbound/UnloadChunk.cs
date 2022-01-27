@@ -11,6 +11,7 @@ public partial class UnloadChunk : IClientboundPacket
     public int Z { get; }
 
     public int Id => 0x1D;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public UnloadChunk(int x, int z)
     {

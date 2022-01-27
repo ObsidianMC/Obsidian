@@ -15,6 +15,7 @@ public partial class BlockEntityData : IClientboundPacket
     public INbtTag NBTData;
 
     public int Id => 0x0A;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 // https://wiki.vg/Protocol#Block_Entity_Data

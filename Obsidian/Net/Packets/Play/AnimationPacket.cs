@@ -11,6 +11,10 @@ public partial class AnimationPacket : IServerboundPacket
 
     public int Id => 0x2C;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var entities = player.GetEntitiesNear(player.client.ClientSettings.ViewDistance);

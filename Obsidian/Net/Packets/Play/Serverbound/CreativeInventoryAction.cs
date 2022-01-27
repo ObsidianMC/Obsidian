@@ -14,6 +14,10 @@ public partial class CreativeInventoryAction : IServerboundPacket
 
     public int Id => 0x28;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         var inventory = player.OpenedContainer ?? player.Inventory;

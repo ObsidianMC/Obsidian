@@ -17,4 +17,5 @@ public partial class BlockBreakAnimation : IClientboundPacket
     public sbyte DestroyStage { get; init; }
 
     public int Id => 0x09;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

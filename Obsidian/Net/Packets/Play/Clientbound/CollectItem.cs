@@ -14,4 +14,5 @@ public partial class CollectItem : IClientboundPacket
     public int PickupItemCount { get; init; }
 
     public int Id => 0x61;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

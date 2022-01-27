@@ -20,6 +20,7 @@ public partial class EncryptionRequest : IClientboundPacket
     public byte[] VerifyToken { get; }
 
     public int Id => 0x01;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public EncryptionRequest(byte[] publicKey, byte[] verifyToken)
     {

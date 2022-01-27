@@ -10,6 +10,11 @@ public partial class CloseWindow : IClientboundPacket, IServerboundPacket
     public byte WindowId { get; private set; }
 
     public int Id => 0x09;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
+
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

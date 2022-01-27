@@ -11,6 +11,8 @@ public partial class IncomingChatMessage : IServerboundPacket
 
     public int Id => 0x03;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
     public void Populate(MinecraftStream stream)
     {
         Message = stream.ReadString();

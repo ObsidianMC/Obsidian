@@ -17,4 +17,5 @@ public partial class BlockAction : IClientboundPacket
     public int BlockType { get; init; }
 
     public int Id => 0x0B;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

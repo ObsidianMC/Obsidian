@@ -20,6 +20,7 @@ public partial class NamedSoundEffect : IClientboundPacket
     public float Pitch { get; }
 
     public int Id => 0x19;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public NamedSoundEffect(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
     {

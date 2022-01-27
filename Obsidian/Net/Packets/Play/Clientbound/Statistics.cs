@@ -19,6 +19,7 @@ public partial class Statistics : IClientboundPacket
     }
 
     public int Id => 0x07;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public readonly struct Statistic

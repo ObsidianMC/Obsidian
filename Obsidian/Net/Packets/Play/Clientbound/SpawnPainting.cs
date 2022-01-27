@@ -20,6 +20,7 @@ public partial class SpawnPainting : IClientboundPacket
     public PaintingDirection Direction { get; }
 
     public int Id => 0x03;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SpawnPainting(Guid uuid, int motive, Vector position, PaintingDirection direction)
     {

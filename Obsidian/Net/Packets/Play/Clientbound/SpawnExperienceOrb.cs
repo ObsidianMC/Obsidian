@@ -14,6 +14,7 @@ public partial class SpawnExperienceOrb : IClientboundPacket
     public short Count { get; }
 
     public int Id => 0x01;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SpawnExperienceOrb(short count, VectorF position)
     {

@@ -18,4 +18,5 @@ public partial class UpdateViewPosition : IClientboundPacket
     }
 
     public int Id => 0x49;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

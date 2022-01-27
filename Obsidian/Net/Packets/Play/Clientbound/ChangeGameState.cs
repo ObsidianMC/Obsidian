@@ -11,6 +11,7 @@ public partial class ChangeGameState : IClientboundPacket
     public float Value { get; }
 
     public int Id => 0x1E;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public ChangeGameState(ChangeGameStateReason reason)
     {

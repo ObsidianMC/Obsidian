@@ -62,6 +62,7 @@ public partial class JoinGame : IClientboundPacket
     public bool Flat { get; init; } = false;
 
     public int Id => 0x26;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public enum LevelType

@@ -20,4 +20,5 @@ public partial class EntityTeleport : IClientboundPacket
     public bool OnGround { get; init; }
 
     public int Id => 0x62;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

@@ -17,6 +17,7 @@ public partial class ScoreboardObjectivePacket : IClientboundPacket
     public DisplayType Type { get; init; }
 
     public int Id => 0x53;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     private bool ShouldWriteValue => Mode is ScoreboardMode.Create or ScoreboardMode.Update;
 }

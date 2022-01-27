@@ -29,4 +29,5 @@ public partial class SpawnEntityPacket : IClientboundPacket
     public Velocity Velocity { get; init; }
 
     public int Id => 0x00;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

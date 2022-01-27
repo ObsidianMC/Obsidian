@@ -15,6 +15,11 @@ public partial class WindowConfirmation : IClientboundPacket, IServerboundPacket
     public bool Accepted { get; private set; }
 
     public int Id => 0x11;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
+
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

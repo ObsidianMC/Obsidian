@@ -8,6 +8,7 @@ public partial class DestroyEntities : IClientboundPacket
     public List<int> Entities { get; private set; } = new();
 
     public int Id => 0x3A;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public DestroyEntities(params int[] entities)
     {

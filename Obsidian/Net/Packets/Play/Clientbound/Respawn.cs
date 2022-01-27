@@ -30,4 +30,5 @@ public partial class Respawn : IClientboundPacket
     public bool CopyMetadata { get; init; }
 
     public int Id => 0x3D; // wow 3D it's jsut like real lifeeeee
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

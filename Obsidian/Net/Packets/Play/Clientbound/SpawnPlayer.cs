@@ -20,4 +20,5 @@ public partial class SpawnPlayer : IClientboundPacket
     public Angle Pitch { get; init; }
 
     public int Id => 0x04;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

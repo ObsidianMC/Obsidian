@@ -38,6 +38,7 @@ public partial class UnlockRecipes : IClientboundPacket
     public List<string> SecondRecipeIds { get; init; }
 
     public int Id => 0x39;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public enum UnlockRecipeAction : int

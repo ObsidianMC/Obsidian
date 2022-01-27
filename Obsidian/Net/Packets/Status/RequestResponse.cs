@@ -8,6 +8,7 @@ public partial class RequestResponse : IClientboundPacket
     public string Json { get; }
 
     public int Id => 0x00;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public RequestResponse(string json)
     {

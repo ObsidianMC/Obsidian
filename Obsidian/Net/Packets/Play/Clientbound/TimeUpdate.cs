@@ -11,6 +11,7 @@ public partial class TimeUpdate : IClientboundPacket
     public long TimeOfDay { get; }
 
     public int Id => 0x59;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public TimeUpdate(long worldAge, long timeOfDay)
     {

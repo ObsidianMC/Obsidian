@@ -8,6 +8,7 @@ public partial class ClientHeldItemChange : IClientboundPacket
     public byte Slot { get; }
 
     public int Id => 0x48;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public ClientHeldItemChange(byte slot)
     {

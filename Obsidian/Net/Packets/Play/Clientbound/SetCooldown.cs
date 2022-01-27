@@ -11,4 +11,5 @@ public partial class SetCooldown : IClientboundPacket
     public int CooldownTicks { get; init; }
 
     public int Id => 0x17;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

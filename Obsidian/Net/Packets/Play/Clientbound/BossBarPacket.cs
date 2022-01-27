@@ -9,6 +9,7 @@ public partial class BossBarPacket : IClientboundPacket
     public BossBarAction Action { get; }
 
     public int Id => 0x0D;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public BossBarPacket(BossBarAction action)
     {

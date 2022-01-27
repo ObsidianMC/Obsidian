@@ -12,6 +12,7 @@ public partial class PluginMessage : IClientboundPacket
     public byte[] PluginData { get; private set; }
 
     public int Id => 0x18;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public PluginMessage()
     {

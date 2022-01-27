@@ -11,4 +11,5 @@ public partial class EntityHeadLook : IClientboundPacket
     public Angle HeadYaw { get; init; }
 
     public int Id => 0x3E;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

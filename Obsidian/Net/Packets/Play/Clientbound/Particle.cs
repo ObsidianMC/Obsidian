@@ -29,6 +29,7 @@ public partial class Particle : IClientboundPacket
     public ParticleData Data { get; init; }
 
     public int Id => 0x24;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public Particle(ParticleType type, VectorF position, int particleCount)
     {

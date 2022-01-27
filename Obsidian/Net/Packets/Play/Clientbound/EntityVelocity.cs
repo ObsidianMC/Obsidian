@@ -11,4 +11,5 @@ public partial class EntityVelocity : IClientboundPacket
     public Velocity Velocity { get; init; }
 
     public int Id => 0x4F;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }

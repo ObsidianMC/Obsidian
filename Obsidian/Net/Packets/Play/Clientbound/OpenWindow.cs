@@ -14,6 +14,7 @@ public partial class OpenWindow : IClientboundPacket
     public ChatMessage Title { get; }
 
     public int Id => 0x2E;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public OpenWindow(BaseContainer inventory, int windowId)
     {

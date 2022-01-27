@@ -9,6 +9,7 @@ public partial class TagsPacket : IClientboundPacket
     public IDictionary<string, List<Tag>> Tags { get; }
 
     public int Id => 0x67;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public static readonly TagsPacket FromRegistry = new(Registry.Tags);
 

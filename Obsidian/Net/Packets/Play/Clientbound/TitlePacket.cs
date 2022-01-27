@@ -8,6 +8,7 @@ public partial class TitlePacket : IClientboundPacket
     public ChatMessage Text { get; set; }
 
     public int Id { get; }
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public TitlePacket(TitleMode mode)
     {
@@ -27,6 +28,7 @@ public partial class TitleTimesPacket : IClientboundPacket
     public int FadeOut { get; set; }
 
     public int Id => 0X5B;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public enum TitleMode

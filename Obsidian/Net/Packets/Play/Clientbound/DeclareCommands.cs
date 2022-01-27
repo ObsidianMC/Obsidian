@@ -13,6 +13,7 @@ public partial class DeclareCommands : IClientboundPacket
     public int RootIndex { get; }
 
     public int Id => 0x12;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public void AddNode(CommandNode node)
     {

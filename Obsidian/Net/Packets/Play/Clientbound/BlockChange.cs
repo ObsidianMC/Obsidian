@@ -11,6 +11,7 @@ public partial class BlockChange : IClientboundPacket
     public int BlockId { get; }
 
     public int Id => 0x0C;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public BlockChange(Vector position, int block)
     {

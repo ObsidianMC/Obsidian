@@ -14,6 +14,7 @@ public partial class EntityEquipment : IClientboundPacket
     public ItemStack Item { get; init; }
 
     public int Id => 0x50;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 }
 
 public enum ESlot : int

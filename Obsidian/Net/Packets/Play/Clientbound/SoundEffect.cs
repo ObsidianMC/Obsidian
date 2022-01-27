@@ -20,6 +20,7 @@ public partial class SoundEffect : IClientboundPacket
     public float Pitch { get; }
 
     public int Id => 0x5D;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
 
     public SoundEffect(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f)
     {

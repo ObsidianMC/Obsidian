@@ -24,6 +24,10 @@ public partial class PlayerBlockPlacement : IServerboundPacket
 
     public int Id => 0x2E;
 
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
+
     public async ValueTask HandleAsync(Server server, Player player)
     {
         //Get main hand first return offhand if null
