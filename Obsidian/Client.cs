@@ -208,7 +208,7 @@ public sealed class Client : IDisposable
 
                                 if (config.WhitelistEnabled)
                                 {
-                                    var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == user.Id);
+                                    var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == user?.Id);
 
                                     if (wlEntry is null)
                                     {
