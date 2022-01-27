@@ -565,13 +565,10 @@ public sealed class Client : IDisposable
 
         clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
         clientNeededChunks = clientNeededChunks.Except(LoadedChunks).ToList();
-        clientNeededChunks.Sort((chunk1, chunk2) =>
-        {
-            return Math.Abs(playerChunkX - chunk1.X) +
-            Math.Abs(playerChunkZ - chunk1.Z) <
-            Math.Abs(playerChunkX - chunk2.X) +
-            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
-        });
+        clientNeededChunks.Sort((chunk1, chunk2) => Math.Abs(playerChunkX - chunk1.X) +
+                                                    Math.Abs(playerChunkZ - chunk1.Z) <
+                                                    Math.Abs(playerChunkX - chunk2.X) +
+                                                    Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1);
 
         await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
         {
