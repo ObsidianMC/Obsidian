@@ -469,7 +469,8 @@ public sealed class Client : IDisposable
 
         await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
     }
-    internal async Task SendPlayerInfoAsync()
+
+    private async Task SendPlayerInfoAsync()
     {
         var list = new List<InfoAction>();
 
