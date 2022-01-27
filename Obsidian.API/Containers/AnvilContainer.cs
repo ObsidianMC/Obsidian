@@ -8,7 +8,7 @@ public sealed class AnvilContainer : ResultContainer, IBlockEntity
 
     public AnvilContainer(string id) : base(3, InventoryType.Anvil)
     {
-        this.Id = id;
+        Id = id;
     }
 
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();

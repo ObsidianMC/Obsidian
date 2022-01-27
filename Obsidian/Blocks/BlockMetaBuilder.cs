@@ -20,24 +20,24 @@ public class BlockMetaBuilder
 
     public BlockMetaBuilder()
     {
-        this.BlockEntityTag = new NbtCompound("BlockEntityTag");
-        this.BlockStateTag = new NbtCompound("BlockStateTag");
+        BlockEntityTag = new NbtCompound("BlockEntityTag");
+        BlockStateTag = new NbtCompound("BlockStateTag");
 
-        this.CanPlaceOn = new ReadOnlyCollection<string>(this.canPlaceOn);
+        CanPlaceOn = new ReadOnlyCollection<string>(canPlaceOn);
 
-        this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
+        Lore = new ReadOnlyCollection<ChatMessage>(lore);
     }
 
     public BlockMetaBuilder CouldPlaceOn(string id)
     {
-        this.canPlaceOn.Add(id);
+        canPlaceOn.Add(id);
 
         return this;
     }
 
     public BlockMetaBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
@@ -51,14 +51,14 @@ public class BlockMetaBuilder
 
     public BlockMetaBuilder AddBlockStateTag(INbtTag tag)
     {
-        this.BlockStateTag.Add(tag);
+        BlockStateTag.Add(tag);
 
         return this;
     }
 
     public BlockMetaBuilder AddBlockEntityTag(INbtTag tag)
     {
-        this.BlockEntityTag.Add(tag);
+        BlockEntityTag.Add(tag);
 
         return this;
     }
@@ -67,11 +67,11 @@ public class BlockMetaBuilder
     {
         var meta = new BlockMeta
         {
-            Name = this.Name,
-            Lore = this.lore,
-            CanPlaceOn = this.canPlaceOn,
-            BlockEntityTag = this.BlockEntityTag,
-            BlockStateTag = this.BlockStateTag
+            Name = Name,
+            Lore = lore,
+            CanPlaceOn = canPlaceOn,
+            BlockEntityTag = BlockEntityTag,
+            BlockStateTag = BlockStateTag
         };
 
         return meta;

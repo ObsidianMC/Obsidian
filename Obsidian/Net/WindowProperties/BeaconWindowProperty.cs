@@ -8,8 +8,8 @@ public class BeaconWindowProperty : IWindowProperty
 
     public BeaconWindowProperty(BeaconProperty property, short value)
     {
-        this.Property = (short)property;
-        this.Value = value;
+        Property = (short)property;
+        Value = value;
     }
 }
 

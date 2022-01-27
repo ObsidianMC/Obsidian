@@ -10,10 +10,10 @@ internal class DimensionElementConverter : JsonConverter<DimensionElement>
 
     public DimensionElementConverter()
     {
-        this.propertyMap = new();
+        propertyMap = new();
 
         foreach (var property in typeof(DimensionElement).GetProperties())
-            this.propertyMap.Add(property.Name, property);
+            propertyMap.Add(property.Name, property);
     }
 
     public override DimensionElement? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -40,7 +40,7 @@ internal class DimensionElementConverter : JsonConverter<DimensionElement>
             if (string.IsNullOrWhiteSpace(propName))
                 throw new JsonException("Property name was null.");
 
-            foreach (var (name, property) in this.propertyMap)
+            foreach (var (name, property) in propertyMap)
             {
                 var convertedName = options.PropertyNamingPolicy?.ConvertName(name) ?? name;
 

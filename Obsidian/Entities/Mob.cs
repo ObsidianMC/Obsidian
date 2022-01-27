@@ -10,7 +10,7 @@ public class Mob : Living
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, this.MobBitMask);
+        await stream.WriteEntityMetdata(14, EntityMetadataType.Byte, MobBitMask);
     }
 
     public override void Write(MinecraftStream stream)

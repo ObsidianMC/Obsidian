@@ -32,34 +32,34 @@ public partial class MinecraftStream : Stream
     public MinecraftStream(bool debug = false)
     {
         if (debug)
-            this.debugMemoryStream = new MemoryStream();
+            debugMemoryStream = new MemoryStream();
 
-        this.BaseStream = new MemoryStream();
+        BaseStream = new MemoryStream();
     }
 
     public MinecraftStream(Stream stream, bool debug = false)
     {
         if (debug)
-            this.debugMemoryStream = new MemoryStream();
+            debugMemoryStream = new MemoryStream();
 
-        this.BaseStream = stream;
+        BaseStream = stream;
     }
 
     public MinecraftStream(byte[] data)
     {
-        this.BaseStream = new MemoryStream(data);
+        BaseStream = new MemoryStream(data);
     }
 
     public async Task DumpAsync(bool clear = true, IPacket packet = null)
     {
-        if (this.debugMemoryStream == null)
+        if (debugMemoryStream == null)
             throw new Exception("Can't dump a stream who wasn't set to debug.");
 
         // TODO: Stream the memory stream into a file stream for better performance and stuff :3
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
 
         var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{(packet != null ? packet.GetType().Name : "")}-" + Path.GetRandomFileName() + ".bin");
-        await File.WriteAllBytesAsync(filePath, this.debugMemoryStream.ToArray());
+        await File.WriteAllBytesAsync(filePath, debugMemoryStream.ToArray());
 
         if (clear)
             await ClearDebug();
@@ -69,14 +69,14 @@ public partial class MinecraftStream : Stream
 
     public async Task DumpAsync(bool clear = true, string name = "")
     {
-        if (this.debugMemoryStream == null)
+        if (debugMemoryStream == null)
             throw new Exception("Can't dump a stream who wasn't set to debug.");
 
         // TODO: Stream the memory stream into a file stream for better performance and stuff :3
         Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), $"obsidian"));
 
         var filePath = Path.Combine(Path.GetTempPath(), $"obsidian/obsidian-{name}-" + Path.GetRandomFileName() + ".bin");
-        await File.WriteAllBytesAsync(filePath, this.debugMemoryStream.ToArray());
+        await File.WriteAllBytesAsync(filePath, debugMemoryStream.ToArray());
 
         if (clear)
             await ClearDebug();
@@ -86,15 +86,15 @@ public partial class MinecraftStream : Stream
 
     public Task ClearDebug()
     {
-        this.debugMemoryStream.Dispose();
-        this.debugMemoryStream = new MemoryStream();
+        debugMemoryStream.Dispose();
+        debugMemoryStream = new MemoryStream();
 
         return Task.CompletedTask;
     }
 
-    public override void Flush() => this.BaseStream.Flush();
+    public override void Flush() => BaseStream.Flush();
 
-    public override int Read(byte[] buffer, int offset, int count) => this.BaseStream.Read(buffer, offset, count);
+    public override int Read(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
@@ -114,7 +114,7 @@ public partial class MinecraftStream : Stream
     {
         try
         {
-            var read = await this.BaseStream.ReadAsync(buffer, cancellationToken);
+            var read = await BaseStream.ReadAsync(buffer, cancellationToken);
 
             return read;
         }
@@ -126,7 +126,7 @@ public partial class MinecraftStream : Stream
 
     public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        if (this.debugMemoryStream != null)
+        if (debugMemoryStream != null)
             await debugMemoryStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
 
         await BaseStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
@@ -134,46 +134,46 @@ public partial class MinecraftStream : Stream
 
     public virtual async Task WriteAsync(byte[] buffer, CancellationToken cancellationToken = default)
     {
-        if (this.debugMemoryStream != null)
-            await this.debugMemoryStream.WriteAsync(buffer, cancellationToken);
+        if (debugMemoryStream != null)
+            await debugMemoryStream.WriteAsync(buffer, cancellationToken);
 
-        await this.BaseStream.WriteAsync(buffer, cancellationToken);
+        await BaseStream.WriteAsync(buffer, cancellationToken);
     }
 
     public override void Write(byte[] buffer, int offset, int count)
     {
-        if (this.debugMemoryStream != null)
-            this.debugMemoryStream.Write(buffer, offset, count);
+        if (debugMemoryStream != null)
+            debugMemoryStream.Write(buffer, offset, count);
 
-        this.BaseStream.Write(buffer, offset, count);
+        BaseStream.Write(buffer, offset, count);
     }
 
-    public override long Seek(long offset, SeekOrigin origin) => this.BaseStream.Seek(offset, origin);
+    public override long Seek(long offset, SeekOrigin origin) => BaseStream.Seek(offset, origin);
 
-    public override void SetLength(long value) => this.BaseStream.SetLength(value);
+    public override void SetLength(long value) => BaseStream.SetLength(value);
 
-    public override void Close() => this.BaseStream.Close();
+    public override void Close() => BaseStream.Close();
 
     public byte[] ToArray()
     {
-        this.Position = 0;
-        var buffer = new byte[this.Length];
-        for (var totalBytesCopied = 0; totalBytesCopied < this.Length;)
-            totalBytesCopied += this.Read(buffer, totalBytesCopied, Convert.ToInt32(this.Length) - totalBytesCopied);
+        Position = 0;
+        var buffer = new byte[Length];
+        for (var totalBytesCopied = 0; totalBytesCopied < Length;)
+            totalBytesCopied += Read(buffer, totalBytesCopied, Convert.ToInt32(Length) - totalBytesCopied);
         return buffer;
     }
 
     protected override void Dispose(bool disposing)
     {
-        if (this.disposed)
+        if (disposed)
             return;
 
         if (disposing)
         {
-            this.BaseStream.Dispose();
-            this.Lock.Dispose();
+            BaseStream.Dispose();
+            Lock.Dispose();
         }
 
-        this.disposed = true;
+        disposed = true;
     }
 }

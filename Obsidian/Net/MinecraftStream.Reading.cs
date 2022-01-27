@@ -11,9 +11,9 @@ public partial class MinecraftStream
 {
 
     [ReadMethod]
-    public sbyte ReadSignedByte() => (sbyte)this.ReadUnsignedByte();
+    public sbyte ReadSignedByte() => (sbyte)ReadUnsignedByte();
 
-    public async Task<sbyte> ReadByteAsync() => (sbyte)await this.ReadUnsignedByteAsync();
+    public async Task<sbyte> ReadByteAsync() => (sbyte)await ReadUnsignedByteAsync();
 
     [ReadMethod]
     public byte ReadUnsignedByte()
@@ -26,7 +26,7 @@ public partial class MinecraftStream
     public async Task<byte> ReadUnsignedByteAsync()
     {
         var buffer = new byte[1];
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return buffer[0];
     }
 
@@ -38,7 +38,7 @@ public partial class MinecraftStream
 
     public async Task<bool> ReadBooleanAsync()
     {
-        var value = (int)await this.ReadByteAsync();
+        var value = (int)await ReadByteAsync();
         if (value == 0x00)
         {
             return false;
@@ -57,14 +57,14 @@ public partial class MinecraftStream
     public ushort ReadUnsignedShort()
     {
         Span<byte> buffer = stackalloc byte[2];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadUInt16BigEndian(buffer);
     }
 
     public async Task<ushort> ReadUnsignedShortAsync()
     {
         var buffer = new byte[2];
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadUInt16BigEndian(buffer);
     }
 
@@ -72,14 +72,14 @@ public partial class MinecraftStream
     public short ReadShort()
     {
         Span<byte> buffer = stackalloc byte[2];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
     public async Task<short> ReadShortAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(short));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadInt16BigEndian(buffer);
     }
 
@@ -87,14 +87,14 @@ public partial class MinecraftStream
     public int ReadInt()
     {
         Span<byte> buffer = stackalloc byte[4];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
     public async Task<int> ReadIntAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(int));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadInt32BigEndian(buffer);
     }
 
@@ -102,14 +102,14 @@ public partial class MinecraftStream
     public long ReadLong()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
     public async Task<long> ReadLongAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(long));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadInt64BigEndian(buffer);
     }
 
@@ -117,14 +117,14 @@ public partial class MinecraftStream
     public ulong ReadUnsignedLong()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadUInt64BigEndian(buffer);
     }
 
     public async Task<ulong> ReadUnsignedLongAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(ulong));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadUInt64BigEndian(buffer);
     }
 
@@ -132,14 +132,14 @@ public partial class MinecraftStream
     public float ReadFloat()
     {
         Span<byte> buffer = stackalloc byte[4];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
     public async Task<float> ReadFloatAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(float));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadSingleBigEndian(buffer);
     }
 
@@ -147,14 +147,14 @@ public partial class MinecraftStream
     public double ReadDouble()
     {
         Span<byte> buffer = stackalloc byte[8];
-        this.Read(buffer);
+        Read(buffer);
         return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
 
     public async Task<double> ReadDoubleAsync()
     {
         using var buffer = new RentedArray<byte>(sizeof(double));
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
         return BinaryPrimitives.ReadDoubleBigEndian(buffer);
     }
 
@@ -163,7 +163,7 @@ public partial class MinecraftStream
     {
         var length = ReadVarInt();
         var buffer = new byte[length];
-        this.Read(buffer, 0, length);
+        Read(buffer, 0, length);
 
         var value = Encoding.UTF8.GetString(buffer);
         if (maxLength > 0 && value.Length > maxLength)
@@ -175,13 +175,13 @@ public partial class MinecraftStream
 
     public async Task<string> ReadStringAsync(int maxLength = 32767)
     {
-        var length = await this.ReadVarIntAsync();
+        var length = await ReadVarIntAsync();
         using var buffer = new RentedArray<byte>(length);
         if (BitConverter.IsLittleEndian)
         {
             buffer.Span.Reverse();
         }
-        await this.ReadAsync(buffer);
+        await ReadAsync(buffer);
 
         var value = Encoding.UTF8.GetString(buffer);
         if (maxLength > 0 && value.Length > maxLength)
@@ -199,7 +199,7 @@ public partial class MinecraftStream
         byte read;
         do
         {
-            read = this.ReadUnsignedByte();
+            read = ReadUnsignedByte();
             int value = read & 0b01111111;
             result |= value << (7 * numRead);
 
@@ -220,7 +220,7 @@ public partial class MinecraftStream
         byte read;
         do
         {
-            read = await this.ReadUnsignedByteAsync();
+            read = await ReadUnsignedByteAsync();
             int value = read & 0b01111111;
             result |= value << (7 * numRead);
 
@@ -257,7 +257,7 @@ public partial class MinecraftStream
     public async Task<byte[]> ReadUInt8ArrayAsync(int length = 0)
     {
         if (length == 0)
-            length = await this.ReadVarIntAsync();
+            length = await ReadVarIntAsync();
 
         var result = new byte[length];
         if (length == 0)
@@ -266,7 +266,7 @@ public partial class MinecraftStream
         int n = length;
         while (true)
         {
-            n -= await this.ReadAsync(result, length - n, n);
+            n -= await ReadAsync(result, length - n, n);
             if (n == 0)
                 break;
         }
@@ -275,7 +275,7 @@ public partial class MinecraftStream
 
     public async Task<byte> ReadUInt8Async()
     {
-        int value = await this.ReadByteAsync();
+        int value = await ReadByteAsync();
         if (value == -1)
             throw new EndOfStreamException();
         return (byte)value;
@@ -289,7 +289,7 @@ public partial class MinecraftStream
         byte read;
         do
         {
-            read = this.ReadUnsignedByte();
+            read = ReadUnsignedByte();
             int value = (read & 0b01111111);
             result |= (long)value << (7 * numRead);
 
@@ -310,7 +310,7 @@ public partial class MinecraftStream
         byte read;
         do
         {
-            read = await this.ReadUnsignedByteAsync();
+            read = await ReadUnsignedByteAsync();
             int value = (read & 0b01111111);
             result |= (long)value << (7 * numRead);
 
@@ -327,7 +327,7 @@ public partial class MinecraftStream
     [ReadMethod]
     public Vector ReadPosition()
     {
-        ulong value = this.ReadUnsignedLong();
+        ulong value = ReadUnsignedLong();
 
         long x = (long)(value >> 38);
         long y = (long)(value & 0xFFF);
@@ -375,7 +375,7 @@ public partial class MinecraftStream
 
     public async Task<Vector> ReadPositionAsync()
     {
-        ulong value = await this.ReadUnsignedLongAsync();
+        ulong value = await ReadUnsignedLongAsync();
 
         long x = (long)(value >> 38);
         long y = (long)(value & 0xFFF);
@@ -403,7 +403,7 @@ public partial class MinecraftStream
     [ReadMethod]
     public VectorF ReadPositionF()
     {
-        ulong value = this.ReadUnsignedLong();
+        ulong value = ReadUnsignedLong();
 
         long x = (long)(value >> 38);
         long y = (long)(value & 0xFFF);
@@ -462,7 +462,7 @@ public partial class MinecraftStream
 
     public async Task<VectorF> ReadPositionFAsync()
     {
-        ulong value = await this.ReadUnsignedLongAsync();
+        ulong value = await ReadUnsignedLongAsync();
 
         long x = (long)(value >> 38);
         long y = (long)(value & 0xFFF);
@@ -488,18 +488,18 @@ public partial class MinecraftStream
     }
 
     [ReadMethod]
-    public SoundPosition ReadSoundPosition() => new SoundPosition(this.ReadInt(), this.ReadInt(), this.ReadInt());
+    public SoundPosition ReadSoundPosition() => new SoundPosition(ReadInt(), ReadInt(), ReadInt());
 
     [ReadMethod]
-    public Angle ReadAngle() => new Angle(this.ReadUnsignedByte());
+    public Angle ReadAngle() => new Angle(ReadUnsignedByte());
 
     [ReadMethod, DataFormat(typeof(float))]
     public Angle ReadFloatAngle() => ReadFloat();
 
-    public async Task<Angle> ReadAngleAsync() => new Angle(await this.ReadUnsignedByteAsync());
+    public async Task<Angle> ReadAngleAsync() => new Angle(await ReadUnsignedByteAsync());
 
     [ReadMethod]
-    public ChatMessage ReadChat() => this.ReadString().FromJson<ChatMessage>();
+    public ChatMessage ReadChat() => ReadString().FromJson<ChatMessage>();
 
     [ReadMethod]
     public byte[] ReadByteArray()
@@ -519,12 +519,12 @@ public partial class MinecraftStream
     {
         var dict = new Dictionary<short, ItemStack>();
 
-        var length = this.ReadVarInt();
+        var length = ReadVarInt();
 
         for (int i = 0; i < length; i++)
         {
-            var slot = this.ReadShort();
-            var item = this.ReadItemStack();
+            var slot = ReadShort();
+            var item = ReadItemStack();
 
             dict.Add(slot, item);
         }
@@ -647,13 +647,13 @@ public partial class MinecraftStream
 
     public async Task<ItemStack> ReadSlotAsync()
     {
-        var present = await this.ReadBooleanAsync();
+        var present = await ReadBooleanAsync();
 
         if (present)
         {
-            var item = Registry.GetItem((short)await this.ReadVarIntAsync());
+            var item = Registry.GetItem((short)await ReadVarIntAsync());
 
-            var itemStack = new ItemStack(item.Type, await this.ReadByteAsync())
+            var itemStack = new ItemStack(item.Type, await ReadByteAsync())
             {
                 Present = present
             };

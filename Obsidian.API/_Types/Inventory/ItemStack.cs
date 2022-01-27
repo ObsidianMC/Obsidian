@@ -16,12 +16,12 @@ public class ItemStack : IEquatable<ItemStack>
 
     public ItemStack(Material type, short count = 1, ItemMeta? meta = null)
     {
-        this.Type = type;
-        this.Count = count;
+        Type = type;
+        Count = count;
         if (count > 0) { Present = true; }
 
         if (meta.HasValue)
-            this.ItemMeta = meta.Value;
+            ItemMeta = meta.Value;
     }
 
     public static ItemStack operator -(ItemStack item, int value)
@@ -57,10 +57,10 @@ public class ItemStack : IEquatable<ItemStack>
 
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
-    public bool Equals(ItemStack other) => (this.Type, this.ItemMeta) == (other?.Type, other?.ItemMeta);
+    public bool Equals(ItemStack other) => (Type, ItemMeta) == (other?.Type, other?.ItemMeta);
 
     public override bool Equals(object? obj) => obj is ItemStack itemStack && Equals(itemStack);
 
     public override int GetHashCode() =>
-        (this.Present, this.Count, this.ItemMeta).GetHashCode();
+        (Present, Count, ItemMeta).GetHashCode();
 }

@@ -9,7 +9,7 @@ public sealed class BrewingStand : ResultContainer, IBlockEntity
 
     public BrewingStand() : base(5, InventoryType.BrewingStand)
     {
-        this.Title = "Brewing Stand";
+        Title = "Brewing Stand";
     }
 
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();

@@ -4,7 +4,7 @@ public sealed class Loom : ResultContainer
 {
     public Loom() : base(4, InventoryType.Loom)
     {
-        this.Title = "Loom";
+        Title = "Loom";
     }
 
     public override ItemStack? GetResult() => throw new NotImplementedException();

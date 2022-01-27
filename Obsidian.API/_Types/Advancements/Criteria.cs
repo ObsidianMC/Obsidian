@@ -21,13 +21,13 @@ public class Criteria
 
     public Criteria(string name, bool required)
     {
-        this.Identifier = name;
-        this.Required = required;
+        Identifier = name;
+        Required = required;
     }
 
     public void CompleteCriteria(DateTimeOffset completedAt)
     {
-        this.AchievedAt = completedAt;
-        this.Achieved = true;
+        AchievedAt = completedAt;
+        Achieved = true;
     }
 }

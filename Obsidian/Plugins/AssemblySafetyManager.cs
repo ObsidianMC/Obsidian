@@ -13,7 +13,7 @@ internal static class AssemblySafetyManager
     static AssemblySafetyManager()
     {
         systemKey = typeof(System.IO.DriveType).Assembly.GetName().GetPublicKeyToken();
-        reflectionKey = typeof(System.Reflection.BindingFlags).Assembly.GetName().GetPublicKeyToken();
+        reflectionKey = typeof(BindingFlags).Assembly.GetName().GetPublicKeyToken();
         diagnosticsKey = typeof(System.Diagnostics.ActivityIdFormat).Assembly.GetName().GetPublicKeyToken();
         csharpKey = typeof(Microsoft.CodeAnalysis.DiagnosticSeverity).Assembly.GetName().GetPublicKeyToken();
     }

@@ -8,29 +8,29 @@ public class OperatorList : IOperatorList
     private List<Operator> ops;
     private readonly List<OperatorRequest> reqs;
     private readonly Server server;
-    private string Path => System.IO.Path.Combine(this.server.ServerFolderPath, "ops.json");
+    private string Path => System.IO.Path.Combine(server.ServerFolderPath, "ops.json");
 
     public OperatorList(Server server)
     {
-        this.ops = new List<Operator>();
-        this.reqs = new List<OperatorRequest>();
+        ops = new List<Operator>();
+        reqs = new List<OperatorRequest>();
         this.server = server;
     }
 
     public async Task InitializeAsync()
     {
-        var fi = new FileInfo(this.Path);
+        var fi = new FileInfo(Path);
 
         if (fi.Exists)
         {
             using var fs = fi.OpenRead();
-            this.ops = await fs.FromJsonAsync<List<Operator>>();
+            ops = await fs.FromJsonAsync<List<Operator>>();
         }
         else
         {
             using var fs = fi.Create();
 
-            await this.ops.ToJsonAsync(fs);
+            await ops.ToJsonAsync(fs);
         }
     }
 
@@ -79,23 +79,23 @@ public class OperatorList : IOperatorList
 
     public void AddOperator(string username)
     {
-        this.ops.Add(new Operator { Username = username, Uuid = Guid.Empty });
-        this.UpdateList();
+        ops.Add(new Operator { Username = username, Uuid = Guid.Empty });
+        UpdateList();
     }
 
     public void RemoveOperator(IPlayer p)
     {
-        this.ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
-        this.UpdateList();
+        ops.RemoveAll(x => x.Uuid == p.Uuid || x.Username == p.Username);
+        UpdateList();
     }
 
     public void RemoveOperator(string value)
     {
-        this.ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
-        this.UpdateList();
+        ops.RemoveAll(x => x.Username == value || x.Uuid == Guid.Parse(value));
+        UpdateList();
     }
 
-    public bool IsOperator(IPlayer p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
+    public bool IsOperator(IPlayer p) => ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
 
     private void UpdateList()
     {

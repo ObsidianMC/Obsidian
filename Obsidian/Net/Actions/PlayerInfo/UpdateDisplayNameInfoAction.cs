@@ -9,7 +9,7 @@ public class UpdateDisplayNameInfoAction : InfoAction
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteStringAsync(this.DisplayName);
+        await stream.WriteStringAsync(DisplayName);
     }
 
     public override void Write(MinecraftStream stream)

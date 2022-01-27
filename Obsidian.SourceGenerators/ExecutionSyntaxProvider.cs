@@ -20,7 +20,7 @@ public abstract class ExecutionSyntaxProvider<T> : ISyntaxProvider<T> where T : 
 
     public ISyntaxProvider<T> WithContext(GeneratorExecutionContext context)
     {
-        this.Context = context;
+        Context = context;
         return this;
     }
 

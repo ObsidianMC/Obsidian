@@ -10,7 +10,7 @@ public class Horse : AbstractHorse
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.VarInt, this.Variant);
+        await stream.WriteEntityMetdata(18, EntityMetadataType.VarInt, Variant);
     }
 
     public override void Write(MinecraftStream stream)

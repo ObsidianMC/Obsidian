@@ -90,9 +90,9 @@ public partial class Server : IServer
         LoggerProvider = new LoggerProvider(config.LogLevel);
         Logger = LoggerProvider.CreateLogger($"Server");
         // This stuff down here needs to be looked into
-        Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
-        PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-        Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
+        Globals.PacketLogger = LoggerProvider.CreateLogger("Packets");
+        PacketDebug.Logger = LoggerProvider.CreateLogger("PacketDebug");
+        Registry.Logger = LoggerProvider.CreateLogger("Registry");
 
         Logger.LogDebug("Initializing command handler...");
         CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
@@ -200,8 +200,8 @@ public partial class Server : IServer
         if (string.IsNullOrWhiteSpace(gen.Id))
             throw new InvalidOperationException($"Failed to get id for generator: {gen.Id}");
 
-        if (this.WorldGenerators.TryAdd(gen.Id, typeof(T)))
-            this.Logger.LogDebug($"Registered {gen.Id}...");
+        if (WorldGenerators.TryAdd(gen.Id, typeof(T)))
+            Logger.LogDebug($"Registered {gen.Id}...");
     }
 
     /// <summary>
@@ -630,7 +630,7 @@ public partial class Server : IServer
                 }
             }
 
-            await this.WorldManager.TickWorldsAsync();
+            await WorldManager.TickWorldsAsync();
 
             long elapsedTicks = stopwatch.ElapsedTicks;
             stopwatch.Restart();
@@ -648,9 +648,9 @@ public partial class Server : IServer
     /// Might be used for more stuff later so I'll leave this here - tides 
     private void RegisterDefaults()
     {
-        this.RegisterWorldGenerator<SuperflatGenerator>();
-        this.RegisterWorldGenerator<OverworldGenerator>();
-        this.RegisterWorldGenerator<EmptyWorldGenerator>();
+        RegisterWorldGenerator<SuperflatGenerator>();
+        RegisterWorldGenerator<OverworldGenerator>();
+        RegisterWorldGenerator<EmptyWorldGenerator>();
     }
 
     internal void UpdateStatusConsole()

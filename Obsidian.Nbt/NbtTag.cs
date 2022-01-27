@@ -15,10 +15,10 @@ public class NbtTag<T> : INbtTag
 
     public NbtTag(string name, T value, INbtTag parent = null)
     {
-        this.Name = name;
-        this.Parent = parent;
-        this.Value = value;
-        this.Type = value switch
+        Name = name;
+        Parent = parent;
+        Value = value;
+        Type = value switch
         {
             bool => NbtTagType.Byte,
             byte => NbtTagType.Byte,
@@ -34,7 +34,7 @@ public class NbtTag<T> : INbtTag
 
     public override string ToString()
     {
-        switch (this.Type)
+        switch (Type)
         {
             case NbtTagType.Byte:
             case NbtTagType.Short:
@@ -43,7 +43,7 @@ public class NbtTag<T> : INbtTag
             case NbtTagType.Float:
             case NbtTagType.Double:
             case NbtTagType.String:
-                return $"TAG_{this.Type}('{this.Name}'): {this.Value}";
+                return $"TAG_{Type}('{Name}'): {Value}";
             default:
                 throw new NotSupportedException("Only generic types are supported.");
         }
@@ -51,7 +51,7 @@ public class NbtTag<T> : INbtTag
 
     public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
-        switch (this.Type)
+        switch (Type)
         {
             case NbtTagType.Byte:
             case NbtTagType.Short:
@@ -61,7 +61,7 @@ public class NbtTag<T> : INbtTag
             case NbtTagType.Double:
             case NbtTagType.String:
                 {
-                    var name = $"TAG_{this.Type}('{this.Name}'): {this.Value}";
+                    var name = $"TAG_{Type}('{Name}'): {Value}";
                     return name.PadLeft(name.Length + depth);
                 }
             default:

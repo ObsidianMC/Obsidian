@@ -6,6 +6,6 @@ public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
 
     internal ServerStatusRequestEventArgs(IServer server, IServerStatus status) : base(server)
     {
-        this.Status = status;
+        Status = status;
     }
 }

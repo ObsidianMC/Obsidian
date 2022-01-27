@@ -8,7 +8,7 @@ public class AnvilWindowProperty : IWindowProperty
 
     public AnvilWindowProperty(short repairCost)
     {
-        this.Property = 0;
-        this.Value = repairCost;
+        Property = 0;
+        Value = repairCost;
     }
 }

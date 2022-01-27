@@ -318,8 +318,8 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteWindowProperty(IWindowProperty windowProperty)
     {
-        this.WriteShort(windowProperty.Property);
-        this.WriteShort(windowProperty.Value);
+        WriteShort(windowProperty.Property);
+        WriteShort(windowProperty.Value);
     }
 
     [WriteMethod]
@@ -443,63 +443,63 @@ public partial class MinecraftStream
     [WriteMethod]
     public void WriteTags(IDictionary<string, List<Tag>> tagsDictionary)
     {
-        this.WriteVarInt(tagsDictionary.Count);
+        WriteVarInt(tagsDictionary.Count);
 
         foreach (var (name, tags) in tagsDictionary)
         {
-            this.WriteString($"minecraft:{name.TrimEnd('s')}");
+            WriteString($"minecraft:{name.TrimEnd('s')}");
 
-            this.WriteVarInt(tags.Count);
+            WriteVarInt(tags.Count);
             foreach (var tag in tags)
-                this.WriteTag(tag);
+                WriteTag(tag);
         }
     }
 
     public void WriteAdvancements(IDictionary<string, Advancement> advancements)
     {
-        this.WriteVarInt(advancements.Count);
+        WriteVarInt(advancements.Count);
 
         foreach (var (name, value) in advancements)
         {
-            this.WriteString(name);
-            this.WriteAdvancement(value);
+            WriteString(name);
+            WriteAdvancement(value);
         }
     }
 
     public void WriteAdvancement(Advancement advancement)
     {
         var hasParent = !string.IsNullOrEmpty(advancement.Parent);
-        this.WriteBoolean(hasParent);
+        WriteBoolean(hasParent);
 
         if (hasParent)
-            this.WriteString(advancement.Parent);
+            WriteString(advancement.Parent);
 
         var hasDisplay = advancement.Display != null;
 
-        this.WriteBoolean(hasDisplay);
+        WriteBoolean(hasDisplay);
 
         if (hasDisplay)
         {
-            this.WriteChat(advancement.Display.Title);
-            this.WriteChat(advancement.Display.Description);
+            WriteChat(advancement.Display.Title);
+            WriteChat(advancement.Display.Description);
 
-            this.WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
+            WriteItemStack(Registry.GetSingleItem(advancement.Display.Icon.Type));
 
-            this.WriteVarInt(advancement.Display.AdvancementFrameType);
+            WriteVarInt(advancement.Display.AdvancementFrameType);
 
-            this.WriteInt((int)advancement.Display.Flags);
+            WriteInt((int)advancement.Display.Flags);
 
             if (advancement.Display.Flags.HasFlag(AdvancementFlags.HasBackgroundTexture))
-                this.WriteString(advancement.Display.BackgroundTexture);
+                WriteString(advancement.Display.BackgroundTexture);
 
-            this.WriteFloat(advancement.Display.XCoord);
-            this.WriteFloat(advancement.Display.YCoord);
+            WriteFloat(advancement.Display.XCoord);
+            WriteFloat(advancement.Display.YCoord);
         }
 
-        this.WriteVarInt(advancement.Criteria.Count);
+        WriteVarInt(advancement.Criteria.Count);
 
         foreach (var criteria in advancement.Criteria)
-            this.WriteString(criteria.Identifier);
+            WriteString(criteria.Identifier);
 
         var reqired = advancement.Criteria.Where(x => x.Required);
 
@@ -507,12 +507,12 @@ public partial class MinecraftStream
         if (reqired.Any())
         {
             //Always gonna be 1 for now
-            this.WriteVarInt(1);
+            WriteVarInt(1);
 
-            this.WriteVarInt(reqired.Count());
+            WriteVarInt(reqired.Count());
 
             foreach (var criteria in reqired)
-                this.WriteString(criteria.Identifier);
+                WriteString(criteria.Identifier);
         }
     }
 

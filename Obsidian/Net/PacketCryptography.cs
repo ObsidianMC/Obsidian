@@ -26,14 +26,14 @@ public class PacketCryptography
         {
             try
             {
-                this.provider = new RsaKeyPairGenerator();
-                this.provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
-                this.encryptCipher = new Pkcs1Encoding(new RsaEngine());
-                this.decryptCipher = new Pkcs1Encoding(new RsaEngine());
-                this.KeyPair = provider.GenerateKeyPair();
+                provider = new RsaKeyPairGenerator();
+                provider.Init(new KeyGenerationParameters(new SecureRandom(), 1024));
+                encryptCipher = new Pkcs1Encoding(new RsaEngine());
+                decryptCipher = new Pkcs1Encoding(new RsaEngine());
+                KeyPair = provider.GenerateKeyPair();
 
-                this.encryptCipher.Init(true, KeyPair.Public);
-                this.decryptCipher.Init(false, KeyPair.Private);
+                encryptCipher.Init(true, KeyPair.Public);
+                decryptCipher.Init(false, KeyPair.Private);
             }
             catch
             {
@@ -41,12 +41,12 @@ public class PacketCryptography
             }
         }
 
-        return this.KeyPair;
+        return KeyPair;
     }
 
-    public byte[] Decrypt(byte[] toDecrypt) => this.decryptCipher.ProcessBlock(toDecrypt, 0, this.decryptCipher.GetInputBlockSize());
+    public byte[] Decrypt(byte[] toDecrypt) => decryptCipher.ProcessBlock(toDecrypt, 0, decryptCipher.GetInputBlockSize());
 
-    public byte[] Encrypt(byte[] toDecrypt) => this.encryptCipher.ProcessBlock(toDecrypt, 0, this.encryptCipher.GetInputBlockSize());
+    public byte[] Encrypt(byte[] toDecrypt) => encryptCipher.ProcessBlock(toDecrypt, 0, encryptCipher.GetInputBlockSize());
 
     public (byte[] publicKey, byte[] randomToken) GeneratePublicKeyAndToken()
     {
@@ -54,9 +54,9 @@ public class PacketCryptography
         using var provider = new RNGCryptoServiceProvider();
         provider.GetBytes(randomToken);
 
-        this.VerifyToken = randomToken;
-        this.PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(this.KeyPair.Public).ToAsn1Object().GetDerEncoded();
+        VerifyToken = randomToken;
+        PublicKey = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(KeyPair.Public).ToAsn1Object().GetDerEncoded();
 
-        return (this.PublicKey, this.VerifyToken);
+        return (PublicKey, VerifyToken);
     }
 }

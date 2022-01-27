@@ -11,8 +11,8 @@ public sealed class BiomeContainer : DataContainer<Biomes>
 
     internal BiomeContainer(byte bitsPerEntry = 2) : base(bitsPerEntry)
     {
-        this.Palette = bitsPerEntry.DetermineBiomePalette();
-        this.DataArray = new(this.BitsPerEntry, 64);
+        Palette = bitsPerEntry.DetermineBiomePalette();
+        DataArray = new(BitsPerEntry, 64);
     }
 
     private BiomeContainer(IPalette<Biomes> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
@@ -23,45 +23,45 @@ public sealed class BiomeContainer : DataContainer<Biomes>
 
     public void Set(int x, int y, int z, Biomes biome)
     {
-        var index = this.GetIndex(x, y, z);
+        var index = GetIndex(x, y, z);
 
-        var paletteIndex = this.Palette.GetOrAddId(biome);
+        var paletteIndex = Palette.GetOrAddId(biome);
 
         if (Palette.BitCount > DataArray.BitsPerEntry)
             DataArray = DataArray.Grow(Palette.BitCount);
 
-        this.DataArray[index] = paletteIndex;
+        DataArray[index] = paletteIndex;
     }
 
     public Biomes Get(int x, int y, int z)
     {
-        var storageId = this.DataArray[this.GetIndex(x, y, z)];
+        var storageId = DataArray[GetIndex(x, y, z)];
 
-        return this.Palette.GetValueFromIndex(storageId);
+        return Palette.GetValueFromIndex(storageId);
     }
 
     public override async Task WriteToAsync(MinecraftStream stream)
     {
-        stream.WriteUnsignedByte(this.BitsPerEntry);
+        stream.WriteUnsignedByte(BitsPerEntry);
 
-        await this.Palette.WriteToAsync(stream);
+        await Palette.WriteToAsync(stream);
 
-        stream.WriteVarInt(this.DataArray.storage.Length);
+        stream.WriteVarInt(DataArray.storage.Length);
 
-        long[] storage = this.DataArray.storage;
+        long[] storage = DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
     }
 
     public override void WriteTo(MinecraftStream stream)
     {
-        stream.WriteUnsignedByte(this.BitsPerEntry);
+        stream.WriteUnsignedByte(BitsPerEntry);
 
-        this.Palette.WriteTo(stream);
+        Palette.WriteTo(stream);
 
-        stream.WriteVarInt(this.DataArray.storage.Length);
+        stream.WriteVarInt(DataArray.storage.Length);
 
-        long[] storage = this.DataArray.storage;
+        long[] storage = DataArray.storage;
         for (int i = 0; i < storage.Length; i++)
             stream.WriteLong(storage[i]);
     }

@@ -20,17 +20,17 @@ public partial class AdvancementsPacket : IClientboundPacket
     {
         using var packetStream = new MinecraftStream();
 
-        packetStream.WriteBoolean(this.Reset);
+        packetStream.WriteBoolean(Reset);
 
-        packetStream.WriteAdvancements(this.Advancements);
+        packetStream.WriteAdvancements(Advancements);
 
         //Not sure what this is for
-        packetStream.WriteVarInt(this.RemovedAdvancements.Count);
-        foreach (var removed in this.RemovedAdvancements)
+        packetStream.WriteVarInt(RemovedAdvancements.Count);
+        foreach (var removed in RemovedAdvancements)
             packetStream.WriteString(removed);
 
         //Write progress for advancements
-        foreach (var (name, advancement) in this.Advancements)
+        foreach (var (name, advancement) in Advancements)
         {
             packetStream.WriteVarInt(advancement.Criteria.Count);
 
@@ -46,8 +46,8 @@ public partial class AdvancementsPacket : IClientboundPacket
         }
 
         stream.Lock.Wait();
-        stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
-        stream.WriteVarInt(this.Id);
+        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
+        stream.WriteVarInt(Id);
         packetStream.Position = 0;
         packetStream.CopyTo(stream);
         stream.Lock.Release();

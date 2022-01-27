@@ -23,7 +23,7 @@ public abstract class BaseFlora
     protected BaseFlora(World world, Material mat = Material.RedTulip)
     {
         this.world = world;
-        this.FloraMat = mat;
+        FloraMat = mat;
     }
 
     /// <summary>

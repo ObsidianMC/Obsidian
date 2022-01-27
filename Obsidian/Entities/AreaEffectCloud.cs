@@ -21,13 +21,13 @@ public class AreaEffectCloud : Entity
     public override void Write(MinecraftStream stream)
     {
         stream.WriteEntityMetadataType(8, EntityMetadataType.Float);
-        stream.WriteFloat(this.Radius);
+        stream.WriteFloat(Radius);
 
         stream.WriteEntityMetadataType(9, EntityMetadataType.VarInt);
-        stream.WriteVarInt(this.Color);
+        stream.WriteVarInt(Color);
 
         stream.WriteEntityMetadataType(10, EntityMetadataType.Boolean);
-        stream.WriteBoolean(this.SinglePoint);
+        stream.WriteBoolean(SinglePoint);
 
         //TODO write particle
         //this.Effect.Write(effect);

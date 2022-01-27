@@ -10,7 +10,7 @@ public class Entity : IEquatable<Entity>, IEntity
 {
     public IServer Server { get; set; }
 
-    protected Server server => this.Server as Server;
+    protected Server server => Server as Server;
 
     public World World { get; set; }
     public IWorld WorldLocation => World;
@@ -65,7 +65,7 @@ public class Entity : IEquatable<Entity>, IEntity
     #region Update methods
     internal virtual async Task UpdateAsync(VectorF position, bool onGround)
     {
-        var isNewLocation = position != this.Position;
+        var isNewLocation = position != Position;
 
         if (isNewLocation)
         {
@@ -73,22 +73,22 @@ public class Entity : IEquatable<Entity>, IEntity
 
             server.BroadcastPacket(new EntityPosition
             {
-                EntityId = this.EntityId,
+                EntityId = EntityId,
 
                 Delta = delta,
 
                 OnGround = onGround
-            }, this.EntityId);
+            }, EntityId);
 
-            await this.UpdatePositionAsync(position, onGround);
+            await UpdatePositionAsync(position, onGround);
         }
     }
 
 
     internal virtual async Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
     {
-        var isNewLocation = position != this.Position;
-        var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
+        var isNewLocation = position != Position;
+        var isNewRotation = yaw != Yaw || pitch != Pitch;
 
         if (isNewLocation)
         {
@@ -96,9 +96,9 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.server.BroadcastPacket(new EntityPositionAndRotation
+                server.BroadcastPacket(new EntityPositionAndRotation
                 {
-                    EntityId = this.EntityId,
+                    EntityId = EntityId,
 
                     Delta = delta,
 
@@ -106,51 +106,51 @@ public class Entity : IEquatable<Entity>, IEntity
                     Pitch = pitch,
 
                     OnGround = onGround
-                }, this.EntityId);
+                }, EntityId);
 
-                this.server.BroadcastPacket(new EntityHeadLook
+                server.BroadcastPacket(new EntityHeadLook
                 {
-                    EntityId = this.EntityId,
+                    EntityId = EntityId,
                     HeadYaw = yaw
                 });
             }
             else
             {
-                this.server.BroadcastPacket(new EntityPosition
+                server.BroadcastPacket(new EntityPosition
                 {
-                    EntityId = this.EntityId,
+                    EntityId = EntityId,
 
                     Delta = delta,
 
                     OnGround = onGround
-                }, this.EntityId);
+                }, EntityId);
             }
 
-            await this.UpdatePositionAsync(position, yaw, pitch, onGround);
+            await UpdatePositionAsync(position, yaw, pitch, onGround);
         }
     }
 
 
     internal virtual Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
     {
-        var isNewRotation = yaw != this.Yaw || pitch != this.Pitch;
+        var isNewRotation = yaw != Yaw || pitch != Pitch;
 
         if (isNewRotation)
         {
-            this.server.BroadcastPacket(new EntityRotation
+            server.BroadcastPacket(new EntityRotation
             {
-                EntityId = this.EntityId,
+                EntityId = EntityId,
                 OnGround = onGround,
                 Yaw = yaw,
                 Pitch = pitch
-            }, this.EntityId);
+            }, EntityId);
 
-            this.server.BroadcastPacket(new EntityHeadLook
+            server.BroadcastPacket(new EntityHeadLook
             {
-                EntityId = this.EntityId,
+                EntityId = EntityId,
                 HeadYaw = yaw
             });
-            this.UpdatePosition(yaw, pitch, onGround);
+            UpdatePosition(yaw, pitch, onGround);
         }
 
         return Task.CompletedTask;
@@ -158,38 +158,38 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public async Task UpdatePositionAsync(VectorF pos, bool onGround = true)
     {
-        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var chunk = await World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
-            this.Position = pos;
+            Position = pos;
         }
 
-        this.OnGround = onGround;
+        OnGround = onGround;
     }
 
     public async Task UpdatePositionAsync(VectorF pos, Angle yaw, Angle pitch, bool onGround = true)
     {
-        var chunk = await this.World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
+        var chunk = await World.GetChunkAsync((int)MathF.Round(pos.X / 16f), (int)MathF.Round(pos.Z / 16f), false);
         if (chunk != null && chunk.isGenerated)
         {
-            this.Position = pos;
+            Position = pos;
         }
 
-        this.Yaw = yaw;
-        this.Pitch = pitch;
-        this.OnGround = onGround;
+        Yaw = yaw;
+        Pitch = pitch;
+        OnGround = onGround;
     }
 
     public async Task UpdatePositionAsync(float x, float y, float z, bool onGround = true)
     {
-        await this.UpdatePositionAsync(new VectorF(x, y, z), onGround);
+        await UpdatePositionAsync(new VectorF(x, y, z), onGround);
     }
 
     public void UpdatePosition(Angle yaw, Angle pitch, bool onGround = true)
     {
-        this.Yaw = yaw;
-        this.Pitch = pitch;
-        this.OnGround = onGround;
+        Yaw = yaw;
+        Pitch = pitch;
+        OnGround = onGround;
     }
     #endregion
 
@@ -204,33 +204,33 @@ public class Entity : IEquatable<Entity>, IEntity
         return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
     }
 
-    public Task RemoveAsync() => this.World.DestroyEntityAsync(this);
+    public Task RemoveAsync() => World.DestroyEntityAsync(this);
 
     private EntityBitMask GenerateBitmask()
     {
         var mask = EntityBitMask.None;
 
-        if (this.Sneaking)
+        if (Sneaking)
         {
-            this.Pose = Pose.Sneaking;
+            Pose = Pose.Sneaking;
             mask |= EntityBitMask.Crouched;
         }
-        else if (this.Swimming)
+        else if (Swimming)
         {
-            this.Pose = Pose.Swimming;
+            Pose = Pose.Swimming;
             mask |= EntityBitMask.Swimming;
         }
-        else if (!this.Sneaking && this.Pose == Pose.Sneaking || !this.Swimming && this.Pose == Pose.Swimming)
-            this.Pose = Pose.Standing;
-        else if (this.Sprinting)
+        else if (!Sneaking && Pose == Pose.Sneaking || !Swimming && Pose == Pose.Swimming)
+            Pose = Pose.Standing;
+        else if (Sprinting)
             mask |= EntityBitMask.Sprinting;
-        else if (this.Glowing)
+        else if (Glowing)
             mask |= EntityBitMask.Glowing;
-        else if (this.Invisible)
+        else if (Invisible)
             mask |= EntityBitMask.Invisible;
-        else if (this.Burning)
+        else if (Burning)
             mask |= EntityBitMask.OnFire;
-        else if (this.FlyingWithElytra)
+        else if (FlyingWithElytra)
             mask |= EntityBitMask.FlyingWithElytra;
 
         return mask;
@@ -238,24 +238,24 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public virtual async Task WriteAsync(MinecraftStream stream)
     {
-        await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)this.GenerateBitmask());
+        await stream.WriteEntityMetdata(0, EntityMetadataType.Byte, (byte)GenerateBitmask());
 
-        await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, this.Air);
+        await stream.WriteEntityMetdata(1, EntityMetadataType.VarInt, Air);
 
-        await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, this.CustomName, this.CustomName != null);
+        await stream.WriteEntityMetdata(2, EntityMetadataType.OptChat, CustomName, CustomName != null);
 
-        await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, this.CustomNameVisible);
-        await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, this.Silent);
-        await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, this.NoGravity);
-        await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, this.Pose);
-        await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, this.PowderedSnowTicks);
+        await stream.WriteEntityMetdata(3, EntityMetadataType.Boolean, CustomNameVisible);
+        await stream.WriteEntityMetdata(4, EntityMetadataType.Boolean, Silent);
+        await stream.WriteEntityMetdata(5, EntityMetadataType.Boolean, NoGravity);
+        await stream.WriteEntityMetdata(6, EntityMetadataType.Pose, Pose);
+        await stream.WriteEntityMetdata(7, EntityMetadataType.VarInt, PowderedSnowTicks);
     }
 
     public virtual void Write(MinecraftStream stream)
     {
         stream.WriteEntityMetadataType(0, EntityMetadataType.Byte);
 
-        stream.WriteUnsignedByte((byte)this.GenerateBitmask());
+        stream.WriteUnsignedByte((byte)GenerateBitmask());
 
         stream.WriteEntityMetadataType(1, EntityMetadataType.VarInt);
         stream.WriteVarInt(Air);
@@ -278,10 +278,10 @@ public class Entity : IEquatable<Entity>, IEntity
         stream.WriteVarInt((int)Pose);
 
         stream.WriteEntityMetadataType(7, EntityMetadataType.VarInt);
-        stream.WriteVarInt(this.PowderedSnowTicks);
+        stream.WriteVarInt(PowderedSnowTicks);
     }
 
-    public IEnumerable<IEntity> GetEntitiesNear(float distance) => this.World.GetEntitiesNear(this.Position, distance).Where(x => x != this);
+    public IEnumerable<IEntity> GetEntitiesNear(float distance) => World.GetEntitiesNear(Position, distance).Where(x => x != this);
 
     public virtual Task TickAsync() => Task.CompletedTask;
 
@@ -289,13 +289,13 @@ public class Entity : IEquatable<Entity>, IEntity
     //TODO check for other entities and handle accordingly 
     public async Task DamageAsync(IEntity source, float amount = 1.0f)
     {
-        this.Health -= amount;
+        Health -= amount;
 
         if (this is ILiving living)
         {
-            await this.server.QueueBroadcastPacketAsync(new EntityAnimationPacket
+            await server.QueueBroadcastPacketAsync(new EntityAnimationPacket
             {
-                EntityId = this.EntityId,
+                EntityId = EntityId,
                 Animation = EntityAnimationType.TakeDamage
             });
 
@@ -303,7 +303,7 @@ public class Entity : IEquatable<Entity>, IEntity
             {
                 var player = iplayer as Player;
 
-                await player.client.QueuePacketAsync(new UpdateHealth(this.Health, 20, 5));
+                await player.client.QueuePacketAsync(new UpdateHealth(Health, 20, 5));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));
@@ -322,7 +322,7 @@ public class Entity : IEquatable<Entity>, IEntity
         if (ReferenceEquals(this, other))
             return true;
 
-        return this.EntityId == other.EntityId;
+        return EntityId == other.EntityId;
     }
 
     public override bool Equals(object obj) => Equals(obj as Entity);
@@ -339,34 +339,34 @@ public class Entity : IEquatable<Entity>, IEntity
 
     public static bool operator !=(Entity a, Entity b) => !(a == b);
 
-    public override int GetHashCode() => this.EntityId.GetHashCode();
+    public override int GetHashCode() => EntityId.GetHashCode();
 
     public virtual Task TeleportAsync(IWorld world) => Task.CompletedTask;
 
     public async virtual Task TeleportAsync(IEntity to)
     {
-        this.Position = to.Position;
+        Position = to.Position;
 
-        if (to.WorldLocation != this.World)
+        if (to.WorldLocation != World)
         {
-            await this.World.DestroyEntityAsync(this);
+            await World.DestroyEntityAsync(this);
 
-            this.World = to.WorldLocation as World;
+            World = to.WorldLocation as World;
 
-            await this.World.SpawnEntityAsync(to.Position, this.Type);
+            await World.SpawnEntityAsync(to.Position, Type);
 
             return;
         }
 
-        if (VectorF.Distance(this.Position, to.Position) > 8)
+        if (VectorF.Distance(Position, to.Position) > 8)
         {
-            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            await server.QueueBroadcastPacketAsync(new EntityTeleport
             {
-                EntityId = this.EntityId,
-                OnGround = this.OnGround,
+                EntityId = EntityId,
+                OnGround = OnGround,
                 Position = to.Position,
-                Pitch = this.Pitch,
-                Yaw = this.Yaw,
+                Pitch = Pitch,
+                Yaw = Yaw,
             });
 
             return;
@@ -374,27 +374,27 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        await server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
         {
-            EntityId = this.EntityId,
+            EntityId = EntityId,
             Delta = delta,
-            OnGround = this.OnGround,
-            Pitch = this.Pitch,
-            Yaw = this.Yaw
+            OnGround = OnGround,
+            Pitch = Pitch,
+            Yaw = Yaw
         });
     }
 
     public async virtual Task TeleportAsync(VectorF pos)
     {
-        if (VectorF.Distance(this.Position, pos) > 8)
+        if (VectorF.Distance(Position, pos) > 8)
         {
-            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            await server.QueueBroadcastPacketAsync(new EntityTeleport
             {
-                EntityId = this.EntityId,
-                OnGround = this.OnGround,
+                EntityId = EntityId,
+                OnGround = OnGround,
                 Position = pos,
-                Pitch = this.Pitch,
-                Yaw = this.Yaw,
+                Pitch = Pitch,
+                Yaw = Yaw,
             });
 
             return;
@@ -402,13 +402,13 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        await server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
         {
-            EntityId = this.EntityId,
+            EntityId = EntityId,
             Delta = delta,
-            OnGround = this.OnGround,
-            Pitch = this.Pitch,
-            Yaw = this.Yaw
+            OnGround = OnGround,
+            Pitch = Pitch,
+            Yaw = Yaw
         });
     }
 }

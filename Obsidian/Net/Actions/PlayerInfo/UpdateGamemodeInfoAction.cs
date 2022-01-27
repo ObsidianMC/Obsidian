@@ -8,7 +8,7 @@ public class UpdateGamemodeInfoAction : InfoAction
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteVarIntAsync(this.Gamemode);
+        await stream.WriteVarIntAsync(Gamemode);
     }
 
     public override void Write(MinecraftStream stream)

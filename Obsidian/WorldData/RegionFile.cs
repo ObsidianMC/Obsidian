@@ -22,7 +22,7 @@ public class RegionFile : IAsyncDisposable
     {
         this.filePath = filePath;
         this.cubicRegionSize = cubicRegionSize;
-        this.tableSize = cubicRegionSize * cubicRegionSize * 4;
+        tableSize = cubicRegionSize * cubicRegionSize * 4;
         var minCacheSize = (tableSize * 2) + (cubicRegionSize * cubicRegionSize * (4096 + 4));
 
         fileCache = MemoryPool<byte>.Shared.Rent(minCacheSize);

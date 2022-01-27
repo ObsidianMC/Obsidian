@@ -16,7 +16,7 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
 
     public SmeltingRecipeBuilder WithType(SmeltingType type)
     {
-        this.Type = type;
+        Type = type;
 
         return this;
     }
@@ -33,38 +33,38 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
 
     public SmeltingRecipeBuilder GivesExperience(float exp)
     {
-        this.Experience = exp;
+        Experience = exp;
 
         return this;
     }
 
     public SmeltingRecipeBuilder WithCookingTime(int cookingTime)
     {
-        this.CookingTime = cookingTime;
+        CookingTime = cookingTime;
 
         return this;
     }
 
     public SmeltingRecipeBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
 
     public SmeltingRecipeBuilder SetResult(ItemStack result)
     {
-        if (this.Result != null)
+        if (Result != null)
             throw new InvalidOperationException("Result is already set.");
 
-        this.Result = result;
+        Result = result;
 
         return this;
     }
 
     public SmeltingRecipeBuilder InGroup(string group)
     {
-        this.Group = group;
+        Group = group;
 
         return this;
     }
@@ -80,18 +80,18 @@ public class SmeltingRecipeBuilder : IRecipeBuilder<SmeltingRecipeBuilder>
             _ => throw new NotImplementedException()
         };
 
-        if (this.Ingredient.Count <= 0)
+        if (Ingredient.Count <= 0)
             throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
         return new SmeltingRecipe
         (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Name ?? throw new NullReferenceException("Recipe must have a name"),
             type,
-            Group = this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            this.Ingredient,
-            this.Experience,
-            this.CookingTime
+            Group = Group,
+            Result != null ? new Ingredient { Result } : throw new NullReferenceException("Result is not set."),
+            Ingredient,
+            Experience,
+            CookingTime
         );
     }
 }

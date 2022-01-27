@@ -21,7 +21,7 @@ public class ContainerClickEventArgs : PlayerEventArgs, ICancellable
 
     internal ContainerClickEventArgs(IPlayer player, BaseContainer container, ItemStack item) : base(player)
     {
-        this.Container = container;
-        this.Item = item;
+        Container = container;
+        Item = item;
     }
 }

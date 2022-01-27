@@ -8,7 +8,7 @@ public class LecternWindowProperty : IWindowProperty
 
     public LecternWindowProperty(short pageNumber)
     {
-        this.Property = 0;
-        this.Value = pageNumber;
+        Property = 0;
+        Value = pageNumber;
     }
 }

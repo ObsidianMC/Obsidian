@@ -13,7 +13,7 @@ public class SmithingRecipeBuilder : IRecipeBuilder<SmithingRecipeBuilder>
     public SmithingRecipeBuilder AddBaseIngredients(params ItemStack[] items)
     {
         foreach (var item in items)
-            this.Base.Add(item);
+            Base.Add(item);
 
         return this;
     }
@@ -22,51 +22,51 @@ public class SmithingRecipeBuilder : IRecipeBuilder<SmithingRecipeBuilder>
     public SmithingRecipeBuilder AddSubIngredients(params ItemStack[] items)
     {
         foreach (var item in items)
-            this.Addition.Add(item);
+            Addition.Add(item);
 
         return this;
     }
 
     public SmithingRecipeBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
 
     public SmithingRecipeBuilder SetResult(ItemStack result)
     {
-        if (this.Result != null)
+        if (Result != null)
             throw new InvalidOperationException("Result is already set.");
 
-        this.Result = result;
+        Result = result;
 
         return this;
     }
 
     public SmithingRecipeBuilder InGroup(string group)
     {
-        this.Group = group;
+        Group = group;
 
         return this;
     }
 
     public IRecipe Build()
     {
-        if (this.Base.Count <= 0)
+        if (Base.Count <= 0)
             throw new InvalidOperationException("Base ingredients must have atleast 1 item.");
 
-        if (this.Addition.Count <= 0)
+        if (Addition.Count <= 0)
             throw new InvalidOperationException("Sub ingredients must have atleast 1 item.");
 
         return new SmithingRecipe
         (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Name ?? throw new NullReferenceException("Recipe must have a name"),
             CraftingType.Smithing,
-            this.Group,
-            this.Base,
-            this.Addition,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set.")
+            Group,
+            Base,
+            Addition,
+            Result != null ? new Ingredient { Result } : throw new NullReferenceException("Result is not set.")
         );
     }
 }

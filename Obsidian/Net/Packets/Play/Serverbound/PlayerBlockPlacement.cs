@@ -32,7 +32,7 @@ public partial class PlayerBlockPlacement : IServerboundPacket
     {
         //Get main hand first return offhand if null
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
-        var position = this.Position;
+        var position = Position;
 
         var b = await player.World.GetBlockAsync(position);
 
@@ -46,7 +46,7 @@ public partial class PlayerBlockPlacement : IServerboundPacket
             {
                 Item = currentItem,
                 Block = interactedBlock,
-                BlockLocation = this.Position,
+                BlockLocation = Position,
             });
 
             return;

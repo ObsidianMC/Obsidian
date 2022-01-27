@@ -90,7 +90,7 @@ public class Chunk
         Sections[i].SetBiome(x, y, z, biome);
     }
 
-    public NbtCompound GetBlockEntity(Vector position) => this.GetBlockEntity(position.X, position.Y, position.Z);
+    public NbtCompound GetBlockEntity(Vector position) => GetBlockEntity(position.X, position.Y, position.Z);
 
     public NbtCompound GetBlockEntity(int x, int y, int z)
     {
@@ -98,10 +98,10 @@ public class Chunk
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        return this.BlockEntities.GetValueOrDefault(value);
+        return BlockEntities.GetValueOrDefault(value);
     }
 
-    public void SetBlockEntity(Vector position, NbtCompound tileEntityData) => this.SetBlockEntity(position.X, position.Y, position.Z, tileEntityData);
+    public void SetBlockEntity(Vector position, NbtCompound tileEntityData) => SetBlockEntity(position.X, position.Y, position.Z, tileEntityData);
 
     public void SetBlockEntity(int x, int y, int z, NbtCompound tileEntityData)
     {
@@ -109,7 +109,7 @@ public class Chunk
         z = NumericsHelper.Modulo(z, 16);
         var value = (short)((x << 8) | (z << 4) | y);
 
-        this.BlockEntities[value] = tileEntityData;
+        BlockEntities[value] = tileEntityData;
     }
     
     public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);

@@ -18,9 +18,9 @@ public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
 
     public ShapedRecipeBuilder()
     {
-        this.Pattern = new ReadOnlyCollection<string>(this.pattern);
+        Pattern = new ReadOnlyCollection<string>(pattern);
 
-        this.Key = new ReadOnlyDictionary<char, Ingredient>(this.key);
+        Key = new ReadOnlyDictionary<char, Ingredient>(key);
     }
 
     public ShapedRecipeBuilder WithPattern(params string[] pattern)
@@ -47,43 +47,43 @@ public class ShapedRecipeBuilder : IRecipeBuilder<ShapedRecipeBuilder>
 
     public IRecipe Build()
     {
-        if (this.pattern.Count <= 0)
+        if (pattern.Count <= 0)
             throw new InvalidOperationException("Patterns cannot be empty");
 
-        if (this.key.Count <= 0)
+        if (key.Count <= 0)
             throw new InvalidOperationException("Keys cannot be empty.");
 
         return new ShapedRecipe
         (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Name ?? throw new NullReferenceException("Recipe must have a name"),
             CraftingType.CraftingShaped,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            new ReadOnlyCollection<string>(new List<string>(this.pattern)),
-            new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(this.key))
+            Group,
+            Result != null ? new Ingredient { Result } : throw new NullReferenceException("Result is not set."),
+            new ReadOnlyCollection<string>(new List<string>(pattern)),
+            new ReadOnlyDictionary<char, Ingredient>(new Dictionary<char, Ingredient>(key))
         );
     }
 
     public ShapedRecipeBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
 
     public ShapedRecipeBuilder SetResult(ItemStack result)
     {
-        if (this.Result != null)
+        if (Result != null)
             throw new InvalidOperationException("Result is already set.");
 
-        this.Result = result;
+        Result = result;
 
         return this;
     }
 
     public ShapedRecipeBuilder InGroup(string group)
     {
-        this.Group = group;
+        Group = group;
 
         return this;
     }

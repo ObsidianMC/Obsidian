@@ -8,7 +8,7 @@ public class UpdatePingInfoAction : InfoAction
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteVarIntAsync(this.Ping);
+        await stream.WriteVarIntAsync(Ping);
     }
 
     public override void Write(MinecraftStream stream)

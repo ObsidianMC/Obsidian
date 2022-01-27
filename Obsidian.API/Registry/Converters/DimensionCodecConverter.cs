@@ -11,10 +11,10 @@ internal class DimensionCodecConverter : JsonConverter<DimensionCodec>
 
     public DimensionCodecConverter()
     {
-        this.propertyMap = new();
+        propertyMap = new();
 
         foreach (var property in typeof(DimensionCodec).GetProperties())
-            this.propertyMap.Add(property.Name, property);
+            propertyMap.Add(property.Name, property);
     }
 
     public override DimensionCodec? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -41,7 +41,7 @@ internal class DimensionCodecConverter : JsonConverter<DimensionCodec>
             if (string.IsNullOrWhiteSpace(propName))
                 throw new JsonException("Property name was null.");
 
-            foreach (var (name, property) in this.propertyMap)
+            foreach (var (name, property) in propertyMap)
             {
                 var convertedName = options.PropertyNamingPolicy?.ConvertName(name) ?? name;
 

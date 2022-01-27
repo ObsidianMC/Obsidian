@@ -6,7 +6,7 @@ public class TulipFlora : BaseFlora
     {
         var seedRand = new Random();
         int tulipType = seedRand.Next(3);
-        this.FloraMat = tulipType switch
+        FloraMat = tulipType switch
         {
             0 => Material.OrangeTulip,
             1 => Material.PinkTulip,

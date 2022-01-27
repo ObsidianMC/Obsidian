@@ -4,7 +4,7 @@ public sealed class Stonecutter : ResultContainer
 {
     public Stonecutter() : base(2, InventoryType.Stonecutter)
     {
-        this.Title = "Stonecutter";
+        Title = "Stonecutter";
     }
 
     public override ItemStack? GetResult() => throw new NotImplementedException();

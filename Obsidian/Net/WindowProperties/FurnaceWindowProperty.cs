@@ -8,12 +8,12 @@ public class FurnaceWindowProperty : IWindowProperty
 
     public FurnaceWindowProperty(FurnaceProperty property, short value)
     {
-        this.Property = (short)property;
+        Property = (short)property;
 
         if (property == FurnaceProperty.ProgressArrow && value > 200)
             throw new InvalidOperationException();
 
-        this.Value = value;
+        Value = value;
     }
 }
 

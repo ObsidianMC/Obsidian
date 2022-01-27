@@ -13,55 +13,55 @@ public class CuttingRecipeBuilder : IRecipeBuilder<CuttingRecipeBuilder>
     public CuttingRecipeBuilder AddIngredients(params ItemStack[] items)
     {
         foreach (var item in items)
-            this.Ingredient.Add(item);
+            Ingredient.Add(item);
 
         return this;
     }
 
     public CuttingRecipeBuilder SetOutputCount(int count)
     {
-        this.Count = count;
+        Count = count;
 
         return this;
     }
 
     public CuttingRecipeBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
 
     public CuttingRecipeBuilder SetResult(ItemStack result)
     {
-        if (this.Result != null)
+        if (Result != null)
             throw new InvalidOperationException("Result is already set.");
 
-        this.Result = result;
+        Result = result;
 
         return this;
     }
 
     public CuttingRecipeBuilder InGroup(string group)
     {
-        this.Group = group;
+        Group = group;
 
         return this;
     }
 
     public IRecipe Build()
     {
-        if (this.Ingredient.Count <= 0)
+        if (Ingredient.Count <= 0)
             throw new InvalidOperationException("Recipe must atleast have 1 item as an ingredient");
 
         return new CuttingRecipe
         (
-            this.Name ?? throw new NullReferenceException("Name must not be null"),
+            Name ?? throw new NullReferenceException("Name must not be null"),
             CraftingType.Stonecutting,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            this.Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
-            this.Count
+            Group,
+            Result != null ? new Ingredient { Result } : throw new NullReferenceException("Result is not set."),
+            Ingredient ?? throw new NullReferenceException("Ingredient must not be null"),
+            Count
         );
     }
 }

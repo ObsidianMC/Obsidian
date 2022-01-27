@@ -29,13 +29,13 @@ public class CipherStream : Stream
 
         if (readCipher != null)
         {
-            this.ReadCipher = readCipher;
+            ReadCipher = readCipher;
             mInBuf = null;
         }
 
         if (writeCipher != null)
         {
-            this.WriteCipher = writeCipher;
+            WriteCipher = writeCipher;
         }
     }
     #region Synchronous
@@ -67,7 +67,7 @@ public class CipherStream : Stream
                     break;
             }
 
-            int numToCopy = System.Math.Min(count - num, mInBuf.Length - mInPos);
+            int numToCopy = Math.Min(count - num, mInBuf.Length - mInPos);
             Array.Copy(mInBuf, mInPos, buffer, offset + num, numToCopy);
             mInPos += numToCopy;
             num += numToCopy;

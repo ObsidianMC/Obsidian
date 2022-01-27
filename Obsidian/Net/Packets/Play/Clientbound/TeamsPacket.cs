@@ -41,30 +41,30 @@ public partial class TeamsPacket : IClientboundPacket
     {
         using var packetStream = new MinecraftStream();
 
-        packetStream.WriteString(this.TeamName);
-        packetStream.WriteByte((sbyte)this.Mode);
+        packetStream.WriteString(TeamName);
+        packetStream.WriteByte((sbyte)Mode);
 
-        if (this.Mode == TeamModeOption.UpdateTeam || this.Mode == TeamModeOption.CreateTeam)
+        if (Mode == TeamModeOption.UpdateTeam || Mode == TeamModeOption.CreateTeam)
         {
-            packetStream.WriteChat(this.TeamDisplayName);
-            packetStream.WriteByte((sbyte)this.FriendlyFlags);
-            packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.NameTagVisibility.ToString()));
-            packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(this.CollisionRule.ToString()));
-            packetStream.WriteVarInt((int)this.TeamColor);
-            packetStream.WriteChat(this.TeamPrefix ?? "");
-            packetStream.WriteChat(this.TeamSuffix ?? "");
+            packetStream.WriteChat(TeamDisplayName);
+            packetStream.WriteByte((sbyte)FriendlyFlags);
+            packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(NameTagVisibility.ToString()));
+            packetStream.WriteString(JsonNamingPolicy.CamelCase.ConvertName(CollisionRule.ToString()));
+            packetStream.WriteVarInt((int)TeamColor);
+            packetStream.WriteChat(TeamPrefix ?? "");
+            packetStream.WriteChat(TeamSuffix ?? "");
         }
 
-        if (this.Mode != TeamModeOption.RemoveTeam || this.Mode != TeamModeOption.UpdateTeam)
+        if (Mode != TeamModeOption.RemoveTeam || Mode != TeamModeOption.UpdateTeam)
         {
-            packetStream.WriteVarInt(this.Entities.Count);
-            foreach (var entity in this.Entities)
+            packetStream.WriteVarInt(Entities.Count);
+            foreach (var entity in Entities)
                 packetStream.WriteString(entity);
         }
 
         stream.Lock.Wait();
 
-        stream.WriteVarInt(this.Id.GetVarIntLength() + (int)packetStream.Length);
+        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
         stream.WriteVarInt(Id);
 
         packetStream.Position = 0;

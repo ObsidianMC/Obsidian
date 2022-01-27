@@ -8,24 +8,24 @@ public class BossBarAction
 
     public BossBarAction(int action)
     {
-        this.Action = action;
+        Action = action;
     }
 
     public virtual void WriteTo(MinecraftStream stream)
     {
-        if (this.Uuid == default)
+        if (Uuid == default)
             throw new InvalidOperationException("Uuid must be assigned a value.");
 
-        stream.WriteUuid(this.Uuid);
-        stream.WriteVarInt(this.Action);
+        stream.WriteUuid(Uuid);
+        stream.WriteVarInt(Action);
     }
 
     public virtual async Task WriteToAsync(MinecraftStream stream)
     {
-        if (this.Uuid == default)
+        if (Uuid == default)
             throw new InvalidOperationException("Uuid must be assigned a value.");
 
-        await stream.WriteUuidAsync(this.Uuid);
-        await stream.WriteVarIntAsync(this.Action);
+        await stream.WriteUuidAsync(Uuid);
+        await stream.WriteVarIntAsync(Action);
     }
 }

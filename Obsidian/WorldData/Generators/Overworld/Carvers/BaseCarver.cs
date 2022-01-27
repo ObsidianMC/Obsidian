@@ -11,7 +11,7 @@ public class BaseCarver : Module
 
     protected BaseCarver() : base(0)
     {
-        this.settings = OverworldGenerator.GeneratorSettings;
+        settings = OverworldGenerator.GeneratorSettings;
         result = new Constant { ConstantValue = 0 };
     }
 

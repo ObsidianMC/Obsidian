@@ -28,12 +28,12 @@ public sealed class WorldManager
 
     public async Task LoadWorldsAsync()
     {
-        foreach (var serverWorld in this.serverWorlds)
+        foreach (var serverWorld in serverWorlds)
         {
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
 
-            var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
+            var world = new World(serverWorld.Name, server, serverWorld.Seed, value);
 
             if (!Registry.TryGetDimensionCodec(serverWorld.DefaultDimension, out var defaultCodec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out defaultCodec))
                 throw new InvalidOperationException("Failed to get default dimension codec.");
@@ -49,7 +49,7 @@ public sealed class WorldManager
                 {
                     if (!Registry.TryGetDimensionCodec(dimensionName, out var codec))
                     {
-                        this.server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
+                        server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
                         continue;
                     }
 
@@ -63,21 +63,21 @@ public sealed class WorldManager
                 await world.SaveAsync();
             }
 
-            if (serverWorld.Default && this.DefaultWorld == null)
-                this.DefaultWorld = world;
+            if (serverWorld.Default && DefaultWorld == null)
+                DefaultWorld = world;
 
-            this.worlds.Add(world.Name, world);
+            worlds.Add(world.Name, world);
         }
 
         //No default world was defined so choose the first one to come up
-        if (this.DefaultWorld == null)
-            this.DefaultWorld = this.worlds.FirstOrDefault().Value;
+        if (DefaultWorld == null)
+            DefaultWorld = worlds.FirstOrDefault().Value;
     }
 
-    public IReadOnlyCollection<World> GetAvailableWorlds() => this.worlds.Values.ToList().AsReadOnly();
+    public IReadOnlyCollection<World> GetAvailableWorlds() => worlds.Values.ToList().AsReadOnly();
 
-    public bool TryGetWorld(string name, [NotNullWhen(true)] out World? world) => this.worlds.TryGetValue(name, out world);
+    public bool TryGetWorld(string name, [NotNullWhen(true)] out World? world) => worlds.TryGetValue(name, out world);
 
-    public Task TickWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.DoWorldTickAsync()));
-    public Task FlushLoadedWorldsAsync() => Task.WhenAll(this.worlds.Select(pair => pair.Value.FlushRegionsAsync()));
+    public Task TickWorldsAsync() => Task.WhenAll(worlds.Select(pair => pair.Value.DoWorldTickAsync()));
+    public Task FlushLoadedWorldsAsync() => Task.WhenAll(worlds.Select(pair => pair.Value.FlushRegionsAsync()));
 }

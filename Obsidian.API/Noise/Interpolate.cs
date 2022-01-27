@@ -15,7 +15,7 @@ public class Interpolate : Module
     {
         // Bitshift the source module by 1 one so we can
         // "divide" each pixel into 4 quadrants
-        var shifted = new BitShiftInput(this.Source0)
+        var shifted = new BitShiftInput(Source0)
         {
             Amount = 1,
             Left = false

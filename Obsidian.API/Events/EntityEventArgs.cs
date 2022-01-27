@@ -11,6 +11,6 @@ public class EntityEventArgs : BaseMinecraftEventArgs, ICancellable
 
     public EntityEventArgs(IEntity entity, IServer server) : base(server)
     {
-        this.Entity = entity;
+        Entity = entity;
     }
 }

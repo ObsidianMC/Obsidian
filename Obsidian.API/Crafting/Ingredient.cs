@@ -6,19 +6,19 @@ public class Ingredient : IEnumerable<ItemStack>
 {
     private readonly List<ItemStack> items;
 
-    public int Count => this.items.Count;
+    public int Count => items.Count;
 
     public Ingredient()
     {
-        this.items = new List<ItemStack>();
+        items = new List<ItemStack>();
     }
 
-    public void Add(ItemStack item) => this.items.Add(item);
+    public void Add(ItemStack item) => items.Add(item);
 
-    public void Remove(ItemStack item) => this.items.Remove(item);
+    public void Remove(ItemStack item) => items.Remove(item);
 
     /// <inheritdoc/>
-    public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
+    public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(items);
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 

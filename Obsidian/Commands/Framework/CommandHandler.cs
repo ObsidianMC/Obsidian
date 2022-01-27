@@ -19,10 +19,10 @@ public class CommandHandler
 
     public CommandHandler(string prefix)
     {
-        this._commandParser = new CommandParser(prefix);
-        this._commands = new List<Command>();
-        this._argumentParsers = new List<BaseArgumentParser>();
-        this._prefix = prefix;
+        _commandParser = new CommandParser(prefix);
+        _commands = new List<Command>();
+        _argumentParsers = new List<BaseArgumentParser>();
+        _prefix = prefix;
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
@@ -76,12 +76,12 @@ public class CommandHandler
         var command = new Command(name, aliases, info?.Description ?? string.Empty, info?.Usage ?? string.Empty, null, checks.ToArray(), this, plugin, null, t, issuers);
         command.Overloads.Add(m);
 
-        this._commands.Add(command);
+        _commands.Add(command);
     }
 
     public void UnregisterPluginCommands(PluginContainer plugin)
     {
-        this._commands.RemoveAll(x => x.Plugin == plugin);
+        _commands.RemoveAll(x => x.Plugin == plugin);
     }
 
     public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
@@ -136,7 +136,7 @@ public class CommandHandler
             RegisterSubgroups(st, plugin, cmd);
             RegisterSubcommands(st, plugin, cmd);
 
-            this._commands.Add(cmd);
+            _commands.Add(cmd);
         }
     }
 
@@ -170,7 +170,7 @@ public class CommandHandler
             // Add overloads.
             command.Overloads.AddRange(methods.Where(x => x.CustomAttributes.Any(y => y.AttributeType == typeof(CommandOverloadAttribute)) && x.Name == m.Name));
 
-            this._commands.Add(command);
+            _commands.Add(command);
         }
     }
 

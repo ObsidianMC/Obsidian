@@ -75,29 +75,29 @@ public class Command
     public async Task ExecuteAsync(CommandContext context, string[] args)
     {
         // Check whether the issuer can execute this command
-        if (!this.AllowedIssuers.HasFlag(context.Sender.Issuer))
+        if (!AllowedIssuers.HasFlag(context.Sender.Issuer))
         {
             throw new DisallowedCommandIssuerException(
-                $"Command {this.GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
+                $"Command {GetQualifiedName()} cannot be executed as {context.Sender.Issuer}", AllowedIssuers);
         }
 
         // Find matching overload
-        if (!this.Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
+        if (!Overloads.Any(x => x.GetParameters().Length - 1 == args.Length
          || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null))
         {
             //throw new InvalidCommandOverloadException($"No such overload for command {this.GetQualifiedName()}");
-            await context.Sender.SendMessageAsync($"&4Correct usage: {this.Usage}");
+            await context.Sender.SendMessageAsync($"&4Correct usage: {Usage}");
 
             return;
         }
 
-        var method = this.Overloads.First(x => x.GetParameters().Length - 1 == args.Length
+        var method = Overloads.First(x => x.GetParameters().Length - 1 == args.Length
         || x.GetParameters().Last().GetCustomAttribute<RemainingAttribute>() != null);
 
         // Create instance of declaring type to execute.
-        var obj = this.ParentInstance;
-        if (obj == null && this.ParentType != null)
-            obj = this.Handler.CreateCommandRootInstance(this.ParentType, this.Plugin);
+        var obj = ParentInstance;
+        if (obj == null && ParentType != null)
+            obj = Handler.CreateCommandRootInstance(ParentType, Plugin);
 
         // Get required params
         var methodparams = method.GetParameters().Skip(1).ToArray();
@@ -120,11 +120,11 @@ public class Command
             }
 
             // Checks if there is any valid registered command handler
-            if (this.Handler._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
+            if (Handler._argumentParsers.Any(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType))
             {
                 // Gets parser
                 // TODO premake instances of parsers in command handler
-                var parsertype = this.Handler._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
+                var parsertype = Handler._argumentParsers.First(x => x.GetType().BaseType.GetGenericArguments()[0] == paraminfo.ParameterType).GetType();
                 var parser = Activator.CreateInstance(parsertype);
 
                 // sets args for parser method
@@ -175,6 +175,6 @@ public class Command
 
     public override string ToString()
     {
-        return $"{this.Handler._prefix}{this.GetQualifiedName()}";
+        return $"{Handler._prefix}{GetQualifiedName()}";
     }
 }

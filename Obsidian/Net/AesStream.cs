@@ -23,8 +23,8 @@ public class AesStream : MinecraftStream
         DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
         DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
 
-        var oldStream = this.BaseStream;
-        this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
+        var oldStream = BaseStream;
+        BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
     }
 
     public AesStream(Stream stream, byte[] key) : base(stream)
@@ -35,8 +35,8 @@ public class AesStream : MinecraftStream
         DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
         DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
 
-        var oldStream = this.BaseStream;
-        this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
+        var oldStream = BaseStream;
+        BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
     }
 
     public AesStream(byte[] data, byte[] key) : base(data)
@@ -47,8 +47,8 @@ public class AesStream : MinecraftStream
         DecryptCipher = new BufferedBlockCipher(new CfbBlockCipher(new AesEngine(), 8));
         DecryptCipher.Init(false, new ParametersWithIV(new KeyParameter(key), key, 0, 16));
 
-        var oldStream = this.BaseStream;
-        this.BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
+        var oldStream = BaseStream;
+        BaseStream = new CipherStream(oldStream, DecryptCipher, EncryptCipher);
     }
 
     public override int ReadByte()
@@ -63,7 +63,7 @@ public class AesStream : MinecraftStream
 
     public override int Read(byte[] buffer, int offset, int count) => BaseStream.Read(buffer, offset, count);
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => await this.BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, offset, count, cancellationToken);
 
     public override async Task<int> ReadAsync(byte[] buffer, CancellationToken cancellationToken = default) => await BaseStream.ReadAsync(buffer, cancellationToken);
 

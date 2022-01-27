@@ -9,7 +9,7 @@ public abstract class BaseTallFlora : BaseFlora
     {
         this.lowerState = (short)lowerState;
         this.upperState = (short)upperState;
-        this.height = maxHeight;
+        height = maxHeight;
     }
 
     /// <summary>

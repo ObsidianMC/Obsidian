@@ -11,7 +11,7 @@ public class GlobalBiomePalette : IPalette<Biomes>
 
     public GlobalBiomePalette(int bitCount)
     {
-        this.BitCount = bitCount;
+        BitCount = bitCount;
     }
 
     public bool TryGetId(Biomes biome, out int id)

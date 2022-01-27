@@ -6,7 +6,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 {
     protected ItemStack?[] items;
 
-    public int Size => this.items.Length;
+    public int Size => items.Length;
 
     public InventoryType Type { get; }
 
@@ -16,15 +16,15 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
     public List<IPlayer> Viewers { get; } = new();
 
-    public ItemStack? this[int index] { get => this.items[index]; set => this.items[index] = value; }
+    public ItemStack? this[int index] { get => items[index]; set => items[index] = value; }
 
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
     internal BaseContainer(int size, InventoryType type)
     {
-        this.Type = type;
+        Type = type;
 
-        this.items = new ItemStack?[size];
+        items = new ItemStack?[size];
     }
 
     //TODO match item meta
@@ -32,9 +32,9 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        for (int i = 0; i < this.Size; i++)
+        for (int i = 0; i < Size; i++)
         {
-            var invItem = this.items[i];
+            var invItem = items[i];
 
             if (invItem?.Type == item.Type)
             {
@@ -49,7 +49,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
             if (invItem == null)
             {
-                this.items[i] = item;
+                items[i] = item;
 
                 return i;
             }
@@ -58,37 +58,37 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return -1;
     }
 
-    public virtual void SetItem(int slot, ItemStack? item) => this.items[slot] = item;
+    public virtual void SetItem(int slot, ItemStack? item) => items[slot] = item;
 
-    public virtual ItemStack? GetItem(int slot) => this.items[slot];
+    public virtual ItemStack? GetItem(int slot) => items[slot];
 
     public virtual bool RemoveItem(int slot)
     {
-        if (this.items[slot] == null)
+        if (items[slot] == null)
             return false;
 
-        this.SetItem(slot, null);
+        SetItem(slot, null);
 
         return true;
     }
 
     public virtual bool RemoveItem(int slot, int amount)
     {
-        var item = this.items[slot];
+        var item = items[slot];
 
         if (item == null)
             return false;
 
         item.Count -= amount;
         if (item.Count <= 0)
-            this.SetItem(slot, null);
+            SetItem(slot, null);
 
         return true;
     }
 
     public virtual bool RemoveItem(int slot, out ItemStack? removedItem)
     {
-        var item = this.items[slot];
+        var item = items[slot];
 
         if (item == null)
         {
@@ -98,12 +98,12 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
         removedItem = item;
 
-        return this.RemoveItem(slot);
+        return RemoveItem(slot);
     }
 
     public virtual bool RemoveItem(int slot, int amount, out ItemStack? removedItem)
     {
-        var item = this.items[slot];
+        var item = items[slot];
 
         if (item == null)
         {
@@ -113,17 +113,17 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
 
         removedItem = item;
 
-        return this.RemoveItem(slot, amount);
+        return RemoveItem(slot, amount);
     }
 
     public virtual (int slot, bool forPlayer) GetDifference(int clickedSlot) =>
-        clickedSlot > this.Size ? (clickedSlot - this.Size + 9, true) : (clickedSlot, false);
+        clickedSlot > Size ? (clickedSlot - Size + 9, true) : (clickedSlot, false);
 
-    public virtual void Resize(int newSize) => Array.Resize(ref this.items, newSize);
+    public virtual void Resize(int newSize) => Array.Resize(ref items, newSize);
 
-    public bool HasItems() => this.items.Any(x => x is not null);
+    public bool HasItems() => items.Any(x => x is not null);
 
-    public IEnumerator<ItemStack> GetEnumerator() => (this.items as IEnumerable<ItemStack>).GetEnumerator();
+    public IEnumerator<ItemStack> GetEnumerator() => (items as IEnumerable<ItemStack>).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

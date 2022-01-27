@@ -8,19 +8,19 @@ public struct SoundPosition
 
     public SoundPosition(int x, int y, int z)
     {
-        this.X = x * 8;
-        this.Y = y * 8;
-        this.Z = z * 8;
+        X = x * 8;
+        Y = y * 8;
+        Z = z * 8;
     }
 
     public SoundPosition(double x, double y, double z)
     {
-        this.X = (int)(x * 8);
-        this.Y = (int)(y * 8);
-        this.Z = (int)(z * 8);
+        X = (int)(x * 8);
+        Y = (int)(y * 8);
+        Z = (int)(z * 8);
     }
 
-    public bool Match(int x, int y, int z) => this.X == x && this.Y == y && this.Z == z;
+    public bool Match(int x, int y, int z) => X == x && Y == y && Z == z;
 
     public override string ToString() => $"{X}:{Y}:{Z}";
 }

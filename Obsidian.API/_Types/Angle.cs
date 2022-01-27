@@ -12,7 +12,7 @@ public struct Angle
         set => Value = NormalizeToByte(value);
     }
 
-    public Angle(byte value) => this.Value = value;
+    public Angle(byte value) => Value = value;
 
     public static implicit operator Angle(float degree) => new(NormalizeToByte(ClampDegrees(degree)));
 

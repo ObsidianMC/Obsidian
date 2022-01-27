@@ -13,7 +13,7 @@ public class GlobalBlockStatePalette : IPalette<Block>
 
     public GlobalBlockStatePalette(int bitCount)
     {
-        this.BitCount = bitCount;
+        BitCount = bitCount;
     }
 
     public bool TryGetId(Block block, out int id)

@@ -4,7 +4,7 @@ public sealed class CartographyTable : ResultContainer
 {
     public CartographyTable() : base(3, InventoryType.CartographyTable)
     {
-        this.Title = "Cartography Table";
+        Title = "Cartography Table";
     }
 
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();

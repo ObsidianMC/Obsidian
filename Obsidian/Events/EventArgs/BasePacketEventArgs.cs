@@ -17,7 +17,7 @@ public class BasePacketEventArgs : AsyncEventArgs
 
     internal BasePacketEventArgs(Client client, IPacket packet)
     {
-        this.Client = client;
-        this.Packet = packet;
+        Client = client;
+        Packet = packet;
     }
 }

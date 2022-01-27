@@ -10,7 +10,7 @@ public class BaseTerrain : Module
 
     protected BaseTerrain() : base(0)
     {
-        this.settings = OverworldGenerator.GeneratorSettings;
+        settings = OverworldGenerator.GeneratorSettings;
         result = new Constant { ConstantValue = 0 };
     }
 

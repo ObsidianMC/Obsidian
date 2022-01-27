@@ -15,33 +15,33 @@ public class DoubleCommandParser : CommandParser
     public DoubleCommandParser(double min, double max) : this()
     {
         if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
+            Flags |= NumberFlags.HasMinValue;
         if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
+            Flags |= NumberFlags.HasMaxValue;
     }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteByteAsync((sbyte)this.Flags);
+        await stream.WriteByteAsync((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteDoubleAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteDoubleAsync(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            await stream.WriteDoubleAsync(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            await stream.WriteDoubleAsync(Max);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteByte((sbyte)this.Flags);
+        stream.WriteByte((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteDouble(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteDouble(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            stream.WriteDouble(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            stream.WriteDouble(Max);
     }
 }
 
@@ -58,33 +58,33 @@ public class FloatCommandParser : CommandParser
     public FloatCommandParser(float min, float max) : this()
     {
         if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
+            Flags |= NumberFlags.HasMinValue;
         if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
+            Flags |= NumberFlags.HasMaxValue;
     }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteByteAsync((sbyte)this.Flags);
+        await stream.WriteByteAsync((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteFloatAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteFloatAsync(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            await stream.WriteFloatAsync(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            await stream.WriteFloatAsync(Max);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteByte((sbyte)this.Flags);
+        stream.WriteByte((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteFloat(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteFloat(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            stream.WriteFloat(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            stream.WriteFloat(Max);
     }
 }
 
@@ -101,33 +101,33 @@ public class IntCommandParser : CommandParser
     public IntCommandParser(int min, int max) : this()
     {
         if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
+            Flags |= NumberFlags.HasMinValue;
         if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
+            Flags |= NumberFlags.HasMaxValue;
     }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteByteAsync((sbyte)this.Flags);
+        await stream.WriteByteAsync((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteIntAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteIntAsync(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            await stream.WriteIntAsync(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            await stream.WriteIntAsync(Max);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteByte((sbyte)this.Flags);
+        stream.WriteByte((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteInt(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteInt(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            stream.WriteInt(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            stream.WriteInt(Max);
     }
 }
 
@@ -144,33 +144,33 @@ public class LongCommandParser : CommandParser
     public LongCommandParser(long min, long max) : this()
     {
         if (min != double.MinValue)
-            this.Flags |= NumberFlags.HasMinValue;
+            Flags |= NumberFlags.HasMinValue;
         if (max != double.MaxValue)
-            this.Flags |= NumberFlags.HasMaxValue;
+            Flags |= NumberFlags.HasMaxValue;
     }
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteByteAsync((sbyte)this.Flags);
+        await stream.WriteByteAsync((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            await stream.WriteLongAsync(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            await stream.WriteLongAsync(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            await stream.WriteLongAsync(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            await stream.WriteLongAsync(Max);
     }
 
     public override void Write(MinecraftStream stream)
     {
         base.Write(stream);
 
-        stream.WriteByte((sbyte)this.Flags);
+        stream.WriteByte((sbyte)Flags);
 
-        if (this.Flags.HasFlag(NumberFlags.HasMinValue))
-            stream.WriteLong(this.Min);
-        if (this.Flags.HasFlag(NumberFlags.HasMaxValue))
-            stream.WriteLong(this.Max);
+        if (Flags.HasFlag(NumberFlags.HasMinValue))
+            stream.WriteLong(Min);
+        if (Flags.HasFlag(NumberFlags.HasMaxValue))
+            stream.WriteLong(Max);
     }
 }
 

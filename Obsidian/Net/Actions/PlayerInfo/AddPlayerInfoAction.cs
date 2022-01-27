@@ -20,22 +20,22 @@ public class AddPlayerInfoAction : InfoAction
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteStringAsync(this.Name, 16);
+        await stream.WriteStringAsync(Name, 16);
 
-        await stream.WriteVarIntAsync(this.Properties.Count);
+        await stream.WriteVarIntAsync(Properties.Count);
 
-        foreach (var props in this.Properties)
+        foreach (var props in Properties)
             await stream.WriteAsync(await props.ToArrayAsync());
 
 
-        await stream.WriteVarIntAsync(this.Gamemode);
+        await stream.WriteVarIntAsync(Gamemode);
 
-        await stream.WriteVarIntAsync(this.Ping);
+        await stream.WriteVarIntAsync(Ping);
 
-        await stream.WriteBooleanAsync(this.HasDisplayName);
+        await stream.WriteBooleanAsync(HasDisplayName);
 
-        if (this.HasDisplayName)
-            await stream.WriteChatAsync(this.DisplayName);
+        if (HasDisplayName)
+            await stream.WriteChatAsync(DisplayName);
     }
 
     public override void Write(MinecraftStream stream)

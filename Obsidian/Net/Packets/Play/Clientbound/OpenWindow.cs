@@ -28,7 +28,7 @@ public partial class OpenWindow : IClientboundPacket
         WindowId = windowId;
     }
 
-    public override string ToString() => $"{this.WindowId}:{this.Type}";
+    public override string ToString() => $"{WindowId}:{Type}";
 }
 
 // Do not mess up the order this is how it's supposed to be ordered

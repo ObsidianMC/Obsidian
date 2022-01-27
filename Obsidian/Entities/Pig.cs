@@ -12,8 +12,8 @@ public class Pig : Animal
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.Boolean, this.HasSaddle);
-        await stream.WriteEntityMetdata(17, EntityMetadataType.VarInt, this.TotalTimeBoost);
+        await stream.WriteEntityMetdata(16, EntityMetadataType.Boolean, HasSaddle);
+        await stream.WriteEntityMetdata(17, EntityMetadataType.VarInt, TotalTimeBoost);
     }
 
     public override void Write(MinecraftStream stream)

@@ -15,7 +15,7 @@ public partial class TagsPacket : IClientboundPacket
 
     public TagsPacket(IDictionary<string, List<Tag>> tags)
     {
-        this.Tags = tags;
+        Tags = tags;
     }
 }
 

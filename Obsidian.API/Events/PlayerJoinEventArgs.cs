@@ -9,6 +9,6 @@ public class PlayerJoinEventArgs : PlayerEventArgs
 
     public PlayerJoinEventArgs(IPlayer player, DateTimeOffset join) : base(player)
     {
-        this.JoinDate = join;
+        JoinDate = join;
     }
 }

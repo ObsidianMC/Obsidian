@@ -19,7 +19,7 @@ public class PlayerAttackEntityEventArgs : EntityEventArgs
 
     public PlayerAttackEntityEventArgs(IPlayer attacker, IEntity entity, IServer server, bool sneaking) : base(entity, server)
     {
-        this.Attacker = attacker;
-        this.Sneaking = sneaking;
+        Attacker = attacker;
+        Sneaking = sneaking;
     }
 }

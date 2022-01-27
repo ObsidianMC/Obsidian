@@ -8,59 +8,59 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
 
     private NbtTagType type;
 
-    public int Count => this.array.Length;
+    public int Count => array.Length;
 
     public bool IsReadOnly => false;
 
-    public NbtTagType Type => this.type;
+    public NbtTagType Type => type;
 
     public string Name { get; set; }
 
     public INbtTag Parent { get; set; }
 
-    public bool IsSynchronized => this.array.IsSynchronized;
+    public bool IsSynchronized => array.IsSynchronized;
 
-    public object SyncRoot => this.array.SyncRoot;
+    public object SyncRoot => array.SyncRoot;
 
-    public T this[int index] { get => this.array[index]; set => this.array[index] = value; }
+    public T this[int index] { get => array[index]; set => array[index] = value; }
 
     public NbtArray(string name, int length)
     {
-        (this.Name, this.array) = (name, new T[length]);
+        (Name, array) = (name, new T[length]);
 
-        this.SetType();
+        SetType();
     }
 
     public NbtArray(string name, IEnumerable<T> array)
     {
-        (this.Name, this.array) = (name, array.ToArray());
+        (Name, this.array) = (name, array.ToArray());
 
-        this.SetType();
+        SetType();
     }
 
     public NbtArray(string name, T[] array)
     {
-        (this.Name, this.array) = (name, array);
+        (Name, this.array) = (name, array);
 
-        this.SetType();
+        SetType();
     }
 
     public void CopyTo(Array array, int index) => this.array.CopyTo(array, index);
 
-    public IEnumerator GetEnumerator() => this.array.GetEnumerator();
+    public IEnumerator GetEnumerator() => array.GetEnumerator();
 
-    public bool Contains(T item) => this.array.Contains(item);
+    public bool Contains(T item) => array.Contains(item);
 
-    public T[] GetArray() => this.array;
+    public T[] GetArray() => array;
 
     public override string ToString()
     {
-        switch (this.type)
+        switch (type)
         {
             case NbtTagType.ByteArray:
             case NbtTagType.IntArray:
             case NbtTagType.LongArray:
-                return $"TAG_{this.Type}('{this.Name}'): {this.Count} Values";
+                return $"TAG_{Type}('{Name}'): {Count} Values";
             default:
                 throw new InvalidOperationException();
         }
@@ -68,13 +68,13 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
 
     public string PrettyString(int depth = 2, int addBraceDepth = 1)
     {
-        switch (this.type)
+        switch (type)
         {
             case NbtTagType.ByteArray:
             case NbtTagType.IntArray:
             case NbtTagType.LongArray:
                 {
-                    var name = $"TAG_{this.Type}('{this.Name}'): {this.Count} Values";
+                    var name = $"TAG_{Type}('{Name}'): {Count} Values";
                     return name.PadLeft(name.Length + depth);
                 }
             default:
@@ -86,15 +86,15 @@ public class NbtArray<T> : INbtTag, IEnumerable, ICollection
     {
         if (typeof(T) == typeof(int))
         {
-            this.type = NbtTagType.IntArray;
+            type = NbtTagType.IntArray;
         }
         else if (typeof(T) == typeof(long))
         {
-            this.type = NbtTagType.LongArray;
+            type = NbtTagType.LongArray;
         }
         else if (typeof(T) == typeof(byte))
         {
-            this.type = NbtTagType.ByteArray;
+            type = NbtTagType.ByteArray;
         }
     }
 }

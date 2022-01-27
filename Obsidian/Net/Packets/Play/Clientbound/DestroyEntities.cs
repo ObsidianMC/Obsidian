@@ -12,6 +12,6 @@ public partial class DestroyEntities : IClientboundPacket
 
     public DestroyEntities(params int[] entities)
     {
-        this.Entities = entities.ToList();
+        Entities = entities.ToList();
     }
 }

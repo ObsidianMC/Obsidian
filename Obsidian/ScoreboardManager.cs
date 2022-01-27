@@ -14,15 +14,15 @@ public sealed class ScoreboardManager : IScoreboardManager
     {
         this.server = server;
 
-        this.DefaultScoreboard = this.CreateScoreboard("default");
+        DefaultScoreboard = CreateScoreboard("default");
     }
 
     public IScoreboard CreateScoreboard(string name)
     {
-        if (!this.scoreboards.Add(name))
-            this.server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
+        if (!scoreboards.Add(name))
+            server.Logger.LogWarning($"Scoreboard with the name: {name} already exists. This might cause some issues and override already existing scoreboards displaying on clients.");
 
-        return new Scoreboard(name, this.server);
+        return new Scoreboard(name, server);
     }
 }
 

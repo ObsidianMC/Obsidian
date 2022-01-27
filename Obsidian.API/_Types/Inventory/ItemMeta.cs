@@ -19,10 +19,10 @@ public struct ItemMeta : IEquatable<ItemMeta>
 
     public IReadOnlyList<ChatMessage> Lore { get; internal set; }
 
-    public bool HasTags() => this.Name != null || this.Lore?.Count > 0 || this.Durability > 0 || this.Unbreakable || this.RepairAmount > 0;
+    public bool HasTags() => Name != null || Lore?.Count > 0 || Durability > 0 || Unbreakable || RepairAmount > 0;
 
     public bool Equals(ItemMeta other) =>
-        (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore) ==
+        (CustomModelData, Name, RepairAmount, Durability, Unbreakable, Enchantments, StoredEnchantments, CanDestroy, Lore) ==
         (other.CustomModelData, other.Name, other.RepairAmount, other.Durability, other.Unbreakable, other.Enchantments, other.StoredEnchantments, other.CanDestroy, other.Lore);
 
     public override bool Equals(object? obj) => obj is ItemMeta meta && Equals(meta);
@@ -32,5 +32,5 @@ public struct ItemMeta : IEquatable<ItemMeta>
     public static bool operator !=(ItemMeta left, ItemMeta right) => !(left == right);
 
     public override int GetHashCode() =>
-        (this.CustomModelData, this.Name, this.RepairAmount, this.Durability, this.Unbreakable, this.Enchantments, this.StoredEnchantments, this.CanDestroy, this.Lore).GetHashCode();
+        (CustomModelData, Name, RepairAmount, Durability, Unbreakable, Enchantments, StoredEnchantments, CanDestroy, Lore).GetHashCode();
 }

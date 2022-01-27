@@ -4,7 +4,7 @@ public sealed class Grindstone : ResultContainer
 {
     public Grindstone() : base(3, InventoryType.Grindstone)
     {
-        this.Title = "Grindstone";
+        Title = "Grindstone";
     }
 
     public override ItemStack? GetResult() => throw new NotImplementedException();

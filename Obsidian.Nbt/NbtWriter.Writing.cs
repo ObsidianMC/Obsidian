@@ -5,9 +5,9 @@ namespace Obsidian.Nbt;
 
 public partial class NbtWriter
 {
-    internal void Write(NbtTagType tagType) => this.WriteByteInternal((byte)tagType);
+    internal void Write(NbtTagType tagType) => WriteByteInternal((byte)tagType);
 
-    internal void WriteByteInternal(byte value) => this.BaseStream.WriteByte(value);
+    internal void WriteByteInternal(byte value) => BaseStream.WriteByte(value);
 
     internal void WriteStringInternal(string value)
     {
@@ -18,8 +18,8 @@ public partial class NbtWriter
 
         var buffer = Encoding.UTF8.GetBytes(value);
 
-        this.WriteShortInternal((short)buffer.Length);
-        this.BaseStream.Write(buffer);
+        WriteShortInternal((short)buffer.Length);
+        BaseStream.Write(buffer);
     }
     internal void WriteShortInternal(short value)
     {
@@ -27,7 +27,7 @@ public partial class NbtWriter
 
         BinaryPrimitives.WriteInt16BigEndian(buffer, value);
 
-        this.BaseStream.Write(buffer);
+        BaseStream.Write(buffer);
     }
 
     internal void WriteIntInternal(int value)
@@ -36,7 +36,7 @@ public partial class NbtWriter
 
         BinaryPrimitives.WriteInt32BigEndian(buffer, value);
 
-        this.BaseStream.Write(buffer);
+        BaseStream.Write(buffer);
     }
 
     internal void WriteFloatInternal(float value)
@@ -45,7 +45,7 @@ public partial class NbtWriter
 
         BinaryPrimitives.WriteSingleBigEndian(buffer, value);
 
-        this.BaseStream.Write(buffer);
+        BaseStream.Write(buffer);
     }
 
     internal void WriteLongInternal(long value)
@@ -54,7 +54,7 @@ public partial class NbtWriter
 
         BinaryPrimitives.WriteInt64BigEndian(buffer, value);
 
-        this.BaseStream.Write(buffer);
+        BaseStream.Write(buffer);
     }
 
     internal void WriteDoubleInternal(double value)
@@ -63,6 +63,6 @@ public partial class NbtWriter
 
         BinaryPrimitives.WriteDoubleBigEndian(buffer, value);
 
-        this.BaseStream.Write(buffer);
+        BaseStream.Write(buffer);
     }
 }

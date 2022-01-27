@@ -8,7 +8,7 @@ public class StonecutterWindowProperty : IWindowProperty
 
     public StonecutterWindowProperty(short selectedRecipeIndex)
     {
-        this.Property = 0;
-        this.Value = selectedRecipeIndex;
+        Property = 0;
+        Value = selectedRecipeIndex;
     }
 }

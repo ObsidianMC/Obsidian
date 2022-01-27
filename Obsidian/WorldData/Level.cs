@@ -81,12 +81,12 @@ public sealed class Level
     {
         get
         {
-            return (int)(this.Time % 24000); // day time is based on server time
+            return (int)(Time % 24000); // day time is based on server time
         }
         set
         {
-            var startOfDay = this.Time - (this.Time % 24000);
-            this.Time = startOfDay + value;
+            var startOfDay = Time - (Time % 24000);
+            Time = startOfDay + value;
         }
     }
 

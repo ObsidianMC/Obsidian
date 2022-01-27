@@ -33,7 +33,7 @@ public sealed class Container : BaseContainer, IBlockEntity
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        if (this.IsPlayerInventory)
+        if (IsPlayerInventory)
         {
             int? slot = InventoryItem(item, PlayerHotbarStart, PlayerHotbarEnd);
             if (slot is null) slot = InventoryItem(item, PlayerMainInventoryStart, PlayerMainInventoryEnd);
@@ -51,7 +51,7 @@ public sealed class Container : BaseContainer, IBlockEntity
     {
         for (int i = start; i <= end; i++)
         {
-            var invItem = this.items[i];
+            var invItem = items[i];
 
             if (invItem?.Type == item.Type)
             {
@@ -65,7 +65,7 @@ public sealed class Container : BaseContainer, IBlockEntity
 
             if (invItem == null)
             {
-                this.items[i] = item;
+                items[i] = item;
 
                 return i;
             }

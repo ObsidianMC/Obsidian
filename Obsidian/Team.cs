@@ -27,90 +27,90 @@ public class Team : ITeam
 
     public async Task CreateAsync()
     {
-        this.packet = new()
+        packet = new()
         {
-            TeamName = this.Name,
-            TeamDisplayName = this.DisplayName,
-            NameTagVisibility = this.NameTagVisibility,
-            CollisionRule = this.CollisionRule,
-            TeamColor = this.Color,
-            TeamPrefix = this.Prefix,
-            TeamSuffix = this.Suffix,
-            Entities = this.Entities
+            TeamName = Name,
+            TeamDisplayName = DisplayName,
+            NameTagVisibility = NameTagVisibility,
+            CollisionRule = CollisionRule,
+            TeamColor = Color,
+            TeamPrefix = Prefix,
+            TeamSuffix = Suffix,
+            Entities = Entities
         };
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        await server.QueueBroadcastPacketAsync(packet);
     }
 
     public async Task<int> AddEntitiesAsync(params string[] entities)
     {
-        this.SetPacketMode(TeamModeOption.AddEntities);
+        SetPacketMode(TeamModeOption.AddEntities);
 
         var added = 0;
 
         foreach (var entity in entities)
         {
-            if (this.Entities.Add(entity))
+            if (Entities.Add(entity))
             {
-                this.packet.Entities.Add(entity);
+                packet.Entities.Add(entity);
                 added++;
             }
         }
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        await server.QueueBroadcastPacketAsync(packet);
 
-        this.packet.Entities.Clear();
+        packet.Entities.Clear();
 
         return added;
     }
 
     public async Task<int> RemoveEntitiesAsync(params string[] entities)
     {
-        this.SetPacketMode(TeamModeOption.RemoveEntities);
+        SetPacketMode(TeamModeOption.RemoveEntities);
 
         var removed = 0;
         foreach (var entity in entities)
         {
-            if (this.Entities.Remove(entity))
+            if (Entities.Remove(entity))
             {
-                this.packet.Entities.Add(entity);
+                packet.Entities.Add(entity);
                 removed++;
             }
         }
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        await server.QueueBroadcastPacketAsync(packet);
 
-        this.packet.Entities.Clear();
+        packet.Entities.Clear();
 
         return removed;
     }
 
     public async Task DeleteAsync()
     {
-        this.SetPacketMode(TeamModeOption.RemoveTeam);
+        SetPacketMode(TeamModeOption.RemoveTeam);
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        await server.QueueBroadcastPacketAsync(packet);
 
-        this.scoreboard.Teams.Remove(this);
+        scoreboard.Teams.Remove(this);
     }
 
     public async Task UpdateAsync()
     {
-        this.packet = new()
+        packet = new()
         {
-            TeamName = this.Name,
+            TeamName = Name,
             Mode = TeamModeOption.UpdateTeam,
-            TeamDisplayName = this.DisplayName,
-            NameTagVisibility = this.NameTagVisibility,
-            CollisionRule = this.CollisionRule,
-            TeamColor = this.Color,
-            TeamPrefix = this.Prefix,
-            TeamSuffix = this.Suffix,
-            Entities = this.Entities
+            TeamDisplayName = DisplayName,
+            NameTagVisibility = NameTagVisibility,
+            CollisionRule = CollisionRule,
+            TeamColor = Color,
+            TeamPrefix = Prefix,
+            TeamSuffix = Suffix,
+            Entities = Entities
         };
 
-        await this.server.QueueBroadcastPacketAsync(this.packet);
+        await server.QueueBroadcastPacketAsync(packet);
     }
 
-    private void SetPacketMode(TeamModeOption mode) => this.packet.Mode = mode;
+    private void SetPacketMode(TeamModeOption mode) => packet.Mode = mode;
 }

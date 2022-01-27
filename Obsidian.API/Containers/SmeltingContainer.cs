@@ -19,7 +19,7 @@ public class SmeltingContainer : ResultContainer, IBlockEntity
         if (type is not InventoryType.Furnace and not InventoryType.Smoker and not InventoryType.BlastFurnace and not InventoryType.Custom)
             throw new InvalidOperationException("Type must either be custom, furnace, blast furnace or smoker.");
 
-        this.Id = id;
+        Id = id;
     }
 
     public virtual ItemStack? GetFuel() => throw new NotImplementedException();

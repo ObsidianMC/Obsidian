@@ -77,17 +77,17 @@ public class BaseBiomeNoise
             {
                 Source0 = Noise(),
                 ControlPoints = new List<ControlPoint> {
-                        new Curve.ControlPoint(-3.000 - CurveOffset, 0.0),
-                        new Curve.ControlPoint(-0.350 - CurveOffset, 0.0),
-                        new Curve.ControlPoint(-0.334 - CurveOffset, 1.0),
-                        new Curve.ControlPoint(-0.332 - CurveOffset, 1.0),
-                        new Curve.ControlPoint(-0.300 - CurveOffset, 0.0),
+                        new ControlPoint(-3.000 - CurveOffset, 0.0),
+                        new ControlPoint(-0.350 - CurveOffset, 0.0),
+                        new ControlPoint(-0.334 - CurveOffset, 1.0),
+                        new ControlPoint(-0.332 - CurveOffset, 1.0),
+                        new ControlPoint(-0.300 - CurveOffset, 0.0),
 
-                        new Curve.ControlPoint(0.330 - CurveOffset, 0.0),
-                        new Curve.ControlPoint(0.332 - CurveOffset, 1.0),
-                        new Curve.ControlPoint(0.334 - CurveOffset, 1.0),
-                        new Curve.ControlPoint(0.350 - CurveOffset, 0.0),
-                        new Curve.ControlPoint(3.000 - CurveOffset, 0.0),
+                        new ControlPoint(0.330 - CurveOffset, 0.0),
+                        new ControlPoint(0.332 - CurveOffset, 1.0),
+                        new ControlPoint(0.334 - CurveOffset, 1.0),
+                        new ControlPoint(0.350 - CurveOffset, 0.0),
+                        new ControlPoint(3.000 - CurveOffset, 0.0),
                     }
             }
         };

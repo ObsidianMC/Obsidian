@@ -156,7 +156,7 @@ public class ClientHandler
                 }
                 catch (Exception e)
                 {
-                    if (this.config.VerboseExceptionLogging)
+                    if (config.VerboseExceptionLogging)
                         Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                 }
                 break;

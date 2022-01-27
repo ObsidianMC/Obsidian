@@ -16,7 +16,7 @@ public class IncomingChatMessageEventArgs : PlayerEventArgs, ICancellable
 
     public IncomingChatMessageEventArgs(IPlayer player, string message, string format) : base(player)
     {
-        this.Message = message;
-        this.Format = format;
+        Message = message;
+        Format = format;
     }
 }

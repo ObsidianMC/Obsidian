@@ -7,7 +7,7 @@ public class ItemEntity : Entity
 {
     public int Id { get; set; }
 
-    public Material Material => Registry.GetItem(this.Id).Type;
+    public Material Material => Registry.GetItem(Id).Type;
 
     public sbyte Count { get; set; }
 
@@ -17,13 +17,13 @@ public class ItemEntity : Entity
 
     public DateTimeOffset TimeDropped { get; private set; } = DateTimeOffset.UtcNow;
 
-    public ItemEntity() => this.Type = EntityType.Item;
+    public ItemEntity() => Type = EntityType.Item;
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(this.Material, this.Count, this.ItemMeta));
+        await stream.WriteEntityMetdata(8, EntityMetadataType.Slot, new ItemStack(Material, Count, ItemMeta));
     }
 
     public override void Write(MinecraftStream stream)
@@ -31,24 +31,24 @@ public class ItemEntity : Entity
         base.Write(stream);
 
         stream.WriteEntityMetadataType(8, EntityMetadataType.Slot);
-        stream.WriteItemStack(new ItemStack(this.Material, this.Count, this.ItemMeta));
+        stream.WriteItemStack(new ItemStack(Material, Count, ItemMeta));
     }
 
     public override async Task TickAsync()
     {
         await base.TickAsync();
 
-        if (!CanPickup && this.TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
-            this.CanPickup = true;
+        if (!CanPickup && TimeDropped.Subtract(DateTimeOffset.UtcNow).TotalSeconds > 5)
+            CanPickup = true;
 
-        foreach (var ent in this.World.GetEntitiesNear(this.Position, 1.5f))
+        foreach (var ent in World.GetEntitiesNear(Position, 1.5f))
         {
             if (ent is ItemEntity item)
             {
                 if (item == this)
                     continue;
 
-                this.Count += item.Count;
+                Count += item.Count;
 
                 await item.RemoveAsync();//TODO find a better way to removed item entities that merged
             }

@@ -8,8 +8,8 @@ public struct BoundingBox : IEquatable<BoundingBox>
 
     public BoundingBox(VectorF min, VectorF max)
     {
-        this.Min = min;
-        this.Max = max;
+        Min = min;
+        Max = max;
     }
 
     public double Height
@@ -96,13 +96,13 @@ public struct BoundingBox : IEquatable<BoundingBox>
             };
     }
 
-    public override bool Equals(object? obj) => (obj is BoundingBox box) && this.Equals(box);
+    public override bool Equals(object? obj) => (obj is BoundingBox box) && Equals(box);
 
     public override int GetHashCode() => Min.GetHashCode() + Max.GetHashCode();
 
     public bool Intersects(BoundingBox box)
     {
-        this.Intersects(ref box, out bool result);
+        Intersects(ref box, out bool result);
         return result;
     }
 

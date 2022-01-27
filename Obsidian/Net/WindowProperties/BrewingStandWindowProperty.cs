@@ -8,8 +8,8 @@ public class BrewingStandWindowProperty : IWindowProperty
 
     public BrewingStandWindowProperty(BrewingStandProperty property, short value)
     {
-        this.Property = (short)property;
-        this.Value = value;
+        Property = (short)property;
+        Value = value;
     }
 }
 

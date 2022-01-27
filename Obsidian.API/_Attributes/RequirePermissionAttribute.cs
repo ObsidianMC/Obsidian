@@ -20,10 +20,10 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
             return Task.FromResult(true);
         if (context.Player == null)
             return Task.FromResult(false);
-        if (this.op && context.Player.IsOperator)
+        if (op && context.Player.IsOperator)
             return Task.FromResult(true);
 
-        if (this.permissions.Length > 0)
+        if (permissions.Length > 0)
             return Task.FromResult(checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(permissions) : context.Player.HasAnyPermission(permissions));
 
         return Task.FromResult(false);

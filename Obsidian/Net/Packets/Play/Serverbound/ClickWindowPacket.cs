@@ -53,7 +53,7 @@ public partial class ClickWindowPacket : IServerboundPacket
     [Field(6)]
     public ItemStack ClickedItem { get; private set; }
 
-    private bool IsPlayerInventory => this.WindowId == 0;
+    private bool IsPlayerInventory => WindowId == 0;
 
     public int Id => 0x08;
 
@@ -67,7 +67,7 @@ public partial class ClickWindowPacket : IServerboundPacket
 
         var (slot, forPlayer) = container.GetDifference(ClickedSlot);
 
-        if (this.IsPlayerInventory || forPlayer)
+        if (IsPlayerInventory || forPlayer)
             container = player.Inventory;
 
         switch (Mode)
@@ -195,13 +195,13 @@ public partial class ClickWindowPacket : IServerboundPacket
 
                 items!.Clear();
 
-                this.FillNbtList(items, container);
+                FillNbtList(items, container);
             }
             else
             {
                 var items = new NbtList(NbtTagType.Compound, "Items");
 
-                this.FillNbtList(items, container);
+                FillNbtList(items, container);
 
                 blockEntity.Add(items);
             }
@@ -234,7 +234,7 @@ public partial class ClickWindowPacket : IServerboundPacket
         }
 
         //Try the player inventory
-        if (amountNeeded > 0 && !this.IsPlayerInventory)
+        if (amountNeeded > 0 && !IsPlayerInventory)
         {
             for (int i = 0; i < playerContainer.Size; i++)
             {

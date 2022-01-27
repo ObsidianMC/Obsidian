@@ -27,43 +27,43 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder()
     {
-        this.Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.enchantments);
-        this.StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(this.storedEnchantments);
-        this.CanDestroy = new ReadOnlyCollection<string>(this.canDestroy);
-        this.Lore = new ReadOnlyCollection<ChatMessage>(this.lore);
+        Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(enchantments);
+        StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(storedEnchantments);
+        CanDestroy = new ReadOnlyCollection<string>(canDestroy);
+        Lore = new ReadOnlyCollection<ChatMessage>(lore);
     }
 
     internal ItemMetaBuilder WithCustomModelData(int modelData)
     {
-        this.CustomModelData = modelData;
+        CustomModelData = modelData;
 
         return this;
     }
 
     public ItemMetaBuilder CouldDestroy(string id)
     {
-        this.canDestroy.Add(id);
+        canDestroy.Add(id);
 
         return this;
     }
 
     public ItemMetaBuilder WithDurability(int durability)
     {
-        this.Durability = durability;
+        Durability = durability;
 
         return this;
     }
 
     public ItemMetaBuilder WithName(string name)
     {
-        this.Name = ChatMessage.Simple(name);
+        Name = ChatMessage.Simple(name);
 
         return this;
     }
 
     public ItemMetaBuilder WithName(ChatMessage name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
@@ -84,14 +84,14 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder IsUnbreakable(bool unbreakable)
     {
-        this.Unbreakable = unbreakable;
+        Unbreakable = unbreakable;
 
         return this;
     }
 
     public ItemMetaBuilder AddEnchantment(EnchantmentType type, int level)
     {
-        this.enchantments.Add(type, new Enchantment
+        enchantments.Add(type, new Enchantment
         {
             Type = type,
             Level = level
@@ -102,7 +102,7 @@ public class ItemMetaBuilder
 
     public ItemMetaBuilder AddStoredEnchantment(EnchantmentType type, int level)
     {
-        this.storedEnchantments.Add(type, new Enchantment
+        storedEnchantments.Add(type, new Enchantment
         {
             Type = type,
             Level = level
@@ -115,16 +115,16 @@ public class ItemMetaBuilder
     {
         var meta = new ItemMeta
         {
-            CustomModelData = this.CustomModelData,
-            Name = this.Name,
-            Lore = this.Lore,
-            Durability = this.Durability,
-            Unbreakable = this.Unbreakable,
+            CustomModelData = CustomModelData,
+            Name = Name,
+            Lore = Lore,
+            Durability = Durability,
+            Unbreakable = Unbreakable,
 
-            Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(this.enchantments)),
-            StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(this.storedEnchantments)),
+            Enchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(enchantments)),
+            StoredEnchantments = new ReadOnlyDictionary<EnchantmentType, Enchantment>(new Dictionary<EnchantmentType, Enchantment>(storedEnchantments)),
 
-            CanDestroy = new ReadOnlyCollection<string>(new List<string>(this.canDestroy))
+            CanDestroy = new ReadOnlyCollection<string>(new List<string>(canDestroy))
         };
 
         return meta;

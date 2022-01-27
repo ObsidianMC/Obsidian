@@ -12,7 +12,7 @@ public partial class TitlePacket : IClientboundPacket
 
     public TitlePacket(TitleMode mode)
     {
-        this.Id = mode == TitleMode.SetTitle ? 0x5A : 0x58;
+        Id = mode == TitleMode.SetTitle ? 0x5A : 0x58;
     }
 }
 

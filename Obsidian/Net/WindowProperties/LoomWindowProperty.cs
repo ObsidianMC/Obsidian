@@ -8,7 +8,7 @@ public class LoomWindowProperty : IWindowProperty
 
     public LoomWindowProperty(short selectedPatternIndex)
     {
-        this.Property = 0;
-        this.Value = selectedPatternIndex;
+        Property = 0;
+        Value = selectedPatternIndex;
     }
 }

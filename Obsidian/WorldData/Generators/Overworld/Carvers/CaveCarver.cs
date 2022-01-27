@@ -11,10 +11,10 @@ public class CavesCarver : BaseCarver
         {
             ControlPoints = new List<ControlPoint>()
                 {
-                     new Curve.ControlPoint(-1, -1),
-                     new Curve.ControlPoint(-0.7, -0.5),
-                     new Curve.ControlPoint(-0.4, -0.5),
-                     new Curve.ControlPoint(1, 1),
+                     new ControlPoint(-1, -1),
+                     new ControlPoint(-0.7, -0.5),
+                     new ControlPoint(-0.4, -0.5),
+                     new ControlPoint(1, 1),
                 },
             Source0 = new Billow
             {

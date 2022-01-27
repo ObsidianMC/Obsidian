@@ -20,10 +20,10 @@ public class CommandNode
     public async Task CopyToAsync(MinecraftStream stream)
     {
         await using var dataStream = new MinecraftStream();
-        await dataStream.WriteByteAsync((sbyte)this.Type);
-        await dataStream.WriteVarIntAsync(this.Children.Count);
+        await dataStream.WriteByteAsync((sbyte)Type);
+        await dataStream.WriteVarIntAsync(Children.Count);
 
-        foreach (var childNode in this.Children.Select(x => x.Index))
+        foreach (var childNode in Children.Select(x => x.Index))
         {
             await dataStream.WriteVarIntAsync(childNode);
         }
@@ -34,14 +34,14 @@ public class CommandNode
         //    await dataStream.WriteVarIntAsync(0);
         //}
 
-        if ((this.Type.HasFlag(CommandNodeType.Argument) || this.Type.HasFlag(CommandNodeType.Literal)))
+        if ((Type.HasFlag(CommandNodeType.Argument) || Type.HasFlag(CommandNodeType.Literal)))
         {
-            await dataStream.WriteStringAsync(this.Name);
+            await dataStream.WriteStringAsync(Name);
         }
 
-        if (this.Type.HasFlag(CommandNodeType.Argument))
+        if (Type.HasFlag(CommandNodeType.Argument))
         {
-            await this.Parser.WriteAsync(dataStream);
+            await Parser.WriteAsync(dataStream);
         }
 
         dataStream.Position = 0;
@@ -73,5 +73,5 @@ public class CommandNode
         dataStream.CopyTo(stream);
     }
 
-    public void AddChild(CommandNode child) => this.Children.Add(child);
+    public void AddChild(CommandNode child) => Children.Add(child);
 }

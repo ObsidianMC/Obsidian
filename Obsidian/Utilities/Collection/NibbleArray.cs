@@ -23,7 +23,7 @@ public class NibbleArray //: INbtSerializable
     /// </summary>
     public NibbleArray(int length)
     {
-        this.Data = new byte[length / 2];
+        Data = new byte[length / 2];
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public class NibbleArray //: INbtSerializable
     //[NbtIgnore]
     public int Length
     {
-        get { return this.Data.Length * 2; }
+        get { return Data.Length * 2; }
     }
 
     /// <summary>
@@ -41,12 +41,12 @@ public class NibbleArray //: INbtSerializable
     //[NbtIgnore]
     public byte this[int index]
     {
-        get => (byte)((this.Data[index / 2] >> (index % 2 * 4)) & 0xF);
+        get => (byte)((Data[index / 2] >> (index % 2 * 4)) & 0xF);
         set
         {
             value &= 0xF;
-            this.Data[index / 2] &= (byte)(0xF << ((index + 1) % 2 * 4));
-            this.Data[index / 2] |= (byte)(value << (index % 2 * 4));
+            Data[index / 2] &= (byte)(0xF << ((index + 1) % 2 * 4));
+            Data[index / 2] |= (byte)(value << (index % 2 * 4));
         }
     }
 
@@ -57,7 +57,7 @@ public class NibbleArray //: INbtSerializable
 
     public void Deserialize(INbtTag value)
     {
-        this.Data = ((NbtArray<byte>)value).GetArray().ToArray();
+        Data = ((NbtArray<byte>)value).GetArray().ToArray();
     }
 }
 
@@ -67,13 +67,13 @@ public class ReadOnlyNibbleArray
 
     public ReadOnlyNibbleArray(NibbleArray array)
     {
-        this.NibbleArray = array;
+        NibbleArray = array;
     }
 
-    public byte this[int index] => this.NibbleArray[index];
+    public byte this[int index] => NibbleArray[index];
 
     public ReadOnlyCollection<byte> Data
     {
-        get { return Array.AsReadOnly(this.NibbleArray.Data); }
+        get { return Array.AsReadOnly(NibbleArray.Data); }
     }
 }

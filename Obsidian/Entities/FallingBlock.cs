@@ -33,7 +33,7 @@ public class FallingBlock : Entity
     {
         AliveTime++;
         LastPosition = Position;
-        if (!this.NoGravity)
+        if (!NoGravity)
             DeltaPosition += gravity; // y - 0.04
         DeltaPosition *= windResFactor; // * 0.98
         Position += DeltaPosition;

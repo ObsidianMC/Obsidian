@@ -8,8 +8,8 @@ public class EnchantmentTableWindowProperty : IWindowProperty
 
     public EnchantmentTableWindowProperty(EnchantmentTableProperty property, short value)
     {
-        this.Property = (short)property;
-        this.Value = value;
+        Property = (short)property;
+        Value = value;
     }
 }
 

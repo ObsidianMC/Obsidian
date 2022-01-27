@@ -12,9 +12,9 @@ public class AbstractHorse : Animal
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, this.HorseMask);
+        await stream.WriteEntityMetdata(16, EntityMetadataType.Byte, HorseMask);
 
-        if (this.Owner != default)
+        if (Owner != default)
             await stream.WriteEntityMetdata(17, EntityMetadataType.OptUuid, Owner, true);
     }
 

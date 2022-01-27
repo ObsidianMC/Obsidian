@@ -14,7 +14,7 @@ public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
 
     public ShapelessRecipeBuilder()
     {
-        this.Ingredients = new ReadOnlyCollection<Ingredient>(this.ingredients);
+        Ingredients = new ReadOnlyCollection<Ingredient>(ingredients);
     }
 
     public ShapelessRecipeBuilder AddIngredients(params ItemStack[] items)
@@ -29,39 +29,39 @@ public class ShapelessRecipeBuilder : IRecipeBuilder<ShapelessRecipeBuilder>
 
     public IRecipe Build()
     {
-        if (this.ingredients.Count <= 0)
+        if (ingredients.Count <= 0)
             throw new InvalidOperationException("Ingredients must be filled with atleast 1 item.");
 
         return new ShapelessRecipe
         (
-            this.Name ?? throw new NullReferenceException("Recipe must have a name"),
+            Name ?? throw new NullReferenceException("Recipe must have a name"),
             CraftingType.CraftingShapeless,
-            this.Group,
-            this.Result != null ? new Ingredient { this.Result } : throw new NullReferenceException("Result is not set."),
-            new ReadOnlyCollection<Ingredient>(new List<Ingredient>(this.ingredients))
+            Group,
+            Result != null ? new Ingredient { Result } : throw new NullReferenceException("Result is not set."),
+            new ReadOnlyCollection<Ingredient>(new List<Ingredient>(ingredients))
         );
     }
 
     public ShapelessRecipeBuilder WithName(string name)
     {
-        this.Name = name;
+        Name = name;
 
         return this;
     }
 
     public ShapelessRecipeBuilder SetResult(ItemStack result)
     {
-        if (this.Result != null)
+        if (Result != null)
             throw new InvalidOperationException("Result is already set.");
 
-        this.Result = result;
+        Result = result;
 
         return this;
     }
 
     public ShapelessRecipeBuilder InGroup(string group)
     {
-        this.Group = group;
+        Group = group;
 
         return this;
     }

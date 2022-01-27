@@ -10,7 +10,7 @@ public class AgeableMob : PathfinderMob
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(15, EntityMetadataType.Boolean, this.IsBaby);
+        await stream.WriteEntityMetdata(15, EntityMetadataType.Boolean, IsBaby);
     }
 
     public override void Write(MinecraftStream stream)

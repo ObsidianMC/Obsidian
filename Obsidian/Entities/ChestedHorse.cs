@@ -10,7 +10,7 @@ public class ChestedHorse : AbstractHorse
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(18, EntityMetadataType.Boolean, this.HasChest);
+        await stream.WriteEntityMetdata(18, EntityMetadataType.Boolean, HasChest);
     }
 
     public override void Write(MinecraftStream stream)
@@ -34,9 +34,9 @@ public class Llama : ChestedHorse
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(19, EntityMetadataType.VarInt, this.Strength);
-        await stream.WriteEntityMetdata(20, EntityMetadataType.VarInt, this.CarpetColor);
-        await stream.WriteEntityMetdata(21, EntityMetadataType.VarInt, this.Variant);
+        await stream.WriteEntityMetdata(19, EntityMetadataType.VarInt, Strength);
+        await stream.WriteEntityMetdata(20, EntityMetadataType.VarInt, CarpetColor);
+        await stream.WriteEntityMetdata(21, EntityMetadataType.VarInt, Variant);
     }
 
     public override void Write(MinecraftStream stream)

@@ -27,53 +27,53 @@ public class BossBar : IBossBar
     public BossBar(Server server)
     {
         this.server = server;
-        this.removeAction = new BossBarRemoveAction
+        removeAction = new BossBarRemoveAction
         {
-            Uuid = this.Uuid
+            Uuid = Uuid
         };
     }
 
     public async Task RemoveFlagAsync(BossBarFlags flag)
     {
-        this.Flags &= ~flag;
+        Flags &= ~flag;
 
-        await this.UpdateFlagsAsync();
+        await UpdateFlagsAsync();
     }
 
     public async Task UpdateColorAsync(BossBarColor newColor)
     {
-        this.Color = newColor;
+        Color = newColor;
 
-        await this.UpdateStyleAsync();
+        await UpdateStyleAsync();
     }
 
     public async Task UpdateDivisionAsync(BossBarDivisionType newDivision)
     {
-        this.DivisionType = newDivision;
+        DivisionType = newDivision;
 
-        await this.UpdateStyleAsync();
+        await UpdateStyleAsync();
     }
 
     public async Task AddFlagsAsync(BossBarFlags newFlags)
     {
-        this.Flags |= newFlags;
+        Flags |= newFlags;
 
-        await this.UpdateFlagsAsync();
+        await UpdateFlagsAsync();
     }
 
     public async Task UpdateHealthAsync(float newHealth)
     {
-        this.Health = newHealth;
+        Health = newHealth;
 
         var updateHealthAction = new BossBarUpdateHealthAction
         {
-            Uuid = this.Uuid,
-            Health = this.Health
+            Uuid = Uuid,
+            Health = Health
         };
 
-        foreach (var (uuid, player) in this.server.OnlinePlayers)
+        foreach (var (uuid, player) in server.OnlinePlayers)
         {
-            if (!this.HasPlayer(uuid))
+            if (!HasPlayer(uuid))
                 continue;
 
             await player.client.QueuePacketAsync(new BossBarPacket(updateHealthAction));
@@ -82,17 +82,17 @@ public class BossBar : IBossBar
 
     public async Task UpdateTitleAsync(ChatMessage newTitle)
     {
-        this.Title = newTitle;
+        Title = newTitle;
 
         var updateHealthAction = new BossBarUpdateTitleAction
         {
-            Uuid = this.Uuid,
-            Title = this.Title
+            Uuid = Uuid,
+            Title = Title
         };
 
-        foreach (var (uuid, player) in this.server.OnlinePlayers)
+        foreach (var (uuid, player) in server.OnlinePlayers)
         {
-            if (!this.HasPlayer(uuid))
+            if (!HasPlayer(uuid))
                 continue;
 
             await player.client.QueuePacketAsync(new BossBarPacket(updateHealthAction));
@@ -101,7 +101,7 @@ public class BossBar : IBossBar
 
     public async Task AddPlayerAsync(Guid playerUuid)
     {
-        var hasPlayer = this.Players.Add(playerUuid);
+        var hasPlayer = Players.Add(playerUuid);
 
         //Players already in the list so we assume they're seeing the bar.
         if (!hasPlayer)
@@ -109,45 +109,45 @@ public class BossBar : IBossBar
 
         var addAction = new BossBarAddAction
         {
-            Uuid = this.Uuid,
-            Title = this.Title,
-            Color = this.Color,
-            Division = this.DivisionType,
-            Flags = this.Flags,
-            Health = this.Health
+            Uuid = Uuid,
+            Title = Title,
+            Color = Color,
+            Division = DivisionType,
+            Flags = Flags,
+            Health = Health
         };
 
-        var player = this.server.GetPlayer(playerUuid) as Player;
+        var player = server.GetPlayer(playerUuid) as Player;
 
         await player.client.QueuePacketAsync(new BossBarPacket(addAction));
     }
 
     public async Task RemovePlayerAsync(Guid playerUuid)
     {
-        var removed = this.Players.Remove(playerUuid);
+        var removed = Players.Remove(playerUuid);
 
         //Player is not in here??
         if (!removed)
             return;
 
-        var player = this.server.GetPlayer(playerUuid) as Player;
+        var player = server.GetPlayer(playerUuid) as Player;
 
-        await player.client.QueuePacketAsync(new BossBarPacket(this.removeAction));
+        await player.client.QueuePacketAsync(new BossBarPacket(removeAction));
     }
 
-    public bool HasPlayer(Guid uuid) => this.Players.Contains(uuid);
+    public bool HasPlayer(Guid uuid) => Players.Contains(uuid);
 
     private async Task UpdateFlagsAsync()
     {
         var updateFlagAction = new BossBarUpdateFlagsAction
         {
-            Uuid = this.Uuid,
-            Flags = this.Flags
+            Uuid = Uuid,
+            Flags = Flags
         };
 
-        foreach (var (uuid, player) in this.server.OnlinePlayers)
+        foreach (var (uuid, player) in server.OnlinePlayers)
         {
-            if (!this.HasPlayer(uuid))
+            if (!HasPlayer(uuid))
                 continue;
 
             await player.client.QueuePacketAsync(new BossBarPacket(updateFlagAction));
@@ -158,14 +158,14 @@ public class BossBar : IBossBar
     {
         var updateStyleAction = new BossBarUpdateStyleAction
         {
-            Uuid = this.Uuid,
-            Color = this.Color,
-            Division = this.DivisionType
+            Uuid = Uuid,
+            Color = Color,
+            Division = DivisionType
         };
 
-        foreach (var (uuid, player) in this.server.OnlinePlayers)
+        foreach (var (uuid, player) in server.OnlinePlayers)
         {
-            if (!this.HasPlayer(uuid))
+            if (!HasPlayer(uuid))
                 continue;
 
             await player.client.QueuePacketAsync(new BossBarPacket(updateStyleAction));

@@ -15,25 +15,25 @@ public class Living : Entity, ILiving
     public int AbsorbtionAmount { get; set; }
 
     public Vector BedBlockPosition { get; set; }
-    public bool Alive => this.Health > 0f;
+    public bool Alive => Health > 0f;
 
     public override async Task WriteAsync(MinecraftStream stream)
     {
         await base.WriteAsync(stream);
 
-        await stream.WriteEntityMetdata(7, EntityMetadataType.Byte, (byte)this.LivingBitMask);
+        await stream.WriteEntityMetdata(7, EntityMetadataType.Byte, (byte)LivingBitMask);
 
-        await stream.WriteEntityMetdata(8, EntityMetadataType.Float, this.Health);
+        await stream.WriteEntityMetdata(8, EntityMetadataType.Float, Health);
 
-        await stream.WriteEntityMetdata(9, EntityMetadataType.VarInt, (int)this.ActiveEffectColor);
+        await stream.WriteEntityMetdata(9, EntityMetadataType.VarInt, (int)ActiveEffectColor);
 
-        await stream.WriteEntityMetdata(10, EntityMetadataType.Boolean, this.AmbientPotionEffect);
+        await stream.WriteEntityMetdata(10, EntityMetadataType.Boolean, AmbientPotionEffect);
 
-        await stream.WriteEntityMetdata(11, EntityMetadataType.VarInt, this.AbsorbedArrows);
+        await stream.WriteEntityMetdata(11, EntityMetadataType.VarInt, AbsorbedArrows);
 
-        await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, this.AbsorbtionAmount);
+        await stream.WriteEntityMetdata(12, EntityMetadataType.VarInt, AbsorbtionAmount);
 
-        await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, this.BedBlockPosition, this.BedBlockPosition != API.Vector.Zero);
+        await stream.WriteEntityMetdata(13, EntityMetadataType.OptPosition, BedBlockPosition, BedBlockPosition != Vector.Zero);
     }
 
     public override void Write(MinecraftStream stream)
