@@ -19,20 +19,13 @@ internal class WorldLight
         {
             for (int z = 0; z < 16; z++)
             {
-                int y = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(x, z);
+                int y = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(x, z) + 1;
                 var worldPos = new Vector(x + (chunk.X << 4), y, z + (chunk.Z << 4));
                 await SetLightAndSpread(worldPos, LightType.Sky, 15);
             }
         }
 
-        // Check neighboring chunks (if exist) for skylight on edges
-        /*        var centerChunkVec = new Vector(chunk.X, 0, chunk.Z);
-                var northChunk = await world.GetChunkAsync(centerChunkVec + Vector.North, false);
-                var southChunk = await world.GetChunkAsync(centerChunkVec + Vector.South, false);
-                var westChunk = await world.GetChunkAsync(centerChunkVec + Vector.West, false);
-                var eastChunk = await world.GetChunkAsync(centerChunkVec + Vector.East, false);*/
-
-
+        //TODO: Check neighboring chunks (if exist) for light on edges
     }
 
     public async Task SetLightAndSpread(Vector pos, LightType lt, int level)
@@ -46,11 +39,25 @@ internal class WorldLight
 
         chunk.SetLightLevel(pos, lt, level);
 
+        // Can spread up with no loss of level
+        // as long as there is a neighbor that's non-transparent.
+        for (int spreadY = 1; spreadY < 320 - pos.Y; spreadY++)
+        {
+            var secIndex = ((pos.Y + spreadY) >> 4) + 4;
+            if (chunk.Sections[secIndex].IsEmpty) { break; }
+
+            foreach (Vector dir in Vector.CardinalDirs)
+            {
+                if ( await world.GetBlockAsync(pos + (0, spreadY, 0) + dir) is { IsTransparent: false })
+                {
+                    chunk.SetLightLevel(pos + (0, spreadY, 0), lt, level);
+                }
+            }
+        }
+
         level--;
 
         if (level == 0) { return; }
-
-        return;
 
         // Can spread in any cardinal direction and up/down.
         // No level lost for travelling vertically.
