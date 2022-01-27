@@ -629,8 +629,7 @@ public sealed class Client : IDisposable
             minecraftStream.Dispose();
             tcp.Dispose();
 
-            if (Cancellation != null)
-                Cancellation.Dispose();
+            Cancellation.Dispose();
         }
 
         Player = null;
