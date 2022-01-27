@@ -545,8 +545,8 @@ public sealed class Client : IDisposable
         {
             if (!Player.Respawning)
             {
-                foreach (var (X, Z) in LoadedChunks)
-                    await UnloadChunkAsync(X, Z);
+                foreach (var (x, z) in LoadedChunks)
+                    await UnloadChunkAsync(x, z);
             }
 
             LoadedChunks.Clear();
