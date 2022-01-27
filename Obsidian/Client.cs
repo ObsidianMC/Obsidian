@@ -231,7 +231,7 @@ public sealed class Client : IDisposable
                                 break;
                             }
 
-                            if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
+                            if (config.WhitelistEnabled && config.Whitelisted.All(x => x.Nickname != username))
                             {
                                 await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
                                 break;
