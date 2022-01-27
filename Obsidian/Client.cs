@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
-using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events.EventArgs;

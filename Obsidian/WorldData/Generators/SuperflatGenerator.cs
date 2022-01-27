@@ -41,7 +41,7 @@ public class SuperflatGenerator : IWorldGenerator
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                motionBlockingHeightmap.Set(bx, bz, -64);
+                motionBlockingHeightmap.Set(bx, bz, -60);
             }
         }
 

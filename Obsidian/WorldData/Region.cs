@@ -22,7 +22,7 @@ public class Region
 
     public ConcurrentDictionary<int, Entity> Entities { get; } = new();
 
-    public int LoadedChunkCount => loadedChunks.Count;
+    public int LoadedChunkCount => loadedChunks.Count(c => c.isGenerated);
 
     private DenseCollection<Chunk> loadedChunks { get; } = new(cubicRegionSize, cubicRegionSize);
 
@@ -159,7 +159,7 @@ public class Region
             isGenerated = true
         };
 
-        foreach (var child in chunkCompound["Sections"] as NbtList)
+        foreach (var child in (NbtList)chunkCompound["Sections"])
         {
             if (child is not NbtCompound sectionCompound)
                 throw new InvalidOperationException("Nbt Tag is not a compound.");
@@ -192,15 +192,18 @@ public class Region
                 if (Enum.TryParse<Biomes>(biome.Value.TrimResourceTag(), true, out var value))
                     biomePalette.GetOrAddId(value);
             }
+
+            section.SetLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray(), LightType.Sky);
+            section.SetLight(((NbtArray<byte>)sectionCompound["BlockLight"]).GetArray(), LightType.Block);
         }
 
-        foreach (var (name, heightmap) in chunkCompound["Heightmaps"] as NbtCompound)
+        foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
         {
             var heightmapType = (HeightmapType)Enum.Parse(typeof(HeightmapType), name.Replace("_", ""), true);
             chunk.Heightmaps[heightmapType].data.storage = ((NbtArray<long>)heightmap).GetArray();
         }
 
-        foreach (var tileEntityNbt in chunkCompound["block_entities"] as NbtList)
+        foreach (var tileEntityNbt in (NbtList)chunkCompound["block_entities"])
         {
             var tileEntityCompound = tileEntityNbt as NbtCompound;
 
@@ -259,11 +262,14 @@ public class Region
                 biomesCompound.Add(palette);
             }
 
+
             sectionsCompound.Add(new NbtCompound
             {
                 new NbtTag<byte>("Y", (byte)section.YBase),
+                blockStatesCompound,
                 biomesCompound,
-                blockStatesCompound
+                new NbtArray<byte>("SkyLight", section.SkyLightArray.ToArray()),
+                new NbtArray<byte>("BlockLight", section.BlockLightArray.ToArray())
             });
         }
 

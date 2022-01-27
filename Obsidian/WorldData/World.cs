@@ -45,6 +45,7 @@ public class World : IWorld
     public string DimensionName { get; private set; }
 
     public string? ParentWorldName { get; private set; }
+    private WorldLight worldLight;
 
     internal World(string name, Server server, string seed, Type generatorType)
     {
@@ -55,6 +56,7 @@ public class World : IWorld
 
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         this.Generator.Init(seed);
+        worldLight = new(this);
     }
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -135,7 +137,6 @@ public class World : IWorld
             isGenerated = false // Not necessary; just being explicit.
         };
         region.SetChunk(chunk);
-
         return chunk;
     }
 
@@ -480,6 +481,7 @@ public class World : IWorld
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
             region.SetChunk(c);
+            await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 
