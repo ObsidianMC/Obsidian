@@ -256,9 +256,9 @@ public sealed class Client : IDisposable
 
                             var serverId = sharedKey.Concat(packetCryptography.PublicKey).ToArray().MinecraftShaDigest();
 
-                            JoinedResponse response = await MinecraftAPI.HasJoined(Player.Username, serverId);
+                            JoinedResponse joinedResponse = await MinecraftAPI.HasJoined(Player.Username, serverId);
 
-                            if (response is null)
+                            if (joinedResponse is null)
                             {
                                 Logger.LogWarning($"Failed to auth {Player.Username}");
                                 await DisconnectAsync("Unable to authenticate..");
