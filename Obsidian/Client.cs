@@ -22,7 +22,7 @@ using System.Threading.Tasks.Dataflow;
 
 namespace Obsidian;
 
-public class Client : IDisposable
+public sealed class Client : IDisposable
 {
     public event Action<Client>? Disconnected;
 
@@ -618,7 +618,8 @@ public class Client : IDisposable
     }
 
     #region Disposing
-    protected virtual void Dispose(bool disposing)
+
+    private void Dispose(bool disposing)
     {
         if (disposed)
             return;
