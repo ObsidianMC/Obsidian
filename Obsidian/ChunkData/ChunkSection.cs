@@ -69,9 +69,10 @@ public sealed class ChunkSection
     public int GetLightLevel(int x, int y, int z, LightType lt)
     {
         var index = (y << 8) | (z << 4) | x;
-        var mask = 0xF << (index & 1);
+        var shift = (index & 1) << 2;
+        var mask = 0xF << shift;
         index /= 2;
-        return lt == LightType.Sky ? skyLight[index] & mask : blockLight[index] & mask;
+        return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
     }
 
     internal void SetSkyLight(byte[] data)
