@@ -18,6 +18,11 @@ public partial class Handshake : IClientboundPacket, IServerboundPacket
     public ClientState NextState { get; private set; }
 
     public int Id => 0x00;
+    public void Serialize(MinecraftStream stream) => throw new NotImplementedException();
+
+    public void Populate(byte[] data) => throw new NotImplementedException();
+
+    public void Populate(MinecraftStream stream) => throw new NotImplementedException();
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }
