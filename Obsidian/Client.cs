@@ -41,7 +41,7 @@ public sealed class Client : IDisposable
 
     private bool disposed;
     private bool compressionEnabled;
-    public bool EncryptionEnabled { get; private set; }
+    private bool EncryptionEnabled { get; set; }
 
     private const int CompressionThreshold = 256;
 
