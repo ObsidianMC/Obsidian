@@ -194,6 +194,7 @@ public class Region
             }
 
             section.SetLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray(), LightType.Sky);
+            section.SetLight(((NbtArray<byte>)sectionCompound["BlockLight"]).GetArray(), LightType.Block);
         }
 
         foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
@@ -267,7 +268,8 @@ public class Region
                 new NbtTag<byte>("Y", (byte)section.YBase),
                 blockStatesCompound,
                 biomesCompound,
-                new NbtArray<byte>("SkyLight", section.SkyLightArray.ToArray())
+                new NbtArray<byte>("SkyLight", section.SkyLightArray.ToArray()),
+                new NbtArray<byte>("BlockLight", section.BlockLightArray.ToArray())
             });
         }
 
