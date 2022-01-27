@@ -193,7 +193,7 @@ public class Region
                     biomePalette.GetOrAddId(value);
             }
 
-            section.SetSkyLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray());
+            section.SetLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray(), LightType.Sky);
         }
 
         foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])

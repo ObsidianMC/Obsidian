@@ -21,7 +21,7 @@ public sealed class ChunkSection
 
     private byte[] skyLight = new byte[2048];
 
-    private readonly byte[] blockLight = new byte[2048];
+    private byte[] blockLight = new byte[2048];
 
     public ChunkSection(byte bitsPerBlock = 4, byte bitsPerBiome = 2, int? yBase = null)
     {
@@ -82,17 +82,24 @@ public sealed class ChunkSection
         return lt == LightType.Sky ? (skyLight[index] & mask) >> shift : (blockLight[index] & mask >> shift);
     }
 
-    internal void SetSkyLight(byte[] data)
+    internal void SetLight(byte[] data, LightType lt)
     {
         foreach (var b in data)
         {
             if (b != 0)
             {
-                HasSkyLight = true;
+                if (lt == LightType.Sky)
+                    HasSkyLight = true;
+                else
+                    HasBlockLight = true;
                 break;
             }
         }
-        skyLight = data;
+        if (lt == LightType.Sky)
+            skyLight = data;
+        else
+            blockLight = data;
+        
     }
 
     public ChunkSection Clone()
