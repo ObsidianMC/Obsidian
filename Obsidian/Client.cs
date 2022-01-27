@@ -65,7 +65,7 @@ public sealed class Client : IDisposable
     public Server Server { get; private set; }
     public Player Player { get; private set; }
 
-    public ILogger Logger => Server.Logger;
+    private ILogger Logger => Server.Logger;
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
