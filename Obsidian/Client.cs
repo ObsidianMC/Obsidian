@@ -45,7 +45,7 @@ public class Client : IDisposable
 
     private const int CompressionThreshold = 256;
 
-    internal TcpClient tcp;
+    private TcpClient tcp;
 
     internal int ping;
     internal int missedKeepalives;
