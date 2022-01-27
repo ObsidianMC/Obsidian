@@ -464,7 +464,7 @@ public sealed class Client : IDisposable
         {
             var uuid = player.Uuid.ToString().Replace("-", "");
             var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
-            addAction.Properties.AddRange(skin.Properties);
+            addAction.Properties.AddRange(skin?.Properties);
         }
 
         await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
@@ -489,7 +489,7 @@ public sealed class Client : IDisposable
             {
                 var uuid = player.Uuid.ToString().Replace("-", "");
                 var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
-                piaa.Properties.AddRange(skin.Properties);
+                piaa.Properties.AddRange(skin?.Properties);
             }
 
             list.Add(piaa);
