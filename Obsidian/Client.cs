@@ -107,7 +107,7 @@ public sealed class Client : IDisposable
         int packetId = 0;
         byte[] packetData = Array.Empty<byte>();
 
-        using (var packetStream = new MinecraftStream(receivedData))
+        await using (var packetStream = new MinecraftStream(receivedData))
         {
             try
             {
