@@ -104,7 +104,7 @@ public sealed class Client : IDisposable
 
         await minecraftStream.ReadAsync(receivedData.AsMemory(0, length));
 
-        int packetId = 0;
+        int packetId;
         byte[] packetData = Array.Empty<byte>();
 
         await using (var packetStream = new MinecraftStream(receivedData))
