@@ -588,7 +588,7 @@ public sealed class Client : IDisposable
     }
 
 
-    private Task SendChunkAsync(Chunk chunk) => chunk != null ? QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    private Task SendChunkAsync(Chunk chunk) => QueuePacketAsync(new ChunkDataPacket(chunk));
 
     private Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
 
