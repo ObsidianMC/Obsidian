@@ -594,7 +594,7 @@ public sealed class Client : IDisposable
 
     private async Task SendServerBrand()
     {
-        using var stream = new MinecraftStream();
+        await using var stream = new MinecraftStream();
 
         await stream.WriteStringAsync("obsidian");
 
