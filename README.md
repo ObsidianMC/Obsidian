@@ -82,3 +82,5 @@ Thank you to Mojang for creating this wonderful game named [Minecraft](https://w
 </a>
 
 <sub><sup>Made with [contributors-img](https://contributors-img.web.app)</sup></sub>
+
+![repobeats](https://repobeats.axiom.co/api/embed/18e251a59758b25b1ecebdfe0f4b6b4004b8d0f9.svg "Repobeats analytics image")
