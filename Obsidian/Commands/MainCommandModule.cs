@@ -339,7 +339,15 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         var player = server.GetPlayer(username);
         server.Bans.AddBan(player, duration);
-        await player.KickAsync($"{username} was banned by an Operator");
+
+        if (ctx.IsPlayer)
+        {
+            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
+        }
+        else
+        {
+            await player.KickAsync($"{username} was banned by Console");
+        }
     }
 
     [Command("unban")]
@@ -350,7 +358,15 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         var player = server.GetPlayer(username);
         server.Bans.RemoveBan(player);
-        await player.KickAsync($"{username} was banned by an Operator");
+        
+        if (ctx.IsPlayer)
+        {
+            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
+        }
+        else
+        {
+            await player.KickAsync($"{username} was banned by Console");
+        }
     }
 
     [Command("kick")]
@@ -360,7 +376,15 @@ public class MainCommandModule
     {
         var server = (Server)ctx.Server;
         var player = server.Players.FirstOrDefault(player => player.Username == username);
-        await player.KickAsync($"{username} was kicked by an Operator");
+        
+        if (ctx.IsPlayer)
+        {
+            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
+        }
+        else
+        {
+            await player.KickAsync($"{username} was banned by Console");
+        }
     }
 
     [Command("time")]
