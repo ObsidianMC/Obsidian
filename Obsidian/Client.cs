@@ -176,16 +176,6 @@ public class Client : IDisposable
 
                         if(nextState == ClientState.Login)
                         {
-                            if ((int)handshake.Version > (int)Server.Protocol)
-                            {
-                                await this.DisconnectAsync($"Outdated server! I'm still on {Server.Protocol.GetDescription()}.");
-                            }
-
-                            if ((int)handshake.Version < (int)Server.Protocol)
-                            {
-                                await this.DisconnectAsync($"Outdated client! Please use {Server.Protocol.GetDescription()}.");
-                            }
-
                             if (this.Server.Bans.IsBanned(this.Player))
                             {
                                 IBan ban = this.Server.Bans.GetBan(this.Player);
