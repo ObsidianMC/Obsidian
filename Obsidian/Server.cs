@@ -39,6 +39,7 @@ public partial class Server : IServer
     public MinecraftEventHandler Events { get; } = new();
 
     public IOperatorList Operators { get; }
+    public IBanList Bans { get; }
     public IScoreboardManager ScoreboardManager { get; private set; }
 
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
@@ -86,6 +87,7 @@ public partial class Server : IServer
         tcpListener = new TcpListener(IPAddress.Any, Port);
 
         Operators = new OperatorList(this);
+        Bans = new BanList(this);
 
         LoggerProvider = new LoggerProvider(config.LogLevel);
         Logger = LoggerProvider.CreateLogger($"Server");
@@ -233,6 +235,7 @@ public partial class Server : IServer
         Logger.LogInformation($"Loading properties...");
 
         await (Operators as OperatorList).InitializeAsync();
+        await (Bans as BanList).InitializeAsync();
         RegisterDefaults();
 
         ScoreboardManager = new ScoreboardManager(this);

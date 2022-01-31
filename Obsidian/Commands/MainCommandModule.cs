@@ -331,6 +331,38 @@ public class MainCommandModule
         return Task.CompletedTask;
     }
 
+    [Command("ban")]
+    [CommandInfo("Bans a user.", "/ban <user> <duration>")]
+    [RequirePermission(permissions: "obsidian.ban")]
+    public async Task BanAsync(CommandContext ctx, string username, int duration)
+    {
+        var server = (Server)ctx.Server;
+        var player = server.GetPlayer(username);
+        server.Bans.AddBan(player, duration);
+        await player.KickAsync($"{username} was banned by an Operator");
+    }
+
+    [Command("unban")]
+    [CommandInfo("Unbans a user.", "/unban <user>")]
+    [RequirePermission(permissions: "obsidian.ban")]
+    public async Task UnbanAsync(CommandContext ctx, string username)
+    {
+        var server = (Server)ctx.Server;
+        var player = server.GetPlayer(username);
+        server.Bans.RemoveBan(player);
+        await player.KickAsync($"{username} was banned by an Operator");
+    }
+
+    [Command("kick")]
+    [CommandInfo("Kicks a user.", "/kick <user>")]
+    [RequirePermission(permissions: "obsidian.kick")]
+    public async Task KickAsync(CommandContext ctx, string username)
+    {
+        var server = (Server)ctx.Server;
+        var player = server.Players.FirstOrDefault(player => player.Username == username);
+        await player.KickAsync($"{username} was kicked by an Operator");
+    }
+
     [Command("time")]
     [CommandInfo("Sets declared time", "/time <timeOfDay>")]
     public Task TimeAsync(CommandContext ctx) => TimeAsync(ctx, 1337);

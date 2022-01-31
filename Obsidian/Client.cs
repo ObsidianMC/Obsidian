@@ -174,8 +174,36 @@ public class Client : IDisposable
                             await this.DisconnectAsync("you seem suspicious");
                         }
 
-                        this.State = nextState;
-                        this.Logger.LogInformation($"Handshaking with client (protocol: {ChatColor.Yellow}{handshake.Version.GetDescription()} {ChatColor.White}[{ChatColor.Yellow}{(int)handshake.Version}{ChatColor.White}], server: {ChatColor.Yellow}{handshake.ServerAddress}:{handshake.ServerPort}{ChatColor.White})");
+                        if(nextState == ClientState.Login)
+                        {
+                            if ((int)handshake.Version > (int)Server.Protocol)
+                            {
+                                await this.DisconnectAsync($"Outdated server! I'm still on {Server.Protocol.GetDescription()}.");
+                            }
+
+                            if ((int)handshake.Version < (int)Server.Protocol)
+                            {
+                                await this.DisconnectAsync($"Outdated client! Please use {Server.Protocol.GetDescription()}.");
+                            }
+
+                            if (this.Server.Bans.IsBanned(this.Player))
+                            {
+                                IBan ban = this.Server.Bans.GetBan(this.Player);
+                                if (DateTime.Now.CompareTo(ban.TimeStamp.AddDays(ban.Duration)) > 0)
+                                {
+                                    this.Server.Bans.RemoveBan(this.Player);
+                                }
+                                else
+                                {
+                                    await this.DisconnectAsync("You are banned on this server\nContact server administrator");
+                                }
+                            }
+                        }
+
+                        this.State = nextState == ClientState.Login && ((int)handshake.Version != (int)Server.Protocol) ? ClientState.Closed : nextState;
+                        this.Logger.LogInformation($"Handshaking with client (protocol: {ChatColor.Yellow}{handshake.Version.GetDescription() ?? "UNSUPPORTED"} {ChatColor.White}[{ChatColor.Yellow}{(int)handshake.Version}{ChatColor.White}], server: {ChatColor.Yellow}{handshake.ServerAddress}:{handshake.ServerPort}{ChatColor.White})");
+
+
                     }
                     else
                     {
