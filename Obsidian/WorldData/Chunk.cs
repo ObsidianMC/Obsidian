@@ -1,6 +1,8 @@
-﻿using Obsidian.Blocks;
+﻿using Obsidian.API._Types;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
+using Obsidian.Net;
 
 namespace Obsidian.WorldData;
 
@@ -149,6 +151,26 @@ public class Chunk
 
     public void SetBlockMeta(Vector position, BlockMeta meta) => SetBlockMeta(position.X, position.Y, position.Z, meta);
 
+    public void SetLightLevel(Vector position, LightType lt, int light) => this.SetLightLevel(position.X, position.Y, position.Z, lt, light);
+    public void SetLightLevel(int x, int y, int z, LightType lt, int level)
+    {
+        var sec = Sections[SectionIndex(y)];
+        x = NumericsHelper.Modulo(x, 16);
+        y = NumericsHelper.Modulo(y, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        sec.SetLightLevel(x, y, z, lt, level);
+    }
+
+    public int GetLightLevel(Vector position, LightType lt) => GetLightLevel(position.X, position.Y, position.Z, lt);
+    public int GetLightLevel(int x, int y, int z, LightType lt)
+    {
+        var sec = Sections[SectionIndex(y)];
+        x = NumericsHelper.Modulo(x, 16);
+        y = NumericsHelper.Modulo(y, 16);
+        z = NumericsHelper.Modulo(z, 16);
+        return sec.GetLightLevel(x, y, z, lt);
+    }
+
     public void CalculateHeightmap()
     {
         Heightmap target = Heightmaps[HeightmapType.MotionBlocking];
@@ -165,6 +187,78 @@ public class Chunk
                     target.Set(x, z, value: y);
                     break;
                 }
+            }
+        }
+    }
+
+    public void WriteLightMaskTo(MinecraftStream stream, LightType lt)
+    {
+        /*
+         * BitSet containing bits for each section in the world + 2. 
+         * Each set bit indicates that the corresponding 16×16×16 chunk section 
+         * has data in the Sky Light array below. 
+         * The least significant bit is for blocks 16 blocks to 1 block below 
+         * the min world height (one section below the world), 
+         * while the most significant bit covers blocks 1 to 16 blocks 
+         * above the max world height (one section above the world). 
+         * */
+        var bs = new BitSet();
+        for (int i = 0; i < Sections.Length + 2; i++)
+        {
+            if (i == 0 || i == Sections.Length + 1)
+            {
+                continue;
+            }
+            else
+            {
+                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                bs.SetBit(i, hasLight);
+            }
+        }
+        stream.WriteVarInt(bs.DataStorage.Length);
+        if (bs.DataStorage.Length != 0)
+            stream.WriteLongArray(bs.DataStorage.ToArray());
+    }
+
+    public void WriteEmptyLightMaskTo(MinecraftStream stream, LightType lt)
+    {
+        var bs = new BitSet();
+        for (int i = 0; i < Sections.Length + 2; i++)
+        {
+            if (i == 0 || i == Sections.Length + 1)
+            {
+                continue;
+            }
+            else
+            {
+                var hasLight = lt == LightType.Sky ? Sections[i - 1].HasSkyLight : Sections[i - 1].HasBlockLight;
+                bs.SetBit(i, !hasLight);
+            }
+        }
+        stream.WriteVarInt(bs.DataStorage.Length);
+        if (bs.DataStorage.Length != 0)
+            stream.WriteLongArray(bs.DataStorage.ToArray());
+    }
+
+    public void WriteLightTo(MinecraftStream stream, LightType lt)
+    {
+        // Sanity check
+        var litSections = Sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
+        stream.WriteVarInt(litSections);
+        
+        if (litSections == 0) { return; }
+
+        for (int a = 0; a < Sections.Length; a++)
+        {
+            if (lt == LightType.Sky && Sections[a].HasSkyLight)
+            {
+                stream.WriteVarInt(Sections[a].SkyLightArray.Length);
+                stream.WriteByteArray(Sections[a].SkyLightArray.ToArray());
+            }
+            else if (lt == LightType.Block && Sections[a].HasBlockLight)
+            {
+                stream.WriteVarInt(Sections[a].BlockLightArray.Length);
+                stream.WriteByteArray(Sections[a].BlockLightArray.ToArray());
             }
         }
     }

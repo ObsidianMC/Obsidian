@@ -73,6 +73,112 @@ public interface IPlayer : ILiving
     /// <param name="stay">Time in ticks for the title to stay on screen</param>
     /// <param name="fadeOut">Time in ticks for the title to fade out</param>
     public Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
+    
+    /// <summary>
+    /// Sends an action bar text to the player.
+    /// </summary>
+    /// <param name="text">The text of the action bar.</param>
+    public Task SendActionBarAsync(string text);
+
+    /// <summary>
+    /// Spawns the given particle at the target coordinates.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="x">The target x-coordination.</param>
+    /// <param name="y">The target y-coordination.</param>
+    /// <param name="z">The target z-coordination.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target coordinates and with the given offset.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="x">The target x-coordination.</param>
+    /// <param name="y">The target y-coordination.</param>
+    /// <param name="z">The target z-coordination.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="offsetX">The x-offset.</param>
+    /// <param name="offsetY">The y-offset.</param>
+    /// <param name="offsetZ">The z-offset.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
+        float offsetY, float offsetZ, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target position.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target position.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="offsetX">The x-offset.</param>
+    /// <param name="offsetY">The y-offset.</param>
+    /// <param name="offsetZ">The z-offset.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, float extra = 0);
+    
+    /// <summary>
+    /// Spawns the given particle at the target coordinates.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="x">The target x-coordination.</param>
+    /// <param name="y">The target y-coordination.</param>
+    /// <param name="z">The target z-coordination.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target coordinates and with the given offset.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="x">The target x-coordination.</param>
+    /// <param name="y">The target y-coordination.</param>
+    /// <param name="z">The target z-coordination.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="offsetX">The x-offset.</param>
+    /// <param name="offsetY">The y-offset.</param>
+    /// <param name="offsetZ">The z-offset.</param>
+    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
+        float offsetY, float offsetZ, ParticleData data, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target position.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data, float extra = 0);
+
+    /// <summary>
+    /// Spawns the given particle at the target position.
+    /// </summary>
+    /// <param name="particle">The <see cref="ParticleType"/> to be spawned.</param>
+    /// <param name="pos">The target position as <see cref="VectorF"/>.</param>
+    /// <param name="count">The amount of particles to be spawned.</param>
+    /// <param name="offsetX">The x-offset.</param>
+    /// <param name="offsetY">The y-offset.</param>
+    /// <param name="offsetZ">The z-offset.</param>
+    /// <param name="data">The <see cref="ParticleData"/> of the particle.</param>
+    /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
+    public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, ParticleData data, float extra = 0);
 
     public Task<bool> GrantPermissionAsync(string permission);
     public Task<bool> RevokePermissionAsync(string permission);
