@@ -3,6 +3,7 @@ using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 #nullable enable
@@ -11,6 +12,7 @@ namespace Obsidian.Utilities;
 
 public static partial class Extensions
 {
+    internal readonly static Regex validUsernamePattern = new(@"/^\w{3,16}$/i");
     internal readonly static EntityType[] nonLiving = new[] { EntityType.Arrow,
                 EntityType.SpectralArrow,
                 EntityType.Boat,
@@ -107,4 +109,6 @@ public static partial class Extensions
         JsonSerializer.DeserializeAsync<TValue>(stream, options ?? Globals.JsonOptions, cancellationToken);
     public static Task ToJsonAsync(this object? value, Stream stream, CancellationToken cancellationToken = default) =>
         JsonSerializer.SerializeAsync(stream, value, Globals.JsonOptions, cancellationToken);
+
+    public static bool IsValidUsername(this string str) => str != null && validUsernamePattern.IsMatch(str);
 }

@@ -435,8 +435,17 @@ public class MainCommandModule
         try
         {
             IReadOnlyList<Player> players = new List<Player>();
-            if(player.EqualsIgnoreCase("@a")) players = ctx.Server.Players.Select(p=>p as Player).ToList();
-            if(!player.StartsWith("@") /*&& player.IsValidUsername()*/) players = new List<Player> { ctx.Server.GetPlayer(player, StringComparison.OrdinalIgnoreCase) as Player };
+            if (player[0].Equals('@'))
+            {
+                if (player[1..].Equals("a", StringComparison.OrdinalIgnoreCase))
+                {
+                    players = ctx.Server.Players.Select(p => p as Player).ToList();
+                }
+            }
+            else
+            {
+                if(player.IsValidUsername()) players = new List<Player> { ctx.Server.GetPlayerIgnoreCase(player) as Player };
+            }
             
             var prefix = block.Contains(":") ? block.Split(":")[0] : "minecraft";
 
