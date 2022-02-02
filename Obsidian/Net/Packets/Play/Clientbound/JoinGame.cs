@@ -1,7 +1,7 @@
-﻿using Obsidian.Serialization.Attributes;
-using Obsidian.Utilities.Registry.Codecs;
-using Obsidian.Utilities.Registry.Codecs.Biomes;
-using Obsidian.Utilities.Registry.Codecs.Dimensions;
+﻿using Obsidian.API.Registry.Codecs;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Dimensions;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -35,7 +35,7 @@ public partial class JoinGame : IClientboundPacket
     public DimensionCodec Dimension { get; init; }
 
     [Field(8)]
-    public string WorldName { get; init; }
+    public string DimensionName { get; init; }
 
     [Field(9)]
     public long HashedSeed { get; init; }

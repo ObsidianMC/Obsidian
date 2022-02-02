@@ -292,6 +292,11 @@ public struct Vector : IEquatable<Vector>
     /// </summary>
     public static readonly Vector South = new(0, 0, 1);
 
+    /// <summary>
+    /// Enumerable array of Cardinal Directions
+    /// </summary>
+    public static readonly IEnumerable<Vector> CardinalDirs = new[] {Vector.North, Vector.South, Vector.West, Vector.East};
+
     private string GetDebuggerDisplay()
     {
         return ToString();

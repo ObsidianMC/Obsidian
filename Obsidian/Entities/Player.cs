@@ -7,12 +7,15 @@ using Obsidian.Net;
 using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 using System.IO;
 
 namespace Obsidian.Entities;
 
 public class Player : Living, IPlayer
 {
+    private byte containerId = 0;
+
     internal readonly Client client;
 
     internal HashSet<int> visiblePlayers = new();
@@ -22,7 +25,7 @@ public class Player : Living, IPlayer
 
     internal bool isDragging;
 
-    private byte containerId = 0;
+    internal int TeleportId { get; set; }
 
     public bool IsOperator => Server.Operators.IsOperator(this);
 
@@ -49,6 +52,7 @@ public class Player : Living, IPlayer
 
     public bool Sleeping { get; set; }
     public bool InHorseInventory { get; set; }
+    public bool Respawning { get; internal set; }
 
     public short AttackTime { get; set; }
     public short DeathTime { get; set; }
@@ -68,7 +72,6 @@ public class Player : Living, IPlayer
     }
 
     public int Ping => this.client.ping;
-    public string Dimension { get; set; }
     public int FoodLevel { get; set; }
     public int FoodTickTimer { get; set; }
     public int XpLevel { get; set; }
@@ -91,7 +94,10 @@ public class Player : Living, IPlayer
     // As minecraft might just ignore them.
     public Permission PlayerPermissions { get; private set; } = new Permission("root");
 
-    internal Player(Guid uuid, string username, Client client)
+    public string PersistentDataFile { get; }
+    public string PersistentDataBackupFile { get; }
+
+    internal Player(Guid uuid, string username, Client client, World world)
     {
         this.Uuid = uuid;
         this.Username = username;
@@ -102,102 +108,14 @@ public class Player : Living, IPlayer
             Owner = uuid,
             IsPlayerInventory = true
         };
-
         this.EnderInventory = new Container
         {
             Title = "Ender Chest"
         };
 
+        this.World = world;
         this.Server = client.Server;
         this.Type = EntityType.Player;
-    }
-
-    internal async override Task UpdateAsync(VectorF position, bool onGround)
-    {
-        await base.UpdateAsync(position, onGround);
-
-        this.HeadY = position.Y + 1.62f;
-
-        await this.TrySpawnPlayerAsync(position);
-
-        await this.PickupNearbyItemsAsync(1);
-    }
-
-    internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
-    {
-        await base.UpdateAsync(position, yaw, pitch, onGround);
-
-        this.HeadY = position.Y + 1.62f;
-
-        await this.TrySpawnPlayerAsync(position);
-
-        await this.PickupNearbyItemsAsync(0.8f);
-    }
-
-    internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
-    {
-        await base.UpdateAsync(yaw, pitch, onGround);
-
-        await this.PickupNearbyItemsAsync(2);
-    }
-
-    private async Task TrySpawnPlayerAsync(VectorF position)
-    {
-        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= x.Value.client.ClientSettings.ViewDistance))
-        {
-            if (!this.visiblePlayers.Contains(player.EntityId) && player.Alive)
-            {
-                this.server.Logger.LogDebug($"Added back: {player.Username}");
-                this.visiblePlayers.Add(player.EntityId);
-
-                await this.client.QueuePacketAsync(new SpawnPlayer
-                {
-                    EntityId = player.EntityId,
-                    Uuid = player.Uuid,
-                    Position = player.Position,
-                    Yaw = player.Yaw,
-                    Pitch = player.Pitch
-                });
-            }
-        }
-
-        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null);
-    }
-
-    private async Task PickupNearbyItemsAsync(float distance = 0.5f)
-    {
-        foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
-        {
-            if (entity is ItemEntity item)
-            {
-                this.server.BroadcastPacket(new CollectItem
-                {
-                    CollectedEntityId = item.EntityId,
-                    CollectorEntityId = this.EntityId,
-                    PickupItemCount = item.Count
-                });
-
-                await GiveItemAsync(new ItemStack(item.Material, item.Count, item.ItemMeta));
-
-                await item.RemoveAsync();
-            }
-        }
-    }
-
-    public async Task GiveItemAsync(ItemStack itemStack)
-    {
-        var slot = this.Inventory.AddItem(itemStack);
-
-        this.client.SendPacket(new SetSlot
-        {
-            Slot = (short)slot,
-
-            WindowId = 0,
-
-            SlotData = this.Inventory.GetItem(slot),
-
-            StateId = this.Inventory.StateId++
-        });
     }
 
     public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -273,11 +191,11 @@ public class Player : Living, IPlayer
             await this.client.QueuePacketAsync(new WindowItems(nextId, container.ToList()));
     }
 
-    public async Task TeleportAsync(VectorF pos)
+    public async override Task TeleportAsync(VectorF pos)
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.client.Server.World.ResendBaseChunksAsync(this.client);
+        await this.client.UpdateChunksAsync(true);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -298,19 +216,49 @@ public class Player : Living, IPlayer
         this.TeleportId = tid;
     }
 
-    public async Task TeleportAsync(IPlayer to)
+    public async override Task TeleportAsync(IEntity to)
     {
         this.LastPosition = this.Position;
         this.Position = to.Position;
-        await this.client.Server.World.ResendBaseChunksAsync(this.client);
-        var tid = Globals.Random.Next(0, 999);
+
+        await this.client.UpdateChunksAsync(true);
+
+        this.TeleportId = Globals.Random.Next(0, 999);
+
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
             Position = to.Position,
             Flags = PositionFlags.None,
-            TeleportId = tid
+            TeleportId = this.TeleportId
         });
-        this.TeleportId = tid;
+    }
+
+    public async override Task TeleportAsync(IWorld world)
+    {
+        if (world is not World w)
+        {
+            await base.TeleportAsync(world);
+            return;
+        }
+
+        // save current world/persistent data 
+        await this.SaveAsync();
+
+        this.World.TryRemovePlayer(this);
+        w.TryAddPlayer(this);
+
+        this.World = w;
+
+        // resync player data
+        await this.LoadAsync(false);
+
+        // reload world stuff and send rest of the info
+        await this.client.UpdateChunksAsync(true);
+
+        await this.client.SendInfoAsync();
+
+        var (chunkX, chunkZ) = this.Position.ToChunkCoord();
+        await this.client.QueuePacketAsync(new UpdateViewPosition(chunkX, chunkZ));
     }
 
     public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
@@ -328,43 +276,47 @@ public class Player : Living, IPlayer
     public Task KickAsync(string reason) => this.client.DisconnectAsync(ChatMessage.Simple(reason));
     public Task KickAsync(ChatMessage reason) => this.client.DisconnectAsync(reason);
 
-    public async Task RespawnAsync()
+    public async Task RespawnAsync(bool copyMetadata = false)
     {
-        if (this.Alive)
-            return;
+        if (!Alive)
+        {
+            // if unalive, reset health and set location to world spawn
+            this.Health = 20f;
+            this.Position = this.World.LevelData.SpawnPosition;
+        }
 
-        this.visiblePlayers.Clear();
+        Registry.TryGetDimensionCodec(this.World.DimensionName, out var codec);
 
-        Registry.Dimensions.TryGetValue(0, out var codec);
+        this.server.Logger.LogDebug("Loading into world: {}", this.World.Name);
 
         await this.client.QueuePacketAsync(new Respawn
         {
             Dimension = codec,
-            WorldName = "minecraft:world",
+            DimensionName = this.World.DimensionName,
             Gamemode = this.Gamemode,
             PreviousGamemode = this.Gamemode,
             HashedSeed = 0,
             IsFlat = false,
             IsDebug = false,
-            CopyMetadata = false
+            CopyMetadata = copyMetadata
         });
 
-        //Gotta send chunks again
-        await this.World.ResendBaseChunksAsync(this.client);
+        this.visiblePlayers.Clear();
 
-        this.Position = this.server.World.Data.SpawnPosition;
+        this.Respawning = true;
+
+        await this.client.UpdateChunksAsync(true);
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
-            Position = this.server.World.Data.SpawnPosition,
+            Position = this.Position,
             Yaw = 0,
             Pitch = 0,
             Flags = PositionFlags.None,
             TeleportId = 0
         });
 
-
-        this.Health = 20f;
+        this.Respawning = false;
     }
 
     //TODO make IDamageSource 
@@ -514,13 +466,77 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(titleTimesPacket);
     }
 
+    public async Task SendActionBarAsync(string text)
+    {
+        var actionBarPacket = new ActionBarPacket
+        {
+            Text = text
+        };
+
+        await this.client.QueuePacketAsync(actionBarPacket);
+    }
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
+        float offsetY, float offsetZ, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
+
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
+        await this.client.QueuePacketAsync(new Particle(particle, pos, count) {ParticleData = extra});
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, float extra = 0) => await this.client.QueuePacketAsync(
+        new Particle(particle, pos, count) {Offset = new VectorF(offsetX, offsetY, offsetZ), ParticleData = extra});
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data,
+        float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
+    
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ, ParticleData data, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
+        float extra = 0) =>
+        await this.client.QueuePacketAsync(new Particle(particle, pos, count) {Data = data, ParticleData = extra});
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, ParticleData data, float extra = 0) => await this.client.QueuePacketAsync(
+        new Particle(particle, pos, count)
+        {
+            Data = data, Offset = new VectorF(offsetX, offsetY, offsetZ), ParticleData = extra
+        });
+
     public async Task SaveAsync()
     {
-        var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
+        var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
-        await using var playerFileStream = playerFile.Open(FileMode.OpenOrCreate, FileAccess.Write);
+        if (playerDataFile.Exists)
+        {
+            playerDataFile.CopyTo(this.GetPlayerDataPath(true), true);
+            playerDataFile.Delete();
+        }
 
-        using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        if (persistentDataFile.Exists)
+        {
+            persistentDataFile.CopyTo(this.PersistentDataBackupFile, true);
+            persistentDataFile.Delete();
+        }
+
+        await using var persistentDataStream = persistentDataFile.Create();
+        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
+
+        persistentDataWriter.WriteString("worldName", this.World.ParentWorldName ?? this.World.Name);
+        //TODO make sure to save inventory in the right location if has using global data set to true
+
+        persistentDataWriter.EndCompound();
+        await persistentDataWriter.TryFinishAsync();
+
+        await using var playerFileStream = playerDataFile.Create();
+        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
 
         writer.WriteInt("DataVersion", 2724);
         writer.WriteInt("playerGameType", (int)this.Gamemode);
@@ -537,7 +553,7 @@ public class Player : Living, IPlayer
         writer.WriteFloat("foodExhaustionLevel", this.FoodExhaustionLevel);
         writer.WriteFloat("foodSaturationLevel", this.FoodSaturationLevel);
 
-        writer.WriteString("Dimension", this.Dimension);
+        writer.WriteString("Dimension", this.World.DimensionName);
 
         writer.WriteListStart("Pos", NbtTagType.Double, 3);
 
@@ -562,54 +578,44 @@ public class Player : Living, IPlayer
         await writer.TryFinishAsync();
     }
 
-    private void WriteItems(NbtWriter writer, bool inventory = true)
+    public async Task LoadAsync(bool loadFromPersistentWorld = true)
     {
-        var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
+        // Read persistent data first
+        var persistentDataFile = new FileInfo(this.PersistentDataFile);
 
-        var nonNullItems = items.Where(x => x.item != null);
-
-        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
-
-        foreach (var (item, slot) in nonNullItems)
+        if (persistentDataFile.Exists)
         {
-            writer.WriteCompoundStart();
+            await using var persistentDataStream = persistentDataFile.OpenRead();
 
-            writer.WriteByte("Count", (byte)item.Count);
-            writer.WriteByte("Slot", (byte)slot);
+            var persistentDataReader = new NbtReader(persistentDataStream, NbtCompression.GZip);
 
-            writer.WriteString("id", item.AsItem().UnlocalizedName);
+            //TODO use inventory if has using global data set to true
+            if (persistentDataReader.ReadNextTag() is NbtCompound persistentDataCompound)
+            {
+                var worldName = persistentDataCompound.GetString("worldName");
 
-            writer.WriteCompoundStart("tag");
+                this.server.Logger.LogInformation($"persistent world: {worldName}");
 
-            writer.WriteInt("Damage", item.ItemMeta.Durability);
-            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
-
-            //TODO: item attributes
-
-            writer.EndCompound();
-            writer.EndCompound();
+                if (loadFromPersistentWorld && this.server.WorldManager.TryGetWorld(worldName, out var world))
+                {
+                    this.World = world;
+                    this.server.Logger.LogInformation($"Loading from persistent world: {worldName}");
+                }
+            }
         }
 
-        if (!nonNullItems.Any())
-            writer.Write(NbtTagType.End);
-
-        writer.EndList();
-    }
-
-    public async Task LoadAsync()
-    {
-        var playerFile = new FileInfo(Path.Join(this.server.ServerFolderPath, this.World.Name, "playerdata", $"{this.Uuid}.dat"));
+        // Then read player data
+        var playerDataFile = new FileInfo(this.GetPlayerDataPath());
 
         await this.LoadPermsAsync();
 
-        if (!playerFile.Exists)
+        if (!playerDataFile.Exists)
         {
-            this.Position = this.World.Data.SpawnPosition;
-            this.Dimension = "minecraft:overworld";
+            this.Position = this.World.LevelData.SpawnPosition;
             return;
         }
 
-        await using var playerFileStream = playerFile.OpenRead();
+        await using var playerFileStream = playerDataFile.OpenRead();
 
         var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
 
@@ -623,11 +629,6 @@ public class Player : Living, IPlayer
         this.Health = compound.GetFloat("Health");
         this.HurtTime = compound.GetShort("HurtTime");
         this.SleepTimer = compound.GetShort("SleepTimer");
-
-        var dimension = Registry.GetDimensionCodecOrDefault(compound.GetString("Dimension"));
-
-        this.Dimension = dimension != null ? dimension.Name : "minecraft:overworld";
-
         this.FoodLevel = compound.GetInt("foodLevel");
         this.FoodTickTimer = compound.GetInt("foodTickTimer");
         this.Gamemode = (Gamemode)compound.GetInt("playerGameType");
@@ -637,6 +638,12 @@ public class Player : Living, IPlayer
         this.FoodExhaustionLevel = compound.GetFloat("foodExhaustionLevel");
         this.FoodSaturationLevel = compound.GetFloat("foodSaturationLevel");
         this.XpP = compound.GetInt("XpP");
+
+        var dimensionName = compound.GetString("Dimension");
+        if (!string.IsNullOrWhiteSpace(dimensionName) && Registry.TryGetDimensionCodec(dimensionName, out var codec))
+        {
+            //TODO load into dimension ^ ^
+        }
 
         if (compound.TryGetTag("Pos", out var posTag))
         {
@@ -651,7 +658,7 @@ public class Player : Living, IPlayer
             this.Position = new VectorF(x, y, z);
         }
         else
-            this.Position = this.World.Data.SpawnPosition;
+            this.Position = this.World.LevelData.SpawnPosition;
 
         if (compound.TryGetTag("Rotation", out var rotationTag))
         {
@@ -757,6 +764,9 @@ public class Player : Living, IPlayer
 
         var parent = this.PlayerPermissions;
 
+        if (parent.Children.Count <= 0)
+            return false;
+
         foreach (var permission in permissions)
         {
             if (parent.Children.Any(x => x.Name == Permission.Wildcard) || parent.Children.Any(x => x.Name.EqualsIgnoreCase(permission)))
@@ -780,4 +790,127 @@ public class Player : Living, IPlayer
     }
 
     public override string ToString() => this.Username;
+
+    internal async override Task UpdateAsync(VectorF position, bool onGround)
+    {
+        await base.UpdateAsync(position, onGround);
+
+        this.HeadY = position.Y + 1.62f;
+
+        await this.TrySpawnPlayerAsync(position);
+
+        await this.PickupNearbyItemsAsync(1);
+    }
+
+    internal async override Task UpdateAsync(VectorF position, Angle yaw, Angle pitch, bool onGround)
+    {
+        await base.UpdateAsync(position, yaw, pitch, onGround);
+
+        this.HeadY = position.Y + 1.62f;
+
+        await this.TrySpawnPlayerAsync(position);
+
+        await this.PickupNearbyItemsAsync(0.8f);
+    }
+
+    internal async override Task UpdateAsync(Angle yaw, Angle pitch, bool onGround)
+    {
+        await base.UpdateAsync(yaw, pitch, onGround);
+
+        await this.PickupNearbyItemsAsync(2);
+    }
+
+    private async Task TrySpawnPlayerAsync(VectorF position)
+    {
+        foreach (var (_, player) in this.World.Players.Except(this.Uuid).Where(x => VectorF.Distance(position, x.Value.Position) <= (x.Value.client.ClientSettings?.ViewDistance ?? 10)))
+        {
+            if (player.Alive && !this.visiblePlayers.Contains(player.EntityId))
+            {
+                this.visiblePlayers.Add(player.EntityId);
+
+                await this.client.QueuePacketAsync(new SpawnPlayer
+                {
+                    EntityId = player.EntityId,
+                    Uuid = player.Uuid,
+                    Position = player.Position,
+                    Yaw = player.Yaw,
+                    Pitch = player.Pitch
+                });
+            }
+        }
+
+        var removed = this.visiblePlayers.Where(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x)).ToArray();
+        this.visiblePlayers.RemoveWhere(x => this.Server.GetPlayer(x) == null || !this.World.Players.Any(p => p.Value == x));
+
+        if (removed.Length > 0)
+            await this.client.QueuePacketAsync(new DestroyEntities(removed));
+    }
+
+    private async Task PickupNearbyItemsAsync(float distance = 0.5f)
+    {
+        foreach (var entity in this.World.GetEntitiesNear(this.Position, distance))
+        {
+            if (entity is ItemEntity item)
+            {
+                this.server.BroadcastPacket(new CollectItem
+                {
+                    CollectedEntityId = item.EntityId,
+                    CollectorEntityId = this.EntityId,
+                    PickupItemCount = item.Count
+                });
+
+                var slot = this.Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
+
+                this.client.SendPacket(new SetSlot
+                {
+                    Slot = (short)slot,
+
+                    WindowId = 0,
+
+                    SlotData = this.Inventory.GetItem(slot),
+
+                    StateId = this.Inventory.StateId++
+                });
+
+                await item.RemoveAsync();
+            }
+        }
+    }
+
+    private void WriteItems(NbtWriter writer, bool inventory = true)
+    {
+        var items = inventory ? this.Inventory.Select((item, slot) => (item, slot)) : this.EnderInventory.Select((item, slot) => (item, slot));
+
+        var nonNullItems = items.Where(x => x.item != null);
+
+        writer.WriteListStart(inventory ? "Inventory" : "EnderItems", NbtTagType.Compound, nonNullItems.Count());
+
+        foreach (var (item, slot) in nonNullItems)
+        {
+            writer.WriteCompoundStart();
+
+            writer.WriteByte("Count", (byte)item.Count);
+            writer.WriteByte("Slot", (byte)slot);
+
+            writer.WriteString("id", item.AsItem().UnlocalizedName);
+
+            writer.WriteCompoundStart("tag");
+
+            writer.WriteInt("Damage", item.ItemMeta.Durability);
+            writer.WriteBool("Unbreakable", item.ItemMeta.Unbreakable);
+
+            //TODO: item attributes
+
+            writer.EndCompound();
+            writer.EndCompound();
+        }
+
+        if (!nonNullItems.Any())
+            writer.Write(NbtTagType.End);
+
+        writer.EndList();
+    }
+
+    private string GetPlayerDataPath(bool isOld = false) =>
+        !isOld ? Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat") : Path.Join(this.World.PlayerDataPath, $"{this.Uuid}.dat.old");
 }
