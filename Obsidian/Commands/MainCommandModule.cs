@@ -340,14 +340,7 @@ public class MainCommandModule
         var player = server.GetPlayer(username);
         server.Bans.AddBan(player, duration);
 
-        if (ctx.IsPlayer)
-        {
-            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
-        }
-        else
-        {
-            await player.KickAsync($"{username} was banned by Console");
-        }
+        await player.KickAsync($"{username} was banned by {(ctx.IsPlayer ? ctx.Player.Username : "Console")}");
     }
 
     [Command("unban")]
@@ -359,14 +352,7 @@ public class MainCommandModule
         var player = server.GetPlayer(username);
         server.Bans.RemoveBan(player);
         
-        if (ctx.IsPlayer)
-        {
-            await player.KickAsync($"{username} was unbanned by {ctx.Player.Username}");
-        }
-        else
-        {
-            await player.KickAsync($"{username} was unbanned by Console");
-        }
+        await player.KickAsync($"{username} was unbanned by {(ctx.IsPlayer ? ctx.Player.Username : "Console")}");
     }
 
     [Command("kick")]
@@ -377,14 +363,7 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         var player = server.Players.FirstOrDefault(player => player.Username == username);
         
-        if (ctx.IsPlayer)
-        {
-            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
-        }
-        else
-        {
-            await player.KickAsync($"{username} was banned by Console");
-        }
+        await player.KickAsync($"{username} was kicked by {(ctx.IsPlayer ? ctx.Player.Username : "Console")}");
     }
 
     [Command("time")]
