@@ -332,9 +332,9 @@ public class MainCommandModule
     }
 
     [Command("ban")]
-    [CommandInfo("Bans a user.", "/ban <user> <duration>")]
+    [CommandInfo("Bans a user.", "/ban <user> ?<duration>")]
     [RequirePermission(permissions: "obsidian.ban")]
-    public async Task BanAsync(CommandContext ctx, string username, int duration)
+    public async Task BanAsync(CommandContext ctx, string username, int? duration = null)
     {
         var server = (Server)ctx.Server;
         var player = server.GetPlayer(username);
@@ -361,11 +361,11 @@ public class MainCommandModule
         
         if (ctx.IsPlayer)
         {
-            await player.KickAsync($"{username} was banned by {ctx.Player.Username}");
+            await player.KickAsync($"{username} was unbanned by {ctx.Player.Username}");
         }
         else
         {
-            await player.KickAsync($"{username} was banned by Console");
+            await player.KickAsync($"{username} was unbanned by Console");
         }
     }
 

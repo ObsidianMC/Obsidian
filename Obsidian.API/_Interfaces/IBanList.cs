@@ -2,8 +2,9 @@ namespace Obsidian.API;
 
 public interface IBanList
 {
-    public void AddBan(IPlayer player, int duration);
-    public void AddBan(string username, int duration);
+    public List<IBan> Bans { get; set;}
+    public void AddBan(IPlayer player, int? duration);
+    public void AddBan(string username, int? duration);
     public void RemoveBan(IPlayer player);
     public void RemoveBan(string username);
     public IBan GetBan(IPlayer player);

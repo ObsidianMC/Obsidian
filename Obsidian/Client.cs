@@ -179,7 +179,7 @@ public class Client : IDisposable
                             if (this.Server.Bans.IsBanned(this.Player))
                             {
                                 IBan ban = this.Server.Bans.GetBan(this.Player);
-                                if (DateTime.Now.CompareTo(ban.TimeStamp.AddDays(ban.Duration)) > 0)
+                                if (DateTime.Now.CompareTo(ban.Duration) <= 0)
                                 {
                                     this.Server.Bans.RemoveBan(this.Player);
                                 }
