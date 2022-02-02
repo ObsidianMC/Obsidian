@@ -859,22 +859,27 @@ public class Player : Living, IPlayer
                     PickupItemCount = item.Count
                 });
 
-                var slot = this.Inventory.AddItem(new ItemStack(item.Material, item.Count, item.ItemMeta));
-
-                this.client.SendPacket(new SetSlot
-                {
-                    Slot = (short)slot,
-
-                    WindowId = 0,
-
-                    SlotData = this.Inventory.GetItem(slot),
-
-                    StateId = this.Inventory.StateId++
-                });
+                await GiveItemAsync(new ItemStack(item.Material, item.Count, item.ItemMeta));
 
                 await item.RemoveAsync();
             }
         }
+    }
+
+    public async Task GiveItemAsync(ItemStack itemStack)
+    {
+        var slot = this.Inventory.AddItem(itemStack);
+
+        this.client.SendPacket(new SetSlot
+        {
+            Slot = (short)slot,
+
+            WindowId = 0,
+
+            SlotData = this.Inventory.GetItem(slot),
+
+            StateId = this.Inventory.StateId++
+        });
     }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)
