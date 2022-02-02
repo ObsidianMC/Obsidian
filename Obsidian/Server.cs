@@ -159,7 +159,7 @@ public partial class Server : IServer
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
     public IPlayer GetPlayer(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.Equals(username)).Value;
-    public IPlayer GetPlayer(string username, StringComparison comparisonType) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.Equals(username, comparisonType)).Value;
+    public IPlayer GetPlayerIgnoreCase(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).Value;
 
     public IPlayer GetPlayer(Guid uuid) => OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 

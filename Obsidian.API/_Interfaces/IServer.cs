@@ -22,7 +22,7 @@ public interface IServer
     public void BroadcastMessage(string message, MessageType type = MessageType.Chat);
     public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat);
     public IPlayer? GetPlayer(string username);
-    public IPlayer? GetPlayer(string username, StringComparison comparison);
+    public IPlayer? GetPlayerIgnoreCase(string username);
     public IPlayer? GetPlayer(Guid uuid);
     public IPlayer? GetPlayer(int entityId);
     public void RegisterRecipes(params IRecipe[] recipes);
