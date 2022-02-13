@@ -332,9 +332,9 @@ public class MainCommandModule
     }
 
     [Command("ban")]
-    [CommandInfo("Bans a user.", "/ban <user> ?<duration>")]
+    [CommandInfo("Bans a user.", "/ban <user> [duration]")]
     [RequirePermission(permissions: "obsidian.ban")]
-    public async Task BanAsync(CommandContext ctx, string username, int? duration = null)
+    public async Task BanAsync(CommandContext ctx, string username, DateTime? duration = null)
     {
         var server = (Server)ctx.Server;
         var player = server.GetPlayer(username);
