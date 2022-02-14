@@ -440,11 +440,20 @@ public sealed class Client : IDisposable
         });
     }
 
-    internal Task DisconnectAsync(ChatMessage reason) => Task.Run(() => SendPacket(new Disconnect(reason, State)));
+    internal Task DisconnectAsync(ChatMessage reason)
+    {
+        return Task.Run(() => SendPacket(new Disconnect(reason, State)));
+    }
 
-    internal Task SendTimeUpdateAsync() => QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
-    internal Task SendWeatherUpdateAsync() =>
-        QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    internal Task SendTimeUpdateAsync()
+    {
+        return QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
+    }
+
+    internal Task SendWeatherUpdateAsync()
+    {
+        return QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+    }
 
     internal void ProcessKeepAlive(long id)
     {
@@ -503,10 +512,10 @@ public sealed class Client : IDisposable
 
         await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
     }
+
     internal async Task SendPlayerInfoAsync()
     {
-        var list = new List<InfoAction>();
-
+        var infoActions = new List<InfoAction>();
         foreach (var (_, player) in Server.OnlinePlayers)
         {
             var addPlayerInforAction = new AddPlayerInfoAction()
@@ -525,10 +534,10 @@ public sealed class Client : IDisposable
                 addPlayerInforAction.Properties.AddRange(userWithSkin.Properties);
             }
 
-            list.Add(addPlayerInforAction);
+            infoActions.Add(addPlayerInforAction);
         }
 
-        await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, list));
+        await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, infoActions));
     }
 
     internal void SendPacket(IClientboundPacket packet)
@@ -561,19 +570,25 @@ public sealed class Client : IDisposable
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
         var args = await Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
-
         if (args.Cancel)
         {
             Logger.LogDebug("A packet was set to queue but an event handler prevented it.");
-            return;
         }
-
-        await packetQueue.SendAsync(packet);
+        else
+        {
+            await packetQueue.SendAsync(packet);
+        }
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk != null ? QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    internal Task SendChunkAsync(Chunk chunk)
+    {
+        return chunk is not null ? QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    }
 
-    public Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
+    internal Task UnloadChunkAsync(int x, int z)
+    {
+        return LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
+    }
 
     private async Task SendServerBrand()
     {
@@ -601,30 +616,21 @@ public sealed class Client : IDisposable
         Disconnected?.Invoke(this);
     }
 
-    #region Disposing
-    private void Dispose(bool disposing)
+    public void Dispose()
     {
         if (disposed)
             return;
         disposed = true;
 
-        if (disposing)
-        {
-            minecraftStream.Dispose();
-            socket.Dispose();
-            cancellationSource?.Dispose();
-        }
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
         GC.SuppressFinalize(this);
+
+        minecraftStream.Dispose();
+        socket.Dispose();
+        cancellationSource?.Dispose();
     }
 
     ~Client()
     {
-        Dispose(false);
+        Dispose();
     }
-    #endregion
 }
