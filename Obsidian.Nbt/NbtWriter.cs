@@ -301,9 +301,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             this.Write(NbtTagType.ByteArray);
             this.WriteStringInternal(array.Name);
             this.WriteIntInternal(byteArray.Count);
-
-            for (int i = 0; i < byteArray.Count; i++)
-                this.BaseStream.Write(byteArray.GetArray());
+            this.BaseStream.Write(byteArray.GetArray());
         }
     }
 
