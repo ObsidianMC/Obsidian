@@ -10,7 +10,7 @@ public class CompiledPluginProvider : IPluginProvider
     public PluginContainer GetPlugin(string path, ILogger logger)
     {
         var loadContext = new PluginLoadContext(Path.GetFileNameWithoutExtension(path) + "LoadContext", path);
-        var assembly = loadContext.LoadFromAssemblyPath(path);
+        var assembly = loadContext.LoadFromAssemblyPath(Path.Combine(Directory.GetCurrentDirectory(), path));
 
         return HandlePlugin(loadContext, assembly, path, logger);
     }
