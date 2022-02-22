@@ -39,9 +39,9 @@ jobs:
         webhook-url: ${{ secrets.BUILD_WEBHOOK }}
         embed-title: New Obsidian build available!
         embed-description: |
-          GH Actions Run: [`${{ github.run_id }}`](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) (Download under "artifacts")
-          Commit SHA: [`${{ github.sha }}`](https://github.com/${{github.repository}}/commit/${{github.sha}})
           Developer: [`${{ github.actor }}`](https://github.com/${{ github.actor }})
+          GH Actions Run: [`${{ github.run_id }}`](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}) _(Download under "artifacts")_
+          Commit SHA: [`${{ github.sha }}`](https://github.com/${{github.repository}}/commit/${{github.sha}})
         embed-color: 2424876
-        embed-footer-text: "[Obsidian, A C# implementation of the Minecraft server protocol.](https://github.com/ObsidianMC/Obsidian)"
+        embed-footer-text: "Obsidian, A C# implementation of the Minecraft server protocol."
         if: ${{ github.event_name == 'push' }} # Only publish webhook on push.
