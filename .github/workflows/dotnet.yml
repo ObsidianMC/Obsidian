@@ -37,8 +37,12 @@ jobs:
       uses: tsickert/discord-webhook@v4.0.0
       with:
         webhook-url: ${{ secrets.BUILD_WEBHOOK }}
-        embed-title: New Obsidian build available! \`${{ github.run_id }}\`
-        embed-description: "Available here: [Github Actions](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})"
+        embed-title: New Obsidian build available!
+        embed-description: |
+          Available here: [Github Actions](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
+          Actions run ID: `${{ github.run_id }}`
+          Commit SHA: `${{ github.sha }}`
+          Responsible developer: [${{ github.actor }}](https://github.com/${{ github.actor }})
         embed-color: 2424876
         embed-footer: "[Obsidian, A C# implementation of the Minecraft server protocol.](https://github.com/ObsidianMC/Obsidian)"
         if: ${{ github.event_name == 'push' }} # Only publish webhook on push.
