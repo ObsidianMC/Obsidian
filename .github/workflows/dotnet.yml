@@ -44,4 +44,4 @@ jobs:
           Commit SHA: [`${{ github.sha }}`](https://github.com/${{github.repository}}/commit/${{github.sha}})
         embed-color: 2424876
         embed-footer-text: "Obsidian, A C# implementation of the Minecraft server protocol."
-        if: ${{ github.event_name == 'push' }} # Only publish webhook on push.
+      if: ${{ github.event_name == 'push' }} # Only publish webhook on push.
