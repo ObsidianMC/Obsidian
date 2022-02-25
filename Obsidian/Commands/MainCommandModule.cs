@@ -172,7 +172,7 @@ public class MainCommandModule
     {
         var player = (Player)ctx.Player;
 
-        await player.client.UpdateChunksAsync(true);
+        await player.UpdateChunksAsync(true);
     }
 
     [Command("echo")]
