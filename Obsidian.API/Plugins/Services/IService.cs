@@ -1,4 +1,4 @@
-﻿namespace Obsidian.API.Plugins.Services.Common;
+﻿namespace Obsidian.API.Plugins.Services;
 
 /// <summary>
 /// Provides the base interface for services.

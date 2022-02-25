@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework;
 using Obsidian.Events;
 using Obsidian.Plugins.PluginProviders;
@@ -26,8 +25,6 @@ public sealed class PluginManager
     /// Utility class, responding to file changes inside watched directories.
     /// </summary>
     public DirectoryWatcher DirectoryWatcher { get; } = new();
-
-    public PluginPermissions DefaultPermissions { get; set; } = PluginPermissions.None;
 
     private readonly List<PluginContainer> plugins = new();
     private readonly List<PluginContainer> stagedPlugins = new();
@@ -80,21 +77,11 @@ public sealed class PluginManager
     /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
     /// </summary>
     /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
-    /// <param name="permissions">Permissions granted to the plugin.</param>
     /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-    public PluginContainer LoadPlugin(string path) => LoadPlugin(path, DefaultPermissions);
-
-    /// <summary>
-    /// Loads a plugin from selected path.
-    /// <br/><b>Important note:</b> keeping references to plugin containers outside this class will make them unloadable.
-    /// </summary>
-    /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
-    /// <param name="permissions">Permissions granted to the plugin.</param>
-    /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-    public PluginContainer LoadPlugin(string path, PluginPermissions permissions)
+    public PluginContainer? LoadPlugin(string path)
     {
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
-        if (provider == null)
+        if (provider is null)
         {
             logger?.LogError($"Couldn't load plugin from path '{path}'");
             return null;
@@ -102,27 +89,18 @@ public sealed class PluginManager
 
         PluginContainer plugin = provider.GetPlugin(path, logger);
 
-        return HandlePlugin(plugin, permissions);
+        return HandlePlugin(plugin);
     }
 
     /// <summary>
     /// Loads a plugin from selected path asynchronously.
     /// </summary>
     /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
-    /// <param name="permissions">Permissions granted to the plugin.</param>
     /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-    public async Task<PluginContainer> LoadPluginAsync(string path) => await LoadPluginAsync(path, DefaultPermissions);
-
-    /// <summary>
-    /// Loads a plugin from selected path asynchronously.
-    /// </summary>
-    /// <param name="path">Path to load the plugin from. Can point either to local <b>DLL</b>, <b>C# code file</b> or a <b>GitHub project url</b>.</param>
-    /// <param name="permissions">Permissions granted to the plugin.</param>
-    /// <returns>Loaded plugin. If loading failed, <see cref="PluginContainer.Plugin"/> property will be null.</returns>
-    public async Task<PluginContainer> LoadPluginAsync(string path, PluginPermissions permissions)
+    public async Task<PluginContainer?> LoadPluginAsync(string path)
     {
         IPluginProvider provider = PluginProviderSelector.GetPluginProvider(path);
-        if (provider == null)
+        if (provider is null)
         {
             logger?.LogError($"Couldn't load plugin from path '{path}'");
             return null;
@@ -130,12 +108,12 @@ public sealed class PluginManager
 
         PluginContainer plugin = await provider.GetPluginAsync(path, logger).ConfigureAwait(false);
 
-        return HandlePlugin(plugin, permissions);
+        return HandlePlugin(plugin);
     }
 
-    private PluginContainer HandlePlugin(PluginContainer plugin, PluginPermissions permissions)
+    private PluginContainer? HandlePlugin(PluginContainer plugin)
     {
-        if (plugin?.Plugin == null)
+        if (plugin?.Plugin is null)
         {
             return plugin;
         }
@@ -143,9 +121,6 @@ public sealed class PluginManager
         serviceProvider.InjectServices(plugin, logger);
 
         plugin.RegisterDependencies(this, logger);
-
-        plugin.Permissions = permissions;
-        plugin.PermissionsChanged += OnPluginStateChanged;
 
         plugin.Plugin.unload = () => UnloadPlugin(plugin);
         plugin.Plugin.registerSingleCommand = (Action method) => commands.RegisterSingleCommand(method, plugin, null);
@@ -184,8 +159,6 @@ public sealed class PluginManager
             {
                 var stageMessage = new System.Text.StringBuilder(50);
                 stageMessage.Append($"Plugin {plugin.Info.Name} staged");
-                if (!plugin.HasPermissions)
-                    stageMessage.Append(", missing permissions");
                 if (!plugin.HasDependencies)
                     stageMessage.Append(", missing dependencies");
 
@@ -229,13 +202,13 @@ public sealed class PluginManager
         if (plugin.Plugin is IDisposable)
         {
             var exception = plugin.Plugin.SafeInvoke("Dispose");
-            if (exception != null)
+            if (exception is not null)
                 logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
         }
         else if (plugin.Plugin is IAsyncDisposable)
         {
             var exception = plugin.Plugin.SafeInvokeAsync("DisposeAsync");
-            if (exception != null)
+            if (exception is not null)
                 logger?.LogError(exception, $"Unhandled exception occured when disposing {plugin.Info.Name}");
         }
 
