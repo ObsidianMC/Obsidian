@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using Obsidian.Plugins.ServiceProviders;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -14,18 +13,10 @@ public sealed class PluginContainer : IDisposable
     public AssemblyLoadContext LoadContext { get; private set; }
     public string ClassName { get; }
 
-    private PluginPermissions _permissions;
-    public PluginPermissions Permissions { get => _permissions; set => UpdatePermissions(value); }
-    public PluginPermissions NeedsPermissions { get; }
-
-    public event Action<PluginContainer> PermissionsChanged;
-
-    public bool HasPermissions => (Permissions & NeedsPermissions) == NeedsPermissions;
     public bool HasDependencies { get; private set; } = true;
-    public bool IsReady => HasPermissions && HasDependencies;
+    public bool IsReady => HasDependencies;
     public bool Loaded { get; internal set; }
 
-    internal Dictionary<PluginPermissions, WeakReference<SecuredServiceBase>> SecuredServices { get; } = new();
     internal List<IDisposable> DisposableServices { get; } = new();
     internal List<ScheduledDependencyInjection> ScheduledDependencyInjections { get; } = new();
     internal Dictionary<EventContainer, Delegate> EventHandlers { get; } = new();
@@ -36,7 +27,6 @@ public sealed class PluginContainer : IDisposable
     {
         Info = info;
         Source = source;
-        NeedsPermissions = PluginPermissions.None;
     }
 
     public PluginContainer(PluginBase plugin, PluginInfo info, Assembly assembly, AssemblyLoadContext loadContext, string source)
@@ -46,26 +36,16 @@ public sealed class PluginContainer : IDisposable
         LoadContext = loadContext;
         Source = source;
 
-        NeedsPermissions = AssemblySafetyManager.GetNeededPermissions(assembly);
-
         pluginType = plugin.GetType();
         ClassName = pluginType.Name;
 
         Plugin.Info = Info;
     }
 
-    #region Services
-    internal void RegisterSecuredService(SecuredServiceBase securedService)
-    {
-        if (!SecuredServices.ContainsKey(securedService.NeededPermission))
-            SecuredServices.Add(securedService.NeededPermission, new WeakReference<SecuredServiceBase>(securedService));
-    }
-
     internal void RegisterDisposableService(IDisposable disposableService)
     {
         DisposableServices.Add(disposableService);
     }
-    #endregion
 
     #region Dependencies
     public void RegisterDependencies(PluginManager manager, ILogger logger = null)
@@ -235,33 +215,6 @@ public sealed class PluginContainer : IDisposable
         }
 
         return false;
-    }
-    #endregion
-
-    #region Permissions
-    public bool HasPermission(PluginPermissions permission)
-    {
-        if (permission == PluginPermissions.None)
-            return true;
-
-        return (permission & _permissions) != 0;
-    }
-
-    private void UpdatePermissions(PluginPermissions permissions)
-    {
-        _permissions = permissions;
-        foreach (var (key, value) in SecuredServices)
-        {
-            if (value.TryGetTarget(out var service))
-            {
-                service.HasPermission = HasPermission(key);
-            }
-            else
-            {
-                SecuredServices.Remove(key);
-            }
-        }
-        PermissionsChanged?.Invoke(this);
     }
     #endregion
 
