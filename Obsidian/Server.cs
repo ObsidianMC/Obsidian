@@ -242,7 +242,6 @@ public partial class Server : IServer
         Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
         PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
