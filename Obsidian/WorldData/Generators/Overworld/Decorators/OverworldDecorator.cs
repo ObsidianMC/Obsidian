@@ -1,7 +1,6 @@
 ﻿using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 using Obsidian.WorldData.Generators.Overworld.Features.Flora;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
@@ -14,14 +13,13 @@ public static class OverworldDecorator
         {
             for (int z = 0; z < 16; z++)
             {
-                var b = ChunkBiome.GetBiome((chunk.X << 4) + x, (chunk.Z << 4) + z, ot);
                 var blockPos = new Vector(x, (int)terrainHeightMap[x, z], z);
-                IDecorator decorator = DecoratorFactory.GetDecorator(b, chunk, blockPos, noise);
+                var biome = chunk.GetBiome(blockPos);
+                IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, blockPos, noise);
 
                 decorator.Decorate();
                 await GenerateTreesAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
                 await GenerateFloraAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
-
             }
         }
     }

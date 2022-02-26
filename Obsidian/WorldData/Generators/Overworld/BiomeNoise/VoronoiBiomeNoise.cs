@@ -30,7 +30,7 @@ internal class VoronoiBiomeNoise
             }
         };
 
-        result = new ValuesCache
+        result = new Cache
         {
             Source0 = pass1
         };

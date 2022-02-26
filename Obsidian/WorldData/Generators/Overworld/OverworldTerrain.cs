@@ -115,7 +115,7 @@ public class OverworldTerrain : Module
             Distance = 3
         };
 
-        biomeTerrain = new ValuesCache()
+        biomeTerrain = new Cache()
         {
             Source0 = new TerrainSelect(FinalBiomes)
             {

@@ -41,7 +41,7 @@ public class OverworldGenerator : IWorldGenerator
                 // Determine Biome
                 if (bx % 4 == 0 && bz % 4 == 0) // Biomes are in 4x4x4 blocks. Do a 2D array for now and just copy it vertically.
                 {
-                    var b = ChunkBiome.GetBiome(worldX, worldZ, terrainGen);
+                    var b = (Biomes)terrainGen.GetBiome(worldX, worldZ);
                     for (int y = -64; y < 320; y += 4)
                     {
                         chunk.SetBiome(bx, y, bz, b);
