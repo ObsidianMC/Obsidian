@@ -19,8 +19,21 @@ internal class WorldLight
         {
             for (int z = 0; z < 16; z++)
             {
-                int y = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(x, z) + 1;
-                var worldPos = new Vector(x + (chunk.X << 4), y, z + (chunk.Z << 4));
+                var surfaceY = chunk.Heightmaps[ChunkData.HeightmapType.MotionBlocking].GetHeight(x, z);
+                for (int y = 319; y > surfaceY; y--)
+                {
+                    var secIndex = (y >> 4) + 4;
+                    if (chunk.Sections[secIndex].IsEmpty)
+                    {
+                        y -= 15;
+                    } 
+                    else
+                    {
+                        chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
+                    }
+                }
+
+                var worldPos = new Vector(x + (chunk.X << 4), surfaceY, z + (chunk.Z << 4));
                 await SetLightAndSpread(worldPos, LightType.Sky, 15);
             }
         }
