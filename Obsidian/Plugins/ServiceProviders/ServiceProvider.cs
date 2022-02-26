@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API.Plugins;
-using Obsidian.API.Plugins.Services.Common;
 using System.Reflection;
+using IService = Obsidian.API.Plugins.Services.IService;
 
 namespace Obsidian.Plugins.ServiceProviders;
 
@@ -38,9 +38,6 @@ public class ServiceProvider
                 {
                     service = Activator.CreateInstance(implementationType, container);
                     serviceCache.Add(property.PropertyType, service);
-
-                    if (service is SecuredServiceBase securedService)
-                        container.RegisterSecuredService(securedService);
 
                     if (service is IDisposable disposableService)
                         container.RegisterDisposableService(disposableService);

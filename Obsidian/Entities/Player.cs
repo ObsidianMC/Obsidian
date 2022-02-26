@@ -198,7 +198,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -224,7 +224,7 @@ public class Player : Living, IPlayer
         this.LastPosition = this.Position;
         this.Position = to.Position;
 
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         this.TeleportId = Globals.Random.Next(0, 999);
 
@@ -256,7 +256,7 @@ public class Player : Living, IPlayer
         await this.LoadAsync(false);
 
         // reload world stuff and send rest of the info
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         await this.client.SendInfoAsync();
 
@@ -308,7 +308,7 @@ public class Player : Living, IPlayer
 
         this.Respawning = true;
 
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -468,6 +468,49 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(titlePacket);
         await this.client.QueuePacketAsync(titleTimesPacket);
     }
+
+    public async Task SendActionBarAsync(string text)
+    {
+        var actionBarPacket = new ActionBarPacket
+        {
+            Text = text
+        };
+
+        await this.client.QueuePacketAsync(actionBarPacket);
+    }
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX,
+        float offsetY, float offsetZ, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
+
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
+        await this.client.QueuePacketAsync(new Particle(particle, pos, count) {ParticleData = extra});
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, float extra = 0) => await this.client.QueuePacketAsync(
+        new Particle(particle, pos, count) {Offset = new VectorF(offsetX, offsetY, offsetZ), ParticleData = extra});
+
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data,
+        float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, extra);
+    
+    public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, float offsetX, float offsetY, float offsetZ, ParticleData data, float extra = 0) =>
+        SpawnParticleAsync(particle, new VectorF(x, y, z), count, offsetX, offsetY, offsetZ, extra);
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
+        float extra = 0) =>
+        await this.client.QueuePacketAsync(new Particle(particle, pos, count) {Data = data, ParticleData = extra});
+
+    public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
+        float offsetZ, ParticleData data, float extra = 0) => await this.client.QueuePacketAsync(
+        new Particle(particle, pos, count)
+        {
+            Data = data, Offset = new VectorF(offsetX, offsetY, offsetZ), ParticleData = extra
+        });
 
     public async Task SaveAsync()
     {
@@ -835,6 +878,57 @@ public class Player : Living, IPlayer
                 await item.RemoveAsync();
             }
         }
+    }
+
+    internal async Task UpdateChunksAsync(bool unloadAll = false)
+    {
+        if (unloadAll)
+        {
+            if (!Respawning)
+            {
+                foreach (var (X, Z) in client.LoadedChunks)
+                    await client.UnloadChunkAsync(X, Z);
+            }
+
+            client.LoadedChunks.Clear();
+        }
+
+        List<(int X, int Z)> clientNeededChunks = new();
+        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
+
+        (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
+        (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
+
+        int dist = (client.ClientSettings?.ViewDistance ?? 14) - 2;
+        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                clientNeededChunks.Add((x, z));
+
+        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
+        clientNeededChunks.Sort((chunk1, chunk2) =>
+        {
+            return Math.Abs(playerChunkX - chunk1.X) +
+            Math.Abs(playerChunkZ - chunk1.Z) <
+            Math.Abs(playerChunkX - chunk2.X) +
+            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+        });
+
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
+        {
+            await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+            client.LoadedChunks.TryRemove(chunkLoc);
+        });
+
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+        {
+            var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
+            if (chunk is not null)
+            {
+                await client.SendChunkAsync(chunk);
+                client.LoadedChunks.Add((chunk.X, chunk.Z));
+            }
+        });
     }
 
     private void WriteItems(NbtWriter writer, bool inventory = true)

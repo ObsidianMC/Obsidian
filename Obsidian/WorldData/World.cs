@@ -69,7 +69,7 @@ public class World : IWorld
 
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
-        var region = this.GetRegionForChunk(chunkX, chunkZ);
+        Region? region = this.GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
             throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
@@ -77,14 +77,14 @@ public class World : IWorld
         return region.Entities.TryRemove(entity.EntityId, out _);
     }
 
-    public Region GetRegionForChunk(int chunkX, int chunkZ)
+    public Region? GetRegionForChunk(int chunkX, int chunkZ)
     {
         long value = NumericsHelper.IntsToLong(chunkX >> Region.cubicRegionSizeShift, chunkZ >> Region.cubicRegionSizeShift);
 
-        return this.Regions.SingleOrDefault(x => x.Key == value).Value;
+        return Regions.TryGetValue(value, out Region? region) ? region : null;
     }
 
-    public Region GetRegionForChunk(Vector location) => this.GetRegionForChunk(location.X, location.Z);
+    public Region? GetRegionForChunk(Vector location) => this.GetRegionForChunk(location.X, location.Z);
 
     /// <summary>
     /// Gets a Chunk from a Region.
@@ -96,7 +96,7 @@ public class World : IWorld
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public async Task<Chunk?> GetChunkAsync(int chunkX, int chunkZ, bool scheduleGeneration = true)
     {
-        var region = this.GetRegionForChunk(chunkX, chunkZ);
+        Region? region = this.GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
         {
@@ -227,7 +227,7 @@ public class World : IWorld
     {
         var (chunkX, chunkZ) = location.ToChunkCoord();
 
-        var region = this.GetRegionForChunk(chunkX, chunkZ);
+        Region? region = this.GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
             return new List<Entity>();
@@ -445,11 +445,12 @@ public class World : IWorld
             await r.FlushAsync();
     }
 
-    public async Task ScheduleBlockUpdateAsync(BlockUpdate bu)
+    public async Task ScheduleBlockUpdateAsync(BlockUpdate blockUpdate)
     {
-        bu.Block ??= await GetBlockAsync(bu.position);
-        var r = GetRegionForChunk(bu.position.X.ToChunkCoord(), bu.position.Z.ToChunkCoord());
-        r.AddBlockUpdate(bu);
+        blockUpdate.Block ??= await GetBlockAsync(blockUpdate.position);
+        (int chunkX, int chunkZ) = blockUpdate.position.ToChunkCoord();
+        Region? region = GetRegionForChunk(chunkX, chunkZ);
+        region?.AddBlockUpdate(blockUpdate);
     }
 
     public async Task ManageChunksAsync()
@@ -790,10 +791,10 @@ public class World : IWorld
     {
         var (chunkX, chunkZ) = entity.Position.ToChunkCoord();
 
-        var region = this.GetRegionForChunk(chunkX, chunkZ);
+        Region? region = this.GetRegionForChunk(chunkX, chunkZ);
 
         if (region is null)
-            throw new InvalidOperationException("Region is null this wasn't supposed to happen.");
+            throw new InvalidOperationException("Region is null, this wasn't supposed to happen.");
 
         return region.Entities.TryAdd(entity.EntityId, entity);
     }
