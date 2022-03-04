@@ -67,7 +67,7 @@ public class OverworldTerrain : Module
             { Biomes.Grove, plains },
             { Biomes.IceSpikes, badlands },
             { Biomes.JaggedPeaks, mountains },
-            { Biomes.Jungle, hills },
+            { Biomes.Jungle, plains },
             { Biomes.LukewarmOcean, ocean },
             { Biomes.LushCaves, plains },
             { Biomes.Meadow, plains },
@@ -108,7 +108,7 @@ public class OverworldTerrain : Module
 
         // For debugging, we can override the biome here
         // which is usefull for developing a biome
-        // FinalBiomes = new Constant() { ConstantValue = (int)Biomes.StonyPeaks };
+        FinalBiomes = new Constant() { ConstantValue = (int)Biomes.Jungle };
 
         transitions = new Blend(new TransitionMap(FinalBiomes, 9))
         {

@@ -13,13 +13,14 @@ public static class OverworldDecorator
         {
             for (int z = 0; z < 16; z++)
             {
-                var blockPos = new Vector(x, (int)terrainHeightMap[x, z], z);
-                var biome = chunk.GetBiome(blockPos);
-                IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, blockPos, noise);
+                var chunkPos = new Vector(x, (int)terrainHeightMap[x, z], z);
+                var worldPos = new Vector((chunk.X << 4) + x, chunkPos.Y, (chunk.Z << 4) + z);
+                var biome = (Biomes)ot.GetBiome(worldPos.X, worldPos.Z);
+                IDecorator decorator = DecoratorFactory.GetDecorator(biome, chunk, chunkPos, noise);
 
                 decorator.Decorate();
-                await GenerateTreesAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
-                await GenerateFloraAsync(world, blockPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+                await GenerateTreesAsync(world, chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
+                await GenerateFloraAsync(world, chunkPos + (chunk.X << 4, 0, chunk.Z << 4), decorator.Features, noise);
             }
         }
     }
