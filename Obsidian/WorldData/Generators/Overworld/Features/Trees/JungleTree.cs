@@ -18,10 +18,13 @@ public class JungleTree : BaseTree
 
     protected override async Task GenerateLeavesAsync(Vector origin, int heightOffset)
     {
-        List<Vector> vineCandidates = new();
-        var leafBlock = new Block(leaf);
-
         int topY = origin.Y + trunkHeight + heightOffset + 1;
+        List<Vector> vineCandidates = new()
+        {
+            origin + (0, heightOffset + trunkHeight - 2, 0)
+        };
+
+        var leafBlock = new Block(leaf);
         int radius = leavesRadius;
         for (int y = topY - 2; y < topY + 1; y++)
         {
@@ -46,7 +49,7 @@ public class JungleTree : BaseTree
 
     protected async Task PlaceVinesAsync(List<Vector> candidates)
     {
-        foreach(var candidate in candidates)
+        foreach (var candidate in candidates)
         {
             // Check sides for air
             foreach (var dir in Vector.CardinalDirs)
