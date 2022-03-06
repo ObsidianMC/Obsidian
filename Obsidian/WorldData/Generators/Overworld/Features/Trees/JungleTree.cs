@@ -12,7 +12,7 @@ public class JungleTree : BaseTree
     private readonly Block vineEast = new Block(4876);
     private readonly Random rand = new();
 
-    public JungleTree(World world) : base(world, Material.JungleLeaves, Material.JungleLog, 6)
+    public JungleTree(World world) : base(world, Material.JungleLeaves, Material.JungleLog, 7)
     {
     }
 
@@ -25,24 +25,26 @@ public class JungleTree : BaseTree
         };
 
         var leafBlock = new Block(leaf);
-        int radius = leavesRadius;
         for (int y = topY - 2; y < topY + 1; y++)
         {
             for (int x = -leavesRadius; x <= leavesRadius; x++)
             {
                 for (int z = -leavesRadius; z <= leavesRadius; z++)
                 {
-                    if (inCircle(x, z, radius))
+                    if (Math.Sqrt(x * x + z * z) < leavesRadius)
                     {
-                        await world.SetBlockUntrackedAsync(x + origin.X, y, z + origin.Z, leafBlock);
-                        if (rand.Next(5) % 2 == 0)
+                        if (await world.GetBlockAsync(x + origin.X, y, z + origin.Z) is { IsAir: true })
                         {
-                            vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
+                            await world.SetBlockUntrackedAsync(x + origin.X, y, z + origin.Z, leafBlock);
+                            if (rand.Next(3) == 0)
+                            {
+                                vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
+                            }
                         }
                     }
                 }
             }
-            radius--;
+            leavesRadius--;
         }
         await PlaceVinesAsync(vineCandidates);
     }
@@ -61,7 +63,7 @@ public class JungleTree : BaseTree
                     await world.SetBlockAsync(samplePos, vine);
 
                     // Grow downwards
-                    var growAmt = rand.Next(7);
+                    var growAmt = rand.Next(3, 10);
                     for (int y = -1; y > -growAmt; y--)
                     {
                         if (await world.GetBlockAsync(samplePos + (0, y, 0)) is Block downward && downward.IsAir)
@@ -78,12 +80,16 @@ public class JungleTree : BaseTree
         }
     }
 
-    private bool inCircle(int x, int z, int r)
+    protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
-        return Math.Sqrt(x * x + z * z) < r;
+        await base.GenerateTrunkAsync(origin, heightOffset);
+        if (rand.Next(3) == 0)
+        {
+            await world.SetBlockAsync(origin + (0, trunkHeight + heightOffset -3, -1), new Block(Material.Cocoa, 9));
+        }
     }
 
-    private Block GetVineType(Vector vec) => vec switch
+    protected Block GetVineType(Vector vec) => vec switch
     {
         { X: 1, Z: 0 } => vineWest,
         { X: -1, Z: 0 } => vineEast,

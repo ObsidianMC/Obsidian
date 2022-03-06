@@ -10,7 +10,11 @@ public class JungleDecorator : BaseDecorator
     public JungleDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
-        Features.Trees.Add(new DecoratorFeatures.TreeInfo(6, typeof(JungleTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(4, typeof(JungleTree)));
+        Features.Trees.Add(new DecoratorFeatures.TreeInfo(7, typeof(LargeJungleTree)));
+        Features.Flora.Add(new DecoratorFeatures.FloraInfo(16, typeof(LargeFernFlora), 6, 4));
+        Features.Flora.Add(new DecoratorFeatures.FloraInfo(16, typeof(FernFlora), 6, 4));
+        Features.Flora.Add(new DecoratorFeatures.FloraInfo(1, typeof(MelonFlora), 6, 5));
     }
 
     public override void Decorate()
@@ -31,9 +35,5 @@ public class JungleDecorator : BaseDecorator
         for (int y = -1; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), dirt);
 
-
-        var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
-        if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
     }
 }

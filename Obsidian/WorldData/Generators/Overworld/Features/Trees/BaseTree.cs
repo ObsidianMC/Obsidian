@@ -6,7 +6,7 @@ public abstract class BaseTree
 
     protected readonly Material leaf, trunk;
 
-    protected readonly int trunkHeight;
+    protected int trunkHeight;
 
     protected readonly List<Material> ValidSourceBlocks = new()
     {

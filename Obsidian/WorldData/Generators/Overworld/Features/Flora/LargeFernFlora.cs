@@ -2,7 +2,7 @@
 
 public class LargeFernFlora : BaseTallFlora
 {
-    public LargeFernFlora(World world) : base(world, Material.Lilac)
+    public LargeFernFlora(World world) : base(world, Material.LargeFern)
     {
 
     }
