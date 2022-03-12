@@ -12,11 +12,11 @@ public partial class PlayerListHeaderFooter : IClientboundPacket
 
     public int Id => 0x5F;
 
-    public PlayerListHeaderFooter(ChatMessage header, ChatMessage footer)
+    public PlayerListHeaderFooter(ChatMessage? header, ChatMessage? footer)
     {
-        var empty = ChatMessage.Empty;
+        ChatMessage? empty = null; // ChatMessage.Empty allocates a new ChatMessage (ChatMessage is mutable)
 
-        Header = header ?? empty;
-        Footer = footer ?? empty;
+        Header = header ?? (empty ??= ChatMessage.Empty);
+        Footer = footer ?? (empty ?? ChatMessage.Empty);
     }
 }

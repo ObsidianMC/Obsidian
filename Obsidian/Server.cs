@@ -56,6 +56,7 @@ public partial class Server : IServer
     public string Version { get; }
     public string ServerFolderPath { get; }
     public string PersistentDataPath { get; }
+    public string Brand { get; } = "obsidian";
 
     public int Port { get; }
 
@@ -154,14 +155,14 @@ public partial class Server : IServer
     /// </summary>
     /// <param name="username">The username you want to check for.</param>
     /// <returns>True if the player is online.</returns>
-    public bool IsPlayerOnline(string username) => OnlinePlayers.Any(x => x.Value.Username == username);
+    public bool IsPlayerOnline(string username) => OnlinePlayers.Any(x => x.Value.Username.EqualsIgnoreCase(username));
 
     public bool IsPlayerOnline(Guid uuid) => OnlinePlayers.ContainsKey(uuid);
 
-    public IPlayer GetPlayer(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.Equals(username)).Value;
-    public IPlayer GetPlayerIgnoreCase(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.Equals(username, StringComparison.OrdinalIgnoreCase)).Value;
+    public IPlayer GetPlayer(string username) => GetPlayerIgnoreCase(username);
+    public IPlayer GetPlayerIgnoreCase(string username) => OnlinePlayers.FirstOrDefault(player => player.Value.Username.EqualsIgnoreCase(username)).Value;
 
-    public IPlayer GetPlayer(Guid uuid) => OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
+    public IPlayer? GetPlayer(Guid uuid) => OnlinePlayers.TryGetValue(uuid, out var player) ? player : null;
 
     public IPlayer GetPlayer(int entityId) => OnlinePlayers.FirstOrDefault(player => player.Value.EntityId == entityId).Value;
 
@@ -242,7 +243,6 @@ public partial class Server : IServer
         Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DefaultPermissions = API.Plugins.PluginPermissions.All;
         PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
@@ -260,7 +260,7 @@ public partial class Server : IServer
         Logger.LogInformation($"Listening for new clients...");
         try
         {
-            await Task.WhenAll(AcceptClientsAsync(), LoopAsync(), ServerSaveAsync());
+            await Task.WhenAll(AcceptClientsAsync(cts.Token), LoopAsync(), ServerSaveAsync());
         }
         catch (TaskCanceledException)
         {
@@ -272,16 +272,16 @@ public partial class Server : IServer
         Logger.LogWarning("Server is shutting down...");
     }
 
-    private async Task AcceptClientsAsync()
+    private async Task AcceptClientsAsync(CancellationToken cancellationToken)
     {
         tcpListener.Start();
 
-        while (!cts.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
-            TcpClient tcp;
+            Socket socket;
             try
             {
-                tcp = await tcpListener.AcceptTcpClientAsync();
+                socket = await tcpListener.AcceptSocketAsync(cancellationToken);
             }
             catch (Exception e)
             {
@@ -289,22 +289,29 @@ public partial class Server : IServer
                 break;
             }
 
-            Logger.LogDebug($"New connection from client with IP {tcp.Client.RemoteEndPoint}");
+            Logger.LogDebug($"New connection from client with IP {socket.RemoteEndPoint}");
 
-            var ip = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
                 Logger.LogInformation($"{ip} is not whitelisted. Closing connection");
-                tcp.Client.Disconnect(false);
+                socket.Disconnect(false);
                 return;
             }
 
-            //TODO ENTITY IDS NEED TO BE UNIQUE ON THE ENTIRE SERVER NOT PER WORLD
-            var client = new Client(tcp, Config, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            // TODO Entity ids need to be unique on the entire server, not per world
+            var client = new Client(socket, Config, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
             clients.Add(client);
 
-            client.Disconnected += client => clients.TryRemove(client);
+            client.Disconnected += client =>
+            {
+                clients.TryRemove(client);
+                if (client.Player is not null)
+                {
+                    OnlinePlayers.Remove(client.Player.Uuid, out _);
+                }
+            };
 
             _ = Task.Run(client.StartConnectionAsync);
         }
@@ -580,7 +587,10 @@ public partial class Server : IServer
         tcpListener.Stop();
         WorldGenerators.Clear();
         foreach (var client in clients)
+        {
             client.Disconnect();
+            client.Dispose();
+        }
     }
 
     private async Task ServerSaveAsync()

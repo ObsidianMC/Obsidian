@@ -89,7 +89,7 @@ public class CommandHandler
     public void RegisterCommandClass(PluginContainer plugin, Type type, object instance = null)
     {
         RegisterSubgroups(type, plugin);
-        RegisterSubcommands(type, plugin, instance);
+        RegisterSubcommands(type, plugin);
     }
 
     public object CreateCommandRootInstance(Type type, PluginContainer plugin)
@@ -131,7 +131,7 @@ public class CommandHandler
             var info = st.GetCustomAttribute<CommandInfoAttribute>();
             var issuers = st.GetCustomAttribute<IssuerScopeAttribute>()?.Issuers ?? DefaultIssuerScope;
 
-            var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, type, issuers);
+            var cmd = new Command(name, aliases.ToArray(), info?.Description ?? string.Empty, info?.Usage ?? string.Empty, parent, checks.ToArray(), this, plugin, null, st, issuers);
 
             RegisterSubgroups(st, plugin, cmd);
             RegisterSubcommands(st, plugin, cmd);
@@ -140,7 +140,7 @@ public class CommandHandler
         }
     }
 
-    private void RegisterSubcommands(Type type, PluginContainer plugin, object instance, Command parent = null)
+    private void RegisterSubcommands(Type type, PluginContainer plugin, Command? parent = null)
     {
         // loop through methods and find valid commands
         var methods = type.GetMethods();

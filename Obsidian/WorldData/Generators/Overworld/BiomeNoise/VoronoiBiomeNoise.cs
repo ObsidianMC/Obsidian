@@ -23,13 +23,10 @@ internal class VoronoiBiomeNoise
             Power = 50,
             Roughness = 3,
             Seed = seed + 123,
-            Source0 = new Cache
+            Source0 = new VoronoiBiomes
             {
-                Source0 = new VoronoiBiomes
-                {
-                    Frequency = 0.0054159,
-                    Seed = seed
-                }
+                Frequency = 0.0054159,
+                Seed = seed
             }
         };
 

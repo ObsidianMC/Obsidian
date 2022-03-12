@@ -195,7 +195,7 @@ public class Player : Living, IPlayer
     {
         this.LastPosition = this.Position;
         this.Position = pos;
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         var tid = Globals.Random.Next(0, 999);
 
@@ -221,7 +221,7 @@ public class Player : Living, IPlayer
         this.LastPosition = this.Position;
         this.Position = to.Position;
 
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         this.TeleportId = Globals.Random.Next(0, 999);
 
@@ -253,7 +253,7 @@ public class Player : Living, IPlayer
         await this.LoadAsync(false);
 
         // reload world stuff and send rest of the info
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         await this.client.SendInfoAsync();
 
@@ -305,7 +305,7 @@ public class Player : Living, IPlayer
 
         this.Respawning = true;
 
-        await this.client.UpdateChunksAsync(true);
+        await this.UpdateChunksAsync(true);
 
         await this.client.QueuePacketAsync(new PlayerPositionAndLook
         {
@@ -879,6 +879,57 @@ public class Player : Living, IPlayer
             SlotData = this.Inventory.GetItem(slot),
 
             StateId = this.Inventory.StateId++
+        });
+    }
+
+    internal async Task UpdateChunksAsync(bool unloadAll = false)
+    {
+        if (unloadAll)
+        {
+            if (!Respawning)
+            {
+                foreach (var (X, Z) in client.LoadedChunks)
+                    await client.UnloadChunkAsync(X, Z);
+            }
+
+            client.LoadedChunks.Clear();
+        }
+
+        List<(int X, int Z)> clientNeededChunks = new();
+        List<(int X, int Z)> clientUnneededChunks = new(client.LoadedChunks);
+
+        (int playerChunkX, int playerChunkZ) = Position.ToChunkCoord();
+        (int lastPlayerChunkX, int lastPlayerChunkZ) = LastPosition.ToChunkCoord();
+
+        int dist = (client.ClientSettings?.ViewDistance ?? 14) - 2;
+        for (int x = playerChunkX + dist; x > playerChunkX - dist; x--)
+            for (int z = playerChunkZ + dist; z > playerChunkZ - dist; z--)
+                clientNeededChunks.Add((x, z));
+
+        clientUnneededChunks = clientUnneededChunks.Except(clientNeededChunks).ToList();
+        clientNeededChunks = clientNeededChunks.Except(client.LoadedChunks).ToList();
+        clientNeededChunks.Sort((chunk1, chunk2) =>
+        {
+            return Math.Abs(playerChunkX - chunk1.X) +
+            Math.Abs(playerChunkZ - chunk1.Z) <
+            Math.Abs(playerChunkX - chunk2.X) +
+            Math.Abs(playerChunkZ - chunk2.Z) ? -1 : 1;
+        });
+
+        await Parallel.ForEachAsync(clientUnneededChunks, async (chunkLoc, _) =>
+        {
+            await client.UnloadChunkAsync(chunkLoc.X, chunkLoc.Z);
+            client.LoadedChunks.TryRemove(chunkLoc);
+        });
+
+        await Parallel.ForEachAsync(clientNeededChunks, async (chunkLoc, _) =>
+        {
+            var chunk = await World.GetChunkAsync(chunkLoc.X, chunkLoc.Z);
+            if (chunk is not null)
+            {
+                await client.SendChunkAsync(chunk);
+                client.LoadedChunks.Add((chunk.X, chunk.Z));
+            }
         });
     }
 
