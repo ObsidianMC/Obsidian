@@ -201,7 +201,7 @@ public class OverworldTerrainNoise
         }
     };
 
-/*    public Module Biome => new Cache
+    public Module Biome => new Cache
     {
         Source0 = new Turbulence
         {
@@ -215,8 +215,8 @@ public class OverworldTerrainNoise
                 Seed = seed + 5
             }
         }
-    };*/
+    };
 
     // Set a constant biome here for development
-    public Module Biome => new Constant() { ConstantValue = (int)Biomes.Jungle };
+    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Jungle };
 }

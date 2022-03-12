@@ -13,7 +13,7 @@ public class JungleBushFlora : BaseFlora
         {
             for (int rx = 0; rx <= radius * 2; rx++)
             {
-                if ((radius - rx) * (radius - rx) + (radius - rz) * (radius - rz) <= (radius * radius))
+                if (Math.Sqrt((radius - rx) * (radius - rx) + (radius - rz) * (radius - rz)) <= radius)
                 {
                     int x = origin.X - radius + rx;
                     int z = origin.Z - radius + rz;

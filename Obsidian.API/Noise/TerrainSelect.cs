@@ -1,11 +1,10 @@
 ﻿using SharpNoise.Modules;
-using System.Diagnostics;
 
 namespace Obsidian.API.Noise;
 
 public class TerrainSelect : SharpNoise.Modules.Blend
 {
-    private static readonly Constant zero = new() { ConstantValue = -0.02 };
+    private static readonly Constant zero = new() { ConstantValue = 0 };
 
     public Module BiomeSelector { get; set; }
     internal Dictionary<Biomes, Module> TerrainModules { get; set; } = new();
@@ -20,8 +19,6 @@ public class TerrainSelect : SharpNoise.Modules.Blend
     {
         var b = (int)BiomeSelector.GetValue(x, y, z);
         Source0 = TerrainModules.TryGetValue((Biomes)b, out Module? terrainModule) ? terrainModule : zero;
-        var val = base.GetValue(x, y, z);
-        if (val > 0.7) { Debugger.Break(); }
-        return val;
+        return base.GetValue(x, y, z);
     }
 }
