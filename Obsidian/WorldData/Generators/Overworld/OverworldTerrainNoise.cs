@@ -105,17 +105,9 @@ public class OverworldTerrainNoise
             { Biomes.WoodedBadlands, badlands }
         };
 
-        // For debugging, we can override the biome here
-        // which is usefull for developing a biome
-        //finalBiomes = new Constant() { ConstantValue = (int)Biomes.Jungle };
-
-        transitions = new Multiply
+        transitions = new Blend(new TransitionMap(Biome, 9))
         {
-            Source1 = new Constant() { ConstantValue = 0.95 },
-            Source0 = new Blend(new TransitionMap(Biome, 15))
-            {
-                Distance = 6
-            }
+            Distance = 3
         };
 
         biomeTerrain = new TerrainSelect(Biome)

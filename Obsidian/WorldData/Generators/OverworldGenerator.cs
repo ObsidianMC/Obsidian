@@ -20,11 +20,6 @@ public class OverworldGenerator : IWorldGenerator
         if (helper is null)
             throw new NullReferenceException("GenHelper must not be null. Call Init()");
 
-        // Build terrain map for this chunk
-/*        var terrainHeightmap = new double[16, 16];
-        var rockHeightmap = new double[16, 16];
-        var bedrockHeightmap = new double[16, 16];*/
-
         for (int bx = 0; bx < 16; bx++)
         {
             for (int bz = 0; bz < 16; bz++)
