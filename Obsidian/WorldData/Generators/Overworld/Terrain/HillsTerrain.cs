@@ -13,7 +13,7 @@ public class HillsTerrain : BaseTerrain
     // [Hilly-terrain group]: Caches the output value from the warped-hilly-
     // terrain module.  This is the output value for the entire hilly-
     // terrain group.
-    public HillsTerrain() : base()
+    public HillsTerrain(int seed, OverworldTerrainSettings settings) : base(seed, settings)
     {
         result = new Cache
         {
@@ -45,7 +45,7 @@ public class HillsTerrain : BaseTerrain
                                             // plains-basis-1 module, produces the plains.
                                 Source0 = new Billow
                                 {
-                                    Seed = settings.Seed + 79,
+                                    Seed = seed + 79,
                                     Frequency = 23.5,
                                     Persistence = 0.5,
                                     Lacunarity = settings.PlainsLacunarity,
@@ -65,7 +65,7 @@ public class HillsTerrain : BaseTerrain
                                 // plains-basis-2 module, produces the plains.
                                 Source0 = new Billow
                                 {
-                                    Seed = settings.Seed + 78,
+                                    Seed = seed + 78,
                                     Frequency = 13.5,
                                     Persistence = 0.5,
                                     Lacunarity = settings.PlainsLacunarity,

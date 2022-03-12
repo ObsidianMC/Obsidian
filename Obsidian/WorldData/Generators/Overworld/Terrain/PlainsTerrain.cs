@@ -7,15 +7,15 @@ public class PlainsTerrain : BaseTerrain
 {
     // Generates the plains terrain.
     // Outputs will be between 0 and 1
-    public PlainsTerrain() : base()
+    public PlainsTerrain(int seed, OverworldTerrainSettings settings) : base(seed, settings)
     {
         result = new Cache
         {
             Source0 = new ScalePoint
             {
-                XScale = 1 / 140.103,
+                XScale = 1 / 180.103,
                 YScale = 1 / 140.103,
-                ZScale = 1 / 140.103,
+                ZScale = 1 / 180.103,
                 Source0 = new Clamp
                 {
                     UpperBound = 1.0,
@@ -30,7 +30,7 @@ public class PlainsTerrain : BaseTerrain
                             Frequency = 33.4578,
                             Power = 0.028,
                             Roughness = 3,
-                            Seed = settings.Seed,
+                            Seed = seed,
                             Source0 = new Multiply
                             {
                                 Source0 = new ScaleBias
@@ -39,7 +39,7 @@ public class PlainsTerrain : BaseTerrain
                                     Bias = 0.2, // move elevation
                                     Source0 = new Billow
                                     {
-                                        Seed = settings.Seed + 70,
+                                        Seed = seed + 70,
                                         Frequency = 18.5,
                                         Persistence = 0.5,
                                         Lacunarity = settings.PlainsLacunarity,
@@ -53,7 +53,7 @@ public class PlainsTerrain : BaseTerrain
                                     Bias = 0.3,
                                     Source0 = new Billow
                                     {
-                                        Seed = settings.Seed + 71,
+                                        Seed = seed + 71,
                                         Frequency = 3.5,
                                         Persistence = 0.5,
                                         Lacunarity = settings.PlainsLacunarity,

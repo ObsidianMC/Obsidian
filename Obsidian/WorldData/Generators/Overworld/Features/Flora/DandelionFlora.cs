@@ -2,7 +2,7 @@
 
 public class DandelionFlora : BaseFlora
 {
-    public DandelionFlora(World world) : base(world, Material.Dandelion)
+    public DandelionFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Dandelion)
     {
 
     }

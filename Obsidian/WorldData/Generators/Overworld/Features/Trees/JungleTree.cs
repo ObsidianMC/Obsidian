@@ -12,7 +12,7 @@ public class JungleTree : BaseTree
     private readonly Block vineEast = new Block(4876);
     private readonly Random rand = new();
 
-    public JungleTree(World world) : base(world, Material.JungleLeaves, Material.JungleLog, 7)
+    public JungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
     {
     }
 
@@ -33,9 +33,9 @@ public class JungleTree : BaseTree
                 {
                     if (Math.Sqrt(x * x + z * z) < leavesRadius)
                     {
-                        if (await world.GetBlockAsync(x + origin.X, y, z + origin.Z) is { IsAir: true })
+                        if (await helper.GetBlockAsync(x + origin.X, y, z + origin.Z, chunk) is { IsAir: true })
                         {
-                            await world.SetBlockUntrackedAsync(x + origin.X, y, z + origin.Z, leafBlock);
+                            await helper.SetBlockAsync(x + origin.X, y, z + origin.Z, leafBlock, chunk);
                             if (rand.Next(3) == 0)
                             {
                                 vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
@@ -57,18 +57,18 @@ public class JungleTree : BaseTree
             foreach (var dir in Vector.CardinalDirs)
             {
                 var samplePos = candidate + dir;
-                if (await world.GetBlockAsync(samplePos) is Block vineBlock && vineBlock.IsAir)
+                if (await helper.GetBlockAsync(samplePos, chunk) is Block vineBlock && vineBlock.IsAir)
                 {
                     var vine = GetVineType(dir);
-                    await world.SetBlockAsync(samplePos, vine);
+                    await helper.SetBlockAsync(samplePos, vine, chunk);
 
                     // Grow downwards
                     var growAmt = rand.Next(3, 10);
                     for (int y = -1; y > -growAmt; y--)
                     {
-                        if (await world.GetBlockAsync(samplePos + (0, y, 0)) is Block downward && downward.IsAir)
+                        if (await helper.GetBlockAsync(samplePos + (0, y, 0), chunk) is Block downward && downward.IsAir)
                         {
-                            await world.SetBlockAsync(samplePos + (0, y, 0), vine);
+                            await helper.SetBlockAsync(samplePos + (0, y, 0), vine, chunk);
                         }
                         else
                         {
@@ -85,7 +85,7 @@ public class JungleTree : BaseTree
         await base.GenerateTrunkAsync(origin, heightOffset);
         if (rand.Next(3) == 0)
         {
-            await world.SetBlockAsync(origin + (0, trunkHeight + heightOffset -3, -1), new Block(Material.Cocoa, 9));
+            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset -3, -1), new Block(Material.Cocoa, 9), chunk);
         }
     }
 

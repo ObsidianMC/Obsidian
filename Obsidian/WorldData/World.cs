@@ -55,7 +55,7 @@ public class World : IWorld
         this.Seed = seed ?? throw new ArgumentNullException(nameof(seed));
 
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
-        this.Generator.Init(seed);
+        Generator.Init(this);
         worldLight = new(this);
     }
 
@@ -480,7 +480,7 @@ public class World : IWorld
                 // Set chunk now so that it no longer comes back as null. #threadlyfe
                 region.SetChunk(c);
             }
-            c = await Generator.GenerateChunkAsync(job.x, job.z, this, c);
+            c = await Generator.GenerateChunkAsync(job.x, job.z, c);
             region.SetChunk(c);
             await worldLight.ProcessSkyLightForChunk(c);
         });

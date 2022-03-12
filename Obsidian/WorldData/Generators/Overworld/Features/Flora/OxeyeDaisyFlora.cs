@@ -2,7 +2,7 @@
 
 public class OxeyeDaisyFlora : BaseFlora
 {
-    public OxeyeDaisyFlora(World world) : base(world, Material.OxeyeDaisy)
+    public OxeyeDaisyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.OxeyeDaisy)
     {
 
     }

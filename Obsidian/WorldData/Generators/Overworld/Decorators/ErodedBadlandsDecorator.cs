@@ -1,17 +1,16 @@
 ﻿using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class ErodedBadlandsDecorator : BaseDecorator
 {
-    public ErodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public ErodedBadlandsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
     }
 
     public override void Decorate()
     {
-        if (pos.Y < noise.settings.WaterLevel)
+        if (pos.Y < noise.Settings.WaterLevel)
         {
             FillWater();
             return;
@@ -46,11 +45,11 @@ public class ErodedBadlandsDecorator : BaseDecorator
                 chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.Terracotta));
         }
 
-        var bushNoise = noise.Decoration(worldX * 0.1, 0, worldZ * 0.1);
+        var bushNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
         if (bushNoise > 0 && bushNoise < 0.01) // 1% chance for bush
             chunk.SetBlock(pos + (0, 1, 0), deadbush);
 
-        var cactusNoise = noise.Decoration(worldX * 0.1, 1, worldZ * 0.1);
+        var cactusNoise = noise.Decoration.GetValue(worldX * 0.1, 1, worldZ * 0.1);
         if (cactusNoise > 0 && cactusNoise < 0.005) // 0.5% chance for cactus
         {
             chunk.SetBlock(pos + (0, 1, 0), cactus);

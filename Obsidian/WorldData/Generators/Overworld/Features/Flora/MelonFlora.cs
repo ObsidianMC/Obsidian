@@ -2,7 +2,7 @@
 
 public class MelonFlora : BaseFlora
 {
-    public MelonFlora(World world) : base(world, Material.Melon)
+    public MelonFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Melon)
     {
 
     }

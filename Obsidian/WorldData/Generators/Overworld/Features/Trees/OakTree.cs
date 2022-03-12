@@ -2,7 +2,7 @@
 
 public class OakTree : BaseTree
 {
-    public OakTree(World world) : base(world, Material.OakLeaves, Material.OakLog, 7)
+    public OakTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.OakLeaves, Material.OakLog, 7)
     {
     }
 }

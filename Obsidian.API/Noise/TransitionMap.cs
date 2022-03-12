@@ -33,10 +33,14 @@ public class TransitionMap : Module
         var res = (
                 (Source0.GetValue(x, y, z + distance) == self ? -1d : 1d) +
                 (Source0.GetValue(x, y, z - distance) == self ? -1d : 1d) +
+                (Source0.GetValue(x + distance, y, z + distance) == self ? -1d : 1d) +
+                (Source0.GetValue(x - distance, y, z + distance) == self ? -1d : 1d) +
+                (Source0.GetValue(x + distance, y, z - distance) == self ? -1d : 1d) +
+                (Source0.GetValue(x - distance, y, z - distance) == self ? -1d : 1d) +
                 (Source0.GetValue(x + distance, y, z) == self ? -1d : 1d) +
                 (Source0.GetValue(x - distance, y, z) == self ? -1d : 1d)
 
-            ) / 4d; // Get average
+            ) / 8d; // Get average
         return res;
     }
 }

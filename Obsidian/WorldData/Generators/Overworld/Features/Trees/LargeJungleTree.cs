@@ -6,7 +6,7 @@ public class LargeJungleTree : JungleTree
 {
     private readonly Random rand = new();
 
-    public LargeJungleTree(World world) : base(world)
+    public LargeJungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk)
     {
         leavesRadius = 6;
         trunkHeight = 20;
@@ -26,9 +26,9 @@ public class LargeJungleTree : JungleTree
                 {
                     if (Math.Sqrt((x - 0.5) * (x - 0.5) + (z - 0.5) * (z - 0.5)) < leavesRadius)
                     {
-                        if (await world.GetBlockAsync(x + origin.X, y, z + origin.Z) is { IsAir: true })
+                        if (await helper.GetBlockAsync(x + origin.X, y, z + origin.Z, chunk) is { IsAir: true })
                         {
-                            await world.SetBlockUntrackedAsync(x + origin.X, y, z + origin.Z, leafBlock);
+                            await helper.SetBlockAsync(x + origin.X, y, z + origin.Z, leafBlock, chunk);
                             if (rand.Next(4) == 0)
                             {
                                 vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
@@ -53,7 +53,7 @@ public class LargeJungleTree : JungleTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await world.SetBlockUntrackedAsync(origin + (x, y, z), new Block(trunk, 1));
+                    await helper.SetBlockAsync(origin + (x, y, z), new Block(trunk, 1), chunk);
 
                     // Roll the dice to place a vine on this trunk block.
                     if (rand.Next(10) == 0)
@@ -63,10 +63,10 @@ public class LargeJungleTree : JungleTree
                 }
 
                 // Fill in any air gaps under the trunk
-                var under = await world.GetBlockAsync(origin + (x, -1, z));
+                var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (under.Value.Material != Material.GrassBlock)
                 {
-                    await world.SetBlockUntrackedAsync(origin + (x, -1, z), new Block(trunk, 1));
+                    await helper.SetBlockAsync(origin + (x, -1, z), new Block(trunk, 1), chunk);
                 }
             }
         }

@@ -48,7 +48,7 @@ public class SuperflatGenerator : IWorldGenerator
         model.isGenerated = true;
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
     {
         if (chunk is { isGenerated: true })
             return chunk;
@@ -56,5 +56,6 @@ public class SuperflatGenerator : IWorldGenerator
         return model.Clone(x, z);
     }
 
-    public void Init(string seed) { }
+    public void Init(IWorld world) { }
+
 }

@@ -2,7 +2,7 @@
 
 public class AlliumFlora : BaseFlora
 {
-    public AlliumFlora(World world) : base(world, Material.Allium)
+    public AlliumFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Allium)
     {
 
     }

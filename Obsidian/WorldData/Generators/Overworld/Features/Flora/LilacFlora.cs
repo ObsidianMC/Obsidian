@@ -2,7 +2,7 @@
 
 public class LilacFlora : BaseTallFlora
 {
-    public LilacFlora(World world) : base(world, Material.Lilac)
+    public LilacFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Lilac)
     {
 
     }
