@@ -1,12 +1,11 @@
 ﻿using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class MushroomFieldsDecorator : BaseDecorator
 {
-    public MushroomFieldsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public MushroomFieldsDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(OakTree)));
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(AcaciaTree)));
@@ -14,7 +13,7 @@ public class MushroomFieldsDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        if (pos.Y < noise.settings.WaterLevel)
+        if (pos.Y < noise.Settings.WaterLevel)
         {
             FillWater();
             return;
@@ -31,23 +30,23 @@ public class MushroomFieldsDecorator : BaseDecorator
             chunk.SetBlock(pos + (0, y, 0), dirt);
 
         // Flowers
-        var grassNoise = noise.Decoration(worldX * 0.1, 8, worldZ * 0.1);
+        var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
 
-        var poppyNoise = noise.Decoration(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
+        var poppyNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
         if (poppyNoise > 1)
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Poppy));
 
-        var dandyNoise = noise.Decoration(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
+        var dandyNoise = noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
         if (dandyNoise > 1)
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Dandelion));
 
-        var cornFlowerNoise = noise.Decoration(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
+        var cornFlowerNoise = noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
         if (cornFlowerNoise > 1)
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Cornflower));
 
-        var azureNoise = noise.Decoration(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
+        var azureNoise = noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
         if (azureNoise > 1)
             chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.AzureBluet));
     }

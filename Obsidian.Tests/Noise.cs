@@ -1,5 +1,4 @@
 ﻿using Obsidian.API;
-using Obsidian.WorldData.Generators;
 using Obsidian.WorldData.Generators.Overworld;
 using SharpNoise;
 using SharpNoise.Builders;
@@ -11,8 +10,7 @@ namespace Obsidian.Tests;
 
 public class Noise
 {
-    private OverworldGenerator og = new OverworldGenerator();
-    private OverworldTerrain noiseGen = new OverworldTerrain(true);
+    private OverworldTerrainNoise noiseGen = new OverworldTerrainNoise(123456, true);
 
     [Fact(DisplayName = "Biomes", Timeout = 100000)]
     public async void BiomesAsync()
@@ -21,7 +19,7 @@ public class Noise
         await Task.Run(() =>
         {
             var map = new NoiseMap();
-            var builder = new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.FinalBiomes };
+            var builder = new PlaneNoiseMapBuilder() { DestNoiseMap = map, SourceModule = noiseGen.Biome };
             var image = new Image();
             var biomesRenderer = new ImageRenderer() { SourceNoiseMap = map, DestinationImage = image };
 
@@ -91,8 +89,6 @@ public class Noise
     [Fact(DisplayName = "Transitions", Timeout = 100000)]
     public async void TransitionsAsync()
     {
-        OverworldGenerator og = new OverworldGenerator();
-        OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {
             var map = new NoiseMap();
@@ -117,8 +113,6 @@ public class Noise
     [Fact(DisplayName = "Terrain", Timeout = 100000)]
     public async void TerrainAsync()
     {
-        OverworldGenerator og = new OverworldGenerator();
-        OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {
             var noise = new SharpNoise.Modules.ScaleBias()
@@ -149,8 +143,6 @@ public class Noise
     [Fact(DisplayName = "Terrain Blending", Timeout = 1000000)]
     public async void TerrainBlendAsync()
     {
-        OverworldGenerator og = new OverworldGenerator();
-        OverworldTerrain noiseGen = new OverworldTerrain(true);
         await Task.Run(() =>
         {
             var noise = new SharpNoise.Modules.ScaleBias()

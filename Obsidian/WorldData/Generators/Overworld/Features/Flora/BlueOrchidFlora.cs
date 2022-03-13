@@ -2,7 +2,7 @@
 
 public class BlueOrchidFlora : BaseFlora
 {
-    public BlueOrchidFlora(World world) : base(world, Material.BlueOrchid)
+    public BlueOrchidFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.BlueOrchid)
     {
 
     }

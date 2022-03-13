@@ -5,11 +5,6 @@ namespace Obsidian.WorldData.Generators.Overworld;
 public class OverworldTerrainSettings
 {
     /// <summary>
-    /// Planet seed.  Change this to generate a different planet.
-    /// </summary>
-    public int Seed { get; set; } = 133769420;
-
-    /// <summary>
     /// Minimum elevation on the planet, in meters.  This value is approximate.
     /// </summary>
     public double MinElev { get; set; } = 0;

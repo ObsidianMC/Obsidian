@@ -1,11 +1,9 @@
-﻿using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
-
-namespace Obsidian.WorldData.Generators.Overworld.Decorators;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class ColdOceanDecorator : OceanDecorator
 {
 
-    public ColdOceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, BaseBiomeNoise noise) : base(biome, chunk, surfacePos, noise)
+    public ColdOceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         hasMagma = false;
         hasKelp = false;
