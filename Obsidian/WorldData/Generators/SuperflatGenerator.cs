@@ -2,9 +2,11 @@
 
 namespace Obsidian.WorldData.Generators;
 
-public class SuperflatGenerator : WorldGenerator
+public class SuperflatGenerator : IWorldGenerator
 {
     private static readonly Chunk model;
+
+    public string Id => "superflat";
 
     static SuperflatGenerator()
     {
@@ -39,22 +41,21 @@ public class SuperflatGenerator : WorldGenerator
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                motionBlockingHeightmap.Set(bx, bz, -64);
+                motionBlockingHeightmap.Set(bx, bz, -60);
             }
         }
 
         model.isGenerated = true;
     }
 
-    public SuperflatGenerator() : base("superflat")
-    {
-    }
-
-    public override async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
     {
         if (chunk is { isGenerated: true })
             return chunk;
 
         return model.Clone(x, z);
     }
+
+    public void Init(IWorld world) { }
+
 }

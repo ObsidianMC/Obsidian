@@ -13,16 +13,6 @@ public interface IConfig
     public int Port { get; set; }
 
     /// <summary>
-    /// Name of the world generator to be used.
-    /// </summary>
-    public string Generator { get; set; }
-
-    /// <summary>
-    /// Seed supplied to the world generator.
-    /// </summary>
-    public string Seed { get; set; }
-
-    /// <summary>
     /// Message, that is sent to the chat when player successfully joins the server.
     /// </summary>
     public string JoinMessage { get; set; }

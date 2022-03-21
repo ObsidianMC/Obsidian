@@ -2,7 +2,9 @@
 
 public abstract class BaseFlora
 {
-    protected readonly World world;
+    protected GenHelper helper;
+
+    protected Chunk chunk;
 
     protected Material FloraMat { get; set; }
 
@@ -20,9 +22,10 @@ public abstract class BaseFlora
         Material.Podzol
     };
 
-    protected BaseFlora(World world, Material mat = Material.RedTulip)
+    protected BaseFlora(GenHelper helper, Chunk chunk, Material mat = Material.RedTulip)
     {
-        this.world = world;
+        this.helper = helper;
+        this.chunk = chunk;
         this.FloraMat = mat;
     }
 
@@ -46,7 +49,7 @@ public abstract class BaseFlora
                 {
                     int x = origin.X - radius + rx;
                     int z = origin.Z - radius + rz;
-                    int y = await world.GetWorldSurfaceHeightAsync(x, z) ?? -1;
+                    int y = await helper.GetWorldHeightAsync(x, z, chunk) ?? -1;
                     if (y == -1) { continue; }
                     bool isFlora = seedRand.Next(10) % density == 0;
                     var placeVec = new Vector(x, y + 1, z);
@@ -68,7 +71,7 @@ public abstract class BaseFlora
     {
         if (await GetGrowHeightAsync(placeVector) >= height && await GetValidSurfaceAsync(placeVector))
         {
-            await world.SetBlockUntrackedAsync(placeVector, new Block(FloraMat));
+            await helper.SetBlockAsync(placeVector, new Block(FloraMat), chunk);
             return true;
         }
         return false;
@@ -79,7 +82,7 @@ public abstract class BaseFlora
     /// </summary>
     /// <param name="loc">The position above the surface block.</param>
     /// <returns>Whether surface is compatible.</returns>
-    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await world.GetBlockAsync(loc + Vector.Down) is Block b && growsOn.Contains(b.Material);
+    protected virtual async Task<bool> GetValidSurfaceAsync(Vector loc) => await helper.GetBlockAsync(loc + Vector.Down, chunk) is Block b && growsOn.Contains(b.Material);
 
     /// <summary>
     /// Check free space above grow location.
@@ -91,7 +94,7 @@ public abstract class BaseFlora
         int freeSpace = 0;
         for (int y = 0; y < height; y++)
         {
-            if (await world.GetBlockAsync(loc + (0, y, 0)) is Block above && growsIn.Contains(above.Material))
+            if (await helper.GetBlockAsync(loc + (0, y, 0), chunk) is Block above && growsIn.Contains(above.Material))
             {
                 freeSpace++;
             }

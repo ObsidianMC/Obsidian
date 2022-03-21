@@ -1,27 +1,28 @@
-﻿using Obsidian.Utilities.Registry;
-using Obsidian.WorldData.Generators.Overworld.Terrain;
+﻿using Obsidian.ChunkData;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public static class ChunkBuilder
+internal static class ChunkBuilder
 {
     private static readonly Block bedrock = Registry.GetBlock(Material.Bedrock);
     private static readonly Block stone = Registry.GetBlock(Material.Stone);
     private static readonly Block caveAir = Registry.GetBlock(Material.CaveAir);
 
-    public static void FillChunk(Chunk chunk, double[,] terrainHeightmap, double[,] bedrockHeightmap)
+    internal static void FillChunk(Chunk chunk)
     {
+        var terrainHeightmap = chunk.Heightmaps[HeightmapType.MotionBlocking];
         for (int bx = 0; bx < 16; bx++)
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                for (int by = -32; by < terrainHeightmap[bx, bz]; by++)
+                for (int by = -32; by < terrainHeightmap.GetHeight(bx, bz); by++)
                 {
-                    if (by <= bedrockHeightmap[bx, bz] && by > 0)
+                    if (by <= -30 && by > 0) //TODO: better looking bedrock
                     {
                         chunk.SetBlock(bx, by, bz, bedrock);
                     }
-                    else if (by <= terrainHeightmap[bx, bz])
+                    else if (by <= terrainHeightmap.GetHeight(bx, bz))
                     {
                         chunk.SetBlock(bx, by, bz, stone);
                     }
@@ -30,7 +31,7 @@ public static class ChunkBuilder
         }
     }
 
-    public static void CarveCaves(OverworldTerrain noiseGen, Chunk chunk, double[,] rhm, double[,] bhm)
+    internal static void CarveCaves(GenHelper util, Chunk chunk)
     {
         Block block = caveAir;
         int chunkOffsetX = chunk.X * 16;
@@ -39,11 +40,11 @@ public static class ChunkBuilder
         {
             for (int bz = 0; bz < 16; bz++)
             {
-                int tY = Math.Min((int)rhm[bx, bz], 64);
-                int brY = (int)bhm[bx, bz];
-                for (int by = brY; by < tY; by++)
+                int terrainY = chunk.Heightmaps[HeightmapType.MotionBlocking].GetHeight(bx, bz);
+                int brY = -30;
+                for (int by = brY; by < terrainY; by++)
                 {
-                    bool isCave = noiseGen.IsCave(bx + chunkOffsetX, by, bz + chunkOffsetZ);
+                    bool isCave = util.Noise.Cave.GetValue(bx + chunkOffsetX, by, bz + chunkOffsetZ) > 0;
                     if (isCave)
                     {
                         chunk.SetBlock(bx, by, bz, block);

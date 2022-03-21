@@ -2,7 +2,7 @@
 
 public class CornflowerFlora : BaseFlora
 {
-    public CornflowerFlora(World world) : base(world, Material.Cornflower)
+    public CornflowerFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Cornflower)
     {
 
     }

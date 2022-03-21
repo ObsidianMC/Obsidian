@@ -2,6 +2,11 @@
 
 public sealed class Container : BaseContainer, IBlockEntity
 {
+    private const int PlayerHotbarStart = 36;
+    private const int PlayerHotbarEnd = PlayerHotbarStart + 8;
+    private const int PlayerMainInventoryStart = 9;
+    private const int PlayerMainInventoryEnd = PlayerHotbarStart - 1;
+
     internal int StateId { get; set; }
 
     public string Id { get; set; }
@@ -30,27 +35,9 @@ public sealed class Container : BaseContainer, IBlockEntity
 
         if (this.IsPlayerInventory)
         {
-            for (int i = 45; i > 8; i--)
-            {
-                var invItem = this.items[i];
-
-                if (invItem?.Type == item.Type)
-                {
-                    if (invItem.Count >= 64)
-                        continue;
-
-                    invItem.Count += item.Count;
-
-                    return i;
-                }
-
-                if (invItem == null)
-                {
-                    this.items[i] = item;
-
-                    return i;
-                }
-            }
+            int? slot = InventoryItem(item, PlayerHotbarStart, PlayerHotbarEnd);
+            if (slot is null) slot = InventoryItem(item, PlayerMainInventoryStart, PlayerMainInventoryEnd);
+            if (slot is not null) return slot.Value;
         }
         else
         {
@@ -60,6 +47,31 @@ public sealed class Container : BaseContainer, IBlockEntity
         return -1;
     }
 
+    private int? InventoryItem(ItemStack item, int start, int end)
+    {
+        for (int i = start; i <= end; i++)
+        {
+            var invItem = this.items[i];
+
+            if (invItem?.Type == item.Type)
+            {
+                if (invItem.Count >= 64)
+                    continue;
+
+                invItem.Count += item.Count;
+
+                return i;
+            }
+
+            if (invItem == null)
+            {
+                this.items[i] = item;
+
+                return i;
+            }
+        }
+        return null;
+    }
     public void ToNbt() => throw new NotImplementedException();
     public void FromNbt() => throw new NotImplementedException();
 }

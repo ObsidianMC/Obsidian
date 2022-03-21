@@ -2,7 +2,7 @@
 
 public class PoppyFlora : BaseFlora
 {
-    public PoppyFlora(World world) : base(world, Material.Poppy)
+    public PoppyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.Poppy)
     {
 
     }

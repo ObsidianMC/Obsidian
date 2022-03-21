@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Plugins.Services.Common;
+﻿using Obsidian.API.Plugins.Services;
 
 namespace Obsidian.Plugins.ServiceProviders;
 

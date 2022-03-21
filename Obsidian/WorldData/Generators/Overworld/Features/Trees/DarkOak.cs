@@ -2,7 +2,7 @@
 
 public class DarkOakTree : BaseTree
 {
-    public DarkOakTree(World world) : base(world, Material.DarkOakLeaves, Material.DarkOakLog, 8)
+    public DarkOakTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.DarkOakLeaves, Material.DarkOakLog, 8)
     {
     }
 }

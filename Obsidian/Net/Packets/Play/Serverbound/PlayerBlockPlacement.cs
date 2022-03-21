@@ -30,7 +30,8 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         var currentItem = player.GetHeldItem() ?? player.GetOffHandItem();
         var position = this.Position;
 
-        var b = await server.World.GetBlockAsync(position);
+        var b = await player.World.GetBlockAsync(position);
+
         if (b is null) { return; }
         var interactedBlock = (Block)b;
 
@@ -107,6 +108,6 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         }
 
         // TODO calculate the block state
-        await server.World.SetBlockAsync(position, block, doBlockUpdate: true);
+        await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }

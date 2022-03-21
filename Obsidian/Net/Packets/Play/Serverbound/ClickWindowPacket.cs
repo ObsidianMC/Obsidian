@@ -177,7 +177,7 @@ public partial class ClickWindowPacket : IServerboundPacket
 
         if (container is IBlockEntity tileEntityContainer)
         {
-            var blockEntity = await server.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
+            var blockEntity = await player.World.GetBlockEntityAsync(tileEntityContainer.BlockPosition);
 
             if (blockEntity is null)
                 return;
