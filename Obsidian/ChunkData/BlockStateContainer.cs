@@ -15,7 +15,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
     private readonly DirtyCache<short> validBlockCount;
 #endif
 
-    internal BlockStateContainer(byte bitsPerEntry = 4) : base(bitsPerEntry)
+    internal BlockStateContainer(byte bitsPerEntry = 4)
     {
         DataArray = new DataArray(bitsPerEntry, 4096);
         Palette = bitsPerEntry.DetermineBlockPalette();
@@ -25,7 +25,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 #endif
     }
 
-    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray, byte bitsPerEntry) : base(bitsPerEntry)
+    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -171,6 +171,8 @@ public sealed class BlockStateContainer : DataContainer<Block>
 
     public BlockStateContainer Clone()
     {
-        return new BlockStateContainer(Palette.Clone(), DataArray.Clone(), BitsPerEntry);
+        return new BlockStateContainer(Palette.Clone(), DataArray.Clone());
     }
+
+    public override int GetIndex(int x, int y, int z) => (y << 4 | z) << 4 | x;
 }
