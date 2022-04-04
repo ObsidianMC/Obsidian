@@ -4,13 +4,11 @@ using Obsidian.Utilities.Collection;
 namespace Obsidian.ChunkData;
 public abstract class DataContainer<T>
 {
-    public byte BitsPerEntry { get; }
+    public byte BitsPerEntry => (byte)DataArray.BitsPerEntry;
 
     public abstract IPalette<T> Palette { get; internal set; }
 
     public abstract DataArray DataArray { get; protected set; }
-
-    public DataContainer(byte bitsPerEntry) => this.BitsPerEntry = bitsPerEntry;
 
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
