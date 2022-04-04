@@ -70,4 +70,6 @@ public sealed class BiomeContainer : DataContainer<Biomes>
     {
         return new BiomeContainer(Palette.Clone(), DataArray.Clone());
     }
+
+    public override int GetIndex(int x, int y, int z) => (y << 2 | z) << 2 | x;
 }
