@@ -50,7 +50,6 @@
 		<None Remove="Assets\biome_codec.json" />
 		<None Remove="Assets\default_dimensions.json" />
 		<None Remove="Assets\default_dimensions.xaml" />
-		<None Remove="Assets\entity_types.json" />
 		<None Remove="Assets\fluids.json" />
 		<None Remove="Assets\tags.json" />
 		<None Remove="Serializer\Attributes\NewFile1.txt" />
@@ -93,9 +92,6 @@
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\default_dimensions.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\entity_types.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\fluids.json">
