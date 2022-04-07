@@ -63,15 +63,3 @@ public partial class JoinGame : IClientboundPacket
 
     public int Id => 0x26;
 }
-
-public enum LevelType
-{
-    Default,
-    Flat,
-    LargeBiomes,
-    Amplified,
-    Customized,
-    Buffet,
-
-    Default_1_1
-}
