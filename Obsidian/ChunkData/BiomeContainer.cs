@@ -60,10 +60,7 @@ public sealed class BiomeContainer : DataContainer<Biomes>
         this.Palette.WriteTo(stream);
 
         stream.WriteVarInt(this.DataArray.storage.Length);
-
-        long[] storage = this.DataArray.storage;
-        for (int i = 0; i < storage.Length; i++)
-            stream.WriteLong(storage[i]);
+        stream.WriteLongArray(this.DataArray.storage);
     }
 
     public BiomeContainer Clone()

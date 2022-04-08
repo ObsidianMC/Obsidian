@@ -26,7 +26,7 @@ public partial class JoinGame : IClientboundPacket
     public sbyte PreviousGamemode { get; init; } = 0;
 
     [Field(5)]
-    public List<string> WorldNames { get; init; }
+    public List<string> DimensionNames { get; init; }
 
     [Field(6)]
     public MixedCodec Codecs { get; init; }
