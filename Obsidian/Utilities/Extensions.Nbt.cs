@@ -193,12 +193,10 @@ public partial class Extensions
             new NbtTag<bool>("has_raids", value.Element.HasRaids),
 
             new NbtTag<int>("min_y", value.Element.MinY),
-
             new NbtTag<int>("height", value.Element.Height),
-
             new NbtTag<int>("logical_height", value.Element.LogicalHeight),
 
-            new NbtTag<float>("coordinate_scale", value.Element.CoordinateScale),
+            new NbtTag<double>("coordinate_scale", value.Element.CoordinateScale),
 
             new NbtTag<bool>("ultrawarm", value.Element.Ultrawarm),
             new NbtTag<bool>("has_ceiling", value.Element.HasCeiling)

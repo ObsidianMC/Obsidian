@@ -11,6 +11,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
+using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -637,7 +638,6 @@ public partial class MinecraftStream
         };
 
         #region biomes
-
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
         foreach (var (_, biome) in value.Biomes)
