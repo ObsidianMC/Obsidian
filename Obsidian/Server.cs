@@ -261,7 +261,7 @@ public partial class Server : IServer
             if (string.IsNullOrWhiteSpace(Config.RconPassword))
                 Logger.LogError("RCON password must not be empty");
             else
-                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config.RconPort, Config.RconPassword);
+                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config.RconPort, Config.RconPassword, this, CommandsHandler);
         }
         
         loadTimeStopwatch.Stop();

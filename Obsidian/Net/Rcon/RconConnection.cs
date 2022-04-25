@@ -1,8 +1,9 @@
 //     Obsidian/RconConnection.cs
 //     Copyright (C) 2022
 
-using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.Extensions.Logging;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Framework.Exceptions;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -15,12 +16,10 @@ public class RconConnection
 
     public bool Connected { get; private set; } = true;
     public bool Authenticated { get; private set; }
-    
+
     private readonly CancellationToken cancellationToken;
     private readonly ILogger logger;
     private readonly NetworkStream networkStream;
-
-    private bool stop;
 
     public RconConnection(uint connectionId, TcpClient conn, ILogger logger, CancellationToken cancellationToken)
     {
@@ -42,10 +41,10 @@ public class RconConnection
 
                 if (packet is null)
                 {
-                    logger.LogInformation("Connection {ConnectionId} disconnected", Id);
+                    logger.LogDebug("Connection {ConnectionId} disconnected", Id);
                     break;
                 }
-                
+
                 if (!Authenticated)
                 {
                     if (packet.Type != RconPacketType.Login)
@@ -59,7 +58,7 @@ public class RconConnection
                     else
                     {
                         if (packet.PayloadText != RconServer.Password) continue;
-                        
+
                         var response = new RconPacket {Type = RconPacketType.Command, RequestId = packet.RequestId};
                         await response.WriteAsync(networkStream, cancellationToken);
                         Authenticated = true;
@@ -67,15 +66,76 @@ public class RconConnection
                 }
                 else
                 {
-                    logger.LogInformation("Connection {ConnectionId} executed: '{Command}'", Id, packet.PayloadText);
-                    
-                    var response = new RconPacket
+                    if (packet.Type == RconPacketType.Command)
                     {
-                        Type = RconPacketType.CommandResponse,
-                        PayloadText = $"Echo: '{packet.PayloadText}'",
-                        RequestId = packet.RequestId
-                    };
-                    await response.WriteAsync(networkStream, cancellationToken);
+                        // logger.LogInformation("Connection {ConnectionId} executed: '{Command}'", Id, packet.PayloadText);
+                        //
+                        // var response = new RconPacket
+                        // {
+                        //     Type = RconPacketType.CommandResponse,
+                        //     PayloadText = $"Echo: '{packet.PayloadText}'",
+                        //     RequestId = packet.RequestId
+                        // };
+                        // await response.WriteAsync(networkStream, cancellationToken);
+
+                        var sender = new RconCommandSender();
+                        var context = new CommandContext(CommandHandler.DefaultPrefix + packet.PayloadText, sender,
+                            null, RconServer.Server);
+
+                        try
+                        {
+                            await RconServer.CommandsHandler.ProcessCommand(context);
+
+                            var commandResult = sender.GetResponse();
+                            var response = new RconPacket
+                            {
+                                Type = RconPacketType.CommandResponse,
+                                PayloadText = commandResult,
+                                RequestId = packet.RequestId
+                            };
+                            await response.WriteAsync(networkStream, cancellationToken);
+                        }
+                        catch (CommandNotFoundException)
+                        {
+                            var response = new RconPacket
+                            {
+                                Type = RconPacketType.CommandResponse,
+                                PayloadText = "Command not found",
+                                RequestId = packet.RequestId
+                            };
+                            await response.WriteAsync(networkStream, cancellationToken);
+                        }
+                        catch (DisallowedCommandIssuerException disallowedCommandIssuerException)
+                        {
+                            var response = new RconPacket
+                            {
+                                Type = RconPacketType.CommandResponse,
+                                PayloadText = disallowedCommandIssuerException.Message,
+                                RequestId = packet.RequestId
+                            };
+                            await response.WriteAsync(networkStream, cancellationToken);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogWarning(e, "Error processing RCON command");
+                            var response = new RconPacket
+                            {
+                                Type = RconPacketType.CommandResponse,
+                                PayloadText = $"Error: '{e.Message}'",
+                                RequestId = packet.RequestId
+                            };
+                            await response.WriteAsync(networkStream, cancellationToken);
+                        }
+                    }
+                    else
+                    {
+                        await new RconPacket
+                        {
+                            Type = RconPacketType.CommandResponse,
+                            PayloadText = $"Unknown request {(int)packet.Type:x2}",
+                            RequestId = packet.RequestId
+                        }.WriteAsync(networkStream, cancellationToken);
+                    }
                 }
             }
             catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
