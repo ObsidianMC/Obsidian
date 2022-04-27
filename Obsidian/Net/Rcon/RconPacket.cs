@@ -135,5 +135,9 @@ public enum RconPacketType
     Command = 2,
     Login = 3,
 
-    Upgrade = 222
+    EncryptedContent = 105,
+    Upgrade = 222,
+    EncryptStart = 223,
+    EncryptTest = 224,
+    EncryptSuccess = 225
 }

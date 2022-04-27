@@ -38,12 +38,16 @@ public class Config : IConfig
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
 
     public bool EnableRcon { get; set; } = false;
-    
+
     public string RconPassword { get; set; } = string.Empty;
 
     public ushort RconPort { get; set; } = 25575;
 
     public bool BroadcastRconToOps { get; set; } = true;
+
+    public string? RconKey { get; set; }
+
+    public bool AllowDiffieHellman { get; set; }
 
     public bool UDPBroadcast = false;
 

@@ -68,7 +68,7 @@ public partial class Server : IServer
     private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
-    
+
     private RconServer rconServer;
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
@@ -260,10 +260,12 @@ public partial class Server : IServer
         {
             if (string.IsNullOrWhiteSpace(Config.RconPassword))
                 Logger.LogError("RCON password must not be empty");
+            else if (string.IsNullOrWhiteSpace(Config.RconKey) && !Config.AllowDiffieHellman)
+                Logger.LogError("RCON PSK key must be not null and not whitespace when Diffie-Hellman exchange is disabled");
             else
-                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config.RconPort, Config.RconPassword, this, CommandsHandler);
+                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config, this, CommandsHandler);
         }
-        
+
         loadTimeStopwatch.Stop();
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
 
@@ -666,7 +668,7 @@ public partial class Server : IServer
     /// <summary>
     /// Registers the "obsidian-vanilla" entities and objects.
     /// </summary>
-    /// Might be used for more stuff later so I'll leave this here - tides 
+    /// Might be used for more stuff later so I'll leave this here - tides
     private void RegisterDefaults()
     {
         this.RegisterWorldGenerator<SuperflatGenerator>();

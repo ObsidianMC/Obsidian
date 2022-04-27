@@ -20,14 +20,18 @@ public class RconServer
     private uint connectionId;
 
     public static string Password { get; private set; } = string.Empty;
+    public static string? PskKey { get; private set; }
+    public static bool EnableDiffieHellman { get; private set; }
 
-    public RconServer(ILogger logger, ushort port, string password, IServer server, CommandHandler commandHandler)
+    public RconServer(ILogger logger, IConfig config, IServer server, CommandHandler commandHandler)
     {
         this.logger = logger;
-        Password = password;
+        Password = config.RconPassword;
         Server = server;
         CommandsHandler = commandHandler;
-        listener = TcpListener.Create(port);
+        PskKey = config.RconKey;
+        EnableDiffieHellman = config.AllowDiffieHellman;
+        listener = TcpListener.Create(config.RconPort);
     }
 
     public async Task RunAsync(CancellationToken token)

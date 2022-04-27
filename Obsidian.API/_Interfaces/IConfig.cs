@@ -80,4 +80,14 @@ public interface IConfig
     /// Whether the RCON commands should be sent to currently online Operators
     /// </summary>
     public bool BroadcastRconToOps { get; set; }
+
+    /// <summary>
+    /// Key used in RCON encryption
+    /// </summary>
+    public string? RconKey { get; set; }
+
+    /// <summary>
+    /// Whether the RCON encryption can happen with a Diffie-Hellman Key Exchange or only PSK
+    /// </summary>
+    public bool AllowDiffieHellman { get; set; }
 }

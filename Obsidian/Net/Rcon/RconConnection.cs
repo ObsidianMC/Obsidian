@@ -4,7 +4,11 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Exceptions;
+using Org.BouncyCastle.Bcpg;
+using System.Buffers.Binary;
+using System.IO;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
@@ -29,6 +33,13 @@ public class RconConnection
         set => currentEncoding = value ? Encoding.UTF8 : Encoding.ASCII;
     }
 
+    public EncryptionState EncryptionState { get; private set; } = EncryptionState.Unencrypted;
+    public EncryptionMode EncryptionMode { get; private set; } = (EncryptionMode)(-1);
+    private int encryptionChallenge;
+
+    private ICryptoTransform? encryptor;
+    private ICryptoTransform? decryptor;
+
     public RconConnection(uint connectionId, TcpClient conn, ILogger logger, CancellationToken cancellationToken)
     {
         Id = connectionId;
@@ -45,7 +56,7 @@ public class RconConnection
         while (!cancellationToken.IsCancellationRequested)
             try
             {
-                var packet = await RconPacket.ReadAsync(networkStream, cancellationToken, currentEncoding);
+                var packet = await ReceiveAsync();
 
                 if (packet is null)
                 {
@@ -56,8 +67,102 @@ public class RconConnection
                 if (packet.Type == RconPacketType.Upgrade)
                 {
                     Upgraded = true;
-                    await new RconPacket(currentEncoding) { Type = RconPacketType.Upgrade, RequestId = packet.RequestId }.WriteAsync(
-                        networkStream, cancellationToken);
+                    await SendAsync(new RconPacket(currentEncoding)
+                        { Type = RconPacketType.Upgrade, RequestId = packet.RequestId });
+                    continue;
+                }
+
+                if (packet.Type >= RconPacketType.EncryptedContent && !Upgraded)
+                {
+                    await SendAsync(new RconPacket(currentEncoding)
+                    {
+                        Type = RconPacketType.CommandResponse,
+                        PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
+                        RequestId = packet.RequestId
+                    });
+                    continue;
+                }
+
+                if (packet.Type == RconPacketType.EncryptStart && EncryptionState == EncryptionState.Unencrypted)
+                {
+                    var mode = (EncryptionMode)BinaryPrimitives.ReadInt32LittleEndian(packet.PayloadBytes);
+                    if (mode < EncryptionMode.PreSharedKey || !Enum.IsDefined(mode))
+                    {
+                        await SendAsync(new RconPacket(currentEncoding)
+                        {
+                            Type = RconPacketType.EncryptStart, RequestId = packet.RequestId
+                        });
+                        continue;
+                    }
+
+                    switch (mode)
+                    {
+                        case EncryptionMode.PreSharedKey when !string.IsNullOrWhiteSpace(RconServer.PskKey):
+                        {
+                            EncryptionState = EncryptionState.Challenge;
+                            EncryptionMode = mode;
+
+                            encryptionChallenge = Random.Shared.Next(1000000);
+
+                            var buffer = new byte[4];
+                            BinaryPrimitives.WriteInt32LittleEndian(buffer, encryptionChallenge);
+
+                            using var aes = Aes.Create();
+
+                            var iv = new byte[16];
+                            var key = Encoding.UTF8.GetBytes(RconServer.PskKey);
+
+                            aes.Key = key;
+                            aes.IV = iv;
+
+                            encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                            decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                            await SendAsync(Encrypt(new RconPacket(currentEncoding)
+                            {
+                                Type = RconPacketType.EncryptTest, RequestId = packet.RequestId, PayloadBytes = buffer
+                            }));
+                            continue;
+                        }
+                        case EncryptionMode.DiffieHellmanExchange when RconServer.EnableDiffieHellman:
+                            // TODO
+                            break;
+                        default:
+                            await SendAsync(new RconPacket(currentEncoding)
+                            {
+                                Type = RconPacketType.EncryptStart,
+                                RequestId = packet.RequestId,
+                                PayloadText = "Not allowed"
+                            });
+                            continue;
+                    }
+                }
+
+                if (packet.Type == RconPacketType.EncryptTest && EncryptionState == EncryptionState.Challenge)
+                {
+                    var receivedChallenge = BinaryPrimitives.ReadInt32LittleEndian(packet.PayloadBytes);
+
+                    if (receivedChallenge == 2 * encryptionChallenge)
+                    {
+                        EncryptionState = EncryptionState.Encrypted;
+                        await SendAsync(new RconPacket(currentEncoding)
+                        {
+                            RequestId = packet.RequestId, Type = RconPacketType.EncryptSuccess
+                        });
+                        continue;
+                    }
+
+                    logger.LogWarning("Encryption challenge mismatch");
+                    break;
+
+                }
+
+                if (packet.Type == RconPacketType.EncryptedContent && EncryptionState is not EncryptionState.Encrypted)
+                {
+                    await new RconPacket(currentEncoding)
+                    {
+                        RequestId = packet.RequestId, Type = RconPacketType.EncryptStart
+                    }.WriteAsync(networkStream, cancellationToken);
                     continue;
                 }
 
@@ -170,4 +275,64 @@ public class RconConnection
         Connected = false;
         Client.Close();
     }
+
+    private async Task SendAsync(RconPacket packet, bool encrypt = true)
+    {
+        if (EncryptionState is EncryptionState.Encrypted && encrypt) packet = Encrypt(packet);
+
+        await packet.WriteAsync(networkStream, cancellationToken);
+    }
+
+    private async Task<RconPacket?> ReceiveAsync(bool decrypt = true)
+    {
+        var packet = await RconPacket.ReadAsync(networkStream, cancellationToken, currentEncoding);
+
+        if (packet is null)
+            return null;
+
+        if (packet.Type == RconPacketType.EncryptedContent && decrypt) packet = Decrypt(packet);
+
+        return packet;
+    }
+
+    private RconPacket Encrypt(RconPacket packet)
+    {
+        using var ms = new MemoryStream();
+        using var cs = new CryptoStream(ms, encryptor ?? throw new InvalidOperationException(), CryptoStreamMode.Write);
+
+        packet.Write(cs);
+        cs.FlushFinalBlock();
+
+        var encrypted = ms.ToArray();
+
+        var result = new RconPacket(currentEncoding)
+        { RequestId = packet.RequestId, Type = RconPacketType.EncryptedContent, PayloadBytes = encrypted };
+        return result;
+    }
+
+    private RconPacket Decrypt(RconPacket packet)
+    {
+        using var ms = new MemoryStream();
+        using (var cs = new CryptoStream(ms, decryptor ?? throw new InvalidOperationException(), CryptoStreamMode.Write))
+            cs.Write(packet.PayloadBytes);
+
+        using var ms2 = new MemoryStream(ms.ToArray());
+
+        var result = RconPacket.Read(ms2, currentEncoding);
+        return result;
+    }
+}
+
+public enum EncryptionState
+{
+    Unencrypted,
+    Encrypted,
+    Started,
+    Challenge
+}
+
+public enum EncryptionMode
+{
+    PreSharedKey,
+    DiffieHellmanExchange
 }
