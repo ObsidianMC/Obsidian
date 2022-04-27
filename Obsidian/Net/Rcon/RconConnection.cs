@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Exceptions;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 namespace Obsidian.Net.Rcon;
@@ -20,6 +21,13 @@ public class RconConnection
     private readonly CancellationToken cancellationToken;
     private readonly ILogger logger;
     private readonly NetworkStream networkStream;
+    private Encoding currentEncoding = Encoding.ASCII;
+
+    public bool Upgraded
+    {
+        get => currentEncoding.Equals(Encoding.UTF8);
+        set => currentEncoding = value ? Encoding.UTF8 : Encoding.ASCII;
+    }
 
     public RconConnection(uint connectionId, TcpClient conn, ILogger logger, CancellationToken cancellationToken)
     {
@@ -37,7 +45,7 @@ public class RconConnection
         while (!cancellationToken.IsCancellationRequested)
             try
             {
-                var packet = await RconPacket.ReadAsync(networkStream, cancellationToken);
+                var packet = await RconPacket.ReadAsync(networkStream, cancellationToken, currentEncoding);
 
                 if (packet is null)
                 {
@@ -45,11 +53,19 @@ public class RconConnection
                     break;
                 }
 
+                if (packet.Type == RconPacketType.Upgrade)
+                {
+                    Upgraded = true;
+                    await new RconPacket(currentEncoding) { Type = RconPacketType.Upgrade, RequestId = packet.RequestId }.WriteAsync(
+                        networkStream, cancellationToken);
+                    continue;
+                }
+
                 if (!Authenticated)
                 {
                     if (packet.Type != RconPacketType.Login)
                     {
-                        var response = new RconPacket
+                        var response = new RconPacket(currentEncoding)
                         {
                             Type = RconPacketType.Login, PayloadText = "Not authenticated", RequestId = -1
                         };
@@ -57,9 +73,16 @@ public class RconConnection
                     }
                     else
                     {
-                        if (packet.PayloadText != RconServer.Password) continue;
+                        if (packet.PayloadText != RconServer.Password)
+                        {
+                            await new RconPacket(currentEncoding)
+                            {
+                                Type = RconPacketType.Login, PayloadText = "Wrong password", RequestId = -1
+                            }.WriteAsync(networkStream, cancellationToken);
+                            break;
+                        }
 
-                        var response = new RconPacket {Type = RconPacketType.Command, RequestId = packet.RequestId};
+                        var response = new RconPacket(currentEncoding) {Type = RconPacketType.Command, RequestId = packet.RequestId};
                         await response.WriteAsync(networkStream, cancellationToken);
                         Authenticated = true;
                     }
@@ -87,7 +110,7 @@ public class RconConnection
                             await RconServer.CommandsHandler.ProcessCommand(context);
 
                             var commandResult = sender.GetResponse();
-                            var response = new RconPacket
+                            var response = new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = commandResult,
@@ -97,7 +120,7 @@ public class RconConnection
                         }
                         catch (CommandNotFoundException)
                         {
-                            var response = new RconPacket
+                            var response = new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = "Command not found",
@@ -107,7 +130,7 @@ public class RconConnection
                         }
                         catch (DisallowedCommandIssuerException disallowedCommandIssuerException)
                         {
-                            var response = new RconPacket
+                            var response = new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = disallowedCommandIssuerException.Message,
@@ -118,7 +141,7 @@ public class RconConnection
                         catch (Exception e)
                         {
                             logger.LogWarning(e, "Error processing RCON command");
-                            var response = new RconPacket
+                            var response = new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = $"Error: '{e.Message}'",
@@ -129,10 +152,10 @@ public class RconConnection
                     }
                     else
                     {
-                        await new RconPacket
+                        await new RconPacket(currentEncoding)
                         {
                             Type = RconPacketType.CommandResponse,
-                            PayloadText = $"Unknown request {(int)packet.Type:x2}",
+                            PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
                             RequestId = packet.RequestId
                         }.WriteAsync(networkStream, cancellationToken);
                     }
