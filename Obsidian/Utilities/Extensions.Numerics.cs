@@ -25,8 +25,9 @@ public static partial class Extensions
         return (float)random.NextDouble();
     }
 
-    public static int GetVarIntLength(this int val)
+    public static int GetVarIntLength(this int value)
     {
+        uint val = (uint)value;
         int amount = 0;
         do
         {
