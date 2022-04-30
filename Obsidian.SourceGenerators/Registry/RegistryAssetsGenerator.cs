@@ -1,4 +1,8 @@
-﻿namespace Obsidian.SourceGenerators.Registry;
+﻿using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
 public sealed class RegistryAssetsGenerator : ISourceGenerator
@@ -16,63 +20,101 @@ public sealed class RegistryAssetsGenerator : ISourceGenerator
         source.Namespace("Obsidian.Util.Registry");
         source.Type("public static partial class Registry");
 
-        ParseBiomeDimensionCodecs(GetJson("biome_dimension_codec.json"), source);
-        ParseBlocks(GetJson("blocks.json"), source);
-        ParseDimensions(GetJson("default_dimensions.json"), source);
-        ParseEntityTypes(GetJson("entity_types.json"), source);
-        ParseFluids(GetJson("fluids.json"), source);
-        ParseItems(GetJson("items.json"), source);
-        ParseRecipes(GetJson("recipes.json"), source);
-        ParseTags(GetJson("tags.json"), source);
+        var gen = (Action<string, GeneratorExecutionContext> generator, string file) =>
+        {
+            string? json = GetJson(file, context);
+            if (json is not null)
+                generator(json, context);
+        };
 
-        source.EndScope(); // EOF type
-        source.EndScope(); // EOF namespace
+        gen(ParseBiomeDimensionCodecs, "biome_dimension_codec.json");
+        gen(ParseBlocks, "blocks.json");
+        gen(ParseDimensions, "default_dimensions.json");
+        gen(ParseEntityTypes, "entity_types.json");
+        gen(ParseFluids, "fluids.json");
+        gen(ParseItems, "items.json");
+        gen(ParseRecipes, "recipes.json");
+        gen(ParseTags, "tags.json");
+
+        source.EndScope(); // end of type
 
         context.AddSource("Registry.Assets.cs", source.ToString());
     }
 
-    private static void ParseBiomeDimensionCodecs(string json, CodeBuilder source)
+    private static void ParseBiomeDimensionCodecs(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseBlocks(string json, CodeBuilder source)
+    private static void ParseBlocks(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseDimensions(string json, CodeBuilder source)
+    private static void ParseDimensions(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseEntityTypes(string json, CodeBuilder source)
+    private static void ParseEntityTypes(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseFluids(string json, CodeBuilder source)
+    private static void ParseFluids(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseItems(string json, CodeBuilder source)
+    private static void ParseItems(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseRecipes(string json, CodeBuilder source)
+    private static void ParseRecipes(string json, GeneratorExecutionContext context)
     {
 
     }
 
-    private static void ParseTags(string json, CodeBuilder source)
+    private static void ParseTags(string json, GeneratorExecutionContext context)
     {
+        var tags = JsonSerializer.Deserialize<Dictionary<string, Tag>>(json) ?? new();
 
+        var builder = new CodeBuilder();
+        builder.Namespace("Obsidian.Util.Registry");
+        builder.Line();
+        builder.Type("public static class TagsRegistry");
+
+        builder.Line($"// Tag Count = {tags.Count}");
+        foreach (var tag in tags)
+        {
+            builder.Line($"// {tag.Key}: {tag.Value}");
+            builder.Line($"// {string.Join(", ", tag.Value.Values)}");
+        }
+
+        builder.EndScope();
+        context.AddSource("TagsRegistry.g.cs", builder.ToString());
     }
 
-    private static string GetJson(string file)
+    private static string? GetJson(string file, GeneratorExecutionContext context)
     {
-        throw new NotImplementedException();
+        return context.AdditionalFiles.FirstOrDefault(additionalText => Path.GetFileName(additionalText.Path).Equals(file))?.GetText()?.ToString();
+    }
+
+    private sealed class Tag
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+        [JsonPropertyName("replace")]
+        public bool Replace { get; set; }
+        [JsonPropertyName("values")]
+        public List<string> Values { get; set; }
+
+        public override string ToString()
+        {
+            return $"Tag {{ Name = \"{Name}\", Type = \"{Type}\", Replace = {Replace}, Values Count = {Values?.Count ?? 0} }}";
+        }
     }
 }

@@ -69,6 +69,13 @@
 
 	<ItemGroup>
 		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+		<EmbeddedResource Remove="Assets\tags.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AdditionalFiles Include="Assets\tags.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -94,9 +101,6 @@
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\items.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\tags.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
