@@ -27,14 +27,26 @@ public static partial class Extensions
 
     public static int GetVarIntLength(this int value)
     {
-        uint val = (uint)value;
-        int amount = 0;
-        do
-        {
-            val >>= 7;
-            amount++;
-        } while (val != 0);
+        // Alternative implementation:
+        // uint val = (uint)value;
+        // int amount = 0;
+        // do
+        // {
+        //     val >>= 7;
+        //     amount++;
+        // } while (val != 0);
+        // return amount;
 
-        return amount;
+        // Note: Implementation below is just as fast for 1-byte numbers, but
+        //       notably faster for more bytes, as there are no jumps and/or branches
+
+        // | 1      Formula doesn't work with 0, so we have to set the value to at least 1
+        // LZC      Count all leading zeroes, this gives us position of the MS bit with 1
+        // - 38     Equivalent of - 31 - 7
+        //  -31     We need the MSB index from the right instead from the left
+        //  - 7     The result is always at least one byte (= 7 source bits)
+        // * - 1171 >> 13 is an optimized version of / -7
+
+        return (System.Numerics.BitOperations.LeadingZeroCount((uint)value | 1) - 38) * -1171 >> 13;
     }
 }
