@@ -24,8 +24,11 @@ internal sealed class Assets
         return new Assets(blocks, tags, items);
     }
 
-    private static Block[] GetBlocks(string json)
+    private static Block[] GetBlocks(string? json)
     {
+        if (json is null)
+            return Array.Empty<Block>();
+
         var blocks = new List<Block>();
         using var document = JsonDocument.Parse(json);
 
@@ -38,8 +41,11 @@ internal sealed class Assets
         return blocks.ToArray();
     }
 
-    private static Item[] GetItems(string json)
+    private static Item[] GetItems(string? json)
     {
+        if (json is null)
+            return Array.Empty<Item>();
+
         var items = new List<Item>();
         using var document = JsonDocument.Parse(json);
 
@@ -51,8 +57,11 @@ internal sealed class Assets
         return items.ToArray();
     }
 
-    private static Tag[] GetTags(string json, Block[] blocks)
+    private static Tag[] GetTags(string? json, Block[] blocks)
     {
+        if (json is null)
+            return Array.Empty<Tag>();
+
         var taggables = new Dictionary<string, ITaggable>();
         foreach (Block block in blocks)
         {
@@ -71,13 +80,9 @@ internal sealed class Assets
         return tags.ToArray();
     }
 
-    private static string GetAsset(GeneratorExecutionContext context, string fileName)
+    private static string? GetAsset(GeneratorExecutionContext context, string fileName)
     {
         AdditionalText? asset = context.AdditionalFiles.FirstOrDefault(additionalText => additionalText.Path.EndsWith(fileName));
-        if (asset is null)
-        {
-            throw new System.IO.FileNotFoundException("Asset not found.", fileName);
-        }
-        return asset.GetText()?.ToString() ?? string.Empty;
+        return asset?.GetText()?.ToString();
     }
 }
