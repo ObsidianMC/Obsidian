@@ -226,7 +226,6 @@ public partial class Server : IServer
         await Task.WhenAll(Registry.RegisterBlocksAsync(),
                            Registry.RegisterItemsAsync(),
                            Registry.RegisterCodecsAsync(),
-                           Registry.RegisterTagsAsync(),
                            Registry.RegisterRecipesAsync());
 
         Block.Initialize();

@@ -24,7 +24,6 @@ public static partial class Registry
 
     public static readonly Dictionary<Material, Item> Items = new();
     public static readonly Dictionary<string, IRecipe> Recipes = new();
-    public static readonly Dictionary<string, List<Tag>> Tags = new();
 
     internal static readonly MatchTarget[] StateToMatch = new MatchTarget[20_342]; // 20,341 - highest block state
     internal static readonly string[] BlockNames = new string[898]; // 897 - block count
@@ -160,55 +159,6 @@ public static partial class Registry
         }
 
         Logger?.LogDebug($"Successfully registered {registered} dimensions...");
-    }
-
-    public static async Task RegisterTagsAsync()
-    {
-        int registered = 0;
-
-        using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.tags.json");
-
-        var dict = await stream.FromJsonAsync<Dictionary<string, RawTag>>();
-
-        foreach (var (name, rawTag) in dict)
-        {
-            var split = name.Split('/');
-
-            var tagBase = split[0];
-            var tagName = split.Length == 3 ? $"{split[1]}/{split[2]}" : split[1];
-
-            if (Tags.ContainsKey(tagBase))
-            {
-                var tag = new Tag
-                {
-                    Type = tagBase,
-                    Name = tagName
-                };
-                AddTagValues(tagBase, tag, rawTag.Values, dict);
-
-                Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
-
-                Tags[tagBase].Add(tag);
-            }
-            else
-            {
-                var tag = new Tag
-                {
-                    Type = tagBase,
-                    Name = tagName
-                };
-
-                AddTagValues(tagBase, tag, rawTag.Values, dict);
-
-                Logger?.LogDebug($"Registered tag: {name} with {tag.Count} entries");
-
-                Tags[tagBase] = new List<Tag> { tag };
-            }
-
-            registered++;
-        }
-
-        Logger?.LogDebug($"Registered {registered} tags");
     }
 
     public static async Task RegisterRecipesAsync()
@@ -384,59 +334,6 @@ public static partial class Registry
 
         return true;
     }
-
-    private static void AddTagValues(string tagBase, Tag tag, List<string> values, Dictionary<string, RawTag> dict)
-    {
-        foreach (var value in values)
-        {
-            switch (tagBase)
-            {
-                case "items":
-                    var item = GetItem(value);
-
-                    tag.Entries.Add(item.Id);
-                    break;
-                case "blocks":
-                    CheckIfNamespace(value, tag, dict);
-                    break;
-                case "entity_types":
-                    Enum.TryParse<EntityType>(value.TrimResourceTag(), true, out var type);
-                    tag.Entries.Add((int)type);
-                    break;
-                case "fluids":
-                    Enum.TryParse<Fluids>(value.TrimResourceTag(), true, out var fluid);
-                    tag.Entries.Add((int)fluid);
-                    break;
-                case "game_events":
-                    Enum.TryParse<GameEvents>(value.TrimResourceTag(), true, out var gameEvent);
-                    tag.Entries.Add((int)gameEvent);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private static void CheckIfNamespace(string value, Tag tag, Dictionary<string, RawTag> dict)
-    {
-        if (value.StartsWith('#'))
-        {
-            var sanitizedValue = value.TrimStart('#').Replace(':', '/').Replace("minecraft", "blocks");
-
-            if (dict.TryGetValue(sanitizedValue, out RawTag rawTag))
-            {
-                foreach (var newValue in rawTag.Values)
-                    CheckIfNamespace(newValue, tag, dict);
-
-                return;
-            }
-        }
-
-        var block = GetBlock(value);
-
-        tag.Entries.Add(block.Id);
-    }
-
 
     private class BaseRegistryJson
     {
