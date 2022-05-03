@@ -22,7 +22,6 @@ public static partial class Registry
 
     public static DeclareCommands DeclareCommandsPacket = new();
 
-    public static readonly Dictionary<Material, Item> Items = new();
     public static readonly Dictionary<string, IRecipe> Recipes = new();
 
     internal static readonly MatchTarget[] StateToMatch = new MatchTarget[20_342]; // 20,341 - highest block state
@@ -102,26 +101,6 @@ public static partial class Registry
         GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToMatch.Length));
 
         Logger?.LogDebug($"Successfully registered {registered} blocks...");
-    }
-
-    public static async Task RegisterItemsAsync()
-    {
-        using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.items.json");
-
-        var dict = await fs.FromJsonAsync<Dictionary<string, BaseRegistryJson>>(codecJsonOptions);
-        int registered = 0;
-
-        foreach (var (name, item) in dict)
-        {
-            var itemName = name.Split(":")[1];
-            if (!Enum.TryParse(itemName.Replace("_", ""), true, out Material material))
-                continue;
-
-            Items.Add(material, new Item((short)item.ProtocolId, name, material));
-            registered++;
-        }
-
-        Logger?.LogDebug($"Successfully registered {registered} items...");
     }
 
     public static async Task RegisterCodecsAsync()
@@ -310,10 +289,10 @@ public static partial class Registry
     public static Block GetBlock(string unlocalizedName) =>
         new(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
 
-    public static Item GetItem(int id) => Items.Values.SingleOrDefault(x => x.Id == id);
-    public static Item GetItem(Material mat) => Items.GetValueOrDefault(mat);
+    public static Item GetItem(int id) => ItemsRegistry.Items.Values.SingleOrDefault(x => x.Id == id);
+    public static Item GetItem(Material mat) => ItemsRegistry.Items.GetValueOrDefault(mat);
     public static Item GetItem(string unlocalizedName) =>
-        Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
+        ItemsRegistry.Items.Values.SingleOrDefault(x => x.UnlocalizedName.EqualsIgnoreCase(unlocalizedName));
 
     public static ItemStack GetSingleItem(Material mat, ItemMeta? meta = null) => new(mat, 1, meta);
 

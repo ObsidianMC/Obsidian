@@ -6,19 +6,22 @@ internal sealed class Assets
 {
     public Block[] Blocks { get; }
     public Tag[] Tags { get; }
+    public Item[] Items { get; }
 
-    private Assets(Block[] blocks, Tag[] tags)
+    private Assets(Block[] blocks, Tag[] tags, Item[] items)
     {
         Blocks = blocks;
         Tags = tags;
+        Items = items;
     }
 
     public static Assets Get(GeneratorExecutionContext context)
     {
         Block[] blocks = GetBlocks(GetAsset(context, "blocks.json"));
         Tag[] tags = GetTags(GetAsset(context, "tags.json"), blocks);
+        Item[] items = GetItems(GetAsset(context, "items.json"));
 
-        return new Assets(blocks, tags);
+        return new Assets(blocks, tags, items);
     }
 
     private static Block[] GetBlocks(string json)
@@ -33,6 +36,19 @@ internal sealed class Assets
         }
 
         return blocks.ToArray();
+    }
+
+    private static Item[] GetItems(string json)
+    {
+        var items = new List<Item>();
+        using var document = JsonDocument.Parse(json);
+
+        foreach (JsonProperty property in document.RootElement.EnumerateObject())
+        {
+            items.Add(Item.Get(property));
+        }
+
+        return items.ToArray();
     }
 
     private static Tag[] GetTags(string json, Block[] blocks)

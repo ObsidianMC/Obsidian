@@ -2,7 +2,7 @@
 
 namespace Obsidian.SourceGenerators.Registry.Models;
 
-internal sealed class Block : ITaggable
+internal sealed class Block : ITaggable, IHasName
 {
     public string Name { get; }
     public string Tag { get; }
