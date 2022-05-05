@@ -47,7 +47,7 @@ public class Config : IConfig
 
     public string? RconKey { get; set; }
 
-    public bool AllowDiffieHellman { get; set; }
+    public bool AllowDiffieHellman { get; set; } = true;
 
     public bool UDPBroadcast = false;
 
