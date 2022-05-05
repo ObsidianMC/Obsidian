@@ -4,7 +4,13 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Exceptions;
+using Org.BouncyCastle.Asn1.Nist;
 using Org.BouncyCastle.Bcpg;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Security;
 using System.Buffers.Binary;
 using System.IO;
 using System.Net.Sockets;
@@ -40,7 +46,15 @@ public class RconConnection
     private ICryptoTransform? encryptor;
     private ICryptoTransform? decryptor;
 
-    public RconConnection(uint connectionId, TcpClient conn, ILogger logger, CancellationToken cancellationToken)
+    private readonly IServer server;
+    private readonly CommandHandler commandHandler;
+    private readonly string password;
+    private byte[] pskKey;
+    private readonly bool enableDiffieHellman;
+    private readonly DHParameters? dhParameters;
+    private readonly AsymmetricCipherKeyPair? keyPair;
+
+    public RconConnection(uint connectionId, TcpClient conn, ILogger logger, RconServer.InitData initData, CancellationToken cancellationToken)
     {
         Id = connectionId;
         Client = conn;
@@ -48,7 +62,24 @@ public class RconConnection
         this.cancellationToken = cancellationToken;
         networkStream = conn.GetStream();
 
+        server = initData.Server;
+        commandHandler = initData.CommandHandler;
+        password = initData.Password;
+        pskKey = initData.PskKey is null ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(initData.PskKey);
+        enableDiffieHellman = initData.EnableDiffieHellman;
+        dhParameters = initData.DhParameters;
+        keyPair = initData.KeyPair;
+
         _ = Task.Run(ReceiveLoop, cancellationToken);
+    }
+
+    private static AsymmetricCipherKeyPair GenerateKeyPair(ECDomainParameters ecDomain)
+    {
+        var gen = (ECKeyPairGenerator)GeneratorUtilities.GetKeyPairGenerator("ECDH");
+        gen.Init(new ECKeyGenerationParameters(ecDomain, new SecureRandom()));
+
+        var keyPair = gen.GenerateKeyPair();
+        return keyPair;
     }
 
     private async Task ReceiveLoop()
@@ -86,18 +117,10 @@ public class RconConnection
                 if (packet.Type == RconPacketType.EncryptStart && EncryptionState == EncryptionState.Unencrypted)
                 {
                     var mode = (EncryptionMode)BinaryPrimitives.ReadInt32LittleEndian(packet.PayloadBytes);
-                    if (mode < EncryptionMode.PreSharedKey || !Enum.IsDefined(mode))
-                    {
-                        await SendAsync(new RconPacket(currentEncoding)
-                        {
-                            Type = RconPacketType.EncryptStart, RequestId = packet.RequestId
-                        });
-                        continue;
-                    }
 
                     switch (mode)
                     {
-                        case EncryptionMode.PreSharedKey when !string.IsNullOrWhiteSpace(RconServer.PskKey):
+                        case EncryptionMode.PreSharedKey when pskKey.Length != 0:
                         {
                             EncryptionState = EncryptionState.Challenge;
                             EncryptionMode = mode;
@@ -110,9 +133,8 @@ public class RconConnection
                             using var aes = Aes.Create();
 
                             var iv = new byte[16];
-                            var key = Encoding.UTF8.GetBytes(RconServer.PskKey);
 
-                            aes.Key = key;
+                            aes.Key = pskKey;
                             aes.IV = iv;
 
                             encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
@@ -124,18 +146,82 @@ public class RconConnection
                             }));
                             continue;
                         }
-                        case EncryptionMode.DiffieHellmanExchange when RconServer.EnableDiffieHellman:
-                            // TODO
-                            break;
+                        case EncryptionMode.DiffieHellmanExchange when enableDiffieHellman:
+                        {
+                            ArgumentNullException.ThrowIfNull(dhParameters);
+                            ArgumentNullException.ThrowIfNull(keyPair);
+
+                            EncryptionState = EncryptionState.Started;
+                            EncryptionMode = mode;
+
+                            var bytes = new List<byte>();
+                            var buffer = new byte[4];
+
+                            var tempBytes = Encoding.UTF8.GetBytes(dhParameters.P.ToString());
+                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                            bytes.AddRange(buffer);
+                            bytes.AddRange(tempBytes);
+
+                            tempBytes = Encoding.UTF8.GetBytes(dhParameters.G.ToString());
+                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                            bytes.AddRange(buffer);
+                            bytes.AddRange(tempBytes);
+
+                            tempBytes = Encoding.UTF8.GetBytes((keyPair.Public as DHPublicKeyParameters)!.Y.ToString());
+                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                            bytes.AddRange(buffer);
+                            bytes.AddRange(tempBytes);
+
+                            await SendAsync(new RconPacket(currentEncoding)
+                            {
+                                Type = RconPacketType.EncryptInitial,
+                                RequestId = packet.RequestId,
+                                PayloadBytes = bytes.ToArray()
+                            });
+                            continue;
+                        }
                         default:
                             await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.EncryptStart,
                                 RequestId = packet.RequestId,
-                                PayloadText = "Not allowed"
                             });
                             continue;
                     }
+                }
+
+                if (EncryptionState == EncryptionState.Started && packet.Type == RconPacketType.EncryptClientPublic)
+                {
+                    var length = BinaryPrimitives.ReadInt32LittleEndian(packet.PayloadBytes);
+                    var segment = new ArraySegment<byte>(packet.PayloadBytes, 4, length);
+                    var clientPublicKey = Encoding.UTF8.GetString(segment);
+
+                    var sharedKey = ComputeSharedKey(clientPublicKey);
+
+                    pskKey = sharedKey.ToByteArray();
+
+                    EncryptionState = EncryptionState.Challenge;
+
+                    encryptionChallenge = Random.Shared.Next(1000000);
+
+                    var buffer = new byte[4];
+                    BinaryPrimitives.WriteInt32LittleEndian(buffer, encryptionChallenge);
+
+                    using var aes = Aes.Create();
+
+                    var iv = new byte[16];
+
+                    aes.Key = pskKey;
+                    aes.IV = iv;
+
+                    encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                    decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                    await SendAsync(Encrypt(new RconPacket(currentEncoding)
+                    {
+                        Type = RconPacketType.EncryptTest, RequestId = packet.RequestId, PayloadBytes = buffer
+                    }));
+                    continue;
                 }
 
                 if (packet.Type == RconPacketType.EncryptTest && EncryptionState == EncryptionState.Challenge)
@@ -178,7 +264,7 @@ public class RconConnection
                     }
                     else
                     {
-                        if (packet.PayloadText != RconServer.Password)
+                        if (!packet.PayloadText.Equals(password))
                         {
                             await new RconPacket(currentEncoding)
                             {
@@ -208,11 +294,11 @@ public class RconConnection
 
                         var sender = new RconCommandSender();
                         var context = new CommandContext(CommandHandler.DefaultPrefix + packet.PayloadText, sender,
-                            null, RconServer.Server);
+                            null, server);
 
                         try
                         {
-                            await RconServer.CommandsHandler.ProcessCommand(context);
+                            await commandHandler.ProcessCommand(context);
 
                             var commandResult = sender.GetResponse();
                             var response = new RconPacket(currentEncoding)
@@ -256,14 +342,12 @@ public class RconConnection
                         }
                     }
                     else
-                    {
                         await new RconPacket(currentEncoding)
                         {
                             Type = RconPacketType.CommandResponse,
                             PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
                             RequestId = packet.RequestId
                         }.WriteAsync(networkStream, cancellationToken);
-                    }
                 }
             }
             catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
@@ -320,6 +404,17 @@ public class RconConnection
 
         var result = RconPacket.Read(ms2, currentEncoding);
         return result;
+    }
+
+    private BigInteger ComputeSharedKey(string clientKeyString)
+    {
+        ArgumentNullException.ThrowIfNull(keyPair);
+
+        var clientKey = new DHPublicKeyParameters(new BigInteger(clientKeyString), dhParameters);
+        var internalKeyAgree = AgreementUtilities.GetBasicAgreement("DH");
+        internalKeyAgree.Init(keyPair.Private);
+
+        return internalKeyAgree.CalculateAgreement(clientKey);
     }
 }
 

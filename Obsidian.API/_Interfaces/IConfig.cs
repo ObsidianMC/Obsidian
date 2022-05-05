@@ -60,34 +60,33 @@ public interface IConfig
     public string[] DownloadPlugins { get; set; }
 
     /// <summary>
-    /// Enabled Remote Console operation
+    /// Enabled Remote Console operation.
     /// </summary>
     /// <remarks>See more at https://wiki.vg/RCON</remarks>
     public bool EnableRcon { get; set; }
 
     /// <summary>
-    /// Password to access the RCON
+    /// Password to access the RCON.
     /// </summary>
-    /// <remarks>The password is (currently) sent over plain text, as is all RCON communication</remarks>
     public string RconPassword { get; set; }
 
     /// <summary>
-    /// Port on which RCON server listens
+    /// Port on which RCON server listens.
     /// </summary>
     public ushort RconPort { get; set; }
 
     /// <summary>
-    /// Whether the RCON commands should be sent to currently online Operators
+    /// Whether the RCON commands should be sent to currently online Operators.
     /// </summary>
     public bool BroadcastRconToOps { get; set; }
 
     /// <summary>
-    /// Key used in RCON encryption
+    /// Key used in RCON encryption.
     /// </summary>
     public string? RconKey { get; set; }
 
     /// <summary>
-    /// Whether the RCON encryption can happen with a Diffie-Hellman Key Exchange or only PSK
+    /// Whether the RCON encryption can happen with a Diffie-Hellman Key Exchange or only PSK.
     /// </summary>
     public bool AllowDiffieHellman { get; set; }
 }

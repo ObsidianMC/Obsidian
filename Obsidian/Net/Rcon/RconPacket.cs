@@ -139,5 +139,7 @@ public enum RconPacketType
     Upgrade = 222,
     EncryptStart = 223,
     EncryptTest = 224,
-    EncryptSuccess = 225
+    EncryptSuccess = 225,
+    EncryptInitial = 226,
+    EncryptClientPublic = 227
 }
