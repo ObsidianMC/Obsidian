@@ -9,15 +9,17 @@ internal sealed class Block : ITaggable, IHasName
     public int BaseId { get; }
     public int DefaultId { get; }
     public int NumericId { get; }
+    public int StatesCount { get; }
     public BlockProperty[] Properties { get; }
 
-    private Block(string name, string tag, int baseId, int defaultId, int numericId, BlockProperty[] properties)
+    private Block(string name, string tag, int baseId, int defaultId, int numericId, int statesCount, BlockProperty[] properties)
     {
         Name = name;
         Tag = tag;
         BaseId = baseId;
         DefaultId = defaultId;
         NumericId = numericId;
+        StatesCount = statesCount;
         Properties = properties;
     }
 
@@ -27,7 +29,13 @@ internal sealed class Block : ITaggable, IHasName
         (int baseId, int defaultId) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
 
-        return new Block(name, property.Name, baseId, defaultId, id, properties);
+        int statesCount = 1;
+        foreach (BlockProperty blockProperty in properties)
+        {
+            statesCount *= blockProperty.Values.Length;
+        }
+
+        return new Block(name, property.Name, baseId, defaultId, id, statesCount, properties);
     }
 
     private static (int baseId, int defaultId) GetIds(JsonProperty property)

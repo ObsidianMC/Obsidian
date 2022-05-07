@@ -18,6 +18,7 @@ public sealed partial class RegistryAssetsGenerator : ISourceGenerator
         {
             GenerateTags(assets, context);
             GenerateItems(assets, context);
+            GenerateBlockIds(assets, context);
         }
         else if (assembly == "Obsidian.API")
         {
