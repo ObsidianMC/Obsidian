@@ -23,7 +23,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release /p:DebugType=None
     - name: Rename executables
-      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
+      working-directory: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net7.0/
       run: |
         mv Obsidian.ConsoleApp.dll ObsidianApp.dll
         mv Obsidian.ConsoleApp.deps.json ObsidianApp.deps.json
@@ -32,7 +32,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.4
       with:
         name: Obsidian-Nightly-Build
-        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net6.0/
+        path: /home/runner/work/Obsidian/Obsidian/Obsidian.ConsoleApp/bin/Release/net7.0/
       if: ${{ github.event_name == 'push' }} # Only upload artifacts on push, don't upload them for PRs
     - name: Discord Webhook Action
       uses: tsickert/discord-webhook@v4.0.0
