@@ -16,7 +16,7 @@
 		<Company>Obsidian Team</Company>
 		<Authors>Obsidian Team</Authors>
 		<PackageLicenseExpression></PackageLicenseExpression>
-		<Description>A C# implementation of the Minecraft server protocol (.NET 6)</Description>
+		<Description>A C# implementation of the Minecraft server protocol (.NET)</Description>
 		<PackageProjectUrl>https://github.com/ObsidianMC/Obsidian</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/ObsidianMC/Obsidian</RepositoryUrl>
 		<PackageTags>minecraft-server-protocol minecraft-server minecraft</PackageTags>
