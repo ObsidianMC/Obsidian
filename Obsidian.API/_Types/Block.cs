@@ -8,26 +8,27 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
     public static Block Air => new(0, 0);
 
     internal static string[] blockNames;
-    internal static MatchTarget[] stateToMatch;
-    internal static short[] numericToBase;
+    internal static ushort[] numericToBase;
+    internal static ushort[] stateToNumeric;
+    internal static ushort[] stateToBase;
 
-    private static short[] interactables;
+    private static ushort[] interactables;
     private static bool initialized = false;
 
     public string UnlocalizedName => blockNames[Id];
     public string Name => Material.ToString();
-    public Material Material => (Material)stateToMatch[baseId].numeric;
+    public Material Material => (Material)stateToNumeric[baseId];
     public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
     public bool IsAir => baseId == 0 || baseId == 9915 || baseId == 9916;
     public bool IsFluid => StateId > 33 && StateId < 66;
     public bool IsTransparent => Material is Material.Glass || IsFluid || IsAir || Replaceable.Contains(Material) || (baseId >= 4164 && baseId <= 4179) || (baseId >= 148 && baseId <= 259);
-    public int Id => stateToMatch[baseId].numeric;
-    public short StateId => (short)(baseId + state);
+    public int Id => stateToNumeric[baseId];
+    public int StateId => baseId + state;
     public int State => state;
-    public short BaseId => baseId;
+    public int BaseId => baseId;
 
-    private readonly short baseId;
-    private readonly short state;
+    private readonly ushort baseId;
+    private readonly ushort state;
 
     internal static readonly List<Material> Replaceable = new()
     {
@@ -135,27 +136,27 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
         "minecraft:sculk_sensor",
     };
 
-    public Block(int stateId) : this((short)stateId)
+    public Block(int stateId) : this((ushort)stateId)
     {
     }
 
-    public Block(short stateId)
+    public Block(ushort stateId)
     {
-        baseId = stateToMatch[stateId].@base;
-        state = (short)(stateId - baseId);
+        baseId = stateToBase[stateId];
+        state = (ushort)(stateId - baseId);
     }
 
-    public Block(int baseId, int state) : this((short)baseId, (short)state)
+    public Block(int baseId, int state) : this((ushort)baseId, (ushort)state)
     {
     }
 
-    public Block(short baseId, short state)
+    public Block(ushort baseId, ushort state)
     {
         this.baseId = baseId;
         this.state = state;
     }
 
-    public Block(Material material, short state = 0)
+    public Block(Material material, ushort state = 0)
     {
         baseId = numericToBase[(int)material];
         this.state = state;
@@ -173,7 +174,7 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
 
     public bool Is(Material material)
     {
-        return stateToMatch[baseId].numeric == (int)material;
+        return stateToNumeric[baseId] == (ushort)material;
     }
 
     public override bool Equals(object? obj)
@@ -204,35 +205,22 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
 
         interactables = new[]
         {
-                numericToBase[(int)Material.Chest],
-                numericToBase[(int)Material.CraftingTable],
-                numericToBase[(int)Material.Furnace],
-                numericToBase[(int)Material.BrewingStand],
-                numericToBase[(int)Material.EnderChest],
-                numericToBase[(int)Material.Anvil],
-                numericToBase[(int)Material.ChippedAnvil],
-                numericToBase[(int)Material.DamagedAnvil],
-                numericToBase[(int)Material.TrappedChest],
-                numericToBase[(int)Material.Hopper],
-                numericToBase[(int)Material.Barrel],
-                numericToBase[(int)Material.Smoker],
-                numericToBase[(int)Material.BlastFurnace],
-                numericToBase[(int)Material.Grindstone],
-            };
+            numericToBase[(int)Material.Chest],
+            numericToBase[(int)Material.CraftingTable],
+            numericToBase[(int)Material.Furnace],
+            numericToBase[(int)Material.BrewingStand],
+            numericToBase[(int)Material.EnderChest],
+            numericToBase[(int)Material.Anvil],
+            numericToBase[(int)Material.ChippedAnvil],
+            numericToBase[(int)Material.DamagedAnvil],
+            numericToBase[(int)Material.TrappedChest],
+            numericToBase[(int)Material.Hopper],
+            numericToBase[(int)Material.Barrel],
+            numericToBase[(int)Material.Smoker],
+            numericToBase[(int)Material.BlastFurnace],
+            numericToBase[(int)Material.Grindstone],
+        };
     }
 
     public static Block Construct(int value) => new(value);
-}
-
-[DebuggerDisplay("{@base}:{numeric}")]
-internal struct MatchTarget
-{
-    public short @base;
-    public short numeric;
-
-    public MatchTarget(short @base, short numeric)
-    {
-        this.@base = @base;
-        this.numeric = numeric;
-    }
 }

@@ -20,7 +20,7 @@ public partial class RegistryAssetsGenerator
             builder.Line($"public static Tag[] All = new[] {{ {string.Join(", ", tagGroup.Select(tag => tag.Name))} }};");
             foreach (Tag tag in tagGroup)
             {
-                builder.Line($"public static Tag {tag.Name} {{ get; }} = new Tag {{ Name = \"{tag.Name}\", Type = \"{tag.Type}\", Replace = {(tag.Replace ? "true" : "false")}, Entries = new int[] {{ {string.Join(", ", tag.Values.Select(value => value.GetTagValue()))} }} }};");
+                builder.Line($"public static Tag {tag.Name} {{ get; }} = new Tag {{ Name = \"{tag.MinecraftName}\", Type = \"{tag.Type}\", Replace = {(tag.Replace ? "true" : "false")}, Entries = new int[] {{ {string.Join(", ", tag.Values.Select(value => value.GetTagValue()))} }} }};");
             }
             builder.EndScope();
         }

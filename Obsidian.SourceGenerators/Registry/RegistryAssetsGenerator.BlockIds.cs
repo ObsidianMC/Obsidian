@@ -33,7 +33,7 @@ public partial class RegistryAssetsGenerator
         builder.Indent().Append("internal static readonly string[] Names = { ");
         foreach (Block block in assets.Blocks)
         {
-            builder.Append($"\"{block.Name}\", ");
+            builder.Append($"\"{block.Tag}\", ");
         }
         builder.Append("};").Line();
 

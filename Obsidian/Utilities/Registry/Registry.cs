@@ -24,10 +24,6 @@ public static partial class Registry
 
     public static readonly Dictionary<string, IRecipe> Recipes = new();
 
-    internal static readonly MatchTarget[] StateToMatch = new MatchTarget[20_342]; // 20,341 - highest block state
-    internal static readonly string[] BlockNames = new string[898]; // 897 - block count
-    internal static readonly short[] NumericToBase = new short[898]; // 897 - highest block numeric id
-
     public static int GlobalBitsPerBlocks { get; internal set; }
     public static int GlobalBitsPerBiomes { get; internal set; }
 
@@ -60,48 +56,6 @@ public static partial class Registry
     {
         PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance
     };
-
-    public static async Task RegisterBlocksAsync()
-    {
-        using Stream fs = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.blocks.json");
-
-        var dict = await fs.FromJsonAsync<Dictionary<string, BlockJson>>(blockJsonOptions);
-
-        int registered = 0;
-        foreach (var (blockName, value) in dict)
-        {
-            var name = blockName[(blockName.IndexOf(':') + 1)..];
-
-            if (!Enum.TryParse(name.Replace("_", ""), true, out Material material))
-                continue;
-
-            if (value.States.Length <= 0)
-                continue;
-
-            int id = 0;
-            foreach (var state in value.States)
-                id = state.Default ? state.Id : value.States.First().Id;
-
-            var baseId = (short)value.States.Min(state => state.Id);
-            NumericToBase[(int)material] = baseId;
-
-            BlockNames[(int)material] = blockName;
-
-            foreach (var state in value.States)
-            {
-                StateToMatch[state.Id] = new MatchTarget(baseId, (short)material);
-            }
-            registered++;
-        }
-
-        Block.numericToBase = NumericToBase;
-        Block.stateToMatch = StateToMatch;
-        Block.blockNames = BlockNames;
-
-        GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToMatch.Length));
-
-        Logger?.LogDebug($"Successfully registered {registered} blocks...");
-    }
 
     public static async Task RegisterCodecsAsync()
     {
@@ -287,7 +241,7 @@ public static partial class Registry
     public static Block GetBlock(int id) => new(id);
 
     public static Block GetBlock(string unlocalizedName) =>
-        new(NumericToBase[Array.IndexOf(BlockNames, unlocalizedName)]);
+        new(BlocksRegistry.NumericToBase[Array.IndexOf(BlocksRegistry.Names, unlocalizedName)]);
 
     public static Item GetItem(int id) => ItemsRegistry.Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item GetItem(Material mat) => ItemsRegistry.Items.GetValueOrDefault(mat);

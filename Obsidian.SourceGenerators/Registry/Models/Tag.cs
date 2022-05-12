@@ -5,13 +5,15 @@ namespace Obsidian.SourceGenerators.Registry.Models;
 internal sealed class Tag
 {
     public string Name { get; }
+    public string MinecraftName { get; }
     public string Type { get; }
     public bool Replace { get; }
     public List<ITaggable> Values { get; }
 
-    private Tag(string name, string type, bool replace, List<ITaggable> values)
+    private Tag(string name, string minecraftName, string type, bool replace, List<ITaggable> values)
     {
         Name = name;
+        MinecraftName = minecraftName;
         Type = type;
         Replace = replace;
         Values = values;
@@ -21,7 +23,8 @@ internal sealed class Tag
     {
         JsonElement propertyValues = property.Value;
 
-        string name = propertyValues.GetProperty("name").GetString()!.ToPascalCase();
+        string minecraftName = propertyValues.GetProperty("name").GetString()!;
+        string name = minecraftName.ToPascalCase();
         string type = property.Name.Substring(0, property.Name.IndexOf('/'));
         bool replace = propertyValues.GetProperty("replace").GetBoolean();
 
@@ -47,7 +50,7 @@ internal sealed class Tag
             }
         }
 
-        var tag = new Tag(name, type, replace, values);
+        var tag = new Tag(name, minecraftName, type, replace, values);
         knownTags[property.Name] = tag;
         return tag;
     }
