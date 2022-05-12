@@ -156,9 +156,5 @@ public class Nbt
         if (isSetup)
             return;
         isSetup = true;
-
-        //ServerImplementationRegistry.RegisterServerImplementations();
-        await Registry.RegisterBlocksAsync();
-        await Registry.RegisterItemsAsync();
     }
 }
