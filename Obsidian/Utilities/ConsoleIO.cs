@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Utilities;
+﻿using System.Threading;
+
+namespace Obsidian.Utilities;
 
 /// <summary>
 /// Allows simultaneous console input and output without breaking user input
@@ -80,7 +82,12 @@ public static class ConsoleIO
 
         while (k.Key != ConsoleKey.Enter)
         {
-            while(!Console.KeyAvailable) {} // Don't block, just wait in a loop until there's a KeyPress
+            while(!Console.KeyAvailable) 
+            {
+                // This doesn't introduce noticeable input lag. Maybe in the future we'll come with a better solution without any input lag?
+                Thread.Sleep(50);
+            }
+
             k = Console.ReadKey(true);
 
             lock (io_lock)
