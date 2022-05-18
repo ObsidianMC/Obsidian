@@ -78,7 +78,9 @@ public static class ConsoleIO
 
         while (k.Key != ConsoleKey.Enter)
         {
+            while(!Console.KeyAvailable) {} // Don't block, just wait in a loop until there's a KeyPress
             k = Console.ReadKey(true);
+
             lock (io_lock)
             {
                 switch (k.Key)
