@@ -6,6 +6,8 @@
 /// Provide some fancy features such as formatted output, text pasting and tab-completion.
 /// By ORelio - (c) 2012-2018 - Available under the CDDL-1.0 license
 /// source https://github.com/ORelio/Minecraft-Console-Client/blob/master/MinecraftClient/ConsoleIO.cs
+/// 
+/// Modified by GasInfinity -> Fix Linux Console Blocking - 18/05/2022
 /// </summary>
 public static class ConsoleIO
 {
