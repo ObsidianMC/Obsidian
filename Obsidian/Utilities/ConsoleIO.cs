@@ -59,6 +59,7 @@ public static class ConsoleIO
     public static bool BasicIO_NoColor = false;
 
 
+    private static Func<bool, ConsoleKeyInfo> PlatformReadKey;
 
     /// <summary>
     /// Read a line from the standard input
@@ -82,13 +83,7 @@ public static class ConsoleIO
 
         while (k.Key != ConsoleKey.Enter)
         {
-            while(!Console.KeyAvailable) 
-            {
-                // This doesn't introduce noticeable input lag. Maybe in the future we'll come with a better solution without any input lag?
-                Thread.Sleep(50);
-            }
-
-            k = Console.ReadKey(true);
+            k = PlatformReadKey(true);
 
             lock (io_lock)
             {
@@ -400,6 +395,20 @@ public static class ConsoleIO
     }
 
     #endregion
+
+    static ConsoleIO()
+    {
+        PlatformReadKey = OperatingSystem.IsWindows() ? Console.ReadKey : 
+                          (intercept) => 
+                          {
+                              while(!Console.KeyAvailable) 
+                              {
+                                  Thread.Sleep(50);
+                              }
+
+                              return Console.ReadKey(intercept);
+                          };
+    }
 }
 
 
