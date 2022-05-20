@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Utilities;
+﻿using System.Threading;
+
+namespace Obsidian.Utilities;
 
 /// <summary>
 /// Allows simultaneous console input and output without breaking user input
@@ -6,6 +8,8 @@
 /// Provide some fancy features such as formatted output, text pasting and tab-completion.
 /// By ORelio - (c) 2012-2018 - Available under the CDDL-1.0 license
 /// source https://github.com/ORelio/Minecraft-Console-Client/blob/master/MinecraftClient/ConsoleIO.cs
+/// 
+/// Modified by GasInfinity -> Fix Linux Console Blocking - 18/05/2022
 /// </summary>
 public static class ConsoleIO
 {
@@ -55,6 +59,7 @@ public static class ConsoleIO
     public static bool BasicIO_NoColor = false;
 
 
+    private static Func<bool, ConsoleKeyInfo> PlatformReadKey;
 
     /// <summary>
     /// Read a line from the standard input
@@ -78,7 +83,8 @@ public static class ConsoleIO
 
         while (k.Key != ConsoleKey.Enter)
         {
-            k = Console.ReadKey(true);
+            k = PlatformReadKey(true);
+
             lock (io_lock)
             {
                 switch (k.Key)
@@ -389,6 +395,20 @@ public static class ConsoleIO
     }
 
     #endregion
+
+    static ConsoleIO()
+    {
+        PlatformReadKey = OperatingSystem.IsWindows() ? Console.ReadKey : 
+                          (intercept) => 
+                          {
+                              while(!Console.KeyAvailable) 
+                              {
+                                  Thread.Sleep(50);
+                              }
+
+                              return Console.ReadKey(intercept);
+                          };
+    }
 }
 
 
