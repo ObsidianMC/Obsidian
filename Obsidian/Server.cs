@@ -223,12 +223,13 @@ public partial class Server : IServer
             return;
         }
 
-        await Task.WhenAll(Registry.RegisterBlocksAsync(),
-                           Registry.RegisterItemsAsync(),
-                           Registry.RegisterCodecsAsync(),
-                           Registry.RegisterTagsAsync(),
+        await Task.WhenAll(Registry.RegisterCodecsAsync(),
                            Registry.RegisterRecipesAsync());
 
+        Block.blockNames = BlocksRegistry.Names;
+        Block.numericToBase = BlocksRegistry.NumericToBase;
+        Block.stateToNumeric = BlocksRegistry.StateToNumeric;
+        Block.stateToBase = BlocksRegistry.StateToBase;
         Block.Initialize();
 
         Logger.LogInformation($"Loading properties...");

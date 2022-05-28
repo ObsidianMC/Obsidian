@@ -2,13 +2,13 @@
 
 public abstract class BaseTallFlora : BaseFlora
 {
-    protected readonly short lowerState;
-    protected readonly short upperState;
+    protected readonly ushort lowerState;
+    protected readonly ushort upperState;
 
     protected BaseTallFlora(GenHelper helper, Chunk chunk, Material floraMat, int maxHeight = 2, int lowerState = 1, int upperState = 0) : base(helper, chunk, floraMat)
     {
-        this.lowerState = (short)lowerState;
-        this.upperState = (short)upperState;
+        this.lowerState = (ushort)lowerState;
+        this.upperState = (ushort)upperState;
         this.height = maxHeight;
     }
 

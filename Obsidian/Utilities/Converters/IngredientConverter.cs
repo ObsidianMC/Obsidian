@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Crafting;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Obsidian.Utilities.Registry;
 using static Obsidian.Utilities.Registry.Registry;
 
 namespace Obsidian.Utilities.Converters;
@@ -21,7 +22,7 @@ public class IngredientConverter : JsonConverter<Ingredient>
             {
                 if (rawRecipe.Item == null && rawRecipe.Tag != null)
                 {
-                    var tag = Tags["items"].FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
+                    var tag = TagsRegistry.Items.All.FirstOrDefault(x => x.Name.EqualsIgnoreCase(rawRecipe.Tag.Replace("minecraft:", "")));
                     foreach (var id in tag.Entries)
                     {
                         var item = GetItem(id);

@@ -32,6 +32,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
+	  <AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\.editorconfig" Link=".editorconfig" />
 		<None Include="..\LICENSE">
 			<Pack>True</Pack>
@@ -41,6 +46,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="SharpNoise" Version="0.12.1.1" />
+	</ItemGroup>
+  
+	<ItemGroup>
+    <ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  
+	<ItemGroup>
+	  <Folder Include="Assets\" />
 	</ItemGroup>
 
 </Project>

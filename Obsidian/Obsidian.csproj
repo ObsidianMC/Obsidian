@@ -68,7 +68,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Remove="Assets\blocks.json" />
 		<EmbeddedResource Remove="Assets\default_dimensions.xaml" />
+		<EmbeddedResource Remove="Assets\items.json" />
+		<EmbeddedResource Remove="Assets\tags.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AdditionalFiles Include="Assets\blocks.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
+	  <AdditionalFiles Include="Assets\items.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
+	  <AdditionalFiles Include="Assets\tags.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AdditionalFiles>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -87,16 +102,7 @@
 		<EmbeddedResource Update="Assets\biome_codec.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\blocks.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\default_dimensions.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\items.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
-		<EmbeddedResource Update="Assets\tags.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
