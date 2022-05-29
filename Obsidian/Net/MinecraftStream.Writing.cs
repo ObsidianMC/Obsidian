@@ -11,6 +11,7 @@ using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
+using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -434,14 +435,14 @@ public partial class MinecraftStream
     {
         WriteString(value.Name);
         WriteVarInt(value.Count);
-        for (int i = 0; i < value.Entries.Count; i++)
+        for (int i = 0; i < value.Entries.Length; i++)
         {
             WriteVarInt(value.Entries[i]);
         }
     }
 
     [WriteMethod]
-    public void WriteTags(IDictionary<string, List<Tag>> tagsDictionary)
+    public void WriteTags(IDictionary<string, Tag[]> tagsDictionary)
     {
         this.WriteVarInt(tagsDictionary.Count);
 
@@ -449,7 +450,7 @@ public partial class MinecraftStream
         {
             this.WriteString($"minecraft:{name.TrimEnd('s')}");
 
-            this.WriteVarInt(tags.Count);
+            this.WriteVarInt(tags.Length);
             foreach (var tag in tags)
                 this.WriteTag(tag);
         }
@@ -637,7 +638,6 @@ public partial class MinecraftStream
         };
 
         #region biomes
-
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
         foreach (var (_, biome) in value.Biomes)

@@ -2,7 +2,7 @@
 
 public class RoseBushFlora : BaseTallFlora
 {
-    public RoseBushFlora(World world) : base(world, Material.RoseBush)
+    public RoseBushFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.RoseBush)
     {
 
     }

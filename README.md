@@ -5,7 +5,7 @@
 [![.NET Build](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml/badge.svg)](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml)
 [![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
-Obsidian is a C# .NET 6 implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
+Obsidian is a C# .NET implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
 
 Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious about the current state of the project, questions are always welcome!
 
@@ -36,7 +36,7 @@ Find out about plugin development [here](https://github.com/ObsidianMC/Documenta
 
 ## 🔥 Development builds
 Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
-- Ensure you have [.NET 6 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0) installed
+- Ensure you have the latest [.NET Runtime]https://dotnet.microsoft.com/en-us/download/dotnet/7.0) installed
 - Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3Amaster) and scroll to the bottom of the page to find the artifacts.
 - Unzip the artifact and run `dotnet ObsidianApp.dll` to start the server.
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.

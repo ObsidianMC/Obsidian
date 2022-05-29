@@ -2,7 +2,7 @@
 
 public class TulipFlora : BaseFlora
 {
-    public TulipFlora(World world) : base(world)
+    public TulipFlora(GenHelper helper, Chunk chunk) : base(helper, chunk)
     {
         var seedRand = new Random();
         int tulipType = seedRand.Next(3);
@@ -14,5 +14,4 @@ public class TulipFlora : BaseFlora
             _ => Material.WhiteTulip
         };
     }
-
 }

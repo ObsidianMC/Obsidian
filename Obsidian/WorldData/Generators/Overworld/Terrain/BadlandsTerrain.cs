@@ -5,24 +5,16 @@ namespace Obsidian.WorldData.Generators.Overworld.Terrain;
 
 public class BadlandsTerrain : BaseTerrain
 {
-    // Generates the hilly terrain.
-    //
-    // -1.0 represents the lowest elevations and +1.0 represents the highest
-    // elevations.
-    //
-    // [Hilly-terrain group]: Caches the output value from the warped-hilly-
-    // terrain module.  This is the output value for the entire hilly-
-    // terrain group.
-    public BadlandsTerrain() : base()
+    public BadlandsTerrain(int seed, OverworldTerrainSettings settings) : base(seed, settings)
     {
         result = new Cache
         {
-            // Sanity check to force results b/w -1.0<y<1.0
             Source0 = new ScalePoint
             {
                 XScale = 1 / 190.103,
                 YScale = 1 / 140.103,
                 ZScale = 1 / 190.103,
+                // Sanity check to force results b/w -1.0<y<1.0
                 Source0 = new Clamp
                 {
                     Source0 = new Max
@@ -63,7 +55,7 @@ public class BadlandsTerrain : BaseTerrain
                     // octave, which makes very smooth dunes.
                     Source0 = new RidgedMulti
                     {
-                        Seed = settings.Seed + 80,
+                        Seed = seed + 80,
                         Frequency = 9.13,
                         Lacunarity = settings.BadlandsLacunarity,
                         Quality = NoiseQuality.Fast,
@@ -84,7 +76,7 @@ public class BadlandsTerrain : BaseTerrain
                     // are joined to the edges of nearby pits.
                     Source0 = new Cell
                     {
-                        Seed = settings.Seed + 81,
+                        Seed = seed + 81,
                         Frequency = 11.1,
                         Displacement = 0,
                         EnableDistance = true,
@@ -111,7 +103,7 @@ public class BadlandsTerrain : BaseTerrain
             // some fine detail to it.
             Source0 = new Turbulence
             {
-                Seed = settings.Seed + 92,
+                Seed = seed + 92,
                 Frequency = 4,
                 Power = 1.0 / 211543.0 * settings.BadlandsTwist,
                 Roughness = 2,
@@ -120,7 +112,7 @@ public class BadlandsTerrain : BaseTerrain
                 // it.
                 Source0 = new Turbulence
                 {
-                    Seed = settings.Seed + 91,
+                    Seed = seed + 91,
                     Frequency = 6,
                     Power = 1.0 / 141539.0 * settings.BadlandsTwist,
                     Roughness = 3,
@@ -166,7 +158,7 @@ public class BadlandsTerrain : BaseTerrain
                                 // noise that will be used to generate the cliffs.
                                 Source0 = new Perlin
                                 {
-                                    Seed = settings.Seed + 90,
+                                    Seed = seed + 90,
                                     Frequency = 8,
                                     Persistence = 0.5,
                                     Lacunarity = settings.BadlandsLacunarity,

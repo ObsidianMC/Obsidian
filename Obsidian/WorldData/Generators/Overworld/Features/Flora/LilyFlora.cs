@@ -2,7 +2,7 @@
 
 public class LilyFlora : BaseFlora
 {
-    public LilyFlora(World world) : base(world, Material.LilyOfTheValley)
+    public LilyFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.LilyOfTheValley)
     {
 
     }

@@ -1,42 +1,43 @@
 ﻿using Obsidian.API.Noise;
-using Obsidian.WorldData.Generators.Overworld.BiomeNoise;
-using Obsidian.WorldData.Generators.Overworld.Carvers;
 using Obsidian.WorldData.Generators.Overworld.Terrain;
 using SharpNoise.Modules;
-using static Obsidian.API.Noise.VoronoiBiomes;
+using static SharpNoise.Modules.Curve;
 using Blend = Obsidian.API.Noise.Blend;
 
 namespace Obsidian.WorldData.Generators.Overworld;
 
-public class OverworldTerrain : Module
+public class OverworldTerrainNoise
 {
-    public Module result;
+    public Module Heightmap { get; set; }
 
-    public readonly OverworldTerrainSettings settings;
+    public OverworldTerrainSettings Settings { get; private set; } = new OverworldTerrainSettings();
 
     public readonly Module ocean, deepocean, badlands, plains, hills, mountains, rivers;
 
-    public readonly Module caves, tunnels;
+    public readonly Module tunnels;
 
-    public readonly Module transitions, biomeTerrain, blendPass1, blendPass2, selectiveBlend;
+    public readonly Module transitions, biomeTerrain, blendPass1, selectiveBlend;
 
-    public Module FinalBiomes;
+    private readonly int seed;
 
-    public OverworldTerrain(bool isUnitTest = false) : base(0)
+    private bool isUnitTest;
+
+    public OverworldTerrainNoise(int seed, bool isUnitTest = false)
     {
-        settings = OverworldGenerator.GeneratorSettings;
-        ocean = new OceanTerrain();
-        deepocean = new DeepOceanTerrain();
-        plains = new PlainsTerrain();
-        hills = new HillsTerrain();
-        badlands = new BadlandsTerrain();
-        mountains = new MountainsTerrain();
-        rivers = new RiverTerrain();
-        caves = new CavesCarver();
+        this.isUnitTest = isUnitTest;
+        this.seed = seed + 765; // add offset
+        ocean = new OceanTerrain(seed, Settings);
+        deepocean = new DeepOceanTerrain(seed, Settings);
+        plains = new PlainsTerrain(seed, Settings);
+        hills = new HillsTerrain(seed, Settings);
+        badlands = new BadlandsTerrain(seed, Settings);
+        mountains = new MountainsTerrain(seed, Settings);
+        rivers = new RiverTerrain(seed, Settings);
+
         tunnels = new VoronoiTunnels()
         {
             Frequency = 0.0123456,
-            Seed = settings.Seed
+            Seed = this.seed
         };
 
         Dictionary<Biomes, Module> biomesTerrainMap = new()
@@ -67,7 +68,7 @@ public class OverworldTerrain : Module
             { Biomes.Grove, plains },
             { Biomes.IceSpikes, badlands },
             { Biomes.JaggedPeaks, mountains },
-            { Biomes.Jungle, hills },
+            { Biomes.Jungle, plains },
             { Biomes.LukewarmOcean, ocean },
             { Biomes.LushCaves, plains },
             { Biomes.Meadow, plains },
@@ -104,32 +105,19 @@ public class OverworldTerrain : Module
             { Biomes.WoodedBadlands, badlands }
         };
 
-        FinalBiomes = VoronoiBiomeNoise.Instance.result;
-
-        // For debugging, we can override the biome here
-        // which is usefull for developing a biome
-        // FinalBiomes = new Constant() { ConstantValue = (int)Biomes.StonyPeaks };
-
-        transitions = new Blend(new TransitionMap(FinalBiomes, 9))
+        transitions = new Blend(new TransitionMap(Biome, 9))
         {
             Distance = 3
         };
 
-        biomeTerrain = new Cache()
+        biomeTerrain = new TerrainSelect(Biome)
         {
-            Source0 = new TerrainSelect(FinalBiomes)
-            {
-                Control = transitions,
-                TerrainModules = biomesTerrainMap
-            }
+            Control = transitions,
+            TerrainModules = biomesTerrainMap
         };
+
 
         blendPass1 = new Blend(biomeTerrain)
-        {
-            Distance = 2
-        };
-
-        blendPass2 = new Blend(blendPass1)
         {
             Distance = 2
         };
@@ -154,42 +142,73 @@ public class OverworldTerrain : Module
             Bias = 64 // sea level
         };
 
-        var mapScaledBiomes = new ScaleBias()
+        Heightmap = isUnitTest ? blendPass1 : scaledWorld;
+    }
+
+    public Module Cave => new Turbulence()
+    {
+        Frequency = 0.1234,
+        Power = 1,
+        Roughness = 3,
+        Seed = seed + 1,
+        Source0 = new Max()
         {
-            Scale = 1 / 30.0,
-            Bias = -1,
-            Source0 = FinalBiomes
-        };
-
-        result = isUnitTest ? FinalBiomes : scaledWorld;
-
-    }
-
-    internal BaseBiome GetBiome(double x, double z, double y = 0)
-    {
-        return (BaseBiome)FinalBiomes.GetValue(x, y, z);
-    }
-
-    public override double GetValue(double x, double z, double y = 0)
-    {
-        return result.GetValue(x, y, z);
-    }
-
-    public bool IsCave(double x, double y, double z)
-    {
-        var c = new Turbulence()
-        {
-            Frequency = 0.1234,
-            Power = 1,
-            Roughness = 3,
-            Seed = settings.Seed,
-            Source0 = new Max()
+            Source0 = tunnels,
+            Source1 = new ScalePoint
             {
-                Source0 = tunnels,
-                Source1 = caves
+                XScale = 1 / 1024.0,
+                YScale = 1 / 384.0,
+                ZScale = 1 / 1024.0,
+                Source0 = new Curve
+                {
+                    ControlPoints = new List<ControlPoint>()
+                {
+                     new Curve.ControlPoint(-1, -1),
+                     new Curve.ControlPoint(-0.7, -0.5),
+                     new Curve.ControlPoint(-0.4, -0.5),
+                     new Curve.ControlPoint(1, 1),
+                },
+                    Source0 = new Billow
+                    {
+                        Frequency = 18.12345,
+                        Seed = seed + 2,
+                        Quality = SharpNoise.NoiseQuality.Fast,
+                        OctaveCount = 6,
+                        Lacunarity = 1.2234,
+                        Persistence = 1.23
+                    }
+                }
             }
-        };
+        }
+    };
 
-        return c.GetValue(x, y, z) > 0;
-    }
+    public Module Decoration => new Multiply
+    {
+        Source0 = new Checkerboard(),
+        Source1 = new Perlin
+        {
+            Frequency = 1.14,
+            Lacunarity = 2.222,
+            Seed = seed + 3
+        }
+    };
+
+    public Module Biome => new Cache
+    {
+        Source0 = new Turbulence
+        {
+            Frequency = 0.007119,
+            Power = 16,
+            Roughness = 3,
+            Seed = seed + 4,
+            Source0 = new VoronoiBiomes(isUnitTest)
+            {
+                Frequency = 0.0054159,
+                Seed = seed + 5
+            }
+        }
+    };
+
+    // Set a constant biome here for development
+    //public Module Biome => new Constant() { ConstantValue = (int)Biomes.Jungle };
 }

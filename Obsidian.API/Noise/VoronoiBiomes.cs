@@ -44,15 +44,18 @@ public class VoronoiBiomes : Module
         Biomes.Ocean,
     };
 
-    public VoronoiBiomes() : base(0)
-    {
+    private bool isUnitTest;
 
+    public VoronoiBiomes(bool isUnitTest = false) : base(0)
+    {
+        this.isUnitTest = isUnitTest;
     }
 
     [SkipLocalsInit]
     public override double GetValue(double x, double y, double z)
     {
-        z = y != 0 ? y : z; // Fix for unit tests which pass x and y
+/*        if (isUnitTest)
+            z = y;*/
         x *= Frequency;
         z *= Frequency;
 
@@ -310,8 +313,8 @@ public class VoronoiBiomes : Module
 
     private VoronoiCell ProcessRiversAndBeaches(VoronoiCell me, VoronoiCell nearest)
     {
-        var beachSize = 0.03;
-        var riverSize = 0.03;
+        var beachSize = 0.05;
+        var riverSize = 0.06;
 
         var dist = nearest.DistanceToPoint - me.DistanceToPoint;
 

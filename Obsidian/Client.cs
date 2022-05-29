@@ -379,7 +379,7 @@ public sealed class Client : IDisposable
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
-            WorldNames = new List<string> { "minecraft:world" },
+            DimensionNames = Registry.Dimensions.Values.Select(x => x.Name).ToList(),
             Codecs = new MixedCodec
             {
                 Dimensions = Registry.Dimensions,

@@ -54,7 +54,7 @@ public class EmptyWorldGenerator : IWorldGenerator
         spawn.isGenerated = true;
     }
 
-    public async Task<Chunk> GenerateChunkAsync(int x, int z, World world, Chunk? chunk = null)
+    public async Task<Chunk> GenerateChunkAsync(int x, int z, Chunk? chunk = null)
     {
         if (chunk is { isGenerated: true })
             return chunk;
@@ -64,5 +64,5 @@ public class EmptyWorldGenerator : IWorldGenerator
         return empty.Clone(x, z);
     }
 
-    public void Init(string seed) { }
+    public void Init(IWorld world) { }
 }

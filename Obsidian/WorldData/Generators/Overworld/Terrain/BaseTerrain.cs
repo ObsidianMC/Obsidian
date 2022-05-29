@@ -2,20 +2,18 @@
 
 namespace Obsidian.WorldData.Generators.Overworld.Terrain;
 
-public class BaseTerrain : Module
+public partial class BaseTerrain : Module
 {
+
+    protected readonly int seed;
     protected readonly OverworldTerrainSettings settings;
+    protected Cache result;
 
-    protected Module result;
-
-    protected BaseTerrain() : base(0)
+    protected BaseTerrain(int seed, OverworldTerrainSettings settings) : base(0)
     {
-        this.settings = OverworldGenerator.GeneratorSettings;
-        result = new Constant { ConstantValue = 0 };
+        this.seed = seed;
+        this.settings = settings;
     }
 
-    public override double GetValue(double x, double y, double z)
-    {
-        return result.GetValue(x, y, z);
-    }
+    public override double GetValue(double x, double y, double z) => result.GetValue(x, y, z);
 }

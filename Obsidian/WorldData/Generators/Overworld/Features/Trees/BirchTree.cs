@@ -2,7 +2,7 @@
 
 public class BirchTree : BaseTree
 {
-    public BirchTree(World world) : base(world, Material.BirchLeaves, Material.BirchLog, 7)
+    public BirchTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.BirchLeaves, Material.BirchLog, 7)
     {
     }
 }
