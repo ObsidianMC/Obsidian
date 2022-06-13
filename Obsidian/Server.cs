@@ -258,12 +258,7 @@ public partial class Server : IServer
 
         if (Config.EnableRcon)
         {
-            if (string.IsNullOrWhiteSpace(Config.RconPassword))
-                Logger.LogError("RCON password must not be empty");
-            else if (string.IsNullOrWhiteSpace(Config.RconKey) && !Config.AllowDiffieHellman)
-                Logger.LogError("RCON PSK key must be not null and not whitespace when Diffie-Hellman exchange is disabled");
-            else
-                rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config, this, CommandsHandler);
+            rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config, this, CommandsHandler);
         }
 
         loadTimeStopwatch.Stop();

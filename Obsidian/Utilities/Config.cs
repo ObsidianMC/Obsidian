@@ -44,10 +44,7 @@ public class Config : IConfig
     public ushort RconPort { get; set; } = 25575;
 
     public bool BroadcastRconToOps { get; set; } = true;
-
-    public string? RconKey { get; set; }
-
-    public bool AllowDiffieHellman { get; set; } = true;
+    public bool RequireRconEncryption { get; set; } = false;
 
     public bool UDPBroadcast = false;
 

@@ -4,10 +4,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Obsidian.Commands.Framework.Exceptions;
-using Org.BouncyCastle.Asn1.Nist;
-using Org.BouncyCastle.Bcpg;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
@@ -40,7 +37,6 @@ public class RconConnection
     }
 
     public EncryptionState EncryptionState { get; private set; } = EncryptionState.Unencrypted;
-    public EncryptionMode EncryptionMode { get; private set; } = (EncryptionMode)(-1);
     private int encryptionChallenge;
 
     private ICryptoTransform? encryptor;
@@ -49,10 +45,9 @@ public class RconConnection
     private readonly IServer server;
     private readonly CommandHandler commandHandler;
     private readonly string password;
-    private byte[] pskKey;
-    private readonly bool enableDiffieHellman;
     private readonly DHParameters? dhParameters;
     private readonly AsymmetricCipherKeyPair? keyPair;
+    private readonly bool requireEncryption;
 
     public RconConnection(uint connectionId, TcpClient conn, ILogger logger, RconServer.InitData initData, CancellationToken cancellationToken)
     {
@@ -65,21 +60,11 @@ public class RconConnection
         server = initData.Server;
         commandHandler = initData.CommandHandler;
         password = initData.Password;
-        pskKey = initData.PskKey is null ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(initData.PskKey);
-        enableDiffieHellman = initData.EnableDiffieHellman;
         dhParameters = initData.DhParameters;
         keyPair = initData.KeyPair;
+        requireEncryption = initData.RequireEncryption;
 
         _ = Task.Run(ReceiveLoop, cancellationToken);
-    }
-
-    private static AsymmetricCipherKeyPair GenerateKeyPair(ECDomainParameters ecDomain)
-    {
-        var gen = (ECKeyPairGenerator)GeneratorUtilities.GetKeyPairGenerator("ECDH");
-        gen.Init(new ECKeyGenerationParameters(ecDomain, new SecureRandom()));
-
-        var keyPair = gen.GenerateKeyPair();
-        return keyPair;
     }
 
     private async Task ReceiveLoop()
@@ -95,98 +80,53 @@ public class RconConnection
                     break;
                 }
 
-                if (packet.Type == RconPacketType.Upgrade)
+                switch (packet.Type)
                 {
-                    Upgraded = true;
-                    await SendAsync(new RconPacket(currentEncoding)
-                        { Type = RconPacketType.Upgrade, RequestId = packet.RequestId });
-                    continue;
-                }
-
-                if (packet.Type >= RconPacketType.EncryptedContent && !Upgraded)
-                {
-                    await SendAsync(new RconPacket(currentEncoding)
-                    {
-                        Type = RconPacketType.CommandResponse,
-                        PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
-                        RequestId = packet.RequestId
-                    });
-                    continue;
-                }
-
-                if (packet.Type == RconPacketType.EncryptStart && EncryptionState == EncryptionState.Unencrypted)
-                {
-                    var mode = (EncryptionMode)BinaryPrimitives.ReadInt32LittleEndian(packet.PayloadBytes);
-
-                    switch (mode)
-                    {
-                        case EncryptionMode.PreSharedKey when pskKey.Length != 0:
+                    case RconPacketType.Upgrade:
+                        Upgraded = true;
+                        await SendAsync(new RconPacket(currentEncoding)
+                            { Type = RconPacketType.Upgrade, RequestId = packet.RequestId });
+                        continue;
+                    case >= RconPacketType.EncryptedContent when !Upgraded:
+                        await SendAsync(new RconPacket(currentEncoding)
                         {
-                            EncryptionState = EncryptionState.Challenge;
-                            EncryptionMode = mode;
+                            Type = RconPacketType.CommandResponse,
+                            PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
+                            RequestId = packet.RequestId
+                        });
+                        continue;
+                    case RconPacketType.EncryptStart when EncryptionState == EncryptionState.Unencrypted:
+                    {
+                        ArgumentNullException.ThrowIfNull(dhParameters);
+                        ArgumentNullException.ThrowIfNull(keyPair);
 
-                            encryptionChallenge = Random.Shared.Next(1000000);
+                        EncryptionState = EncryptionState.Started;
 
-                            var buffer = new byte[4];
-                            BinaryPrimitives.WriteInt32LittleEndian(buffer, encryptionChallenge);
+                        var bytes = new List<byte>();
+                        var buffer = new byte[4];
 
-                            using var aes = Aes.Create();
+                        var tempBytes = Encoding.UTF8.GetBytes(dhParameters.P.ToString());
+                        BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                        bytes.AddRange(buffer);
+                        bytes.AddRange(tempBytes);
 
-                            var iv = new byte[16];
+                        tempBytes = Encoding.UTF8.GetBytes(dhParameters.G.ToString());
+                        BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                        bytes.AddRange(buffer);
+                        bytes.AddRange(tempBytes);
 
-                            aes.Key = pskKey;
-                            aes.IV = iv;
+                        tempBytes = Encoding.UTF8.GetBytes((keyPair.Public as DHPublicKeyParameters)!.Y.ToString());
+                        BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
+                        bytes.AddRange(buffer);
+                        bytes.AddRange(tempBytes);
 
-                            encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-                            decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-
-                            await SendAsync(Encrypt(new RconPacket(currentEncoding)
-                            {
-                                Type = RconPacketType.EncryptTest, RequestId = packet.RequestId, PayloadBytes = buffer
-                            }));
-                            continue;
-                        }
-                        case EncryptionMode.DiffieHellmanExchange when enableDiffieHellman:
+                        await SendAsync(new RconPacket(currentEncoding)
                         {
-                            ArgumentNullException.ThrowIfNull(dhParameters);
-                            ArgumentNullException.ThrowIfNull(keyPair);
-
-                            EncryptionState = EncryptionState.Started;
-                            EncryptionMode = mode;
-
-                            var bytes = new List<byte>();
-                            var buffer = new byte[4];
-
-                            var tempBytes = Encoding.UTF8.GetBytes(dhParameters.P.ToString());
-                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
-                            bytes.AddRange(buffer);
-                            bytes.AddRange(tempBytes);
-
-                            tempBytes = Encoding.UTF8.GetBytes(dhParameters.G.ToString());
-                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
-                            bytes.AddRange(buffer);
-                            bytes.AddRange(tempBytes);
-
-                            tempBytes = Encoding.UTF8.GetBytes((keyPair.Public as DHPublicKeyParameters)!.Y.ToString());
-                            BinaryPrimitives.WriteInt32LittleEndian(buffer, tempBytes.Length);
-                            bytes.AddRange(buffer);
-                            bytes.AddRange(tempBytes);
-
-                            await SendAsync(new RconPacket(currentEncoding)
-                            {
-                                Type = RconPacketType.EncryptInitial,
-                                RequestId = packet.RequestId,
-                                PayloadBytes = bytes.ToArray()
-                            });
-                            continue;
-                        }
-                        default:
-                            await SendAsync(new RconPacket(currentEncoding)
-                            {
-                                Type = RconPacketType.EncryptStart,
-                                RequestId = packet.RequestId,
-                            });
-                            continue;
+                            Type = RconPacketType.EncryptInitial,
+                            RequestId = packet.RequestId,
+                            PayloadBytes = bytes.ToArray()
+                        });
+                        continue;
                     }
                 }
 
@@ -198,7 +138,7 @@ public class RconConnection
 
                     var sharedKey = ComputeSharedKey(clientPublicKey);
 
-                    pskKey = sharedKey.ToByteArray();
+                    var key = sharedKey.ToByteArray();
 
                     EncryptionState = EncryptionState.Challenge;
 
@@ -211,7 +151,7 @@ public class RconConnection
 
                     var iv = new byte[16];
 
-                    aes.Key = pskKey;
+                    aes.Key = key;
                     aes.IV = iv;
 
                     encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
@@ -245,10 +185,10 @@ public class RconConnection
 
                 if (packet.Type == RconPacketType.EncryptedContent && EncryptionState is not EncryptionState.Encrypted)
                 {
-                    await new RconPacket(currentEncoding)
+                    await SendAsync(new RconPacket(currentEncoding)
                     {
                         RequestId = packet.RequestId, Type = RconPacketType.EncryptStart
-                    }.WriteAsync(networkStream, cancellationToken);
+                    });
                     continue;
                 }
 
@@ -256,25 +196,31 @@ public class RconConnection
                 {
                     if (packet.Type != RconPacketType.Login)
                     {
-                        var response = new RconPacket(currentEncoding)
+                        await SendAsync(new RconPacket(currentEncoding)
                         {
                             Type = RconPacketType.Login, PayloadText = "Not authenticated", RequestId = -1
-                        };
-                        await response.WriteAsync(networkStream, cancellationToken);
+                        });
                     }
                     else
                     {
+                        if (EncryptionState is not EncryptionState.Encrypted && requireEncryption)
+                        {
+                            await SendAsync(new RconPacket(currentEncoding)
+                            {
+                                Type = RconPacketType.EncryptStart, RequestId = -1
+                            });
+                            break;
+                        }
                         if (!packet.PayloadText.Equals(password))
                         {
-                            await new RconPacket(currentEncoding)
+                            await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.Login, PayloadText = "Wrong password", RequestId = -1
-                            }.WriteAsync(networkStream, cancellationToken);
+                            });
                             break;
                         }
 
-                        var response = new RconPacket(currentEncoding) {Type = RconPacketType.Command, RequestId = packet.RequestId};
-                        await response.WriteAsync(networkStream, cancellationToken);
+                        await SendAsync(new RconPacket(currentEncoding) {Type = RconPacketType.Command, RequestId = packet.RequestId});
                         Authenticated = true;
                     }
                 }
@@ -301,53 +247,49 @@ public class RconConnection
                             await commandHandler.ProcessCommand(context);
 
                             var commandResult = sender.GetResponse();
-                            var response = new RconPacket(currentEncoding)
+                            await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = commandResult,
                                 RequestId = packet.RequestId
-                            };
-                            await response.WriteAsync(networkStream, cancellationToken);
+                            });
                         }
                         catch (CommandNotFoundException)
                         {
-                            var response = new RconPacket(currentEncoding)
+                            await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = "Command not found",
                                 RequestId = packet.RequestId
-                            };
-                            await response.WriteAsync(networkStream, cancellationToken);
+                            });
                         }
                         catch (DisallowedCommandIssuerException disallowedCommandIssuerException)
                         {
-                            var response = new RconPacket(currentEncoding)
+                            await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = disallowedCommandIssuerException.Message,
                                 RequestId = packet.RequestId
-                            };
-                            await response.WriteAsync(networkStream, cancellationToken);
+                            });
                         }
                         catch (Exception e)
                         {
                             logger.LogWarning(e, "Error processing RCON command");
-                            var response = new RconPacket(currentEncoding)
+                            await SendAsync(new RconPacket(currentEncoding)
                             {
                                 Type = RconPacketType.CommandResponse,
                                 PayloadText = $"Error: '{e.Message}'",
                                 RequestId = packet.RequestId
-                            };
-                            await response.WriteAsync(networkStream, cancellationToken);
+                            });
                         }
                     }
                     else
-                        await new RconPacket(currentEncoding)
+                        await SendAsync(new RconPacket(currentEncoding)
                         {
                             Type = RconPacketType.CommandResponse,
                             PayloadText = $"Unknown request 0x{(int)packet.Type:x2}",
                             RequestId = packet.RequestId
-                        }.WriteAsync(networkStream, cancellationToken);
+                        });
                 }
             }
             catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
@@ -424,10 +366,4 @@ public enum EncryptionState
     Encrypted,
     Started,
     Challenge
-}
-
-public enum EncryptionMode
-{
-    PreSharedKey,
-    DiffieHellmanExchange
 }

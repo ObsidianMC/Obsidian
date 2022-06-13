@@ -33,30 +33,23 @@ public class RconServer
     {
         this.logger = logger;
         var password = config.RconPassword;
-        var pskKey = config.RconKey;
-        var enableDiffieHellman = config.AllowDiffieHellman;
 
-        if (enableDiffieHellman)
-        {
-            logger.LogInformation("Generating keys...");
+        logger.LogInformation("Generating keys...");
 
-            const int keySize = 256;
-            const int certainty = 5;
-            var gen = new DHParametersGenerator();
-            gen.Init(keySize, certainty, new SecureRandom());
-            dhParameters = gen.GenerateParameters();
+        const int keySize = 256;
+        const int certainty = 5;
+        var gen = new DHParametersGenerator();
+        gen.Init(keySize, certainty, new SecureRandom());
+        dhParameters = gen.GenerateParameters();
 
-            var keyGen = GeneratorUtilities.GetKeyPairGenerator("DH");
-            var kgp = new DHKeyGenerationParameters(new SecureRandom(), dhParameters);
-            keyGen.Init(kgp);
-            keyPair = keyGen.GenerateKeyPair();
+        var keyGen = GeneratorUtilities.GetKeyPairGenerator("DH");
+        var kgp = new DHKeyGenerationParameters(new SecureRandom(), dhParameters);
+        keyGen.Init(kgp);
+        keyPair = keyGen.GenerateKeyPair();
 
-            logger.LogInformation("Done");
-        }
+        logger.LogInformation("Done");
 
-        initData = new InitData(
-            server, commandHandler, password, pskKey,
-            enableDiffieHellman, dhParameters, keyPair);
+        initData = new InitData(server, commandHandler, password, config.RequireRconEncryption, dhParameters, keyPair);
 
         listener = TcpListener.Create(config.RconPort);
     }
@@ -98,6 +91,6 @@ public class RconServer
     }
 
     public record InitData(
-        IServer Server, CommandHandler CommandHandler, string Password, string? PskKey,
-        bool EnableDiffieHellman, DHParameters? DhParameters, AsymmetricCipherKeyPair? KeyPair);
+        IServer Server, CommandHandler CommandHandler, string Password, bool RequireEncryption,
+        DHParameters? DhParameters, AsymmetricCipherKeyPair? KeyPair);
 }

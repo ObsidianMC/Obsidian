@@ -81,12 +81,7 @@ public interface IConfig
     public bool BroadcastRconToOps { get; set; }
 
     /// <summary>
-    /// Key used in RCON encryption.
+    /// Whether the server will require the encryption before authenticating
     /// </summary>
-    public string? RconKey { get; set; }
-
-    /// <summary>
-    /// Whether the RCON encryption can happen with a Diffie-Hellman Key Exchange or only PSK.
-    /// </summary>
-    public bool AllowDiffieHellman { get; set; }
+    public bool RequireRconEncryption { get; set; }
 }
