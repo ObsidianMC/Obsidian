@@ -11,6 +11,8 @@ public interface IPlayer : ILiving
     public Guid Uuid { get; }
     public bool IsOperator { get; }
 
+    public Vector? LastDeathLocation { get; set; }
+
     public Gamemode Gamemode { get; set; }
     public Hand MainHand { get; set; }
     public PlayerBitMask PlayerBitMask { get; set; }
