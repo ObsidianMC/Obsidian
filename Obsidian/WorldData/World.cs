@@ -570,7 +570,7 @@ public class World : IWorld
                 Type = type
             };
 
-            await this.Server.QueueBroadcastPacketAsync(new SpawnLivingEntity
+            await this.Server.QueueBroadcastPacketAsync(new SpawnEntityPacket
             {
                 EntityId = entity.EntityId,
                 Uuid = entity.Uuid,
@@ -578,7 +578,7 @@ public class World : IWorld
                 Position = position,
                 Pitch = 0,
                 Yaw = 0,
-                HeadPitch = 0,
+                HeadYaw = 0,
                 Velocity = new Velocity(0, 0, 0)
             });
         }
@@ -605,9 +605,6 @@ public class World : IWorld
 
     public Task SpawnExperienceOrbs(VectorF position, short count = 1) =>
         this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
-
-    public Task SpawnPaintingAsync(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default) =>
-        this.Server.QueueBroadcastPacketAsync(new SpawnPainting(uuid == Guid.Empty ? Guid.NewGuid() : uuid, painting.Id, position, direction));
 
     /// <summary>
     /// 

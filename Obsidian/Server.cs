@@ -504,12 +504,9 @@ public partial class Server : IServer
             }
             case DiggingStatus.StartedDigging:
             {
-                BroadcastPacket(new AcknowledgePlayerDigging
+                BroadcastPacket(new AcknowledgeBlockChangesPacket
                 {
-                    Position = digging.Position,
-                    Block = block.StateId,
-                    Status = digging.Status,
-                    Successful = true
+                    SequenceID = 0
                 });
 
                 if (player.Gamemode == Gamemode.Creative)
@@ -522,12 +519,9 @@ public partial class Server : IServer
                 break;
             case DiggingStatus.FinishedDigging:
             {
-                BroadcastPacket(new AcknowledgePlayerDigging
+                BroadcastPacket(new AcknowledgeBlockChangesPacket//TODO properly implement this
                 {
-                    Position = digging.Position,
-                    Block = block.StateId,
-                    Status = digging.Status,
-                    Successful = true
+                    SequenceID = 0
                 });
 
                 BroadcastPacket(new BlockBreakAnimation

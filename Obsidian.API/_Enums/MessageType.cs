@@ -4,5 +4,10 @@ public enum MessageType : int
 {
     Chat,
     System,
-    ActionBar
+    ActionBar,
+    SayCommand,
+    MessageCommand,
+    TeamMessageCommand,
+    EmoteCommand,
+    TellRawCommand
 }
