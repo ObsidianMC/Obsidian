@@ -19,7 +19,10 @@ public partial class NamedSoundEffect : IClientboundPacket
     [Field(4)]
     public float Pitch { get; }
 
-    public int Id => 0x19;
+    [Field(5)]
+    public long Seed { get; set; } = 0;//TODO generate seed
+
+    public int Id => 0x16;
 
     public NamedSoundEffect(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
     {

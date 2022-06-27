@@ -268,7 +268,7 @@ public class Player : Living, IPlayer
         this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
 
     public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
-        client.QueuePacketAsync(new ChatMessagePacket(message, type, sender ?? Guid.Empty));
+        client.QueuePacketAsync(new PlayerChatMessage(message, type, sender ?? Guid.Empty));
 
     public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
         client.QueuePacketAsync(new SoundEffect(soundId, position, category, volume, pitch));

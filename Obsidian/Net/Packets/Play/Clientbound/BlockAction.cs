@@ -16,5 +16,8 @@ public partial class BlockAction : IClientboundPacket
     [Field(3), VarLength]
     public int BlockType { get; init; }
 
+    [Field(4), VarLength]
+    public int Sequence { get; init; }//TODO figure this out
+
     public int Id => 0x0B;
 }

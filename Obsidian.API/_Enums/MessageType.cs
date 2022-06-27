@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum MessageType : sbyte
+public enum MessageType : int
 {
     Chat,
     System,

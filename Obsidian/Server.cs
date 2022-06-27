@@ -64,7 +64,7 @@ public partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-    private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
+    private readonly ConcurrentQueue<PlayerChatMessage> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
 
@@ -178,7 +178,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new ChatMessagePacket(message, type));
+        chatMessagesQueue.Enqueue(new PlayerChatMessage(message, type));
         Logger.LogInformation(message.Text);
     }
 
@@ -187,7 +187,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(string message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new ChatMessagePacket(ChatMessage.Simple(message), type));
+        chatMessagesQueue.Enqueue(new PlayerChatMessage(ChatMessage.Simple(message), type));
         Logger.LogInformation(message);
     }
 
@@ -633,7 +633,7 @@ public partial class Server : IServer
                 }
             }
 
-            while (chatMessagesQueue.TryDequeue(out ChatMessagePacket chatMessagePacket))
+            while (chatMessagesQueue.TryDequeue(out PlayerChatMessage chatMessagePacket))
             {
                 foreach (Player player in Players)
                 {

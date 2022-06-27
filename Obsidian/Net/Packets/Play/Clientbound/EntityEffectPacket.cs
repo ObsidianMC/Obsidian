@@ -1,4 +1,5 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Nbt;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -18,8 +19,14 @@ public partial class EntityEffectPacket : IClientboundPacket
     
     [Field(4)]
     public byte Flags { get; init; }
-    
-    public int Id => 0x65;
+
+    [Field(5)]
+    public bool HasFactorData { get; init; }
+
+    [Field(6), Condition("HasFactorData")]
+    public NbtCompound FactorCodec { get; init; }
+
+    public int Id => 0x62;
 
     public EntityEffectPacket(int entityId, byte effectId, int duration)
     {

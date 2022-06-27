@@ -15,6 +15,9 @@ public partial class PlayerDigging : IServerboundPacket
     [Field(2), ActualType(typeof(sbyte))]
     public BlockFace Face { get; private set; } // This is an enum of what face of the block is being hit
 
+    [Field(3), VarLength]
+    public int Sequence { get; private set; }
+
     public int Id => 0x1A;
 
     public async ValueTask HandleAsync(Server server, Player player)
