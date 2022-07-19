@@ -9,6 +9,7 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.IO;
+using System.Net;
 
 namespace Obsidian.Entities;
 
@@ -96,6 +97,8 @@ public class Player : Living, IPlayer
 
     public string PersistentDataFile { get; }
     public string PersistentDataBackupFile { get; }
+
+    public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
 
     internal Player(Guid uuid, string username, Client client, World world)
     {
