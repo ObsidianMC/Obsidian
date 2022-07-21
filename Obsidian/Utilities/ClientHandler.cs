@@ -65,7 +65,7 @@ public class ClientHandler
         //Packets.TryAdd(0x2C, new Animation());
         //Packets.TryAdd(0x2D, Spectate);
         //Packets.TryAdd(0x2E, new PlayerBlockPlacement()); !
-        Packets.TryAdd(0x2F, new UseItem());
+        Packets.TryAdd(0x2F, new UseItemPacket());
     }
 
     public async Task HandlePlayPackets(int id, byte[] data, Client client)
