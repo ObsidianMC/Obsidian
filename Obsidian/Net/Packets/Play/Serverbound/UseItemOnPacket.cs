@@ -5,7 +5,7 @@ using Obsidian.Utilities.Registry;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerBlockPlacement : IServerboundPacket
+public partial class UseItemOnPacket : IServerboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; } // Hand it was placed from. 0 = Main, 1 = Off
@@ -22,7 +22,10 @@ public partial class PlayerBlockPlacement : IServerboundPacket
     [Field(6)]
     public bool InsideBlock { get; private set; }
 
-    public int Id => 0x2E;
+    [Field(7), VarLength]
+    public int Sequence { get; private set; }
+
+    public int Id => 0x30;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class ClientSettings : IServerboundPacket
+public partial class ClientInformationPacket : IServerboundPacket
 {
     [Field(0)]
     public string Locale { get; private set; }
@@ -11,8 +11,8 @@ public partial class ClientSettings : IServerboundPacket
     [Field(1)]
     public sbyte ViewDistance { get; private set; }
 
-    [Field(2)]
-    public int ChatMode { get; private set; }
+    [Field(2), ActualType(typeof(int)), VarLength]
+    public ChatMode ChatMode { get; private set; }
 
     [Field(3)]
     public bool ChatColors { get; private set; }
@@ -24,9 +24,12 @@ public partial class ClientSettings : IServerboundPacket
     public int MainHand { get; private set; }
 
     [Field(6)]
-    public bool DisableTextFiltering { get; private set; }
+    public bool EnableTextFiltering { get; private set; }
 
-    public int Id => 0x05;
+    [Field(7)]
+    public bool AllowServerListings { get; private set; }
+
+    public int Id => 0x07;
 
     public ValueTask HandleAsync(Server server, Player player)
     {

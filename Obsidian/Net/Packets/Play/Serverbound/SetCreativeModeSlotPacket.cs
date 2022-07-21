@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class CreativeInventoryAction : IServerboundPacket
+public partial class SetCreativeModeSlotPacket : IServerboundPacket
 {
     [Field(0)]
     public short ClickedSlot { get; private set; }
@@ -12,7 +12,7 @@ public partial class CreativeInventoryAction : IServerboundPacket
     [Field(1)]
     public ItemStack ClickedItem { get; private set; }
 
-    public int Id => 0x28;
+    public int Id => 0x2A;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

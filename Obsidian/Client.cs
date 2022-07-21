@@ -57,7 +57,7 @@ public sealed class Client : IDisposable
     /// </summary>
     public string? Brand { get; set; }
 
-    public ClientSettings? ClientSettings { get; internal set; }
+    public ClientInformationPacket? ClientSettings { get; internal set; }
 
     private readonly CancellationTokenSource cancellationSource = new();
 

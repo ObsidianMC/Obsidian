@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class EntityAction : IServerboundPacket
+public partial class PlayerCommandPacket : IServerboundPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; private set; }
@@ -15,7 +15,7 @@ public partial class EntityAction : IServerboundPacket
     [Field(2), VarLength]
     public int JumpBoost { get; set; }
 
-    public int Id => 0x1B;
+    public int Id => 0x1D;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

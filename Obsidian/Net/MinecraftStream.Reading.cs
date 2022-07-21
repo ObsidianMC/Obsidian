@@ -1,4 +1,5 @@
-﻿using Obsidian.Nbt;
+﻿using Obsidian.Commands;
+using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
@@ -322,6 +323,26 @@ public partial class MinecraftStream
         } while ((read & 0b10000000) != 0);
 
         return result;
+    }
+
+    [ReadMethod]
+    public ArgumentSignature ReadArgumentSignature() => new()
+    {
+        ArgumentName = this.ReadString(),
+        Signature = this.ReadByteArray()
+    };
+
+    [ReadMethod]
+    public List<ArgumentSignature> ReadArgumentSignatures()
+    {
+        var length = this.ReadVarInt();
+
+        var list = new List<ArgumentSignature>(length);
+
+        for (int i = 0; i < length; i++)
+            list[i] = this.ReadArgumentSignature();
+
+        return list;
     }
 
     [ReadMethod]

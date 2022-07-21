@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class InteractEntity : IServerboundPacket
+public partial class InteractPacket : IServerboundPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; private set; }
@@ -21,7 +21,7 @@ public partial class InteractEntity : IServerboundPacket
     [Field(4)]
     public bool Sneaking { get; private set; }
 
-    public int Id => 0x0D;
+    public int Id => 0x0F;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

@@ -4,12 +4,12 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play;
 
-public partial class AnimationPacket : IServerboundPacket
+public partial class SwingArmPacket : IServerboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public Hand Hand { get; private set; }
 
-    public int Id => 0x2C;
+    public int Id => 0x2E;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

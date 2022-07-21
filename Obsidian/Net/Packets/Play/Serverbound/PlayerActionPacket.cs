@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerDigging : IServerboundPacket
+public partial class PlayerActionPacket : IServerboundPacket
 {
     [Field(0), ActualType(typeof(int)), VarLength]
     public DiggingStatus Status { get; private set; }
@@ -18,7 +18,7 @@ public partial class PlayerDigging : IServerboundPacket
     [Field(3), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x1A;
+    public int Id => 0x1C;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -51,7 +51,7 @@ public partial class PlayerDigging : IServerboundPacket
 public class PlayerDiggingStore
 {
     public Guid Player { get; init; }
-    public PlayerDigging Packet { get; init; }
+    public PlayerActionPacket Packet { get; init; }
 }
 
 public enum DiggingStatus : int

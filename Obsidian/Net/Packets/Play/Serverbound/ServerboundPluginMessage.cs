@@ -12,7 +12,7 @@ public partial class ServerboundPluginMessage : IServerboundPacket
     [Field(1)]
     public byte[] PluginData { get; private set; }
 
-    public int Id => 0x0A;
+    public int Id => 0x0C;
 
     public ServerboundPluginMessage()
     {

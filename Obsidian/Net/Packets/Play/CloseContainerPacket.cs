@@ -4,12 +4,12 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play;
 
-public partial class CloseWindow : IClientboundPacket, IServerboundPacket
+public partial class CloseContainerPacket : IClientboundPacket, IServerboundPacket
 {
     [Field(0)]
     public byte WindowId { get; private set; }
 
-    public int Id => 0x09;
+    public int Id => 0x0B;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

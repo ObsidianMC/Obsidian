@@ -3,12 +3,15 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class SetDisplayedRecipe : IServerboundPacket
+public partial class ClickContainerButtonPacket : IServerboundPacket
 {
     [Field(0)]
-    public string RecipeId { get; private set; }
+    public sbyte WindowId { get; private set; }
 
-    public int Id => 0x1F;
+    [Field(1)]
+    public sbyte ButtonId { get; private set; }
+
+    public int Id => 0x09;
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

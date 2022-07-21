@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
 // Source: https://wiki.vg/index.php?title=Protocol&oldid=14889#Click_Window
-public partial class ClickWindowPacket : IServerboundPacket
+public partial class ClickContainerPacket : IServerboundPacket
 {
     private const int Outsideinventory = -999;
 
@@ -55,7 +55,7 @@ public partial class ClickWindowPacket : IServerboundPacket
 
     private bool IsPlayerInventory => this.WindowId == 0;
 
-    public int Id => 0x08;
+    public int Id => 0x0A;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

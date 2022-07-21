@@ -75,74 +75,80 @@ public class ClientHandler
             case 0x00:
                 await HandleFromPoolAsync<TeleportConfirm>(data, client);
                 break;
-
             case 0x03:
-                await HandleFromPoolAsync<IncomingChatMessage>(data, client);
+                await HandleFromPoolAsync<ChatCommandPacket>(data, client);
                 break;
             case 0x04:
-                await HandleFromPoolAsync<ClientStatus>(data, client);
+                await HandleFromPoolAsync<IncomingChatMessagePacket>(data, client);
                 break;
-            case 0x05:
-                await HandleFromPoolAsync<ClientSettings>(data, client);
+            case 0x06:
+                await HandleFromPoolAsync<ClientCommandPacket>(data, client);
                 break;
-
             case 0x07:
-                await HandleFromPoolAsync<ClickWindowButton>(data, client);
-                break;
-
-            case 0x08:
-                await HandleFromPoolAsync<ClickWindowPacket>(data, client);
+                await HandleFromPoolAsync<ClientInformationPacket>(data, client);
                 break;
 
             case 0x09:
-                await HandleFromPoolAsync<CloseWindow>(data, client);
+                await HandleFromPoolAsync<ClickContainerButtonPacket>(data, client);
                 break;
 
             case 0x0A:
+                await HandleFromPoolAsync<ClickContainerPacket>(data, client);
+                break;
+
+            case 0x0B:
+                await HandleFromPoolAsync<CloseContainerPacket>(data, client);
+                break;
+
+            case 0x0C:
                 await HandleFromPoolAsync<ServerboundPluginMessage>(data, client);
                 break;
+
             case 0x0F:
+                await HandleFromPoolAsync<InteractPacket>(data, client);
+                break;
+
+            case 0x11:
                 await HandleFromPoolAsync<KeepAlivePacket>(data, client);
                 break;
 
-            case 0x0D:
-                await HandleFromPoolAsync<InteractEntity>(data, client);
-                break;
-
-            case 0x17:
-                await HandleFromPoolAsync<PickItem>(data, client);
-                break;
-
-            case 0x18:
-                await HandleFromPoolAsync<CraftRecipeRequest>(data, client);
+            case 0x19:
+                await HandleFromPoolAsync<PickItemPacket>(data, client);
                 break;
 
             case 0x1A:
-                await HandleFromPoolAsync<PlayerDigging>(data, client);
+                await HandleFromPoolAsync<PlaceRecipePacket>(data, client);
                 break;
 
-            case 0x1B:
-                await HandleFromPoolAsync<EntityAction>(data, client);
+            case 0x1C:
+                await HandleFromPoolAsync<PlayerActionPacket>(data, client);
                 break;
 
-            case 0x1F:
-                await HandleFromPoolAsync<SetDisplayedRecipe>(data, client);
+            case 0x1D:
+                await HandleFromPoolAsync<PlayerCommandPacket>(data, client);
                 break;
 
-            case 0x20:
-                await HandleFromPoolAsync<NameItem>(data, client);
+            case 0x21:
+                await HandleFromPoolAsync<SetSeenRecipePacket>(data, client);
                 break;
 
-            case 0x28:
-                await HandleFromPoolAsync<CreativeInventoryAction>(data, client);
+            case 0x22:
+                await HandleFromPoolAsync<RenameItemPacket>(data, client);
                 break;
 
-            case 0x2C:
-                await HandleFromPoolAsync<AnimationPacket>(data, client);
+            case 0x2A:
+                await HandleFromPoolAsync<SetCreativeModeSlotPacket>(data, client);
                 break;
 
             case 0x2E:
-                await HandleFromPoolAsync<PlayerBlockPlacement>(data, client);
+                await HandleFromPoolAsync<SwingArmPacket>(data, client);
+                break;
+
+            case 0x30:
+                await HandleFromPoolAsync<UseItemOnPacket>(data, client);
+                break;
+            case 0x31:
+                await HandleFromPoolAsync<UseItemPacket>(data, client);
                 break;
 
             default:
