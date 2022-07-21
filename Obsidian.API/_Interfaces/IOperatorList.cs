@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using System.Collections.Immutable;
+
+namespace Obsidian.API;
 
 public interface IOperatorList
 {
@@ -9,4 +11,5 @@ public interface IOperatorList
     public void RemoveOperator(IPlayer player);
     public void RemoveOperator(string username);
     public bool IsOperator(IPlayer p);
+    public ImmutableList<IPlayer> GetOnlineOperators();
 }

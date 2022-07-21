@@ -244,6 +244,13 @@ public class RconConnection
 
                         try
                         {
+                            logger.LogInformation("Executing '{Prefix}{Command}'", CommandHandler.DefaultPrefix, packet.PayloadText);
+
+                            server.Operators.GetOnlineOperators().ForEach(op =>
+                            {
+                                op.SendMessageAsync($"[RCON: {CommandHandler.DefaultPrefix}{packet.PayloadText}]", MessageType.System);
+                            });
+
                             await commandHandler.ProcessCommand(context);
 
                             var commandResult = sender.GetResponse();

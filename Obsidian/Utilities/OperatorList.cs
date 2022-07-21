@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Collections.Immutable;
 using System.IO;
 
 namespace Obsidian.Utilities;
@@ -96,6 +97,8 @@ public class OperatorList : IOperatorList
     }
 
     public bool IsOperator(IPlayer p) => this.ops.Any(x => x.Username == p.Username || p.Uuid == x.Uuid);
+
+    public ImmutableList<IPlayer> GetOnlineOperators() => server.Players.Where(IsOperator).ToImmutableList();
 
     private void UpdateList()
     {
