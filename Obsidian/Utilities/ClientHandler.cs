@@ -36,9 +36,9 @@ public class ClientHandler
         //Packets.TryAdd(0x0E, InteractEntity);
         //Packets.TryAdd(0x0F, GenerateStructure);
         //Packets.TryAdd(0x11, LockDifficulty);
-        Packets.TryAdd(0x11, new PlayerPosition());
-        Packets.TryAdd(0x12, new PlayerPositionAndRotation());
-        Packets.TryAdd(0x13, new PlayerRotation());
+        Packets.TryAdd(0x13, new PlayerPosition());
+        Packets.TryAdd(0x14, new PlayerPositionAndRotation());
+        Packets.TryAdd(0x15, new PlayerRotation());
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
         //Packets.TryAdd(0x17, SteerBoat);
@@ -55,7 +55,7 @@ public class ClientHandler
         //Packets.TryAdd(0x22, AdvancementTab);
         //Packets.TryAdd(0x23, SelectTrade);
         //Packets.TryAdd(0x24, SetBeaconEffect);
-        Packets.TryAdd(0x25, new ServerHeldItemChange());
+        Packets.TryAdd(0x27, new SetHeldItemPacket());
         //Packets.TryAdd(0x26, UpdateCommandBlock);
         //Packets.TryAdd(0x27, UpdateCommandBlockMinecart);
         //Packets.TryAdd(0x28, new CreativeInventoryAction()); !

@@ -4,12 +4,12 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class ServerHeldItemChange : IServerboundPacket
+public partial class SetHeldItemPacket : IServerboundPacket
 {
     [Field(0)]
     public short Slot { get; private set; }
 
-    public int Id => 0x25;
+    public int Id => 0x47;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
