@@ -36,9 +36,9 @@ public class ClientHandler
         //Packets.TryAdd(0x0E, InteractEntity);
         //Packets.TryAdd(0x0F, GenerateStructure);
         //Packets.TryAdd(0x11, LockDifficulty);
-        Packets.TryAdd(0x13, new PlayerPosition());
-        Packets.TryAdd(0x14, new PlayerPositionAndRotation());
-        Packets.TryAdd(0x15, new PlayerRotation());
+        Packets.TryAdd(0x13, new SetPlayerPositionPacket());
+        Packets.TryAdd(0x14, new SetPlayerPositionAndRotationPacket());
+        Packets.TryAdd(0x15, new SetPlayerRotationPacket());
         //Packets.TryAdd(0x15, PlayerMovement);
         //Packets.TryAdd(0x16, VehicleMove);
         //Packets.TryAdd(0x17, SteerBoat);
@@ -55,7 +55,7 @@ public class ClientHandler
         //Packets.TryAdd(0x22, AdvancementTab);
         //Packets.TryAdd(0x23, SelectTrade);
         //Packets.TryAdd(0x24, SetBeaconEffect);
-        Packets.TryAdd(0x27, new SetHeldItemPacket());
+        Packets.TryAdd(0x27, new SetHeldItemPacket(false));
         //Packets.TryAdd(0x26, UpdateCommandBlock);
         //Packets.TryAdd(0x27, UpdateCommandBlockMinecart);
         //Packets.TryAdd(0x28, new CreativeInventoryAction()); !
@@ -73,13 +73,13 @@ public class ClientHandler
         switch (id)
         {
             case 0x00:
-                await HandleFromPoolAsync<TeleportConfirm>(data, client);
+                await HandleFromPoolAsync<ConfirmTeleportationPacket>(data, client);
                 break;
             case 0x03:
                 await HandleFromPoolAsync<ChatCommandPacket>(data, client);
                 break;
             case 0x04:
-                await HandleFromPoolAsync<IncomingChatMessagePacket>(data, client);
+                await HandleFromPoolAsync<ChatMessagePacket>(data, client);
                 break;
             case 0x06:
                 await HandleFromPoolAsync<ClientCommandPacket>(data, client);
@@ -101,7 +101,7 @@ public class ClientHandler
                 break;
 
             case 0x0C:
-                await HandleFromPoolAsync<ServerboundPluginMessage>(data, client);
+                await HandleFromPoolAsync<PluginMessagePacket>(data, client);
                 break;
 
             case 0x0F:

@@ -48,10 +48,10 @@ public partial class ClickContainerPacket : IServerboundPacket
     public IDictionary<short, ItemStack> SlotsUpdated { get; private set; }
 
     /// <summary>
-    /// The clicked slot. Has to be empty (item ID = -1) for drop mode.
+    /// 	Item carried by the cursor. Has to be empty (item ID = -1) for drop mode, otherwise nothing will happen.
     /// </summary>
     [Field(6)]
-    public ItemStack ClickedItem { get; private set; }
+    public ItemStack CarriedItem { get; private set; }
 
     private bool IsPlayerInventory => this.WindowId == 0;
 
@@ -74,7 +74,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
             case InventoryOperationMode.ShiftMouseClick:
                 {
-                    if (ClickedItem == null)
+                    if (CarriedItem == null)
                         return;
 
                     //TODO implement shift click
@@ -88,17 +88,17 @@ public partial class ClickContainerPacket : IServerboundPacket
 
                     var currentItem = player.Inventory.GetItem(localSlot);
 
-                    if (currentItem.IsAir() && ClickedItem != null)
+                    if (currentItem.IsAir() && CarriedItem != null)
                     {
                         container.RemoveItem(slot);
 
-                        player.Inventory.SetItem(localSlot, ClickedItem);
+                        player.Inventory.SetItem(localSlot, CarriedItem);
                     }
-                    else if (!currentItem.IsAir() && ClickedItem != null)
+                    else if (!currentItem.IsAir() && CarriedItem != null)
                     {
                         container.SetItem(slot, currentItem);
 
-                        player.Inventory.SetItem(localSlot, ClickedItem);
+                        player.Inventory.SetItem(localSlot, CarriedItem);
                     }
                     else
                     {
@@ -167,7 +167,7 @@ public partial class ClickContainerPacket : IServerboundPacket
 
             case InventoryOperationMode.DoubleClick:
                 {
-                    if (ClickedItem == null || ClickedItem.Count >= 64)
+                    if (CarriedItem == null || CarriedItem.Count >= 64)
                         return;
 
                     TakeFromContainer(container, player.Inventory);
@@ -206,14 +206,14 @@ public partial class ClickContainerPacket : IServerboundPacket
 
     private void TakeFromContainer(BaseContainer container, BaseContainer playerContainer)
     {
-        int amountNeeded = 64 - ClickedItem.Count; // TODO use max item count
+        int amountNeeded = 64 - CarriedItem.Count; // TODO use max item count
         if (amountNeeded == 0)
             return;
 
         for (int i = 0; i < container.Size; i++)
         {
             ItemStack? item = container[i];
-            if (item is null || item != ClickedItem)
+            if (item is null || item != CarriedItem)
                 continue;
 
             int amountTaken = Math.Min(item.Count, amountNeeded);
@@ -222,7 +222,7 @@ public partial class ClickContainerPacket : IServerboundPacket
             if (item.Count == 0)
                 container.RemoveItem(i);
 
-            ClickedItem.Count += amountTaken;
+            CarriedItem.Count += amountTaken;
             amountNeeded -= amountTaken;
 
             if (amountNeeded == 0)
@@ -235,7 +235,7 @@ public partial class ClickContainerPacket : IServerboundPacket
             for (int i = 0; i < playerContainer.Size; i++)
             {
                 ItemStack? item = playerContainer[i];
-                if (item is null || item != ClickedItem)
+                if (item is null || item != CarriedItem)
                     continue;
 
                 int amountTaken = Math.Min(item.Count, amountNeeded);
@@ -244,7 +244,7 @@ public partial class ClickContainerPacket : IServerboundPacket
                 if (item.Count == 0)
                     playerContainer.RemoveItem(i);
 
-                ClickedItem.Count += amountTaken;
+                CarriedItem.Count += amountTaken;
                 amountNeeded -= amountTaken;
 
                 if (amountNeeded == 0)
@@ -270,9 +270,9 @@ public partial class ClickContainerPacket : IServerboundPacket
 
     private async Task HandleMouseClick(BaseContainer container, Server server, Player player, int slot)
     {
-        if (!ClickedItem.IsAir())
+        if (!CarriedItem.IsAir())
         {
-            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, ClickedItem)
+            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, CarriedItem)
             {
                 Slot = slot
             });
@@ -280,7 +280,7 @@ public partial class ClickContainerPacket : IServerboundPacket
             if (@event.Cancel)
                 return;
 
-            player.LastClickedItem = ClickedItem;
+            player.LastClickedItem = CarriedItem;
 
             container.RemoveItem(slot);
         }
@@ -291,13 +291,13 @@ public partial class ClickContainerPacket : IServerboundPacket
                 server.Logger.LogDebug("Placed: {} in container: {}", player.LastClickedItem?.Type, container.Title?.Text);
                 container.SetItem(slot, player.LastClickedItem);
 
-                player.LastClickedItem = ClickedItem;
+                player.LastClickedItem = CarriedItem;
             }
             else
             {
                 container.SetItem(slot, player.LastClickedItem);
 
-                player.LastClickedItem = ClickedItem;
+                player.LastClickedItem = CarriedItem;
             }
         }
     }
@@ -318,7 +318,7 @@ public partial class ClickContainerPacket : IServerboundPacket
                 if (Button != 9)
                     return;
 
-                container.SetItem(value, ClickedItem);
+                container.SetItem(value, CarriedItem);
             }
             else
             {
@@ -327,7 +327,7 @@ public partial class ClickContainerPacket : IServerboundPacket
                 if (Button != 1 || Button != 5)
                     return;
 
-                container.SetItem(value, ClickedItem);
+                container.SetItem(value, CarriedItem);
             }
         }
     }

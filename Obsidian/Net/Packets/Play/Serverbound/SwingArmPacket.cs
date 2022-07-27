@@ -2,7 +2,7 @@
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
 
-namespace Obsidian.Net.Packets.Play;
+namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class SwingArmPacket : IServerboundPacket
 {

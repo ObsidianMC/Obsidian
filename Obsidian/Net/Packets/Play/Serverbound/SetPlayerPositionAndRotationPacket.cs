@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerPositionAndRotation : IServerboundPacket
+public partial class SetPlayerPositionAndRotationPacket : IServerboundPacket
 {
     [Field(0), DataFormat(typeof(double))]
     public VectorF Position { get; private set; }

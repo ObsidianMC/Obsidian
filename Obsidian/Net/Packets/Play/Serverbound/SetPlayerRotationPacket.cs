@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerRotation : IServerboundPacket
+public partial class SetPlayerRotationPacket : IServerboundPacket
 {
     [Field(0), DataFormat(typeof(float))]
     public Angle Yaw { get; private set; }
@@ -16,11 +16,11 @@ public partial class PlayerRotation : IServerboundPacket
 
     public int Id => 0x15;
 
-    public PlayerRotation()
+    public SetPlayerRotationPacket()
     {
     }
 
-    public PlayerRotation(float yaw, float pitch, bool onGround)
+    public SetPlayerRotationPacket(float yaw, float pitch, bool onGround)
     {
         Yaw = yaw;
         Pitch = pitch;

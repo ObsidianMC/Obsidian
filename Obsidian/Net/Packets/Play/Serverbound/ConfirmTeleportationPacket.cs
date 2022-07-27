@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class TeleportConfirm : IServerboundPacket
+public partial class ConfirmTeleportationPacket : IServerboundPacket
 {
     [Field(0), VarLength]
     public int TeleportId { get; private set; }

@@ -3,7 +3,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class IncomingChatMessagePacket : IServerboundPacket
+public partial class ChatMessagePacket : IServerboundPacket
 {
     [Field(0)]
     public string Message { get; private set; }

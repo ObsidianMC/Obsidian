@@ -20,7 +20,7 @@ public partial class ClientInformationPacket : IServerboundPacket
     [Field(4)]
     public byte SkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
 
-    [Field(5)]
+    [Field(5), VarLength]
     public int MainHand { get; private set; }
 
     [Field(6)]

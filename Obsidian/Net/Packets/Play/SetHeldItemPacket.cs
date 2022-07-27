@@ -5,12 +5,42 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class SetHeldItemPacket : IServerboundPacket
+public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
 {
+    private bool toClient;
+
     [Field(0)]
     public short Slot { get; private set; }
 
-    public int Id => 0x47;
+    public int Id { get; }
+
+    public SetHeldItemPacket(bool toClient)
+    {
+        this.toClient = toClient;
+
+        this.Id = toClient ? 0x47 : 0x27;
+    }
+
+    public void Serialize(MinecraftStream stream)
+    {
+        using var packetStream = new MinecraftStream();
+
+        packetStream.WriteByte((sbyte)Slot);
+
+        stream.Lock.Wait();
+        stream.WriteVarInt(Id.GetVarIntLength() + (int)packetStream.Length);
+        stream.WriteVarInt(Id);
+        packetStream.Position = 0;
+        packetStream.CopyTo(stream);
+        stream.Lock.Release();
+    }
+
+    public static SetHeldItemPacket Deserialize(MinecraftStream stream)
+    {
+        var packet = new SetHeldItemPacket(false);
+        packet.Populate(stream);
+        return packet;
+    }
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

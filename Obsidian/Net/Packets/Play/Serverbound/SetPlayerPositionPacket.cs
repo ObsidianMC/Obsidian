@@ -4,7 +4,7 @@ using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-public partial class PlayerPosition : IServerboundPacket
+public partial class SetPlayerPositionPacket : IServerboundPacket
 {
     [Field(0), DataFormat(typeof(double))]
     public VectorF Position { get; private set; }
@@ -14,11 +14,11 @@ public partial class PlayerPosition : IServerboundPacket
 
     public int Id => 0x13;
 
-    public PlayerPosition()
+    public SetPlayerPositionPacket()
     {
     }
 
-    public PlayerPosition(VectorF position, bool onGround)
+    public SetPlayerPositionPacket(VectorF position, bool onGround)
     {
         Position = position;
         OnGround = onGround;

@@ -1,9 +1,10 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Entities;
+using Obsidian.Serialization.Attributes;
 using System.Text;
 
 namespace Obsidian.Net.Packets.Play;
 
-public partial class PluginMessagePacket : IClientboundPacket
+public partial class PluginMessagePacket : IClientboundPacket, IServerboundPacket
 {
     [Field(0)]
     public string Channel { get; private set; }
@@ -54,6 +55,47 @@ public partial class PluginMessagePacket : IClientboundPacket
     {
         Channel = stream.ReadString();
         PluginData = stream.ReadUInt8Array((int)(stream.Length - stream.Position));
+    }
+
+    public ValueTask HandleAsync(Server server, Player player)
+    {
+        var result = Handle();
+
+        if (result == null)
+            return ValueTask.CompletedTask;
+
+        switch (result.Type)
+        {
+            case PluginMessageType.Brand:
+                player.client.Brand = result.Value.ToString();
+                break;
+
+            case PluginMessageType.Register:
+                {
+                    var list = result.Value.ToString().Split("/"); // Unsure if this is the only separator that's used
+
+                    if (list.Length > 0)
+                    {
+                        foreach (var item in list)
+                            server.RegisteredChannels.Add(item);
+                    }
+                    else
+                        server.RegisteredChannels.Add(result.Value.ToString());
+
+                    break;
+                }
+
+            case PluginMessageType.Unregister:
+                // TODO unregister registered channels 
+
+                //server.RegisteredChannels.RemoveWhere(x => x == this.Channel.ToLower());
+                break;
+
+            case PluginMessageType.Custom: // This can be ignored for now
+                break;
+        }
+
+        return ValueTask.CompletedTask;
     }
 }
 
