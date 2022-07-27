@@ -1,4 +1,6 @@
-﻿namespace Obsidian.API;
+﻿using System.Net;
+
+namespace Obsidian.API;
 
 public interface IPlayer : ILiving
 {
@@ -13,6 +15,7 @@ public interface IPlayer : ILiving
 
     public Vector? LastDeathLocation { get; set; }
 
+    public IPAddress? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
     public Hand MainHand { get; set; }
     public PlayerBitMask PlayerBitMask { get; set; }

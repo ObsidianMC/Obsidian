@@ -16,6 +16,7 @@ using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
@@ -58,6 +59,7 @@ public sealed class Client : IDisposable
     public string? Brand { get; set; }
 
     public ClientInformationPacket? ClientSettings { get; internal set; }
+    public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
 
     private readonly CancellationTokenSource cancellationSource = new();
 
