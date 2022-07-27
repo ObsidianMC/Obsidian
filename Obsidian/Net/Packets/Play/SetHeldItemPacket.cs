@@ -7,8 +7,6 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 
 public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
 {
-    private bool toClient;
-
     [Field(0)]
     public short Slot { get; private set; }
 
@@ -16,8 +14,6 @@ public partial class SetHeldItemPacket : IServerboundPacket, IClientboundPacket
 
     public SetHeldItemPacket(bool toClient)
     {
-        this.toClient = toClient;
-
         this.Id = toClient ? 0x47 : 0x27;
     }
 
