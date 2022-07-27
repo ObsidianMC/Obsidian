@@ -63,7 +63,7 @@ public class World : IWorld
 
     public async Task<bool> DestroyEntityAsync(Entity entity)
     {
-        var destroyed = new DestroyEntities(entity);
+        var destroyed = new RemoveEntitiesPacket(entity);
 
         await this.Server.QueueBroadcastPacketAsync(destroyed);
 
@@ -283,15 +283,15 @@ public class World : IWorld
         if (oldLevel != this.rainLevel)
         {
             // send new level if updated
-            this.Server.BroadcastPacket(new ChangeGameState(ChangeGameStateReason.RainLevelChange, this.rainLevel));
+            this.Server.BroadcastPacket(new GameEventPacket(ChangeGameStateReason.RainLevelChange, this.rainLevel));
             if (rainLevel < 0.3f && rainLevel > 0.1f)
-                this.Server.BroadcastPacket(new ChangeGameState(this.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+                this.Server.BroadcastPacket(new GameEventPacket(this.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         }
 
         if (this.LevelData.Time % (20 * this.Server.Config.TimeTickSpeedMultiplier) == 0)
         {
             // Update client time every second / 20 ticks
-            this.Server.BroadcastPacket(new TimeUpdate(this.LevelData.Time, this.LevelData.Time % 24000));
+            this.Server.BroadcastPacket(new UpdateTimePacket(this.LevelData.Time, this.LevelData.Time % 24000));
         }
 
         await this.ManageChunksAsync();
@@ -604,7 +604,7 @@ public class World : IWorld
     }
 
     public Task SpawnExperienceOrbs(VectorF position, short count = 1) =>
-        this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrb(count, position));
+        this.Server.QueueBroadcastPacketAsync(new SpawnExperienceOrbPacket(count, position));
 
     /// <summary>
     /// 

@@ -64,7 +64,7 @@ public partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-    private readonly ConcurrentQueue<PlayerChatMessage> chatMessagesQueue = new();
+    private readonly ConcurrentQueue<PlayerChatMessagePacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
 
@@ -178,7 +178,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new PlayerChatMessage(message, type));
+        chatMessagesQueue.Enqueue(new PlayerChatMessagePacket(message, type));
         Logger.LogInformation(message.Text);
     }
 
@@ -187,7 +187,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(string message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new PlayerChatMessage(ChatMessage.Simple(message), type));
+        chatMessagesQueue.Enqueue(new PlayerChatMessagePacket(ChatMessage.Simple(message), type));
         Logger.LogInformation(message);
     }
 
@@ -343,7 +343,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, Block block, Vector location)
     {
-        var packet = new BlockChange(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.StateId);
         foreach (Player player in PlayersInRange(world, location))
         {
             player.client.SendPacket(packet);
@@ -352,7 +352,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, Player initiator, Block block, Vector location)
     {
-        var packet = new BlockChange(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.StateId);
         foreach (Player player in PlayersInRange(world, location))
         {
             if (player == initiator)
@@ -481,7 +481,7 @@ public partial class Server : IServer
                     Data = 1,
                     Velocity = vel
                 });
-                BroadcastPacket(new EntityMetadata
+                BroadcastPacket(new SetEntityMetadataPacket
                 {
                     EntityId = item.EntityId,
                     Entity = item
@@ -489,7 +489,7 @@ public partial class Server : IServer
 
                 player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
 
-                player.client.SendPacket(new SetSlot
+                player.client.SendPacket(new SetContainerSlotPacket
                 {
                     Slot = player.inventorySlot,
 
@@ -504,7 +504,7 @@ public partial class Server : IServer
             }
             case DiggingStatus.StartedDigging:
             {
-                BroadcastPacket(new AcknowledgeBlockChangesPacket
+                BroadcastPacket(new AcknowledgeBlockChangePacket
                 {
                     SequenceID = 0
                 });
@@ -519,19 +519,19 @@ public partial class Server : IServer
                 break;
             case DiggingStatus.FinishedDigging:
             {
-                BroadcastPacket(new AcknowledgeBlockChangesPacket//TODO properly implement this
+                BroadcastPacket(new AcknowledgeBlockChangePacket//TODO properly implement this
                 {
                     SequenceID = 0
                 });
 
-                BroadcastPacket(new BlockBreakAnimation
+                BroadcastPacket(new SetBlockDestroyStagePacket
                 {
                     EntityId = player,
                     Position = digging.Position,
                     DestroyStage = -1
                 });
 
-                BroadcastPacket(new BlockChange(digging.Position, 0));
+                BroadcastPacket(new BlockUpdatePacket(digging.Position, 0));
 
                 var droppedItem = Registry.GetItem(block.Material);
 
@@ -565,7 +565,7 @@ public partial class Server : IServer
                         (Globals.Random.NextFloat() * 0.5f) + 0.25f))
                 });
 
-                BroadcastPacket(new EntityMetadata
+                BroadcastPacket(new SetEntityMetadataPacket
                 {
                     EntityId = item.EntityId,
                     Entity = item
@@ -627,7 +627,7 @@ public partial class Server : IServer
                 }
             }
 
-            while (chatMessagesQueue.TryDequeue(out PlayerChatMessage chatMessagePacket))
+            while (chatMessagesQueue.TryDequeue(out PlayerChatMessagePacket chatMessagePacket))
             {
                 foreach (Player player in Players)
                 {

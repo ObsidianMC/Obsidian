@@ -7,7 +7,7 @@ public partial class ChunkDataPacket : IClientboundPacket
 {
     public Chunk Chunk { get; }
 
-    public int Id => 0x22;
+    public int Id => 0x1F;
 
     public ChunkDataPacket(Chunk chunk)
     {

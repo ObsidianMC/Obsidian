@@ -8,8 +8,8 @@ public partial class EntityEffectPacket : IClientboundPacket
     [Field(0), VarLength]
     public int EntityId { get; init; }
     
-    [Field(1)]
-    public byte EffectId { get; init; }
+    [Field(1), VarLength]
+    public int EffectId { get; init; }
     
     [Field(2)]
     public byte Amplifier { get; init; }
@@ -26,9 +26,9 @@ public partial class EntityEffectPacket : IClientboundPacket
     [Field(6), Condition("HasFactorData")]
     public NbtCompound FactorCodec { get; init; }
 
-    public int Id => 0x62;
+    public int Id => 0x66;
 
-    public EntityEffectPacket(int entityId, byte effectId, int duration)
+    public EntityEffectPacket(int entityId, int effectId, int duration)
     {
         EntityId = entityId;
         EffectId = effectId;

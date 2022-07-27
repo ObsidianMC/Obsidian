@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
@@ -17,11 +18,17 @@ public partial class SetHeldItemPacket : IServerboundPacket
 
         var heldItem = player.GetHeldItem();
 
-        await server.QueueBroadcastPacketAsync(new EntityEquipment
+        await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
         {
             EntityId = player.EntityId,
-            Slot = ESlot.MainHand,
-            Item = heldItem
+            Equipment = new()
+            {
+                new()
+                {
+                    Slot = EquipmentSlot.MainHand,
+                    Item = heldItem
+                }
+            }
         },
         excluded: player);
     }

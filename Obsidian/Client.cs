@@ -359,7 +359,7 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Compression has been enabled.");
     }
 
-    private Task DeclareRecipesAsync() => QueuePacketAsync(DeclareRecipes.FromRegistry);
+    private Task DeclareRecipesAsync() => QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
 
     private async Task ConnectAsync()
     {
@@ -375,7 +375,7 @@ public sealed class Client : IDisposable
         if (!Registry.TryGetDimensionCodec(Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
             throw new ApplicationException("Failed to retrieve proper dimension for player.");
 
-        await QueuePacketAsync(new JoinGame
+        await QueuePacketAsync(new LoginPacket
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
@@ -394,10 +394,10 @@ public sealed class Client : IDisposable
         });
 
         await SendServerBrand();
-        await QueuePacketAsync(TagsPacket.FromRegistry);
+        await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
         await SendCommandsAsync();
         await DeclareRecipesAsync();
-        await QueuePacketAsync(new UnlockRecipes
+        await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
             FirstRecipeIds = Registry.Recipes.Keys.ToList(),
@@ -417,11 +417,11 @@ public sealed class Client : IDisposable
     #region Packet sending
     internal async Task SendInfoAsync()
     {
-        await QueuePacketAsync(new SpawnPosition(Player.World.LevelData.SpawnPosition));
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.World.LevelData.SpawnPosition));
 
         Player.TeleportId = Globals.Random.Next(0, 999);
 
-        await QueuePacketAsync(new PlayerPositionAndLook
+        await QueuePacketAsync(new SynchronizePlayerPositionPacket
         {
             Position = Player.Position,
             Yaw = 0,
@@ -433,7 +433,7 @@ public sealed class Client : IDisposable
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
 
-        await QueuePacketAsync(new WindowItems(0, Player.Inventory.ToList())
+        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
         {
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),
@@ -442,17 +442,17 @@ public sealed class Client : IDisposable
 
     internal Task DisconnectAsync(ChatMessage reason)
     {
-        return Task.Run(() => SendPacket(new Disconnect(reason, State)));
+        return Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
     }
 
     internal Task SendTimeUpdateAsync()
     {
-        return QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
+        return QueuePacketAsync(new UpdateTimePacket(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
     }
 
     internal Task SendWeatherUpdateAsync()
     {
-        return QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        return QueuePacketAsync(new GameEventPacket(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
     }
 
     internal void ProcessKeepAlive(long id)
@@ -483,7 +483,7 @@ public sealed class Client : IDisposable
         //}).ConfigureAwait(false);
     }
 
-    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.DeclareCommandsPacket);
+    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(
         new PlayerInfoPacket(PlayerInfoAction.RemovePlayer,
@@ -587,7 +587,7 @@ public sealed class Client : IDisposable
 
     internal Task UnloadChunkAsync(int x, int z)
     {
-        return LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
+        return LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
     }
 
     private async Task SendServerBrand()
@@ -596,7 +596,7 @@ public sealed class Client : IDisposable
 
         await stream.WriteStringAsync(Server.Brand);
 
-        await QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+        await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
         Logger.LogDebug("Sent server brand.");
     }
 
@@ -605,7 +605,7 @@ public sealed class Client : IDisposable
         ChatMessage? header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
         ChatMessage? footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
 
-        await QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
+        await QueuePacketAsync(new SetTabListHeaderAndFooterPacket(header, footer));
         Logger.LogDebug("Sent player list decoration");
     }
     #endregion Packet sending

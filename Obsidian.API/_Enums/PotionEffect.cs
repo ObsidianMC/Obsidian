@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API;
 
-public enum PotionEffect : byte
+public enum PotionEffect : int
 {
     Speed = 1,
     Slowness,

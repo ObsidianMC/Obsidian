@@ -31,7 +31,7 @@ public partial class PlayerPosition : IServerboundPacket
         {
             await player.UpdateChunksAsync();
             (int cx, int cz) = player.Position.ToChunkCoord();
-            player.client.SendPacket(new UpdateViewPosition(cx, cz));
+            player.client.SendPacket(new SetCenterChunkPacket(cx, cz));
         }
 
         player.LastPosition = player.Position;

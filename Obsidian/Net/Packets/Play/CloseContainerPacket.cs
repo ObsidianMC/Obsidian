@@ -9,7 +9,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
     [Field(0)]
     public byte WindowId { get; private set; }
 
-    public int Id => 0x0B;
+    public int Id => 0x10;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
@@ -26,7 +26,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
         var block = (Block)b;
         if (block.Is(Material.Chest))
         {
-            await player.client.QueuePacketAsync(new BlockAction
+            await player.client.QueuePacketAsync(new BlockActionPacket
             {
                 Position = position,
                 ActionId = 1,
@@ -37,7 +37,7 @@ public partial class CloseContainerPacket : IClientboundPacket, IServerboundPack
         }
         else if (block.Is(Material.EnderChest))
         {
-            await player.client.QueuePacketAsync(new BlockAction
+            await player.client.QueuePacketAsync(new BlockActionPacket
             {
                 Position = position,
                 ActionId = 1,

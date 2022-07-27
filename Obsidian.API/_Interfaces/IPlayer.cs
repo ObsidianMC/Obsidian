@@ -41,8 +41,9 @@ public interface IPlayer : ILiving
 
     public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
     public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
-    public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
-    public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendSoundAsync(Sounds sound, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendCustomSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
     public Task KickAsync(ChatMessage reason);
     public Task KickAsync(string reason);
     public Task OpenInventoryAsync(BaseContainer container);

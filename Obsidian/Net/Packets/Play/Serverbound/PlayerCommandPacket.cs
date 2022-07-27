@@ -57,7 +57,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
                 break;
         }
 
-        await server.QueueBroadcastPacketAsync(new EntityMetadata
+        await server.QueueBroadcastPacketAsync(new SetEntityMetadataPacket
         {
             EntityId = player.EntityId,
             Entity = player

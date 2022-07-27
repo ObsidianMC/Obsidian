@@ -20,7 +20,7 @@ public static partial class Registry
 {
     internal static ILogger Logger { get; set; }
 
-    public static DeclareCommands DeclareCommandsPacket = new();
+    public static CommandsPacket CommandsPacket = new();
 
     public static readonly Dictionary<string, IRecipe> Recipes = new();
 
@@ -174,7 +174,7 @@ public static partial class Registry
 
     public static void RegisterCommands(Server server)
     {
-        DeclareCommandsPacket = new();
+        CommandsPacket = new();
         var index = 0;
 
         var node = new CommandNode()
@@ -233,7 +233,7 @@ public static partial class Registry
             node.AddChild(cmdNode);
         }
 
-        DeclareCommandsPacket.AddNode(node);
+        CommandsPacket.AddNode(node);
     }
 
     public static Block GetBlock(Material material) => new(material);

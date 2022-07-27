@@ -10,7 +10,7 @@ public partial class EntityAnimationPacket : IClientboundPacket
     [Field(1), ActualType(typeof(byte))]
     public EntityAnimationType Animation { get; init; }
 
-    public int Id => 0x06;
+    public int Id => 0x03;
 }
 
 public enum EntityAnimationType : byte

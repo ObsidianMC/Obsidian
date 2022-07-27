@@ -9,7 +9,7 @@ public partial class SystemChatMessagePacket : IClientboundPacket
     [Field(1), ActualType(typeof(int)), VarLength]
     public MessageType Type { get; }
 
-    public int Id => 0x5C;
+    public int Id => 0x5F;
 
     public SystemChatMessagePacket(ChatMessage message, MessageType type)
     {

@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -345,6 +346,13 @@ public partial class MinecraftStream
     public void WriteChat(ChatMessage chatMessage)
     {
         WriteString(chatMessage.ToString(Globals.JsonOptions));
+    }
+
+    [WriteMethod]
+    public void WriteEquipment(Equipment equipment)
+    {
+        this.WriteByte((sbyte)equipment.Slot);
+        this.WriteItemStack(equipment.Item);
     }
 
     [WriteMethod]

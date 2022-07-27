@@ -153,7 +153,7 @@ public partial class ClickContainerPacket : IServerboundPacket
                             Data = 1,
                             Velocity = vel
                         });
-                        server.BroadcastPacket(new EntityMetadata
+                        server.BroadcastPacket(new SetEntityMetadataPacket
                         {
                             EntityId = item.EntityId,
                             Entity = item

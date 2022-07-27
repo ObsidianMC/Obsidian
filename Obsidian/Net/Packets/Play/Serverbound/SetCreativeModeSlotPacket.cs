@@ -31,11 +31,17 @@ public partial class SetCreativeModeSlotPacket : IServerboundPacket
         {
             var heldItem = player.GetHeldItem();
 
-            await server.QueueBroadcastPacketAsync(new EntityEquipment
+            await server.QueueBroadcastPacketAsync(new SetEquipmentPacket
             {
                 EntityId = player.EntityId,
-                Slot = ESlot.MainHand,
-                Item = heldItem
+                Equipment = new()
+                {
+                    new()
+                    {
+                        Item = heldItem,
+                        Slot = API.Inventory.EquipmentSlot.MainHand
+                    }
+                }
             }, player);
         }
     }

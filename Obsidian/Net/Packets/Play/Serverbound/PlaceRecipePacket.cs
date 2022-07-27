@@ -19,6 +19,6 @@ public partial class PlaceRecipePacket : IServerboundPacket
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        await player.client.QueuePacketAsync(new CraftRecipeResponse(WindowId, RecipeId));
+        await player.client.QueuePacketAsync(new PlaceGhostRecipePacket(WindowId, RecipeId));
     }
 }

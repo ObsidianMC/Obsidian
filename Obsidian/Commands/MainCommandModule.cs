@@ -192,7 +192,7 @@ public class MainCommandModule
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
     [IssuerScope(CommandIssuers.Client)]
-    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
+    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(Registry.CommandsPacket);
 
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
