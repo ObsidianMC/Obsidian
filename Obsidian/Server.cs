@@ -256,7 +256,7 @@ public partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
-        if (Config.EnableRcon)
+        if (Configuration.EnableRcon)
         {
             rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config, this, CommandsHandler);
         }

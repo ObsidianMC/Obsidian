@@ -32,7 +32,7 @@ public class RconServer
     public RconServer(ILogger logger, IConfig config, IServer server, CommandHandler commandHandler)
     {
         this.logger = logger;
-        var password = config.RconPassword;
+        var password = config.Rcon?.Password ?? throw new NullReferenceException("Null RCON config was passed");
 
         logger.LogInformation("Generating keys...");
 
@@ -49,9 +49,9 @@ public class RconServer
 
         logger.LogInformation("Done");
 
-        initData = new InitData(server, commandHandler, password, config.RequireRconEncryption, dhParameters, keyPair);
+        initData = new InitData(server, commandHandler, password, config.Rcon.RequireEncryption, dhParameters, keyPair);
 
-        listener = TcpListener.Create(config.RconPort);
+        listener = TcpListener.Create(config.Rcon.Port);
     }
 
     public async Task RunAsync(CancellationToken token)

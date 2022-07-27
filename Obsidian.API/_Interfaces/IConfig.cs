@@ -1,4 +1,7 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API._Types.Config;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API;
 
 public interface IConfig
 {
@@ -63,25 +66,10 @@ public interface IConfig
     /// Enabled Remote Console operation.
     /// </summary>
     /// <remarks>See more at https://wiki.vg/RCON</remarks>
-    public bool EnableRcon { get; set; }
+    public bool EnableRcon => Rcon is not null;
 
     /// <summary>
-    /// Password to access the RCON.
+    /// Remote Console configuration
     /// </summary>
-    public string RconPassword { get; set; }
-
-    /// <summary>
-    /// Port on which RCON server listens.
-    /// </summary>
-    public ushort RconPort { get; set; }
-
-    /// <summary>
-    /// Whether the RCON commands should be sent to currently online Operators.
-    /// </summary>
-    public bool BroadcastRconToOps { get; set; }
-
-    /// <summary>
-    /// Whether the server will require the encryption before authenticating
-    /// </summary>
-    public bool RequireRconEncryption { get; set; }
+    public RconConfig? Rcon { get; set; }
 }
