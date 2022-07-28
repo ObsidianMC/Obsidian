@@ -6,15 +6,23 @@ public class AddPlayerInfoAction : InfoAction
 {
     public string Name { get; set; }
 
-    public List<SkinProperties> Properties { get; set; } = new List<SkinProperties>();
+    public List<SkinProperty> Properties { get; set; } = new List<SkinProperty>();
 
     public int Gamemode { get; set; }
 
     public int Ping { get; set; }
 
-    public ChatMessage DisplayName { get; set; } = null;
+    public ChatMessage? DisplayName { get; set; } = null;
 
     public bool HasDisplayName => DisplayName != null;
+
+    public bool HasSigData { get; set; }
+
+    public DateTimeOffset KeyExpireTime { get; set; }
+
+    public byte[] PublicKey { get; set; }
+
+    public byte[] Signature { get; set; }
 
     public async override Task WriteAsync(MinecraftStream stream)
     {
@@ -53,5 +61,17 @@ public class AddPlayerInfoAction : InfoAction
         stream.WriteBoolean(HasDisplayName);
         if (HasDisplayName)
             stream.WriteChat(DisplayName);
+
+        stream.WriteBoolean(this.HasSigData);
+        if (HasSigData)
+        {
+            stream.WriteDateTimeOffset(this.KeyExpireTime);
+
+            stream.WriteVarInt(this.PublicKey.Length);
+            stream.WriteByteArray(this.PublicKey);
+
+            stream.WriteVarInt(this.Signature.Length);
+            stream.WriteByteArray(this.Signature);
+        }
     }
 }

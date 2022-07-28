@@ -43,6 +43,9 @@ public sealed class Client : IDisposable
 
     private bool disposed;
     private bool compressionEnabled;
+
+    private MojangUser cachedMojangUser;
+
     public bool EncryptionEnabled { get; private set; }
 
     private const int CompressionThreshold = 256;
@@ -271,7 +274,6 @@ public sealed class Client : IDisposable
 
         string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
-
         Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
         await Server.DisconnectIfConnectedAsync(username);
@@ -279,9 +281,9 @@ public sealed class Client : IDisposable
         var world = (World)Server.DefaultWorld;
         if (config.OnlineMode)
         {
-            MojangUser? user = await MinecraftAPI.GetUserAsync(loginStart.Username);
+            this.cachedMojangUser = await MinecraftAPI.GetUserAndSkinAsync(loginStart.Username);
 
-            if (user is null)
+            if (this.cachedMojangUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
@@ -289,7 +291,7 @@ public sealed class Client : IDisposable
 
             if (config.WhitelistEnabled)
             {
-                var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == user.Id);
+                var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == this.cachedMojangUser.Id);
 
                 if (wlEntry is null)
                 {
@@ -299,7 +301,7 @@ public sealed class Client : IDisposable
 
             }
 
-            Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
+            Player = new Player(Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
 
             packetCryptography.GenerateKeyPair();
 
@@ -365,7 +367,11 @@ public sealed class Client : IDisposable
 
     private async Task ConnectAsync()
     {
-        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username));
+        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.cachedMojangUser?.Properties ?? new(),
+        });
+
         Logger.LogDebug($"Sent Login success to user {Player.Username} {Player.Uuid}");
 
         State = ClientState.Play;
@@ -385,7 +391,8 @@ public sealed class Client : IDisposable
             Codecs = new MixedCodec
             {
                 Dimensions = Registry.Dimensions,
-                Biomes = Registry.Biomes
+                Biomes = Registry.Biomes,
+                ChatTypes = Registry.ChatTypes
             },
             DimensionType = codec.Name,
             DimensionName = codec.Name,
@@ -508,8 +515,7 @@ public sealed class Client : IDisposable
         if (config.OnlineMode)
         {
             var uuid = player.Uuid.ToString().Replace("-", "");
-            var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
-            addAction.Properties.AddRange(skin.Properties);
+            addAction.Properties.AddRange(this.cachedMojangUser.Properties);
         }
 
         await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
