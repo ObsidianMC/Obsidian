@@ -12,7 +12,7 @@ public sealed class BiomeElement
 
     public float Downfall { get; set; }
 
-    public string Category { get; set; }
+    public string Category { get; set; } = string.Empty;
 
     public string Precipitation { get; set; }//TODO turn into enum
 

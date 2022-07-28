@@ -48,7 +48,17 @@ internal class DimensionElementConverter : JsonConverter<DimensionElement>
                     continue;
 
                 if (!ConverterHelpers.TryGetAction(property.PropertyType, out var action))
+                {
+                    if (reader.TokenType == JsonTokenType.Number)
+                        dimensionElement.MonsterSpawnLightLevel = new()
+                        {
+                            IntValue = reader.GetInt32()
+                        };
+                    else
+                        dimensionElement.MonsterSpawnLightLevel = JsonSerializer.Deserialize<MonsterSpawnLightLevel>(ref reader, options);
+
                     continue;
+                }
 
                 action.Invoke(dimensionElement, ref reader, property);
             }

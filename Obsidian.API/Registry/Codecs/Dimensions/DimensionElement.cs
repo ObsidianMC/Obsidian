@@ -6,6 +6,10 @@ namespace Obsidian.API.Registry.Codecs.Dimensions;
 [JsonConverter(typeof(DimensionElementConverter))]
 public sealed class DimensionElement
 {
+    public int MonsterSpawnBlockLightLimit { get; set; }
+
+    public MonsterSpawnLightLevel MonsterSpawnLightLevel { get; set; }
+
     /// <summary>
     /// Whether piglins shake and transform to zombified piglins.
     /// </summary>
@@ -124,4 +128,22 @@ public sealed class DimensionElement
     public bool HasCeiling { get; set; }
 
     internal DimensionElement() { }
+}
+
+
+public sealed class MonsterSpawnLightLevel
+{
+    public MonsterSpawnLightLevelValue? Value { get; set; }
+
+    [JsonIgnore]
+    public int? IntValue { get; set; }
+
+    public string? Type { get; set; }
+}
+
+public struct MonsterSpawnLightLevelValue
+{
+    public int MaxInclusive { get; set; }
+
+    public int MinInclusive { get; set; }
 }

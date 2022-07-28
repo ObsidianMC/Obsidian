@@ -54,7 +54,11 @@ public static partial class Registry
 
     private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
     {
-        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance
+        PropertyNamingPolicy = SnakeCaseNamingPolicy.Instance,
+        Converters =
+        {
+            new IntToBoolConverter(),
+        }
     };
 
     public static async Task RegisterCodecsAsync()
