@@ -137,8 +137,6 @@ public sealed class MonsterSpawnLightLevel
 
     [JsonIgnore]
     public int? IntValue { get; set; }
-
-    public string? Type { get; set; }
 }
 
 public struct MonsterSpawnLightLevelValue
@@ -146,4 +144,6 @@ public struct MonsterSpawnLightLevelValue
     public int MaxInclusive { get; set; }
 
     public int MinInclusive { get; set; }
+
+    public string? Type { get; set; }
 }
