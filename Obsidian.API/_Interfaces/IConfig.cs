@@ -1,4 +1,7 @@
-﻿namespace Obsidian.API;
+﻿using Obsidian.API._Types.Config;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Obsidian.API;
 
 public interface IConfig
 {
@@ -58,4 +61,15 @@ public interface IConfig
     /// Paths of plugins that are loaded at the starttime.
     /// </summary>
     public string[] DownloadPlugins { get; set; }
+
+    /// <summary>
+    /// Enabled Remote Console operation.
+    /// </summary>
+    /// <remarks>See more at https://wiki.vg/RCON</remarks>
+    public bool EnableRcon => Rcon is not null;
+
+    /// <summary>
+    /// Remote Console configuration
+    /// </summary>
+    public RconConfig? Rcon { get; set; }
 }

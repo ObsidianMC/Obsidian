@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API._Types.Config;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
@@ -36,6 +37,7 @@ public class Config : IConfig
     public int MaxMissedKeepAlives { get; set; } = 15;
 
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
+    public RconConfig? Rcon { get; set; }
 
     public bool UDPBroadcast = false;
 

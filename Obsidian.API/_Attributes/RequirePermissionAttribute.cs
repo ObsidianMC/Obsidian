@@ -16,7 +16,7 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
 
     public override Task<bool> RunChecksAsync(CommandContext context)
     {
-        if (context.Sender.Issuer == CommandIssuers.Console)
+        if (context.Sender.Issuer is CommandIssuers.Console or CommandIssuers.RemoteConsole)
             return Task.FromResult(true);
         if (context.Player == null)
             return Task.FromResult(false);
