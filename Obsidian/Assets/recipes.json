@@ -33,6 +33,23 @@
     },
     "type": "minecraft:crafting_shapeless"
   },
+  "acacia_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:acacia_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:acacia_chest_boat",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
   "acacia_door": {
     "group": "wooden_door",
     "key": {
@@ -652,6 +669,23 @@
     "result": {
       "count": 1,
       "item": "minecraft:birch_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "birch_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:birch_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:birch_chest_boat",
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
@@ -2492,28 +2526,20 @@
     "type": "minecraft:crafting_shaped"
   },
   "chest_minecart": {
-    "key": {
-      "A": {
-        "count": 1,
-        "item": "minecraft:chest",
-        "tag": null
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
       },
-      "B": {
-        "count": 1,
-        "item": "minecraft:minecart",
-        "tag": null
+      {
+        "item": "minecraft:minecart"
       }
-    },
-    "pattern": [
-      "A",
-      "B"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:chest_minecart",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "chiseled_deepslate": {
     "key": {
@@ -4462,6 +4488,23 @@
     "result": {
       "count": 1,
       "item": "minecraft:dark_oak_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "dark_oak_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:dark_oak_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:dark_oak_chest_boat",
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
@@ -6424,28 +6467,20 @@
     "type": "minecraft:crafting_shaped"
   },
   "furnace_minecart": {
-    "key": {
-      "A": {
-        "count": 1,
-        "item": "minecraft:furnace",
-        "tag": null
+    "ingredients": [
+      {
+        "item": "minecraft:furnace"
       },
-      "B": {
-        "count": 1,
-        "item": "minecraft:minecart",
-        "tag": null
+      {
+        "item": "minecraft:minecart"
       }
-    },
-    "pattern": [
-      "A",
-      "B"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:furnace_minecart",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "glass": {
     "cookingtime": 200,
@@ -7959,28 +7994,20 @@
     "type": "minecraft:crafting_shaped"
   },
   "hopper_minecart": {
-    "key": {
-      "A": {
-        "count": 1,
-        "item": "minecraft:hopper",
-        "tag": null
+    "ingredients": [
+      {
+        "item": "minecraft:hopper"
       },
-      "B": {
-        "count": 1,
-        "item": "minecraft:minecart",
-        "tag": null
+      {
+        "item": "minecraft:minecart"
       }
-    },
-    "pattern": [
-      "A",
-      "B"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:hopper_minecart",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "iron_axe": {
     "key": {
@@ -8642,6 +8669,23 @@
     "result": {
       "count": 1,
       "item": "minecraft:jungle_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "jungle_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:jungle_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:jungle_chest_boat",
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
@@ -10690,6 +10734,267 @@
     },
     "type": "minecraft:crafting_shapeless"
   },
+  "mangrove_boat": {
+    "group": "boat",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "# #",
+      "###"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:mangrove_boat",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_button": {
+    "group": "wooden_button",
+    "ingredients": [
+      {
+        "item": "minecraft:mangrove_planks"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:mangrove_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "mangrove_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:mangrove_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:mangrove_chest_boat",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "mangrove_door": {
+    "group": "wooden_door",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:mangrove_door",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_fence": {
+    "group": "wooden_fence",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "W#W",
+      "W#W"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:mangrove_fence",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_fence_gate": {
+    "group": "wooden_fence_gate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      },
+      "W": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#W#",
+      "#W#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:mangrove_fence_gate",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_planks": {
+    "group": "planks",
+    "ingredients": [
+      {
+        "tag": "minecraft:mangrove_logs"
+      }
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:mangrove_planks",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "mangrove_pressure_plate": {
+    "group": "wooden_pressure_plate",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:mangrove_pressure_plate",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_sign": {
+    "group": "wooden_sign",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      },
+      "X": {
+        "count": 1,
+        "item": "minecraft:stick",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###",
+      " X "
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:mangrove_sign",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_slab": {
+    "group": "wooden_slab",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:mangrove_slab",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_stairs": {
+    "group": "wooden_stairs",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#  ",
+      "## ",
+      "###"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:mangrove_stairs",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_trapdoor": {
+    "group": "wooden_trapdoor",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_planks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 2,
+      "item": "minecraft:mangrove_trapdoor",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mangrove_wood": {
+    "group": "bark",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mangrove_log",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:mangrove_wood",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
   "map": {
     "key": {
       "#": {
@@ -11050,6 +11355,128 @@
     },
     "type": "minecraft:crafting_shapeless"
   },
+  "mud_brick_slab": {
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mud_bricks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:mud_brick_slab",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mud_brick_slab_from_mud_bricks_stonecutting": {
+    "count": 2,
+    "ingredient": {
+      "count": 1,
+      "item": "minecraft:mud_bricks",
+      "tag": null
+    },
+    "result": "minecraft:mud_brick_slab",
+    "type": "minecraft:stonecutting"
+  },
+  "mud_brick_stairs": {
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mud_bricks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "#  ",
+      "## ",
+      "###"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:mud_brick_stairs",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mud_brick_stairs_from_mud_bricks_stonecutting": {
+    "count": 1,
+    "ingredient": {
+      "count": 1,
+      "item": "minecraft:mud_bricks",
+      "tag": null
+    },
+    "result": "minecraft:mud_brick_stairs",
+    "type": "minecraft:stonecutting"
+  },
+  "mud_brick_wall": {
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:mud_bricks",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "###",
+      "###"
+    ],
+    "result": {
+      "count": 6,
+      "item": "minecraft:mud_brick_wall",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "mud_brick_wall_from_mud_bricks_stonecutting": {
+    "count": 1,
+    "ingredient": {
+      "count": 1,
+      "item": "minecraft:mud_bricks",
+      "tag": null
+    },
+    "result": "minecraft:mud_brick_wall",
+    "type": "minecraft:stonecutting"
+  },
+  "mud_bricks": {
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:packed_mud",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 4,
+      "item": "minecraft:mud_bricks",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
+  "muddy_mangrove_roots": {
+    "ingredients": [
+      {
+        "item": "minecraft:mud"
+      },
+      {
+        "item": "minecraft:mangrove_roots"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:muddy_mangrove_roots",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
   "mushroom_stew": {
     "ingredients": [
       {
@@ -11068,6 +11495,26 @@
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
+  },
+  "music_disc_5": {
+    "key": {
+      "S": {
+        "count": 1,
+        "item": "minecraft:disc_fragment_5",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "SSS",
+      "SSS",
+      "SSS"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:music_disc_5",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
   },
   "nether_brick": {
     "cookingtime": 200,
@@ -11501,6 +11948,23 @@
     "result": {
       "count": 1,
       "item": "minecraft:oak_button",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "oak_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:oak_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:oak_chest_boat",
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
@@ -12209,6 +12673,22 @@
     "result": {
       "count": 1,
       "item": "minecraft:packed_ice",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
+  "packed_mud": {
+    "ingredients": [
+      {
+        "item": "minecraft:mud"
+      },
+      {
+        "item": "minecraft:wheat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:packed_mud",
       "tag": null
     },
     "type": "minecraft:crafting_shapeless"
@@ -14529,6 +15009,31 @@
     },
     "type": "minecraft:crafting_shaped"
   },
+  "recovery_compass": {
+    "key": {
+      "C": {
+        "count": 1,
+        "item": "minecraft:compass",
+        "tag": null
+      },
+      "S": {
+        "count": 1,
+        "item": "minecraft:echo_shard",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "SSS",
+      "SCS",
+      "SSS"
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:recovery_compass",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
   "red_banner": {
     "group": "banner",
     "key": {
@@ -16100,6 +16605,23 @@
     },
     "type": "minecraft:crafting_shapeless"
   },
+  "spruce_chest_boat": {
+    "group": "chest_boat",
+    "ingredients": [
+      {
+        "item": "minecraft:chest"
+      },
+      {
+        "item": "minecraft:spruce_boat"
+      }
+    ],
+    "result": {
+      "count": 1,
+      "item": "minecraft:spruce_chest_boat",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shapeless"
+  },
   "spruce_door": {
     "group": "wooden_door",
     "key": {
@@ -16888,6 +17410,26 @@
     },
     "type": "minecraft:crafting_shaped"
   },
+  "stripped_mangrove_wood": {
+    "group": "bark",
+    "key": {
+      "#": {
+        "count": 1,
+        "item": "minecraft:stripped_mangrove_log",
+        "tag": null
+      }
+    },
+    "pattern": [
+      "##",
+      "##"
+    ],
+    "result": {
+      "count": 3,
+      "item": "minecraft:stripped_mangrove_wood",
+      "tag": null
+    },
+    "type": "minecraft:crafting_shaped"
+  },
   "stripped_oak_wood": {
     "group": "bark",
     "key": {
@@ -17076,28 +17618,20 @@
     "type": "minecraft:crafting_shaped"
   },
   "tnt_minecart": {
-    "key": {
-      "A": {
-        "count": 1,
-        "item": "minecraft:tnt",
-        "tag": null
+    "ingredients": [
+      {
+        "item": "minecraft:tnt"
       },
-      "B": {
-        "count": 1,
-        "item": "minecraft:minecart",
-        "tag": null
+      {
+        "item": "minecraft:minecart"
       }
-    },
-    "pattern": [
-      "A",
-      "B"
     ],
     "result": {
       "count": 1,
       "item": "minecraft:tnt_minecart",
       "tag": null
     },
-    "type": "minecraft:crafting_shaped"
+    "type": "minecraft:crafting_shapeless"
   },
   "torch": {
     "key": {
