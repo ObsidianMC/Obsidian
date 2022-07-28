@@ -318,6 +318,12 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteDateTimeOffset(DateTimeOffset date)
+    {
+        this.WriteLong(date.ToUnixTimeMilliseconds());
+    }
+
+    [WriteMethod]
     public void WriteWindowProperty(IWindowProperty windowProperty)
     {
         this.WriteShort(windowProperty.Property);

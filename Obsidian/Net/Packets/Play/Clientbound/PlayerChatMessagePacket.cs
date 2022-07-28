@@ -6,34 +6,40 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class PlayerChatMessagePacket : IClientboundPacket
 {
     [Field(0)]
-    public ChatMessage Message { get; }
+    public ChatMessage SignedMessage { get; }
 
-    [Field(1), ActualType(typeof(int)), VarLength]
+    [Field(1)]
+    public bool HasUnsignedChatContent => this.UnsignedChatMessage != null;
+
+    [Field(2), Condition("HasUnsignedChatContent")]
+    public ChatMessage UnsignedChatMessage { get; init; }
+
+    [Field(3), ActualType(typeof(int)), VarLength]
     public MessageType Type { get; }
 
-    [Field(2)]
+    [Field(4)]
     public Guid Sender { get; }
 
-    [Field(3)]
-    public ChatMessage DisplayName { get; }
-
-    [Field(4)]
-    public bool HasTeamDisplayName { get; }
-
-    [Field(5), Condition("HasTeamDisplayName")]
-    public ChatMessage TeamDisplayName { get; }
+    [Field(5)]
+    public ChatMessage SenderDisplayName { get; init; }
 
     [Field(6)]
-    public long Timestamp { get; }
+    public bool HasTeamDisplayName => this.TeamDisplayName != null;
 
-    [Field(7)]
-    public long Salt { get; }
+    [Field(7), Condition("HasTeamDisplayName")]
+    public ChatMessage TeamDisplayName { get; }
 
-    [Field(8), VarLength]
-    public int SignatureLength { get; }
+    [Field(8)]
+    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
 
     [Field(9)]
-    public byte[] MessageSignature { get; }
+    public long Salt { get; init; }
+
+    [Field(10), VarLength]
+    public int SignatureLength => this.MessageSignature.Length;
+
+    [Field(11)]
+    public byte[] MessageSignature { get; init; }
 
     public int Id => 0x30;
 
@@ -41,10 +47,10 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
     {
     }
 
-    public PlayerChatMessagePacket(ChatMessage message, MessageType type, Guid sender)
+    public PlayerChatMessagePacket(ChatMessage message, MessageType type, Guid? sender)
     {
-        Message = message;
+        SignedMessage = message;
         Type = type;
-        Sender = sender;
+        Sender = sender ?? Guid.Empty;
     }
 }

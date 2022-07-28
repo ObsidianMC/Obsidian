@@ -326,6 +326,9 @@ public partial class MinecraftStream
     }
 
     [ReadMethod]
+    public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());
+
+    [ReadMethod]
     public ArgumentSignature ReadArgumentSignature() => new()
     {
         ArgumentName = this.ReadString(),

@@ -10,6 +10,8 @@ using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Obsidian.Entities;
 
@@ -269,11 +271,27 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(new SetCenterChunkPacket(chunkX, chunkZ));
     }
 
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) =>
-        this.SendMessageAsync(ChatMessage.Simple(message), type, sender ?? Guid.Empty);
+    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null) =>
+        this.SendMessageAsync(ChatMessage.Simple(message), type, sender, messageSignature);
 
-    public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null) =>
-        client.QueuePacketAsync(new PlayerChatMessagePacket(message, type, sender ?? Guid.Empty));
+    public async Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null)
+    {
+        if (messageSignature.HasValue)
+        {
+            await client.QueuePacketAsync(new PlayerChatMessagePacket(message, type, sender)
+            {
+                SenderDisplayName = this.CustomName ?? this.Username,
+                Salt = messageSignature?.Salt ?? 0,
+                MessageSignature = messageSignature?.Value ?? Array.Empty<byte>(),
+                UnsignedChatMessage = message,
+                Timestamp = messageSignature?.Timestamp ?? DateTimeOffset.UtcNow,
+            });
+
+            return;
+        }
+
+        await client.QueuePacketAsync(new SystemChatMessagePacket(message, type));
+    }
 
     public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
         client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));

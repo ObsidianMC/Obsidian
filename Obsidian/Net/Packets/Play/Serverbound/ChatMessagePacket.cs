@@ -9,30 +9,23 @@ public partial class ChatMessagePacket : IServerboundPacket
     public string Message { get; private set; }
 
     [Field(1)]
+    public DateTimeOffset Timestamp { get; private set; }
+
+    [Field(2)]
     public long Salt { get; private set; }
 
-    [Field(2), VarLength]
-    public int SignatureLength { get; private set; }
-
-    [Field(3)]
+    [Field(4)]
     public byte[] Signature { get; private set; }
 
-    [Field(4)]
+    [Field(5)]
     public bool SignedPreview { get; set; }
 
-    public string Format { get; private set; }
+    public string Format { get; private set; } = "<{0}> {1}";
 
     public int Id => 0x04;
 
-    public void Populate(MinecraftStream stream)
-    {
-        Message = stream.ReadString();
-        Format = "<{0}> {1}";
-    }
-
-    //TODO verify message signature https://wiki.vg/images/f/f4/MinecraftChat.drawio4.png
     public async ValueTask HandleAsync(Server server, Player player)
     {
-        await server.HandleIncomingMessageAsync(Message, Format, player.client);
+        await server.HandleIncomingMessageAsync(this, player.client);
     }
 }
