@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Registry.Codecs;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Serialization.Attributes;
 
@@ -9,6 +10,8 @@ public class MixedCodec
 {
     public CodecCollection<int, DimensionCodec> Dimensions { get; init; }
     public CodecCollection<int, BiomeCodec> Biomes { get; init; }
+
+    public CodecCollection<int, ChatCodec> ChatTypes { get; init; }
 }
 
 public partial class LoginPacket : IClientboundPacket
@@ -32,7 +35,7 @@ public partial class LoginPacket : IClientboundPacket
     public MixedCodec Codecs { get; init; }
 
     [Field(7)]
-    public DimensionCodec Dimension { get; init; }
+    public string DimensionType { get; init; }
 
     [Field(8)]
     public string DimensionName { get; init; }

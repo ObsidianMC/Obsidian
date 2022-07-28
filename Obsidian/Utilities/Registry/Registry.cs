@@ -2,6 +2,7 @@
 using Obsidian.API.Crafting;
 using Obsidian.API.Registry.Codecs;
 using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
@@ -29,6 +30,8 @@ public static partial class Registry
 
     public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");
     public static CodecCollection<int, BiomeCodec> Biomes { get; } = new("minecraft:worldgen/biome");
+
+    public static CodecCollection<int, ChatCodec> ChatTypes { get; } = new("minecraft:chat_type");
 
     private static readonly string mainDomain = "Obsidian.Assets";
 
@@ -63,7 +66,9 @@ public static partial class Registry
 
     public static async Task RegisterCodecsAsync()
     {
-        using Stream biomes = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.biome_codec.json");
+        var asm = Assembly.GetExecutingAssembly()!;
+
+        await using Stream biomes = asm.GetManifestResourceStream($"{mainDomain}.biome_codec.json");
 
         var baseCodec = await biomes.FromJsonAsync<BaseCodec<BiomeCodec>>(codecJsonOptions);
 
@@ -79,12 +84,12 @@ public static partial class Registry
 
         Logger?.LogDebug($"Successfully registered {registered} biomes...");
 
-        using Stream dimensions = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
+        await using Stream dimensions = asm.GetManifestResourceStream($"{mainDomain}.default_dimensions.json");
 
-        var dict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
+        var dimensionDict = await dimensions.FromJsonAsync<Dictionary<string, List<DimensionCodec>>>(codecJsonOptions);
 
         registered = 0;
-        foreach (var (_, values) in dict)
+        foreach (var (_, values) in dimensionDict)
         {
             foreach (var codec in values)
             {
@@ -96,6 +101,24 @@ public static partial class Registry
         }
 
         Logger?.LogDebug($"Successfully registered {registered} dimensions...");
+
+        await using Stream chatTypes = asm.GetManifestResourceStream($"{mainDomain}.chat_type_codec.json");
+
+        var chatTypesDict = await chatTypes.FromJsonAsync<Dictionary<string, List<ChatCodec>>>(codecJsonOptions);
+
+        registered = 0;
+        foreach (var (_, values) in chatTypesDict)
+        {
+            foreach (var codec in values)
+            {
+                ChatTypes.TryAdd(codec.Id, codec);
+
+                Logger?.LogDebug($"Added codec: {codec.Name}:{codec.Id}");
+                registered++;
+            }
+        }
+
+        Logger?.LogDebug($"Successfully registered {registered} chat types...");
     }
 
     public static async Task RegisterRecipesAsync()

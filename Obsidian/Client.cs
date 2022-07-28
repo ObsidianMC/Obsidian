@@ -387,7 +387,7 @@ public sealed class Client : IDisposable
                 Dimensions = Registry.Dimensions,
                 Biomes = Registry.Biomes
             },
-            Dimension = codec,
+            DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
             ReducedDebugInfo = false,
