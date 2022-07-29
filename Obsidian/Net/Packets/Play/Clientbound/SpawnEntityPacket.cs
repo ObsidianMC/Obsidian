@@ -25,7 +25,7 @@ public partial class SpawnEntityPacket : IClientboundPacket
     [Field(6)]
     public Angle HeadYaw { get; init; }
 
-    [Field(7)]
+    [Field(7), VarLength]
     public int Data { get; init; }
 
     [Field(8)]
