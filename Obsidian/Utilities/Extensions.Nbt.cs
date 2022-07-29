@@ -301,7 +301,7 @@ public partial class Extensions
         }
 
         var narrationList = new NbtList(NbtTagType.String, "parameters");
-        if (chatElement.Chat?.Decoration?.Parameters != null)
+        if (chatElement.Narration?.Decoration?.Parameters != null)
         {
             foreach (var parameter in chatElement.Narration?.Decoration?.Parameters)
                 narrationList.Add(new NbtTag<string>(string.Empty, parameter));

@@ -280,7 +280,7 @@ public class Player : Living, IPlayer
         {
             await client.QueuePacketAsync(new PlayerChatMessagePacket(message, type, sender)
             {
-                SenderDisplayName = this.CustomName ?? this.Username,
+                SenderDisplayName = messageSignature?.Username ?? string.Empty,
                 Salt = messageSignature?.Salt ?? 0,
                 MessageSignature = messageSignature?.Value ?? Array.Empty<byte>(),
                 UnsignedChatMessage = message,
@@ -650,7 +650,7 @@ public class Player : Living, IPlayer
 
         if (!playerDataFile.Exists)
         {
-            this.Position = this.World.LevelData.SpawnPosition;
+            this.Position = new VectorF(0, 128, 0);
             return;
         }
 

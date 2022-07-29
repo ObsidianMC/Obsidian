@@ -21,7 +21,7 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
     public Guid Sender { get; }
 
     [Field(5)]
-    public ChatMessage SenderDisplayName { get; init; }
+    public ChatMessage SenderDisplayName { get; init; } = string.Empty;
 
     [Field(6)]
     public bool HasTeamDisplayName => this.TeamDisplayName != null;

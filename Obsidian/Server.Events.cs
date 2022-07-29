@@ -236,7 +236,12 @@ public partial class Server
 
         joined.World.TryAddPlayer(joined);
 
-        BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
+        var chatMessage = new ChatMessage
+        {
+            Translate = "chat.system.text"
+        }.AddChatComponent(string.Format(Config.JoinMessage, e.Player.Username));
+
+        BroadcastMessage(chatMessage, MessageType.System);
         foreach (Player other in Players)
         {
             await other.client.AddPlayerToListAsync(joined);

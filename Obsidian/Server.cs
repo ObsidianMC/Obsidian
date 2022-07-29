@@ -64,7 +64,7 @@ public partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-    private readonly ConcurrentQueue<PlayerChatMessagePacket> chatMessagesQueue = new();
+    private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
 
@@ -178,7 +178,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new PlayerChatMessagePacket(message, type));
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, type));
         Logger.LogInformation(message.Text);
     }
 
@@ -196,7 +196,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(string message, MessageType type = MessageType.Chat)
     {
-        chatMessagesQueue.Enqueue(new PlayerChatMessagePacket(ChatMessage.Simple(message), type));
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(ChatMessage.Simple(message), type));
         Logger.LogInformation(message);
     }
 
@@ -373,19 +373,18 @@ public partial class Server : IServer
 
     internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
     {
-        var format = packet.Format;
+        var format = "<{0}> {1}";
+        var message = packet.Message;
 
-        var formattedMessage = string.Format(format, source.Player.Username, packet.Message);
-
-        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, packet.Message, format));
+        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
         if (chat.Cancel)
             return;
 
-        var playerChatMessagePacket = new PlayerChatMessagePacket(formattedMessage, type, source.Player.Uuid)
+        var playerChatMessagePacket = new PlayerChatMessagePacket(message, type, source.Player.Uuid)
         {
-            UnsignedChatMessage = formattedMessage,
+            UnsignedChatMessage = message,
+            SenderDisplayName = source.Player.CustomName ?? source.Player.Username,
             MessageSignature = packet.Signature,
-            SenderDisplayName = source.Player.Username,
             Salt = packet.Salt,
             Timestamp = packet.Timestamp
         };
@@ -657,11 +656,11 @@ public partial class Server : IServer
                 }
             }
 
-            while (chatMessagesQueue.TryDequeue(out PlayerChatMessagePacket chatMessagePacket))
+            while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
             {
                 foreach (Player player in Players)
                 {
-                    player.client.SendPacket(chatMessagePacket);
+                    player.client.SendPacket(packet);
                 }
             }
 

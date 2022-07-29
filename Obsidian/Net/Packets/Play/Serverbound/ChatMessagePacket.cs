@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
@@ -19,8 +20,6 @@ public partial class ChatMessagePacket : IServerboundPacket
 
     [Field(5)]
     public bool SignedPreview { get; set; }
-
-    public string Format { get; private set; } = "<{0}> {1}";
 
     public int Id => 0x04;
 

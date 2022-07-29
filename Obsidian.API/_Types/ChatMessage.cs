@@ -7,6 +7,8 @@ public class ChatMessage
 {
     public string Text { get; set; }
 
+    public string Translate { get; set; }
+
     public HexColor Color { get; set; }
 
     public bool Bold { get; set; }
@@ -27,8 +29,23 @@ public class ChatMessage
 
     public List<ChatMessage> Extra { get; private set; }
 
+    public List<ChatMessage> With { get; private set; }
+
     [JsonIgnore]
     public IEnumerable<ChatMessage> Extras => GetExtras();
+    [JsonIgnore]
+    public IEnumerable<ChatMessage> ExtraChatComponents => GetExtraChatComponents();
+
+    public IEnumerable<ChatMessage> GetExtraChatComponents()
+    {
+        if (With == null)
+            yield break;
+
+        foreach (var extra in With)
+        {
+            yield return extra;
+        }
+    }
 
     public IEnumerable<ChatMessage> GetExtras()
     {
@@ -73,7 +90,7 @@ public class ChatMessage
     /// <param name="text">The text of the <see cref="ChatMessage"/>.</param>
     /// <returns>The created <see cref="ChatMessage"/> object.</returns>
     public static ChatMessage SimpleLegacy(string text) => new() { Text = ReformatAmpersandPrefixes(text) };
-    
+
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text.
     /// </summary>
@@ -84,7 +101,31 @@ public class ChatMessage
     {
         Text = $"{color}{text}"
     };
-    
+
+    public static ChatMessage TranslatableChatMessageType(string text, string username)
+    {
+        var message = new ChatMessage()
+        {
+            Translate = "chat.type.text",
+        }
+        .AddChatComponent(username ?? string.Empty)
+        .AddChatComponent(text);
+
+        return message;
+    }
+
+    public static ChatMessage TranslatableChatMessageType(string text, ChatColor color, string username)
+    {
+        var message = new ChatMessage()
+        {
+            Translate = "chat.type.text",
+        }
+        .AddChatComponent(username ?? string.Empty)
+        .AddChatComponent($"{color}{text}");
+
+        return message;
+    }
+
     /// <summary>
     /// Creates a new <see cref="ChatMessage"/> object with plain text. The text will be reformatted by using
     /// the <see cref="ReformatAmpersandPrefixes"/> method.
@@ -150,6 +191,23 @@ public class ChatMessage
             }
         });
     }
+
+    public ChatMessage AddChatComponent(ChatMessage message)
+    {
+        this.With ??= new();
+        this.With.Add(message);
+
+        return this;
+    }
+
+    public ChatMessage AddChatComponent(IEnumerable<ChatMessage> message)
+    {
+        this.With ??= new();
+        this.With.AddRange(message);
+
+        return this;
+    }
+
 
     public ChatMessage AddExtra(ChatMessage message)
     {
