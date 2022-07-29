@@ -14,7 +14,7 @@ public sealed class BiomeElement
 
     public string Category { get; set; } = string.Empty;
 
-    public string Precipitation { get; set; }//TODO turn into enum
+    public string Precipitation { get; set; }
 
-    public string TemperatureModifier { get; set; }//TODO turn into enum
+    public string TemperatureModifier { get; set; }
 }

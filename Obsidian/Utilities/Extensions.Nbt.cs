@@ -179,12 +179,13 @@ public partial class Extensions
 
         if (value.Element.MonsterSpawnLightLevel.Value.HasValue)
         {
-            monsterSpawnLightLevel = new NbtCompound("monster_spawn_light_level")
-            {
-                new NbtTag<int>("min_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MinInclusive ?? 0),
-                new NbtTag<int>("max_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0),
-                new NbtTag<string>("type", value.Element.MonsterSpawnLightLevel.Value?.Type ?? string.Empty)
-            };
+            //monsterSpawnLightLevel = new NbtCompound("monster_spawn_light_level")
+            //{
+            //    new NbtTag<int>("min_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MinInclusive ?? 0),
+            //    new NbtTag<int>("max_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0),
+            //    new NbtTag<string>("type", value.Element.MonsterSpawnLightLevel.Value?.Type ?? string.Empty)
+            //};
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0);
         }
         else
             monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.IntValue ?? 0);
