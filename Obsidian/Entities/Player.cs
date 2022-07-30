@@ -10,8 +10,6 @@ using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using System.IO;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Obsidian.Entities;
 
@@ -271,27 +269,31 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(new SetCenterChunkPacket(chunkX, chunkZ));
     }
 
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null) =>
-        this.SendMessageAsync(ChatMessage.Simple(message), type, sender, messageSignature);
-
-    public async Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null)
+    public async Task SendMessageAsync(ChatMessage message, Guid? sender = null, SecureMessageSignature? messageSignature = null)
     {
-        if (messageSignature.HasValue)
+        if (sender != null)
         {
-            await client.QueuePacketAsync(new PlayerChatMessagePacket(message, type, sender)
+            ArgumentNullException.ThrowIfNull(messageSignature);
+
+            var value = messageSignature.Value;
+
+            await client.QueuePacketAsync(new PlayerChatMessagePacket(message, MessageType.Chat, sender)
             {
-                SenderDisplayName = messageSignature?.Username ?? string.Empty,
-                Salt = messageSignature?.Salt ?? 0,
-                MessageSignature = messageSignature?.Value ?? Array.Empty<byte>(),
+                SenderDisplayName = value.Username,
+                Salt = value.Salt,
+                MessageSignature = value.Value,
                 UnsignedChatMessage = message,
-                Timestamp = messageSignature?.Timestamp ?? DateTimeOffset.UtcNow,
+                Timestamp = value.Timestamp,
             });
 
             return;
         }
 
-        await client.QueuePacketAsync(new SystemChatMessagePacket(message, type));
+        await client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));
     }
+
+    public Task SetActionBarTextAsync(ChatMessage message) =>
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.ActionBar));
 
     public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
         client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));

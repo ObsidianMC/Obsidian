@@ -15,11 +15,11 @@ public class CommandSender : ICommandSender
         Logger = logger;
     }
 
-    public async Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
+    public async Task SendMessageAsync(ChatMessage message, Guid? sender = null)
     {
         if (Issuer == CommandIssuers.Client)
         {
-            await Player.SendMessageAsync(message, type, sender);
+            await Player.SendMessageAsync(message, sender);
             return;
         }
 
@@ -31,6 +31,4 @@ public class CommandSender : ICommandSender
 
         Logger.LogInformation(messageString);
     }
-
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => SendMessageAsync(ChatMessage.Simple(message), type, sender);
 }

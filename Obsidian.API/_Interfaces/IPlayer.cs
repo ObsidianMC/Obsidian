@@ -42,8 +42,8 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
-    public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null);
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null, SecureMessageSignature? messageSignature = null);
+    public Task SendMessageAsync(ChatMessage message, Guid? sender = null, SecureMessageSignature? messageSignature = null);
+    public Task SetActionBarTextAsync(ChatMessage message);
     public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
     public Task SendSoundAsync(Sounds sound, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
     public Task SendCustomSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
