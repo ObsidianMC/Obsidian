@@ -11,7 +11,7 @@ public partial class Server
     private async Task PlayerAttack(PlayerAttackEntityEventArgs e)
     {
         var entity = e.Entity;
-        var attacker = e.Attacker;
+        var attacker = e.Player;
 
         if (entity is IPlayer player)
         {
@@ -24,10 +24,9 @@ public partial class Server
         var item = e.Item;
 
         var block = e.Block;
-        var server = e.Server as Server;
         var player = e.Player as Player;
 
-        if (e.Cancel)
+        if (e.Cancelled)
             return;
 
         if (block.HasValue)

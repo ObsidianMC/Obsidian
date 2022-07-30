@@ -188,13 +188,11 @@ public sealed class Client : IDisposable
 
                 case ClientState.Play:
                     Debug.Assert(Player is not null);
+
                     var packetReceivedEventArgs = new PacketReceivedEventArgs(Player, id, data);
                     await Server.Events.InvokePacketReceivedAsync(packetReceivedEventArgs);
 
-                    if (!packetReceivedEventArgs.Cancel)
-                    {
-                        await handler.HandlePlayPackets(id, data, this);
-                    }
+                    if (!packetReceivedEventArgs.Cancelled) await handler.HandlePlayPackets(id, data, this);
                     break;
             }
         }
@@ -571,14 +569,10 @@ public sealed class Client : IDisposable
     internal async Task QueuePacketAsync(IClientboundPacket packet)
     {
         var args = await Server.Events.InvokeQueuePacketAsync(new QueuePacketEventArgs(this, packet));
-        if (args.Cancel)
-        {
+        if (args.Cancelled)
             Logger.LogDebug("A packet was set to queue but an event handler prevented it.");
-        }
         else
-        {
             await packetQueue.SendAsync(packet);
-        }
     }
 
     internal Task SendChunkAsync(Chunk chunk)

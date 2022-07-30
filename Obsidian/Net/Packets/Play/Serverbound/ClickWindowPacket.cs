@@ -272,12 +272,9 @@ public partial class ClickWindowPacket : IServerboundPacket
     {
         if (!ClickedItem.IsAir())
         {
-            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(player, container, ClickedItem)
-            {
-                Slot = slot
-            });
+            var @event = await server.Events.InvokeContainerClickAsync(new ContainerClickEventArgs(container, ClickedItem, slot, player));
 
-            if (@event.Cancel)
+            if (@event.Cancelled)
                 return;
 
             player.LastClickedItem = ClickedItem;

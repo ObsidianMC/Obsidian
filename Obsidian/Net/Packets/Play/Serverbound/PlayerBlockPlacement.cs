@@ -38,12 +38,7 @@ public partial class PlayerBlockPlacement : IServerboundPacket
         //TODO check if a player can place a block if they can't then call the player interact event
         if (interactedBlock.IsInteractable && !player.Sneaking)
         {
-            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-            {
-                Item = currentItem,
-                Block = interactedBlock,
-                BlockLocation = this.Position,
-            });
+            await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(currentItem, player, interactedBlock, Position));
 
             return;
         }

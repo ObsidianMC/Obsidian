@@ -390,9 +390,9 @@ public partial class Server : IServer
         }
         else
         {
-            var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+            var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(message, format, source.Player));
 
-            if (!chat.Cancel)
+            if (!chat.Cancelled)
                 BroadcastMessage(string.Format(format, source.Player.Username, message), type);
 
             return;

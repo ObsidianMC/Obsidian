@@ -16,18 +16,11 @@ public partial class UseItem : IServerboundPacket
         switch (Hand)
         {
             case Hand.MainHand:
-                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-                {
-                    Item = player.GetHeldItem()
-                });
+                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player.GetHeldItem(), player));
                 break;
             case Hand.OffHand:
-                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
-                {
-                    Item = player.GetOffHandItem()
-                });
+                await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player.GetHeldItem(), player));
                 break;
         }
     }
 }
-

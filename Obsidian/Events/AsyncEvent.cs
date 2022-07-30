@@ -15,7 +15,7 @@ public sealed class AsyncEvent : IEventRegistry
     private readonly List<Hook> hooks = new();
     private readonly Action<AsyncEvent, Exception>? exceptionHandler;
 
-    public AsyncEvent()
+    private AsyncEvent()
     {
     }
 
@@ -44,12 +44,11 @@ public sealed class AsyncEvent : IEventRegistry
         semaphore.Wait();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i] == handler)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return;
-            }
+            if (hooks[i] != handler) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return;
         }
         semaphore.Release();
     }
@@ -59,12 +58,11 @@ public sealed class AsyncEvent : IEventRegistry
         await semaphore.WaitAsync();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i] == handler)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return;
-            }
+            if (hooks[i] != handler) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return;
         }
         semaphore.Release();
     }
@@ -110,66 +108,56 @@ public sealed class AsyncEvent : IEventRegistry
         semaphore.Wait();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i].Delegate == @delegate)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return true;
-            }
+            if (hooks[i].Delegate != @delegate) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return true;
         }
         semaphore.Release();
         return false;
     }
 
-    public static AsyncEvent operator +(AsyncEvent asyncEvent, Hook.VoidMethod method)
+    public static AsyncEvent operator +(AsyncEvent? asyncEvent, Hook.VoidMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent();
         asyncEvent.Register(new Hook(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent operator -(AsyncEvent asyncEvent, Hook.VoidMethod method)
+    public static AsyncEvent operator -(AsyncEvent? asyncEvent, Hook.VoidMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent();
-        }
+        if (asyncEvent is null) return new AsyncEvent();
 
         asyncEvent.Unregister(new Hook(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent operator +(AsyncEvent asyncEvent, Hook.ValueTaskMethod method)
+    public static AsyncEvent operator +(AsyncEvent? asyncEvent, Hook.ValueTaskMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent();
         asyncEvent.Register(new Hook(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent operator -(AsyncEvent asyncEvent, Hook.ValueTaskMethod method)
+    public static AsyncEvent operator -(AsyncEvent? asyncEvent, Hook.ValueTaskMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent();
-        }
+        if (asyncEvent is null) return new AsyncEvent();
 
         asyncEvent.Unregister(new Hook(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent operator +(AsyncEvent asyncEvent, Hook.TaskMethod method)
+    public static AsyncEvent operator +(AsyncEvent? asyncEvent, Hook.TaskMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent();
         asyncEvent.Register(new Hook(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent operator -(AsyncEvent asyncEvent, Hook.TaskMethod method)
+    public static AsyncEvent operator -(AsyncEvent? asyncEvent, Hook.TaskMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent();
-        }
+        if (asyncEvent is null) return new AsyncEvent();
 
         asyncEvent.Unregister(new Hook(method));
         return asyncEvent;
@@ -297,7 +285,7 @@ public sealed class AsyncEvent : IEventRegistry
             return RuntimeHelpers.GetHashCode(Delegate);
         }
 
-        public override string? ToString()
+        public override string ToString()
         {
             return $"{methodType} Hook";
         }

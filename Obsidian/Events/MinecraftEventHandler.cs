@@ -46,7 +46,7 @@ public class MinecraftEventHandler
     {
     }
 
-    private void HandleException<T>(AsyncEvent<T> e, Exception exception)
+    private void HandleException<T>(AsyncEvent<T> e, Exception exception) where T : BaseEventArgs
     {
     }
 

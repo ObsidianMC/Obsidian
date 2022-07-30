@@ -3,21 +3,21 @@ using Obsidian.Net.Packets;
 
 namespace Obsidian.Events.EventArgs;
 
-public class BasePacketEventArgs : AsyncEventArgs
+public class BasePacketEventArgs : BaseEventArgs
 {
+    internal BasePacketEventArgs(Client client, IPacket packet)
+    {
+        Client = client;
+        Packet = packet;
+    }
+
     /// <summary>
     /// The client that invoked the event.
     /// </summary>
-    public Client Client { get; set; }
+    public Client Client { get; }
 
     /// <summary>
     /// The packet being used to invoke this event.
     /// </summary>
-    public IPacket Packet { get; private set; }
-
-    internal BasePacketEventArgs(Client client, IPacket packet)
-    {
-        this.Client = client;
-        this.Packet = packet;
-    }
+    public IPacket Packet { get; }
 }

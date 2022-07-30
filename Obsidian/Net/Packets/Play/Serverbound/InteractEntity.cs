@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using System.Diagnostics;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -27,19 +28,21 @@ public partial class InteractEntity : IServerboundPacket
     {
         var entity = player.GetEntitiesNear(4).FirstOrDefault(x => x.EntityId == EntityId); // TODO check if the entity is within range and in vision/not being blocked by a wall
 
+        Debug.Assert(entity is not null, "entity is null");
+
         switch (Type)
         {
             case InteractionType.Interact:
-                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Sneaking));
+                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, Sneaking));
                 break;
 
             case InteractionType.Attack:
-                await server.Events.InvokePlayerAttackEntityAsync(new PlayerAttackEntityEventArgs(player, entity, server, Sneaking));
+                await server.Events.InvokePlayerAttackEntityAsync(new PlayerAttackEntityEventArgs(player, entity, Sneaking));
                 break;
 
             case InteractionType.InteractAt:
-                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, server, Hand, Target, Sneaking));
-                break;
-        }
+                await server.Events.InvokeEntityInteractAsync(new EntityInteractEventArgs(player, entity, Hand, Target,
+                    Sneaking));
+                break; }
     }
 }

@@ -27,8 +27,11 @@ public partial class PlayerDigging : IServerboundPacket
         {
             await player.World.SetBlockUntrackedAsync(Position, Block.Air, true);
 
-            var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
-            if (blockBreakEvent.Cancel)
+            var blockBreakEvent =
+                await server.Events.InvokeBlockBreakAsync(
+                    new BlockBreakEventArgs(player.World, player, block, Position));
+
+            if (blockBreakEvent.Cancelled)
                 return;
         }
 

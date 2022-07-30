@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Obsidian.API.Events;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -6,7 +7,7 @@ using System.Threading;
 
 namespace Obsidian.Events;
 
-public sealed class AsyncEvent<T> : IEventRegistry
+public sealed class AsyncEvent<T> : IEventRegistry where T : BaseEventArgs
 {
     public string? Name { get; } // Name must be set in order to be visible to plugins
 
@@ -14,7 +15,7 @@ public sealed class AsyncEvent<T> : IEventRegistry
     private readonly List<Hook<T>> hooks = new();
     private readonly Action<AsyncEvent<T>, Exception>? exceptionHandler;
 
-    public AsyncEvent()
+    private AsyncEvent()
     {
     }
 
@@ -43,12 +44,11 @@ public sealed class AsyncEvent<T> : IEventRegistry
         semaphore.Wait();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i] == handler)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return;
-            }
+            if (hooks[i] != handler) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return;
         }
         semaphore.Release();
     }
@@ -58,12 +58,11 @@ public sealed class AsyncEvent<T> : IEventRegistry
         await semaphore.WaitAsync();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i] == handler)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return;
-            }
+            if (hooks[i] != handler) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return;
         }
         semaphore.Release();
     }
@@ -109,66 +108,56 @@ public sealed class AsyncEvent<T> : IEventRegistry
         semaphore.Wait();
         for (int i = 0; i < hooks.Count; i++)
         {
-            if (hooks[i].Delegate == @delegate)
-            {
-                hooks.RemoveAt(i);
-                semaphore.Release();
-                return true;
-            }
+            if (hooks[i].Delegate != @delegate) continue;
+
+            hooks.RemoveAt(i);
+            semaphore.Release();
+            return true;
         }
         semaphore.Release();
         return false;
     }
 
-    public static AsyncEvent<T> operator +(AsyncEvent<T> asyncEvent, Hook<T>.VoidMethod method)
+    public static AsyncEvent<T> operator +(AsyncEvent<T>? asyncEvent, Hook<T>.VoidMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent<T>();
         asyncEvent.Register(new Hook<T>(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent<T> operator -(AsyncEvent<T> asyncEvent, Hook<T>.VoidMethod method)
+    public static AsyncEvent<T> operator -(AsyncEvent<T>? asyncEvent, Hook<T>.VoidMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent<T>();
-        }
+        if (asyncEvent is null) return new AsyncEvent<T>();
 
         asyncEvent.Unregister(new Hook<T>(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent<T> operator +(AsyncEvent<T> asyncEvent, Hook<T>.ValueTaskMethod method)
+    public static AsyncEvent<T> operator +(AsyncEvent<T>? asyncEvent, Hook<T>.ValueTaskMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent<T>();
         asyncEvent.Register(new Hook<T>(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent<T> operator -(AsyncEvent<T> asyncEvent, Hook<T>.ValueTaskMethod method)
+    public static AsyncEvent<T> operator -(AsyncEvent<T>? asyncEvent, Hook<T>.ValueTaskMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent<T>();
-        }
+        if (asyncEvent is null) return new AsyncEvent<T>();
 
         asyncEvent.Unregister(new Hook<T>(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent<T> operator +(AsyncEvent<T> asyncEvent, Hook<T>.TaskMethod method)
+    public static AsyncEvent<T> operator +(AsyncEvent<T>? asyncEvent, Hook<T>.TaskMethod method)
     {
-        asyncEvent ??= new();
+        asyncEvent ??= new AsyncEvent<T>();
         asyncEvent.Register(new Hook<T>(method));
         return asyncEvent;
     }
 
-    public static AsyncEvent<T> operator -(AsyncEvent<T> asyncEvent, Hook<T>.TaskMethod method)
+    public static AsyncEvent<T> operator -(AsyncEvent<T>? asyncEvent, Hook<T>.TaskMethod method)
     {
-        if (asyncEvent is null)
-        {
-            return new AsyncEvent<T>();
-        }
+        if (asyncEvent is null) return new AsyncEvent<T>();
 
         asyncEvent.Unregister(new Hook<T>(method));
         return asyncEvent;
@@ -255,13 +244,11 @@ public sealed class AsyncEvent<T> : IEventRegistry
                 }
             }
             else if (returnType == typeof(Task))
-            {
                 if (Delegate.CreateDelegate(typeof(TaskMethod), instance, method, throwOnBindFailure: false) is TaskMethod @delegate)
                 {
                     hook = new Hook<TArgs>(@delegate);
                     return true;
                 }
-            }
 
             hook = default;
             return false;
