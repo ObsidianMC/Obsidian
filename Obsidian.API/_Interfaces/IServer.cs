@@ -19,8 +19,8 @@ public interface IServer
 
     public bool IsPlayerOnline(string username);
     public bool IsPlayerOnline(Guid uuid);
-    public void BroadcastMessage(string message, MessageType type = MessageType.Chat);
-    public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat);
+    public void BroadcastMessage(string message);
+    public void BroadcastMessage(ChatMessage message);
     public IPlayer? GetPlayer(string username);
     public IPlayer? GetPlayer(Guid uuid);
     public IPlayer? GetPlayer(int entityId);

@@ -182,7 +182,7 @@ public class MainCommandModule
     [Command("announce")]
     [CommandInfo("Makes an announcement", "/announce <message>")]
     [RequirePermission(op: true, permissions: "obsidian.announce")]
-    public void Announce(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage(text, MessageType.ActionBar);
+    public void Announce(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage(text);
 
     [Command("uptime", "up")]
     [CommandInfo("Gets current uptime", "/uptime")]

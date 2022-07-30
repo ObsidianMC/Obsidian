@@ -275,6 +275,7 @@ public partial class Extensions
     }
     #endregion
 
+    #region Chat Codec Writing
     public static void Write(this ChatCodec value, NbtList list)
     {
         var compound = new NbtCompound
@@ -292,47 +293,72 @@ public partial class Extensions
     public static NbtCompound WriteElement(this ChatCodec value)
     {
         var chatElement = value.Element;
-        var chatList = new NbtList(NbtTagType.String, "parameters");
+        var chat = chatElement.Chat;
+        var narration = chatElement.Narration;
 
-        if(chatElement.Chat?.Decoration?.Parameters != null)
-        {
-            foreach (var parameter in chatElement.Chat?.Decoration?.Parameters)
-                chatList.Add(new NbtTag<string>(string.Empty, parameter));
-        }
-
-        var narrationList = new NbtList(NbtTagType.String, "parameters");
-        if (chatElement.Narration?.Decoration?.Parameters != null)
-        {
-            foreach (var parameter in chatElement.Narration?.Decoration?.Parameters)
-                narrationList.Add(new NbtTag<string>(string.Empty, parameter));
-        }
+        var chatCompound = new NbtCompound("chat");
+        var narrationCompound = new NbtCompound("narration");
 
         var element = new NbtCompound("element")
         {
-            new NbtCompound("chat")
-            {
-                new NbtTag<string>("priority", chatElement.Chat?.Priority ?? string.Empty),
-                new NbtCompound("decoration")
-                {
-                    chatList,
-                    new NbtTag<string>("translation_key", chatElement.Chat?.Decoration?.TranslationKey ?? string.Empty),
-                    new NbtCompound("style")
-                }
-            },
-            new NbtCompound("Narration")
-            {
-                new NbtTag<string>("priority", chatElement.Narration?.Priority ?? string.Empty),
-                new NbtCompound("decoration")
-                {
-                    chatList,
-                    new NbtTag<string>("translation_key", chatElement.Narration?.Decoration?.TranslationKey ?? string.Empty),
-                    new NbtCompound("style")
-                }
-            }
+            chatCompound,
+            narrationCompound,
         };
+
+        if(value.Id == 2)
+        {
+            element.Remove("chat");
+            element.Remove("narration");
+
+            //For some reason game info needs an overlay compound? Idk what its use is for but we have to write it
+            element.Add(new NbtCompound("overlay"));
+
+            return element;
+        }
+
+        if (chat != null)
+        {
+            if (!string.IsNullOrWhiteSpace(chat.Priority))
+                chatCompound.Add(new NbtTag<string>("priority", chat.Priority));
+
+            AddDecoration(chat.Decoration, chatCompound);
+        }
+
+        if (narration != null)
+        {
+            if (!string.IsNullOrWhiteSpace(narration.Priority))
+                narrationCompound.Add(new NbtTag<string>("priority", narration.Priority));
+
+            AddDecoration(narration.Decoration, narrationCompound);
+        }
 
         return element;
     }
+    private static void AddDecoration(ChatDecoration? decoration, NbtCompound compound)
+    {
+        var decorationCompound = new NbtCompound("decoration");
+
+        if (decoration == null)
+            return;
+
+        decorationCompound.Add(new NbtCompound("style"));//always an empty style compound idk why
+
+        if (!string.IsNullOrWhiteSpace(decoration.TranslationKey))
+            decorationCompound.Add(new NbtTag<string>("translation_key", decoration.TranslationKey));
+
+        if (decoration.Parameters != null)
+        {
+            var list = new NbtList(NbtTagType.String, "parameters");
+
+            foreach (var parameter in decoration.Parameters)
+                list.Add(new NbtTag<string>(string.Empty, parameter));
+
+            decorationCompound.Add(list);
+        }
+
+        compound.Add(decorationCompound);
+    }
+    #endregion
 
     #region Biome Codec Writing
     public static void Write(this BiomeCodec value, NbtList list)

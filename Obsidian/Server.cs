@@ -176,9 +176,9 @@ public partial class Server : IServer
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat)
+    public void BroadcastMessage(ChatMessage message)
     {
-        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, type));
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, MessageType.System));
         Logger.LogInformation(message.Text);
     }
 
@@ -194,9 +194,12 @@ public partial class Server : IServer
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(string message, MessageType type = MessageType.Chat)
+    public void BroadcastMessage(string message)
     {
-        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(ChatMessage.Simple(message), type));
+        var chatMessage = ChatMessage.Simple(string.Empty)
+            .AddExtra(message);
+
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, MessageType.System));
         Logger.LogInformation(message);
     }
 
@@ -391,34 +394,34 @@ public partial class Server : IServer
         BroadcastMessage(playerChatMessagePacket);
     }
 
-    internal async Task HandleIncomingMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
-    {
-        format ??= "<{0}> {1}";
+    //internal async Task HandleIncomingMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
+    //{
+    //    format ??= "<{0}> {1}";
 
-        if (message.StartsWith(CommandHandler.DefaultPrefix))
-        {
-            // TODO command logging
-            // TODO error handling for commands
-            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
-            try
-            {
-                await CommandsHandler.ProcessCommand(context);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, e.Message);
-            }
-        }
-        else
-        {
-            var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+    //    if (message.StartsWith(CommandHandler.DefaultPrefix))
+    //    {
+    //        // TODO command logging
+    //        // TODO error handling for commands
+    //        var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
+    //        try
+    //        {
+    //            await CommandsHandler.ProcessCommand(context);
+    //        }
+    //        catch (Exception e)
+    //        {
+    //            Logger.LogError(e, e.Message);
+    //        }
+    //    }
+    //    else
+    //    {
+    //        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
 
-            if (!chat.Cancel)
-                BroadcastMessage(string.Format(format, source.Player.Username, message), type);
+    //        if (!chat.Cancel)
+    //            BroadcastMessage(string.Format(format, source.Player.Username, message), type);
 
-            return;
-        }
-    }
+    //        return;
+    //    }
+    //}
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
     {

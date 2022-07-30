@@ -236,7 +236,12 @@ public partial class Server
 
         joined.World.TryAddPlayer(joined);
 
-        BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username), MessageType.System);
+        BroadcastMessage(ChatMessage.Simple(string.Empty).AddExtra(new ChatMessage
+        {
+            Text = string.Format(Config.JoinMessage, e.Player.Username),
+            Color = HexColor.Yellow
+        }));
+
         foreach (Player other in Players)
         {
             await other.client.AddPlayerToListAsync(joined);
