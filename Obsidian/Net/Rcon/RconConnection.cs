@@ -248,7 +248,7 @@ public class RconConnection
 
                             server.Operators.GetOnlineOperators().ForEach(op =>
                             {
-                                op.SendMessageAsync($"[RCON: {CommandHandler.DefaultPrefix}{packet.PayloadText}]", MessageType.System);
+                                op.SendMessageAsync($"[RCON: {CommandHandler.DefaultPrefix}{packet.PayloadText}]");
                             });
 
                             await commandHandler.ProcessCommand(context);
