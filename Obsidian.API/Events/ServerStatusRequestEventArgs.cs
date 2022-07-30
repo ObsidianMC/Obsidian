@@ -1,11 +1,14 @@
 ﻿namespace Obsidian.API.Events;
 
-public class ServerStatusRequestEventArgs : BaseMinecraftEventArgs
+public sealed class ServerStatusRequestEventArgs : BaseEventArgs, IServerEvent, ICancellable
 {
-    public IServerStatus Status { get; }
-
-    internal ServerStatusRequestEventArgs(IServer server, IServerStatus status) : base(server)
+    internal ServerStatusRequestEventArgs(IServer server, IServerStatus status)
     {
-        this.Status = status;
+        Server = server;
+        Status = status;
     }
+
+    public IServerStatus Status { get; }
+    public IServer Server { get; }
+    public bool Cancelled { get; set; }
 }

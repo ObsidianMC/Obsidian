@@ -1,25 +1,31 @@
 ﻿namespace Obsidian.API.Events;
 
 //TODO check if player crits and calculate damage
-public class PlayerAttackEntityEventArgs : EntityEventArgs
+public sealed class PlayerAttackEntityEventArgs : BaseEventArgs, IEntityEvent, IPlayerEvent
 {
-    /// <summary>
-    /// The player who interacted with the entity.
-    /// </summary>
-    public IPlayer Attacker { get; }
+    internal PlayerAttackEntityEventArgs(IPlayer attacker, IEntity entity, bool sneaking)
+    {
+        Player = attacker;
+        Entity = entity;
+        Sneaking = sneaking;
+    }
 
     public float Damage { get; internal set; }
 
-    public bool IsCrit { get; internal set; }
+    public bool IsCritical { get; internal set; }
 
     /// <summary>
     /// True if the player is sneaking when this event is triggered.
     /// </summary>
     public bool Sneaking { get; }
 
-    public PlayerAttackEntityEventArgs(IPlayer attacker, IEntity entity, IServer server, bool sneaking) : base(entity, server)
-    {
-        this.Attacker = attacker;
-        this.Sneaking = sneaking;
-    }
+    /// <summary>
+    /// The entity that was attacked.
+    /// </summary>
+    public IEntity Entity { get; }
+
+    /// <summary>
+    /// The attacker.
+    /// </summary>
+    public IPlayer Player { get; }
 }
