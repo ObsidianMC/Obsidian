@@ -14,15 +14,13 @@ public class RconCommandSender : ICommandSender
         builder = new StringBuilder();
     }
 
-    public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
+    public Task SendMessageAsync(ChatMessage message, Guid? sender = null)
     {
         builder.Append(message.Text);
         foreach (var extra in message.GetExtras()) builder.Append(extra.Text);
 
         return Task.CompletedTask;
     }
-
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => SendMessageAsync(ChatMessage.Simple(message), type, sender);
 
     public string GetResponse() => builder.ToString();
 }
