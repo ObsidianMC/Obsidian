@@ -26,7 +26,7 @@ internal class WorldLight
                     if (chunk.Sections[secIndex].IsEmpty)
                     {
                         y -= 15;
-                    } 
+                    }
                     else
                     {
                         chunk.SetLightLevel(x, y, z, LightType.Sky, 15);
@@ -61,7 +61,7 @@ internal class WorldLight
 
             foreach (Vector dir in Vector.CardinalDirs)
             {
-                if ( await world.GetBlockAsync(pos + (0, spreadY, 0) + dir) is { IsTransparent: false })
+                if (await world.GetBlockAsync(pos + (0, spreadY, 0) + dir) is { IsTransparent: false })
                 {
                     chunk.SetLightLevel(pos + (0, spreadY, 0), lt, level);
                 }
@@ -77,14 +77,14 @@ internal class WorldLight
         foreach (Vector dir in Vector.CardinalDirs)
         {
             var highY = await world.GetWorldSurfaceHeightAsync(pos.X + dir.X, pos.Z + dir.Z) + 1;
-            
+
             // Spread up
             for (int spreadY = 1; spreadY < (highY - pos.Y); spreadY++)
             {
                 // To spread up, there must only be transparent blocks above the source
                 var upBlock = chunk.GetBlock(pos + (0, spreadY, 0));
                 if (!upBlock.IsTransparent) { break; }
-                
+
                 var scanPos = pos + dir + (0, spreadY, 0);
                 if (await world.GetBlockAsync(scanPos) is { IsTransparent: true })
                 {

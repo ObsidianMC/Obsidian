@@ -88,7 +88,7 @@ public static partial class Extensions
                     span[i] = sourceChar;
                     i++;
                 }
-                else if(sourceChar != '_')
+                else if (sourceChar != '_')
                 {
                     span[i] = sourceChar;
                     i++;

@@ -3,7 +3,7 @@
 public abstract class BaseTree
 {
     protected readonly GenHelper helper;
-    
+
     protected readonly Chunk chunk;
 
     protected readonly Material leaf, trunk;
@@ -74,19 +74,19 @@ public abstract class BaseTree
 
     protected virtual async Task<bool> TreeCanGrowAsync(Vector origin)
     {
-        var surfaceBlock = (Block) await helper.GetBlockAsync(origin, chunk);
+        var surfaceBlock = (Block)await helper.GetBlockAsync(origin, chunk);
         bool surfaceValid = ValidSourceBlocks.Contains(surfaceBlock.Material);
 
         bool plentyOfRoom =
-            ((Block) await helper.GetBlockAsync(origin + (-1, 2, -1), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (-1, 2, 0), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (-1, 2, 1), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (0, 2, -1), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (0, 2, 0), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (0, 2, 1), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (1, 2, -1), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (1, 2, 0), chunk)).IsAir &&
-            ((Block) await helper.GetBlockAsync(origin + (1, 2, 1), chunk)).IsAir;
+            ((Block)await helper.GetBlockAsync(origin + (-1, 2, -1), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (-1, 2, 0), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (-1, 2, 1), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (0, 2, -1), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (0, 2, 0), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (0, 2, 1), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (1, 2, -1), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (1, 2, 0), chunk)).IsAir &&
+            ((Block)await helper.GetBlockAsync(origin + (1, 2, 1), chunk)).IsAir;
 
 
         return surfaceValid && plentyOfRoom;

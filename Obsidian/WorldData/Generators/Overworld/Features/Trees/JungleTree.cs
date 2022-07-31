@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class JungleTree : BaseTree
 {
@@ -85,7 +83,7 @@ public class JungleTree : BaseTree
         await base.GenerateTrunkAsync(origin, heightOffset);
         if (rand.Next(3) == 0)
         {
-            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset -3, -1), new Block(Material.Cocoa, 9), chunk);
+            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), new Block(Material.Cocoa, 9), chunk);
         }
     }
 

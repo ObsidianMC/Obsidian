@@ -15,11 +15,13 @@ public class CommandSender : ICommandSender
         Logger = logger;
     }
 
-    public async Task SendMessageAsync(ChatMessage message, Guid? sender = null)
+    public async Task SendMessageAsync(ChatMessage message)
     {
         if (Issuer == CommandIssuers.Client)
         {
-            await Player.SendMessageAsync(message, sender);
+            await Player.SendMessageAsync(message);
+
+            //TODO make sure to send secure message if there's a sender
             return;
         }
 
@@ -31,4 +33,6 @@ public class CommandSender : ICommandSender
 
         Logger.LogInformation(messageString);
     }
+
+    public Task SendMessageAsync(ChatMessage message, Guid sender) => throw new NotImplementedException();
 }

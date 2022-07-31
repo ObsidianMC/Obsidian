@@ -20,7 +20,7 @@ public class RconPacket
     public int Length => 4 + 4 + PayloadBytes.Length + 1; // RequestId (Int32) + Type (Int32) + PayloadBytes (varies) + padding (1)
     public int RequestId { get; set; }
     public RconPacketType Type { get; set; }
-    public byte[] PayloadBytes { get; set; } = {0x00};
+    public byte[] PayloadBytes { get; set; } = { 0x00 };
     public string PayloadText
     {
         get => PayloadBytes.Length > 1
@@ -29,8 +29,8 @@ public class RconPacket
         set
         {
             if (string.IsNullOrEmpty(value))
-                PayloadBytes = new byte[] {0x00};
-            PayloadBytes = encoding.GetBytes(value).Append((byte) 0x00).ToArray();
+                PayloadBytes = new byte[] { 0x00 };
+            PayloadBytes = encoding.GetBytes(value).Append((byte)0x00).ToArray();
         }
     }
 
@@ -47,7 +47,7 @@ public class RconPacket
         packet.RequestId = BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         stream.Read(buf);
-        packet.Type = (RconPacketType) BinaryPrimitives.ReadInt32LittleEndian(buf);
+        packet.Type = (RconPacketType)BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         if (payloadSize > 0)
         {
@@ -75,7 +75,7 @@ public class RconPacket
         packet.RequestId = BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         await stream.ReadAsync(buf, ct);
-        packet.Type = (RconPacketType) BinaryPrimitives.ReadInt32LittleEndian(buf);
+        packet.Type = (RconPacketType)BinaryPrimitives.ReadInt32LittleEndian(buf);
 
         if (payloadSize > 0)
         {
@@ -100,7 +100,7 @@ public class RconPacket
         BinaryPrimitives.WriteInt32LittleEndian(buf, RequestId);
         stream.Write(buf);
 
-        BinaryPrimitives.WriteInt32LittleEndian(buf, (int) Type);
+        BinaryPrimitives.WriteInt32LittleEndian(buf, (int)Type);
         stream.Write(buf);
 
         stream.Write(PayloadBytes);
@@ -118,13 +118,13 @@ public class RconPacket
         BinaryPrimitives.WriteInt32LittleEndian(buf, RequestId);
         await stream.WriteAsync(buf, ct);
 
-        BinaryPrimitives.WriteInt32LittleEndian(buf, (int) Type);
+        BinaryPrimitives.WriteInt32LittleEndian(buf, (int)Type);
         await stream.WriteAsync(buf, ct);
 
         if (PayloadBytes.Length > 0)
             await stream.WriteAsync(PayloadBytes, ct);
 
-        buf = new byte[] {0x00};
+        buf = new byte[] { 0x00 };
         await stream.WriteAsync(buf, ct); // Padding
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Obsidian.API.Crafting;
+using Obsidian.Utilities.Registry;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Obsidian.Utilities.Registry;
 using static Obsidian.Utilities.Registry.Registry;
 
 namespace Obsidian.Utilities.Converters;

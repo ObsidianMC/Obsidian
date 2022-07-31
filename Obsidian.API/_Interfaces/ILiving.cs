@@ -18,7 +18,7 @@ public interface ILiving : IEntity
     public int AbsorbtionAmount { get; set; }
 
     public Vector BedBlockPosition { get; set; }
-    
+
     /// <summary>
     /// The dictionary containing all active <see cref="PotionEffect"/> with their respective <see cref="PotionEffectData"/>.
     /// </summary>

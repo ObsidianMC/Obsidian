@@ -6,6 +6,6 @@ public partial class SetActionBarTextPacket : IClientboundPacket
 {
     [Field(0)]
     public string Text { get; init; }
-    
+
     public int Id => 0x40;
 }

@@ -1,5 +1,4 @@
 ﻿using Obsidian.API._Types.Config;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API;
 

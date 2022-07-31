@@ -12,17 +12,17 @@ public sealed class NumericExtensionsTests
         //                          |        expected byte length
         //                          |        |
         //                          v        v
-        yield return new object[] { 0,       1 };
-        yield return new object[] { 1 << 0,  1 };
-        yield return new object[] { 1 << 6,  1 };
-        yield return new object[] { 1 << 7,  2 };
+        yield return new object[] { 0, 1 };
+        yield return new object[] { 1 << 0, 1 };
+        yield return new object[] { 1 << 6, 1 };
+        yield return new object[] { 1 << 7, 2 };
         yield return new object[] { 1 << 13, 2 };
         yield return new object[] { 1 << 14, 3 };
         yield return new object[] { 1 << 20, 3 };
         yield return new object[] { 1 << 21, 4 };
         yield return new object[] { 1 << 27, 4 };
         yield return new object[] { 1 << 28, 5 };
-        yield return new object[] { -1,      5 };
+        yield return new object[] { -1, 5 };
     }
 
     [Theory, MemberData(nameof(VarInts))]

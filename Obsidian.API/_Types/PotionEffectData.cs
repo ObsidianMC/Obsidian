@@ -9,12 +9,12 @@ public class PotionEffectData
     /// The duration of the potion effect when it was added.
     /// </summary>
     public int Duration { get; }
-    
+
     /// <summary>
     /// The amplifier of the potion effect.
     /// </summary>
     public int Amplifier { get; }
-    
+
     /// <summary>
     /// The flags which define some settings with the potion effect itself.
     /// See https://wiki.vg/Protocol#Entity_Effect for more information.

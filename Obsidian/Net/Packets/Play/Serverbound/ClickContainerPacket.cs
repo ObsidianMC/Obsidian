@@ -4,7 +4,6 @@ using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Serialization.Attributes;
-using System.Text.Json;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 

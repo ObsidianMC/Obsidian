@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 

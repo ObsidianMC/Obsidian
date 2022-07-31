@@ -19,7 +19,7 @@ public class VoronoiTunnels : Module
     public override double GetValue(double x, double y, double z)
     {
         x *= Frequency;
-        y *= Frequency*1.333;
+        y *= Frequency * 1.333;
         z *= Frequency;
 
         var xint = (x > 0D) ? (int)x : (int)x - 1;
@@ -49,7 +49,7 @@ public class VoronoiTunnels : Module
                     {
                         Index = (xCur, zCur),
                         DistanceToPoint = dist,
-                        Point = new VectorF(xPos,yPos,zPos),
+                        Point = new VectorF(xPos, yPos, zPos),
                     };
                 }
             }

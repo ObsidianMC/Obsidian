@@ -1,7 +1,6 @@
 ﻿using Obsidian.API;
 using Obsidian.Nbt;
 using Obsidian.Net;
-using Obsidian.Utilities.Registry;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;

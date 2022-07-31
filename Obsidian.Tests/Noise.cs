@@ -15,7 +15,7 @@ public class Noise
     [Fact(DisplayName = "Biomes", Timeout = 100000)]
     public async void BiomesAsync()
     {
-        
+
         await Task.Run(() =>
         {
             var map = new NoiseMap();

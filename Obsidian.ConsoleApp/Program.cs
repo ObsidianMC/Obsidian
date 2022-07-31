@@ -83,7 +83,7 @@ public static class Program
             return await worldsFileStream.FromJsonAsync<List<ServerWorld>>();
         }
 
-        var worlds = new List<ServerWorld>() 
+        var worlds = new List<ServerWorld>()
         {
             new()
             {

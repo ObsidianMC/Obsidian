@@ -269,28 +269,18 @@ public class Player : Living, IPlayer
         await this.client.QueuePacketAsync(new SetCenterChunkPacket(chunkX, chunkZ));
     }
 
-    public async Task SendMessageAsync(ChatMessage message, Guid? sender = null, SecureMessageSignature? messageSignature = null)
-    {
-        if (sender != null)
-        {
-            ArgumentNullException.ThrowIfNull(messageSignature);
+    public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
+         this.client.QueuePacketAsync(new PlayerChatMessagePacket(message, MessageType.Chat, sender)
+         {
+             SenderDisplayName = messageSignature.Username,
+             Salt = messageSignature.Salt,
+             MessageSignature = messageSignature.Value,
+             UnsignedChatMessage = message,
+             Timestamp = messageSignature.Timestamp,
+         });
 
-            var value = messageSignature.Value;
-
-            await client.QueuePacketAsync(new PlayerChatMessagePacket(message, MessageType.Chat, sender)
-            {
-                SenderDisplayName = value.Username,
-                Salt = value.Salt,
-                MessageSignature = value.Value,
-                UnsignedChatMessage = message,
-                Timestamp = value.Timestamp,
-            });
-
-            return;
-        }
-
-        await client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));
-    }
+    public Task SendMessageAsync(ChatMessage message) =>
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));
 
     public Task SetActionBarTextAsync(ChatMessage message) =>
         this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.ActionBar));

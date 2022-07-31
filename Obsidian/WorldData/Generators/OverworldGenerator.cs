@@ -13,7 +13,7 @@ public class OverworldGenerator : IWorldGenerator
     {
         if (chunk is null)
             chunk = new Chunk(cx, cz);
-        
+
         // Sanity checks
         if (chunk.isGenerated)
             return chunk;

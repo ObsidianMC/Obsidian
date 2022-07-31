@@ -7,16 +7,16 @@ public partial class EntityEffectPacket : IClientboundPacket
 {
     [Field(0), VarLength]
     public int EntityId { get; init; }
-    
+
     [Field(1), VarLength]
     public int EffectId { get; init; }
-    
+
     [Field(2)]
     public byte Amplifier { get; init; }
-    
+
     [Field(3), VarLength]
     public int Duration { get; init; }
-    
+
     [Field(4)]
     public byte Flags { get; init; }
 

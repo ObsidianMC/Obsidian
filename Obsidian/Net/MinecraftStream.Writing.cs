@@ -13,7 +13,6 @@ using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
-using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;

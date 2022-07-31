@@ -1,7 +1,4 @@
 using Obsidian.API._Types;
-using Obsidian.Net;
-
-using System.Collections.Generic;
 
 using Xunit;
 

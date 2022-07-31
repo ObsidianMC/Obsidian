@@ -305,7 +305,7 @@ public partial class Extensions
             narrationCompound,
         };
 
-        if(value.Id == 2)
+        if (value.Id == 2)
         {
             element.Remove("chat");
             element.Remove("narration");

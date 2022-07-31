@@ -1,6 +1,6 @@
-﻿using Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿using Obsidian.ChunkData;
 using Obsidian.WorldData.Generators.Overworld.Features.Flora;
-using Obsidian.ChunkData;
+using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
