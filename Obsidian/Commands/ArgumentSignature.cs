@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.Commands;
-public struct ArgumentSignature
+public readonly struct ArgumentSignature
 {
     public string ArgumentName { get; init; }
 

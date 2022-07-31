@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API.Inventory;
-public sealed class Equipment
+public sealed record class Equipment
 {
     public EquipmentSlot Slot { get; init; }
 

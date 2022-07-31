@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public struct SecureMessageSignature
+public readonly struct SecureMessageSignature
 {
     public string Username { get; init; }
 
