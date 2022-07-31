@@ -32,10 +32,10 @@ public partial class RespawnPacket : IClientboundPacket
     [Field(8)]
     public bool HasDeathLocation { get; init; }
 
-    [Field(9), Condition("HasDeathLocation")]
+    [Field(9), Condition(nameof(HasDeathLocation))]
     public string DeathDimensionName { get; init; }
 
-    [Field(10), Condition("HasDeathLocation")]
+    [Field(10), Condition(nameof(HasDeathLocation))]
     public VectorF DeathLocation { get; init; }
 
     public int Id => 0x3B;

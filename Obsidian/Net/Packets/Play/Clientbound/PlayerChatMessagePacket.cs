@@ -2,7 +2,6 @@
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-//TODO finish this
 public partial class PlayerChatMessagePacket : IClientboundPacket
 {
     [Field(0)]
