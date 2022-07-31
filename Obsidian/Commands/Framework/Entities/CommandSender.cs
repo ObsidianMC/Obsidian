@@ -26,7 +26,7 @@ public class CommandSender : ICommandSender
         }
 
         string messageString = message.Text;
-        foreach (var extra in message.Extras)
+        foreach (var extra in message.GetExtras())
         {
             messageString += extra.Text;
         }

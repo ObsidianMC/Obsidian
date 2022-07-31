@@ -31,32 +31,9 @@ public class ChatMessage
 
     public List<ChatMessage> With { get; private set; }
 
-    [JsonIgnore]
-    public IEnumerable<ChatMessage> Extras => GetExtras();
-    [JsonIgnore]
-    public IEnumerable<ChatMessage> ExtraChatComponents => GetExtraChatComponents();
+    public IEnumerable<ChatMessage> GetExtraChatComponents() => With ?? Enumerable.Empty<ChatMessage>();
 
-    public IEnumerable<ChatMessage> GetExtraChatComponents()
-    {
-        if (With == null)
-            yield break;
-
-        foreach (var extra in With)
-        {
-            yield return extra;
-        }
-    }
-
-    public IEnumerable<ChatMessage> GetExtras()
-    {
-        if (Extra == null)
-            yield break;
-
-        foreach (var extra in Extra)
-        {
-            yield return extra;
-        }
-    }
+    public IEnumerable<ChatMessage> GetExtras() => Extra ?? Enumerable.Empty<ChatMessage>();
 
     public static implicit operator ChatMessage(string text) => Simple(text);
 
