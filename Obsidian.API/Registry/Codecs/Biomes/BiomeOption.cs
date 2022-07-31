@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public sealed class BiomeOption
+public sealed record class BiomeOption
 {
     public string Type { get; set; }
 }

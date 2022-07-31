@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Chat;
 
-public sealed class ChatDecoration
+public sealed record class ChatDecoration
 {
     public List<string>? Parameters { get; set; }
 

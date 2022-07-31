@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
 [JsonConverter(typeof(DimensionElementConverter))]
-public sealed class DimensionElement
+public sealed record class DimensionElement
 {
     public int MonsterSpawnBlockLightLimit { get; set; }
 
@@ -131,7 +131,7 @@ public sealed class DimensionElement
 }
 
 
-public sealed class MonsterSpawnLightLevel
+public sealed record class MonsterSpawnLightLevel
 {
     public MonsterSpawnLightLevelValue? Value { get; set; }
 
@@ -139,7 +139,7 @@ public sealed class MonsterSpawnLightLevel
     public int? IntValue { get; set; }
 }
 
-public struct MonsterSpawnLightLevelValue
+public record struct MonsterSpawnLightLevelValue
 {
     public int MaxInclusive { get; set; }
 

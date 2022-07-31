@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public class BiomeCodec : ICodec
+public sealed record class BiomeCodec : ICodec
 {
     public string Name { get; set; }
 

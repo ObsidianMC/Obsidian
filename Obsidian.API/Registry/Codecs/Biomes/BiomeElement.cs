@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public sealed class BiomeElement
+public sealed record class BiomeElement
 {
     public BiomeEffect Effects { get; set; }
 

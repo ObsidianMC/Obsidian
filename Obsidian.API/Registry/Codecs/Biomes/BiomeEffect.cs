@@ -1,6 +1,6 @@
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public class BiomeEffect
+public sealed record class BiomeEffect
 {
     public BiomeMusicEffect Music { get; set; }
 

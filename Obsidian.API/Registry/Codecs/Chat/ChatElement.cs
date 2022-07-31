@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Chat;
 
-public sealed class ChatElement
+public sealed record class ChatElement
 {
     public ChatType? Chat { get; set; }
 

@@ -1,13 +1,13 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public sealed class BiomeAdditionSound
+public sealed record class BiomeAdditionSound
 {
     public string Sound { get; set; }
 
     public double TickChance { get; set; }
 }
 
-public sealed class BiomeMoodSound
+public sealed record class BiomeMoodSound
 {
     public string Sound { get; set; }
 
