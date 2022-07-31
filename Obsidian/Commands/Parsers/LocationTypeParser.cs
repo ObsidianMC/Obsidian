@@ -4,7 +4,7 @@ namespace Obsidian.Commands.Parsers;
 
 public class LocationTypeParser : BaseArgumentParser<VectorF>
 {
-    public LocationTypeParser() : base("minecraft:vec3")
+    public LocationTypeParser() : base(10, "minecraft:vec3")
     {
     }
 

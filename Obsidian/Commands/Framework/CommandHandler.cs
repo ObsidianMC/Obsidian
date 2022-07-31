@@ -38,7 +38,7 @@ public class CommandHandler
         this.pluginManager = pluginManager;
     }
 
-    public string FindMinecraftType(Type type)
+    public (int id, string mctype) FindMinecraftType(Type type)
     {
         var parserType = _argumentParsers.FirstOrDefault(x => x.GetType().BaseType.GetGenericArguments()[0] == type)?.GetType();
 
@@ -46,7 +46,7 @@ public class CommandHandler
             throw new Exception("No such parser registered!");
 
         var parser = (BaseArgumentParser)Activator.CreateInstance(parserType);
-        return parser.ParserIdentifier;
+        return (parser.Id, parser.ParserIdentifier);
     }
 
     public Command[] GetAllCommands()

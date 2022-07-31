@@ -238,7 +238,7 @@ public static partial class Registry
 
                     Type type = arg.ParameterType;
 
-                    var mctype = server.CommandsHandler.FindMinecraftType(type);
+                    var (id, mctype) = server.CommandsHandler.FindMinecraftType(type);
 
                     argNode.Parser = mctype switch
                     {
@@ -248,7 +248,7 @@ public static partial class Registry
                         "brigadier:float" => new FloatCommandParser(),
                         "brigadier:integer" => new IntCommandParser(),
                         "brigadier:long" => new LongCommandParser(),
-                        _ => new CommandParser(mctype),
+                        _ => new CommandParser(id, mctype),
                     };
 
                     prev.AddChild(argNode);

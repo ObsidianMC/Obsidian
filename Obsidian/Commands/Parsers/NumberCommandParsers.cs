@@ -10,7 +10,7 @@ public class DoubleCommandParser : CommandParser
 
     public double Max { get; }
 
-    public DoubleCommandParser() : base("brigadier:double") { }
+    public DoubleCommandParser() : base(2, "brigadier:double") { }
 
     public DoubleCommandParser(double min, double max) : this()
     {
@@ -53,7 +53,7 @@ public class FloatCommandParser : CommandParser
 
     public float Max { get; set; }
 
-    public FloatCommandParser() : base("brigadier:float") { }
+    public FloatCommandParser() : base(1, "brigadier:float") { }
 
     public FloatCommandParser(float min, float max) : this()
     {
@@ -96,7 +96,7 @@ public class IntCommandParser : CommandParser
 
     public int Max { get; set; }
 
-    public IntCommandParser() : base("brigadier:integer") { }
+    public IntCommandParser() : base(3, "brigadier:integer") { }
 
     public IntCommandParser(int min, int max) : this()
     {
@@ -139,7 +139,7 @@ public class LongCommandParser : CommandParser
 
     public long Max { get; set; }
 
-    public LongCommandParser() : base("brigadier:long") { }
+    public LongCommandParser() : base(4, "brigadier:long") { }
 
     public LongCommandParser(long min, long max) : this()
     {

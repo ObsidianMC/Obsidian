@@ -4,12 +4,17 @@ namespace Obsidian.Commands;
 
 public class CommandParser
 {
+    public int Id { get; }
     private string Identifier { get; }
 
-    public CommandParser(string identifier) => Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+    public CommandParser(int id, string identifier)
+    {
+        Id = id;
+        Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
+    }
 
-    public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteStringAsync(Identifier);
-    public virtual void Write(MinecraftStream stream) => stream.WriteString(Identifier);
+    public virtual Task WriteAsync(MinecraftStream stream) => stream.WriteVarIntAsync(this.Id);
+    public virtual void Write(MinecraftStream stream) => stream.WriteVarInt(this.Id);
 
     public override string ToString() => Identifier;
 }

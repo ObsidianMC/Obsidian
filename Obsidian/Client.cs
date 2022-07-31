@@ -404,7 +404,7 @@ public sealed class Client : IDisposable
 
         await SendServerBrand();
         await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
-        //await SendCommandsAsync();
+        await SendCommandsAsync();
         await DeclareRecipesAsync();
         await QueuePacketAsync(new UpdateRecipeBookPacket
         {
