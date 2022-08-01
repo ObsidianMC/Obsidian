@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.Registry.Codecs.Chat;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Nbt;
 
@@ -96,73 +97,73 @@ public partial class Extensions
             switch (name.ToUpperInvariant())
             {
                 case "ENCHANTMENTS":
-                {
-                    var enchantments = (NbtList)child;
-
-                    foreach (var enchant in enchantments)
                     {
-                        if (enchant is NbtCompound compound)
-                        {
-                            itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
-                        }
-                    }
+                        var enchantments = (NbtList)child;
 
-                    break;
-                }
+                        foreach (var enchant in enchantments)
+                        {
+                            if (enchant is NbtCompound compound)
+                            {
+                                itemMetaBuilder.AddEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                            }
+                        }
+
+                        break;
+                    }
 
                 case "STOREDENCHANTMENTS":
-                {
-                    var enchantments = (NbtList)child;
-
-                    foreach (var enchantment in enchantments)
                     {
-                        if (enchantment is NbtCompound compound)
-                        {
-                            compound.TryGetTag("id", out var id);
-                            compound.TryGetTag("lvl", out var lvl);
+                        var enchantments = (NbtList)child;
 
-                            itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                        foreach (var enchantment in enchantments)
+                        {
+                            if (enchantment is NbtCompound compound)
+                            {
+                                compound.TryGetTag("id", out var id);
+                                compound.TryGetTag("lvl", out var lvl);
+
+                                itemMetaBuilder.AddStoredEnchantment(compound.GetString("id").ToEnchantType(), compound.GetShort("lvl"));
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
 
                 case "SLOT":
-                {
-                    var byteTag = (NbtTag<byte>)child;
+                    {
+                        var byteTag = (NbtTag<byte>)child;
 
-                    itemStack.Slot = byteTag.Value;
-                    break;
-                }
+                        itemStack.Slot = byteTag.Value;
+                        break;
+                    }
 
                 case "DAMAGE":
-                {
-                    var intTag = (NbtTag<int>)child;
+                    {
+                        var intTag = (NbtTag<int>)child;
 
-                    itemMetaBuilder.WithDurability(intTag.Value);
-                    break;
-                }
+                        itemMetaBuilder.WithDurability(intTag.Value);
+                        break;
+                    }
 
                 case "DISPLAY":
-                {
-                    var display = (NbtCompound)child;
-
-                    foreach (var (displayTagName, displayTag) in display)
                     {
-                        if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
-                        {
-                            itemMetaBuilder.WithName(stringTag.Value);
-                        }
-                        else if (displayTag.Name.EqualsIgnoreCase("lore"))
-                        {
-                            var loreTag = (NbtList)displayTag;
+                        var display = (NbtCompound)child;
 
-                            foreach (NbtTag<string> lore in loreTag)
-                                itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                        foreach (var (displayTagName, displayTag) in display)
+                        {
+                            if (displayTagName.EqualsIgnoreCase("name") && displayTag is NbtTag<string> stringTag)
+                            {
+                                itemMetaBuilder.WithName(stringTag.Value);
+                            }
+                            else if (displayTag.Name.EqualsIgnoreCase("lore"))
+                            {
+                                var loreTag = (NbtList)displayTag;
+
+                                foreach (NbtTag<string> lore in loreTag)
+                                    itemMetaBuilder.AddLore(lore.Value.FromJson<ChatMessage>());
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
             }
         }
 
@@ -174,6 +175,21 @@ public partial class Extensions
     #region Dimension Codec Writing
     public static NbtCompound WriteElement(this DimensionCodec value)
     {
+        INbtTag monsterSpawnLightLevel;
+
+        if (value.Element.MonsterSpawnLightLevel.Value.HasValue)
+        {
+            //monsterSpawnLightLevel = new NbtCompound("monster_spawn_light_level")
+            //{
+            //    new NbtTag<int>("min_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MinInclusive ?? 0),
+            //    new NbtTag<int>("max_inclusive", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0),
+            //    new NbtTag<string>("type", value.Element.MonsterSpawnLightLevel.Value?.Type ?? string.Empty)
+            //};
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.Value?.MaxInclusive ?? 0);
+        }
+        else
+            monsterSpawnLightLevel = new NbtTag<int>("monster_spawn_light_level", value.Element.MonsterSpawnLightLevel.IntValue ?? 0);
+
         var compound = new NbtCompound("element")
         {
             new NbtTag<bool>("piglin_safe", value.Element.PiglinSafe),
@@ -199,7 +215,11 @@ public partial class Extensions
             new NbtTag<double>("coordinate_scale", value.Element.CoordinateScale),
 
             new NbtTag<bool>("ultrawarm", value.Element.Ultrawarm),
-            new NbtTag<bool>("has_ceiling", value.Element.HasCeiling)
+            new NbtTag<bool>("has_ceiling", value.Element.HasCeiling),
+
+            new NbtTag<int>("monster_spawn_block_light_limit", value.Element.MonsterSpawnBlockLightLimit),
+
+            monsterSpawnLightLevel
         };
 
         if (value.Element.FixedTime.HasValue)
@@ -252,6 +272,91 @@ public partial class Extensions
 
         writer.WriteBool("ultrawarm", value.Element.Ultrawarm);
         writer.WriteBool("has_ceiling", value.Element.HasCeiling);
+    }
+    #endregion
+
+    #region Chat Codec Writing
+    public static void Write(this ChatCodec value, NbtList list)
+    {
+        var compound = new NbtCompound
+        {
+            new NbtTag<int>("id", value.Id),
+
+            new NbtTag<string>("name", value.Name),
+
+            value.WriteElement()
+        };
+
+        list.Add(compound);
+    }
+
+    public static NbtCompound WriteElement(this ChatCodec value)
+    {
+        var chatElement = value.Element;
+        var chat = chatElement.Chat;
+        var narration = chatElement.Narration;
+
+        var chatCompound = new NbtCompound("chat");
+        var narrationCompound = new NbtCompound("narration");
+
+        var element = new NbtCompound("element")
+        {
+            chatCompound,
+            narrationCompound,
+        };
+
+        if (value.Id == 2)
+        {
+            element.Remove("chat");
+            element.Remove("narration");
+
+            //For some reason game info needs an overlay compound? Idk what its use is for but we have to write it
+            element.Add(new NbtCompound("overlay"));
+
+            return element;
+        }
+
+        if (chat != null)
+        {
+            if (!string.IsNullOrWhiteSpace(chat.Priority))
+                chatCompound.Add(new NbtTag<string>("priority", chat.Priority));
+
+            AddDecoration(chat.Decoration, chatCompound);
+        }
+
+        if (narration != null)
+        {
+            if (!string.IsNullOrWhiteSpace(narration.Priority))
+                narrationCompound.Add(new NbtTag<string>("priority", narration.Priority));
+
+            AddDecoration(narration.Decoration, narrationCompound);
+        }
+
+        return element;
+    }
+    private static void AddDecoration(ChatDecoration? decoration, NbtCompound compound)
+    {
+        var decorationCompound = new NbtCompound("decoration");
+
+        if (decoration == null)
+            return;
+
+        decorationCompound.Add(new NbtCompound("style"));//always an empty style compound idk why
+
+        if (!string.IsNullOrWhiteSpace(decoration.TranslationKey))
+            decorationCompound.Add(new NbtTag<string>("translation_key", decoration.TranslationKey));
+
+        if (decoration.Parameters != null)
+        {
+            var list = new NbtList(NbtTagType.String, "parameters");
+
+            foreach (var parameter in decoration.Parameters)
+                list.Add(new NbtTag<string>(string.Empty, parameter));
+
+            decorationCompound.Add(list);
+        }
+
+        compound.Add(decorationCompound);
     }
     #endregion
 
@@ -315,6 +420,9 @@ public partial class Extensions
         if (value.MoodSound != null)
             value.MoodSound.WriteMoodSound(effects);
 
+        if (value.Music != null)
+            value.Music.WriteMusic(effects);
+
         if (!value.AmbientSound.IsNullOrEmpty())
             effects.Add(new NbtTag<string>("ambient_sound", value.AmbientSound));
 
@@ -322,6 +430,19 @@ public partial class Extensions
             value.Particle.WriteParticle(compound);
 
         compound.Add(effects);
+    }
+
+    public static void WriteMusic(this BiomeMusicEffect musicEffect, NbtCompound compound)
+    {
+        var music = new NbtCompound("music")
+        {
+            new NbtTag<bool>("replace_current_music", musicEffect.ReplaceCurrentMusic),
+            new NbtTag<string>("sound", musicEffect.Sound),
+            new NbtTag<int>("max_delay", musicEffect.MaxDelay),
+            new NbtTag<int>("min_delay", musicEffect.MinDelay)
+        };
+
+        compound.Add(music);
     }
 
     public static void WriteAdditionSound(this BiomeAdditionSound value, NbtCompound compound)

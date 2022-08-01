@@ -2,6 +2,7 @@
 
 public enum EntityType : int
 {
+    Allay,
     AreaEffectCloud,
     ArmorStand,
     Arrow,
@@ -10,6 +11,7 @@ public enum EntityType : int
     Bee,
     Blaze,
     Boat,
+    ChestBoat,
     Cat,
     CaveSpider,
     Chicken,
@@ -32,6 +34,7 @@ public enum EntityType : int
     FallingBlock,
     FireworkRocket,
     Fox,
+    Frog,
     Ghast,
     Giant,
     GlowItemFrame,
@@ -91,6 +94,7 @@ public enum EntityType : int
     Squid,
     Stray,
     Strider,
+    Tadpole,
     Egg,
     EnderPearl,
     ExperienceBottle,
@@ -103,6 +107,7 @@ public enum EntityType : int
     Villager,
     Vindicator,
     WanderingTrader,
+    Warden,
     Witch,
     Wither,
     WitherSkeleton,
@@ -114,5 +119,5 @@ public enum EntityType : int
     ZombieVillager,
     ZombifiedPiglin,
     Player,
-    FishingBobber
+    FishingBobber,
 }

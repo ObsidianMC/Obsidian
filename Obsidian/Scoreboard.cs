@@ -22,7 +22,7 @@ public class Scoreboard : IScoreboard
 
     public async Task CreateOrUpdateObjectiveAsync(ChatMessage title, DisplayType displayType = DisplayType.Integer)
     {
-        var packet = new ScoreboardObjectivePacket
+        var packet = new UpdateObjectivesPacket
         {
             ObjectiveName = this.name,
             Mode = this.Objective != null ? ScoreboardMode.Update : ScoreboardMode.Create,
@@ -51,7 +51,7 @@ public class Scoreboard : IScoreboard
 
                     foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                     {
-                        await player.client.QueuePacketAsync(new UpdateScore
+                        await player.client.QueuePacketAsync(new UpdateScorePacket
                         {
                             EntityName = score.DisplayText,
                             ObjectiveName = this.name,
@@ -80,7 +80,7 @@ public class Scoreboard : IScoreboard
                 if (player.CurrentScoreboard != this)
                     continue;
 
-                await player.client.QueuePacketAsync(new UpdateScore
+                await player.client.QueuePacketAsync(new UpdateScorePacket
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
@@ -110,7 +110,7 @@ public class Scoreboard : IScoreboard
 
             foreach (var (_, s) in this.scores.OrderBy(x => x.Value.Value))
             {
-                await player.client.QueuePacketAsync(new UpdateScore
+                await player.client.QueuePacketAsync(new UpdateScorePacket
                 {
                     EntityName = s.DisplayText,
                     ObjectiveName = this.name,
@@ -131,7 +131,7 @@ public class Scoreboard : IScoreboard
                 if (player.CurrentScoreboard != this)
                     continue;
 
-                await player.client.QueuePacketAsync(new UpdateScore
+                await player.client.QueuePacketAsync(new UpdateScorePacket
                 {
                     EntityName = score.DisplayText,
                     ObjectiveName = this.name,
@@ -149,7 +149,7 @@ public class Scoreboard : IScoreboard
 
     public async Task RemoveObjectiveAsync()
     {
-        var obj = new ScoreboardObjectivePacket
+        var obj = new UpdateObjectivesPacket
         {
             ObjectiveName = this.Objective.ObjectiveName,
             Mode = ScoreboardMode.Remove
@@ -162,7 +162,7 @@ public class Scoreboard : IScoreboard
         }
     }
 
-    private async Task UpdateObjectiveAsync(ScoreboardObjectivePacket packet)
+    private async Task UpdateObjectiveAsync(UpdateObjectivesPacket packet)
     {
         foreach (var (_, player) in this.server.OnlinePlayers)
         {
@@ -172,7 +172,7 @@ public class Scoreboard : IScoreboard
 
                 foreach (var score in this.scores.Select(x => x.Value).OrderByDescending(x => x.Value))
                 {
-                    await player.client.QueuePacketAsync(new UpdateScore
+                    await player.client.QueuePacketAsync(new UpdateScorePacket
                     {
                         EntityName = score.DisplayText,
                         ObjectiveName = this.name,

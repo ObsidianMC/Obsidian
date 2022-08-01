@@ -7,15 +7,13 @@ internal sealed class Tag
     public string Name { get; }
     public string MinecraftName { get; }
     public string Type { get; }
-    public bool Replace { get; }
     public List<ITaggable> Values { get; }
 
-    private Tag(string name, string minecraftName, string type, bool replace, List<ITaggable> values)
+    private Tag(string name, string minecraftName, string type, List<ITaggable> values)
     {
         Name = name;
         MinecraftName = minecraftName;
         Type = type;
-        Replace = replace;
         Values = values;
     }
 
@@ -26,7 +24,6 @@ internal sealed class Tag
         string minecraftName = propertyValues.GetProperty("name").GetString()!;
         string name = minecraftName.ToPascalCase();
         string type = property.Name.Substring(0, property.Name.IndexOf('/'));
-        bool replace = propertyValues.GetProperty("replace").GetBoolean();
 
         var values = new List<ITaggable>();
         foreach (JsonElement value in propertyValues.GetProperty("values").EnumerateArray())
@@ -50,7 +47,7 @@ internal sealed class Tag
             }
         }
 
-        var tag = new Tag(name, minecraftName, type, replace, values);
+        var tag = new Tag(name, minecraftName, type, values);
         knownTags[property.Name] = tag;
         return tag;
     }

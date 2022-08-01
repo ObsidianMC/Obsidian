@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.Advancements;
 using Obsidian.API.Crafting;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using Obsidian.Commands;
 using Obsidian.Entities;
@@ -9,9 +10,9 @@ using Obsidian.Net.Actions.PlayerInfo;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.WindowProperties;
 using Obsidian.Serialization.Attributes;
+using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
-using System.IO;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -317,6 +318,12 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteDateTimeOffset(DateTimeOffset date)
+    {
+        this.WriteLong(date.ToUnixTimeMilliseconds());
+    }
+
+    [WriteMethod]
     public void WriteWindowProperty(IWindowProperty windowProperty)
     {
         this.WriteShort(windowProperty.Property);
@@ -345,6 +352,13 @@ public partial class MinecraftStream
     public void WriteChat(ChatMessage chatMessage)
     {
         WriteString(chatMessage.ToString(Globals.JsonOptions));
+    }
+
+    [WriteMethod]
+    public void WriteEquipment(Equipment equipment)
+    {
+        this.WriteByte((sbyte)equipment.Slot);
+        this.WriteItemStack(equipment.Item);
     }
 
     [WriteMethod]
@@ -518,6 +532,20 @@ public partial class MinecraftStream
     }
 
     [WriteMethod]
+    public void WriteSkinProperty(SkinProperty skinProperty)
+    {
+        this.WriteString(skinProperty.Name);
+        this.WriteString(skinProperty.Value);
+
+        var signed = string.IsNullOrWhiteSpace(skinProperty.Signature);
+
+        this.WriteBoolean(signed);
+
+        if (signed)
+            this.WriteString(skinProperty.Signature);
+    }
+
+    [WriteMethod]
     public void WriteCommandNode(CommandNode value)
     {
         value.CopyTo(this);
@@ -637,7 +665,34 @@ public partial class MinecraftStream
             list
         };
 
-        #region biomes
+        writer.WriteTag(dimensions);
+
+        this.WriteBiomeCodec(value, writer);
+        this.WriteChatCodec(value, writer);
+
+        writer.EndCompound();
+        writer.TryFinish();
+    }
+
+    private void WriteChatCodec(MixedCodec value, NbtWriter writer)
+    {
+        var chatTypes = new NbtList(NbtTagType.Compound, "value");
+
+        foreach (var (_, chatType) in value.ChatTypes)
+            chatType.Write(chatTypes);
+
+        var chatTypesCompound = new NbtCompound(value.ChatTypes.Name)
+        {
+            new NbtTag<string>("type", value.ChatTypes.Name),
+
+            chatTypes
+        };
+
+        writer.WriteTag(chatTypesCompound);
+    }
+
+    private void WriteBiomeCodec(MixedCodec value, NbtWriter writer)
+    {
         var biomes = new NbtList(NbtTagType.Compound, "value");
 
         foreach (var (_, biome) in value.Biomes)
@@ -649,13 +704,8 @@ public partial class MinecraftStream
 
             biomes
         };
-        #endregion
 
-        writer.WriteTag(dimensions);
         writer.WriteTag(biomeCompound);
-
-        writer.EndCompound();
-        writer.TryFinish();
     }
 
     [WriteMethod]

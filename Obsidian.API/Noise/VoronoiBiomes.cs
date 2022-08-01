@@ -54,8 +54,8 @@ public class VoronoiBiomes : Module
     [SkipLocalsInit]
     public override double GetValue(double x, double y, double z)
     {
-/*        if (isUnitTest)
-            z = y;*/
+        /*        if (isUnitTest)
+                    z = y;*/
         x *= Frequency;
         z *= Frequency;
 
@@ -265,12 +265,12 @@ public class VoronoiBiomes : Module
         {
             case Biomes.WindsweptHills:
                 // If a windswept hills is next to a forest, a windswept forest generates
-                if (new[] {Biomes.Forest, Biomes.BirchForest, Biomes.DarkForest }.Contains(neighbor.Biome))
+                if (new[] { Biomes.Forest, Biomes.BirchForest, Biomes.DarkForest }.Contains(neighbor.Biome))
                 {
                     me.Biome = Biomes.WindsweptForest;
                 }
                 // If a windswept hills is next to a mountain, a windswept gravel hills generates
-                else if (new[] {Biomes.SnowySlopes, Biomes.Grove}.Contains(neighbor.Biome))
+                else if (new[] { Biomes.SnowySlopes, Biomes.Grove }.Contains(neighbor.Biome))
                 {
                     me.Biome = Biomes.WindsweptGravellyHills;
                 }
@@ -299,9 +299,9 @@ public class VoronoiBiomes : Module
                 if (new[] { BaseBiome.Dry, BaseBiome.DryRare, BaseBiome.Medium, BaseBiome.MediumRare }.Contains(neighbor.BaseBiome))
                 {
                     me.Biome = Biomes.StonyPeaks;
-                } 
+                }
                 // If a grove borders an ocean, a stony shore generates.
-                else if (new[] {BaseBiome.ColdOcean, BaseBiome.FrozenOcean, BaseBiome.WarmOcean, BaseBiome.LukewarmOcean}.Contains(neighbor.BaseBiome))
+                else if (new[] { BaseBiome.ColdOcean, BaseBiome.FrozenOcean, BaseBiome.WarmOcean, BaseBiome.LukewarmOcean }.Contains(neighbor.BaseBiome))
                 {
                     me.Biome = Biomes.StonyShore;
                 }

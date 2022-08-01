@@ -12,6 +12,9 @@ public interface IPlayer : ILiving
 
     public Guid Uuid { get; }
     public bool IsOperator { get; }
+
+    public Vector? LastDeathLocation { get; set; }
+
     public IPAddress? ClientIP { get; }
     public Gamemode Gamemode { get; set; }
     public Hand MainHand { get; set; }
@@ -39,10 +42,12 @@ public interface IPlayer : ILiving
     public float FoodExhaustionLevel { get; set; }
     public float FoodSaturationLevel { get; set; }
 
-    public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null);
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null);
-    public Task SendSoundAsync(Sounds soundId, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
-    public Task SendNamedSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendMessageAsync(ChatMessage message);
+    public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
+    public Task SetActionBarTextAsync(ChatMessage message);
+    public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendSoundAsync(Sounds sound, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
+    public Task SendCustomSoundAsync(string name, SoundPosition position, SoundCategory category = SoundCategory.Master, float pitch = 1f, float volume = 1f);
     public Task KickAsync(ChatMessage reason);
     public Task KickAsync(string reason);
     public Task OpenInventoryAsync(BaseContainer container);
@@ -75,7 +80,7 @@ public interface IPlayer : ILiving
     /// <param name="stay">Time in ticks for the title to stay on screen</param>
     /// <param name="fadeOut">Time in ticks for the title to fade out</param>
     public Task SendSubtitleAsync(ChatMessage subtitle, int fadeIn, int stay, int fadeOut);
-    
+
     /// <summary>
     /// Sends an action bar text to the player.
     /// </summary>
@@ -129,7 +134,7 @@ public interface IPlayer : ILiving
     /// <param name="extra">The extra data of the particle, mostly used for speed.</param>
     public Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, float extra = 0);
-    
+
     /// <summary>
     /// Spawns the given particle at the target coordinates.
     /// </summary>

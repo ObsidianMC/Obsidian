@@ -43,6 +43,9 @@ public sealed class Client : IDisposable
 
     private bool disposed;
     private bool compressionEnabled;
+
+    private MojangUser cachedMojangUser;
+
     public bool EncryptionEnabled { get; private set; }
 
     private const int CompressionThreshold = 256;
@@ -57,8 +60,9 @@ public sealed class Client : IDisposable
     /// The client brand.
     /// </summary>
     public string? Brand { get; set; }
+
+    public ClientInformationPacket? ClientSettings { get; internal set; }
     public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
-    public ClientSettings? ClientSettings { get; internal set; }
 
     private readonly CancellationTokenSource cancellationSource = new();
 
@@ -270,7 +274,6 @@ public sealed class Client : IDisposable
 
         string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
-
         Logger.LogDebug($"Received login request from user {loginStart.Username}");
 
         await Server.DisconnectIfConnectedAsync(username);
@@ -278,9 +281,9 @@ public sealed class Client : IDisposable
         var world = (World)Server.DefaultWorld;
         if (config.OnlineMode)
         {
-            MojangUser? user = await MinecraftAPI.GetUserAsync(loginStart.Username);
+            this.cachedMojangUser = await MinecraftAPI.GetUserAndSkinAsync(loginStart.Username);
 
-            if (user is null)
+            if (this.cachedMojangUser is null)
             {
                 await DisconnectAsync("Account not found in the Mojang database");
                 return;
@@ -288,7 +291,7 @@ public sealed class Client : IDisposable
 
             if (config.WhitelistEnabled)
             {
-                var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == user.Id);
+                var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == this.cachedMojangUser.Id);
 
                 if (wlEntry is null)
                 {
@@ -298,7 +301,7 @@ public sealed class Client : IDisposable
 
             }
 
-            Player = new Player(Guid.Parse(user.Id), loginStart.Username, this, world);
+            Player = new Player(Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
 
             packetCryptography.GenerateKeyPair();
 
@@ -360,11 +363,15 @@ public sealed class Client : IDisposable
         Logger.LogDebug("Compression has been enabled.");
     }
 
-    private Task DeclareRecipesAsync() => QueuePacketAsync(DeclareRecipes.FromRegistry);
+    private Task DeclareRecipesAsync() => QueuePacketAsync(UpdateRecipesPacket.FromRegistry);
 
     private async Task ConnectAsync()
     {
-        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username));
+        await QueuePacketAsync(new LoginSuccess(Player.Uuid, Player.Username)
+        {
+            SkinProperties = this.cachedMojangUser?.Properties ?? new(),
+        });
+
         Logger.LogDebug($"Sent Login success to user {Player.Username} {Player.Uuid}");
 
         State = ClientState.Play;
@@ -376,7 +383,7 @@ public sealed class Client : IDisposable
         if (!Registry.TryGetDimensionCodec(Player.World.DimensionName, out var codec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out codec))
             throw new ApplicationException("Failed to retrieve proper dimension for player.");
 
-        await QueuePacketAsync(new JoinGame
+        await QueuePacketAsync(new LoginPacket
         {
             EntityId = id,
             Gamemode = Player.Gamemode,
@@ -384,9 +391,10 @@ public sealed class Client : IDisposable
             Codecs = new MixedCodec
             {
                 Dimensions = Registry.Dimensions,
-                Biomes = Registry.Biomes
+                Biomes = Registry.Biomes,
+                ChatTypes = Registry.ChatTypes
             },
-            Dimension = codec,
+            DimensionType = codec.Name,
             DimensionName = codec.Name,
             HashedSeed = 0,
             ReducedDebugInfo = false,
@@ -395,10 +403,10 @@ public sealed class Client : IDisposable
         });
 
         await SendServerBrand();
-        await QueuePacketAsync(TagsPacket.FromRegistry);
+        await QueuePacketAsync(UpdateTagsPacket.FromRegistry);
         await SendCommandsAsync();
         await DeclareRecipesAsync();
-        await QueuePacketAsync(new UnlockRecipes
+        await QueuePacketAsync(new UpdateRecipeBookPacket
         {
             Action = UnlockRecipeAction.Init,
             FirstRecipeIds = Registry.Recipes.Keys.ToList(),
@@ -406,6 +414,7 @@ public sealed class Client : IDisposable
         });
 
         await SendPlayerListDecoration();
+
         await SendPlayerInfoAsync();
 
         await Player.UpdateChunksAsync();
@@ -418,11 +427,11 @@ public sealed class Client : IDisposable
     #region Packet sending
     internal async Task SendInfoAsync()
     {
-        await QueuePacketAsync(new SpawnPosition(Player.World.LevelData.SpawnPosition));
+        await QueuePacketAsync(new SetDefaultSpawnPositionPacket(Player.World.LevelData.SpawnPosition));
 
         Player.TeleportId = Globals.Random.Next(0, 999);
 
-        await QueuePacketAsync(new PlayerPositionAndLook
+        await QueuePacketAsync(new SynchronizePlayerPositionPacket
         {
             Position = Player.Position,
             Yaw = 0,
@@ -434,7 +443,7 @@ public sealed class Client : IDisposable
         await SendTimeUpdateAsync();
         await SendWeatherUpdateAsync();
 
-        await QueuePacketAsync(new WindowItems(0, Player.Inventory.ToList())
+        await QueuePacketAsync(new SetContainerContentPacket(0, Player.Inventory.ToList())
         {
             StateId = Player.Inventory.StateId++,
             CarriedItem = Player.GetHeldItem(),
@@ -443,17 +452,17 @@ public sealed class Client : IDisposable
 
     internal Task DisconnectAsync(ChatMessage reason)
     {
-        return Task.Run(() => SendPacket(new Disconnect(reason, State)));
+        return Task.Run(() => SendPacket(new DisconnectPacket(reason, State)));
     }
 
     internal Task SendTimeUpdateAsync()
     {
-        return QueuePacketAsync(new TimeUpdate(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
+        return QueuePacketAsync(new UpdateTimePacket(Player.World.LevelData.Time, Player.World.LevelData.DayTime));
     }
 
     internal Task SendWeatherUpdateAsync()
     {
-        return QueuePacketAsync(new ChangeGameState(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
+        return QueuePacketAsync(new GameEventPacket(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
     }
 
     internal void ProcessKeepAlive(long id)
@@ -484,7 +493,7 @@ public sealed class Client : IDisposable
         //}).ConfigureAwait(false);
     }
 
-    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.DeclareCommandsPacket);
+    internal Task SendCommandsAsync() => QueuePacketAsync(Registry.CommandsPacket);
 
     internal Task RemovePlayerFromListAsync(IPlayer player) => QueuePacketAsync(
         new PlayerInfoPacket(PlayerInfoAction.RemovePlayer,
@@ -507,8 +516,7 @@ public sealed class Client : IDisposable
         if (config.OnlineMode)
         {
             var uuid = player.Uuid.ToString().Replace("-", "");
-            var skin = await MinecraftAPI.GetUserAndSkinAsync(uuid);
-            addAction.Properties.AddRange(skin.Properties);
+            addAction.Properties.AddRange(this.cachedMojangUser.Properties);
         }
 
         await QueuePacketAsync(new PlayerInfoPacket(PlayerInfoAction.AddPlayer, addAction));
@@ -588,7 +596,7 @@ public sealed class Client : IDisposable
 
     internal Task UnloadChunkAsync(int x, int z)
     {
-        return LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunk(x, z)) : Task.CompletedTask;
+        return LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
     }
 
     private async Task SendServerBrand()
@@ -597,7 +605,7 @@ public sealed class Client : IDisposable
 
         await stream.WriteStringAsync(Server.Brand);
 
-        await QueuePacketAsync(new PluginMessage("minecraft:brand", stream.ToArray()));
+        await QueuePacketAsync(new PluginMessagePacket("minecraft:brand", stream.ToArray()));
         Logger.LogDebug("Sent server brand.");
     }
 
@@ -606,7 +614,7 @@ public sealed class Client : IDisposable
         ChatMessage? header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
         ChatMessage? footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
 
-        await QueuePacketAsync(new PlayerListHeaderFooter(header, footer));
+        await QueuePacketAsync(new SetTabListHeaderAndFooterPacket(header, footer));
         Logger.LogDebug("Sent player list decoration");
     }
     #endregion Packet sending

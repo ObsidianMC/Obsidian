@@ -6,7 +6,7 @@ public class StringCommandParser : CommandParser
 {
     public StringType Type { get; }
 
-    public StringCommandParser(StringType type) : base("brigadier:string")
+    public StringCommandParser(StringType type) : base(5, "brigadier:string")
     {
         Type = type;
     }

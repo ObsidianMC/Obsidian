@@ -14,7 +14,7 @@ public class RconCommandSender : ICommandSender
         builder = new StringBuilder();
     }
 
-    public Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
+    public Task SendMessageAsync(ChatMessage message)
     {
         builder.Append(message.Text);
         foreach (var extra in message.GetExtras()) builder.Append(extra.Text);
@@ -22,7 +22,13 @@ public class RconCommandSender : ICommandSender
         return Task.CompletedTask;
     }
 
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => SendMessageAsync(ChatMessage.Simple(message), type, sender);
+    public Task SendMessageAsync(ChatMessage message, Guid sender)
+    {
+        builder.Append(message.Text);
+        foreach (var extra in message.GetExtras()) builder.Append(extra.Text);
+
+        return Task.CompletedTask;
+    }
 
     public string GetResponse() => builder.ToString();
 }

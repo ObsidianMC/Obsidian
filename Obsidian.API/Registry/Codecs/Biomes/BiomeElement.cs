@@ -1,6 +1,6 @@
 ﻿namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public sealed class BiomeElement
+public sealed record class BiomeElement
 {
     public BiomeEffect Effects { get; set; }
 
@@ -12,9 +12,9 @@ public sealed class BiomeElement
 
     public float Downfall { get; set; }
 
-    public string Category { get; set; }
+    public string Category { get; set; } = string.Empty;
 
-    public string Precipitation { get; set; }//TODO turn into enum
+    public string Precipitation { get; set; }
 
-    public string TemperatureModifier { get; set; }//TODO turn into enum
+    public string TemperatureModifier { get; set; }
 }

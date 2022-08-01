@@ -32,7 +32,7 @@ public class Living : Entity, ILiving
         foreach (var (potion, data) in activePotionEffects)
         {
             data.CurrentDuration--;
-            
+
             if (data.CurrentDuration <= 0)
             {
                 await RemovePotionEffectAsync(potion);
@@ -64,7 +64,7 @@ public class Living : Entity, ILiving
         if (showIcon)
             flags |= 0x04;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityEffectPacket(EntityId, (byte) potion, duration)
+        await this.server.QueueBroadcastPacketAsync(new EntityEffectPacket(EntityId, (int)potion, duration)
         {
             Amplifier = amplifier,
             Flags = flags
@@ -76,7 +76,7 @@ public class Living : Entity, ILiving
 
     public async Task RemovePotionEffectAsync(PotionEffect potion)
     {
-        await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (byte) potion));
+        await this.server.QueueBroadcastPacketAsync(new RemoveEntityEffectPacket(EntityId, (int)potion));
         activePotionEffects.TryRemove(potion, out _);
     }
 

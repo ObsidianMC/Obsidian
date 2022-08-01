@@ -398,10 +398,10 @@ public static class ConsoleIO
 
     static ConsoleIO()
     {
-        PlatformReadKey = OperatingSystem.IsWindows() ? Console.ReadKey : 
-                          (intercept) => 
+        PlatformReadKey = OperatingSystem.IsWindows() ? Console.ReadKey :
+                          (intercept) =>
                           {
-                              while(!Console.KeyAvailable) 
+                              while (!Console.KeyAvailable)
                               {
                                   Thread.Sleep(50);
                               }

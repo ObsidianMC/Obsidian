@@ -71,7 +71,7 @@ public class Entity : IEquatable<Entity>, IEntity
         {
             Vector delta = (Vector)(position * 32 - Position * 32) * 128;
 
-            server.BroadcastPacket(new EntityPosition
+            server.BroadcastPacket(new UpdateEntityPositionPacket
             {
                 EntityId = this.EntityId,
 
@@ -96,7 +96,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
             if (isNewRotation)
             {
-                this.server.BroadcastPacket(new EntityPositionAndRotation
+                this.server.BroadcastPacket(new UpdateEntityPositionAndRotationPacket
                 {
                     EntityId = this.EntityId,
 
@@ -108,7 +108,7 @@ public class Entity : IEquatable<Entity>, IEntity
                     OnGround = onGround
                 }, this.EntityId);
 
-                this.server.BroadcastPacket(new EntityHeadLook
+                this.server.BroadcastPacket(new SetHeadRotationPacket
                 {
                     EntityId = this.EntityId,
                     HeadYaw = yaw
@@ -116,7 +116,7 @@ public class Entity : IEquatable<Entity>, IEntity
             }
             else
             {
-                this.server.BroadcastPacket(new EntityPosition
+                this.server.BroadcastPacket(new UpdateEntityPositionPacket
                 {
                     EntityId = this.EntityId,
 
@@ -137,7 +137,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (isNewRotation)
         {
-            this.server.BroadcastPacket(new EntityRotation
+            this.server.BroadcastPacket(new UpdateEntityRotationPacket
             {
                 EntityId = this.EntityId,
                 OnGround = onGround,
@@ -145,7 +145,7 @@ public class Entity : IEquatable<Entity>, IEntity
                 Pitch = pitch
             }, this.EntityId);
 
-            this.server.BroadcastPacket(new EntityHeadLook
+            this.server.BroadcastPacket(new SetHeadRotationPacket
             {
                 EntityId = this.EntityId,
                 HeadYaw = yaw
@@ -303,7 +303,7 @@ public class Entity : IEquatable<Entity>, IEntity
             {
                 var player = iplayer as Player;
 
-                await player.client.QueuePacketAsync(new UpdateHealth(this.Health, 20, 5));
+                await player.client.QueuePacketAsync(new SetHealthPacket(this.Health, 20, 5));
 
                 if (!player.Alive)
                     await player.KillAsync(source, ChatMessage.Simple("You died xd"));
@@ -360,7 +360,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         if (VectorF.Distance(this.Position, to.Position) > 8)
         {
-            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            await this.server.QueueBroadcastPacketAsync(new TeleportEntityPacket
             {
                 EntityId = this.EntityId,
                 OnGround = this.OnGround,
@@ -374,7 +374,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(to.Position * 32 - Position * 32) * 128;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        await this.server.QueueBroadcastPacketAsync(new UpdateEntityPositionAndRotationPacket
         {
             EntityId = this.EntityId,
             Delta = delta,
@@ -388,7 +388,7 @@ public class Entity : IEquatable<Entity>, IEntity
     {
         if (VectorF.Distance(this.Position, pos) > 8)
         {
-            await this.server.QueueBroadcastPacketAsync(new EntityTeleport
+            await this.server.QueueBroadcastPacketAsync(new TeleportEntityPacket
             {
                 EntityId = this.EntityId,
                 OnGround = this.OnGround,
@@ -402,7 +402,7 @@ public class Entity : IEquatable<Entity>, IEntity
 
         var delta = (Vector)(pos * 32 - Position * 32) * 128;
 
-        await this.server.QueueBroadcastPacketAsync(new EntityPositionAndRotation
+        await this.server.QueueBroadcastPacketAsync(new UpdateEntityPositionAndRotationPacket
         {
             EntityId = this.EntityId,
             Delta = delta,

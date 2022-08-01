@@ -48,6 +48,7 @@
 
 	<ItemGroup>
 		<None Remove="Assets\biome_codec.json" />
+		<None Remove="Assets\chat_type_codec.json" />
 		<None Remove="Assets\default_dimensions.json" />
 		<None Remove="Assets\default_dimensions.xaml" />
 		<None Remove="Assets\tags.json" />
@@ -101,6 +102,9 @@
 	<ItemGroup>
 		<EmbeddedResource Update="Assets\biome_codec.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Update="Assets\chat_type_codec.json">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 		<EmbeddedResource Update="Assets\default_dimensions.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>

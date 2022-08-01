@@ -1,6 +1,6 @@
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
-public class BiomeEffect
+public sealed record class BiomeEffect
 {
     public BiomeMusicEffect Music { get; set; }
 
@@ -12,10 +12,10 @@ public class BiomeEffect
 
     public BiomeParticle Particle { get; set; }
 
-    public int FoliageColor { get; set; }
     public int SkyColor { get; set; }
     public int WaterFogColor { get; set; }
     public int FogColor { get; set; }
     public int WaterColor { get; set; }
+    public int FoliageColor { get; set; }
     public int GrassColor { get; set; }
 }

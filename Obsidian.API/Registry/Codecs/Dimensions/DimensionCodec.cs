@@ -3,7 +3,7 @@
 namespace Obsidian.API.Registry.Codecs.Dimensions;
 
 [JsonConverter(typeof(DimensionCodecConverter))]
-public sealed class DimensionCodec : ICodec
+public sealed record class DimensionCodec : ICodec
 {
     public string Name { get; set; }
 

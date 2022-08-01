@@ -182,7 +182,7 @@ public class MainCommandModule
     [Command("announce")]
     [CommandInfo("Makes an announcement", "/announce <message>")]
     [RequirePermission(op: true, permissions: "obsidian.announce")]
-    public void Announce(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage(text, MessageType.ActionBar);
+    public void Announce(CommandContext ctx, [Remaining] string text) => ctx.Server.BroadcastMessage(text);
 
     [Command("uptime", "up")]
     [CommandInfo("Gets current uptime", "/uptime")]
@@ -192,7 +192,7 @@ public class MainCommandModule
     [Command("declarecmds", "declarecommands")]
     [CommandInfo("Debug command for testing the Declare Commands packet", "/declarecmds")]
     [IssuerScope(CommandIssuers.Client)]
-    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(Registry.DeclareCommandsPacket);
+    public Task DeclareCommandsTestAsync(CommandContext ctx) => ((Player)ctx.Player).client.QueuePacketAsync(Registry.CommandsPacket);
 
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]

@@ -27,5 +27,4 @@ public interface IWorld
 
     public Task<IEntity> SpawnEntityAsync(VectorF position, EntityType type);
     public Task SpawnExperienceOrbs(VectorF position, short count);
-    public Task SpawnPaintingAsync(Vector position, Painting painting, PaintingDirection direction, Guid uuid = default);
 }

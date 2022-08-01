@@ -4,7 +4,7 @@ namespace Obsidian.Commands.Parsers;
 
 public class PlayerTypeParser : BaseArgumentParser<IPlayer>
 {
-    public PlayerTypeParser() : base("obsidian:player")
+    public PlayerTypeParser() : base(48, "obsidian:player")
     {
     }
 

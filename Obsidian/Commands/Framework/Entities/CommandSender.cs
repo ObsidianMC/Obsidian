@@ -15,16 +15,18 @@ public class CommandSender : ICommandSender
         Logger = logger;
     }
 
-    public async Task SendMessageAsync(ChatMessage message, MessageType type = MessageType.Chat, Guid? sender = null)
+    public async Task SendMessageAsync(ChatMessage message)
     {
         if (Issuer == CommandIssuers.Client)
         {
-            await Player.SendMessageAsync(message, type, sender);
+            await Player.SendMessageAsync(message);
+
+            //TODO make sure to send secure message if there's a sender
             return;
         }
 
         string messageString = message.Text;
-        foreach (var extra in message.Extras)
+        foreach (var extra in message.GetExtras())
         {
             messageString += extra.Text;
         }
@@ -32,5 +34,5 @@ public class CommandSender : ICommandSender
         Logger.LogInformation(messageString);
     }
 
-    public Task SendMessageAsync(string message, MessageType type = MessageType.Chat, Guid? sender = null) => SendMessageAsync(ChatMessage.Simple(message), type, sender);
+    public Task SendMessageAsync(ChatMessage message, Guid sender) => throw new NotImplementedException();
 }

@@ -30,7 +30,7 @@ namespace Obsidian;
 
 public partial class Server : IServer
 {
-    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_18_2;
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19;
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -65,7 +65,7 @@ public partial class Server : IServer
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
 
-    private readonly ConcurrentQueue<ChatMessagePacket> chatMessagesQueue = new();
+    private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
 
@@ -179,18 +179,30 @@ public partial class Server : IServer
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(ChatMessage message, MessageType type = MessageType.Chat)
+    public void BroadcastMessage(ChatMessage message)
     {
-        chatMessagesQueue.Enqueue(new ChatMessagePacket(message, type));
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, MessageType.System));
         Logger.LogInformation(message.Text);
     }
 
     /// <summary>
     /// Sends a message to all players on this server.
     /// </summary>
-    public void BroadcastMessage(string message, MessageType type = MessageType.Chat)
+    public void BroadcastMessage(PlayerChatMessagePacket message)
     {
-        chatMessagesQueue.Enqueue(new ChatMessagePacket(ChatMessage.Simple(message), type));
+        chatMessagesQueue.Enqueue(message);
+        Logger.LogInformation(message.SignedMessage.Text);
+    }
+
+    /// <summary>
+    /// Sends a message to all players on this server.
+    /// </summary>
+    public void BroadcastMessage(string message)
+    {
+        var chatMessage = ChatMessage.Simple(string.Empty)
+            .AddExtra(message);
+
+        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, MessageType.System));
         Logger.LogInformation(message);
     }
 
@@ -351,7 +363,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, Block block, Vector location)
     {
-        var packet = new BlockChange(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.StateId);
         foreach (Player player in PlayersInRange(world, location))
         {
             player.client.SendPacket(packet);
@@ -360,7 +372,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, Player initiator, Block block, Vector location)
     {
-        var packet = new BlockChange(location, block.StateId);
+        var packet = new BlockUpdatePacket(location, block.StateId);
         foreach (Player player in PlayersInRange(world, location))
         {
             if (player == initiator)
@@ -370,34 +382,54 @@ public partial class Server : IServer
         }
     }
 
-    internal async Task HandleIncomingMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
+    internal async Task HandleIncomingMessageAsync(ChatMessagePacket packet, Client source, MessageType type = MessageType.Chat)
     {
-        format ??= "<{0}> {1}";
+        var format = "<{0}> {1}";
+        var message = packet.Message;
 
-        if (message.StartsWith(CommandHandler.DefaultPrefix))
-        {
-            // TODO command logging
-            // TODO error handling for commands
-            var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
-            try
-            {
-                await CommandsHandler.ProcessCommand(context);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError(e, e.Message);
-            }
-        }
-        else
-        {
-            var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
-
-            if (!chat.Cancel)
-                BroadcastMessage(string.Format(format, source.Player.Username, message), type);
-
+        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+        if (chat.Cancel)
             return;
-        }
+
+        var playerChatMessagePacket = new PlayerChatMessagePacket(message, type, source.Player.Uuid)
+        {
+            UnsignedChatMessage = message,
+            SenderDisplayName = source.Player.CustomName ?? source.Player.Username,
+            MessageSignature = packet.Signature,
+            Salt = packet.Salt,
+            Timestamp = packet.Timestamp
+        };
+        BroadcastMessage(playerChatMessagePacket);
     }
+
+    //internal async Task HandleIncomingMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
+    //{
+    //    format ??= "<{0}> {1}";
+
+    //    if (message.StartsWith(CommandHandler.DefaultPrefix))
+    //    {
+    //        // TODO command logging
+    //        // TODO error handling for commands
+    //        var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
+    //        try
+    //        {
+    //            await CommandsHandler.ProcessCommand(context);
+    //        }
+    //        catch (Exception e)
+    //        {
+    //            Logger.LogError(e, e.Message);
+    //        }
+    //    }
+    //    else
+    //    {
+    //        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
+
+    //        if (!chat.Cancel)
+    //            BroadcastMessage(string.Format(format, source.Player.Username, message), type);
+
+    //        return;
+    //    }
+    //}
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
     {
@@ -454,138 +486,132 @@ public partial class Server : IServer
         switch (digging.Status)
         {
             case DiggingStatus.DropItem:
-            {
-                var droppedItem = player.GetHeldItem();
-
-                if (droppedItem is null or { Type: Material.Air })
-                    return;
-
-                var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
-
-                var item = new ItemEntity
                 {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.AsItem().Id,
-                    Glowing = true,
-                    World = player.World,
-                    Position = loc
-                };
+                    var droppedItem = player.GetHeldItem();
 
-                TryAddEntity(player.World, item);
+                    if (droppedItem is null or { Type: Material.Air })
+                        return;
 
-                var lookDir = player.GetLookDirection();
+                    var loc = new VectorF(player.Position.X, (float)player.HeadY - 0.3f, player.Position.Z);
 
-                var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
+                    var item = new ItemEntity
+                    {
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        Count = 1,
+                        Id = droppedItem.AsItem().Id,
+                        Glowing = true,
+                        World = player.World,
+                        Position = loc
+                    };
 
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = vel
-                });
-                BroadcastPacket(new EntityMetadata
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
+                    TryAddEntity(player.World, item);
 
-                player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
+                    var lookDir = player.GetLookDirection();
 
-                player.client.SendPacket(new SetSlot
-                {
-                    Slot = player.inventorySlot,
+                    var vel = Velocity.FromDirection(loc, lookDir);//TODO properly shoot the item towards the direction the players looking at
 
-                    WindowId = 0,
+                    BroadcastPacket(new SpawnEntityPacket
+                    {
+                        EntityId = item.EntityId,
+                        Uuid = item.Uuid,
+                        Type = EntityType.Item,
+                        Position = item.Position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 1,
+                        Velocity = vel
+                    });
+                    BroadcastPacket(new SetEntityMetadataPacket
+                    {
+                        EntityId = item.EntityId,
+                        Entity = item
+                    });
 
-                    SlotData = player.GetHeldItem(),
+                    player.Inventory.RemoveItem(player.inventorySlot, player.Sneaking ? 64 : 1);//TODO get max stack size for the item
 
-                    StateId = player.Inventory.StateId++
-                });
+                    player.client.SendPacket(new SetContainerSlotPacket
+                    {
+                        Slot = player.inventorySlot,
 
-                break;
-            }
-            case DiggingStatus.StartedDigging:
-            {
-                BroadcastPacket(new AcknowledgePlayerDigging
-                {
-                    Position = digging.Position,
-                    Block = block.StateId,
-                    Status = digging.Status,
-                    Successful = true
-                });
+                        WindowId = 0,
 
-                if (player.Gamemode == Gamemode.Creative)
-                {
-                    await player.World.SetBlockAsync(digging.Position, Block.Air);
+                        SlotData = player.GetHeldItem(),
+
+                        StateId = player.Inventory.StateId++
+                    });
+
+                    break;
                 }
-            }
-            break;
+            case DiggingStatus.StartedDigging:
+                {
+                    BroadcastPacket(new AcknowledgeBlockChangePacket
+                    {
+                        SequenceID = 0
+                    });
+
+                    if (player.Gamemode == Gamemode.Creative)
+                    {
+                        await player.World.SetBlockAsync(digging.Position, Block.Air);
+                    }
+                }
+                break;
             case DiggingStatus.CancelledDigging:
                 break;
             case DiggingStatus.FinishedDigging:
-            {
-                BroadcastPacket(new AcknowledgePlayerDigging
                 {
-                    Position = digging.Position,
-                    Block = block.StateId,
-                    Status = digging.Status,
-                    Successful = true
-                });
+                    BroadcastPacket(new AcknowledgeBlockChangePacket//TODO properly implement this
+                    {
+                        SequenceID = 0
+                    });
 
-                BroadcastPacket(new BlockBreakAnimation
-                {
-                    EntityId = player,
-                    Position = digging.Position,
-                    DestroyStage = -1
-                });
+                    BroadcastPacket(new SetBlockDestroyStagePacket
+                    {
+                        EntityId = player,
+                        Position = digging.Position,
+                        DestroyStage = -1
+                    });
 
-                BroadcastPacket(new BlockChange(digging.Position, 0));
+                    BroadcastPacket(new BlockUpdatePacket(digging.Position, 0));
 
-                var droppedItem = Registry.GetItem(block.Material);
+                    var droppedItem = Registry.GetItem(block.Material);
 
-                if (droppedItem.Id == 0) { break; }
+                    if (droppedItem.Id == 0) { break; }
 
-                var item = new ItemEntity
-                {
-                    EntityId = player + player.World.GetTotalLoadedEntities() + 1,
-                    Count = 1,
-                    Id = droppedItem.Id,
-                    Glowing = true,
-                    World = player.World,
-                    Position = digging.Position,
-                    Server = this
-                };
+                    var item = new ItemEntity
+                    {
+                        EntityId = player + player.World.GetTotalLoadedEntities() + 1,
+                        Count = 1,
+                        Id = droppedItem.Id,
+                        Glowing = true,
+                        World = player.World,
+                        Position = digging.Position,
+                        Server = this
+                    };
 
-                TryAddEntity(player.World, item);
+                    TryAddEntity(player.World, item);
 
-                BroadcastPacket(new SpawnEntityPacket
-                {
-                    EntityId = item.EntityId,
-                    Uuid = item.Uuid,
-                    Type = EntityType.Item,
-                    Position = item.Position,
-                    Pitch = 0,
-                    Yaw = 0,
-                    Data = 1,
-                    Velocity = Velocity.FromVector(digging.Position + new VectorF(
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f,
-                        (Globals.Random.NextFloat() * 0.5f) + 0.25f))
-                });
+                    BroadcastPacket(new SpawnEntityPacket
+                    {
+                        EntityId = item.EntityId,
+                        Uuid = item.Uuid,
+                        Type = EntityType.Item,
+                        Position = item.Position,
+                        Pitch = 0,
+                        Yaw = 0,
+                        Data = 1,
+                        Velocity = Velocity.FromVector(digging.Position + new VectorF(
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f,
+                            (Globals.Random.NextFloat() * 0.5f) + 0.25f))
+                    });
 
-                BroadcastPacket(new EntityMetadata
-                {
-                    EntityId = item.EntityId,
-                    Entity = item
-                });
-                break;
-            }
+                    BroadcastPacket(new SetEntityMetadataPacket
+                    {
+                        EntityId = item.EntityId,
+                        Entity = item
+                    });
+                    break;
+                }
         }
     }
 
@@ -641,11 +667,11 @@ public partial class Server : IServer
                 }
             }
 
-            while (chatMessagesQueue.TryDequeue(out ChatMessagePacket chatMessagePacket))
+            while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
             {
                 foreach (Player player in Players)
                 {
-                    player.client.SendPacket(chatMessagePacket);
+                    player.client.SendPacket(packet);
                 }
             }
 

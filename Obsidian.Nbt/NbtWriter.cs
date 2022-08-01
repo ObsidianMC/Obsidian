@@ -64,7 +64,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public void WriteCompoundStart(string name = "")
     {
-        if(this.rootNodes.Count > 0)
+        if (this.rootNodes.Count > 0)
             this.Validate(name, NbtTagType.Compound);
 
         if (this.RootType == NbtTagType.List)

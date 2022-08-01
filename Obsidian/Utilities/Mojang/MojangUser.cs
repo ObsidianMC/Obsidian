@@ -12,15 +12,15 @@ public class MojangUser
 
     public bool Demo { get; set; }
 
-    public List<SkinProperties> Properties { get; set; }
+    public List<SkinProperty> Properties { get; set; }
 }
 
-public class SkinProperties
+public class SkinProperty
 {
     public string Name { get; set; }
 
     public string Value { get; set; }
-    public string Signature { get; set; }
+    public string? Signature { get; set; }
 
     public async Task<byte[]> ToArrayAsync()
     {

@@ -113,7 +113,7 @@ public class Chunk
 
         this.BlockEntities[value] = tileEntityData;
     }
-    
+
     public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
 
     public void SetBlock(int x, int y, int z, Block block)
@@ -245,7 +245,7 @@ public class Chunk
         // Sanity check
         var litSections = Sections.Count(s => lt == LightType.Sky ? s.HasSkyLight : s.HasBlockLight);
         stream.WriteVarInt(litSections);
-        
+
         if (litSections == 0) { return; }
 
         for (int a = 0; a < Sections.Length; a++)

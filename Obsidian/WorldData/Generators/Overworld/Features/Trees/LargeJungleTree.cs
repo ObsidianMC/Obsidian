@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeJungleTree : JungleTree
 {

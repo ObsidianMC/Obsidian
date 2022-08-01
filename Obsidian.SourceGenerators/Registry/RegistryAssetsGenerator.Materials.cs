@@ -7,7 +7,7 @@ public partial class RegistryAssetsGenerator
     private static void GenerateMaterials(Assets assets, GeneratorExecutionContext context)
     {
         IEnumerable<string> materials =
-            assets.Blocks.Select(block => block.Name)
+            assets.Blocks.OrderBy(block => block.BaseId).Select(block => block.Name)
             .Concat(assets.Items.Select(item => item.Name))
             .Distinct();
 

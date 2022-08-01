@@ -85,7 +85,7 @@ public partial class Server
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockAction
+                await player.client.QueuePacketAsync(new BlockActionPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -104,7 +104,7 @@ public partial class Server
                 };
 
                 await player.OpenInventoryAsync(container);
-                await player.client.QueuePacketAsync(new BlockAction
+                await player.client.QueuePacketAsync(new BlockActionPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -139,7 +139,7 @@ public partial class Server
                     Id = "shulker_box"
                 };
 
-                await player.client.QueuePacketAsync(new BlockAction
+                await player.client.QueuePacketAsync(new BlockActionPacket
                 {
                     Position = blockPosition,
                     ActionId = 1,
@@ -215,7 +215,7 @@ public partial class Server
 
         player.World.TryRemovePlayer(player);
 
-        var destroy = new DestroyEntities(player.EntityId);
+        var destroy = new RemoveEntitiesPacket(player.EntityId);
 
         foreach (Player other in Players)
         {
@@ -236,7 +236,12 @@ public partial class Server
 
         joined.World.TryAddPlayer(joined);
 
-        BroadcastMessage(string.Format(Config.JoinMessage, e.Player.Username));
+        BroadcastMessage(ChatMessage.Simple(string.Empty).AddExtra(new ChatMessage
+        {
+            Text = string.Format(Config.JoinMessage, e.Player.Username),
+            Color = HexColor.Yellow
+        }));
+
         foreach (Player other in Players)
         {
             await other.client.AddPlayerToListAsync(joined);

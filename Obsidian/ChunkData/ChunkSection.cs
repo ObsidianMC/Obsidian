@@ -99,7 +99,7 @@ public sealed class ChunkSection
             skyLight = data;
         else
             blockLight = data;
-        
+
     }
 
     public ChunkSection Clone()

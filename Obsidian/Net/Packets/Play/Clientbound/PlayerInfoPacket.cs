@@ -11,7 +11,7 @@ public partial class PlayerInfoPacket : IClientboundPacket
     [Field(1)]
     public List<InfoAction> Actions { get; set; } = new();
 
-    public int Id => 0x36;
+    public int Id => 0x34;
 
     public PlayerInfoPacket(PlayerInfoAction action, List<InfoAction> infoActions)
     {

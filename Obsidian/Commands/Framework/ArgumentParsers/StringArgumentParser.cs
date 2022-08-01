@@ -2,7 +2,7 @@
 
 public class StringArgumentParser : BaseArgumentParser<string>
 {
-    public StringArgumentParser() : base("brigadier:string") { }
+    public StringArgumentParser() : base(5, "brigadier:string") { }
     public override bool TryParseArgument(string input, CommandContext ctx, out string result)
     {
         result = input;
@@ -12,7 +12,7 @@ public class StringArgumentParser : BaseArgumentParser<string>
 
 public class GuidArgumentParser : BaseArgumentParser<Guid>
 {
-    public GuidArgumentParser() : base("minecraft:uuid") { }
+    public GuidArgumentParser() : base(47, "minecraft:uuid") { }
     public override bool TryParseArgument(string input, CommandContext ctx, out Guid result)
     {
         return Guid.TryParse(input, out result);

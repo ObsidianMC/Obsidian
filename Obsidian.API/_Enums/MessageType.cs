@@ -1,8 +1,13 @@
 ﻿namespace Obsidian.API;
 
-public enum MessageType : sbyte
+public enum MessageType : int
 {
     Chat,
     System,
-    ActionBar
+    ActionBar,
+    SayCommand,
+    MessageCommand,
+    TeamMessageCommand,
+    EmoteCommand,
+    TellRawCommand
 }

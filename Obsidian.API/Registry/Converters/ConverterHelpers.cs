@@ -22,7 +22,7 @@ internal static class ConverterHelpers
         simpleTypeMap.Add(typeof(float), (object obj, ref Utf8JsonReader reader, PropertyInfo propertyInfo)
             => propertyInfo.SetValue(obj, reader.GetSingle()));
         simpleTypeMap.Add(typeof(bool), (object obj, ref Utf8JsonReader reader, PropertyInfo propertyInfo)
-            => propertyInfo.SetValue(obj, reader.GetBoolean()));
+            => propertyInfo.SetValue(obj, reader.TokenType is JsonTokenType.Number ? Convert.ToBoolean(reader.GetInt32()) : reader.GetBoolean()));
     }
 
     public static bool TryGetAction(Type type, out ActionRef action) => simpleTypeMap.TryGetValue(type, out action);

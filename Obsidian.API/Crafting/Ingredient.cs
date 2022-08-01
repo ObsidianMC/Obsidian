@@ -30,14 +30,16 @@ public class Ingredient : IEnumerable<ItemStack>
 
         public ItemStack Current
         {
-            get {
+            get
+            {
                 return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
             }
         }
 
         object IEnumerator.Current
         {
-            get {
+            get
+            {
                 return (Position >= 0 && Position < items.Count) ? items[Position] : throw new InvalidOperationException();
             }
         }
