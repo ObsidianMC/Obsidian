@@ -255,10 +255,10 @@ public partial class Server : IServer
         ScoreboardManager = new ScoreboardManager(this);
         Logger.LogInformation("Loading plugins...");
 
-        Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
+        Directory.CreateDirectory(Path.Join(ServerFolderPath, "Plugins"));
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "Plugins"));
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
