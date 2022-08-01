@@ -71,7 +71,7 @@ public partial class Server : IServer
 
     private RconServer rconServer;
 
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+    internal string PermissionPath => Path.Combine(ServerFolderPath, "Permissions");
 
     internal readonly CancellationTokenSource cts = new();
 
