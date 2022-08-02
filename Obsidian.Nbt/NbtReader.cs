@@ -14,18 +14,18 @@ public class NbtReader
 
     public NbtReader() : this(new MemoryStream()) { }
 
-    public NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
+    public NbtReader(Stream instream, NbtCompression compressionMode = NbtCompression.None)
     {
         switch (compressionMode)
         {
             case NbtCompression.None:
-                this.BaseStream = input;
+                this.BaseStream = instream;
                 break;
             case NbtCompression.GZip:
-                this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
+                this.BaseStream = new GZipStream(instream, CompressionMode.Decompress);
                 break;
             case NbtCompression.ZLib:
-                this.BaseStream = new ZLibStream(input, CompressionMode.Decompress);
+                this.BaseStream = new ZLibStream(instream, CompressionMode.Decompress);
                 break;
             case NbtCompression.Auto:
             case NbtCompression.Zstd:
