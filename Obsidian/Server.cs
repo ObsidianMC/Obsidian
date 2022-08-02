@@ -71,7 +71,7 @@ public partial class Server : IServer
 
     private RconServer rconServer;
 
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "Permissions");
+    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
     internal readonly CancellationTokenSource cts = new();
 
@@ -255,10 +255,10 @@ public partial class Server : IServer
         ScoreboardManager = new ScoreboardManager(this);
         Logger.LogInformation("Loading plugins...");
 
-        Directory.CreateDirectory(Path.Join(ServerFolderPath, "Plugins"));
+        Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "Plugins"));
+        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 

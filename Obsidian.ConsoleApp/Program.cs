@@ -73,12 +73,12 @@ public static class Program
 
     private static async Task<List<ServerWorld>> TryLoadServerWorldsAsync()
     {
-        if (!Directory.Exists("Config"))
+        if (!Directory.Exists("config"))
         {
-            Directory.CreateDirectory("Config");
+            Directory.CreateDirectory("config");
         }
 
-        var worldsFile = new FileInfo(Path.Combine("Config", "Worlds.json"));
+        var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
         if (worldsFile.Exists)
         {
@@ -108,12 +108,12 @@ public static class Program
 
     private static async Task<Config?> TryLoadConfigAsync()
     {
-        if (!Directory.Exists("Config"))
+        if (!Directory.Exists("config"))
         {
-            Directory.CreateDirectory("Config");
+            Directory.CreateDirectory("config");
         }
 
-        var configFile = new FileInfo(Path.Combine("Config", "Main.json"));
+        var configFile = new FileInfo(Path.Combine("config", "main.json"));
 
         if (configFile.Exists)
         {
