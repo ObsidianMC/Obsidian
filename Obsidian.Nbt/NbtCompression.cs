@@ -8,5 +8,7 @@ public enum NbtCompression
 
     GZip,
 
-    ZLib
+    ZLib,
+
+    Zstd
 }

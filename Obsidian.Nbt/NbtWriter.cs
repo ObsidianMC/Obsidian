@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using ImpromptuNinjas.ZStd;
+using System.IO;
 using System.IO.Compression;
 
 namespace Obsidian.Nbt;
@@ -18,12 +19,25 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
-        if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
-        else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+        switch (compressionMode)
+        {
+            case NbtCompression.None:
+                  this.BaseStream = outstream;
+                  break;
+              case NbtCompression.GZip:
+                  this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+                  break;
+              case NbtCompression.ZLib:
+                  this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
+                  break;
+              case NbtCompression.Auto:
+              case NbtCompression.Zstd:
+                  var compressStream = new ZStdCompressStream(BaseStream);
+                  compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
+
+                  this.BaseStream = compressStream;
+                  break;
+        }
     }
 
     public NbtWriter(Stream outstream, string name)
@@ -38,12 +52,25 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
     {
-        if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
-        else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
-        else
-            this.BaseStream = outstream;
+        switch (compressionMode)
+        {
+            case NbtCompression.None:
+                this.BaseStream = outstream;
+                break;
+            case NbtCompression.GZip:
+               this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
+                break;
+            case NbtCompression.ZLib:
+                this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
+                break;
+            case NbtCompression.Auto:
+            case NbtCompression.Zstd:
+                var compressStream = new ZStdCompressStream(BaseStream);
+                compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
+
+                this.BaseStream = compressStream;
+                break;
+        }
 
         this.Write(NbtTagType.Compound);
         this.WriteStringInternal(name);

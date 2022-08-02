@@ -1,4 +1,5 @@
-﻿using System.Buffers.Binary;
+﻿using ImpromptuNinjas.ZStd;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -15,12 +16,22 @@ public class NbtReader
 
     public NbtReader(Stream input, NbtCompression compressionMode = NbtCompression.None)
     {
-        if (compressionMode == NbtCompression.GZip)
-            this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
-        else if (compressionMode == NbtCompression.ZLib)
-            this.BaseStream = new ZLibStream(input, CompressionMode.Decompress);
-        else
-            this.BaseStream = input;
+        switch (compressionMode)
+        {
+            case NbtCompression.None:
+                this.BaseStream = input;
+                break;
+            case NbtCompression.GZip:
+                this.BaseStream = new GZipStream(input, CompressionMode.Decompress);
+                break;
+            case NbtCompression.ZLib:
+                this.BaseStream = new ZLibStream(input, CompressionMode.Decompress);
+                break;
+            case NbtCompression.Auto:
+            case NbtCompression.Zstd:
+                this.BaseStream = new ZStdDecompressStream(BaseStream);
+                break;
+        }
     }
 
     public NbtTagType ReadTagType()
