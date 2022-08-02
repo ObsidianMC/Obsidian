@@ -74,9 +74,9 @@ csharp_style_expression_bodied_accessors = true:suggestion
 #prefer block bodies for constructors
 csharp_style_expression_bodied_constructors = false:suggestion
 #prefer expression-bodied members for methods
-csharp_style_expression_bodied_methods =true:silent
+csharp_style_expression_bodied_methods = true:silent
 #prefer expression-bodied members for operators
-csharp_style_expression_bodied_operators =true:silent
+csharp_style_expression_bodied_operators = true:silent
 #prefer expression-bodied members for properties
 csharp_style_expression_bodied_properties = true:suggestion
 

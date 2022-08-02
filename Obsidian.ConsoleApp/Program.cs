@@ -15,7 +15,6 @@ public static class Program
     /// Event handler for Windows console events
     /// </summary>
     private static NativeMethods.HandlerRoutine _windowsConsoleEventHandler;
-    private const string globalConfigFile = "global_config.json";
 
     private static async Task Main(params string[] args)
     {
@@ -74,7 +73,12 @@ public static class Program
 
     private static async Task<List<ServerWorld>> TryLoadServerWorldsAsync()
     {
-        var worldsFile = new FileInfo("worlds.json");
+        if (!Directory.Exists("config"))
+        {
+            Directory.CreateDirectory("config");
+        }
+
+        var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
         if (worldsFile.Exists)
         {
@@ -104,7 +108,12 @@ public static class Program
 
     private static async Task<Config?> TryLoadConfigAsync()
     {
-        var configFile = new FileInfo("config.json");
+        if (!Directory.Exists("config"))
+        {
+            Directory.CreateDirectory("config");
+        }
+
+        var configFile = new FileInfo(Path.Combine("config", "main.json"));
 
         if (configFile.Exists)
         {

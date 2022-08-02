@@ -9,7 +9,7 @@ public class OperatorList : IOperatorList
     private List<Operator> ops;
     private readonly List<OperatorRequest> reqs;
     private readonly Server server;
-    private string Path => System.IO.Path.Combine(this.server.ServerFolderPath, "ops.json");
+    private string Path => System.IO.Path.Combine(System.IO.Path.Combine(this.server.ServerFolderPath, "config"), "ops.json");
 
     public OperatorList(Server server)
     {

@@ -671,15 +671,15 @@ public class World : IWorld
         // Make sure we set the right paths
         if (string.IsNullOrWhiteSpace(parentWorldName))
         {
-            this.FolderPath = Path.Combine(this.Server.ServerFolderPath, this.Name);
+            this.FolderPath = Path.Combine(Path.Combine(this.Server.ServerFolderPath, "worlds"), this.Name);
             this.LevelDataFilePath = Path.Combine(this.FolderPath, "level.dat");
             this.PlayerDataPath = Path.Combine(this.FolderPath, "playerdata");
         }
         else
         {
-            this.FolderPath = Path.Combine(this.Server.ServerFolderPath, parentWorldName, this.Name);
-            this.LevelDataFilePath = Path.Combine(this.Server.ServerFolderPath, parentWorldName, "level.dat");
-            this.PlayerDataPath = Path.Combine(this.Server.ServerFolderPath, parentWorldName, "playerdata");
+            this.FolderPath = Path.Combine(Path.Combine(this.Server.ServerFolderPath, "worlds"), parentWorldName, this.Name);
+            this.LevelDataFilePath = Path.Combine(Path.Combine(this.Server.ServerFolderPath, "worlds"), parentWorldName, "level.dat");
+            this.PlayerDataPath = Path.Combine(Path.Combine(this.Server.ServerFolderPath, "worlds"), parentWorldName, "playerdata");
         }
 
         this.ParentWorldName = parentWorldName;
