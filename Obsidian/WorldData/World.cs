@@ -47,7 +47,9 @@ public class World : IWorld
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
-    internal World(string name, Server server, string seed, Type generatorType)
+    public NbtCompression NbtCompressionMode = NbtCompression.GZip;
+
+    internal World(string name, Server server, string seed, Type generatorType, NbtCompression nbtCompression = NbtCompression.GZip)
     {
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
         this.Server = server;
@@ -57,6 +59,8 @@ public class World : IWorld
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         Generator.Init(this);
         worldLight = new(this);
+
+        this.NbtCompressionMode = nbtCompression;
     }
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -312,7 +316,7 @@ public class World : IWorld
         if (!fi.Exists)
             return false;
 
-        var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
+        var reader = new NbtReader(fi.OpenRead(), this.NbtCompressionMode);
 
         var levelCompound = reader.ReadNextTag() as NbtCompound;
         this.LevelData = new Level()

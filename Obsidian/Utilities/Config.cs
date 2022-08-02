@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API._Types.Config;
+using Obsidian.Nbt;
 using System.Text.Json.Serialization;
 
 namespace Obsidian.Utilities;
@@ -57,6 +58,8 @@ public class Config : IConfig
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     public int TimeTickSpeedMultiplier { get; set; } = 1;
+
+    public NbtCompression NbtCompressionMode { get; set; } = NbtCompression.GZip;
 }
 
 public sealed class ServerWorld
