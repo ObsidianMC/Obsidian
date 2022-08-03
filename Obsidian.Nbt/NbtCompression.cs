@@ -4,6 +4,8 @@ public enum NbtCompression
 {
     Auto,
 
+    Brotli,
+
     None,
 
     GZip,

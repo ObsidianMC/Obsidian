@@ -16,12 +16,13 @@ public class NbtReader
 
     public NbtReader(Stream instream, NbtCompression compressionMode = NbtCompression.None)
     {
-    Console.WriteLine("USING " + compressionMode.ToString());
-
         switch (compressionMode)
         {
             case NbtCompression.None:
                 this.BaseStream = instream;
+                break;
+            case NbtCompression.Brotli:
+                this.BaseStream = new BrotliStream(instream, CompressionMode.Decompress);
                 break;
             case NbtCompression.Auto:
             case NbtCompression.GZip:
@@ -32,7 +33,7 @@ public class NbtReader
                 break;
             case NbtCompression.Zstd:
                 this.BaseStream = new ZStdDecompressStream(instream);
-                break;
+        break;
         }
     }
 

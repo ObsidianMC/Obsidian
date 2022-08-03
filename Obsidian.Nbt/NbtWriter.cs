@@ -24,8 +24,11 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             case NbtCompression.None:
                   this.BaseStream = outstream;
                   break;
-            case NbtCompression.Auto:
-            case NbtCompression.GZip:
+            case NbtCompression.Brotli:
+                this.BaseStream = new BrotliStream(outstream, CompressionMode.Compress);
+                break;
+              case NbtCompression.Auto:
+              case NbtCompression.GZip:
                   this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
                   break;
               case NbtCompression.ZLib:
@@ -56,6 +59,9 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
         {
             case NbtCompression.None:
                 this.BaseStream = outstream;
+                break;
+            case NbtCompression.Brotli:
+                this.BaseStream = new BrotliStream(outstream, CompressionMode.Compress);
                 break;
             case NbtCompression.Auto:
             case NbtCompression.GZip:
