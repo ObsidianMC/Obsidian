@@ -21,13 +21,13 @@ public class NbtReader
             case NbtCompression.None:
                 this.BaseStream = instream;
                 break;
+            case NbtCompression.Auto:
             case NbtCompression.GZip:
                 this.BaseStream = new GZipStream(instream, CompressionMode.Decompress);
                 break;
             case NbtCompression.ZLib:
                 this.BaseStream = new ZLibStream(instream, CompressionMode.Decompress);
                 break;
-            case NbtCompression.Auto:
             case NbtCompression.Zstd:
                 this.BaseStream = new ZStdDecompressStream(BaseStream);
                 break;

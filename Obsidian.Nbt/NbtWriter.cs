@@ -24,13 +24,13 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             case NbtCompression.None:
                   this.BaseStream = outstream;
                   break;
-              case NbtCompression.GZip:
+            case NbtCompression.Auto:
+            case NbtCompression.GZip:
                   this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
                   break;
               case NbtCompression.ZLib:
                   this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
                   break;
-              case NbtCompression.Auto:
               case NbtCompression.Zstd:
                   var compressStream = new ZStdCompressStream(BaseStream);
                   compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
@@ -57,13 +57,13 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
             case NbtCompression.None:
                 this.BaseStream = outstream;
                 break;
+            case NbtCompression.Auto:
             case NbtCompression.GZip:
                this.BaseStream = new GZipStream(outstream, CompressionMode.Compress);
                 break;
             case NbtCompression.ZLib:
                 this.BaseStream = new ZLibStream(outstream, CompressionMode.Compress);
                 break;
-            case NbtCompression.Auto:
             case NbtCompression.Zstd:
                 var compressStream = new ZStdCompressStream(BaseStream);
                 compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
