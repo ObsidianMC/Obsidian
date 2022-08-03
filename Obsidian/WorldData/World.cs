@@ -600,7 +600,7 @@ public class World : IWorld
         if (!this.Server.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
-        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType, this.NbtCompressionMode);
+        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType, this.Server.NbtCompressionMode);
 
         dimensionWorld.Init(codec, this.Name);
 

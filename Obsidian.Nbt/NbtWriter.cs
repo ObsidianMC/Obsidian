@@ -19,8 +19,6 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode = NbtCompression.None)
     {
-    Console.WriteLine("USING " + compressionMode.ToString());
-
         switch (compressionMode)
         {
             case NbtCompression.None:
@@ -35,7 +33,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
                   break;
               case NbtCompression.Zstd:
                   var compressStream = new ZStdCompressStream(outstream);
-                  compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
+                  compressStream.Compressor.Set(CompressionParameter.CompressionLevel, 19);
 
                   this.BaseStream = compressStream;
                   break;
@@ -54,8 +52,6 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
 
     public NbtWriter(Stream outstream, NbtCompression compressionMode, string name)
     {
-        Console.WriteLine("USING " + compressionMode.ToString());
-
         switch (compressionMode)
         {
             case NbtCompression.None:
@@ -70,7 +66,7 @@ public sealed partial class NbtWriter : IDisposable, IAsyncDisposable
                 break;
             case NbtCompression.Zstd:
                 var compressStream = new ZStdCompressStream(outstream);
-                compressStream.Compressor.Set(CompressionParameter.CompressionLevel, ZStdCompressor.MaximumCompressionLevel);
+                compressStream.Compressor.Set(CompressionParameter.CompressionLevel, 19);
 
                 this.BaseStream = compressStream;
                 break;
