@@ -11,7 +11,6 @@ public class Region
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
-    private const NbtCompression UsedCompression = NbtCompression.GZip;
 
     public int X { get; }
     public int Z { get; }
@@ -30,15 +29,19 @@ public class Region
 
     private readonly ConcurrentDictionary<Vector, BlockUpdate> blockUpdates = new();
 
-    internal Region(int x, int z, string worldFolderPath)
+    private NbtCompression NbtCompressionMode = NbtCompression.GZip;
+
+    internal Region(int x, int z, string worldFolderPath, NbtCompression nbtCompression = NbtCompression.GZip)
     {
         X = x;
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
         var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
-        regionFile = new RegionFile(filePath, cubicRegionSize);
 
+        this.NbtCompressionMode = nbtCompression;
+
+        regionFile = new RegionFile(filePath, cubicRegionSize);
     }
 
     internal void AddBlockUpdate(BlockUpdate bu)
@@ -81,7 +84,7 @@ public class Region
         }
 
         var bytesStream = new ReadOnlyStream(compressedBytes);
-        var nbtReader = new NbtReader(bytesStream, UsedCompression);
+        var nbtReader = new NbtReader(bytesStream, this.NbtCompressionMode);
         var chunkCompound = (NbtCompound)nbtReader.ReadNextTag();
         return GetChunkFromNbt(chunkCompound);
     }
@@ -110,7 +113,7 @@ public class Region
         NbtCompound chunkNbt = GetNbtFromChunk(chunk);
 
         using MemoryStream strm = new();
-        using NbtWriter writer = new(strm, NbtCompression.GZip);
+        using NbtWriter writer = new(strm, this.NbtCompressionMode);
 
         writer.WriteTag(chunkNbt);
 

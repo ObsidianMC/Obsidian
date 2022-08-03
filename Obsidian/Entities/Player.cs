@@ -562,7 +562,7 @@ public class Player : Living, IPlayer
         }
 
         await using var persistentDataStream = persistentDataFile.Create();
-        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
+        await using var persistentDataWriter = new NbtWriter(persistentDataStream, this.NbtCompressionMode, "");
 
         persistentDataWriter.WriteString("worldName", this.World.ParentWorldName ?? this.World.Name);
         //TODO make sure to save inventory in the right location if has using global data set to true
@@ -571,7 +571,7 @@ public class Player : Living, IPlayer
         await persistentDataWriter.TryFinishAsync();
 
         await using var playerFileStream = playerDataFile.Create();
-        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        await using var writer = new NbtWriter(playerFileStream, this.NbtCompressionMode, "");
 
         writer.WriteInt("DataVersion", 2724);
         writer.WriteInt("playerGameType", (int)this.Gamemode);

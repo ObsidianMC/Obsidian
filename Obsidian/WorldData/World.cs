@@ -372,12 +372,12 @@ public class World : IWorld
 
         if (worldFile.Exists)
         {
-            worldFile.CopyTo($"{this.LevelDataFilePath}.old");
+            worldFile.CopyTo($"{this.LevelDataFilePath}.old", true);
             worldFile.Delete();
         }
 
         using var fs = worldFile.Create();
-        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        using var writer = new NbtWriter(fs, this.NbtCompressionMode, "");
 
         writer.WriteBool("hardcore", this.LevelData.Hardcore);
         writer.WriteBool("MapFeatures", this.LevelData.MapFeatures);
@@ -433,7 +433,7 @@ public class World : IWorld
             }
         }
 
-        var region = new Region(regionX, regionZ, this.FolderPath);
+        var region = new Region(regionX, regionZ, this.FolderPath, this.NbtCompressionMode);
         if (await region.InitAsync())
         {
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
@@ -600,7 +600,7 @@ public class World : IWorld
         if (!this.Server.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
-        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType);
+        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType, this.NbtCompressionMode);
 
         dimensionWorld.Init(codec, this.Name);
 

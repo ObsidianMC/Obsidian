@@ -301,7 +301,7 @@ public sealed class Client : IDisposable
 
             }
 
-            Player = new Player(Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
+            Player = new Player(Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world, world.NbtCompressionMode);
 
             packetCryptography.GenerateKeyPair();
 
@@ -317,7 +317,7 @@ public sealed class Client : IDisposable
         }
         else
         {
-            Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world);
+            Player = new Player(GuidHelper.FromStringHash($"OfflinePlayer:{username}"), username, this, world, world.NbtCompressionMode);
 
             //await this.SetCompression();
             await ConnectAsync();

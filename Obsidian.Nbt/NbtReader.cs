@@ -16,6 +16,8 @@ public class NbtReader
 
     public NbtReader(Stream instream, NbtCompression compressionMode = NbtCompression.None)
     {
+    Console.WriteLine("USING " + compressionMode.ToString());
+
         switch (compressionMode)
         {
             case NbtCompression.None:
@@ -29,7 +31,7 @@ public class NbtReader
                 this.BaseStream = new ZLibStream(instream, CompressionMode.Decompress);
                 break;
             case NbtCompression.Zstd:
-                this.BaseStream = new ZStdDecompressStream(BaseStream);
+                this.BaseStream = new ZStdDecompressStream(instream);
                 break;
         }
     }
