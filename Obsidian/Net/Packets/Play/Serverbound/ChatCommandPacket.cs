@@ -1,17 +1,19 @@
-﻿using Obsidian.Commands;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.Commands;
+using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
+using System.Text;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-//TODO USE THIS PACKET PROPERLY
 public partial class ChatCommandPacket : IServerboundPacket
 {
     [Field(0)]
     public string Command { get; private set; }
 
     [Field(1)]
-    public long Timestamp { get; private set; }
+    public DateTimeOffset Timestamp { get; private set; }
 
     [Field(2)]
     public long Salt { get; private set; }
@@ -24,5 +26,16 @@ public partial class ChatCommandPacket : IServerboundPacket
 
     public int Id => 0x03;
 
-    public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
+    public async ValueTask HandleAsync(Server server, Player player)
+    {
+        var context = new CommandContext($"/{this.Command}", new CommandSender(CommandIssuers.Client, player, server.Logger), player, server);
+        try
+        {
+            await server.CommandsHandler.ProcessCommand(context);
+        }
+        catch (Exception e)
+        {
+            server.Logger.LogError(e, e.Message);
+        }
+    }
 }

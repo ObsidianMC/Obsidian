@@ -402,35 +402,6 @@ public partial class Server : IServer
         BroadcastMessage(playerChatMessagePacket);
     }
 
-    //internal async Task HandleIncomingMessageAsync(string message, string format, Client source, MessageType type = MessageType.Chat)
-    //{
-    //    format ??= "<{0}> {1}";
-
-    //    if (message.StartsWith(CommandHandler.DefaultPrefix))
-    //    {
-    //        // TODO command logging
-    //        // TODO error handling for commands
-    //        var context = new CommandContext(message, new CommandSender(CommandIssuers.Client, source.Player, Logger), source.Player, this);
-    //        try
-    //        {
-    //            await CommandsHandler.ProcessCommand(context);
-    //        }
-    //        catch (Exception e)
-    //        {
-    //            Logger.LogError(e, e.Message);
-    //        }
-    //    }
-    //    else
-    //    {
-    //        var chat = await Events.InvokeIncomingChatMessageAsync(new IncomingChatMessageEventArgs(source.Player, message, format));
-
-    //        if (!chat.Cancel)
-    //            BroadcastMessage(string.Format(format, source.Player.Username, message), type);
-
-    //        return;
-    //    }
-    //}
-
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
     {
         foreach (Player player in Players)
