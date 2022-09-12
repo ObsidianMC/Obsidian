@@ -15,6 +15,7 @@ using Obsidian.Net.Packets.Status;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
+using Org.BouncyCastle.Utilities;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -46,8 +47,6 @@ public sealed class Client : IDisposable
 
     private MojangUser cachedMojangUser;
 
-    public bool EncryptionEnabled { get; private set; }
-
     private const int CompressionThreshold = 256;
 
     private readonly Socket socket;
@@ -55,6 +54,10 @@ public sealed class Client : IDisposable
     internal int ping;
     internal int missedKeepalives;
     internal int id;
+
+    internal SignatureData? signatureData;
+
+    public bool EncryptionEnabled { get; private set; }
 
     /// <summary>
     /// The client brand.
@@ -272,6 +275,16 @@ public sealed class Client : IDisposable
     {
         var loginStart = LoginStart.Deserialize(data);
 
+        if (loginStart.HasSigData)
+        {
+            this.signatureData = new()
+            {
+                PublicKey = loginStart.PublicKey!,
+                Signature = loginStart.Signature!,
+                ExpirationTime = loginStart.Timestamp!.Value
+            };
+        }
+
         string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
 
         Logger.LogDebug($"Received login request from user {loginStart.Username}");
@@ -301,7 +314,7 @@ public sealed class Client : IDisposable
 
             }
 
-            Player = new Player(Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
+            Player = new Player(loginStart.PlayerUuid ?? Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
 
             packetCryptography.GenerateKeyPair();
 
