@@ -30,33 +30,24 @@ namespace Obsidian;
 
 public sealed partial class Server : IServer
 {
-    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19;
-
 #if RELEASE
     public static readonly string VERSION = "0.1";
 #else
     public static readonly string VERSION = "0.1-DEV";
 #endif
-
+    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19;
     public ProtocolVersion Protocol => DefaultProtocol;
-
     public int Tps { get; private set; }
     public DateTimeOffset StartTime { get; private set; }
-
     public PluginManager PluginManager { get; }
     public MinecraftEventHandler Events { get; } = new();
-
     public IOperatorList Operators { get; }
-    public IScoreboardManager ScoreboardManager { get; private set; }
-
+    public IScoreboardManager? ScoreboardManager { get; private set; }
     public ConcurrentDictionary<Guid, Player> OnlinePlayers { get; } = new();
     public Dictionary<string, Type> WorldGenerators { get; } = new();
-
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-
     public IServerConfiguration Configuration { get; }
-
     public ILogger Logger { get; }
     public LoggerProvider LoggerProvider { get; }
     public string ServerFolderPath { get; }
@@ -64,19 +55,18 @@ public sealed partial class Server : IServer
     public string Brand { get; } = "obsidian";
     public string Version => VERSION;
     public int Port { get; }
-
     public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
     public CancellationToken CancelToken => _cancelTokenSource.Token;
 
+    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+
     private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
     private readonly CancellationTokenSource _cancelTokenSource;
-
-    private RconServer rconServer;
-    internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
+    private RconServer? rconServer;
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.

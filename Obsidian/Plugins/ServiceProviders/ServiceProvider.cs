@@ -19,7 +19,7 @@ public class ServiceProvider
 
     public void InjectServices(PluginContainer container, ILogger logger) => InjectServices(container.Plugin, container, logger);
 
-    public void InjectServices(object o, PluginContainer container, ILogger logger)
+    public void InjectServices(object? o, PluginContainer container, ILogger logger)
     {
         var serviceCache = new Dictionary<Type, object>();
 

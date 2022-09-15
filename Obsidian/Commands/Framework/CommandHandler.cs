@@ -84,9 +84,9 @@ public class CommandHandler
         this._commands.RemoveAll(x => x.Plugin == plugin);
     }
 
-    public void RegisterCommandClass<T>(PluginContainer plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
+    public void RegisterCommandClass<T>(PluginContainer? plugin, T instance) => RegisterCommandClass(plugin, typeof(T), instance);
 
-    public void RegisterCommandClass(PluginContainer plugin, Type type, object instance = null)
+    public void RegisterCommandClass(PluginContainer? plugin, Type type, object? instance = null)
     {
         RegisterSubgroups(type, plugin);
         RegisterSubcommands(type, plugin);

@@ -7,6 +7,8 @@ namespace Obsidian.ConsoleApp;
 
 public class ConsoleServerSetup : IServerSetup
 {
+    public bool ServerShutdownStopsProgram { get; } = true;
+
     public async Task<IServerConfiguration> LoadServerConfiguration(CancellationToken cToken)
     {
         if (!Directory.Exists("config"))
@@ -38,8 +40,6 @@ public class ConsoleServerSetup : IServerSetup
         Environment.Exit(0);
         throw new Exception("Unreachable?");
     }
-
-
     public async Task<List<ServerWorld>> LoadServerWorlds(CancellationToken cToken)
     {
         if (!Directory.Exists("config"))
@@ -73,6 +73,15 @@ public class ConsoleServerSetup : IServerSetup
         await worlds.ToJsonAsync(fs, cancellationToken: cToken);
 
         return worlds;
+    }
+    public async Task ProvideServerCommands(Server server, CancellationToken cToken)
+    {
+        while (!cToken.IsCancellationRequested)
+        {
+            var input = Console.ReadLine();
+            if (input == null) continue;
+            await server.ExecuteCommand(input);
+        }
     }
 }
 

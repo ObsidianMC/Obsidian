@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Obsidian.Hosting;
 using Obsidian.Utilities;
 
@@ -23,6 +24,10 @@ public static partial class Program
             .ConfigureServices(services =>
             {
                 services.AddObsidian(setup);
+            })
+            .ConfigureLogging(options =>
+            {
+                options.AddFilter("Microsoft", LogLevel.Critical);
             })
             .Build();
 
