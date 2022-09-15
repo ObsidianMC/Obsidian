@@ -44,7 +44,7 @@ public class OperatorList : IOperatorList
 
     public bool CreateRequest(IPlayer p)
     {
-        if (!server.Config.AllowOperatorRequests)
+        if (!server.Configuration.AllowOperatorRequests)
         {
             return false;
         }

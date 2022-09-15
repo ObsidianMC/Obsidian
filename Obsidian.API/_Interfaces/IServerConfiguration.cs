@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API._Types;
 using Obsidian.API._Types.Config;
 
 namespace Obsidian.API;
@@ -77,4 +78,14 @@ public interface IServerConfiguration
     /// The Server's log level.
     /// </summary>
     public LogLevel LogLevel { get; set; }
+
+    public bool UDPBroadcast { get; set; }
+    public bool VerboseExceptionLogging { get; set; }
+    public bool WhitelistEnabled { get; set; }
+    public bool IpWhitelistEnabled { get; set; }
+    public HashSet<string> IpWhitelist { get; set; }
+    public List<WhitelistedPlayer> UserWhitelist { get; set; }
+    public int PregenerateChunkRange { get; set; }
+    public int TimeTickSpeedMultiplier { get; set; }
+
 }

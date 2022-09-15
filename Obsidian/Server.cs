@@ -55,8 +55,7 @@ public sealed partial class Server : IServer
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
 
-    public ServerConfiguration Config { get; }
-    public IServerConfiguration Configuration => Config;
+    public IServerConfiguration Configuration { get; }
 
     public ILogger Logger { get; }
     public LoggerProvider LoggerProvider { get; }
@@ -84,10 +83,10 @@ public sealed partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-    public Server(IServerConfiguration config, List<ServerWorld> serverWorlds)
+    public Server(IServerConfiguration Configuration, List<ServerWorld> serverWorlds)
     {
-        Config = config;
-        Port = config.Port;
+        Configuration = Configuration;
+        Port = Configuration.Port;
         // Currently not used. Defaults to current directory.
         ServerFolderPath = Environment.CurrentDirectory;
 
@@ -95,7 +94,7 @@ public sealed partial class Server : IServer
 
         Operators = new OperatorList(this);
 
-        LoggerProvider = new LoggerProvider(config.LogLevel);
+        LoggerProvider = new LoggerProvider(Configuration.LogLevel);
         Logger = LoggerProvider.CreateLogger($"Server");
         // This stuff down here needs to be looked into
         Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
@@ -129,7 +128,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
 
-        if (Config.UDPBroadcast)
+        if (Configuration.UDPBroadcast)
         {
             _ = Task.Run(async () =>
             {
@@ -137,7 +136,7 @@ public sealed partial class Server : IServer
                 while (!cts.IsCancellationRequested)
                 {
                     await Task.Delay(1500, cts.Token); // TODO (.NET 6), use PeriodicTimer
-                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{config.Port}[/AD]");
+                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
                     await udpClient.SendAsync(motd, motd.Length);
                 }
             });
@@ -235,9 +234,9 @@ public sealed partial class Server : IServer
         var loadTimeStopwatch = Stopwatch.StartNew();
 
         // Check if MPDM and OM are enabled, if so, we can't handle connections
-        if (Config.MulitplayerDebugMode && Config.OnlineMode)
+        if (Configuration.MulitplayerDebugMode && Configuration.OnlineMode)
         {
-            Logger.LogError("Incompatible Config: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
+            Logger.LogError("Incompatible Configuration: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
             Stop();
             return;
         }
@@ -264,18 +263,18 @@ public sealed partial class Server : IServer
         PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
         PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
-        await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
+        await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         await WorldManager.LoadWorldsAsync();
 
-        if (!Config.OnlineMode)
+        if (!Configuration.OnlineMode)
             Logger.LogInformation($"Starting in offline mode...");
 
         Registry.RegisterCommands(this);
 
         if (Configuration.EnableRcon)
         {
-            rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Config, this, CommandsHandler);
+            rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Configuration, this, CommandsHandler);
         }
 
         loadTimeStopwatch.Stop();
@@ -316,7 +315,7 @@ public sealed partial class Server : IServer
             Logger.LogDebug($"New connection from client with IP {socket.RemoteEndPoint}");
 
             string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
-            if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
+            if (Configuration.IpWhitelistEnabled && !Configuration.IpWhitelist.Contains(ip))
             {
                 Logger.LogInformation($"{ip} is not whitelisted. Closing connection");
                 socket.Disconnect(false);
@@ -324,7 +323,7 @@ public sealed partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(socket, Config, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(socket, Configuration, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
             clients.Add(client);
 
@@ -631,15 +630,6 @@ public sealed partial class Server : IServer
                     client.ProcessKeepAlive(keepAliveId);
 
                 keepAliveTicks = 0;
-            }
-
-            if (Config.Baah.HasValue)
-            {
-                foreach (Player player in Players)
-                {
-                    var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                    await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                }
             }
 
             while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))

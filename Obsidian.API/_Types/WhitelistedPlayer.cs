@@ -1,4 +1,4 @@
-﻿namespace Obsidian.Utilities;
+﻿namespace Obsidian.API._Types;
 
 public class WhitelistedPlayer
 {

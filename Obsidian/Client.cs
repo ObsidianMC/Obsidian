@@ -39,7 +39,7 @@ public sealed class Client : IDisposable
     private MinecraftStream minecraftStream;
     private readonly NetworkStream socketStream;
 
-    private ServerConfiguration config;
+    private IServerConfiguration config;
 
     private bool disposed;
     private bool compressionEnabled;
@@ -75,7 +75,7 @@ public sealed class Client : IDisposable
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
-    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
+    public Client(Socket socket, IServerConfiguration config, int playerId, Server originServer)
     {
         this.socket = socket;
         this.config = config;
@@ -291,7 +291,7 @@ public sealed class Client : IDisposable
 
             if (config.WhitelistEnabled)
             {
-                var wlEntry = config.Whitelisted.FirstOrDefault(x => x.UUID == this.cachedMojangUser.Id);
+                var wlEntry = config.UserWhitelist.FirstOrDefault(x => x.UUID == this.cachedMojangUser.Id);
 
                 if (wlEntry is null)
                 {
@@ -311,7 +311,7 @@ public sealed class Client : IDisposable
 
             SendPacket(new EncryptionRequest(values.publicKey, randomToken));
         }
-        else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
+        else if (config.WhitelistEnabled && !config.UserWhitelist.Any(x => x.Nickname == username))
         {
             await DisconnectAsync("You are not whitelisted on this server\nContact server administrator");
         }
@@ -611,8 +611,8 @@ public sealed class Client : IDisposable
 
     private async Task SendPlayerListDecoration()
     {
-        ChatMessage? header = string.IsNullOrWhiteSpace(Server.Config.Header) ? null : ChatMessage.Simple(Server.Config.Header);
-        ChatMessage? footer = string.IsNullOrWhiteSpace(Server.Config.Footer) ? null : ChatMessage.Simple(Server.Config.Footer);
+        ChatMessage? header = string.IsNullOrWhiteSpace(Server.Configuration.Header) ? null : ChatMessage.Simple(Server.Configuration.Header);
+        ChatMessage? footer = string.IsNullOrWhiteSpace(Server.Configuration.Footer) ? null : ChatMessage.Simple(Server.Configuration.Footer);
 
         await QueuePacketAsync(new SetTabListHeaderAndFooterPacket(header, footer));
         Logger.LogDebug("Sent player list decoration");

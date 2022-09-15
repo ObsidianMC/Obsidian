@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API._Types;
 using Obsidian.API._Types.Config;
 using System.Text.Json.Serialization;
 
@@ -31,15 +32,15 @@ public class ServerConfiguration : IServerConfiguration
     public bool? Baah { get; set; }
     public bool WhitelistEnabled { get; set; }
     public bool IpWhitelistEnabled { get; set; }
-    public List<string> WhitelistedIPs { get; set; } = new();
-    public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
+    public HashSet<string> IpWhitelist { get; set; } = new();
+    public List<WhitelistedPlayer> UserWhitelist { get; set; } = new();
 
     public int MaxMissedKeepAlives { get; set; } = 15;
 
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
     public RconConfig? Rcon { get; set; }
 
-    public bool UDPBroadcast = false;
+    public bool UDPBroadcast { get; set; } = false;
 
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15
 

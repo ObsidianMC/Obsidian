@@ -81,7 +81,7 @@ public class ServerPlayers : IServerPlayers
 
     public ServerPlayers(Server server)
     {
-        Max = server.Config.MaxPlayers;
+        Max = server.Configuration.MaxPlayers;
 
         foreach (Player player in server.Players)
         {
@@ -119,7 +119,7 @@ public sealed class ServerDescription : IServerDescription
 
     public ServerDescription(Server server)
     {
-        text = FormatText(server.Config.Motd);
+        text = FormatText(server.Configuration.Motd);
     }
 
     private static string FormatText(string text)

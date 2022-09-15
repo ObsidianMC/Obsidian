@@ -227,7 +227,7 @@ public partial class Server
                 await other.client.QueuePacketAsync(destroy);
         }
 
-        BroadcastMessage(string.Format(Config.LeaveMessage, e.Player.Username));
+        BroadcastMessage(string.Format(Configuration.LeaveMessage, e.Player.Username));
     }
 
     private async Task OnPlayerJoin(PlayerJoinEventArgs e)
@@ -238,7 +238,7 @@ public partial class Server
 
         BroadcastMessage(ChatMessage.Simple(string.Empty).AddExtra(new ChatMessage
         {
-            Text = string.Format(Config.JoinMessage, e.Player.Username),
+            Text = string.Format(Configuration.JoinMessage, e.Player.Username),
             Color = HexColor.Yellow
         }));
 
