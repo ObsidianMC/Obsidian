@@ -5,6 +5,7 @@ namespace Obsidian.Hosting;
 internal sealed class ObsidianHostingService : BackgroundService
 {
     private readonly IServerSetup _setup;
+    private Server? _server;
 
     public ObsidianHostingService(IServerSetup setup)
     {
@@ -16,8 +17,7 @@ internal sealed class ObsidianHostingService : BackgroundService
         var config = await _setup.LoadServerConfiguration(cToken);
         var worlds = await _setup.LoadServerWorlds(cToken);
 
-        var server = new Server(config, worlds);
-
+        _server = new Server(config, worlds);
+        await _server.RunAsync();
     }
-
 }

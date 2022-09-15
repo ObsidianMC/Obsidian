@@ -62,30 +62,30 @@ public sealed partial class Server : IServer
     public string ServerFolderPath { get; }
     public string PersistentDataPath { get; }
     public string Brand { get; } = "obsidian";
-    public string Version => Version;
+    public string Version => VERSION;
     public int Port { get; }
 
     public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
+    public CancellationToken CancelToken => _cancelTokenSource.Token;
 
     private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
+    private readonly CancellationTokenSource _cancelTokenSource;
 
     private RconServer rconServer;
-
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
-
-    internal readonly CancellationTokenSource cts = new();
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
-    /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-    public Server(IServerConfiguration Configuration, List<ServerWorld> serverWorlds)
+    /// <param name="cToken">Cancelling this token will stop the server.</param>
+    public Server(IServerConfiguration configuration, List<ServerWorld> serverWorlds, CancellationToken cToken = default)
     {
-        Configuration = Configuration;
+        _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cToken);
+        Configuration = configuration;
         Port = Configuration.Port;
         // Currently not used. Defaults to current directory.
         ServerFolderPath = Environment.CurrentDirectory;
@@ -127,20 +127,6 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
-
-        if (Configuration.UDPBroadcast)
-        {
-            _ = Task.Run(async () =>
-            {
-                var udpClient = new UdpClient("224.0.2.60", 4445);
-                while (!cts.IsCancellationRequested)
-                {
-                    await Task.Delay(1500, cts.Token); // TODO (.NET 6), use PeriodicTimer
-                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
-                    await udpClient.SendAsync(motd, motd.Length);
-                }
-            });
-        }
     }
 
     public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
@@ -228,6 +214,20 @@ public sealed partial class Server : IServer
     /// </summary>
     public async Task RunAsync()
     {
+        if (Configuration.UDPBroadcast)
+        {
+            _ = Task.Run(async () =>
+            {
+                var udpClient = new UdpClient("224.0.2.60", 4445);
+                while (!CancelToken.IsCancellationRequested)
+                {
+                    await Task.Delay(1500, CancelToken); // TODO (.NET 6), use PeriodicTimer
+                    byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Configuration.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Configuration.Port}[/AD]");
+                    await udpClient.SendAsync(motd, motd.Length);
+                }
+            }, CancelToken);
+        }
+
         StartTime = DateTimeOffset.Now;
 
         Logger.LogInformation($"Launching Obsidian Server v{Version}");
@@ -237,7 +237,6 @@ public sealed partial class Server : IServer
         if (Configuration.MulitplayerDebugMode && Configuration.OnlineMode)
         {
             Logger.LogError("Incompatible Configuration: Multiplayer debug mode can't be enabled at the same time as online mode since usernames will be overwritten");
-            Stop();
             return;
         }
 
@@ -283,7 +282,11 @@ public sealed partial class Server : IServer
         Logger.LogInformation($"Listening for new clients...");
         try
         {
-            await Task.WhenAll(AcceptClientsAsync(cts.Token), LoopAsync(), ServerSaveAsync(), rconServer?.RunAsync(cts.Token) ?? Task.CompletedTask);
+            await Task.WhenAll(
+                AcceptClientsAsync(),
+                LoopAsync(), 
+                ServerSaveAsync(), 
+                rconServer?.RunAsync(CancelToken) ?? Task.CompletedTask);
         }
         catch (TaskCanceledException)
         {
@@ -293,18 +296,32 @@ public sealed partial class Server : IServer
         await WorldManager.FlushLoadedWorldsAsync();
 
         Logger.LogWarning("Server is shutting down...");
+
+        tcpListener.Stop();
+        WorldGenerators.Clear();
+        foreach (var client in clients)
+        {
+            client.Disconnect();
+            client.Dispose();
+        }
     }
 
-    private async Task AcceptClientsAsync(CancellationToken cancellationToken)
+    public void Stop()
+    {
+        if (!_cancelTokenSource.IsCancellationRequested)
+            _cancelTokenSource.Cancel();
+    }
+
+    private async Task AcceptClientsAsync()
     {
         tcpListener.Start();
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!CancelToken.IsCancellationRequested)
         {
             Socket socket;
             try
             {
-                socket = await tcpListener.AcceptSocketAsync(cancellationToken);
+                socket = await tcpListener.AcceptSocketAsync(CancelToken);
             }
             catch (Exception e)
             {
@@ -589,23 +606,11 @@ public sealed partial class Server : IServer
         }
     }
 
-    public void Stop()
-    {
-        cts.Cancel();
-        tcpListener.Stop();
-        WorldGenerators.Clear();
-        foreach (var client in clients)
-        {
-            client.Disconnect();
-            client.Dispose();
-        }
-    }
-
     private async Task ServerSaveAsync()
     {
-        while (!cts.IsCancellationRequested)
+        while (!CancelToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(5), cts.Token);
+            await Task.Delay(TimeSpan.FromMinutes(5), CancelToken);
             await WorldManager.FlushLoadedWorldsAsync();
         }
     }
@@ -616,7 +621,7 @@ public sealed partial class Server : IServer
 
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
-        var timer = new BalancingTimer(50, cts.Token);
+        var timer = new BalancingTimer(50, CancelToken);
         while (await timer.WaitForNextTickAsync())
         {
             await Events.InvokeServerTickAsync();
