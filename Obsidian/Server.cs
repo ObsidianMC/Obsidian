@@ -28,9 +28,16 @@ using System.Threading;
 
 namespace Obsidian;
 
-public partial class Server : IServer
+public sealed partial class Server : IServer
 {
     public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19;
+
+#if RELEASE
+    public static readonly string VERSION = "0.1";
+#else
+    public static readonly string VERSION = "0.1-DEV";
+#endif
+
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
@@ -48,17 +55,15 @@ public partial class Server : IServer
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
 
-    public Config Config { get; }
-    public IConfig Configuration => Config;
+    public ServerConfiguration Config { get; }
+    public IServerConfiguration Configuration => Config;
 
     public ILogger Logger { get; }
     public LoggerProvider LoggerProvider { get; }
-
-    public string Version { get; }
     public string ServerFolderPath { get; }
     public string PersistentDataPath { get; }
     public string Brand { get; } = "obsidian";
-
+    public string Version => Version;
     public int Port { get; }
 
     public WorldManager WorldManager { get; private set; }
@@ -79,13 +84,12 @@ public partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     /// <param name="version">Version the server is running. <i>(unrelated to minecraft version)</i></param>
-    public Server(Config config, string version, string path, List<ServerWorld> serverWorlds)
+    public Server(IServerConfiguration config, List<ServerWorld> serverWorlds)
     {
         Config = config;
-
         Port = config.Port;
-        Version = version;
-        ServerFolderPath = path;
+        // Currently not used. Defaults to current directory.
+        ServerFolderPath = Environment.CurrentDirectory;
 
         tcpListener = new TcpListener(IPAddress.Any, Port);
 
@@ -674,4 +678,6 @@ public partial class Server : IServer
         var status = $"    tps:{Tps} c:{WorldManager.GeneratingChunkCount}/{WorldManager.LoadedChunkCount} r:{WorldManager.RegionCount}";
         ConsoleIO.UpdateStatusLine(status);
     }
+
+
 }

@@ -1,8 +1,9 @@
-﻿using Obsidian.API._Types.Config;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API._Types.Config;
 
 namespace Obsidian.API;
 
-public interface IConfig
+public interface IServerConfiguration
 {
     /// <summary>
     /// Server description.
@@ -71,4 +72,9 @@ public interface IConfig
     /// Remote Console configuration
     /// </summary>
     public RconConfig? Rcon { get; set; }
+
+    /// <summary>
+    /// The Server's log level.
+    /// </summary>
+    public LogLevel LogLevel { get; set; }
 }

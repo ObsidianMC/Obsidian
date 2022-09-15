@@ -48,7 +48,7 @@ public sealed class PluginContainer : IDisposable
     }
 
     #region Dependencies
-    public void RegisterDependencies(PluginManager manager, ILogger logger = null)
+    public void RegisterDependencies(PluginManager manager, ILogger? logger = null)
     {
         // FieldInfo[] and PropertyInfo[] can't be merged into MemberInfo[], since it includes methods etc. and MemberInfo doesn't have SetValue method
 
