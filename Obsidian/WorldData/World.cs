@@ -368,7 +368,7 @@ public class World : IWorld
 
         if (worldFile.Exists)
         {
-            worldFile.CopyTo($"{this.LevelDataFilePath}.old");
+            worldFile.CopyTo($"{this.LevelDataFilePath}.old", true);
             worldFile.Delete();
         }
 
