@@ -18,15 +18,14 @@ public static partial class Program
         Console.ResetColor();
         Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
 
-        var setup = new ConsoleServerSetup();
-
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddObsidian(setup);
+                services.AddObsidian();
             })
             .ConfigureLogging(options =>
             {
+                //  Shhh... Only let Microsoft log when stuff crashes.
                 options.AddFilter("Microsoft", LogLevel.Critical);
             })
             .Build();

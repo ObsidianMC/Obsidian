@@ -1,20 +1,16 @@
-﻿using Obsidian.API;
-using Obsidian.Hosting;
-using Obsidian.Utilities;
+﻿using System.IO;
 using System.Threading;
 
-namespace Obsidian.ConsoleApp;
+namespace Obsidian.Hosting;
 
-public class ConsoleServerSetup : IServerSetup
+public class DefaultServerStartup : IServerSetup
 {
-    public bool ServerShutdownStopsProgram { get; } = true;
+    public virtual bool ServerShutdownStopsProgram { get; } = true;
 
-    public async Task<IServerConfiguration> LoadServerConfiguration(CancellationToken cToken)
+    public virtual async Task<IServerConfiguration> LoadServerConfiguration(CancellationToken cToken)
     {
         if (!Directory.Exists("config"))
-        {
             Directory.CreateDirectory("config");
-        }
 
         var configFile = new FileInfo(Path.Combine("config", "main.json"));
 
@@ -40,12 +36,10 @@ public class ConsoleServerSetup : IServerSetup
         Environment.Exit(0);
         throw new Exception("Unreachable?");
     }
-    public async Task<List<ServerWorld>> LoadServerWorlds(CancellationToken cToken)
+    public virtual async Task<List<ServerWorld>> LoadServerWorlds(CancellationToken cToken)
     {
         if (!Directory.Exists("config"))
-        {
             Directory.CreateDirectory("config");
-        }
 
         var worldsFile = new FileInfo(Path.Combine("config", "worlds.json"));
 
@@ -74,7 +68,13 @@ public class ConsoleServerSetup : IServerSetup
 
         return worlds;
     }
-    public async Task ProvideServerCommands(Server server, CancellationToken cToken)
+    /// <summary>
+    /// Provide server commands using the Console.
+    /// </summary>
+    /// <param name="server"></param>
+    /// <param name="cToken"></param>
+    /// <returns></returns>
+    public virtual async Task ProvideServerCommands(Server server, CancellationToken cToken)
     {
         while (!cToken.IsCancellationRequested)
         {

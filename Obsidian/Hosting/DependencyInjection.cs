@@ -9,4 +9,15 @@ public static class DependencyInjection
         services.AddHostedService<ObsidianHostingService>();
         return services;
     }
+
+    public static IServiceCollection AddObsidian<T>(this IServiceCollection services) where T : class, IServerSetup, new()
+    {
+        var setup = Activator.CreateInstance<T>();
+        return AddObsidian(services, setup);
+    }
+
+    public static IServiceCollection AddObsidian(this IServiceCollection services)
+    {
+        return AddObsidian<DefaultServerStartup>(services);
+    }
 }
