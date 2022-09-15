@@ -197,6 +197,7 @@ public class MainCommandModule
     [Command("gamemode")]
     [CommandInfo("Change your gamemode.", "/gamemode <survival/creative/adventure/spectator>")]
     [IssuerScope(CommandIssuers.Client)]
+    [RequirePermission(op: true, permissions: "obsidian.gamemode")]
     public async Task GamemodeAsync(CommandContext ctx, string gamemode)
     {
         var player = ctx.Player;
