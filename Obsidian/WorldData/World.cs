@@ -249,8 +249,8 @@ public class World : IWorld
     /// <returns></returns>
     public async Task DoWorldTickAsync()
     {
-        this.LevelData.Time += this.Server.Configuration.TimeTickSpeedMultiplier;
-        this.LevelData.RainTime -= this.Server.Configuration.TimeTickSpeedMultiplier;
+        this.LevelData.Time += this.Server.ServerConfig.TimeTickSpeedMultiplier;
+        this.LevelData.RainTime -= this.Server.ServerConfig.TimeTickSpeedMultiplier;
 
         if (LevelData.RainTime < 1)
         {
@@ -288,7 +288,7 @@ public class World : IWorld
                 this.Server.BroadcastPacket(new GameEventPacket(this.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
         }
 
-        if (this.LevelData.Time % (20 * this.Server.Configuration.TimeTickSpeedMultiplier) == 0)
+        if (this.LevelData.Time % (20 * this.Server.ServerConfig.TimeTickSpeedMultiplier) == 0)
         {
             // Update client time every second / 20 ticks
             this.Server.BroadcastPacket(new UpdateTimePacket(this.LevelData.Time, this.LevelData.Time % 24000));
@@ -704,8 +704,8 @@ public class World : IWorld
         if (!this.initialized)
             throw new InvalidOperationException("World hasn't been initialized please call World.Init() before trying to generate the world.");
 
-        this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.Configuration.PregenerateChunkRange})");
-        int pregenerationRange = Server.Configuration.PregenerateChunkRange;
+        this.Server.Logger.LogInformation($"Generating world... (Config pregeneration size is {Server.ServerConfig.PregenerateChunkRange})");
+        int pregenerationRange = Server.ServerConfig.PregenerateChunkRange;
 
         int regionPregenRange = (pregenerationRange >> Region.cubicRegionSizeShift) + 1;
 
@@ -767,9 +767,9 @@ public class World : IWorld
 
                                 // Should spawn be far from (0,0), queue up chunks in generation range.
                                 // Just feign a request for a chunk and if it doesn't exist, it'll get queued for gen.
-                                for (int x = c.X - Server.Configuration.PregenerateChunkRange; x < c.X + Server.Configuration.PregenerateChunkRange; x++)
+                                for (int x = c.X - Server.ServerConfig.PregenerateChunkRange; x < c.X + Server.ServerConfig.PregenerateChunkRange; x++)
                                 {
-                                    for (int z = c.Z - Server.Configuration.PregenerateChunkRange; z < c.Z + Server.Configuration.PregenerateChunkRange; z++)
+                                    for (int z = c.Z - Server.ServerConfig.PregenerateChunkRange; z < c.Z + Server.ServerConfig.PregenerateChunkRange; z++)
                                     {
                                         await GetChunkAsync(x, z);
                                     }

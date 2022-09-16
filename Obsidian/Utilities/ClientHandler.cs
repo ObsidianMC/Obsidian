@@ -10,9 +10,9 @@ namespace Obsidian;
 public class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
-    private IServerConfiguration config;
+    private ServerConfiguration config;
 
-    public ClientHandler(IServerConfiguration config)
+    public ClientHandler(ServerConfiguration config)
     {
         this.config = config;
     }
@@ -179,7 +179,7 @@ public class ClientHandler
         }
         catch (Exception e)
         {
-            if (client.Server.Configuration.VerboseExceptionLogging)
+            if (client.Server.ServerConfig.VerboseExceptionLogging)
                 Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
         }
         ObjectPool<T>.Shared.Return(packet);

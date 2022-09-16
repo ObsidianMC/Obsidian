@@ -58,6 +58,7 @@ public class ServerConfiguration : IServerConfiguration
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     public int TimeTickSpeedMultiplier { get; set; } = 1;
+    public bool EnableRcon { get; set; }
 }
 
 public sealed class ServerWorld

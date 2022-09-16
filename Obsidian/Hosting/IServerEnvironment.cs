@@ -7,7 +7,7 @@ public interface IServerEnvironment
     /// If set to true, after the server shuts down, the application will stop running as well.
     /// </summary>
     public bool ServerShutdownStopsProgram { get; }
-    public IServerConfiguration Configuration { get; }
+    public ServerConfiguration Configuration { get; }
     public List<ServerWorld> ServerWorlds { get; }
 
     /// <summary>

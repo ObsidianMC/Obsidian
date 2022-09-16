@@ -39,7 +39,7 @@ public sealed class Client : IDisposable
     private MinecraftStream minecraftStream;
     private readonly NetworkStream socketStream;
 
-    private IServerConfiguration config;
+    private ServerConfiguration config;
 
     private bool disposed;
     private bool compressionEnabled;
@@ -75,7 +75,7 @@ public sealed class Client : IDisposable
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
-    public Client(Socket socket, IServerConfiguration config, int playerId, Server originServer)
+    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
     {
         this.socket = socket;
         this.config = config;
@@ -611,8 +611,8 @@ public sealed class Client : IDisposable
 
     private async Task SendPlayerListDecoration()
     {
-        ChatMessage? header = string.IsNullOrWhiteSpace(Server.Configuration.Header) ? null : ChatMessage.Simple(Server.Configuration.Header);
-        ChatMessage? footer = string.IsNullOrWhiteSpace(Server.Configuration.Footer) ? null : ChatMessage.Simple(Server.Configuration.Footer);
+        ChatMessage? header = string.IsNullOrWhiteSpace(Server.ServerConfig.Header) ? null : ChatMessage.Simple(Server.ServerConfig.Header);
+        ChatMessage? footer = string.IsNullOrWhiteSpace(Server.ServerConfig.Footer) ? null : ChatMessage.Simple(Server.ServerConfig.Footer);
 
         await QueuePacketAsync(new SetTabListHeaderAndFooterPacket(header, footer));
         Logger.LogDebug("Sent player list decoration");

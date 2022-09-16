@@ -79,13 +79,4 @@ public interface IServerConfiguration
     /// </summary>
     public LogLevel LogLevel { get; set; }
 
-    public bool UDPBroadcast { get; set; }
-    public bool VerboseExceptionLogging { get; set; }
-    public bool WhitelistEnabled { get; set; }
-    public bool IpWhitelistEnabled { get; set; }
-    public HashSet<string> IpWhitelist { get; set; }
-    public List<WhitelistedPlayer> UserWhitelist { get; set; }
-    public int PregenerateChunkRange { get; set; }
-    public int TimeTickSpeedMultiplier { get; set; }
-
 }

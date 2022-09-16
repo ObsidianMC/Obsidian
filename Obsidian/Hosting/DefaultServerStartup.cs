@@ -6,10 +6,10 @@ namespace Obsidian.Hosting;
 public sealed class DefaultServerEnvironment : IServerEnvironment
 {
     public bool ServerShutdownStopsProgram { get; } = true;
-    public IServerConfiguration Configuration { get; }
+    public ServerConfiguration Configuration { get; }
     public List<ServerWorld> ServerWorlds { get; }
 
-    private DefaultServerEnvironment(bool serverShutdownStopsProgram, IServerConfiguration configuration, List<ServerWorld> serverWorlds)
+    private DefaultServerEnvironment(bool serverShutdownStopsProgram, ServerConfiguration configuration, List<ServerWorld> serverWorlds)
     {
         ServerShutdownStopsProgram = serverShutdownStopsProgram;
         Configuration = configuration;
@@ -39,7 +39,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         return new DefaultServerEnvironment(true, config, worlds);
     }
 
-    private static async Task<IServerConfiguration> LoadServerConfiguration()
+    private static async Task<ServerConfiguration> LoadServerConfiguration()
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");

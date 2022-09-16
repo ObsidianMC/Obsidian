@@ -269,7 +269,7 @@ public class MainCommandModule
         var server = (Server)ctx.Server;
         var player = ctx.Player;
 
-        if (!server.Configuration.AllowOperatorRequests)
+        if (!server.ServerConfig.AllowOperatorRequests)
         {
             await player.SendMessageAsync("§cOperator requests are disabled on this server.");
             return;

@@ -9,9 +9,9 @@ namespace Obsidian.ConsoleApp;
 
 public static partial class Program
 {
-    private static async Task Main(params string[] args)
+    private static async Task Main()
     {
-        Console.Title = "Obsidian";
+        Console.Title = $"Obsidian {Server.VERSION}";
         Console.BackgroundColor = ConsoleColor.White;
         Console.ForegroundColor = ConsoleColor.Black;
         Console.CursorVisible = false;
