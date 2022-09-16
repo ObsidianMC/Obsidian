@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Obsidian.Commands.Framework;
+using Obsidian.Net.Rcon;
 using Obsidian.WorldData;
 using System.ComponentModel.Design;
 
@@ -13,6 +14,9 @@ public static class DependencyInjection
 
         services.AddSingleton<WorldManager>();
         services.AddSingleton<CommandHandler>();
+        services.AddSingleton<RconServer>();
+        services.AddSingleton<Server>();
+        services.AddSingleton<IServer>(f => f.GetRequiredService<Server>());
         services.AddHostedService<ObsidianHostingService>();
         return services;
     }

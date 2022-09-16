@@ -7,9 +7,8 @@ namespace Obsidian.WorldData;
 
 public sealed class WorldManager
 {
-    private readonly ILogger logger;
+    private readonly ILogger _logger;
     private readonly IServerEnvironment _env;
-    private readonly Server server;
     private readonly Dictionary<string, World> worlds = new();
 
     public int GeneratingChunkCount => worlds.SelectMany(pair => pair.Value.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
@@ -18,30 +17,29 @@ public sealed class WorldManager
 
     public int LoadedChunkCount => worlds.Sum(pair => pair.Value.Regions.Sum(x => x.Value.LoadedChunkCount));
 
-    public World DefaultWorld { get; private set; }
+    public World? DefaultWorld { get; private set; }
 
-    public WorldManager(Server server, ILogger<WorldManager> logger, IServerEnvironment env)
+    public WorldManager(ILogger<WorldManager> logger, IServerEnvironment env)
     {
-        this.server = server;
-        this.logger = logger;
-        this._env = env;
+        _logger = logger;
+        _env = env;
     }
 
-    public async Task LoadWorldsAsync()
+    public async Task LoadWorldsAsync(Server server)
     {
         foreach (var serverWorld in _env.ServerWorlds)
         {
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
-                logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
+                _logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
 
-            var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
+            var world = new World(serverWorld.Name, server, serverWorld.Seed, value);
 
             if (!Registry.TryGetDimensionCodec(serverWorld.DefaultDimension, out var defaultCodec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out defaultCodec))
                 throw new InvalidOperationException("Failed to get default dimension codec.");
 
             if (!await world.LoadAsync(defaultCodec))
             {
-                logger.LogInformation($"Creating new world: {serverWorld.Name}...");
+                _logger.LogInformation($"Creating new world: {serverWorld.Name}...");
 
                 world.Init(defaultCodec);
 
@@ -50,7 +48,7 @@ public sealed class WorldManager
                 {
                     if (!Registry.TryGetDimensionCodec(dimensionName, out var codec))
                     {
-                        this.server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
+                        server.Logger.LogWarning($"Failed to find dimension with the name {dimensionName}");
                         continue;
                     }
 

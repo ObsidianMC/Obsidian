@@ -49,7 +49,7 @@ public sealed partial class Server : IServer
     public Dictionary<string, Type> WorldGenerators { get; } = new();
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-    public IServerConfiguration? Configuration { get; private set; }
+    public IServerConfiguration Configuration { get; }
     public ILogger Logger { get; }
     public string ServerFolderPath { get; }
     public string PersistentDataPath { get; private set; }
@@ -63,12 +63,12 @@ public sealed partial class Server : IServer
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
+    private readonly IServiceProvider _provider;
     private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
     private readonly CancellationTokenSource _cancelTokenSource;
     private readonly IServerEnvironment _environment;
-    private readonly RconServer _rconServer;
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -79,9 +79,9 @@ public sealed partial class Server : IServer
         ILogger<Server> logger,
         CancellationToken cToken = default)
     {
+        _provider = provider;
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cToken);
         _environment = provider.GetRequiredService<IServerEnvironment>();
-        _rconServer = provider.GetRequiredService<RconServer>();
 
         CommandsHandler = provider.GetRequiredService<CommandHandler>();
         WorldManager = provider.GetRequiredService<WorldManager>();
@@ -248,7 +248,9 @@ public sealed partial class Server : IServer
 
         Logger.LogInformation($"Loading properties...");
 
-        await (Operators as OperatorList).InitializeAsync();
+        if (Operators is OperatorList oplist) 
+            await oplist.InitializeAsync();
+
         RegisterDefaults();
 
         ScoreboardManager = new ScoreboardManager(this);
@@ -256,12 +258,12 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
-        PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+        // PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+        // PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
-        await WorldManager.LoadWorldsAsync();
+        await WorldManager.LoadWorldsAsync(this);
 
         if (!Configuration.OnlineMode)
             Logger.LogInformation($"Starting in offline mode...");
@@ -272,9 +274,14 @@ public sealed partial class Server : IServer
         {
             AcceptClientsAsync(),
             LoopAsync(),
-            ServerSaveAsync(),
-            Configuration.EnableRcon ? _rconServer.RunAsync(this, CancelToken) : Task.CompletedTask
+            ServerSaveAsync()
         };
+
+        if (Configuration.EnableRcon)
+        {
+            var rconServer = _provider.GetRequiredService<RconServer>();
+            serverTasks.Add(rconServer.RunAsync(this, CancelToken));
+        }
 
         loadTimeStopwatch.Stop();
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");

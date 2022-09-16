@@ -8,6 +8,8 @@ public interface IServer
     public string Version { get; }
     public int Port { get; }
     public int Tps { get; }
+
+
     public DateTimeOffset StartTime { get; }
     public ProtocolVersion Protocol { get; }
     public IEnumerable<IPlayer> Players { get; }

@@ -28,6 +28,7 @@ public static partial class Program
             })
             .ConfigureLogging(options =>
             {
+                options.ClearProviders();
                 options.AddProvider(new LoggerProvider());  
                 //  Shhh... Only let Microsoft log when stuff crashes.
                 options.AddFilter("Microsoft", LogLevel.Critical);
