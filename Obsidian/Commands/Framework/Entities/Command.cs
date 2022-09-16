@@ -1,6 +1,7 @@
 ﻿using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Obsidian.Commands.Framework.Entities;
 
@@ -157,7 +158,11 @@ public class Command
             {
                 // A check failed.
                 // TODO: Tell user what arg failed?
-                throw new CommandExecutionCheckException($"One or more execution checks failed.");
+                throw c switch
+                {
+                    RequirePermissionAttribute r => new NoPermissionException(r.RequiredPermissions, r.CheckType),
+                    _ => new CommandExecutionCheckException($"One or more execution checks failed."),
+                };
             }
         }
 
