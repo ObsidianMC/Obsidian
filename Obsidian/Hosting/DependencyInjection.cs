@@ -1,23 +1,19 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Obsidian.Commands.Framework;
+using Obsidian.WorldData;
+using System.ComponentModel.Design;
 
 namespace Obsidian.Hosting;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddObsidian(this IServiceCollection services, IServerSetup setup)
+    public static IServiceCollection AddObsidian(this IServiceCollection services, IServerEnvironment env)
     {
-        services.AddSingleton(setup);
+        services.AddSingleton(env);
+        services.AddSingleton(env.Configuration);
+
+        services.AddSingleton<WorldManager>();
+        services.AddSingleton<CommandHandler>();
         services.AddHostedService<ObsidianHostingService>();
         return services;
-    }
-
-    public static IServiceCollection AddObsidian<T>(this IServiceCollection services) where T : class, IServerSetup, new()
-    {
-        var setup = Activator.CreateInstance<T>();
-        return AddObsidian(services, setup);
-    }
-
-    public static IServiceCollection AddObsidian(this IServiceCollection services)
-    {
-        return AddObsidian<DefaultServerStartup>(services);
     }
 }

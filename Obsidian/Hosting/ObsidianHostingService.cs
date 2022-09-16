@@ -5,22 +5,18 @@ namespace Obsidian.Hosting;
 internal sealed class ObsidianHostingService : BackgroundService
 {
     private readonly IHostApplicationLifetime _lifetime;
-    private readonly IServerSetup _setup;
+    private readonly IServerEnvironment _setup;
+    private readonly Server _server;
 
-    public ObsidianHostingService(IHostApplicationLifetime lifetime, IServerSetup setup)
+    public ObsidianHostingService(IHostApplicationLifetime lifetime, Server server)
     {
-        _setup = setup;
+        _server = server;
         _lifetime = lifetime;
     }
 
     protected async override Task ExecuteAsync(CancellationToken cToken)
     {
-        var config = await _setup.LoadServerConfiguration(cToken);
-        var worlds = await _setup.LoadServerWorlds(cToken);
-        var server = new Server(config, worlds);
-
-        _ = Task.Run(() => _setup.ProvideServerCommands(server, cToken), cToken);
-        await server.RunAsync();
+        await _server.RunAsync();
 
         if (_setup.ServerShutdownStopsProgram)
             _lifetime.StopApplication();

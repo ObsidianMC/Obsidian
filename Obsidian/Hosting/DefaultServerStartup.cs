@@ -3,11 +3,43 @@ using System.Threading;
 
 namespace Obsidian.Hosting;
 
-public class DefaultServerStartup : IServerSetup
+public sealed class DefaultServerEnvironment : IServerEnvironment
 {
-    public virtual bool ServerShutdownStopsProgram { get; } = true;
+    public bool ServerShutdownStopsProgram { get; } = true;
+    public IServerConfiguration Configuration { get; }
+    public List<ServerWorld> ServerWorlds { get; }
 
-    public virtual async Task<IServerConfiguration> LoadServerConfiguration(CancellationToken cToken)
+    private DefaultServerEnvironment(bool serverShutdownStopsProgram, IServerConfiguration configuration, List<ServerWorld> serverWorlds)
+    {
+        ServerShutdownStopsProgram = serverShutdownStopsProgram;
+        Configuration = configuration;
+        ServerWorlds = serverWorlds;
+    }
+
+    /// <summary>
+    /// Provide server commands using the Console.
+    /// </summary>
+    /// <param name="server"></param>
+    /// <param name="cToken"></param>
+    /// <returns></returns>
+    public async Task ProvideServerCommands(Server server, CancellationToken cToken)
+    {
+        while (!cToken.IsCancellationRequested)
+        {
+            var input = Console.ReadLine();
+            if (input == null) continue;
+            await server.ExecuteCommand(input);
+        }
+    }
+
+    public static async Task<DefaultServerEnvironment> Create()
+    {
+        var config = await LoadServerConfiguration();
+        var worlds = await LoadServerWorlds();
+        return new DefaultServerEnvironment(true, config, worlds);
+    }
+
+    private static async Task<IServerConfiguration> LoadServerConfiguration()
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -17,7 +49,7 @@ public class DefaultServerStartup : IServerSetup
         if (configFile.Exists)
         {
             using var configFileStream = configFile.OpenRead();
-            var c = await configFileStream.FromJsonAsync<ServerConfiguration>(cancellationToken: cToken);
+            var c = await configFileStream.FromJsonAsync<ServerConfiguration>();
             return c ?? throw new Exception("Server config file exists, but is invalid. Is it corrupt?");
         }
 
@@ -25,7 +57,7 @@ public class DefaultServerStartup : IServerSetup
 
         using var fs = configFile.Create();
 
-        await config.ToJsonAsync(fs, cancellationToken: cToken);
+        await config.ToJsonAsync(fs);
 
         Console.WriteLine($"Created new configuration file for Server");
         Console.WriteLine($"Please fill in your config with the values you wish to use for your server.\n");
@@ -36,7 +68,7 @@ public class DefaultServerStartup : IServerSetup
         Environment.Exit(0);
         throw new Exception("Unreachable?");
     }
-    public virtual async Task<List<ServerWorld>> LoadServerWorlds(CancellationToken cToken)
+    private static async Task<List<ServerWorld>> LoadServerWorlds()
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -46,7 +78,7 @@ public class DefaultServerStartup : IServerSetup
         if (worldsFile.Exists)
         {
             using var worldsFileStream = worldsFile.OpenRead();
-            var w = await worldsFileStream.FromJsonAsync<List<ServerWorld>>(cancellationToken: cToken);
+            var w = await worldsFileStream.FromJsonAsync<List<ServerWorld>>();
             return w ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
         }
 
@@ -64,24 +96,10 @@ public class DefaultServerStartup : IServerSetup
 
         using var fs = worldsFile.Create();
 
-        await worlds.ToJsonAsync(fs, cancellationToken: cToken);
+        await worlds.ToJsonAsync(fs);
 
         return worlds;
     }
-    /// <summary>
-    /// Provide server commands using the Console.
-    /// </summary>
-    /// <param name="server"></param>
-    /// <param name="cToken"></param>
-    /// <returns></returns>
-    public virtual async Task ProvideServerCommands(Server server, CancellationToken cToken)
-    {
-        while (!cToken.IsCancellationRequested)
-        {
-            var input = Console.ReadLine();
-            if (input == null) continue;
-            await server.ExecuteCommand(input);
-        }
-    }
+
 }
 

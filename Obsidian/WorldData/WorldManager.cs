@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.Hosting;
 using Obsidian.Utilities.Registry;
 using System.Diagnostics.CodeAnalysis;
 
@@ -7,9 +8,9 @@ namespace Obsidian.WorldData;
 public sealed class WorldManager
 {
     private readonly ILogger logger;
+    private readonly IServerEnvironment _env;
     private readonly Server server;
     private readonly Dictionary<string, World> worlds = new();
-    private readonly List<ServerWorld> serverWorlds;
 
     public int GeneratingChunkCount => worlds.SelectMany(pair => pair.Value.Regions.Where(r => r.Value is not null)).Sum(r => r.Value.LoadedChunkCount);
 
@@ -19,16 +20,16 @@ public sealed class WorldManager
 
     public World DefaultWorld { get; private set; }
 
-    public WorldManager(Server server, ILogger logger, List<ServerWorld> serverWorlds)
+    public WorldManager(Server server, ILogger<WorldManager> logger, IServerEnvironment env)
     {
         this.server = server;
         this.logger = logger;
-        this.serverWorlds = serverWorlds;
+        this._env = env;
     }
 
     public async Task LoadWorldsAsync()
     {
-        foreach (var serverWorld in this.serverWorlds)
+        foreach (var serverWorld in _env.ServerWorlds)
         {
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {serverWorld.Generator}");

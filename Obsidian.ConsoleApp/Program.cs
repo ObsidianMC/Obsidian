@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Obsidian.Hosting;
+using Obsidian.Logging;
 using Obsidian.Utilities;
 
 namespace Obsidian.ConsoleApp;
@@ -18,13 +19,16 @@ public static partial class Program
         Console.ResetColor();
         Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
 
+        var env = await DefaultServerEnvironment.Create();
+
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddObsidian();
+                services.AddObsidian(env);
             })
             .ConfigureLogging(options =>
             {
+                options.AddProvider(new LoggerProvider());  
                 //  Shhh... Only let Microsoft log when stuff crashes.
                 options.AddFilter("Microsoft", LogLevel.Critical);
             })

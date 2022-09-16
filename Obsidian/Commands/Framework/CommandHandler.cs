@@ -1,4 +1,5 @@
-﻿using Obsidian.API.Plugins;
+﻿using Microsoft.Extensions.Logging;
+using Obsidian.API.Plugins;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Commands.Framework.Exceptions;
 using Obsidian.Plugins;
@@ -6,10 +7,12 @@ using System.Reflection;
 
 namespace Obsidian.Commands.Framework;
 
-public class CommandHandler
+public sealed class CommandHandler
 {
     public static readonly string DefaultPrefix = "/";
     private static readonly CommandIssuers DefaultIssuerScope = CommandIssuers.Any;
+
+    private readonly ILogger<CommandHandler> _logger;
 
     internal List<Command> _commands;
     internal CommandParser _commandParser;
@@ -17,15 +20,17 @@ public class CommandHandler
     internal string _prefix;
     internal PluginManager pluginManager;
 
-    public CommandHandler(string prefix)
+    public CommandHandler(ILogger<CommandHandler> logger)
     {
-        this._commandParser = new CommandParser(prefix);
-        this._commands = new List<Command>();
-        this._argumentParsers = new List<BaseArgumentParser>();
-        this._prefix = prefix;
+        _logger = logger;
+        _commandParser = new CommandParser(DefaultPrefix);
+        _commands = new List<Command>();
+        _argumentParsers = new List<BaseArgumentParser>();
+        _prefix = DefaultPrefix;
 
         // Find all predefined argument parsers
-        var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
+        var parsers = typeof(StringArgumentParser).Assembly.GetTypes()
+            .Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
 
         foreach (var parser in parsers)
         {

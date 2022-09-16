@@ -42,7 +42,6 @@ public class RconConnection
     private ICryptoTransform? encryptor;
     private ICryptoTransform? decryptor;
 
-    private readonly IServer server;
     private readonly CommandHandler commandHandler;
     private readonly string password;
     private readonly DHParameters? dhParameters;
@@ -57,17 +56,14 @@ public class RconConnection
         this.cancellationToken = cancellationToken;
         networkStream = conn.GetStream();
 
-        server = initData.Server;
         commandHandler = initData.CommandHandler;
         password = initData.Password;
         dhParameters = initData.DhParameters;
         keyPair = initData.KeyPair;
         requireEncryption = initData.RequireEncryption;
-
-        _ = Task.Run(ReceiveLoop, cancellationToken);
     }
 
-    private async Task ReceiveLoop()
+    internal async Task ReceiveLoop(IServer server)
     {
         while (!cancellationToken.IsCancellationRequested)
             try

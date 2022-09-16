@@ -26,7 +26,7 @@ public class RconServer
 
     private readonly InitData initData;
 
-    public RconServer(ILogger logger, IServerConfiguration config, IServer server, CommandHandler commandHandler)
+    public RconServer(ILogger<RconServer> logger, IServerConfiguration config, CommandHandler commandHandler)
     {
         this.logger = logger;
         var password = config.Rcon?.Password ?? throw new NullReferenceException("Null RCON config was passed");
@@ -46,12 +46,12 @@ public class RconServer
 
         logger.LogInformation("Done");
 
-        initData = new InitData(server, commandHandler, password, config.Rcon.RequireEncryption, dhParameters, keyPair);
+        initData = new InitData( commandHandler, password, config.Rcon.RequireEncryption, dhParameters, keyPair);
 
         listener = TcpListener.Create(config.Rcon.Port);
     }
 
-    public async Task RunAsync(CancellationToken token)
+    public async Task RunAsync(IServer server, CancellationToken token)
     {
         _ = Task.Run(async () =>
         {
@@ -76,7 +76,9 @@ public class RconServer
             {
                 var conn = await listener.AcceptTcpClientAsync(token);
                 logger.LogInformation("Accepting RCON connection ID {ConnectionId} from {RemoteAddress}", ++connectionId, conn.Client.RemoteEndPoint as IPEndPoint);
-                connections.Add(new RconConnection(connectionId, conn, logger, initData, token));
+                var con = new RconConnection(connectionId, conn, logger, initData, token);
+                connections.Add(con);
+                _ = Task.Run(() => con.ReceiveLoop(server), token);
             }
             catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
             {
@@ -88,6 +90,6 @@ public class RconServer
     }
 
     public record InitData(
-        IServer Server, CommandHandler CommandHandler, string Password, bool RequireEncryption,
+        CommandHandler CommandHandler, string Password, bool RequireEncryption,
         DHParameters? DhParameters, AsymmetricCipherKeyPair? KeyPair);
 }

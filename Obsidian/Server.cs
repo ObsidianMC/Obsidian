@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Boss;
 using Obsidian.API.Crafting;
@@ -9,13 +11,13 @@ using Obsidian.Commands.Parsers;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
-using Obsidian.Logging;
+using Obsidian.Hosting;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Debugging;
+using Obsidian.Utilities;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
@@ -47,14 +49,13 @@ public sealed partial class Server : IServer
     public Dictionary<string, Type> WorldGenerators { get; } = new();
     public HashSet<string> RegisteredChannels { get; } = new();
     public CommandHandler CommandsHandler { get; }
-    public IServerConfiguration Configuration { get; }
+    public IServerConfiguration? Configuration { get; private set; }
     public ILogger Logger { get; }
-    public LoggerProvider LoggerProvider { get; }
     public string ServerFolderPath { get; }
-    public string PersistentDataPath { get; }
+    public string PersistentDataPath { get; private set; }
     public string Brand { get; } = "obsidian";
     public string Version => VERSION;
-    public int Port { get; }
+    public int Port { get; private set; }
     public WorldManager WorldManager { get; private set; }
     public IWorld DefaultWorld => WorldManager.DefaultWorld;
     public IEnumerable<IPlayer> Players => GetPlayers();
@@ -66,35 +67,37 @@ public sealed partial class Server : IServer
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
     private readonly CancellationTokenSource _cancelTokenSource;
-    private RconServer? rconServer;
+    private readonly IServerEnvironment _environment;
+    private readonly RconServer _rconServer;
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     /// <param name="cToken">Cancelling this token will stop the server.</param>
-    public Server(IServerConfiguration configuration, List<ServerWorld> serverWorlds, CancellationToken cToken = default)
+    public Server(
+        IServiceProvider provider,
+        ILogger<Server> logger,
+        CancellationToken cToken = default)
     {
         _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cToken);
-        Configuration = configuration;
+        _environment = provider.GetRequiredService<IServerEnvironment>();
+        _rconServer = provider.GetRequiredService<RconServer>();
+
+        CommandsHandler = provider.GetRequiredService<CommandHandler>();
+        WorldManager = provider.GetRequiredService<WorldManager>();
+        Configuration = provider.GetRequiredService<IServerConfiguration>();
+        Logger = logger;
+
         Port = Configuration.Port;
+
         // Currently not used. Defaults to current directory.
         ServerFolderPath = Environment.CurrentDirectory;
-
         tcpListener = new TcpListener(IPAddress.Any, Port);
-
         Operators = new OperatorList(this);
 
-        LoggerProvider = new LoggerProvider(Configuration.LogLevel);
-        Logger = LoggerProvider.CreateLogger($"Server");
-        // This stuff down here needs to be looked into
-        Globals.PacketLogger = this.LoggerProvider.CreateLogger("Packets");
-        PacketDebug.Logger = this.LoggerProvider.CreateLogger("PacketDebug");
-        Registry.Logger = this.LoggerProvider.CreateLogger("Registry");
-
-        Logger.LogDebug("Initializing command handler...");
-        CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
-        PluginManager = new PluginManager(Events, this, LoggerProvider.CreateLogger("Plugin Manager"), CommandsHandler);
-        CommandsHandler.LinkPluginManager(PluginManager);
+        // TODO: Rewrite plugins to work with DI.
+        // PluginManager = new PluginManager(Events, this, CommandsHandler);
+        // CommandsHandler.LinkPluginManager(PluginManager);
 
         Logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass(null, new MainCommandModule());
@@ -106,8 +109,6 @@ public sealed partial class Server : IServer
         Logger.LogDebug("Registering command context type...");
         Logger.LogDebug("Done registering commands.");
 
-        WorldManager = new WorldManager(this, Logger, serverWorlds);
-
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
         Events.PlayerAttackEntity += PlayerAttack;
@@ -118,6 +119,7 @@ public sealed partial class Server : IServer
         Directory.CreateDirectory(PermissionPath);
         Directory.CreateDirectory(PersistentDataPath);
     }
+
 
     public void RegisterCommandClass<T>(PluginContainer plugin, T instance) =>
         CommandsHandler.RegisterCommandClass<T>(plugin, instance);
@@ -204,6 +206,11 @@ public sealed partial class Server : IServer
     /// </summary>
     public async Task RunAsync()
     {
+        _ = Task.Run(() =>
+        {
+            _environment.ProvideServerCommands(this, CancelToken);
+        }, CancelToken);
+
         if (Configuration.UDPBroadcast)
         {
             _ = Task.Run(async () =>
@@ -261,22 +268,21 @@ public sealed partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
-        if (Configuration.EnableRcon)
+        var serverTasks = new List<Task>()
         {
-            rconServer = new RconServer(LoggerProvider.CreateLogger("RCON"), Configuration, this, CommandsHandler);
-        }
+            AcceptClientsAsync(),
+            LoopAsync(),
+            ServerSaveAsync(),
+            Configuration.EnableRcon ? _rconServer.RunAsync(this, CancelToken) : Task.CompletedTask
+        };
 
         loadTimeStopwatch.Stop();
         Logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
-
         Logger.LogInformation($"Listening for new clients...");
+
         try
         {
-            await Task.WhenAll(
-                AcceptClientsAsync(),
-                LoopAsync(), 
-                ServerSaveAsync(), 
-                rconServer?.RunAsync(CancelToken) ?? Task.CompletedTask);
+            await Task.WhenAll(serverTasks);
         }
         catch (TaskCanceledException)
         {

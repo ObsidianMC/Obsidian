@@ -111,4 +111,8 @@
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Plugins\Services\" />
+	</ItemGroup>
 </Project>
