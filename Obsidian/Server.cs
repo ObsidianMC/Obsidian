@@ -95,9 +95,8 @@ public sealed partial class Server : IServer
         tcpListener = new TcpListener(IPAddress.Any, Port);
         Operators = new OperatorList(this);
 
-        // TODO: Rewrite plugins to work with DI.
-        // PluginManager = new PluginManager(Events, this, CommandsHandler);
-        // CommandsHandler.LinkPluginManager(PluginManager);
+        PluginManager = new PluginManager(Events, this, CommandsHandler);
+        CommandsHandler.LinkPluginManager(PluginManager);
 
         Logger.LogDebug("Registering commands...");
         CommandsHandler.RegisterCommandClass(null, new MainCommandModule());
@@ -258,8 +257,8 @@ public sealed partial class Server : IServer
 
         Directory.CreateDirectory(Path.Join(ServerFolderPath, "plugins"));
 
-        // PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
-        // PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
+        PluginManager.DirectoryWatcher.Filters = new[] { ".cs", ".dll" };
+        PluginManager.DirectoryWatcher.Watch(Path.Join(ServerFolderPath, "plugins"));
 
         await Task.WhenAll(Configuration.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
