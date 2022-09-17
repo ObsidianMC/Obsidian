@@ -13,7 +13,7 @@ public interface IServer
     public IEnumerable<IPlayer> Players { get; }
     public IOperatorList Operators { get; }
     public IWorld DefaultWorld { get; }
-    public IConfig Configuration { get; }
+    public IServerConfiguration Configuration { get; }
 
     public IScoreboardManager ScoreboardManager { get; }
 

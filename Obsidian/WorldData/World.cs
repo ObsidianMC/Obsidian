@@ -368,7 +368,7 @@ public class World : IWorld
 
         if (worldFile.Exists)
         {
-            worldFile.CopyTo($"{this.LevelDataFilePath}.old");
+            worldFile.CopyTo($"{this.LevelDataFilePath}.old", true);
             worldFile.Delete();
         }
 
@@ -432,7 +432,7 @@ public class World : IWorld
         var region = new Region(regionX, regionZ, this.FolderPath);
         if (await region.InitAsync())
         {
-            _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
+            _ = Task.Run(() => region.BeginTickAsync(this.Server._cts.Token));
             this.Regions[value] = region;
         }
         return this.Regions[value];
