@@ -33,7 +33,7 @@ public sealed class WorldManager
             if (!server.WorldGenerators.TryGetValue(serverWorld.Generator, out var value))
                 logger.LogWarning($"Unknown generator type {serverWorld.Generator}");
 
-            var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value);
+            var world = new World(serverWorld.Name, this.server, serverWorld.Seed, value, server.NbtCompressionMode);
 
             if (!Registry.TryGetDimensionCodec(serverWorld.DefaultDimension, out var defaultCodec) || !Registry.TryGetDimensionCodec("minecraft:overworld", out defaultCodec))
                 throw new InvalidOperationException("Failed to get default dimension codec.");

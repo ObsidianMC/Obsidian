@@ -102,7 +102,9 @@ public class Player : Living, IPlayer
 
     public IPAddress? ClientIP => (client.RemoteEndPoint as IPEndPoint)?.Address;
 
-    internal Player(Guid uuid, string username, Client client, World world)
+    public NbtCompression NbtCompressionMode { get; set; } = NbtCompression.GZip;
+
+    internal Player(Guid uuid, string username, Client client, World world, NbtCompression nbtCompression = NbtCompression.GZip)
     {
         this.Uuid = uuid;
         this.Username = username;
@@ -124,6 +126,8 @@ public class Player : Living, IPlayer
 
         this.PersistentDataFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat");
         this.PersistentDataBackupFile = Path.Join(this.server.PersistentDataPath, $"{this.Uuid}.dat.old");
+
+        this.NbtCompressionMode = nbtCompression;
     }
 
     public ItemStack GetHeldItem() => this.Inventory.GetItem(this.inventorySlot);
@@ -558,7 +562,7 @@ public class Player : Living, IPlayer
         }
 
         await using var persistentDataStream = persistentDataFile.Create();
-        await using var persistentDataWriter = new NbtWriter(persistentDataStream, NbtCompression.GZip, "");
+        await using var persistentDataWriter = new NbtWriter(persistentDataStream, this.NbtCompressionMode, "");
 
         persistentDataWriter.WriteString("worldName", this.World.ParentWorldName ?? this.World.Name);
         //TODO make sure to save inventory in the right location if has using global data set to true
@@ -567,7 +571,7 @@ public class Player : Living, IPlayer
         await persistentDataWriter.TryFinishAsync();
 
         await using var playerFileStream = playerDataFile.Create();
-        await using var writer = new NbtWriter(playerFileStream, NbtCompression.GZip, "");
+        await using var writer = new NbtWriter(playerFileStream, this.NbtCompressionMode, "");
 
         writer.WriteInt("DataVersion", 2724);
         writer.WriteInt("playerGameType", (int)this.Gamemode);
@@ -618,7 +622,7 @@ public class Player : Living, IPlayer
         {
             await using var persistentDataStream = persistentDataFile.OpenRead();
 
-            var persistentDataReader = new NbtReader(persistentDataStream, NbtCompression.GZip);
+            var persistentDataReader = new NbtReader(persistentDataStream, this.NbtCompressionMode);
 
             //TODO use inventory if has using global data set to true
             if (persistentDataReader.ReadNextTag() is NbtCompound persistentDataCompound)
@@ -648,7 +652,7 @@ public class Player : Living, IPlayer
 
         await using var playerFileStream = playerDataFile.OpenRead();
 
-        var reader = new NbtReader(playerFileStream, NbtCompression.GZip);
+        var reader = new NbtReader(playerFileStream, this.NbtCompressionMode);
 
         var compound = reader.ReadNextTag() as NbtCompound;
 

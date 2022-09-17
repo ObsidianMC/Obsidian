@@ -47,7 +47,9 @@ public class World : IWorld
     public string? ParentWorldName { get; private set; }
     private WorldLight worldLight;
 
-    internal World(string name, Server server, string seed, Type generatorType)
+    public NbtCompression NbtCompressionMode = NbtCompression.GZip;
+
+    internal World(string name, Server server, string seed, Type generatorType, NbtCompression nbtCompression = NbtCompression.GZip)
     {
         this.Name = name ?? throw new ArgumentNullException(nameof(name));
         this.Server = server;
@@ -57,6 +59,8 @@ public class World : IWorld
         this.Generator = (IWorldGenerator)Activator.CreateInstance(generatorType);
         Generator.Init(this);
         worldLight = new(this);
+
+        this.NbtCompressionMode = nbtCompression;
     }
 
     public int GetTotalLoadedEntities() => this.Regions.Values.Sum(e => e == null ? 0 : e.Entities.Count);
@@ -312,7 +316,7 @@ public class World : IWorld
         if (!fi.Exists)
             return false;
 
-        var reader = new NbtReader(fi.OpenRead(), NbtCompression.GZip);
+        var reader = new NbtReader(fi.OpenRead(), this.NbtCompressionMode);
 
         var levelCompound = reader.ReadNextTag() as NbtCompound;
         this.LevelData = new Level()
@@ -368,12 +372,12 @@ public class World : IWorld
 
         if (worldFile.Exists)
         {
-            worldFile.CopyTo($"{this.LevelDataFilePath}.old");
+            worldFile.CopyTo($"{this.LevelDataFilePath}.old", true);
             worldFile.Delete();
         }
 
         using var fs = worldFile.Create();
-        using var writer = new NbtWriter(fs, NbtCompression.GZip, "");
+        using var writer = new NbtWriter(fs, this.NbtCompressionMode, "");
 
         writer.WriteBool("hardcore", this.LevelData.Hardcore);
         writer.WriteBool("MapFeatures", this.LevelData.MapFeatures);
@@ -429,7 +433,7 @@ public class World : IWorld
             }
         }
 
-        var region = new Region(regionX, regionZ, this.FolderPath);
+        var region = new Region(regionX, regionZ, this.FolderPath, this.NbtCompressionMode);
         if (await region.InitAsync())
         {
             _ = Task.Run(() => region.BeginTickAsync(this.Server.cts.Token));
@@ -596,7 +600,7 @@ public class World : IWorld
         if (!this.Server.WorldGenerators.TryGetValue(worldGeneratorId ?? codec.Name.TrimResourceTag(true), out var generatorType))
             throw new ArgumentException($"Failed to find generator with id: {worldGeneratorId}.");
 
-        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType);
+        var dimensionWorld = new World(codec.Name.TrimResourceTag(true), this.Server, this.Seed, generatorType, this.Server.NbtCompressionMode);
 
         dimensionWorld.Init(codec, this.Name);
 

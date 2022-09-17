@@ -10,6 +10,7 @@ using Obsidian.Concurrency;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Logging;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
@@ -73,6 +74,8 @@ public partial class Server : IServer
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
 
+    public NbtCompression NbtCompressionMode = NbtCompression.GZip;
+
     internal readonly CancellationTokenSource cts = new();
 
     /// <summary>
@@ -112,6 +115,8 @@ public partial class Server : IServer
 
         Logger.LogDebug("Registering command context type...");
         Logger.LogDebug("Done registering commands.");
+
+        this.NbtCompressionMode = config.NbtCompressionMode;
 
         WorldManager = new WorldManager(this, Logger, serverWorlds);
 
