@@ -27,6 +27,7 @@ internal sealed class ObsidianHostingService : BackgroundService
         try
         {
             await _server.RunAsync();
+            _logger.LogInformation("Goodbye :)");
         }
         catch (Exception e)
         {

@@ -16,7 +16,6 @@ using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Net.Rcon;
 using Obsidian.Plugins;
-using Obsidian.Utilities.Debugging;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
 using Obsidian.WorldData.Generators;
@@ -73,7 +72,6 @@ public partial class Server : IServer
     private readonly TcpListener tcpListener;
     private readonly RconServer _rconServer;
     internal readonly CancellationTokenSource _cts;
-    private readonly IServerEnvironment _env;
     private readonly ILogger _logger;
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
@@ -84,13 +82,13 @@ public partial class Server : IServer
     public Server(
         IHostApplicationLifetime lifetime, 
         IServerEnvironment env,
-        RconServer rconServer,
-        ILogger<Server> logger)
+        ILogger<Server> logger,
+        RconServer rconServer)
     {
         // Create a tokensource that cancels when the generic host is stopping.
         _logger = logger;
+
         _cts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
-        _env = env;
         _rconServer = rconServer;
         Config = env.Configuration;
 
@@ -103,6 +101,7 @@ public partial class Server : IServer
 
         _logger.LogDebug("Initializing command handler...");
         CommandsHandler = new CommandHandler();
+
         PluginManager = new PluginManager(Events, this, _logger, CommandsHandler);
         CommandsHandler.LinkPluginManager(PluginManager);
 
@@ -280,7 +279,7 @@ public partial class Server : IServer
         };
 
         if (Configuration.EnableRcon)
-            serverTasks.Add(_rconServer.RunAsync(_cts.Token));
+            serverTasks.Add(_rconServer.RunAsync(this, _cts.Token));
         
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
@@ -305,18 +304,23 @@ public partial class Server : IServer
             {
                 socket = await tcpListener.AcceptSocketAsync(_cts.Token);
             }
+            catch (OperationCanceledException)
+            {
+                // No longer accepting clients.
+                break;
+            }
             catch (Exception e)
             {
                 _logger.LogError(e, "Listening for clients encountered an exception");
                 break;
             }
 
-            _logger.LogDebug($"New connection from client with IP {socket.RemoteEndPoint}");
+            _logger.LogDebug("New connection from client with IP {ip}", socket.RemoteEndPoint);
 
             string ip = ((IPEndPoint)socket.RemoteEndPoint!).Address.ToString();
             if (Config.IpWhitelistEnabled && !Config.WhitelistedIPs.Contains(ip))
             {
-                _logger.LogInformation($"{ip} is not whitelisted. Closing connection");
+                _logger.LogInformation("{ip} is not whitelisted. Closing connection", ip);
                 socket.Disconnect(false);
                 return;
             }
@@ -337,6 +341,9 @@ public partial class Server : IServer
 
             _ = Task.Run(client.StartConnectionAsync);
         }
+
+        _logger.LogInformation("No longer accepting new clients");
+        tcpListener.Stop();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -604,7 +611,16 @@ public partial class Server : IServer
     {
         while (!_cts.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromMinutes(5), _cts.Token);
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(5), _cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelled while waiting, don't loop anymore.
+                break;
+            }
+            _logger.LogInformation("Saving world...");
             await WorldManager.FlushLoadedWorldsAsync();
         }
     }
@@ -616,47 +632,57 @@ public partial class Server : IServer
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
         var timer = new BalancingTimer(50, _cts.Token);
-        while (await timer.WaitForNextTickAsync())
+
+        try
         {
-            await Events.InvokeServerTickAsync();
-
-            keepAliveTicks++;
-            if (keepAliveTicks > 50)
+            while (await timer.WaitForNextTickAsync())
             {
-                var keepAliveId = DateTime.Now.Millisecond;
+                await Events.InvokeServerTickAsync();
 
-                foreach (var client in clients.Where(x => x.State == ClientState.Play))
-                    client.ProcessKeepAlive(keepAliveId);
-
-                keepAliveTicks = 0;
-            }
-
-            if (Config.Baah.HasValue)
-            {
-                foreach (Player player in Players)
+                keepAliveTicks++;
+                if (keepAliveTicks > 50)
                 {
-                    var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
-                    await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
-                }
-            }
+                    var keepAliveId = DateTime.Now.Millisecond;
 
-            while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
-            {
-                foreach (Player player in Players)
+                    foreach (var client in clients.Where(x => x.State == ClientState.Play))
+                        client.ProcessKeepAlive(keepAliveId);
+
+                    keepAliveTicks = 0;
+                }
+
+                if (Config.Baah.HasValue)
                 {
-                    player.client.SendPacket(packet);
+                    foreach (Player player in Players)
+                    {
+                        var soundPosition = new SoundPosition(player.Position.X, player.Position.Y, player.Position.Z);
+                        await player.SendSoundAsync(Sounds.EntitySheepAmbient, soundPosition, SoundCategory.Master, 1.0f, 1.0f);
+                    }
                 }
+
+                while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
+                {
+                    foreach (Player player in Players)
+                    {
+                        player.client.SendPacket(packet);
+                    }
+                }
+
+                await this.WorldManager.TickWorldsAsync();
+
+                long elapsedTicks = stopwatch.ElapsedTicks;
+                stopwatch.Restart();
+                tpsMeasure.PushMeasurement(elapsedTicks);
+                Tps = tpsMeasure.Tps;
+
+                UpdateStatusConsole();
             }
-
-            await this.WorldManager.TickWorldsAsync();
-
-            long elapsedTicks = stopwatch.ElapsedTicks;
-            stopwatch.Restart();
-            tpsMeasure.PushMeasurement(elapsedTicks);
-            Tps = tpsMeasure.Tps;
-
-            UpdateStatusConsole();
         }
+        catch (OperationCanceledException)
+        {
+            // Just stop looping.
+        }
+
+        _logger.LogInformation("The game loop has been stopped");
         await WorldManager.FlushLoadedWorldsAsync();
     }
 

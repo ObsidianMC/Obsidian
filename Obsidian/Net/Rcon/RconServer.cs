@@ -1,7 +1,4 @@
-//     Obsidian/RconServer.cs
-//     Copyright (C) 2022
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Obsidian.Commands.Framework;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
@@ -12,82 +9,93 @@ using System.Net.Sockets;
 using System.Threading;
 
 namespace Obsidian.Net.Rcon;
-
-public class RconServer
+public sealed class RconServer
 {
-    private readonly ILogger logger;
-    private readonly TcpListener listener;
-    private readonly List<RconConnection> connections = new();
+    private const int KEY_SIZE = 256;
+    private const int CERTAINTY = 5;
 
-    private uint connectionId;
+    private readonly ILogger _logger;
+    private readonly IServerConfiguration _config;
+    private readonly CommandHandler _cmdHandler;
+    private readonly List<RconConnection> _connections;
 
-    private readonly DHParameters? dhParameters;
-    private readonly AsymmetricCipherKeyPair? keyPair;
-
-    private readonly InitData initData;
-
-    public RconServer(ILogger<RconServer> logger, IServerConfiguration config, IServer server, CommandHandler commandHandler)
+    public RconServer(ILogger<RconServer> logger, IServerConfiguration config, CommandHandler commandHandler)
     {
-        this.logger = logger;
-        var password = config.Rcon?.Password ?? throw new NullReferenceException("Null RCON config was passed");
-
-        logger.LogInformation("Generating keys...");
-
-        const int keySize = 256;
-        const int certainty = 5;
-        var gen = new DHParametersGenerator();
-        gen.Init(keySize, certainty, new SecureRandom());
-        dhParameters = gen.GenerateParameters();
-
-        var keyGen = GeneratorUtilities.GetKeyPairGenerator("DH");
-        var kgp = new DHKeyGenerationParameters(new SecureRandom(), dhParameters);
-        keyGen.Init(kgp);
-        keyPair = keyGen.GenerateKeyPair();
-
-        logger.LogInformation("Done");
-
-        initData = new InitData(server, commandHandler, password, config.Rcon.RequireEncryption, dhParameters, keyPair);
-
-        listener = TcpListener.Create(config.Rcon.Port);
+        _logger = logger;
+        _config = config;
+        _cmdHandler = commandHandler;
+        _connections = new();
     }
 
-    public async Task RunAsync(CancellationToken token)
+    public async Task RunAsync(Server server, CancellationToken cToken)
     {
+        _logger.LogInformation(message: "Generating keys for RCON");
+        var data = GenerateKeys(server);
+        _logger.LogInformation("Done generating keys for RCON");
+
+        var tcpListener = TcpListener.Create(_config.Rcon?.Port ?? 25575);
+
         _ = Task.Run(async () =>
         {
-            while (!token.IsCancellationRequested)
+            while (!cToken.IsCancellationRequested)
                 try
                 {
-                    connections.RemoveAll(c => !c.Connected);
-                    await Task.Delay(5000, token);
+                    _connections.RemoveAll(c => !c.Connected);
+                    await Task.Delay(5000, cToken);
                 }
                 catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
                 {
                     return;
                 }
-        }, token);
+        }, cToken);
 
-        connectionId = 0;
-        listener.Start();
-        logger.LogInformation("Started RCON server");
+        uint connectionId = 0;
+        tcpListener.Start();
+        _logger.LogInformation("Started RCON server");
 
-        while (!token.IsCancellationRequested)
+        while (!cToken.IsCancellationRequested)
             try
             {
-                var conn = await listener.AcceptTcpClientAsync(token);
-                logger.LogInformation("Accepting RCON connection ID {ConnectionId} from {RemoteAddress}", ++connectionId, conn.Client.RemoteEndPoint as IPEndPoint);
-                connections.Add(new RconConnection(connectionId, conn, logger, initData, token));
+                var conn = await tcpListener.AcceptTcpClientAsync(cToken);
+                _logger.LogInformation("Accepting RCON connection ID {ConnectionId} from {RemoteAddress}", ++connectionId, conn.Client.RemoteEndPoint as IPEndPoint);
+                _connections.Add(new RconConnection(connectionId, conn, _logger, data, cToken));
             }
             catch (Exception e) when (e is TaskCanceledException or OperationCanceledException)
             {
                 break;
             }
 
-        logger.LogInformation("Stopping RCON server");
-        listener.Stop();
+        _logger.LogInformation("Stopping RCON server");
+        tcpListener.Stop();
+    }
+
+    private InitData GenerateKeys(Server server)
+    {
+        string password = _config.Rcon?.Password ??
+            throw new InvalidOperationException("You can't start a RconServer without setting a password in the configuration.");
+
+
+        var gen = new DHParametersGenerator();
+        gen.Init(KEY_SIZE, CERTAINTY, new SecureRandom());
+        var dhParameters = gen.GenerateParameters();
+
+        var keyGen = GeneratorUtilities.GetKeyPairGenerator("DH");
+        var kgp = new DHKeyGenerationParameters(new SecureRandom(), dhParameters);
+        keyGen.Init(kgp);
+        var keyPair = keyGen.GenerateKeyPair();
+
+        return new InitData(server, 
+            _cmdHandler, 
+            password,
+            _config.Rcon.RequireEncryption,
+            dhParameters,
+            keyPair);
     }
 
     public record InitData(
-        IServer Server, CommandHandler CommandHandler, string Password, bool RequireEncryption,
-        DHParameters? DhParameters, AsymmetricCipherKeyPair? KeyPair);
+    Server Server, CommandHandler CommandHandler, string Password, bool RequireEncryption,
+    DHParameters? DhParameters, AsymmetricCipherKeyPair? KeyPair);
+
 }
+
+

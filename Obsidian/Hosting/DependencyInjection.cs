@@ -14,8 +14,9 @@ public static class DependencyInjection
 
         services.AddSingleton<WorldManager>();
         services.AddSingleton<CommandHandler>();
-        services.AddSingleton<RconServer>();
         services.AddSingleton<Server>();
+        services.AddSingleton<RconServer>();
+
         services.AddSingleton<IServer>(f => f.GetRequiredService<Server>());
         services.AddHostedService<ObsidianHostingService>();
         return services;
