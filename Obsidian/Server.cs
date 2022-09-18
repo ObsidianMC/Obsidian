@@ -89,6 +89,8 @@ public partial class Server : IServer
         _logger = logger;
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
+        _cts.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
+
         _rconServer = rconServer;
         Config = env.Configuration;
 
@@ -285,12 +287,27 @@ public partial class Server : IServer
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
         _logger.LogInformation("Listening for new clients...");
 
-        await Task.WhenAll(serverTasks);                
-        
+        try
+        {
+            await Task.WhenAll(serverTasks);
+        }
+        catch (Exception)
+        {
+            // Maybe write a crash log to somewhere?
+            throw;
+        }
+        finally
+        {
+            // Try to shut the server down gracefully.
+            await HandleServerShutdown();
+        }
+
+    }
+
+    private async Task HandleServerShutdown()
+    {
         _logger.LogDebug("Flushing regions");
         await WorldManager.FlushLoadedWorldsAsync();
-
-        _logger.LogWarning("Server is shutting down..");
     }
 
     private async Task AcceptClientsAsync()
