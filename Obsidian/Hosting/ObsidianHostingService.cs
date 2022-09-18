@@ -31,8 +31,8 @@ internal sealed class ObsidianHostingService : BackgroundService
         catch (Exception e)
         {
             _logger.LogCritical("Obsidian has crashed...");
-            _logger.LogCritical(e, "Reason: {0}", e.Message);
-            _logger.LogCritical(e.StackTrace);
+            _logger.LogCritical(e, "Reason: {reason}", e.Message);
+            _logger.LogCritical("{}", e.StackTrace);
         }
 
         if (_env.ServerShutdownStopsProgram)

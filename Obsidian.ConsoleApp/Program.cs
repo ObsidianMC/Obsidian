@@ -7,7 +7,7 @@ using Obsidian.Utilities;
 
 namespace Obsidian.ConsoleApp;
 
-public static partial class Program
+public static class Program
 {
     private static async Task Main()
     {
@@ -47,4 +47,6 @@ public static partial class Program
         " ▄█▀▄ ▐█▀▀█▄▄▀▀▀█▄▐█ ▐█  ▐█▌▐█ ▄█▀▀█ ▐█▐▐▌\n" +
         "▐█▌ ▐▌██▄ ▐█▐█▄ ▐█▐█▌██  ██ ▐█▌▐█  ▐▌██▐█▌\n" +
         " ▀█▄▀  ▀▀▀▀  ▀▀▀▀ ▀▀▀▀▀▀▀▀  ▀▀▀ ▀  ▀ ▀▀ █ \n\n";
+
 }
+

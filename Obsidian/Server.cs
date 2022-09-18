@@ -71,14 +71,12 @@ public partial class Server : IServer
     private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
     private readonly ConcurrentHashSet<Client> clients = new();
     private readonly TcpListener tcpListener;
+    private readonly RconServer _rconServer;
     internal readonly CancellationTokenSource _cts;
     private readonly IServerEnvironment _env;
     private readonly ILogger _logger;
 
-    private RconServer rconServer;
-
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
-
 
     /// <summary>
     /// Creates a new instance of <see cref="Server"/>.
@@ -86,12 +84,14 @@ public partial class Server : IServer
     public Server(
         IHostApplicationLifetime lifetime, 
         IServerEnvironment env,
+        RconServer rconServer,
         ILogger<Server> logger)
     {
         // Create a tokensource that cancels when the generic host is stopping.
         _logger = logger;
         _cts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
         _env = env;
+        _rconServer = rconServer;
         Config = env.Configuration;
 
         Port = Config.Port;
@@ -102,7 +102,7 @@ public partial class Server : IServer
         Operators = new OperatorList(this);
 
         _logger.LogDebug("Initializing command handler...");
-        CommandsHandler = new CommandHandler(CommandHandler.DefaultPrefix);
+        CommandsHandler = new CommandHandler();
         PluginManager = new PluginManager(Events, this, _logger, CommandsHandler);
         CommandsHandler.LinkPluginManager(PluginManager);
 
@@ -272,39 +272,38 @@ public partial class Server : IServer
 
         Registry.RegisterCommands(this);
 
+        var serverTasks = new List<Task>()
+        {
+            AcceptClientsAsync(),
+            LoopAsync(),
+            ServerSaveAsync()
+        };
+
         if (Configuration.EnableRcon)
-        {
-            rconServer = new RconServer(_logger, Config, this, CommandsHandler);
-        }
-
+            serverTasks.Add(_rconServer.RunAsync(_cts.Token));
+        
         loadTimeStopwatch.Stop();
-        _logger.LogInformation($"Server loaded in {loadTimeStopwatch.Elapsed}");
+        _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
+        _logger.LogInformation("Listening for new clients...");
 
-        _logger.LogInformation($"Listening for new clients...");
-        try
-        {
-            await Task.WhenAll(AcceptClientsAsync(_cts.Token), LoopAsync(), ServerSaveAsync(), rconServer?.RunAsync(_cts.Token) ?? Task.CompletedTask);
-        }
-        catch (TaskCanceledException)
-        {
-        }
-
+        await Task.WhenAll(serverTasks);                
+        
         _logger.LogDebug("Flushing regions");
         await WorldManager.FlushLoadedWorldsAsync();
 
-        _logger.LogWarning("Server is shutting down...");
+        _logger.LogWarning("Server is shutting down..");
     }
 
-    private async Task AcceptClientsAsync(CancellationToken cancellationToken)
+    private async Task AcceptClientsAsync()
     {
         tcpListener.Start();
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!_cts.Token.IsCancellationRequested)
         {
             Socket socket;
             try
             {
-                socket = await tcpListener.AcceptSocketAsync(cancellationToken);
+                socket = await tcpListener.AcceptSocketAsync(_cts.Token);
             }
             catch (Exception e)
             {

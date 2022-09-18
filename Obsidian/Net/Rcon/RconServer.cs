@@ -26,7 +26,7 @@ public class RconServer
 
     private readonly InitData initData;
 
-    public RconServer(ILogger logger, IServerConfiguration config, IServer server, CommandHandler commandHandler)
+    public RconServer(ILogger<RconServer> logger, IServerConfiguration config, IServer server, CommandHandler commandHandler)
     {
         this.logger = logger;
         var password = config.Rcon?.Password ?? throw new NullReferenceException("Null RCON config was passed");

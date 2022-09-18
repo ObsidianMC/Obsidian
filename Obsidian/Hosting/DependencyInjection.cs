@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Rcon;
 using Obsidian.WorldData;
