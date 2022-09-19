@@ -289,7 +289,6 @@ public partial class Server : IServer
 
         try
         {
-            throw new Exception("Yeah, very nice");
             await Task.WhenAll(serverTasks);
         }
         catch (Exception)
