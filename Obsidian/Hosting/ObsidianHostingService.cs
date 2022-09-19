@@ -27,11 +27,11 @@ internal sealed class ObsidianHostingService : BackgroundService
         try
         {
             await _server.RunAsync();
-            await _environment.OnServerStoppedGracefully(_logger);
+            await _environment.OnServerStoppedGracefullyAsync(_logger);
         }
         catch (Exception e)
         {
-            await _environment.OnServerCrash(_logger, e);
+            await _environment.OnServerCrashAsync(_logger, e);
         }
 
         if (_environment.ServerShutdownStopsProgram)

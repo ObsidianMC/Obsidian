@@ -22,14 +22,14 @@ public interface IServerEnvironment
     /// </summary>
     /// <param name="cToken"></param>
     /// <returns></returns>
-    public Task ProvideServerCommands(Server server, CancellationToken cToken);
+    public Task ProvideServerCommandsAsync(Server server, CancellationToken cToken);
 
     /// <summary>
     /// Called when the server succesfuly ran to completion.
     /// </summary>
     /// <param name="logger"></param>
     /// <returns></returns>
-    public Task OnServerStoppedGracefully(ILogger logger);
+    public Task OnServerStoppedGracefullyAsync(ILogger logger);
 
     /// <summary>
     /// Called when the server stopped due to a crash.
@@ -37,7 +37,7 @@ public interface IServerEnvironment
     /// <param name="logger"></param>
     /// <param name="e"></param>
     /// <returns></returns>
-    public Task OnServerCrash(ILogger logger, Exception e);
+    public Task OnServerCrashAsync(ILogger logger, Exception e);
 
     /// <summary>
     /// Create a <see cref="DefaultServerEnvironment"/> asynchronously, which is aimed for use in Console Applications.

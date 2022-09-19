@@ -30,7 +30,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
     /// <param name="server"></param>
     /// <param name="cToken"></param>
     /// <returns></returns>
-    public async Task ProvideServerCommands(Server server, CancellationToken cToken)
+    public async Task ProvideServerCommandsAsync(Server server, CancellationToken cToken)
     {
         while (!cToken.IsCancellationRequested)
         {
@@ -40,12 +40,12 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         }
     }
      
-    Task IServerEnvironment.OnServerStoppedGracefully(ILogger logger)
+    Task IServerEnvironment.OnServerStoppedGracefullyAsync(ILogger logger)
     {
         logger.LogInformation("Goodbye!");
         return Task.CompletedTask;
     }
-    Task IServerEnvironment.OnServerCrash(ILogger logger, Exception e)
+    Task IServerEnvironment.OnServerCrashAsync(ILogger logger, Exception e)
     {
         // Write crash log somewhere?
         var byeMessages = new[]
@@ -73,11 +73,11 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
     /// <returns></returns>
     public static async Task<DefaultServerEnvironment> CreateAsync(ILogger logger)
     {
-        var config = await LoadServerConfiguration(logger);
-        var worlds = await LoadServerWorlds(logger);
+        var config = await LoadServerConfigurationAsync(logger);
+        var worlds = await LoadServerWorldsAsync(logger);
         return new DefaultServerEnvironment(true, config, worlds);
     }
-    private static async Task<ServerConfiguration> LoadServerConfiguration(ILogger logger)
+    private static async Task<ServerConfiguration> LoadServerConfigurationAsync(ILogger logger)
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -103,7 +103,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         Environment.Exit(0);
         throw new Exception("Unreachable");
     }
-    private static async Task<List<ServerWorld>> LoadServerWorlds(ILogger logger)
+    private static async Task<List<ServerWorld>> LoadServerWorldsAsync(ILogger logger)
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
