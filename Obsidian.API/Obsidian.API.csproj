@@ -32,12 +32,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Hosting\**" />
-	  <EmbeddedResource Remove="Hosting\**" />
-	  <None Remove="Hosting\**" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <AdditionalFiles Include="..\Obsidian\Assets\blocks.json" Link="Assets\blocks.json" />
 	  <AdditionalFiles Include="..\Obsidian\Assets\items.json" Link="Assets\items.json" />
 	</ItemGroup>

@@ -50,7 +50,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         // Write crash log somewhere?
         var byeMessages = new[]
         {
-            "we had a good run...",
+            "We had a good run...",
             "At least we tried...",
             "Who could've seen this one coming...",
             "Try turning it off and on again...",
