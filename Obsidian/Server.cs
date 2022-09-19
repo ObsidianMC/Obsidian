@@ -264,7 +264,7 @@ public partial class Server : IServer
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
         // TODO: This should defenitly accept a cancellation token.
-        // If Cancel is called, this method should stop within 3 seconds, otherwise code execution will simply stop here,
+        // If Cancel is called, this method should stop within the configured timeout, otherwise code execution will simply stop here,
         // and server shutdown will not be handled correctly.
         await WorldManager.LoadWorldsAsync();
 
@@ -289,6 +289,7 @@ public partial class Server : IServer
 
         try
         {
+            throw new Exception("Yeah, very nice");
             await Task.WhenAll(serverTasks);
         }
         catch (Exception)
@@ -300,8 +301,9 @@ public partial class Server : IServer
         {
             // Try to shut the server down gracefully.
             await HandleServerShutdown();
-        }
+            _logger.LogInformation("The server has been shut down");
 
+        }
     }
 
     private async Task HandleServerShutdown()

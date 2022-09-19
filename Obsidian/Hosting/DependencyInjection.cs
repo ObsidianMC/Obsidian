@@ -19,6 +19,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IServer>(f => f.GetRequiredService<Server>());
         services.AddHostedService<ObsidianHostingService>();
+
         return services;
     }
 

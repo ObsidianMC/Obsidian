@@ -60,7 +60,7 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
             "I blame Craftplacer for this one..."
         };
 
-        logger.LogCritical("Obsidian has crashed...");
+        logger.LogCritical("Obsidian has crashed!");
         logger.LogCritical("{message}", byeMessages[new Random().Next(byeMessages.Length)]);
         logger.LogCritical(e, "Reason: {reason}", e.Message);
         logger.LogCritical("{}", e.StackTrace);

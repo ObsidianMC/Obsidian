@@ -28,6 +28,10 @@ public static class Program
             .ConfigureServices(services =>
             {
                 services.AddObsidian(env);
+
+                // Give the server some time to shut down after CTRL-C or SIGTERM.
+                services.Configure<HostOptions>(
+                    opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(10));
             })
             .ConfigureLogging(options =>
             {
