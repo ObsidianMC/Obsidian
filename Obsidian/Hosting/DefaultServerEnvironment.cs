@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Threading;
 
 namespace Obsidian.Hosting;
@@ -8,7 +9,7 @@ namespace Obsidian.Hosting;
 /// Loads the server configuration and worlds using the current working directory and
 /// forwards commands from the standard input to the server.
 /// 
-/// Use the <see cref="Create"/> method to create an instance.
+/// Use the <see cref="CreateAsync"/> method to create an instance.
 /// </summary>
 public sealed class DefaultServerEnvironment : IServerEnvironment
 {
@@ -39,18 +40,44 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         }
     }
      
+    Task IServerEnvironment.OnServerStoppedGracefully(ILogger logger)
+    {
+        logger.LogInformation("Goodbye!");
+        return Task.CompletedTask;
+    }
+    Task IServerEnvironment.OnServerCrash(ILogger logger, Exception e)
+    {
+        // Write crash log somewhere?
+        var byeMessages = new[]
+        {
+            "we had a good run...",
+            "At least we tried...",
+            "Who could've seen this one coming...",
+            "Try turning it off and on again...",
+            "I blame Naamloos for this one...",
+            "I blame Sebastian for this one...",
+            "I blame Tides for this one...",
+            "I blame Craftplacer for this one..."
+        };
+
+        logger.LogCritical("Obsidian has crashed...");
+        logger.LogCritical("{message}", byeMessages[new Random().Next(byeMessages.Length)]);
+        logger.LogCritical(e, "Reason: {reason}", e.Message);
+        logger.LogCritical("{}", e.StackTrace);
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// Create a <see cref="DefaultServerEnvironment"/> asynchronously.
     /// </summary>
     /// <returns></returns>
-    public static async Task<DefaultServerEnvironment> Create()
+    public static async Task<DefaultServerEnvironment> CreateAsync(ILogger logger)
     {
-        var config = await LoadServerConfiguration();
-        var worlds = await LoadServerWorlds();
+        var config = await LoadServerConfiguration(logger);
+        var worlds = await LoadServerWorlds(logger);
         return new DefaultServerEnvironment(true, config, worlds);
     }
-
-    private static async Task<ServerConfiguration> LoadServerConfiguration()
+    private static async Task<ServerConfiguration> LoadServerConfiguration(ILogger logger)
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -60,27 +87,23 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         if (configFile.Exists)
         {
             using var configFileStream = configFile.OpenRead();
-            var c = await configFileStream.FromJsonAsync<ServerConfiguration>();
-            return c ?? throw new Exception("Server config file exists, but is invalid. Is it corrupt?");
+            return await configFileStream.FromJsonAsync<ServerConfiguration>()
+                ?? throw new Exception("Server config file exists, but is invalid. Is it corrupt?");
         }
 
         var config = new ServerConfiguration();
 
-        using (var fs = configFile.Create())
-        {
-            await config.ToJsonAsync(fs);
-        }
+        using (var fileStream = configFile.Create())
+            await config.ToJsonAsync(fileStream);
 
-        Console.WriteLine($"Created new configuration file for Server");
-        Console.WriteLine($"Please fill in your config with the values you wish to use for your server.\n");
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine(configFile.FullName);
-        Console.ResetColor();
+        logger.LogInformation($"Created new configuration file for Server");
+        logger.LogInformation($"Please fill in your config with the values you wish to use for your server.");
+        logger.LogInformation(configFile.FullName);
         Console.ReadKey();
         Environment.Exit(0);
-        throw new Exception("Unreachable?");
+        throw new Exception("Unreachable");
     }
-    private static async Task<List<ServerWorld>> LoadServerWorlds()
+    private static async Task<List<ServerWorld>> LoadServerWorlds(ILogger logger)
     {
         if (!Directory.Exists("config"))
             Directory.CreateDirectory("config");
@@ -90,8 +113,8 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
         if (worldsFile.Exists)
         {
             using var worldsFileStream = worldsFile.OpenRead();
-            var w = await worldsFileStream.FromJsonAsync<List<ServerWorld>>();
-            return w ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
+            return await worldsFileStream.FromJsonAsync<List<ServerWorld>>()
+                ?? throw new Exception("A worlds file does exist, but is invalid. Is it corrupt?");
         }
 
         var worlds = new List<ServerWorld>()
@@ -106,12 +129,14 @@ public sealed class DefaultServerEnvironment : IServerEnvironment
                 }
             };
 
-        using var fs = worldsFile.Create();
 
-        await worlds.ToJsonAsync(fs);
+        using var fileStream = worldsFile.Create();
+        await worlds.ToJsonAsync(fileStream);
+
 
         return worlds;
     }
+
 
 }
 

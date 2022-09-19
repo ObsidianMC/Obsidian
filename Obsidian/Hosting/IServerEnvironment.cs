@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace Obsidian.Hosting;
 
@@ -21,5 +22,27 @@ public interface IServerEnvironment
     /// </summary>
     /// <param name="cToken"></param>
     /// <returns></returns>
-    Task ProvideServerCommands(Server server, CancellationToken cToken);
+    public Task ProvideServerCommands(Server server, CancellationToken cToken);
+
+    /// <summary>
+    /// Called when the server succesfuly ran to completion.
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <returns></returns>
+    public Task OnServerStoppedGracefully(ILogger logger);
+
+    /// <summary>
+    /// Called when the server stopped due to a crash.
+    /// </summary>
+    /// <param name="logger"></param>
+    /// <param name="e"></param>
+    /// <returns></returns>
+    public Task OnServerCrash(ILogger logger, Exception e);
+
+    /// <summary>
+    /// Create a <see cref="DefaultServerEnvironment"/> asynchronously, which is aimed for use in Console Applications.
+    /// </summary>
+    /// <returns></returns>
+    public static Task<DefaultServerEnvironment> CreateDefaultAsync(ILogger logger) => DefaultServerEnvironment.CreateAsync(logger);
+
 }

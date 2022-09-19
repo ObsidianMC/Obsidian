@@ -6,19 +6,19 @@ namespace Obsidian.Hosting;
 internal sealed class ObsidianHostingService : BackgroundService
 {
     private readonly IHostApplicationLifetime _lifetime;
-    private readonly IServerEnvironment _env;
+    private readonly IServerEnvironment _environment;
     private readonly Server _server;
     private readonly ILogger _logger;
 
     public ObsidianHostingService(
-        IHostApplicationLifetime lifetime, 
-        Server server, 
+        IHostApplicationLifetime lifetime,
+        Server server,
         IServerEnvironment env,
         ILogger<ObsidianHostingService> logger)
     {
         _server = server;
         _lifetime = lifetime;
-        _env = env;
+        _environment = env;
         _logger = logger;
     }
 
@@ -27,16 +27,15 @@ internal sealed class ObsidianHostingService : BackgroundService
         try
         {
             await _server.RunAsync();
-            _logger.LogInformation("Goodbye :)");
+            await _environment.OnServerStoppedGracefully(_logger);
         }
         catch (Exception e)
         {
-            _logger.LogCritical("Obsidian has crashed...");
-            _logger.LogCritical(e, "Reason: {reason}", e.Message);
-            _logger.LogCritical("{}", e.StackTrace);
+            await _environment.OnServerCrash(_logger, e);
         }
 
-        if (_env.ServerShutdownStopsProgram)
+        if (_environment.ServerShutdownStopsProgram)
             _lifetime.StopApplication();
     }
+
 }

@@ -11,15 +11,18 @@ public static class Program
 {
     private static async Task Main()
     {
+        var loggerProvider = new LoggerProvider();
+        var startupLogger = loggerProvider.CreateLogger("Startup");
+
         Console.Title = $"Obsidian {Server.VERSION}";
         Console.BackgroundColor = ConsoleColor.White;
         Console.ForegroundColor = ConsoleColor.Black;
         Console.CursorVisible = false;
         Console.WriteLine(asciilogo);
         Console.ResetColor();
-        Console.WriteLine($"A C# implementation of the Minecraft server protocol. Targeting: {Server.DefaultProtocol.GetDescription()}");
+        startupLogger.LogInformation("A C# implementation of the Minecraft server protocol. Targeting: {description}", Server.DefaultProtocol.GetDescription());
 
-        IServerEnvironment env = await DefaultServerEnvironment.Create();
+        IServerEnvironment env = await IServerEnvironment.CreateDefaultAsync(startupLogger);
 
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
@@ -29,7 +32,7 @@ public static class Program
             .ConfigureLogging(options =>
             {
                 options.ClearProviders();
-                options.AddProvider(new LoggerProvider());
+                options.AddProvider(loggerProvider);
                 //  Shhh... Only let Microsoft log when stuff crashes.
                 options.AddFilter("Microsoft", LogLevel.Warning);
             })

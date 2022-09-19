@@ -48,7 +48,7 @@ public class Logger : ILogger<Server>
             _ => "[????]  "
         };
 
-        var prefix = $"[{Prefix}] ";
+        var prefix = $"[{Prefix.Split('.')[^1]}] ";
 
         void PrintLinePrefix()
         {

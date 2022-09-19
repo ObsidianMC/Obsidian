@@ -432,7 +432,7 @@ public class World : IWorld
         var region = new Region(regionX, regionZ, this.FolderPath);
         if (await region.InitAsync())
         {
-            _ = Task.Run(() => region.BeginTickAsync(this.Server._cts.Token));
+            _ = Task.Run(() => region.BeginTickAsync(this.Server._cancelTokenSource.Token));
             this.Regions[value] = region;
         }
         return this.Regions[value];

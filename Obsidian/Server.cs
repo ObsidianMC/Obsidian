@@ -67,11 +67,11 @@ public partial class Server : IServer
     // TODO: This should be removed. Services should get their own logger.
     public ILogger Logger => _logger;
 
-    private readonly ConcurrentQueue<IClientboundPacket> chatMessagesQueue = new();
-    private readonly ConcurrentHashSet<Client> clients = new();
-    private readonly TcpListener tcpListener;
+    private readonly ConcurrentQueue<IClientboundPacket> _chatMessagesQueue = new();
+    private readonly ConcurrentHashSet<Client> _clients = new();
+    private readonly TcpListener _tcpListener;
     private readonly RconServer _rconServer;
-    internal readonly CancellationTokenSource _cts;
+    internal readonly CancellationTokenSource _cancelTokenSource;
     private readonly ILogger _logger;
 
     internal string PermissionPath => Path.Combine(ServerFolderPath, "permissions");
@@ -81,27 +81,24 @@ public partial class Server : IServer
     /// </summary>
     public Server(
         IHostApplicationLifetime lifetime, 
-        IServerEnvironment env,
+        IServerEnvironment environment,
         ILogger<Server> logger,
         RconServer rconServer)
     {
-        // Create a tokensource that cancels when the generic host is stopping.
         _logger = logger;
-
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
-        _cts.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
-
+        _cancelTokenSource = CancellationTokenSource.CreateLinkedTokenSource(lifetime.ApplicationStopping);
+        _cancelTokenSource.Token.Register(() => _logger.LogWarning("Obsidian is shutting down..."));
         _rconServer = rconServer;
-        Config = env.Configuration;
 
+        Config = environment.Configuration;
         Port = Config.Port;
         ServerFolderPath = Directory.GetCurrentDirectory();
 
-        tcpListener = new TcpListener(IPAddress.Any, Port);
+        _tcpListener = new TcpListener(IPAddress.Any, Port);
 
         Operators = new OperatorList(this);
 
-        _logger.LogDebug("Initializing command handler...");
+        _logger.LogDebug(message: "Initializing command handler...");
         CommandsHandler = new CommandHandler();
 
         PluginManager = new PluginManager(Events, this, _logger, CommandsHandler);
@@ -117,7 +114,7 @@ public partial class Server : IServer
         _logger.LogDebug("Registering command context type...");
         _logger.LogDebug("Done registering commands.");
 
-        WorldManager = new WorldManager(this, _logger, env.ServerWorlds);
+        WorldManager = new WorldManager(this, _logger, environment.ServerWorlds);
 
         Events.PlayerLeave += OnPlayerLeave;
         Events.PlayerJoin += OnPlayerJoin;
@@ -134,9 +131,9 @@ public partial class Server : IServer
             _ = Task.Run(async () =>
             {
                 var udpClient = new UdpClient("224.0.2.60", 4445);
-                while (!_cts.IsCancellationRequested)
+                while (!_cancelTokenSource.IsCancellationRequested)
                 {
-                    await Task.Delay(1500, _cts.Token); // TODO (.NET 6), use PeriodicTimer
+                    await Task.Delay(1500, _cancelTokenSource.Token); // TODO (.NET 6), use PeriodicTimer
                     byte[] motd = Encoding.UTF8.GetBytes($"[MOTD]{Config.Motd.Replace('[', '(').Replace(']', ')')}[/MOTD][AD]{Config.Port}[/AD]");
                     await udpClient.SendAsync(motd, motd.Length);
                 }
@@ -185,7 +182,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(ChatMessage message)
     {
-        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, MessageType.System));
+        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(message, MessageType.System));
         _logger.LogInformation(message.Text);
     }
 
@@ -194,7 +191,7 @@ public partial class Server : IServer
     /// </summary>
     public void BroadcastMessage(PlayerChatMessagePacket message)
     {
-        chatMessagesQueue.Enqueue(message);
+        _chatMessagesQueue.Enqueue(message);
         _logger.LogInformation(message.SignedMessage.Text);
     }
 
@@ -206,7 +203,7 @@ public partial class Server : IServer
         var chatMessage = ChatMessage.Simple(string.Empty)
             .AddExtra(message);
 
-        chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, MessageType.System));
+        _chatMessagesQueue.Enqueue(new SystemChatMessagePacket(chatMessage, MessageType.System));
         _logger.LogInformation(message);
     }
 
@@ -266,6 +263,9 @@ public partial class Server : IServer
 
         await Task.WhenAll(Config.DownloadPlugins.Select(path => PluginManager.LoadPluginAsync(path)));
 
+        // TODO: This should defenitly accept a cancellation token.
+        // If Cancel is called, this method should stop within 3 seconds, otherwise code execution will simply stop here,
+        // and server shutdown will not be handled correctly.
         await WorldManager.LoadWorldsAsync();
 
         if (!Config.OnlineMode)
@@ -281,7 +281,7 @@ public partial class Server : IServer
         };
 
         if (Configuration.EnableRcon)
-            serverTasks.Add(_rconServer.RunAsync(this, _cts.Token));
+            serverTasks.Add(_rconServer.RunAsync(this, _cancelTokenSource.Token));
         
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
@@ -312,14 +312,14 @@ public partial class Server : IServer
 
     private async Task AcceptClientsAsync()
     {
-        tcpListener.Start();
+        _tcpListener.Start();
 
-        while (!_cts.Token.IsCancellationRequested)
+        while (!_cancelTokenSource.Token.IsCancellationRequested)
         {
             Socket socket;
             try
             {
-                socket = await tcpListener.AcceptSocketAsync(_cts.Token);
+                socket = await _tcpListener.AcceptSocketAsync(_cancelTokenSource.Token);
             }
             catch (OperationCanceledException)
             {
@@ -343,13 +343,13 @@ public partial class Server : IServer
             }
 
             // TODO Entity ids need to be unique on the entire server, not per world
-            var client = new Client(socket, Config, Math.Max(0, clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
+            var client = new Client(socket, Config, Math.Max(0, _clients.Count + WorldManager.DefaultWorld.GetTotalLoadedEntities()), this);
 
-            clients.Add(client);
+            _clients.Add(client);
 
             client.Disconnected += client =>
             {
-                clients.TryRemove(client);
+                _clients.TryRemove(client);
                 if (client.Player is not null)
                 {
                     OnlinePlayers.Remove(client.Player.Uuid, out _);
@@ -360,7 +360,7 @@ public partial class Server : IServer
         }
 
         _logger.LogInformation("No longer accepting new clients");
-        tcpListener.Stop();
+        _tcpListener.Stop();
     }
 
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags) => new BossBar(this)
@@ -614,10 +614,10 @@ public partial class Server : IServer
 
     public void Stop()
     {
-        _cts.Cancel();
-        tcpListener.Stop();
+        _cancelTokenSource.Cancel();
+        _tcpListener.Stop();
         WorldGenerators.Clear();
-        foreach (var client in clients)
+        foreach (var client in _clients)
         {
             client.Disconnect();
             client.Dispose();
@@ -626,11 +626,11 @@ public partial class Server : IServer
 
     private async Task ServerSaveAsync()
     {
-        while (!_cts.IsCancellationRequested)
+        while (!_cancelTokenSource.IsCancellationRequested)
         {
             try
             {
-                await Task.Delay(TimeSpan.FromMinutes(5), _cts.Token);
+                await Task.Delay(TimeSpan.FromMinutes(5), _cancelTokenSource.Token);
             }
             catch (OperationCanceledException)
             {
@@ -648,7 +648,7 @@ public partial class Server : IServer
 
         var tpsMeasure = new TpsMeasure();
         var stopwatch = Stopwatch.StartNew();
-        var timer = new BalancingTimer(50, _cts.Token);
+        var timer = new BalancingTimer(50, _cancelTokenSource.Token);
 
         try
         {
@@ -661,7 +661,7 @@ public partial class Server : IServer
                 {
                     var keepAliveId = DateTime.Now.Millisecond;
 
-                    foreach (var client in clients.Where(x => x.State == ClientState.Play))
+                    foreach (var client in _clients.Where(x => x.State == ClientState.Play))
                         client.ProcessKeepAlive(keepAliveId);
 
                     keepAliveTicks = 0;
@@ -676,7 +676,7 @@ public partial class Server : IServer
                     }
                 }
 
-                while (chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
+                while (_chatMessagesQueue.TryDequeue(out IClientboundPacket packet))
                 {
                     foreach (Player player in Players)
                     {
