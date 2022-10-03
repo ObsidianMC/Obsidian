@@ -2,7 +2,7 @@
 
 namespace Obsidian.API;
 
-public interface IConfig
+public interface IServerConfiguration
 {
     /// <summary>
     /// Server description.

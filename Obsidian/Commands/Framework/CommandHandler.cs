@@ -17,12 +17,12 @@ public class CommandHandler
     internal string _prefix;
     internal PluginManager pluginManager;
 
-    public CommandHandler(string prefix)
+    public CommandHandler()
     {
-        this._commandParser = new CommandParser(prefix);
+        this._commandParser = new CommandParser(DefaultPrefix);
         this._commands = new List<Command>();
         this._argumentParsers = new List<BaseArgumentParser>();
-        this._prefix = prefix;
+        this._prefix = DefaultPrefix;
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);

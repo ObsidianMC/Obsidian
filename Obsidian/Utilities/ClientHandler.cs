@@ -10,9 +10,9 @@ namespace Obsidian;
 public class ClientHandler
 {
     private ConcurrentDictionary<int, IServerboundPacket> Packets { get; } = new ConcurrentDictionary<int, IServerboundPacket>();
-    private Config config;
+    private ServerConfiguration config;
 
-    public ClientHandler(Config config)
+    public ClientHandler(ServerConfiguration config)
     {
         this.config = config;
     }
