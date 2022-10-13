@@ -285,7 +285,6 @@ public sealed class Client : IDisposable
                     }
                     break;
                 case ClientState.Closed:
-                    break;
                 default:
                     break;
             }
