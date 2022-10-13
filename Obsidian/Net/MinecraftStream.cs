@@ -50,6 +50,7 @@ public partial class MinecraftStream : Stream
         this.BaseStream = new MemoryStream(data);
     }
 
+    // Unused
     public async Task DumpAsync(bool clear = true, IPacket packet = null)
     {
         if (this.debugMemoryStream == null)
@@ -64,9 +65,10 @@ public partial class MinecraftStream : Stream
         if (clear)
             await ClearDebug();
 
-        Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+        //Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
     }
 
+    // unused
     public async Task DumpAsync(bool clear = true, string name = "")
     {
         if (this.debugMemoryStream == null)
@@ -81,7 +83,7 @@ public partial class MinecraftStream : Stream
         if (clear)
             await ClearDebug();
 
-        Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
+        //Globals.PacketLogger.LogDebug($"Dumped stream to {filePath}");
     }
 
     public Task ClearDebug()
