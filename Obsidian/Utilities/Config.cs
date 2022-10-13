@@ -6,7 +6,7 @@ namespace Obsidian.Utilities;
 
 public class ServerConfiguration : IServerConfiguration
 {
-    public string Motd { get; set; } = "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c6 §r§l<3";
+    public string Motd { get; set; } = "§k||||§r §5Obsidian §cPre§r-§cRelease §r§k||||§r \n§r§lRunning on .NET §l§c7 §r§l<3";
 
     public int Port { get; set; } = 25565;
 
