@@ -22,8 +22,8 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
 
     public ValueTask HandleAsync(Server server, Player player)
     {
-        Globals.PacketLogger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
-
+        server.Logger.LogDebug($"Keep alive {player.Username} [{KeepAliveId}] Missed: {player.client.missedKeepalives - 1}"); // Missed is 1 more bc we just handled one
+        
         player.client.missedKeepalives = 0;
 
         return ValueTask.CompletedTask;

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Obsidian.API;
 using Obsidian.Utilities;
+using System.Diagnostics;
 
 namespace Obsidian.ConsoleApp.Logging;
 
@@ -62,6 +63,12 @@ public class Logger : ILogger<Server>
 
         var message = formatter(state, exception);
         var lines = message.Split('\n');
+
+        if (message.IsNullOrEmpty())
+        { 
+            this.LogTrace($"Empty log message sent. Dumping stacktrace:\n{new System.Diagnostics.StackTrace().ToString().Replace("\n", "            ")}");
+            return;
+        }
 
         lock (_lock)
             for (var i = 0; i < lines.Length; i++)

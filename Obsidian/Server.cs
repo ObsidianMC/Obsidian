@@ -192,7 +192,7 @@ public partial class Server : IServer
     public void BroadcastMessage(PlayerChatMessagePacket message)
     {
         _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation(message.SignedMessage.Text);
+        _logger.LogInformation($"<{message.SenderDisplayName.Text}> {message.SignedMessage.Text}");
     }
 
     /// <summary>
