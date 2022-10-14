@@ -262,7 +262,6 @@ public sealed class Client : IDisposable
                         case 0x01:
                             await HandleEncryptionResponseAsync(data);
                             break;
-
                         case 0x02:
                             // Login Plugin Response
                             break;
@@ -342,16 +341,14 @@ public sealed class Client : IDisposable
                 await DisconnectAsync($"Outdated client! Please use {Server.Protocol.GetDescription()}.");
             }
         }
-        else if (nextState is not ClientState.Status)
+        else if (nextState is not ClientState.Status or ClientState.Login or ClientState.Handshaking)
         {
             Logger.LogDebug("Client sent unexpected state ({RedText}{ClientState}{WhiteText}), forcing it to disconnect.", ChatColor.Red, nextState, ChatColor.White);
             await DisconnectAsync($"Invalid client state! Expected Status or Login, received {nextState}.");
         }
-        else
-        {
-            State = nextState == ClientState.Login && handshake.Version != Server.Protocol ? ClientState.Closed : nextState;
-            Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, handshake.Version.GetDescription(), ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
-        }
+
+        State = nextState == ClientState.Login && handshake.Version != Server.Protocol ? ClientState.Closed : nextState;
+        Logger.LogInformation("Handshaking with client (protocol: {YellowText}{VersionDescription}{WhiteText} [{YellowText}{Version}{WhiteText}], server: {YellowText}{ServerAddress}:{ServerPort}{WhiteText})", ChatColor.Yellow, handshake.Version.GetDescription(), ChatColor.White, ChatColor.Yellow, handshake.Version, ChatColor.White, ChatColor.Yellow, handshake.ServerAddress, handshake.ServerPort, ChatColor.White);
     }
 
     private async Task HandleLoginStartAsync(byte[] data)
