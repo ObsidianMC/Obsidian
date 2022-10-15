@@ -14,6 +14,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using static Obsidian.Net.Rcon.RconServer;
 
 namespace Obsidian.Net.Rcon;
 
@@ -49,7 +50,7 @@ public class RconConnection
     private readonly AsymmetricCipherKeyPair? keyPair;
     private readonly bool requireEncryption;
 
-    public RconConnection(uint connectionId, TcpClient conn, ILogger logger, RconServer.InitData initData, CancellationToken cancellationToken)
+    internal RconConnection(uint connectionId, TcpClient conn, ILogger logger, InitData initData, CancellationToken cancellationToken)
     {
         Id = connectionId;
         Client = conn;

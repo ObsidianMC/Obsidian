@@ -40,7 +40,7 @@ public sealed class Client : IDisposable
     private MinecraftStream minecraftStream;
     private readonly NetworkStream socketStream;
 
-    private Config config;
+    private ServerConfiguration config;
 
     private bool disposed;
     private bool compressionEnabled;
@@ -78,7 +78,7 @@ public sealed class Client : IDisposable
 
     public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
 
-    public Client(Socket socket, Config config, int playerId, Server originServer)
+    public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
     {
         this.socket = socket;
         this.config = config;

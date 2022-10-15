@@ -17,12 +17,12 @@ public class CommandHandler
     internal string _prefix;
     internal PluginManager pluginManager;
 
-    public CommandHandler(string prefix)
+    public CommandHandler()
     {
-        this._commandParser = new CommandParser(prefix);
+        this._commandParser = new CommandParser(DefaultPrefix);
         this._commands = new List<Command>();
         this._argumentParsers = new List<BaseArgumentParser>();
-        this._prefix = prefix;
+        this._prefix = DefaultPrefix;
 
         // Find all predefined argument parsers
         var parsers = typeof(StringArgumentParser).Assembly.GetTypes().Where(type => typeof(BaseArgumentParser).IsAssignableFrom(type) && !type.IsAbstract);
@@ -182,13 +182,33 @@ public class CommandHandler
             // if string is "command-qualified" we'll try to execute it.
             string[] command = CommandParser.SplitQualifiedString(qualified); // first, parse the command
 
-            await ExecuteCommand(command, ctx);
+            try
+            {
+                await ExecuteCommand(command, ctx);
+            }
+            catch (CommandExecutionCheckException ex)
+            {
+                await ProvideFeedbackToSender(ctx, ex);
+            }
         }
     }
 
+    private static async Task ProvideFeedbackToSender(CommandContext ctx, CommandExecutionCheckException ex)
+    {
+        switch (ex)
+        {
+            case NoPermissionException:
+                await ctx.Sender.SendMessageAsync(ChatMessage.Simple("You are not allowed to execute this command", ChatColor.Red));
+                break;
+            default:
+                await ctx.Sender.SendMessageAsync(ChatMessage.Simple(ex.Message, ChatColor.Red));
+                break;
+        }
+    } 
+
     private async Task ExecuteCommand(string[] command, CommandContext ctx)
     {
-        Command cmd = null;
+        Command? cmd = default;
         var args = command;
 
         // Search for correct Command class in this._commands.
@@ -201,7 +221,6 @@ public class CommandHandler
         if (cmd is not null)
         {
             ctx.Plugin = cmd.Plugin?.Plugin;
-
             await cmd.ExecuteAsync(ctx, args);
         }
         else

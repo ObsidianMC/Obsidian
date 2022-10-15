@@ -3,15 +3,18 @@
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
 {
-    private string[] permissions;
-    private PermissionCheckType checkType;
-    private bool op;
+    private readonly string[] _permissions;
+    private readonly PermissionCheckType _checkType;
+    private readonly bool _op;
+
+    public PermissionCheckType CheckType => _checkType;
+    public string[] RequiredPermissions => _permissions;
 
     public RequirePermissionAttribute(PermissionCheckType checkType = PermissionCheckType.All, bool op = true, params string[] permissions)
     {
-        this.permissions = permissions;
-        this.checkType = checkType;
-        this.op = op;
+        _permissions = permissions;
+        _checkType = checkType;
+        _op = op;
     }
 
     public override Task<bool> RunChecksAsync(CommandContext context)
@@ -20,11 +23,11 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
             return Task.FromResult(true);
         if (context.Player == null)
             return Task.FromResult(false);
-        if (this.op && context.Player.IsOperator)
+        if (_op && context.Player.IsOperator)
             return Task.FromResult(true);
 
-        if (this.permissions.Length > 0)
-            return Task.FromResult(checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(permissions) : context.Player.HasAnyPermission(permissions));
+        if (_permissions.Length > 0)
+            return Task.FromResult(_checkType == PermissionCheckType.All ? context.Player.HasAllPermissions(_permissions) : context.Player.HasAnyPermission(_permissions));
 
         return Task.FromResult(false);
     }

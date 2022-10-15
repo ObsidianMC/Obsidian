@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
-namespace Obsidian.Logging;
+namespace Obsidian.ConsoleApp.Logging;
 
 public sealed class LoggerProvider : ILoggerProvider
 {

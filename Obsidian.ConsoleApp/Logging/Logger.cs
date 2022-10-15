@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
+using Obsidian.Utilities;
 
-namespace Obsidian.Logging;
+namespace Obsidian.ConsoleApp.Logging;
 
 public class Logger : ILogger<Server>
 {
@@ -21,7 +23,7 @@ public class Logger : ILogger<Server>
         if (!IsEnabled(logLevel))
             return;
 
-        string time = $"[{DateTimeOffset.Now:HH:mm:ss}] ";
+        var time = $"[{DateTimeOffset.Now:HH:mm:ss}] ";
 
         ConsoleColor logLevelColor = (logLevel switch
         {
@@ -34,7 +36,7 @@ public class Logger : ILogger<Server>
             _ => ChatColor.Gray,
         }).ConsoleColor.Value;
 
-        string level = logLevel switch
+        var level = logLevel switch
         {
             LogLevel.Trace => "[Trace] ",
             LogLevel.Debug => "[Debug] ",
@@ -46,7 +48,7 @@ public class Logger : ILogger<Server>
             _ => "[????]  "
         };
 
-        string prefix = $"[{Prefix}] ";
+        var prefix = $"[{Prefix.Split('.')[^1]}] ";
 
         void PrintLinePrefix()
         {
@@ -58,12 +60,11 @@ public class Logger : ILogger<Server>
             ConsoleIO.Write(prefix);
         }
 
-        string message = formatter(state, exception);
-        string[] lines = message.Split('\n');
+        var message = formatter(state, exception);
+        var lines = message.Split('\n');
 
         lock (_lock)
-        {
-            for (int i = 0; i < lines.Length; i++)
+            for (var i = 0; i < lines.Length; i++)
             {
                 PrintLinePrefix();
 
@@ -71,7 +72,6 @@ public class Logger : ILogger<Server>
                 lines[i].RenderColoredConsoleMessage();
                 ConsoleIO.WriteLine(string.Empty);
             }
-        }
     }
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= MinimumLevel;
