@@ -35,5 +35,8 @@ public enum ProtocolVersion
     v1_18_2 = 758,
 
     [Description("1.19")]
-    v1_19 = 759
+    v1_19 = 759,
+
+    [Description("1.19.2")]
+    v1_19_2 = 760
 }

@@ -31,11 +31,11 @@ namespace Obsidian;
 public partial class Server : IServer
 {
 #if RELEASE
-    public static readonly string VERSION = "0.1";
+    public const string VERSION = "0.1";
 #else
-    public static readonly string VERSION = "0.1-DEV";
+    public const string VERSION = "0.1-DEV";
 #endif
-    public static readonly ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19;
+    public const ProtocolVersion DefaultProtocol = ProtocolVersion.v1_19_2;
     public ProtocolVersion Protocol => DefaultProtocol;
 
     public int Tps { get; private set; }
