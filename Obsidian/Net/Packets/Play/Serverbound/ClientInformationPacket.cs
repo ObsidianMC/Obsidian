@@ -6,7 +6,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class ClientInformationPacket : IServerboundPacket
 {
     [Field(0)]
-    public string Locale { get; private set; }
+    public string Locale { get; private set; } = null!;
 
     [Field(1)]
     public sbyte ViewDistance { get; private set; }
@@ -17,8 +17,8 @@ public partial class ClientInformationPacket : IServerboundPacket
     [Field(3)]
     public bool ChatColors { get; private set; }
 
-    [Field(4)]
-    public byte SkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
+    [Field(4), ActualType(typeof(byte))]
+    public PlayerBitMask SkinParts { get; private set; } // Skin parts that are displayed. Might not be necessary to decode?
 
     [Field(5), VarLength]
     public int MainHand { get; private set; }

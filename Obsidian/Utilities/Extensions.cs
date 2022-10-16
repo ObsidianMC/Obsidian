@@ -1,4 +1,6 @@
 ﻿using Obsidian.Entities;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -78,25 +80,26 @@ public static partial class Extensions
         }
     }
 
-    // https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
-    public static string MinecraftShaDigest(this byte[] data)
+    // Derived from https://gist.github.com/ammaraskar/7b4a3f73bee9dc4136539644a0f27e63
+    [SuppressMessage("Roslyn", "CA5350", Justification = "SHA1 is required by the Minecraft protocol.")]
+    public static string MinecraftShaDigest(this IEnumerable<byte> data)
     {
-        var hash = new SHA1Managed().ComputeHash(data);
+        var hash = SHA1.HashData(data.ToArray());
         // Reverse the bytes since BigInteger uses little endian
         Array.Reverse(hash);
 
         var b = new BigInteger(hash);
         // very annoyingly, BigInteger in C# tries to be smart and puts in
-        // a leading 0 when formatting as a hex number to allow roundtripping 
+        // a leading 0 when formatting as a hex number to allow roundtripping
         // of negative numbers, thus we have to trim it off.
         if (b < 0)
         {
             // toss in a negative sign if the interpreted number is negative
-            return $"-{(-b).ToString("x").TrimStart('0')}";
+            return $"-{(-b).ToString("x", CultureInfo.InvariantCulture).TrimStart('0')}";
         }
         else
         {
-            return b.ToString("x").TrimStart('0');
+            return b.ToString("x", CultureInfo.InvariantCulture).TrimStart('0');
         }
     }
 
