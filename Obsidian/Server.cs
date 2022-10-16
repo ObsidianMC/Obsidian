@@ -658,12 +658,12 @@ public partial class Server : IServer
                 await Events.InvokeServerTickAsync();
 
                 keepAliveTicks++;
-                if (keepAliveTicks > 50)
+                if (keepAliveTicks > 200) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
-                    var keepAliveId = DateTime.Now.Millisecond;
+                    var keepAliveTime = DateTimeOffset.Now;
 
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play))
-                        client.ProcessKeepAlive(keepAliveId);
+                        client.SendKeepAlive(keepAliveTime);
 
                     keepAliveTicks = 0;
                 }

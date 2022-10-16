@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -53,7 +54,7 @@ public sealed class Client : IDisposable
     private readonly Socket socket;
 
     internal int ping;
-    internal int missedKeepalives;
+    internal List<long> missedKeepAlives;
     internal int id;
 
     /// <summary>
@@ -87,6 +88,8 @@ public sealed class Client : IDisposable
 
         socketStream = new NetworkStream(socket);
         minecraftStream = new MinecraftStream(socketStream);
+
+        missedKeepAlives = new List<long>();
 
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         packetQueue = new BufferBlock<IClientboundPacket>(blockOptions);
@@ -465,17 +468,43 @@ public sealed class Client : IDisposable
         return QueuePacketAsync(new GameEventPacket(Player.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
     }
 
-    internal void ProcessKeepAlive(long id)
+    internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {
-        ping = (int)(DateTime.Now.Millisecond - id);
-        SendPacket(new KeepAlivePacket(id));
-        missedKeepalives++; // This will be decreased after an answer is received.
-
-        if (missedKeepalives > config.MaxMissedKeepAlives)
-        {
-            // Too many keepalives missed, kill this connection.
-            cancellationSource.Cancel();
+        if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
+{
+            Server.Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
+            DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
+            return;
         }
+
+        // from now on we know this keepalive is VALID and WITHIN BOUNDS
+        decimal ping = DateTimeOffset.Now.ToUnixTimeMilliseconds() - keepAlive.KeepAliveId;
+        ping = Math.Min(int.MaxValue, ping); // convert within integer bounds
+        ping = Math.Max(0, ping); // negative ping is impossible.
+
+        this.ping = (int)ping;
+        Logger.LogDebug($"Valid KeepAlive ({keepAlive.KeepAliveId}) handled from {Player.Username} ({Player.Uuid})");
+        // KeepAlive is handled.
+        missedKeepAlives.Remove(keepAlive.KeepAliveId);
+    }
+
+    internal void SendKeepAlive(DateTimeOffset time)
+    {
+        long keepAliveId = time.ToUnixTimeMilliseconds();
+        // first, check if there's any KeepAlives that are older than 30 seconds
+        if (missedKeepAlives.Any(x => keepAliveId - x > 30000)) // magic number is 30s in millis
+        {
+            // kick player, failed to respond within 30s
+            cancellationSource.Cancel();
+            return;
+        }
+
+        Logger.LogDebug($"Doing KeepAlive ({keepAliveId}) with {Player.Username} ({Player.Uuid})");
+        // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
+        SendPacket(new KeepAlivePacket(keepAliveId));
+        missedKeepAlives.Add(keepAliveId);
+
+        // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
 
         //// Sending ping change in background
         //await Task.Run(async delegate ()
