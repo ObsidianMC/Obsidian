@@ -658,7 +658,7 @@ public partial class Server : IServer
                 await Events.InvokeServerTickAsync();
 
                 keepAliveTicks++;
-                if (keepAliveTicks > 200) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
+                if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
                     var keepAliveTime = DateTimeOffset.Now;
 

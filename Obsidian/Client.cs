@@ -492,7 +492,7 @@ public sealed class Client : IDisposable
     {
         long keepAliveId = time.ToUnixTimeMilliseconds();
         // first, check if there's any KeepAlives that are older than 30 seconds
-        if (missedKeepAlives.Any(x => keepAliveId - x > 30000)) // magic number is 30s in millis
+        if (missedKeepAlives.Any(x => keepAliveId - x > config.KeepAliveTimeoutInterval))
         {
             // kick player, failed to respond within 30s
             cancellationSource.Cancel();

@@ -34,7 +34,9 @@ public class ServerConfiguration : IServerConfiguration
     public List<string> WhitelistedIPs { get; set; } = new();
     public List<WhitelistedPlayer> Whitelisted { get; set; } = new();
 
-    public int MaxMissedKeepAlives { get; set; } = 15;
+    public long KeepAliveInterval { get; set; } = 10_000; // 10 seconds per KeepAlive
+
+    public long KeepAliveTimeoutInterval { get; set; } = 30_000; // No response after 30s? Timeout
 
     public string[] DownloadPlugins { get; set; } = Array.Empty<string>();
     public RconConfig? Rcon { get; set; }
