@@ -51,10 +51,16 @@ public interface IServerConfiguration
     /// </summary>
     public string Footer { get; set; }
 
+
     /// <summary>
-    /// How many KeepAlive packets can be ignored by the client before disconnecting.
+    /// Interval between KeepAlive packets send by the server.
     /// </summary>
-    public int MaxMissedKeepAlives { get; set; }
+    public long KeepAliveInterval { get; set; }
+
+    /// <summary>
+    /// How long it should take for the server to kick an inactive client. KeepAlive Timeout.
+    /// </summary>
+    public long KeepAliveTimeoutInterval { get; set; }
 
     /// <summary>
     /// Paths of plugins that are loaded at the starttime.

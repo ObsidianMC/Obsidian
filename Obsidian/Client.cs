@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -83,7 +84,7 @@ public sealed class Client : IDisposable
     /// <summary>
     /// How many <see cref="KeepAlivePacket"/>s the client has missed.
     /// </summary>
-    internal int missedKeepAlives;
+    internal List<long> missedKeepAlives;
 
     /// <summary>
     /// The client's ping in milliseconds.
@@ -173,6 +174,7 @@ public sealed class Client : IDisposable
         networkStream = new(socket);
         minecraftStream = new(networkStream);
 
+        missedKeepAlives = new List<long>();
         var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
         var blockOptions = new ExecutionDataflowBlockOptions { CancellationToken = cancellationSource.Token, EnsureOrdered = true };
         var sendPacketBlock = new ActionBlock<IClientboundPacket>(packet =>
@@ -540,20 +542,43 @@ public sealed class Client : IDisposable
     internal Task SendTimeUpdateAsync() => QueuePacketAsync(new UpdateTimePacket(Player!.World.LevelData.Time, Player.World.LevelData.DayTime));
     internal Task SendWeatherUpdateAsync() => QueuePacketAsync(new GameEventPacket(Player!.World.LevelData.Raining ? ChangeGameStateReason.BeginRaining : ChangeGameStateReason.EndRaining));
 
-    internal void ProcessKeepAlive(long id)
+    internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {
-        // The Minecraft protocol specifies the keep alive packet id as a long, however the server implementation ensures it only goes up to 1000
-        // However the client can also send back whatever they want which will cause an exception here (may be an attack vector?)
-        // FIXME: Implement keep alive properly.
-        ping = (int)(DateTime.Now.Millisecond - id);
-        SendPacket(new KeepAlivePacket(id));
-        missedKeepAlives++; // This will be decreased after an answer is received.
-
-        if (missedKeepAlives > config.MaxMissedKeepAlives)
-        {
-            // Too many keepalives missed, kill this connection.
-            cancellationSource.Cancel();
+        if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
+{
+            Server.Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
+            DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
+            return;
         }
+
+        // from now on we know this keepalive is VALID and WITHIN BOUNDS
+        decimal ping = DateTimeOffset.Now.ToUnixTimeMilliseconds() - keepAlive.KeepAliveId;
+        ping = Math.Min(int.MaxValue, ping); // convert within integer bounds
+        ping = Math.Max(0, ping); // negative ping is impossible.
+
+        this.ping = (int)ping;
+        Logger.LogDebug($"Valid KeepAlive ({keepAlive.KeepAliveId}) handled from {Player.Username} ({Player.Uuid})");
+        // KeepAlive is handled.
+        missedKeepAlives.Remove(keepAlive.KeepAliveId);
+    }
+
+    internal void SendKeepAlive(DateTimeOffset time)
+    {
+        long keepAliveId = time.ToUnixTimeMilliseconds();
+        // first, check if there's any KeepAlives that are older than 30 seconds
+        if (missedKeepAlives.Any(x => keepAliveId - x > config.KeepAliveTimeoutInterval))
+        {
+            // kick player, failed to respond within 30s
+            cancellationSource.Cancel();
+            return;
+        }
+
+        Logger.LogDebug($"Doing KeepAlive ({keepAliveId}) with {Player.Username} ({Player.Uuid})");
+        // now that all is fine and dandy, we'd be fine to enqueue the new keepalive
+        SendPacket(new KeepAlivePacket(keepAliveId));
+        missedKeepAlives.Add(keepAliveId);
+
+        // TODO: reimplement this? probably in KeepAlivePacket:HandleAsync ⬇️
 
         //// Sending ping change in background
         //await Task.Run(async delegate ()
