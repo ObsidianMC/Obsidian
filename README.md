@@ -5,6 +5,10 @@
 [![.NET Build](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml/badge.svg)](https://github.com/ObsidianMC/Obsidian/actions/workflows/dotnet.yml)
 [![Discord](https://img.shields.io/discord/772894170451804220.svg)](https://discord.gg/gQBtqyXChu)
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-13-orange.svg?style=flat-square)](#contributors)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
 Obsidian is a C# .NET implementation of the Minecraft server protocol. Obsidian is currently still in development, and a lot of love and care is being put into the project!
 
 Feel free to join our [Discord](https://discord.gg/gQBtqyXChu) if you're curious about the current state of the project, questions are always welcome!
@@ -77,10 +81,11 @@ Thank you to Mojang for creating this wonderful game named [Minecraft](https://w
 
 **...and of course the biggest thank you to everyone that contributed!**
 
-<a href="https://github.com/obsidianserver/obsidian/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=obsidianserver/obsidian" />
-</a>
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
 
-<sub><sup>Made with [contributors-img](https://contributors-img.web.app)</sup></sub>
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
 
-![repobeats](https://repobeats.axiom.co/api/embed/18e251a59758b25b1ecebdfe0f4b6b4004b8d0f9.svg "Repobeats analytics image")
+<!-- ALL-CONTRIBUTORS-LIST:END -->
