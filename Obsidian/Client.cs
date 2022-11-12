@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -16,7 +15,6 @@ using Obsidian.Net.Packets.Status;
 using Obsidian.Utilities.Mojang;
 using Obsidian.Utilities.Registry;
 using Obsidian.WorldData;
-using Org.BouncyCastle.Utilities;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -28,58 +26,9 @@ namespace Obsidian;
 public sealed class Client : IDisposable
 {
     /// <summary>
-    /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
+    /// The max amount of bytes that can be sent to the client before compression is required.
     /// </summary>
-    public bool EncryptionEnabled { get; private set; }
-
-    /// <summary>
-    /// The client settings. Consists of the view distance, locale, skin parts and other useful information about the client.
-    /// </summary>
-    public ClientInformationPacket? ClientSettings { get; internal set; }
-
-    internal SignatureData? signatureData;
-
-    public bool EncryptionEnabled { get; private set; }
-
-    /// <summary>
-    /// Which state of the protocol the client is currently in.
-    /// </summary>
-    public ClientState State { get; private set; } = ClientState.Handshaking;
-
-    /// <summary>
-    /// Which chunks the player should have loaded around them.
-    /// </summary>
-    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
-
-    /// <summary>
-    /// The client's ip and port used to establish this connection.
-    /// </summary>
-    public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
-
-    /// <summary>
-    /// Executed when the client disconnects.
-    /// </summary>
-    public event Action<Client>? Disconnected;
-
-    /// <summary>
-    /// Used to log actions caused by the client.
-    /// </summary>
-    public ILogger Logger => Server.Logger;
-
-    /// <summary>
-    /// The player that the client is logged in as.
-    /// </summary>
-    public Player? Player { get; private set; }
-
-    /// <summary>
-    /// The server that the client is connected to.
-    /// </summary>
-    public Server Server { get; private set; }
-
-    /// <summary>
-    /// The client brand. This is the name that the client used to identify itself (Fabric, Forge, Quilt, etc.)
-    /// </summary>
-    public string? Brand { get; set; }
+    private const int CompressionThreshold = 256;
 
     /// <summary>
     /// The player's entity id.
@@ -95,6 +44,11 @@ public sealed class Client : IDisposable
     /// The client's ping in milliseconds.
     /// </summary>
     internal int ping;
+
+    /// <summary>
+    /// The public key/signature data received from mojang.
+    /// </summary>
+    internal SignatureData? signatureData;
 
     /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
@@ -115,11 +69,6 @@ public sealed class Client : IDisposable
     /// The server's token used to encrypt the stream.
     /// </summary>
     private byte[]? sharedKey;
-
-    /// <summary>
-    /// The max amount of bytes that can be sent to the client before compression is required.
-    /// </summary>
-    private const int CompressionThreshold = 256;
 
     /// <summary>
     /// The stream used to receive and send packets.
@@ -165,6 +114,56 @@ public sealed class Client : IDisposable
     /// The current server configuration.
     /// </summary>
     private readonly ServerConfiguration config;
+
+    /// <summary>
+    /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
+    /// </summary>
+    public bool EncryptionEnabled { get; private set; }
+
+    /// <summary>
+    /// The client settings. Consists of the view distance, locale, skin parts and other useful information about the client.
+    /// </summary>
+    public ClientInformationPacket? ClientSettings { get; internal set; }
+
+    /// <summary>
+    /// Which state of the protocol the client is currently in.
+    /// </summary>
+    public ClientState State { get; private set; } = ClientState.Handshaking;
+
+    /// <summary>
+    /// Which chunks the player should have loaded around them.
+    /// </summary>
+    public ConcurrentHashSet<(int X, int Z)> LoadedChunks { get; internal set; }
+
+    /// <summary>
+    /// The client's ip and port used to establish this connection.
+    /// </summary>
+    public EndPoint? RemoteEndPoint => socket.RemoteEndPoint;
+
+    /// <summary>
+    /// Executed when the client disconnects.
+    /// </summary>
+    public event Action<Client>? Disconnected;
+
+    /// <summary>
+    /// Used to log actions caused by the client.
+    /// </summary>
+    public ILogger Logger => Server.Logger;
+
+    /// <summary>
+    /// The player that the client is logged in as.
+    /// </summary>
+    public Player? Player { get; private set; }
+
+    /// <summary>
+    /// The server that the client is connected to.
+    /// </summary>
+    public Server Server { get; private set; }
+
+    /// <summary>
+    /// The client brand. This is the name that the client used to identify itself (Fabric, Forge, Quilt, etc.)
+    /// </summary>
+    public string? Brand { get; set; }
 
     public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
     {
@@ -374,8 +373,6 @@ public sealed class Client : IDisposable
             };
         }
 
-        string username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
-
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
@@ -400,8 +397,14 @@ public sealed class Client : IDisposable
 
             // Attempt to encrypt the connection
             _ = packetCryptography.GenerateKeyPair();
+
             var values = packetCryptography.GeneratePublicKeyAndToken();
-            SendPacket(new EncryptionRequest(values.publicKey, randomToken = values.randomToken));
+
+            SendPacket(new EncryptionRequest
+            {
+                PublicKey = values.publicKey,
+                VerifyToken = randomToken = values.randomToken
+            });
         }
         else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
         {
@@ -564,7 +567,7 @@ public sealed class Client : IDisposable
     internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
-{
+        {
             Server.Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
             DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
