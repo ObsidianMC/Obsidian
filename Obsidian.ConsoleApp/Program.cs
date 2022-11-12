@@ -9,9 +9,14 @@ namespace Obsidian.ConsoleApp;
 
 public static class Program
 {
+#if DEBUG
+    const LogLevel LOGLEVEL = LogLevel.Trace;
+#else
+    const LogLevel LOGLEVEL = LogLevel.Information;
+#endif
     private static async Task Main()
     {
-        var loggerProvider = new LoggerProvider();
+        var loggerProvider = new LoggerProvider(LOGLEVEL);
         var startupLogger = loggerProvider.CreateLogger("Startup");
 
         Console.Title = $"Obsidian {Server.VERSION}";
@@ -25,6 +30,14 @@ public static class Program
         IServerEnvironment env = await IServerEnvironment.CreateDefaultAsync(startupLogger);
 
         var host = Host.CreateDefaultBuilder()
+            .ConfigureLogging(options =>
+            {
+                options.ClearProviders();
+                options.AddProvider(loggerProvider);
+                options.SetMinimumLevel(LOGLEVEL);
+                //  Shhh... Only let Microsoft log when stuff crashes.
+                //options.AddFilter("Microsoft", LogLevel.Warning);
+            })
             .ConfigureServices(services =>
             {
                 services.AddObsidian(env);
@@ -32,13 +45,6 @@ public static class Program
                 // Give the server some time to shut down after CTRL-C or SIGTERM.
                 services.Configure<HostOptions>(
                     opts => opts.ShutdownTimeout = TimeSpan.FromSeconds(10));
-            })
-            .ConfigureLogging(options =>
-            {
-                options.ClearProviders();
-                options.AddProvider(loggerProvider);
-                //  Shhh... Only let Microsoft log when stuff crashes.
-                options.AddFilter("Microsoft", LogLevel.Warning);
             })
             .Build();
 

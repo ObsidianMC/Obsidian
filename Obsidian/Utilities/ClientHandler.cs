@@ -163,7 +163,7 @@ public class ClientHandler
                 catch (Exception e)
                 {
                     if (this.config.VerboseExceptionLogging)
-                        Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                        client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
                 }
                 break;
         }
@@ -180,7 +180,7 @@ public class ClientHandler
         catch (Exception e)
         {
             if (client.Server.Config.VerboseExceptionLogging)
-                Globals.PacketLogger.LogError(e.Message + Environment.NewLine + e.StackTrace);
+                client.Logger.LogError(e.Message + Environment.NewLine + e.StackTrace);
         }
         ObjectPool<T>.Shared.Return(packet);
     }

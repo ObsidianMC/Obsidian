@@ -236,11 +236,11 @@ public partial class Server
 
         joined.World.TryAddPlayer(joined);
 
-        BroadcastMessage(ChatMessage.Simple(string.Empty).AddExtra(new ChatMessage
+        BroadcastMessage(new ChatMessage
         {
             Text = string.Format(Config.JoinMessage, e.Player.Username),
             Color = HexColor.Yellow
-        }));
+        });
 
         foreach (Player other in Players)
         {

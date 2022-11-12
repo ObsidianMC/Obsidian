@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
 WORKDIR /src
 COPY . .
 RUN dotnet restore
@@ -6,7 +6,7 @@ RUN dotnet publish Obsidian.ConsoleApp/ -c Release -r linux-musl-x64 --self-cont
 
 FROM alpine:latest
 WORKDIR /app
-COPY --from=build /src/Obsidian.ConsoleApp/bin/Release/net6.0/linux-musl-x64/publish/ .
+COPY --from=build /src/Obsidian.ConsoleApp/bin/Release/net7.0/linux-musl-x64/publish/ .
 RUN apk upgrade --update-cache --available && apk add openssl libstdc++ && rm -rf /var/cache/apk/*
 
 WORKDIR /files

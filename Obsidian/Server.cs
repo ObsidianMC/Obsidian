@@ -80,7 +80,7 @@ public partial class Server : IServer
     /// Creates a new instance of <see cref="Server"/>.
     /// </summary>
     public Server(
-        IHostApplicationLifetime lifetime, 
+        IHostApplicationLifetime lifetime,
         IServerEnvironment environment,
         ILogger<Server> logger,
         RconServer rconServer)
@@ -192,7 +192,7 @@ public partial class Server : IServer
     public void BroadcastMessage(PlayerChatMessagePacket message)
     {
         _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation(message.SignedMessage.Text);
+        _logger.LogInformation($"<{message.SenderDisplayName.Text}> {message.SignedMessage.Text}");
     }
 
     /// <summary>
@@ -282,7 +282,7 @@ public partial class Server : IServer
 
         if (Configuration.EnableRcon)
             serverTasks.Add(_rconServer.RunAsync(this, _cancelTokenSource.Token));
-        
+
         loadTimeStopwatch.Stop();
         _logger.LogInformation("Server loaded in {time}", loadTimeStopwatch.Elapsed);
         _logger.LogInformation("Listening for new clients...");
@@ -462,7 +462,7 @@ public partial class Server : IServer
             await player.client.SendCommandsAsync();
     }
 
-    internal async Task DisconnectIfConnectedAsync(string username, ChatMessage reason = null)
+    internal async Task DisconnectIfConnectedAsync(string username, ChatMessage? reason = null)
     {
         var player = Players.FirstOrDefault(x => x.Username == username);
         if (player != null)
@@ -658,12 +658,12 @@ public partial class Server : IServer
                 await Events.InvokeServerTickAsync();
 
                 keepAliveTicks++;
-                if (keepAliveTicks > 50)
+                if (keepAliveTicks > (Config.KeepAliveInterval / 50)) // to clarify: one tick is 50 milliseconds. 50 * 200 = 10000 millis means 10 seconds
                 {
-                    var keepAliveId = DateTime.Now.Millisecond;
+                    var keepAliveTime = DateTimeOffset.Now;
 
                     foreach (var client in _clients.Where(x => x.State == ClientState.Play))
-                        client.ProcessKeepAlive(keepAliveId);
+                        client.SendKeepAlive(keepAliveTime);
 
                     keepAliveTicks = 0;
                 }
