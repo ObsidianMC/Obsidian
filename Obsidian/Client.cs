@@ -51,6 +51,11 @@ public sealed class Client : IDisposable
     internal SignatureData? signatureData;
 
     /// <summary>
+    /// Used for signing chat messages.
+    /// </summary>
+    internal MessageSigningData? messageSigningData;
+
+    /// <summary>
     /// Whether the client has compression enabled on the Minecraft stream.
     /// </summary>
     private bool compressionEnabled;
@@ -433,13 +438,26 @@ public sealed class Client : IDisposable
 
         // Decrypt the shared secret and verify the token
         var encryptionResponse = EncryptionResponse.Deserialize(data);
-        sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
-        var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-        if (!decryptedToken.SequenceEqual(randomToken))
+        sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
+
+        if (encryptionResponse.HasVerifyToken)
         {
-            await DisconnectAsync("Invalid token...");
-            return;
+            var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
+
+            if (!decryptedToken.SequenceEqual(randomToken))
+            {
+                await DisconnectAsync("Invalid token...");
+                return;
+            }
+        }
+        else
+        {
+            this.messageSigningData = new()
+            {
+                Salt = encryptionResponse.Salt,
+                MessageSignature = encryptionResponse.MessageSignature,
+            };
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
