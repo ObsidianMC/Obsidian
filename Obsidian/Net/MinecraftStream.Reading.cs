@@ -326,6 +326,14 @@ public partial class MinecraftStream
     }
 
     [ReadMethod]
+    public SignedMessage ReadSignedMessage() =>
+        new()
+        {
+            UserId = this.ReadGuid(),
+            Signature = this.ReadUInt8Array()
+        };
+
+    [ReadMethod]
     public DateTimeOffset ReadDateTimeOffset() => DateTimeOffset.FromUnixTimeMilliseconds(this.ReadLong());
 
     [ReadMethod]
