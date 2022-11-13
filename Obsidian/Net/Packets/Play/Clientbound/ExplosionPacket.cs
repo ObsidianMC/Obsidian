@@ -16,7 +16,7 @@ public partial class ExplosionPacket : IClientboundPacket
     [Field(3), DataFormat(typeof(float))]
     public VectorF PlayerMotion { get; init; }
 
-    public int Id => 0x19;
+    public int Id => 0x1B;
 }
 
 public readonly struct ExplosionRecord

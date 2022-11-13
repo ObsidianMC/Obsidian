@@ -742,7 +742,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk)) : Task.CompletedTask;
     internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
 
     private async Task SendServerBrand()

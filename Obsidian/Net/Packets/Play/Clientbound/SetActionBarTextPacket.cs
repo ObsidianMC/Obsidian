@@ -5,7 +5,7 @@ namespace Obsidian.Net.Packets.Play.Clientbound;
 public partial class SetActionBarTextPacket : IClientboundPacket
 {
     [Field(0)]
-    public string Text { get; init; }
+    public required string Text { get; init; }
 
-    public int Id => 0x40;
+    public int Id => 0x43;
 }

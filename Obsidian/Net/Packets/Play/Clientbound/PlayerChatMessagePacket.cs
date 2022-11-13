@@ -40,11 +40,7 @@ public partial class PlayerChatMessagePacket : IClientboundPacket
     [Field(11)]
     public byte[] MessageSignature { get; init; }
 
-    public int Id => 0x30;
-
-    public PlayerChatMessagePacket(ChatMessage message, MessageType type) : this(message, type, Guid.Empty)
-    {
-    }
+    public int Id => 0x33;
 
     public PlayerChatMessagePacket(ChatMessage message, MessageType type, Guid? sender)
     {

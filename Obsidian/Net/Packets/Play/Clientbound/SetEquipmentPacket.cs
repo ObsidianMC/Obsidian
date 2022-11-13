@@ -11,5 +11,5 @@ public partial class SetEquipmentPacket : IClientboundPacket
     [Field(1)]
     public List<Equipment> Equipment { get; init; }
 
-    public int Id => 0x50;
+    public int Id => 0x53;
 }

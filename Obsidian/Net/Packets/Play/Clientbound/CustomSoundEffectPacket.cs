@@ -22,7 +22,7 @@ public partial class CustomSoundEffectPacket : IClientboundPacket
     [Field(5)]
     public long Seed { get; set; } = 0;//TODO generate seed
 
-    public int Id => 0x16;
+    public int Id => 0x17;
 
     public CustomSoundEffectPacket(string name, SoundPosition position, SoundCategory category, float volume, float pitch)
     {

@@ -3,13 +3,13 @@ using Obsidian.WorldData;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
-public partial class ChunkDataPacket : IClientboundPacket
+public partial class ChunkDataAndUpdateLightPacket : IClientboundPacket
 {
     public Chunk Chunk { get; }
 
-    public int Id => 0x1F;
+    public int Id => 0x21;
 
-    public ChunkDataPacket(Chunk chunk)
+    public ChunkDataAndUpdateLightPacket(Chunk chunk)
     {
         Chunk = chunk;
     }

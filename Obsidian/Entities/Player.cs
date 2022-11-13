@@ -514,11 +514,24 @@ public class Player : Living, IPlayer
 
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
-        await this.client.QueuePacketAsync(new ParticlePacket(particle, pos, count) { MaxSpeed = extra });
+        await this.client.QueuePacketAsync(new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            MaxSpeed = extra
+        });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, float extra = 0) => await this.client.QueuePacketAsync(
-        new ParticlePacket(particle, pos, count) { Offset = new VectorF(offsetX, offsetY, offsetZ), MaxSpeed = extra });
+        new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            Offset = new VectorF(offsetX, offsetY, offsetZ),
+            MaxSpeed = extra
+        });
 
     public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data,
         float extra = 0) =>
@@ -529,12 +542,22 @@ public class Player : Living, IPlayer
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
         float extra = 0) =>
-        await this.client.QueuePacketAsync(new ParticlePacket(particle, pos, count) { Data = data, MaxSpeed = extra });
+        await this.client.QueuePacketAsync(new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            Data = data, 
+            MaxSpeed = extra 
+        });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, ParticleData data, float extra = 0) => await this.client.QueuePacketAsync(
-        new ParticlePacket(particle, pos, count)
+        new ParticlePacket
         {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
             Data = data,
             Offset = new VectorF(offsetX, offsetY, offsetZ),
             MaxSpeed = extra
