@@ -18,7 +18,7 @@ public partial class PlayerActionPacket : IServerboundPacket
     [Field(3), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x1C;
+    public int Id => 0x1D;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

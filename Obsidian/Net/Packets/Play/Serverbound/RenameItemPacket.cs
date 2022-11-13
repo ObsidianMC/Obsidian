@@ -8,7 +8,7 @@ public partial class RenameItemPacket : IServerboundPacket
     [Field(0)]
     public string ItemName { get; private set; }
 
-    public int Id => 0x22;
+    public int Id => 0x23;
 
     public ValueTask HandleAsync(Server server, Player player) => ValueTask.CompletedTask;
 }

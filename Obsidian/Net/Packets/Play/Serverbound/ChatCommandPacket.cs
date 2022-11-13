@@ -3,7 +3,6 @@ using Obsidian.Commands;
 using Obsidian.Commands.Framework.Entities;
 using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
-using System.Text;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
@@ -24,7 +23,7 @@ public partial class ChatCommandPacket : IServerboundPacket
     [Field(4)]
     public bool SignedPreview { get; private set; }
 
-    public int Id => 0x03;
+    public int Id => 0x04;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {

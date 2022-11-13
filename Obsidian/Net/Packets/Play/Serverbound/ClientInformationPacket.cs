@@ -29,7 +29,7 @@ public partial class ClientInformationPacket : IServerboundPacket
     [Field(7)]
     public bool AllowServerListings { get; private set; }
 
-    public int Id => 0x07;
+    public int Id => 0x08;
 
     public ValueTask HandleAsync(Server server, Player player)
     {

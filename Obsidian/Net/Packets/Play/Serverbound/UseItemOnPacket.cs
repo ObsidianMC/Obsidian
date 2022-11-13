@@ -25,7 +25,7 @@ public partial class UseItemOnPacket : IServerboundPacket
     [Field(7), VarLength]
     public int Sequence { get; private set; }
 
-    public int Id => 0x30;
+    public int Id => 0x31;
 
     public async ValueTask HandleAsync(Server server, Player player)
     {
