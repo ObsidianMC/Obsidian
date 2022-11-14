@@ -270,14 +270,7 @@ public class Player : Living, IPlayer
     }
 
     public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
-         this.client.QueuePacketAsync(new PlayerChatMessagePacket(message, MessageType.Chat, sender)
-         {
-             SenderDisplayName = messageSignature.Username,
-             Salt = messageSignature.Salt,
-             MessageSignature = messageSignature.Value,
-             UnsignedChatMessage = message,
-             Timestamp = messageSignature.Timestamp,
-         });
+        throw new NotImplementedException();
 
     public Task SendMessageAsync(ChatMessage message) =>
         this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));

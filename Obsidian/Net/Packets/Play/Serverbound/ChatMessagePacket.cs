@@ -20,7 +20,7 @@ public partial class ChatMessagePacket : IServerboundPacket
     [Field(5)]
     public bool SignedPreview { get; set; }
 
-    [Field(6), VarLength]
+    [Field(6)]
     public List<SignedMessage> PreviouslySeenMessages { get; private set; }
 
     [Field(7)]
@@ -35,6 +35,25 @@ public partial class ChatMessagePacket : IServerboundPacket
     public async ValueTask HandleAsync(Server server, Player player)
     {
         await server.HandleIncomingMessageAsync(this, player.client);
+    }
+
+    public void Populate(MinecraftStream stream)
+    {
+        this.Message = stream.ReadString();
+        this.Timestamp = stream.ReadDateTimeOffset();
+        this.Salt = stream.ReadLong();
+        this.Signature = stream.ReadUInt8Array();
+        this.SignedPreview = stream.ReadBoolean();
+
+        this.PreviouslySeenMessages = new List<SignedMessage>(stream.ReadVarInt());
+
+        for (int i = 0; i < this.PreviouslySeenMessages.Count; i++)
+            this.PreviouslySeenMessages[i] = stream.ReadSignedMessage();
+
+        this.HasLastMessage = stream.ReadBoolean();
+        if (this.HasLastMessage)
+            this.LastMessage = stream.ReadSignedMessage();
+        
     }
 }
 

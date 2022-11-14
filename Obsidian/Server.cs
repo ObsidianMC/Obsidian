@@ -192,7 +192,7 @@ public partial class Server : IServer
     public void BroadcastMessage(PlayerChatMessagePacket message)
     {
         _chatMessagesQueue.Enqueue(message);
-        _logger.LogInformation($"<{message.SenderDisplayName.Text}> {message.SignedMessage.Text}");
+        _logger.LogInformation("{}", message.Header.PlainMessage);
     }
 
     /// <summary>
@@ -418,15 +418,8 @@ public partial class Server : IServer
         if (chat.Cancel)
             return;
 
-        var playerChatMessagePacket = new PlayerChatMessagePacket(message, type, source.Player.Uuid)
-        {
-            UnsignedChatMessage = message,
-            SenderDisplayName = source.Player.CustomName ?? source.Player.Username,
-            MessageSignature = packet.Signature,
-            Salt = packet.Salt,
-            Timestamp = packet.Timestamp
-        };
-        BroadcastMessage(playerChatMessagePacket);
+        //TODO add bool for sending secure chat messages
+        BroadcastMessage(message);
     }
 
     internal async Task QueueBroadcastPacketAsync(IClientboundPacket packet)
