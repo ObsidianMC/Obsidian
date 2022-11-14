@@ -51,7 +51,6 @@ public class LoginStart : IServerboundPacket
         Populate(stream);
     }
 
-
     public void Populate(MinecraftStream stream)
     {
         this.Username = stream.ReadString();

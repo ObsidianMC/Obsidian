@@ -3,7 +3,9 @@ using Obsidian.Nbt;
 using Obsidian.Serialization.Attributes;
 using Obsidian.Utilities.Registry;
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Obsidian.Net;
@@ -543,7 +545,13 @@ public partial class MinecraftStream
     [ReadMethod]
     public Guid ReadGuid()
     {
-        return Guid.Parse(ReadString());
+        var converter = new GuidConverter()
+        {
+            Long1 = this.ReadLong(),
+            Long2 = this.ReadLong()
+        };
+
+        return converter.Guid;
     }
 
     [ReadMethod]
@@ -798,5 +806,21 @@ public partial class MinecraftStream
     public Velocity ReadVelocity()
     {
         return new Velocity(ReadShort(), ReadShort(), ReadShort());
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct GuidConverter
+    {
+        [FieldOffset(0)]
+        public decimal Decimal;
+
+        [FieldOffset(0)]
+        public Guid Guid;
+
+        [FieldOffset(0)]
+        public long Long1;
+
+        [FieldOffset(8)]
+        public long Long2;
     }
 }
