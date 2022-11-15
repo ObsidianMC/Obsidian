@@ -5,127 +5,127 @@
       "id": 0,
       "element": {
         "chat": {
-          "decoration": {
-            "parameters": [
-              "sender",
-              "content"
-            ],
-            "translation_key": "chat.type.text",
-            "style": {}
-          }
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text"
         },
         "narration": {
-          "decoration": {
-            "parameters": [
-              "sender",
-              "content"
-            ],
-            "translation_key": "chat.type.text.narrate",
-            "style": {}
-          },
-          "priority": "chat"
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
     {
       "element": {
-        "narration": {
-          "priority": "system"
+        "chat": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.emote"
         },
-        "chat": {}
+        "narration": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.emote"
+        }
       },
-      "name": "minecraft:system",
+      "name": "minecraft:emote_command",
       "id": 1
     },
     {
       "id": 2,
-      "name": "minecraft:game_info",
+      "name": "minecraft:msg_command_incoming",
       "element": {
-        "overlay": {}
+        "chat": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "style": {
+            "color": "gray",
+            "italic": true
+          },
+          "translation_key": "commands.message.display.incoming"
+        },
+        "narration": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
+        }
       }
     },
     {
       "element": {
-        "narration": {
-          "priority": "chat",
-          "decoration": {
-            "style": {},
-            "parameters": [
-              "sender",
-              "content"
-            ],
-            "translation_key": "chat.type.text.narrate"
-          }
-        },
         "chat": {
-          "decoration": {
-            "style": {},
-            "parameters": [
-              "sender",
-              "content"
-            ],
-            "translation_key": "chat.type.announcement"
-          }
+          "parameters": [
+            "target",
+            "content"
+          ],
+          "style": {
+            "color": "gray",
+            "italic": true
+          },
+          "translation_key": "commands.message.display.outgoing"
+        },
+        "narration": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       },
       "id": 3,
-      "name": "minecraft:say_command"
+      "name": "minecraft:msg_command_outgoing"
     },
     {
       "id": 4,
       "element": {
         "chat": {
-          "decoration": {
-            "translation_key": "commands.message.display.incoming",
-            "style": {
-              "italic": 1,
-              "color": "gray"
-            },
-            "parameters": [
-              "sender",
-              "content"
-            ]
-          }
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.announcement"
         },
         "narration": {
-          "priority": "chat",
-          "decoration": {
-            "translation_key": "chat.type.text.narrate",
-            "style": {},
-            "parameters": [
-              "sender",
-              "content"
-            ]
-          }
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       },
-      "name": "minecraft:msg_command"
+      "name": "minecraft:say_command"
     },
     {
-      "name": "minecraft:team_msg_command",
+      "name": "minecraft:team_msg_command_incoming",
       "id": 5,
       "element": {
-        "narration": {
-          "priority": "chat",
-          "decoration": {
-            "style": {},
-            "parameters": [
-              "sender",
-              "content"
-            ],
-            "translation_key": "chat.type.text.narrate"
-          }
-        },
         "chat": {
-          "decoration": {
-            "translation_key": "chat.type.team.text",
-            "style": {},
-            "parameters": [
-              "team_name",
-              "sender",
-              "content"
-            ]
-          }
+          "parameters": [
+            "target",
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.team.text"
+        },
+        "narration": {
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       }
     },
@@ -133,38 +133,22 @@
       "id": 6,
       "element": {
         "chat": {
-          "decoration": {
-            "translation_key": "chat.type.emote",
-            "style": {},
-            "parameters": [
-              "sender",
-              "content"
-            ]
-          }
+          "parameters": [
+            "target",
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.team.sent"
         },
         "narration": {
-          "priority": "chat",
-          "decoration": {
-            "style": {},
-            "translation_key": "chat.type.emote",
-            "parameters": [
-              "sender",
-              "content"
-            ]
-          }
+          "parameters": [
+            "sender",
+            "content"
+          ],
+          "translation_key": "chat.type.text.narrate"
         }
       },
-      "name": "minecraft:emote_command"
-    },
-    {
-      "element": {
-        "chat": {},
-        "narration": {
-          "priority": "chat"
-        }
-      },
-      "id": 7,
-      "name": "minecraft:tellraw_command"
+      "name": "minecraft:team_msg_command_outgoing"
     }
   ]
 }

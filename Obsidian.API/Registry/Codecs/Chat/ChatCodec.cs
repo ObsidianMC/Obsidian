@@ -2,9 +2,9 @@
 
 public sealed record class ChatCodec
 {
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
-    public int Id { get; set; }
+    public required int Id { get; init; }
 
-    public ChatElement Element { get; set; } = new();
+    public required ChatElement Element { get; init; }
 }
