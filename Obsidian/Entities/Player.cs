@@ -273,10 +273,10 @@ public class Player : Living, IPlayer
         throw new NotImplementedException();
 
     public Task SendMessageAsync(ChatMessage message) =>
-        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, false));
 
     public Task SetActionBarTextAsync(ChatMessage message) =>
-        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.ActionBar));
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
 
     public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
         client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));
