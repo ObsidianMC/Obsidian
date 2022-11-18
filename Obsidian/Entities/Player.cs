@@ -270,20 +270,13 @@ public class Player : Living, IPlayer
     }
 
     public Task SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature) =>
-         this.client.QueuePacketAsync(new PlayerChatMessagePacket(message, MessageType.Chat, sender)
-         {
-             SenderDisplayName = messageSignature.Username,
-             Salt = messageSignature.Salt,
-             MessageSignature = messageSignature.Value,
-             UnsignedChatMessage = message,
-             Timestamp = messageSignature.Timestamp,
-         });
+        throw new NotImplementedException();
 
     public Task SendMessageAsync(ChatMessage message) =>
-        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.System));
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, false));
 
     public Task SetActionBarTextAsync(ChatMessage message) =>
-        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, MessageType.ActionBar));
+        this.client.QueuePacketAsync(new SystemChatMessagePacket(message, true));
 
     public Task SendEntitySoundAsync(Sounds soundId, int entityId, SoundCategory category = SoundCategory.Master, float volume = 1f, float pitch = 1f) =>
         client.QueuePacketAsync(new EntitySoundEffectPacket(soundId, entityId, category, volume, pitch));
@@ -514,11 +507,24 @@ public class Player : Living, IPlayer
 
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float extra = 0) =>
-        await this.client.QueuePacketAsync(new ParticlePacket(particle, pos, count) { MaxSpeed = extra });
+        await this.client.QueuePacketAsync(new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            MaxSpeed = extra
+        });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, float extra = 0) => await this.client.QueuePacketAsync(
-        new ParticlePacket(particle, pos, count) { Offset = new VectorF(offsetX, offsetY, offsetZ), MaxSpeed = extra });
+        new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            Offset = new VectorF(offsetX, offsetY, offsetZ),
+            MaxSpeed = extra
+        });
 
     public Task SpawnParticleAsync(ParticleType particle, float x, float y, float z, int count, ParticleData data,
         float extra = 0) =>
@@ -529,12 +535,22 @@ public class Player : Living, IPlayer
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, ParticleData data,
         float extra = 0) =>
-        await this.client.QueuePacketAsync(new ParticlePacket(particle, pos, count) { Data = data, MaxSpeed = extra });
+        await this.client.QueuePacketAsync(new ParticlePacket
+        {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
+            Data = data, 
+            MaxSpeed = extra 
+        });
 
     public async Task SpawnParticleAsync(ParticleType particle, VectorF pos, int count, float offsetX, float offsetY,
         float offsetZ, ParticleData data, float extra = 0) => await this.client.QueuePacketAsync(
-        new ParticlePacket(particle, pos, count)
+        new ParticlePacket
         {
+            Type = particle,
+            Position = pos,
+            ParticleCount = count,
             Data = data,
             Offset = new VectorF(offsetX, offsetY, offsetZ),
             MaxSpeed = extra

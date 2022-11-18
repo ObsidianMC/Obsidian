@@ -11,7 +11,7 @@ public partial class SetTitleTextPacket : IClientboundPacket
 
     public SetTitleTextPacket(TitleMode mode)
     {
-        this.Id = mode == TitleMode.SetTitle ? 0x5A : 0x58;
+        this.Id = mode == TitleMode.SetTitle ? 0x5D : 0x5B;
     }
 }
 

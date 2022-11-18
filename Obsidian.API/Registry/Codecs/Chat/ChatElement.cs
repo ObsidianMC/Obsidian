@@ -2,9 +2,7 @@
 
 public sealed record class ChatElement
 {
-    public ChatType? Chat { get; set; }
+    public required ChatType Chat { get; set; }
 
-    public ChatType? Narration { get; set; }
-
-    public object? Overlay { get; set; }
+    public required ChatType Narration { get; set; }
 }

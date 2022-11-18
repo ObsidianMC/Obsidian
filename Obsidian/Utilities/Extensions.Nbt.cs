@@ -296,8 +296,34 @@ public partial class Extensions
         var chat = chatElement.Chat;
         var narration = chatElement.Narration;
 
-        var chatCompound = new NbtCompound("chat");
-        var narrationCompound = new NbtCompound("narration");
+        var chatParameters = new NbtList(NbtTagType.String, "parameters");
+        var narrationParameters = new NbtList(NbtTagType.String, "parameters");
+
+        foreach (var param in chat.Parameters)
+            chatParameters.Add(new NbtTag<string>("", param));
+        foreach (var param in narration.Parameters)
+            narrationParameters.Add(new NbtTag<string>("", param));
+
+        var chatCompound = new NbtCompound("chat")
+        {
+            chatParameters,
+            new NbtTag<string>("translation_key", chat.TranslationKey)
+        };
+
+        if(chat.Style is ChatStyle style)
+        {
+            chatCompound.Add(new NbtCompound("style")
+            {
+                new NbtTag<string>("color", style.Color),
+                new NbtTag<bool>("italic", style.Italic)
+            });
+        }
+
+        var narrationCompound = new NbtCompound("narration")
+        {
+            narrationParameters,
+            new NbtTag<string>("translation_key", narration.TranslationKey)
+        };
 
         var element = new NbtCompound("element")
         {
@@ -305,58 +331,7 @@ public partial class Extensions
             narrationCompound,
         };
 
-        if (value.Id == 2)
-        {
-            element.Remove("chat");
-            element.Remove("narration");
-
-            //For some reason game info needs an overlay compound? Idk what its use is for but we have to write it
-            element.Add(new NbtCompound("overlay"));
-
-            return element;
-        }
-
-        if (chat != null)
-        {
-            if (!string.IsNullOrWhiteSpace(chat.Priority))
-                chatCompound.Add(new NbtTag<string>("priority", chat.Priority));
-
-            AddDecoration(chat.Decoration, chatCompound);
-        }
-
-        if (narration != null)
-        {
-            if (!string.IsNullOrWhiteSpace(narration.Priority))
-                narrationCompound.Add(new NbtTag<string>("priority", narration.Priority));
-
-            AddDecoration(narration.Decoration, narrationCompound);
-        }
-
         return element;
-    }
-    private static void AddDecoration(ChatDecoration? decoration, NbtCompound compound)
-    {
-        var decorationCompound = new NbtCompound("decoration");
-
-        if (decoration == null)
-            return;
-
-        decorationCompound.Add(new NbtCompound("style"));//always an empty style compound idk why
-
-        if (!string.IsNullOrWhiteSpace(decoration.TranslationKey))
-            decorationCompound.Add(new NbtTag<string>("translation_key", decoration.TranslationKey));
-
-        if (decoration.Parameters != null)
-        {
-            var list = new NbtList(NbtTagType.String, "parameters");
-
-            foreach (var parameter in decoration.Parameters)
-                list.Add(new NbtTag<string>(string.Empty, parameter));
-
-            decorationCompound.Add(list);
-        }
-
-        compound.Add(decorationCompound);
     }
     #endregion
 

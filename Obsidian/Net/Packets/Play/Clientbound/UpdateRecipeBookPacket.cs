@@ -37,7 +37,7 @@ public partial class UpdateRecipeBookPacket : IClientboundPacket
     [Field(10), Condition("Action == UnlockRecipeAction.Init")]
     public List<string> SecondRecipeIds { get; init; }
 
-    public int Id => 0x37;
+    public int Id => 0x3A;
 }
 
 public enum UnlockRecipeAction : int

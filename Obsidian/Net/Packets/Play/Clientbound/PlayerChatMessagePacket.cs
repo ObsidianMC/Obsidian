@@ -1,55 +1,92 @@
-﻿using Obsidian.Serialization.Attributes;
+﻿using Obsidian.Net.ChatMessageTypes;
+using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
 public partial class PlayerChatMessagePacket : IClientboundPacket
 {
     [Field(0)]
-    public ChatMessage SignedMessage { get; }
+    public required PlayerChatMessageHeader Header { get; init; }
 
-    [Field(1)]
-    public bool HasUnsignedChatContent => this.UnsignedChatMessage != null;
+    [Field(1), VarLength]
+    public required List<PreviousMessage> PreviousMessages { get; init; }
 
-    [Field(2), Condition("HasUnsignedChatContent")]
-    public ChatMessage UnsignedChatMessage { get; init; }
+    [Field(2)]
+    public required PlayerChatMessageBody Body { get; init; }
 
-    [Field(3), ActualType(typeof(int)), VarLength]
-    public MessageType Type { get; }
+    [Field(3)]
+    public required PlayerChatMessageNetworkTarget NetworkTarget { get; init; }
 
-    [Field(4)]
-    public Guid Sender { get; }
+    public int Id => 0x33;
 
-    [Field(5)]
-    public ChatMessage SenderDisplayName { get; init; } = string.Empty;
-
-    [Field(6)]
-    public bool HasTeamDisplayName => this.TeamDisplayName != null;
-
-    [Field(7), Condition("HasTeamDisplayName")]
-    public ChatMessage TeamDisplayName { get; }
-
-    [Field(8)]
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
-
-    [Field(9)]
-    public long Salt { get; init; }
-
-    [Field(10), VarLength]
-    public int SignatureLength => this.MessageSignature.Length;
-
-    [Field(11)]
-    public byte[] MessageSignature { get; init; }
-
-    public int Id => 0x30;
-
-    public PlayerChatMessagePacket(ChatMessage message, MessageType type) : this(message, type, Guid.Empty)
+    public void Serialize(MinecraftStream stream)
     {
+        this.WriteHeader(stream);
+
+        if (this.PreviousMessages.Count > 5)
+            throw new InvalidOperationException("PreviousMessages must have a total of 5 elements.");
+
+        stream.WriteVarInt(this.PreviousMessages.Count);
+        foreach (var previousMessage in this.PreviousMessages)
+        {
+            stream.WriteUuid(previousMessage.Sender);
+            stream.WriteVarInt(previousMessage.MessageSignature.Length);
+            stream.WriteByteArray(previousMessage.MessageSignature);
+        }
+
+        this.WriteBody(stream);
+
+        this.WriteNetworkTarget(stream);
     }
 
-    public PlayerChatMessagePacket(ChatMessage message, MessageType type, Guid? sender)
+    private void WriteNetworkTarget(MinecraftStream stream)
     {
-        SignedMessage = message;
-        Type = type;
-        Sender = sender ?? Guid.Empty;
+        stream.WriteVarInt(this.NetworkTarget.ChatType);
+
+        stream.WriteChat(this.NetworkTarget.NetworkName);
+
+        stream.WriteBoolean(this.NetworkTarget.TargetNamePresent);
+
+        if (this.NetworkTarget.TargetNamePresent)
+            stream.WriteChat(this.NetworkTarget.TargetName);
+    }
+
+    private void WriteBody(MinecraftStream stream)
+    {
+        stream.WriteBoolean(this.Body.UnsignedContentPresent);
+
+        if (this.Body.UnsignedContentPresent)
+            stream.WriteChat(this.Body.UnsignedContent);
+
+        stream.WriteVarInt(this.Body.FilterType);
+        if (this.Body.FilterType.HasFlag(ChatFilterType.PartiallyFiltered))
+        {
+            stream.WriteVarInt(this.Body.FilterTypeBytes.DataStorage.Length);
+            stream.WriteLongArray(this.Body.FilterTypeBytes.DataStorage.ToArray());
+        }
+    }
+
+    private void WriteHeader(MinecraftStream stream)
+    {
+        stream.WriteBoolean(this.Header.MessageSignaturePresent);
+        if (this.Header.MessageSignaturePresent)
+        {
+            stream.WriteVarInt(this.Header.MessageSignature.Length);
+            stream.WriteByteArray(this.Header.MessageSignature);
+        }
+
+        stream.WriteUuid(this.Header.Sender);
+
+        stream.WriteVarInt(this.Header.HeaderSignature.Length);
+        stream.WriteByteArray(this.Header.HeaderSignature);
+
+        stream.WriteString(this.Header.PlainMessage, 256);
+
+        stream.WriteBoolean(this.Header.FormattedMessagePresent);
+        if (this.Header.FormattedMessagePresent)
+            stream.WriteChat(this.Header.FormattedMessage);
+
+        stream.WriteLong(this.Header.Timestamp);
+        stream.WriteLong(this.Header.Salt);
     }
 }

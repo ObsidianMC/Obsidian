@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Obsidian.Entities;
+﻿using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 namespace Obsidian.Net.Packets.Play.Clientbound;
 
@@ -8,7 +7,7 @@ public partial class KeepAlivePacket : IClientboundPacket, IServerboundPacket
     [Field(0)]
     public long KeepAliveId { get; private set; }
 
-    public int Id => 0x1E;
+    public int Id => 0x20;
 
     public KeepAlivePacket()
     {

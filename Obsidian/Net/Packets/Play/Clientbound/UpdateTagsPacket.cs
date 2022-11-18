@@ -8,7 +8,7 @@ public partial class UpdateTagsPacket : IClientboundPacket
     [Field(0)]
     public IDictionary<string, Tag[]> Tags { get; }
 
-    public int Id => 0x68;
+    public int Id => 0x6B;
 
     public static UpdateTagsPacket FromRegistry { get; } = new(TagsRegistry.Categories);
 

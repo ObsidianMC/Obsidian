@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Obsidian.API;
 using Obsidian.API.Events;
 using Obsidian.Concurrency;
 using Obsidian.Entities;
@@ -26,6 +25,101 @@ namespace Obsidian;
 
 public sealed class Client : IDisposable
 {
+    /// <summary>
+    /// The max amount of bytes that can be sent to the client before compression is required.
+    /// </summary>
+    private const int CompressionThreshold = 256;
+
+    /// <summary>
+    /// The player's entity id.
+    /// </summary>
+    internal int id;
+
+    /// <summary>
+    /// How many <see cref="KeepAlivePacket"/>s the client has missed.
+    /// </summary>
+    internal List<long> missedKeepAlives;
+
+    /// <summary>
+    /// The client's ping in milliseconds.
+    /// </summary>
+    internal int ping;
+
+    /// <summary>
+    /// The public key/signature data received from mojang.
+    /// </summary>
+    internal SignatureData? signatureData;
+
+    /// <summary>
+    /// Used for signing chat messages.
+    /// </summary>
+    internal MessageSigningData? messageSigningData;
+
+    /// <summary>
+    /// Whether the client has compression enabled on the Minecraft stream.
+    /// </summary>
+    private bool compressionEnabled;
+
+    /// <summary>
+    /// Whether this client is disposed.
+    /// </summary>
+    private bool disposed;
+
+    /// <summary>
+    /// The random token used to encrypt the stream.
+    /// </summary>
+    private byte[]? randomToken;
+
+    /// <summary>
+    /// The server's token used to encrypt the stream.
+    /// </summary>
+    private byte[]? sharedKey;
+
+    /// <summary>
+    /// The stream used to receive and send packets.
+    /// </summary>
+    private MinecraftStream minecraftStream;
+
+    /// <summary>
+    /// The mojang user that the client and player is associated with.
+    /// </summary>
+    private MojangUser? cachedMojangUser;
+
+    /// <summary>
+    /// Which packets are in queue to be sent to the client.
+    /// </summary>
+    private readonly BufferBlock<IClientboundPacket> packetQueue;
+
+    /// <summary>
+    /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
+    /// </summary>
+    private readonly CancellationTokenSource cancellationSource = new();
+
+    /// <summary>
+    /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
+    /// </summary>
+    private readonly ClientHandler handler;
+
+    /// <summary>
+    /// The base network stream used by the <see cref="minecraftStream"/>.
+    /// </summary>
+    private readonly NetworkStream networkStream;
+
+    /// <summary>
+    /// Used to continuously send and receive encrypted packets from the client.
+    /// </summary>
+    private readonly PacketCryptography packetCryptography;
+
+    /// <summary>
+    /// The socket associated with the <see cref="networkStream"/>.
+    /// </summary>
+    private readonly Socket socket;
+
+    /// <summary>
+    /// The current server configuration.
+    /// </summary>
+    private readonly ServerConfiguration config;
+
     /// <summary>
     /// Whether the stream has encryption enabled. This can be set to false when the client is connecting through LAN or when the server is in offline mode.
     /// </summary>
@@ -75,91 +169,6 @@ public sealed class Client : IDisposable
     /// The client brand. This is the name that the client used to identify itself (Fabric, Forge, Quilt, etc.)
     /// </summary>
     public string? Brand { get; set; }
-
-    /// <summary>
-    /// The player's entity id.
-    /// </summary>
-    internal int id;
-
-    /// <summary>
-    /// How many <see cref="KeepAlivePacket"/>s the client has missed.
-    /// </summary>
-    internal List<long> missedKeepAlives;
-
-    /// <summary>
-    /// The client's ping in milliseconds.
-    /// </summary>
-    internal int ping;
-
-    /// <summary>
-    /// Whether the client has compression enabled on the Minecraft stream.
-    /// </summary>
-    private bool compressionEnabled;
-
-    /// <summary>
-    /// Whether this client is disposed.
-    /// </summary>
-    private bool disposed;
-
-    /// <summary>
-    /// The random token used to encrypt the stream.
-    /// </summary>
-    private byte[]? randomToken;
-
-    /// <summary>
-    /// The server's token used to encrypt the stream.
-    /// </summary>
-    private byte[]? sharedKey;
-
-    /// <summary>
-    /// The max amount of bytes that can be sent to the client before compression is required.
-    /// </summary>
-    private const int CompressionThreshold = 256;
-
-    /// <summary>
-    /// The stream used to receive and send packets.
-    /// </summary>
-    private MinecraftStream minecraftStream;
-
-    /// <summary>
-    /// The mojang user that the client and player is associated with.
-    /// </summary>
-    private MojangUser? cachedMojangUser;
-
-    /// <summary>
-    /// Which packets are in queue to be sent to the client.
-    /// </summary>
-    private readonly BufferBlock<IClientboundPacket> packetQueue;
-
-    /// <summary>
-    /// The cancellation token source used to cancel the packet queue loop and disconnect the client.
-    /// </summary>
-    private readonly CancellationTokenSource cancellationSource = new();
-
-    /// <summary>
-    /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
-    /// </summary>
-    private readonly ClientHandler handler;
-
-    /// <summary>
-    /// The base network stream used by the <see cref="minecraftStream"/>.
-    /// </summary>
-    private readonly NetworkStream networkStream;
-
-    /// <summary>
-    /// Used to continuously send and receive encrypted packets from the client.
-    /// </summary>
-    private readonly PacketCryptography packetCryptography;
-
-    /// <summary>
-    /// The socket associated with the <see cref="networkStream"/>.
-    /// </summary>
-    private readonly Socket socket;
-
-    /// <summary>
-    /// The current server configuration.
-    /// </summary>
-    private readonly ServerConfiguration config;
 
     public Client(Socket socket, ServerConfiguration config, int playerId, Server originServer)
     {
@@ -359,6 +368,16 @@ public sealed class Client : IDisposable
         var username = config.MulitplayerDebugMode ? $"Player{Globals.Random.Next(1, 999)}" : loginStart.Username;
         var world = (World)Server.DefaultWorld;
 
+        if (loginStart.HasSigData)
+        {
+            this.signatureData = new()
+            {
+                PublicKey = loginStart.PublicKey!,
+                Signature = loginStart.Signature!,
+                ExpirationTime = loginStart.Timestamp!.Value
+            };
+        }
+
         Logger.LogDebug("Received login request from user {Username}", loginStart.Username);
         await Server.DisconnectIfConnectedAsync(username);
 
@@ -377,12 +396,20 @@ public sealed class Client : IDisposable
                 return;
             }
 
-            Player = new Player(Guid.Parse(cachedMojangUser.Id), loginStart.Username, this, world);
+            Player = new Player(loginStart.PlayerUuid ?? Guid.Parse(this.cachedMojangUser.Id), loginStart.Username, this, world);
+
+            packetCryptography.GenerateKeyPair();
 
             // Attempt to encrypt the connection
             _ = packetCryptography.GenerateKeyPair();
+
             var values = packetCryptography.GeneratePublicKeyAndToken();
-            SendPacket(new EncryptionRequest(values.publicKey, randomToken = values.randomToken));
+
+            SendPacket(new EncryptionRequest
+            {
+                PublicKey = values.publicKey,
+                VerifyToken = randomToken = values.randomToken
+            });
         }
         else if (config.WhitelistEnabled && !config.Whitelisted.Any(x => x.Nickname == username))
         {
@@ -411,13 +438,26 @@ public sealed class Client : IDisposable
 
         // Decrypt the shared secret and verify the token
         var encryptionResponse = EncryptionResponse.Deserialize(data);
-        sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
-        var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
 
-        if (!decryptedToken.SequenceEqual(randomToken))
+        sharedKey = packetCryptography.Decrypt(encryptionResponse.SharedSecret);
+
+        if (encryptionResponse.HasVerifyToken)
         {
-            await DisconnectAsync("Invalid token...");
-            return;
+            var decryptedToken = packetCryptography.Decrypt(encryptionResponse.VerifyToken);
+
+            if (!decryptedToken.SequenceEqual(randomToken))
+            {
+                await DisconnectAsync("Invalid token...");
+                return;
+            }
+        }
+        else
+        {
+            this.messageSigningData = new()
+            {
+                Salt = encryptionResponse.Salt,
+                MessageSignature = encryptionResponse.MessageSignature,
+            };
         }
 
         var serverId = sharedKey.Concat(packetCryptography.PublicKey).MinecraftShaDigest();
@@ -545,7 +585,7 @@ public sealed class Client : IDisposable
     internal void HandleKeepAlive(KeepAlivePacket keepAlive)
     {
         if (!missedKeepAlives.Contains(keepAlive.KeepAliveId))
-{
+        {
             Server.Logger.LogWarning($"Received invalid KeepAlive from {Player.Username}?? Naughty???? ({Player.Uuid})");
             DisconnectAsync(ChatMessage.Simple("Kicked for invalid KeepAlive."));
             return;
@@ -702,7 +742,7 @@ public sealed class Client : IDisposable
         }
     }
 
-    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataPacket(chunk)) : Task.CompletedTask;
+    internal Task SendChunkAsync(Chunk chunk) => chunk is not null ? QueuePacketAsync(new ChunkDataAndUpdateLightPacket(chunk)) : Task.CompletedTask;
     internal Task UnloadChunkAsync(int x, int z) => LoadedChunks.Contains((x, z)) ? QueuePacketAsync(new UnloadChunkPacket(x, z)) : Task.CompletedTask;
 
     private async Task SendServerBrand()
