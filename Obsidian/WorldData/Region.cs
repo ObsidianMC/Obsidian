@@ -13,7 +13,6 @@ public class Region
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
-    private const NbtCompression UsedCompression = NbtCompression.ZLib;
 
     public int X { get; }
     public int Z { get; }
@@ -75,15 +74,15 @@ public class Region
 
     private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkCompressedBytes(x, z);
+        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkBytes(x, z, out var compression);
 
         if (compressedBytes.IsEmpty)
             return null;
 
         await using var bytesStream = new ReadOnlyStream(compressedBytes);
-        var nbtReader = new NbtReader(bytesStream, UsedCompression);
-        var chunkCompound = (NbtCompound)nbtReader.ReadNextTag();
-        return DeserializeChunk(chunkCompound);
+        var nbtReader = new NbtReader(bytesStream, compression);
+
+        return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
 
     internal IEnumerable<Chunk> GeneratedChunks()
@@ -104,20 +103,20 @@ public class Region
         loadedChunks[x, z] = chunk;
     }
 
-    internal async Task SerializeChunkAsync(Chunk chunk)
+    internal async Task SerializeChunkAsync(Chunk chunk, NbtCompression compression = NbtCompression.ZLib)
     {
         NbtCompound chunkNbt = SerializeChunk(chunk);
 
         var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
 
         await using MemoryStream strm = new();
-        await using NbtWriter writer = new(strm, NbtCompression.ZLib);
+        await using NbtWriter writer = new(strm, compression);
 
         writer.WriteTag(chunkNbt);
 
         await writer.TryFinishAsync();
 
-        await regionFile.SetChunkAsync(x, z, strm.ToArray());
+        await regionFile.SetChunkAsync(x, z, strm.ToArray(), compression);
     }
 
     internal async Task BeginTickAsync(CancellationToken cts)
@@ -173,12 +172,12 @@ public class Region
 
             var section = chunk.Sections[secY + 4];
 
-            if (statesCompound.TryGetTag("data", out var dataArrayTag))
-            {
-                var data = dataArrayTag as NbtArray<long>;
+            //if (statesCompound.TryGetTag("data", out var dataArrayTag))
+            //{
+            //    var data = dataArrayTag as NbtArray<long>;
 
-                section.BlockStateContainer.DataArray.storage = data!.GetArray();
-            }
+            //    section.BlockStateContainer.DataArray.storage = data!.GetArray();
+            //}
 
             var chunkSecPalette = section.BlockStateContainer.Palette;
 
@@ -242,7 +241,7 @@ public class Region
             var biomesCompound = new NbtCompound("biomes");
             var blockStatesCompound = new NbtCompound("block_states")
             {
-                new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
+                //new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
             };
 
             if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)

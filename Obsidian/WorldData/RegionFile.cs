@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Obsidian.Nbt;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -8,35 +9,31 @@ namespace Obsidian.WorldData;
 
 public sealed class RegionFile : IAsyncDisposable
 {
-    private const int HeaderTableSize = 1024;
-    private const int SectionSize = 4096;
+    private const int headerTableSize = 1024;
+    private const int sectionSize = 4096;
 
     private readonly string filePath;
-    private readonly int x;
-    private readonly int z;
+
     private readonly int cubicRegionSize;
     private readonly int op;
+
     private readonly SemaphoreSlim semaphore = new(1, 1);
 
     private FileStream regionFileStream;
     private IMemoryOwner<byte> chunkCache;
 
     private bool disposed;
+    private bool initialized;
 
-    public int[] Locations { get; private set; } = new int[HeaderTableSize];
-    public int[] Timestamps { get; private set; } = new int[HeaderTableSize];
+    public int[] Locations { get; private set; } = new int[headerTableSize];
+    public int[] Timestamps { get; private set; } = new int[headerTableSize];
 
     /// <summary>
     /// Reference Material: https://wiki.vg/Region_Files#Structure
     /// </summary>
     public RegionFile(string filePath, int cubicRegionSize = 32)
     {
-        var name = Path.GetFileName(filePath);
-        var split = name.Split('.');
-
         this.filePath = filePath;
-        this.x = int.Parse(split[1]);
-        this.z = int.Parse(split[2]);
         this.cubicRegionSize = cubicRegionSize;
 
         this.op = cubicRegionSize - 1;
@@ -44,18 +41,23 @@ public sealed class RegionFile : IAsyncDisposable
 
     public async Task<bool> InitializeAsync()
     {
+        if (this.initialized)
+            throw new InvalidOperationException("Region file has already been initialized.");
+
         try
         {
             this.regionFileStream = new(this.filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
         }
         catch { throw; }
 
+        this.initialized = true;
+
         if (regionFileStream.Length == 0)
             return true;
 
-        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - SectionSize * 2);
+        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - sectionSize * 2);
 
-        for (var index = 0; index < HeaderTableSize; index++)
+        for (var index = 0; index < headerTableSize; index++)
         {
             using var num = new RentedArray<byte>(4);
 
@@ -64,7 +66,7 @@ public sealed class RegionFile : IAsyncDisposable
             this.Locations[index] = BinaryPrimitives.ReadInt32BigEndian(num);
         }
 
-        for (var index = 0; index < HeaderTableSize; index++)
+        for (var index = 0; index < headerTableSize; index++)
         {
             using var num = new RentedArray<byte>(4);
 
@@ -78,8 +80,11 @@ public sealed class RegionFile : IAsyncDisposable
         return true;
     }
 
-    public async Task SetChunkAsync(int x, int z, byte[] bytes)
+    public async Task SetChunkAsync(int x, int z, byte[] bytes, NbtCompression compression = NbtCompression.ZLib)
     {
+        if (bytes.Length > sectionSize)
+            throw new InvalidOperationException($"{nameof(bytes)} length exceeds the max section size of {sectionSize}");
+
         var tableIndex = this.GetChunkTableIndex(x, z);
 
         var (offset, size) = this.GetLocation(tableIndex);
@@ -91,13 +96,13 @@ public sealed class RegionFile : IAsyncDisposable
             return;
         }
 
-        this.SetLocation(tableIndex, offset, bytes.Length);
+        this.SetLocation(tableIndex, offset / sectionSize, size);
 
         await this.WriteHeadersAsync();
 
         this.regionFileStream.Position = offset;
 
-        await this.WriteChunkHeaderAsync(bytes.Length + 1, 0x02);
+        await this.WriteChunkHeaderAsync(bytes.Length + 1, (byte)compression);
 
         await this.regionFileStream.WriteAsync(bytes);
 
@@ -106,23 +111,25 @@ public sealed class RegionFile : IAsyncDisposable
         await this.UpdateChunkCache();
     }
 
-    public ReadOnlyMemory<byte> GetChunkCompressedBytes(int x, int z)
+    public ReadOnlyMemory<byte> GetChunkBytes(int x, int z, out NbtCompression compression)
     {
         var tableIndex = this.GetChunkTableIndex(x, z);
 
         var (offset, size) = this.GetLocation(tableIndex);
 
+        compression = NbtCompression.ZLib;
+
         if (offset == 0 && size == 0)
             return ReadOnlyMemory<byte>.Empty;
 
-        var chunk = this.chunkCache.Memory[(offset - (SectionSize * 2))..];
+        var chunk = this.chunkCache.Memory[(offset - (sectionSize * 2))..];
 
         var length = BinaryPrimitives.ReadInt32BigEndian(chunk.Span[..4]);
 
-        var compression = chunk.Span[4];//We'll probably make use of this eventually
+        compression = (NbtCompression)chunk.Span[4];//We'll probably make use of this eventually
 
         if (length > size)
-            throw new InvalidOperationException($"{length} > {size}");
+            throw new UnreachableException($"{length} > {size}");
 
         return chunk.Slice(5, length - 1);//Compression is included with the length
     }
@@ -134,9 +141,9 @@ public sealed class RegionFile : IAsyncDisposable
     {
         var size = this.CalculateChunkSize(bytes.Length);
 
-        var offset = this.regionFileStream.Length > 0 ? (int)this.regionFileStream.Length : SectionSize * 2;
+        var offset = this.regionFileStream.Length > 0 ? (int)this.regionFileStream.Length : sectionSize * 2;
 
-        this.SetLocation(tableIndex, offset / SectionSize, size);
+        this.SetLocation(tableIndex, offset / sectionSize, size);
         this.SetTimestamp(tableIndex, (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
         await this.WriteHeadersAsync();
@@ -156,19 +163,11 @@ public sealed class RegionFile : IAsyncDisposable
     {
         this.chunkCache?.Dispose();
 
-        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - SectionSize * 2);
+        this.chunkCache = MemoryPool<byte>.Shared.Rent((int)this.regionFileStream.Length - sectionSize * 2);
 
-        this.regionFileStream.Position = SectionSize * 2;
+        this.regionFileStream.Position = sectionSize * 2;
 
         await this.regionFileStream.ReadAsync(this.chunkCache.Memory);
-    }
-
-    private void Pad()
-    {
-        var missing = this.regionFileStream.Length % SectionSize;
-
-        if (missing > 0)
-            this.regionFileStream.SetLength(this.regionFileStream.Length + SectionSize - missing);
     }
 
     private async Task WriteChunkHeaderAsync(int length, byte compression)
@@ -189,7 +188,7 @@ public sealed class RegionFile : IAsyncDisposable
         this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
     private int CalculateChunkSize(long length) =>
-        (int)Math.Ceiling(length / (double)SectionSize);
+        (int)Math.Ceiling(length / (double)sectionSize);
 
     private int GetChunkTableIndex(int x, int z) =>
         (x & this.op) + (z & this.op) * this.cubicRegionSize;
@@ -201,36 +200,38 @@ public sealed class RegionFile : IAsyncDisposable
         var offset = sector >> 8;
         var size = sector & 0xFF;
 
-        return (offset * SectionSize, size * SectionSize);
+        return (offset * sectionSize, size * sectionSize);
     }
 
     private async Task WriteHeadersAsync()
     {
         this.regionFileStream.Position = 0;
 
-        await using var ms = new MemoryStream();
-
-        for (var index = 0; index < HeaderTableSize; index++)
+        for (var index = 0; index < headerTableSize; index++)
         {
             using var mem = new RentedArray<byte>(4);
 
             BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Locations[index]);
 
-            await ms.WriteAsync(mem);
+            await this.regionFileStream.WriteAsync(mem);
         }
 
-        for (var index = 0; index < HeaderTableSize; index++)
+        for (var index = 0; index < headerTableSize; index++)
         {
             using var mem = new RentedArray<byte>(4);
 
             BinaryPrimitives.WriteInt32BigEndian(mem.Span, this.Timestamps[index]);
 
-            await ms.WriteAsync(mem);
+            await this.regionFileStream.WriteAsync(mem);
         }
+    }
 
-        ms.Position = 0;
+    private void Pad()
+    {
+        var missing = this.regionFileStream.Length % sectionSize;
 
-        await ms.CopyToAsync(this.regionFileStream);
+        if (missing > 0)
+            this.regionFileStream.SetLength(this.regionFileStream.Length + sectionSize - missing);
     }
 
     #region IDisposable
