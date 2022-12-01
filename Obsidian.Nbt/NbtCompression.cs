@@ -7,4 +7,8 @@ public enum NbtCompression : byte
     GZip,
 
     ZLib,
+
+    Zstd,
+
+    Brotli
 }
