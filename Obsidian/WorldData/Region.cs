@@ -172,16 +172,16 @@ public class Region
 
             var section = chunk.Sections[secY + 4];
 
-            //if (statesCompound.TryGetTag("data", out var dataArrayTag))
-            //{
-            //    var data = dataArrayTag as NbtArray<long>;
+            if (statesCompound.TryGetTag("data", out var dataArrayTag))
+            {
+                var data = dataArrayTag as NbtArray<long>;
 
-            //    section.BlockStateContainer.DataArray.storage = data!.GetArray();
-            //}
+                section.BlockStateContainer.DataArray.storage = data!.GetArray();
+            }
 
             var chunkSecPalette = section.BlockStateContainer.Palette;
 
-            if(statesCompound.TryGetTag("palette", out var palleteArrayTag))
+            if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
                 foreach (NbtCompound palette in blockStatesPalette!)
@@ -241,7 +241,7 @@ public class Region
             var biomesCompound = new NbtCompound("biomes");
             var blockStatesCompound = new NbtCompound("block_states")
             {
-                //new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
+                new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
             };
 
             if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
