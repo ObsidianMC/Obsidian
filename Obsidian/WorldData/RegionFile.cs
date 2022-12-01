@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Obsidian.WorldData;
@@ -14,6 +15,7 @@ public sealed class RegionFile : IAsyncDisposable
 
     private const int headerTableSize = 1024;
     private const int sectionSize = 4096;
+    private const int maxSectionSize = 256;
 
     private readonly string filePath;
 
@@ -87,8 +89,10 @@ public sealed class RegionFile : IAsyncDisposable
     {
         await this.semaphore.WaitAsync();
 
-        if (bytes.Length > sectionSize)
-            throw new InvalidOperationException($"{nameof(bytes)} length exceeds the max section size of {sectionSize}");
+        var calcSize = this.CalculateChunkSize(bytes.LongLength);
+
+        if (calcSize > maxSectionSize)
+            throw new InvalidOperationException($"{nameof(bytes)} calculated length({calcSize}) exceeds the max section size({maxSectionSize})");
 
         var tableIndex = this.GetChunkTableIndex(x, z);
 
@@ -96,7 +100,7 @@ public sealed class RegionFile : IAsyncDisposable
 
         if (offset == 0 && size == 0)
         {
-            await this.WriteNewChunkAsync(bytes, tableIndex);
+            await this.WriteNewChunkAsync(bytes, calcSize, tableIndex);
 
             this.semaphore.Release();
 
@@ -107,7 +111,7 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.WriteHeadersAsync();
 
-        var mem = this.chunkCache.Memory.Slice(this.GetChunkCacheIndex(offset), size);
+        var mem = this.chunkCache.Memory.Slice(this.GetChunkCacheIndex(offset), calcSize);
 
         mem.Span.Clear();
 
@@ -120,8 +124,6 @@ public sealed class RegionFile : IAsyncDisposable
         await this.regionFileStream.WriteAsync(this.chunkCache.Memory);
 
         await this.UpdateChunkCache();
-
-        this.Pad();
 
         this.semaphore.Release();
     }
@@ -161,10 +163,8 @@ public sealed class RegionFile : IAsyncDisposable
     public async Task FlushAsync() =>
        await this.regionFileStream.FlushAsync();
 
-    private async Task WriteNewChunkAsync(byte[] bytes, int tableIndex)
+    private async Task WriteNewChunkAsync(byte[] bytes, int size, int tableIndex)
     {
-        var size = this.CalculateChunkSize(bytes.Length);
-
         var offset = this.regionFileStream.Length > 0 ? (int)this.regionFileStream.Length : sectionSize * 2;
 
         this.SetLocation(tableIndex, offset / sectionSize, size);
@@ -213,7 +213,7 @@ public sealed class RegionFile : IAsyncDisposable
         this.Locations[tableIndex] = (offset << 8) | (size & 0xFF);
 
     private int CalculateChunkSize(long length) =>
-        (int)Math.Ceiling(length / (double)sectionSize);
+        (int)Math.Ceiling((length + 5) / (double)sectionSize);
 
     private int GetChunkTableIndex(int x, int z) =>
         (x & this.op) + (z & this.op) * this.cubicRegionSize;
@@ -256,7 +256,7 @@ public sealed class RegionFile : IAsyncDisposable
         var missing = this.regionFileStream.Length % sectionSize;
 
         if (missing > 0)
-            this.regionFileStream.SetLength(this.regionFileStream.Length + sectionSize - missing);
+            this.regionFileStream.SetLength(this.regionFileStream.Length + (sectionSize - missing));
     }
 
 
