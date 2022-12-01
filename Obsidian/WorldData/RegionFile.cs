@@ -121,7 +121,7 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.UpdateChunkCache();
 
-        this.Pad(bytes.Length + 5);
+        this.Pad();
 
         this.semaphore.Release();
     }
@@ -178,7 +178,7 @@ public sealed class RegionFile : IAsyncDisposable
 
         await this.regionFileStream.WriteAsync(bytes);
 
-        this.Pad(bytes.Length + 5);
+        this.Pad();
 
         await this.UpdateChunkCache();
     }
@@ -251,9 +251,9 @@ public sealed class RegionFile : IAsyncDisposable
         }
     }
 
-    private void Pad(int dataSize)
+    private void Pad()
     {
-        var missing = dataSize % sectionSize;
+        var missing = this.regionFileStream.Length % sectionSize;
 
         if (missing > 0)
             this.regionFileStream.SetLength(this.regionFileStream.Length + sectionSize - missing);
