@@ -168,7 +168,10 @@ public class Region
 
             secY = secY > 20 ? secY - 256 : secY;
 
-            var statesCompound = sectionCompound["block_states"] as NbtCompound;
+            if (!sectionCompound.TryGetTag("block_states", out var statesTag))
+                throw new UnreachableException("Unable to find block states from NBT.");
+
+            var statesCompound = statesTag as NbtCompound;
 
             var section = chunk.Sections[secY + 4];
 
@@ -184,9 +187,18 @@ public class Region
             if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound palette in blockStatesPalette!)
-                    chunkSecPalette.GetOrAddId(Registry.GetBlock(palette.GetString("Name")));
+                foreach (NbtCompound entry in blockStatesPalette!)
+                {
+                    var name = entry.GetString("Name");
+                    
+                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));
+
+                    if(secY == 0 && x == -15 && z == -3)
+                        Console.WriteLine("Adding entry: {0} - Palette Count: {1}", name, chunkSecPalette.Count);
+                }
             }
+
+            section.BlockStateContainer.GrowDataArray();
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
             var biomesPalette = biomesCompound!["palette"] as NbtList;
@@ -239,27 +251,37 @@ public class Region
                 throw new UnreachableException("Section Ybase should not be null");//THIS should never happen
 
             var biomesCompound = new NbtCompound("biomes");
-            var blockStatesCompound = new NbtCompound("block_states")
-            {
-                new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
-            };
+            var blockStatesCompound = new NbtCompound("block_states");
+
+            if (section.BlockStateContainer.DataArray.storage.Any(x => x > 0))
+                blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
 
             if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
             {
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
-                foreach (var stateId in indirect.Values)
-                {
-                    if (stateId == 0)
-                        continue;
+                var hasAir = false;
 
-                    var block = new Block(stateId);
+                foreach(var id in indirect.Values)
+                {
+                    var block = new Block(id);
+
+                    if (block.IsAir && !hasAir && !indirect.Values.Any(x => x > 0))
+                    {
+                        palette.Add(new NbtCompound
+                        {
+                            new NbtTag<string>("Name", block.UnlocalizedName)
+                        });
+                        hasAir = true;
+                        continue;
+                    }
+                    else if (block.IsAir)
+                        continue;
 
                     palette.Add(new NbtCompound
                     {
-                        new NbtTag<string>("Name", block.UnlocalizedName),
-                        new NbtTag<int>("Id", block.StateId)
-                    });//TODO INCLUDE PROPERTIES INSTEAD OF STATE ID
+                        new NbtTag<string>("Name", block.UnlocalizedName)
+                    });//TODO INCLUDE PROPERTIES
                 }
 
                 blockStatesCompound.Add(palette);
