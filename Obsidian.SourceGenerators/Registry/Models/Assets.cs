@@ -33,10 +33,25 @@ internal sealed class Assets
         using var document = JsonDocument.Parse(json);
 
         int id = 0;
-        foreach (JsonProperty property in document.RootElement.EnumerateObject())
+
+        var blockProperties = document.RootElement.EnumerateObject();
+
+        var newBlocks = new Dictionary<int, JsonProperty>();
+
+        foreach (JsonProperty property in blockProperties)
         {
-            blocks.Add(Block.Get(property, id++));
+            foreach(var state in property.Value.GetProperty("states").EnumerateArray())
+            {
+                if(state.TryGetProperty("default", out var element))
+                {
+                    newBlocks.Add(state.GetProperty("id").GetInt32(), property);
+                    break;
+                }
+            }
         }
+
+        foreach(var property in newBlocks.OrderBy(x => x.Key).Select(x => x.Value))
+            blocks.Add(Block.Get(property, id++));
 
         return blocks.ToArray();
     }

@@ -17,11 +17,11 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
 
     public string UnlocalizedName => blockNames[Id];
     public string Name => Material.ToString();
-    public Material Material => (Material)stateToNumeric[baseId];
-    public bool IsInteractable => (baseId >= 9276 && baseId <= 9372) || Array.BinarySearch(interactables, baseId) > -1;
-    public bool IsAir => baseId == 0 || baseId == 9915 || baseId == 9916;
-    public bool IsFluid => StateId > 33 && StateId < 66;
-    public bool IsTransparent => Material is Material.Glass || IsFluid || IsAir || Replaceable.Contains(Material) || (baseId >= 4164 && baseId <= 4179) || (baseId >= 148 && baseId <= 259);
+    public Material Material => (Material)Id;
+    public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
+    public bool IsAir => baseId == 0 || baseId == 10547 || baseId == 10546;
+    public bool IsFluid => UnlocalizedName == "minecraft:water";
+    public bool IsTransparent => Material is Material.Glass || IsFluid || IsAir || Replaceable.Contains(Material);
     public int Id => stateToNumeric[baseId];
     public int StateId => baseId + state;
     public int State => state;
