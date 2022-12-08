@@ -30,10 +30,13 @@ public class Chunk
         X = x;
         Z = z;
 
-        Heightmaps = new();
-        Heightmaps.Add(HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this));
-        Heightmaps.Add(HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this));
-        Heightmaps.Add(HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this));
+        Heightmaps = new()
+        {
+            { HeightmapType.MotionBlocking, new Heightmap(HeightmapType.MotionBlocking, this) },
+            { HeightmapType.OceanFloor, new Heightmap(HeightmapType.OceanFloor, this) },
+            { HeightmapType.WorldSurface, new Heightmap(HeightmapType.WorldSurface, this) },
+            { HeightmapType.MotionBlockingNoLeaves, new Heightmap(HeightmapType.MotionBlockingNoLeaves, this) }
+        };
 
         Sections = new ChunkSection[24];
         for (int i = 0; i < Sections.Length; i++)

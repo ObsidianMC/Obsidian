@@ -1,12 +1,14 @@
 ﻿namespace Obsidian.Nbt;
 
-public enum NbtCompression
+public enum NbtCompression : byte
 {
-    Auto,
-
     None,
 
     GZip,
 
-    ZLib
+    ZLib,
+
+    Zstd,
+
+    Brotli
 }

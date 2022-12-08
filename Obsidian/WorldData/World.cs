@@ -108,8 +108,9 @@ public class World : IWorld
             return null;
         }
 
-        (int X, int Z) chunkIndex = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
-        var chunk = region.GetChunk(chunkIndex);
+        var (x, z) = (NumericsHelper.Modulo(chunkX, Region.cubicRegionSize), NumericsHelper.Modulo(chunkZ, Region.cubicRegionSize));
+
+        var chunk = await region.GetChunkAsync(x, z);
 
         if (chunk is not null)
         {
@@ -469,8 +470,9 @@ public class World : IWorld
         {
             Region region = GetRegionForChunk(job.x, job.z) ?? await LoadRegionByChunkAsync(job.x, job.z);
 
-            (int X, int Z) chunkIndex = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
-            Chunk c = region.GetChunk(chunkIndex);
+            var (x, z) = (NumericsHelper.Modulo(job.x, Region.cubicRegionSize), NumericsHelper.Modulo(job.z, Region.cubicRegionSize));
+
+            Chunk c = await region.GetChunkAsync(x, z);
             if (c is null)
             {
                 c = new Chunk(job.x, job.z)

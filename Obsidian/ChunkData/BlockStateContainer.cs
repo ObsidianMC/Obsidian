@@ -50,6 +50,12 @@ public sealed class BlockStateContainer : DataContainer<Block>
         DataArray[blockIndex] = paletteId;
     }
 
+    internal void GrowDataArray()
+    {
+        if (Palette.BitCount > DataArray.BitsPerEntry)
+            DataArray = DataArray.Grow(Palette.BitCount);
+    }
+
     public Block Get(int x, int y, int z)
     {
         int storageId = DataArray[GetIndex(x, y, z)];

@@ -2,6 +2,8 @@
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Registry;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -11,7 +13,6 @@ public class Region
 {
     public const int cubicRegionSizeShift = 5;
     public const int cubicRegionSize = 1 << cubicRegionSizeShift;
-    private const NbtCompression UsedCompression = NbtCompression.GZip;
 
     public int X { get; }
     public int Z { get; }
@@ -36,7 +37,7 @@ public class Region
         Z = z;
         RegionFolder = Path.Join(worldFolderPath, "regions");
         Directory.CreateDirectory(RegionFolder);
-        var filePath = Path.Join(RegionFolder, $"{X}.{Z}.mca");
+        var filePath = Path.Join(RegionFolder, $"r.{X}.{Z}.mca");
         regionFile = new RegionFile(filePath, cubicRegionSize);
 
     }
@@ -53,37 +54,35 @@ public class Region
 
     internal async Task FlushAsync()
     {
-        foreach (Chunk c in loadedChunks) { SerializeChunk(c); }
-        await regionFile.FlushToDiskAsync();
+        foreach (Chunk c in loadedChunks)
+            await SerializeChunkAsync(c);
+
+        await regionFile.FlushAsync();
     }
 
-    internal Chunk GetChunk((int X, int Z) relativePos) => GetChunk(relativePos.X, relativePos.Z);
-
-    internal Chunk GetChunk(int relativeX, int relativeZ) => GetChunk(new Vector(relativeX, 0, relativeZ));
-
-    internal Chunk GetChunk(Vector relativePosition)
+    internal async ValueTask<Chunk> GetChunkAsync(int x, int z)
     {
-        var chunk = loadedChunks[relativePosition.X, relativePosition.Z];
+        var chunk = loadedChunks[x, z];
         if (chunk is null)
         {
-            chunk = GetChunkFromFile(relativePosition); // Still might be null but that's okay.
-            loadedChunks[relativePosition.X, relativePosition.Z] = chunk;
+            chunk = await GetChunkFromFileAsync(x, z); // Still might be null but that's okay.
+            loadedChunks[x, z] = chunk;
         }
+
         return chunk;
     }
 
-    private Chunk? GetChunkFromFile(Vector relativePosition)
+    private async Task<Chunk?> GetChunkFromFileAsync(int x, int z)
     {
-        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkCompressedBytes(relativePosition);
-        if (compressedBytes.IsEmpty)
-        {
-            return null;
-        }
+        ReadOnlyMemory<byte> compressedBytes = regionFile.GetChunkBytes(x, z, out var compression);
 
-        var bytesStream = new ReadOnlyStream(compressedBytes);
-        var nbtReader = new NbtReader(bytesStream, UsedCompression);
-        var chunkCompound = (NbtCompound)nbtReader.ReadNextTag();
-        return GetChunkFromNbt(chunkCompound);
+        if (compressedBytes.IsEmpty)
+            return null;
+
+        await using var bytesStream = new ReadOnlyStream(compressedBytes);
+        var nbtReader = new NbtReader(bytesStream, compression);
+
+        return DeserializeChunk(nbtReader.ReadNextTag() as NbtCompound);
     }
 
     internal IEnumerable<Chunk> GeneratedChunks()
@@ -104,19 +103,20 @@ public class Region
         loadedChunks[x, z] = chunk;
     }
 
-    internal void SerializeChunk(Chunk chunk)
+    internal async Task SerializeChunkAsync(Chunk chunk, NbtCompression compression = NbtCompression.ZLib)
     {
-        var relativePosition = new Vector(NumericsHelper.Modulo(chunk.X, cubicRegionSize), 0, NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
-        NbtCompound chunkNbt = GetNbtFromChunk(chunk);
+        NbtCompound chunkNbt = SerializeChunk(chunk);
 
-        using MemoryStream strm = new();
-        using NbtWriter writer = new(strm, NbtCompression.GZip);
+        var (x, z) = (NumericsHelper.Modulo(chunk.X, cubicRegionSize), NumericsHelper.Modulo(chunk.Z, cubicRegionSize));
+
+        await using MemoryStream strm = new();
+        await using NbtWriter writer = new(strm, compression);
 
         writer.WriteTag(chunkNbt);
 
-        writer.TryFinish();
+        await writer.TryFinishAsync();
 
-        regionFile.SetChunkCompressedBytes(relativePosition, strm.ToArray());
+        await regionFile.SetChunkAsync(x, z, strm.ToArray(), compression);
     }
 
     internal async Task BeginTickAsync(CancellationToken cts)
@@ -149,7 +149,7 @@ public class Region
     }
 
     #region NBT Ops
-    public static Chunk GetChunkFromNbt(NbtCompound chunkCompound)
+    private static Chunk DeserializeChunk(NbtCompound chunkCompound)
     {
         int x = chunkCompound.GetInt("xPos");
         int z = chunkCompound.GetInt("zPos");
@@ -159,7 +159,7 @@ public class Region
             isGenerated = true
         };
 
-        foreach (var child in (NbtList)chunkCompound["Sections"])
+        foreach (var child in (NbtList)chunkCompound["sections"])
         {
             if (child is not NbtCompound sectionCompound)
                 throw new InvalidOperationException("Nbt Tag is not a compound.");
@@ -168,23 +168,37 @@ public class Region
 
             secY = secY > 20 ? secY - 256 : secY;
 
-            var statesCompound = sectionCompound["block_states"] as NbtCompound;
-            var blockStatePalette = statesCompound!["Palette"] as NbtList;
-            var data = statesCompound["data"] as NbtArray<long>;
+            if (!sectionCompound.TryGetTag("block_states", out var statesTag))
+                throw new UnreachableException("Unable to find block states from NBT.");
+
+            var statesCompound = statesTag as NbtCompound;
 
             var section = chunk.Sections[secY + 4];
 
-            section.BlockStateContainer.DataArray.storage = data.GetArray();
-
-            var chunkSecPalette = section.BlockStateContainer.Palette;
-            foreach (NbtCompound palette in blockStatePalette!)
+            if (statesCompound.TryGetTag("data", out var dataArrayTag))
             {
-                var block = new Block(palette.GetInt("Id"));
-                chunkSecPalette.GetOrAddId(block);
+                var data = dataArrayTag as NbtArray<long>;
+
+                section.BlockStateContainer.DataArray.storage = data!.GetArray();
             }
 
+            var chunkSecPalette = section.BlockStateContainer.Palette;
+
+            if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
+            {
+                var blockStatesPalette = palleteArrayTag as NbtList;
+                foreach (NbtCompound entry in blockStatesPalette!)
+                {
+                    var name = entry.GetString("Name");
+                    
+                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                }
+            }
+
+            section.BlockStateContainer.GrowDataArray();
+
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
-            var biomesPalette = biomesCompound!["Palette"] as NbtList;
+            var biomesPalette = biomesCompound!["palette"] as NbtList;
 
             var biomePalette = section.BiomeContainer.Palette;
             foreach (NbtTag<string> biome in biomesPalette!)
@@ -193,8 +207,19 @@ public class Region
                     biomePalette.GetOrAddId(value);
             }
 
-            section.SetLight(((NbtArray<byte>)sectionCompound["SkyLight"]).GetArray(), LightType.Sky);
-            section.SetLight(((NbtArray<byte>)sectionCompound["BlockLight"]).GetArray(), LightType.Block);
+            if (sectionCompound.TryGetTag("SkyLight", out var skyLightTag))
+            {
+                var array = (NbtArray<byte>)skyLightTag;
+
+                section.SetLight(array.GetArray(), LightType.Sky);
+            }
+
+            if (sectionCompound.TryGetTag("BlockLight", out var blockLightTag))
+            {
+                var array = (NbtArray<byte>)blockLightTag;
+
+                section.SetLight(array.GetArray(), LightType.Sky);
+            }
         }
 
         foreach (var (name, heightmap) in (NbtCompound)chunkCompound["Heightmaps"])
@@ -213,36 +238,47 @@ public class Region
         return chunk;
     }
 
-    public static NbtCompound GetNbtFromChunk(Chunk chunk)
+    private static NbtCompound SerializeChunk(Chunk chunk)
     {
-        var sectionsCompound = new NbtList(NbtTagType.Compound, "Sections");
+        var sectionsCompound = new NbtList(NbtTagType.Compound, "sections");
 
         foreach (var section in chunk.Sections)
         {
-            if (section.YBase is null) { throw new InvalidOperationException("Section Ybase should not be null"); }//THIS should never happen
+            if (section.YBase is null)
+                throw new UnreachableException("Section Ybase should not be null");//THIS should never happen
 
             var biomesCompound = new NbtCompound("biomes");
-            var blockStatesCompound = new NbtCompound("block_states")
-            {
-                new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage)
-            };
+            var blockStatesCompound = new NbtCompound("block_states");
+
+            if (section.BlockStateContainer.DataArray.storage.Any(x => x > 0))
+                blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
 
             if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
             {
-                var palette = new NbtList(NbtTagType.Compound, "Palette");
+                var palette = new NbtList(NbtTagType.Compound, "palette");
 
-                foreach (var stateId in indirect.Values)
+                var hasAir = false;
+
+                foreach(var id in indirect.Values)
                 {
-                    if (stateId == 0)
-                        continue;
+                    var block = new Block(id);
 
-                    var block = new Block(stateId);
+                    if (block.IsAir && !hasAir && !indirect.Values.Any(x => x > 0))
+                    {
+                        palette.Add(new NbtCompound
+                        {
+                            new NbtTag<string>("Name", block.UnlocalizedName)
+                        });
+                        hasAir = true;
+                        continue;
+                    }
+                    else if (block.IsAir)
+                        continue;
 
                     palette.Add(new NbtCompound
                     {
-                        new NbtTag<string>("Name", block.UnlocalizedName),
-                        new NbtTag<int>("Id", block.StateId)
-                    });//TODO redstone etc... has a lit metadata added when creating the palette
+                        new NbtTag<string>("Name", block.UnlocalizedName)
+                    });//TODO INCLUDE PROPERTIES
                 }
 
                 blockStatesCompound.Add(palette);
@@ -250,7 +286,7 @@ public class Region
 
             if (section.BiomeContainer.Palette is BaseIndirectPalette<Biomes> indirectBiomePalette)
             {
-                var palette = new NbtList(NbtTagType.String, "Palette");
+                var palette = new NbtList(NbtTagType.String, "palette");
 
                 foreach (var id in indirectBiomePalette.Values)
                 {
@@ -261,7 +297,6 @@ public class Region
 
                 biomesCompound.Add(palette);
             }
-
 
             sectionsCompound.Add(new NbtCompound
             {
@@ -289,7 +324,7 @@ public class Region
             },
             blockEntities,
             sectionsCompound,
-            new NbtTag<int>("DataVersion", 2860)// Hardcoded version try to get data version through minecraft data and use data correctly
+            new NbtTag<int>("DataVersion", 3105)// Hardcoded version try to get data version through minecraft data and use data correctly
         };
     }
     #endregion NBT Ops
