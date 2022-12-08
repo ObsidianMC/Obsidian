@@ -191,10 +191,7 @@ public class Region
                 {
                     var name = entry.GetString("Name");
                     
-                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));
-
-                    if(secY == 0 && x == -15 && z == -3)
-                        Console.WriteLine("Adding entry: {0} - Palette Count: {1}", name, chunkSecPalette.Count);
+                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
             }
 
