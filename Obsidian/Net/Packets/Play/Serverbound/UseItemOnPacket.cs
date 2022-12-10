@@ -82,11 +82,11 @@ public partial class UseItemOnPacket : IServerboundPacket
 
         switch (Face) // TODO fix this for logs
         {
-            case BlockFace.Bottom:
+            case BlockFace.Down:
                 position.Y -= 1;
                 break;
 
-            case BlockFace.Top:
+            case BlockFace.Up:
                 position.Y += 1;
                 break;
 
