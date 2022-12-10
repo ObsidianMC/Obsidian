@@ -50,8 +50,6 @@ public partial class BlockGenerator
             }
 
             var builder = new CodeBuilder()
-                .Using("Obsidian.API")
-                .Line()
                 .Namespace("Obsidian.API.Blocks")
                 .Line()
                 .Type($"public struct {blockName}Block : IBlock");
@@ -95,8 +93,6 @@ public partial class BlockGenerator
             var block = coloredBlock.Block;
 
             var blockBuilder = new CodeBuilder()
-               .Using("Obsidian.API")
-               .Line()
                .Namespace("Obsidian.API.Blocks")
                .Line()
                .Type($"public struct {type}Block : IBlock");
@@ -124,9 +120,7 @@ public partial class BlockGenerator
               .Type($"public enum ButtonType");
 
         foreach (var buttonType in buttons.Keys)
-        {
             buttonTypeBuilder.Line($"{buttonType},");
-        }
 
         buttonTypeBuilder.EndScope();
 
@@ -137,8 +131,6 @@ public partial class BlockGenerator
         var buttonBlock = button.Value;
 
         var buttonBuilder = new CodeBuilder()
-               .Using("Obsidian.API")
-               .Line()
                .Namespace("Obsidian.API.Blocks")
                .Line()
                .Type($"public struct ButtonBlock : IBlock");
