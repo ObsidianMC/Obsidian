@@ -129,7 +129,7 @@ public partial class Server
                     Title = actualType.ToString()
                 };
             }
-            else if (type >= Material.ShulkerBox && type <= Material.ColoredShulkerBox)
+            else if (type is Material.ShulkerBox or Material.ColoredShulkerBox)
             {
                 container = new Container // TODO shulker box functionality
                 {

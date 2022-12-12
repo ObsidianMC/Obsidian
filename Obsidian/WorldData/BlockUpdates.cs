@@ -151,7 +151,7 @@ internal static class BlockUpdates
             {
                 if (below.Material == block.Material) { return false; }
 
-                if (Block.Replaceable.Contains(below.Material))
+                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.StateId))
                 {
                     var newBlock = new Block(block.BaseId, state + 8);
                     await world.SetBlockAsync(belowPos, newBlock);
