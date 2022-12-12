@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData;
+﻿using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 
 namespace Obsidian;
 
@@ -18,7 +19,7 @@ public struct BlockUpdate
             _block = value;
             if (value is Block b)
             {
-                if (API.Block.GravityAffected.Contains(b.Material))
+                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.StateId))
                 {
                     Delay = 1;
                 }

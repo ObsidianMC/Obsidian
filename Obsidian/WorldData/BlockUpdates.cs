@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData;
 
 internal static class BlockUpdates
 {
@@ -10,7 +12,7 @@ internal static class BlockUpdates
         var location = blockUpdate.position;
         var material = blockUpdate.Block.Value.Material;
         if (await world.GetBlockAsync(location + Vector.Down) is Block below &&
-            (Block.Replaceable.Contains(below.Material) || below.IsFluid))
+            (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.StateId) || below.IsFluid))
         {
             await world.SetBlockAsync(location, Block.Air);
             world.SpawnFallingBlock(location, material);
@@ -46,11 +48,11 @@ internal static class BlockUpdates
             foreach (var pathLoc in paths)
             {
                 if (await world.GetBlockAsync(pathLoc) is Block pathSide &&
-                    (Block.Replaceable.Contains(pathSide.Material) || pathSide.IsFluid))
+                    (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pathSide.StateId) || pathSide.IsFluid))
                 {
                     var pathBelow = await world.GetBlockAsync(pathLoc + Vector.Down);
                     if (pathBelow is Block pBelow &&
-                        (Block.Replaceable.Contains(pBelow.Material) || pBelow.IsFluid))
+                        (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(pBelow.StateId) || pBelow.IsFluid))
                     {
                         validPaths.Add(pathLoc);
                     }
@@ -80,7 +82,7 @@ internal static class BlockUpdates
             }
 
             // Keep falling
-            if (await world.GetBlockAsync(belowPos) is Block below && Block.Replaceable.Contains(below.Material))
+            if (await world.GetBlockAsync(belowPos) is Block below && TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.StateId))
             {
                 var newBlock = new Block(block.BaseId, state);
                 await world.SetBlockAsync(belowPos, newBlock);

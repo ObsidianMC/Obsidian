@@ -81,6 +81,45 @@
       "minecraft:skull"
     ]
   },
+  "blocks/gravity_affected": {
+    "name": "gravity_affected",
+    "type": "blocks",
+    "values": [
+      "#minecraft:anvil",
+      "#minecraft:sand",
+      "minecraft:white_concrete_powder",
+      "minecraft:orange_concrete_powder",
+      "minecraft:magenta_concrete_powder",
+      "minecraft:light_blue_concrete_powder",
+      "minecraft:yellow_concrete_powder",
+      "minecraft:lime_concrete_powder",
+      "minecraft:pink_concrete_powder",
+      "minecraft:gray_concrete_powder",
+      "minecraft:light_gray_concrete_powder",
+      "minecraft:cyan_concrete_powder",
+      "minecraft:purple_concrete_powder",
+      "minecraft:blue_concrete_powder",
+      "minecraft:brown_concrete_powder",
+      "minecraft:green_concrete_powder",
+      "minecraft:red_concrete_powder",
+      "minecraft:black_concrete_powder",
+      "minecraft:scaffolding",
+      "minecraft:dragon_egg"
+    ]
+  },
+  "blocks/replaceable_by_water": {
+    "name": "replaceable_by_water",
+    "type": "blocks",
+    "values": [
+      "#minecraft:replaceable_plants",
+      "#minecraft:saplings",
+      "#minecraft:crops",
+      "#minecraft:small_flowers",
+      "minecraft:sugar_cane",
+      "minecraft:sweet_berry_bush",
+      "minecraft:tall_grass"
+    ]
+  },
   "blocks/acacia_logs": {
     "name": "acacia_logs",
     "type": "blocks",

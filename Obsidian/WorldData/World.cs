@@ -615,18 +615,15 @@ public class World : IWorld
     /// <returns>Whether to update neighbor blocks.</returns>
     internal async Task<bool> HandleBlockUpdateAsync(BlockUpdate bu)
     {
-        if (bu.Block is null) { return false; }
+        if (bu.Block is not Block block)
+            return false;
 
         // Todo: this better
-        if (Block.GravityAffected.Contains(bu.Block.Value.Material))
-        {
+        if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(block.StateId))
             return await BlockUpdates.HandleFallingBlock(bu);
-        }
 
-        if (bu.Block.Value.IsFluid)
-        {
+        if (block.IsFluid)
             return await BlockUpdates.HandleLiquidPhysicsAsync(bu);
-        }
 
         return false;
     }

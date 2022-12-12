@@ -5,5 +5,7 @@ public interface IBlock
 
     public static abstract int BaseId { get; }
 
+    public Material Material { get; }
+
     public int StateId { get; }
 }
