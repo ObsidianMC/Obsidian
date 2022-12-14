@@ -169,7 +169,7 @@ internal static class BlockUpdates
                 if (neighborBlock is null) { continue; }
 
                 var neighbor = neighborBlock.Value;
-                if (Block.Replaceable.Contains(neighbor.Material) ||
+                if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(neighbor.StateId) ||
                     (neighbor.Material == block.Material && neighbor.State > state + 1))
                 {
                     var newBlock = new Block(block.BaseId, state + 1);

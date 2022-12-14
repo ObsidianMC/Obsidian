@@ -1,11 +1,13 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.API.Blocks;
+using Obsidian.Net;
 using Obsidian.Utilities.Collection;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.ChunkData;
 
-public sealed class BlockStateContainer : DataContainer<Block>
+public sealed class BlockStateContainer : DataContainer<IBlock>
 {
-    public override IPalette<Block> Palette { get; internal set; }
+    public override IPalette<IBlock> Palette { get; internal set; }
 
     public bool IsEmpty => DataArray.storage.Length == 0;
 
@@ -25,7 +27,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 #endif
     }
 
-    private BlockStateContainer(IPalette<Block> palette, DataArray dataArray)
+    private BlockStateContainer(IPalette<IBlock> palette, DataArray dataArray)
     {
         Palette = palette;
         DataArray = dataArray;
@@ -35,7 +37,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
 #endif
     }
 
-    public void Set(int x, int y, int z, Block blockState)
+    public void Set(int x, int y, int z, IBlock blockState)
     {
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
@@ -56,7 +58,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
             DataArray = DataArray.Grow(Palette.BitCount);
     }
 
-    public Block Get(int x, int y, int z)
+    public IBlock Get(int x, int y, int z)
     {
         int storageId = DataArray[GetIndex(x, y, z)];
 
@@ -97,7 +99,7 @@ public sealed class BlockStateContainer : DataContainer<Block>
         stream.WriteLongArray(DataArray.storage);
     }
 
-    public void Fill(Block block)
+    public void Fill(IBlock block)
     {
 #if CACHE_VALID_BLOCKS
         validBlockCount.SetDirty();
@@ -109,9 +111,9 @@ public sealed class BlockStateContainer : DataContainer<Block>
         }
     }
 
-    private static readonly Block air = Block.Air;
-    private static readonly Block caveAir = new(Material.CaveAir);
-    private static readonly Block voidAir = new(Material.VoidAir);
+    private static readonly IBlock air = BlocksRegistry.Get(0);
+    private static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
+    private static readonly IBlock voidAir = BlocksRegistry.Get(Material.VoidAir);
 
     private short GetNonAirBlocks()
     {

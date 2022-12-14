@@ -1,9 +1,9 @@
 ﻿namespace Obsidian.API;
 public interface IBlock
 {
-    public static abstract string UnlocalizedName { get; }
+    public string UnlocalizedName { get; }
 
-    public static abstract int BaseId { get; }
+    public int BaseId { get; }
 
     public Material Material { get; }
 

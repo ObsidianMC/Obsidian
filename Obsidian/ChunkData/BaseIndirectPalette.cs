@@ -1,4 +1,5 @@
-﻿using Obsidian.Net;
+﻿using Obsidian.Blocks;
+using Obsidian.Net;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.ChunkData;
@@ -71,8 +72,8 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
             Values = newArray;
         }
 
-        var newId = Count;
-        Values[Count++] = valueId;
+        var newId = Count++;
+        Values[newId] = valueId;
         return newId;
     }
 

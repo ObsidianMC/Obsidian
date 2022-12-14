@@ -12,6 +12,7 @@ public sealed partial class RegistryAssetsGenerator : ISourceGenerator
     public void Execute(GeneratorExecutionContext context)
     {
         string? assembly = context.Compilation.AssemblyName;
+
         var assets = Assets.Get(context);
 
         if (assembly == "Obsidian")

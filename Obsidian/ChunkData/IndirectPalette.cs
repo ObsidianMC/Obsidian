@@ -1,6 +1,9 @@
-﻿namespace Obsidian.ChunkData;
+﻿using Obsidian.Exceptions;
+using Obsidian.Utilities.Registry;
 
-public sealed class IndirectPalette<T> : BaseIndirectPalette<T>, IPalette<T> where T : IPaletteValue<T>
+namespace Obsidian.ChunkData;
+
+public sealed class IndirectPalette : BaseIndirectPalette<IBlock>, IPalette<IBlock>
 {
     public IndirectPalette(byte bitCount) : base(bitCount)
     {
@@ -10,18 +13,18 @@ public sealed class IndirectPalette<T> : BaseIndirectPalette<T>, IPalette<T> whe
     {
     }
 
-    public override T? GetValueFromIndex(int index)
+    public override IBlock? GetValueFromIndex(int index)
     {
         if ((uint)index >= (uint)Count)
-            ThrowHelper.ThrowOutOfRange();
+            throw new MissingPaletteEntryException(index);
 
-        return T.Construct(Values[index]);
+        return BlocksRegistry.Get(Values[index]);
     }
 
-    public override IPalette<T> Clone()
+    public override IPalette<IBlock> Clone()
     {
         int[] valuesCopy = GC.AllocateUninitializedArray<int>(Values.Length);
         Array.Copy(Values, valuesCopy, Count);
-        return new IndirectPalette<T>(valuesCopy, BitCount, Count);
+        return new IndirectPalette(valuesCopy, BitCount, Count);
     }
 }

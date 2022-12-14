@@ -4,8 +4,6 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-   
-   
     private static void GenerateMaterials(Assets assets, GeneratorExecutionContext context)
     {
         IEnumerable<string> materials =

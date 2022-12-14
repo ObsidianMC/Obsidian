@@ -191,7 +191,7 @@ public class Region
                 {
                     var name = entry.GetString("Name");
                     
-                    chunkSecPalette.GetOrAddId(Registry.GetBlock(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
             }
 
@@ -253,7 +253,7 @@ public class Region
             if (section.BlockStateContainer.DataArray.storage.Any(x => x > 0))
                 blockStatesCompound.Add(new NbtArray<long>("data", section.BlockStateContainer.DataArray.storage));
 
-            if (section.BlockStateContainer.Palette is IndirectPalette<Block> indirect)
+            if (section.BlockStateContainer.Palette is IndirectPalette indirect)
             {
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 

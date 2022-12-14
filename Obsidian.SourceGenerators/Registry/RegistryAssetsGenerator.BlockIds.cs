@@ -10,7 +10,7 @@ public partial class RegistryAssetsGenerator
 
         builder.Namespace("Obsidian.Utilities.Registry");
         builder.Line();
-        builder.Type("internal static class BlocksRegistry");
+        builder.Type("internal static partial class BlocksRegistry");
 
         var blocks = assets.Blocks.OrderBy(block => block.BaseId);
 
