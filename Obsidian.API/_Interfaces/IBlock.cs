@@ -5,7 +5,12 @@ public interface IBlock
 
     public int BaseId { get; }
 
+    public IBlockState State { get; }
+
     public Material Material { get; }
 
-    public int StateId { get; }
+    public bool IsLiquid => this.Material is Material.Water or Material.Lava;
+
+    [Obsolete]
+    public bool IsTransparent => this.IsLiquid || this.Material is Material.Air or Material.CaveAir or Material.VoidAir;
 }
