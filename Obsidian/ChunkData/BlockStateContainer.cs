@@ -1,5 +1,4 @@
-﻿using Obsidian.API.Blocks;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using Obsidian.Utilities.Collection;
 using Obsidian.Utilities.Registry;
 

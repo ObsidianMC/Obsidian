@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Blocks;
+﻿using Obsidian.Utilities.Registry;
 using System.Diagnostics;
 
 namespace Obsidian.ChunkData;
@@ -31,7 +31,7 @@ public sealed class ChunkSection
 
         this.YBase = yBase;
 
-        int airIndex = BlockStateContainer.Palette.GetOrAddId(new AirBlock());
+        int airIndex = BlockStateContainer.Palette.GetOrAddId(BlocksRegistry.Air);
         Debug.Assert(airIndex == 0);
     }
 

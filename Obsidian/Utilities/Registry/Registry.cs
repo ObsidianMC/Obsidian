@@ -8,7 +8,6 @@ using Obsidian.Commands;
 using Obsidian.Commands.Parsers;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Utilities.Converters;
-using Obsidian.Utilities.Registry.Enums;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -34,26 +33,6 @@ public static partial class Registry
     public static CodecCollection<int, ChatCodec> ChatTypes { get; } = new("minecraft:chat_type");
 
     private static readonly string mainDomain = "Obsidian.Assets";
-
-    private static readonly JsonSerializerOptions blockJsonOptions = new(Globals.JsonOptions)
-    {
-        Converters =
-            {
-                new StringToBoolConverter(),
-                new DefaultEnumConverter<CustomDirection>(),
-                new DefaultEnumConverter<Axis>(),
-                new DefaultEnumConverter<Face>(),
-                new DefaultEnumConverter<BlockFace>(),
-                new DefaultEnumConverter<EHalf>(),
-                new DefaultEnumConverter<Hinge>(),
-                new DefaultEnumConverter<Instruments>(),
-                new DefaultEnumConverter<Part>(),
-                new DefaultEnumConverter<Shape>(),
-                new DefaultEnumConverter<MinecraftType>(),
-                new DefaultEnumConverter<Attachment>(),
-                new DefaultEnumConverter<Mode>(),
-            }
-    };
 
     private static readonly JsonSerializerOptions codecJsonOptions = new(Globals.JsonOptions)
     {
