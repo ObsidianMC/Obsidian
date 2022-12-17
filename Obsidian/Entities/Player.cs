@@ -44,7 +44,7 @@ public class Player : Living, IPlayer
 
     public ItemStack LastClickedItem { get; internal set; }
 
-    public Block LastClickedBlock { get; internal set; }
+    public IBlock LastClickedBlock { get; internal set; }
 
     public PlayerBitMask PlayerBitMask { get; set; }
     public Gamemode Gamemode { get; set; }

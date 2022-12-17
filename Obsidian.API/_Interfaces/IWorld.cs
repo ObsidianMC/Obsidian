@@ -14,14 +14,14 @@ public interface IWorld
 
     public Gamemode DefaultGamemode { get; }
 
-    public Task<Block?> GetBlockAsync(Vector location);
-    public Task<Block?> GetBlockAsync(int x, int y, int z);
-    public Task SetBlockAsync(Vector location, Block block);
-    public Task SetBlockAsync(int x, int y, int z, Block block);
+    public Task<IBlock?> GetBlockAsync(Vector location);
+    public Task<IBlock?> GetBlockAsync(int x, int y, int z);
+    public Task SetBlockAsync(Vector location, IBlock block);
+    public Task SetBlockAsync(int x, int y, int z, IBlock block);
 
-    public Task SetBlockUntrackedAsync(int x, int y, int z, Block block, bool doBlockUpdate);
+    public Task SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
 
-    public Task SetBlockUntrackedAsync(Vector location, Block block, bool doBlockUpdate);
+    public Task SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate);
 
     public Task<int?> GetWorldSurfaceHeightAsync(int x, int z);
 

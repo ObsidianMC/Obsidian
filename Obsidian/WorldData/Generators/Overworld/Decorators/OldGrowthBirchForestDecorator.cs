@@ -29,8 +29,8 @@ public class OldGrowthBirchForestDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grass = Registry.GetBlock(9);
-        var dirt = Registry.GetBlock(Material.Dirt);
+        var grass = BlocksRegistry.Get(9);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
 
         chunk.SetBlock(pos, grass);
         for (int y = -1; y > -4; y--)
@@ -38,6 +38,6 @@ public class OldGrowthBirchForestDecorator : BaseDecorator
 
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), Registry.GetBlock(Material.Grass));
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.Grass));
     }
 }

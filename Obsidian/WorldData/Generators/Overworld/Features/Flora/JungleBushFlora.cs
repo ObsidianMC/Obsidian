@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public class JungleBushFlora : BaseFlora
 {
@@ -26,6 +28,6 @@ public class JungleBushFlora : BaseFlora
                 }
             }
         }
-        await helper.SetBlockAsync(origin, new Block(Material.JungleLog, 1), chunk);
+        await helper.SetBlockAsync(origin, BlocksRegistry.Get(Material.JungleLog), chunk);//TODO state == 1
     }
 }

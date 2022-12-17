@@ -1,5 +1,4 @@
-﻿using Obsidian.API._Types;
-using Obsidian.Blocks;
+﻿using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Net;
@@ -56,9 +55,9 @@ public class Chunk
         this.isGenerated = isGenerated;
     }
 
-    public Block GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
+    public IBlock GetBlock(Vector position) => GetBlock(position.X, position.Y, position.Z);
 
-    public Block GetBlock(int x, int y, int z)
+    public IBlock GetBlock(int x, int y, int z)
     {
         var i = SectionIndex(y);
 
@@ -117,9 +116,9 @@ public class Chunk
         this.BlockEntities[value] = tileEntityData;
     }
 
-    public void SetBlock(Vector position, Block block) => SetBlock(position.X, position.Y, position.Z, block);
+    public void SetBlock(Vector position, IBlock block) => SetBlock(position.X, position.Y, position.Z, block);
 
-    public void SetBlock(int x, int y, int z, Block block)
+    public void SetBlock(int x, int y, int z, IBlock block)
     {
         int i = SectionIndex(y);
 
@@ -184,7 +183,7 @@ public class Chunk
                 for (int y = worldHeight - 1; y >= worldFloor; y--)
                 {
                     var block = GetBlock(x, y, z);
-                    if (block.IsAir)
+                    if (block.Material == Material.Air)
                         continue;
 
                     target.Set(x, z, value: y);

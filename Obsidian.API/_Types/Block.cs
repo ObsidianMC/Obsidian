@@ -12,15 +12,13 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
     internal static ushort[] stateToNumeric;
     internal static ushort[] stateToBase;
 
-    private static ushort[] interactables;
     private static bool initialized = false;
 
     public string UnlocalizedName => blockNames[Id];
     public string Name => Material.ToString();
     public Material Material => (Material)Id;
-    public bool IsInteractable => Array.BinarySearch(interactables, baseId) > -1;
     public bool IsAir => baseId == 0 || baseId == 10547 || baseId == 10546;
-    public bool IsFluid => UnlocalizedName == "minecraft:water";
+    public bool IsFluid => UnlocalizedName == "minecraft:water" || UnlocalizedName == "minecraft:lava";
     public bool IsTransparent => Material is Material.Glass || IsFluid || IsAir;
     public int Id => stateToNumeric[baseId];
     public int StateId => baseId + state;
@@ -127,31 +125,6 @@ public readonly struct Block : IEquatable<Block>, IPaletteValue<Block>
     public static bool operator !=(Block a, Block b)
     {
         return a.StateId != b.StateId;
-    }
-
-    internal static void Initialize()
-    {
-        if (initialized)
-            return;
-        initialized = true;
-
-        interactables = new[]
-        {
-            numericToBase[(int)Material.Chest],
-            numericToBase[(int)Material.CraftingTable],
-            numericToBase[(int)Material.Furnace],
-            numericToBase[(int)Material.BrewingStand],
-            numericToBase[(int)Material.EnderChest],
-            numericToBase[(int)Material.Anvil],
-            numericToBase[(int)Material.ChippedAnvil],
-            numericToBase[(int)Material.DamagedAnvil],
-            numericToBase[(int)Material.TrappedChest],
-            numericToBase[(int)Material.Hopper],
-            numericToBase[(int)Material.Barrel],
-            numericToBase[(int)Material.Smoker],
-            numericToBase[(int)Material.BlastFurnace],
-            numericToBase[(int)Material.Grindstone],
-        };
     }
 
     public static Block Construct(int value) => new(value);

@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeJungleTree : JungleTree
 {
@@ -15,7 +17,7 @@ public class LargeJungleTree : JungleTree
         List<Vector> vineCandidates = new();
         int topY = origin.Y + trunkHeight + heightOffset + 1;
 
-        var leafBlock = new Block(leaf);
+        var leafBlock = BlocksRegistry.Get(leaf);
         for (int y = topY - 3; y < topY + 1; y++)
         {
             for (int x = -leavesRadius; x <= leavesRadius + 1; x++)
@@ -51,7 +53,7 @@ public class LargeJungleTree : JungleTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, y, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
 
                     // Roll the dice to place a vine on this trunk block.
                     if (rand.Next(10) == 0)
@@ -62,9 +64,9 @@ public class LargeJungleTree : JungleTree
 
                 // Fill in any air gaps under the trunk
                 var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
-                if (under.Value.Material != Material.GrassBlock)
+                if (under.Material != Material.GrassBlock)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, -1, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
                 }
             }
         }

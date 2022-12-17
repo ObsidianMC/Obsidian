@@ -18,11 +18,11 @@ public class GlobalBlockStatePalette : IPalette<IBlock>
 
     public bool TryGetId(IBlock block, out int id)
     {
-        id = block.StateId;
+        id = block.State.Id;
         return true;
     }
 
-    public int GetOrAddId(IBlock block) => block.StateId;
+    public int GetOrAddId(IBlock block) => block.State.Id;
 
     public IBlock GetValueFromIndex(int index) => BlocksRegistry.Get(index);
 

@@ -16,8 +16,8 @@ public class BeachDecorator : BaseDecorator
             return;
         }
 
-        var sand = Registry.GetBlock(Material.Sand);
-        var sandstone = Registry.GetBlock(Material.Sandstone);
+        var sand = BlocksRegistry.Get(Material.Sand);
+        var sandstone = BlocksRegistry.Get(Material.Sandstone);
 
         for (int y = 0; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), sand);

@@ -4,9 +4,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class OceanDecorator : BaseDecorator
 {
-    protected readonly Block bubble, sand, dirt, gravel, clay, magma, seaGrass, tallSeaGrass, kelp;
+    protected readonly IBlock bubble, sand, dirt, gravel, clay, magma, seaGrass, tallSeaGrass, kelp;
 
-    protected Block primarySurface, secondarySurface, tertiarySurface;
+    protected IBlock primarySurface, secondarySurface, tertiarySurface;
 
     protected bool hasSeaGrass, hasKelp, hasMagma = true;
 
@@ -24,15 +24,15 @@ public class OceanDecorator : BaseDecorator
 
     public OceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        sand = Registry.GetBlock(Material.Sand);
-        dirt = Registry.GetBlock(Material.Dirt);
-        gravel = Registry.GetBlock(Material.Gravel);
-        clay = Registry.GetBlock(Material.Clay);
-        magma = Registry.GetBlock(Material.MagmaBlock);
-        seaGrass = Registry.GetBlock(Material.Seagrass);
-        tallSeaGrass = Registry.GetBlock(Material.TallSeagrass);
-        kelp = Registry.GetBlock(Material.KelpPlant);
-        bubble = new Block(Material.BubbleColumn);
+        sand = BlocksRegistry.Get(Material.Sand);
+        dirt = BlocksRegistry.Get(Material.Dirt);
+        gravel = BlocksRegistry.Get(Material.Gravel);
+        clay = BlocksRegistry.Get(Material.Clay);
+        magma = BlocksRegistry.Get(Material.MagmaBlock);
+        seaGrass = BlocksRegistry.Get(Material.Seagrass);
+        tallSeaGrass = BlocksRegistry.Get(Material.TallSeagrass);
+        kelp = BlocksRegistry.Get(Material.KelpPlant);
+        bubble = BlocksRegistry.Get(Material.BubbleColumn);
 
         primarySurface = dirt;
         secondarySurface = sand;
@@ -65,7 +65,7 @@ public class OceanDecorator : BaseDecorator
         }
         if (hasSeaGrass & IsTallGrass)
         {
-            chunk.SetBlock(pos + (0, 1, 0), new Block(Material.TallSeagrass, 1));
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.TallSeagrass)); //TODO state == 1
             chunk.SetBlock(pos + (0, 2, 0), tallSeaGrass);
         }
 

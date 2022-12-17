@@ -1,4 +1,6 @@
-﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿using Obsidian.Utilities.Registry;
+
+namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeOakTree : BaseTree
 {
@@ -73,14 +75,14 @@ public class LargeOakTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, y, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
                 }
 
                 // Fill in any air gaps under the trunk
                 var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
-                if (under.Value.IsAir)
+                if (under.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), new Block(trunk, 1), chunk);
+                    await helper.SetBlockAsync(origin + (x, -1, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
                 }
             }
         }
@@ -95,8 +97,8 @@ public class LargeOakTree : BaseTree
                     for (int y = -2; y < 2; y++)
                     {
                         var b = await helper.GetBlockAsync(origin + (x - 4, y, z - 4), chunk);
-                        if ((Material)b.Value.Id == Material.GrassBlock)
-                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), new Block(Material.Podzol, 1), chunk);
+                        if (b.Is(Material.GrassBlock))
+                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Get(Material.Podzol), chunk);//TODO state == 1
                     }
                 }
             }
@@ -124,7 +126,7 @@ public class LargeOakTree : BaseTree
                 {
                     if (leaves[x, z])
                     {
-                        await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), new Block(leaf), chunk);
+                        await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), BlocksRegistry.Get(leaf), chunk);
                     }
                 }
             }

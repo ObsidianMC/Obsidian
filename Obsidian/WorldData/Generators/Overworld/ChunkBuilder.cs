@@ -5,9 +5,9 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
 internal static class ChunkBuilder
 {
-    private static readonly Block bedrock = Registry.GetBlock(Material.Bedrock);
-    private static readonly Block stone = Registry.GetBlock(Material.Stone);
-    private static readonly Block caveAir = Registry.GetBlock(Material.CaveAir);
+    private static readonly IBlock bedrock = BlocksRegistry.Get(Material.Bedrock);
+    private static readonly IBlock stone = BlocksRegistry.Get(Material.Stone);
+    private static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
 
     internal static void FillChunk(Chunk chunk)
     {
@@ -33,7 +33,7 @@ internal static class ChunkBuilder
 
     internal static void CarveCaves(GenHelper util, Chunk chunk)
     {
-        Block block = caveAir;
+        IBlock block = caveAir;
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
         for (int bx = 0; bx < 16; bx++)

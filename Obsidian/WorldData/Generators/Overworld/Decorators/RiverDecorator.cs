@@ -11,9 +11,9 @@ public class RiverDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        var sand = Registry.GetBlock(Material.Sand);
-        var dirt = Registry.GetBlock(Material.Dirt);
-        var gravel = Registry.GetBlock(Material.Gravel);
+        var sand = BlocksRegistry.Get(Material.Sand);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
+        var gravel = BlocksRegistry.Get(Material.Gravel);
 
         FillWater();
 

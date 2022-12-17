@@ -21,17 +21,17 @@ public class SnowyTaigaDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grass = Registry.GetBlock(Material.Snow);
-        var dirt = Registry.GetBlock(Material.Dirt);
+        var grass = BlocksRegistry.Get(Material.Snow);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
 
         chunk.SetBlock(pos, grass);
         for (int y = -1; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), dirt);
 
-        var sand = Registry.GetBlock(Material.SnowBlock);
-        var sandstone = Registry.GetBlock(Material.PackedIce);
-        var deadbush = Registry.GetBlock(Material.Snow);
-        var cactus = Registry.GetBlock(Material.FrostedIce);
+        var sand = BlocksRegistry.Get(Material.SnowBlock);
+        var sandstone = BlocksRegistry.Get(Material.PackedIce);
+        var deadbush = BlocksRegistry.Get(Material.Snow);
+        var cactus = BlocksRegistry.Get(Material.FrostedIce);
 
         for (int y = 0; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), sand);

@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using Microsoft.Win32;
 using Obsidian.Blocks;
 
 namespace Obsidian.Utilities.Registry;
@@ -35,6 +36,8 @@ internal partial class BlocksRegistry
 
         return compiledLamdba();
     }
+
+    public static int GetNetworkId(int baseId) => StateToNumeric[baseId];
 
     public static IBlock Get(string blockName)
     {

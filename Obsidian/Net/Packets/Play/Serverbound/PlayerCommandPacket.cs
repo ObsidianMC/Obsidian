@@ -34,7 +34,7 @@ public partial class PlayerCommandPacket : IServerboundPacket
                 player.Sleeping = false;
                 break;
             case EAction.StartSprinting:
-                if ((bool)(block?.IsFluid))
+                if ((bool)(block?.IsLiquid))
                     player.Swimming = true;
 
                 player.Sprinting = true;

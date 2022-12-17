@@ -11,15 +11,15 @@ public struct BlockUpdate
     internal int Delay { get; private set; }
     internal int delayCounter;
 
-    internal Block? Block
+    internal IBlock? Block
     {
         get => _block;
         set
         {
             _block = value;
-            if (value is Block b)
+            if (value is IBlock b)
             {
-                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.StateId))
+                if (TagsRegistry.Blocks.GravityAffected.Entries.Contains(b.State.Id))
                 {
                     Delay = 1;
                 }
@@ -35,9 +35,9 @@ public struct BlockUpdate
             delayCounter = Delay;
         }
     }
-    private Block? _block;
+    private IBlock? _block;
 
-    public BlockUpdate(World w, Vector pos, Block? blk = null)
+    public BlockUpdate(World w, Vector pos, IBlock? blk = null)
     {
         world = w;
         position = pos;

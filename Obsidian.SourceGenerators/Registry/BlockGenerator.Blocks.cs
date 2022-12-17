@@ -104,6 +104,7 @@ public partial class BlockGenerator
 
         var buttonBuilder = new CodeBuilder()
                .Using("Obsidian.API")
+               .Using("Obsidian.API.BlockStates")
                .Line()
                .Namespace("Obsidian.Blocks")
                .Line()
@@ -167,6 +168,7 @@ public partial class BlockGenerator
 
             var builder = new CodeBuilder()
                 .Using("Obsidian.API")
+                .Using("Obsidian.API.BlockStates")
                 .Line()
                 .Namespace("Obsidian.Blocks")
                 .Line()
@@ -176,9 +178,11 @@ public partial class BlockGenerator
             builder.Line($"public int BaseId => {block.BaseId};");
             builder.Line("public int StateId { get; private set; }");
 
-            builder.Line($"public Material Material => Material.{blockName};");
+            builder.Line($"public Material Material => Material.{block.Name};");
 
-            builder.Line($"public IBlockState State => new {blockName}();");
+            var state = block.Properties.Length == 0 ? "null;" : $"new {blockName}();";
+
+            builder.Line($"public IBlockState State => {state}");
 
             builder.Line().Method($"internal {blockName}Block()").EndScope();
 
@@ -193,7 +197,7 @@ public partial class BlockGenerator
     {
         foreach (var block in blocks)
         {
-            if (invalidBlocks.Contains(block.Name))
+            if (invalidBlocks.Contains(block.Name) || block.Properties.Length == 0)
                 continue;
 
             var blockName = block.Name.Replace("Block", string.Empty);
@@ -231,6 +235,7 @@ public partial class BlockGenerator
 
             var blockBuilder = new CodeBuilder()
                .Using("Obsidian.API")
+               .Using("Obsidian.API.BlockStates")
                .Line()
                .Namespace("Obsidian.Blocks")
                .Line()

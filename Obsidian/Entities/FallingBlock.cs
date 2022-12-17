@@ -1,4 +1,5 @@
-﻿using Obsidian.WorldData;
+﻿using Obsidian.Utilities.Registry;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -50,9 +51,8 @@ public class FallingBlock : Entity
 
             var upcomingBlock = await world.GetBlockAsync(upcomingBlockPos);
 
-            if (upcomingBlock is Block block &&
-                !block.IsAir &&
-                !block.IsFluid &&
+            if (upcomingBlock is IBlock block &&
+                (!block.IsLiquid || !block.IsAir)  &&
                 block.Material != Material.Grass &&
                 block.Material != Material.DeadBush &&
                 block.Material != Material.Snow
@@ -65,7 +65,7 @@ public class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        var block = new Block(BlockMaterial);
+        var block = BlocksRegistry.Get(BlockMaterial);
         await world.SetBlockUntrackedAsync(loc, block);
 
         await world.SetBlockAsync(loc, block);

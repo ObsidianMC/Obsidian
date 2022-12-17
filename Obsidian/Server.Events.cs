@@ -3,6 +3,7 @@ using Obsidian.API.Events;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian;
 
@@ -30,15 +31,14 @@ public partial class Server
         if (e.Cancel)
             return;
 
-        if (block.HasValue)
+        if (block is not null)
         {
             if (e.BlockLocation is not Vector blockPosition)
                 return;
-            var interactedBlock = block.Value;
 
-            player.LastClickedBlock = interactedBlock;
+            player.LastClickedBlock = block;
 
-            var type = interactedBlock.Material;
+            var type = block.Material;
 
             BaseContainer? container = type switch
             {
@@ -90,7 +90,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = interactedBlock.Id
+                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
                 });
                 await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
@@ -109,7 +109,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = interactedBlock.Id
+                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
                 });
                 await player.SendSoundAsync(Sounds.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
@@ -144,7 +144,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = interactedBlock.Id
+                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
                 });
                 await player.SendSoundAsync(Sounds.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }

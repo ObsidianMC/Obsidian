@@ -1,4 +1,5 @@
 ﻿using Obsidian.ChunkData;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators;
 
@@ -14,9 +15,9 @@ public class EmptyWorldGenerator : IWorldGenerator
         spawn = new Chunk(0, 0);
         empty = new Chunk(0, 0);
 
-        Block grass = new(Material.GrassBlock, 1);
-        Block dirt = new(Material.Dirt);
-        Block bedrock = new(Material.Bedrock);
+        IBlock grass = BlocksRegistry.Get(Material.GrassBlock);
+        IBlock dirt = BlocksRegistry.Get(Material.Dirt);
+        IBlock bedrock = BlocksRegistry.Get(Material.Bedrock);
 
         for (int x = 0; x < 16; x++)
         {

@@ -19,10 +19,10 @@ public class DesertDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var sand = Registry.GetBlock(Material.Sand);
-        var sandstone = Registry.GetBlock(Material.Sandstone);
-        var deadbush = Registry.GetBlock(Material.DeadBush);
-        var cactus = Registry.GetBlock(Material.Cactus);
+        var sand = BlocksRegistry.Get(Material.Sand);
+        var sandstone = BlocksRegistry.Get(Material.Sandstone);
+        var deadbush = BlocksRegistry.Get(Material.DeadBush);
+        var cactus = BlocksRegistry.Get(Material.Cactus);
 
         for (int y = 0; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), sand);

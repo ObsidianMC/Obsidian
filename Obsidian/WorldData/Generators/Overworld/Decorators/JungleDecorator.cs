@@ -28,8 +28,8 @@ public class JungleDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grass = Registry.GetBlock(9);
-        var dirt = Registry.GetBlock(Material.Dirt);
+        var grass = BlocksRegistry.Get(Material.GrassBlock);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
 
         chunk.SetBlock(pos, grass);
         for (int y = -1; y > -4; y--)

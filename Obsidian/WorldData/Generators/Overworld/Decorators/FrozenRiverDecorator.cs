@@ -10,11 +10,11 @@ public class FrozenRiverDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        var sand = Registry.GetBlock(Material.Sand);
-        var dirt = Registry.GetBlock(Material.Dirt);
-        var gravel = Registry.GetBlock(Material.Gravel);
-        var water = Registry.GetBlock(Material.Water);
-        var ice = Registry.GetBlock(Material.Ice);
+        var sand = BlocksRegistry.Get(Material.Sand);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
+        var gravel = BlocksRegistry.Get(Material.Gravel);
+        var water = BlocksRegistry.Get(Material.Water);
+        var ice = BlocksRegistry.Get(Material.Ice);
 
         if (pos.Y <= 64)
         {

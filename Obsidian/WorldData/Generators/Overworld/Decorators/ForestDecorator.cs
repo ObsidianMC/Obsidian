@@ -23,8 +23,8 @@ public class ForestDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grassblock = new Block(Material.GrassBlock, 1);
-        var dirt = Registry.GetBlock(Material.Dirt);
+        var grassblock = BlocksRegistry.Get(Material.GrassBlock);
+        var dirt = BlocksRegistry.Get(Material.Dirt);
 
         chunk.SetBlock(pos, grassblock);
         for (int y = -1; y > -4; y--)
@@ -32,7 +32,7 @@ public class ForestDecorator : BaseDecorator
 
         if (!chunk.GetBlock(pos + (0, 1, 0)).IsAir) { return; }
 
-        var grass = Registry.GetBlock(Material.Grass);
+        var grass = BlocksRegistry.Get(Material.Grass);
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.1)
             chunk.SetBlock(pos + (0, 1, 0), grass);
@@ -42,7 +42,7 @@ public class ForestDecorator : BaseDecorator
             chunk.SetBlock(pos, dirt);
         }
 
-        var dandelion = Registry.GetBlock(Material.Dandelion);
+        var dandelion = BlocksRegistry.Get(Material.Dandelion);
         var dandelionNoise = noise.Decoration.GetValue(worldX * 0.1, 1, worldZ * 0.1);
         if (dandelionNoise > 0 && dandelionNoise < 0.05)
         {
@@ -50,8 +50,8 @@ public class ForestDecorator : BaseDecorator
             return;
         }
 
-        var peony0 = new Block(Material.Peony);
-        var peony1 = new Block(Material.Peony, 1);
+        var peony0 = BlocksRegistry.Get(Material.Peony);
+        var peony1 = BlocksRegistry.Get(Material.Peony);//TODO state == 1
         var peonyNoise = noise.Decoration.GetValue(worldX * 0.1, 2, worldZ * 0.1);
         if (peonyNoise > 0.65 && peonyNoise < 0.665)
         {
@@ -60,8 +60,8 @@ public class ForestDecorator : BaseDecorator
             return;
         }
 
-        var rose0 = new Block(Material.RoseBush, 0);
-        var rose1 = new Block(Material.RoseBush, 1);
+        var rose0 = BlocksRegistry.Get(Material.RoseBush); // TODO state == 0
+        var rose1 = BlocksRegistry.Get(Material.RoseBush);//TODO state == 1
         var roseNoise = noise.Decoration.GetValue(worldX * 0.1, 3, worldZ * 0.1);
         if (roseNoise > 0.17 && roseNoise < 0.185)
         {
@@ -70,7 +70,7 @@ public class ForestDecorator : BaseDecorator
             return;
         }
 
-        var berries = new Block(Material.SweetBerryBush, 2);
+        var berries = BlocksRegistry.Get(Material.SweetBerryBush);//TODO state == 2
         if (noise.Decoration.GetValue(worldX * 0.75, 4, worldZ * 0.75) > 0.95)
         {
             chunk.SetBlock(pos + (0, 1, 0), berries);

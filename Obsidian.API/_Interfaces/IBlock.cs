@@ -11,6 +11,10 @@ public interface IBlock
 
     public bool IsLiquid => this.Material is Material.Water or Material.Lava;
 
+    public bool IsAir => this.Material is Material.Air or Material.CaveAir or Material.VoidAir;
+
     [Obsolete]
-    public bool IsTransparent => this.IsLiquid || this.Material is Material.Air or Material.CaveAir or Material.VoidAir;
+    public bool IsTransparent => this.IsLiquid || IsAir;
+
+    public bool Is(Material material) => this.Material == material;
 }

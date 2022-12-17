@@ -16,7 +16,7 @@ public class FrozenPeaksDecorator : BaseDecorator
             return;
         }
 
-        var topBlock = Registry.GetBlock(Material.SnowBlock);
+        var topBlock = BlocksRegistry.Get(Material.SnowBlock);
 
         for (int y = 0; y > -4; y--)
             chunk.SetBlock(pos + (0, y, 0), topBlock);
@@ -26,7 +26,7 @@ public class FrozenPeaksDecorator : BaseDecorator
 
         var decorator1 = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (decorator1 > 0 && decorator1 < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos, Registry.GetBlock(Material.FrostedIce));
+            chunk.SetBlock(pos, BlocksRegistry.Get(Material.FrostedIce));
 
         var poppyNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
         if (poppyNoise > 1)

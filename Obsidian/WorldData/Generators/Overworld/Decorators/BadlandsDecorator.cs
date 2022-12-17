@@ -19,31 +19,31 @@ public class BadlandsDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var sand = Registry.GetBlock(Material.RedSand);
-        var sand2 = Registry.GetBlock(Material.Sand);
-        var deadbush = Registry.GetBlock(Material.DeadBush);
-        var cactus = Registry.GetBlock(Material.Cactus);
+        var sand = BlocksRegistry.Get(Material.RedSand);
+        var sand2 = BlocksRegistry.Get(Material.Sand);
+        var deadbush = BlocksRegistry.Get(Material.DeadBush);
+        var cactus = BlocksRegistry.Get(Material.Cactus);
 
         chunk.SetBlock(pos, sand);
         for (int y = -1; y > -15; y--)
         {
             var a = (pos.Y + y) % 15;
             if (a == 15)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.BrownTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.BrownTerracotta));
             else if (a == 14)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.WhiteTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.WhiteTerracotta));
             else if (a == 13)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.GrayTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.GrayTerracotta));
             else if (a >= 11)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.YellowTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));
             else if (a == 8 || a == 9)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.RedTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.RedTerracotta));
             else if (a == 6)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.OrangeTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.OrangeTerracotta));
             else if (a == 3)
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.YellowTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));
             else
-                chunk.SetBlock(pos + (0, y, 0), Registry.GetBlock(Material.Terracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.Terracotta));
         }
 
         var bushNoise = noise.Decoration.GetValue(worldX * 0.1, 0, worldZ * 0.1);
