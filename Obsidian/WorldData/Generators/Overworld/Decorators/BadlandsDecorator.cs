@@ -27,21 +27,22 @@ public class BadlandsDecorator : BaseDecorator
         chunk.SetBlock(pos, sand);
         for (int y = -1; y > -15; y--)
         {
+            //TODO SET BLOCK COLOR
             var a = (pos.Y + y) % 15;
             if (a == 15)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.BrownTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.BrownTerracotta));//Brown
             else if (a == 14)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.WhiteTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.WhiteTerracotta));//White
             else if (a == 13)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.GrayTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.GrayTerracotta));//Gray
             else if (a >= 11)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));//Yellow
             else if (a == 8 || a == 9)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.RedTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.RedTerracotta));//Red
             else if (a == 6)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.OrangeTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.OrangeTerracotta));//Orange
             else if (a == 3)
-                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.YellowTerracotta));//Yellow
             else
                 chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Get(Material.Terracotta));
         }

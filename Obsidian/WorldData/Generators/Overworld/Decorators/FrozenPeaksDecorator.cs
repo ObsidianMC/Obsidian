@@ -30,6 +30,6 @@ public class FrozenPeaksDecorator : BaseDecorator
 
         var poppyNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
         if (poppyNoise > 1)
-            chunk.SetBlock(pos, new Block(Material.Gravel));
+            chunk.SetBlock(pos, BlocksRegistry.Get(Material.Gravel));
     }
 }

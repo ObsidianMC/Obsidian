@@ -17,30 +17,10 @@ public partial class RegistryAssetsGenerator
 
         builder.Type("public enum Material");
 
-        var added = new HashSet<string>();
         var addedButton = false;
 
         foreach (string material in materials)
         {
-            var match = BlockGenerator.colorRegex.Match(material);
-
-            if (match.Success && !BlockGenerator.ignored.Contains(material))
-            {
-                var color = match.Value;
-
-                var na = material.Replace(color, string.Empty);
-
-                if (BlockGenerator.filters.Contains(na))
-                    na = $"Colored{na}";
-
-                if (!added.Add(na))
-                    continue;
-
-                builder.Line($"{na},");
-
-                continue;
-            }
-
             if (material.EndsWith("Button") && !addedButton)
             {
                 builder.Line("Button,");
