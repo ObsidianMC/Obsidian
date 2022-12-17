@@ -81,6 +81,24 @@
       "minecraft:skull"
     ]
   },
+  "blocks/players_can_interact": {
+    "name": "players_can_interact",
+    "type": "block",
+    "values": [
+      "minecraft:chest",
+      "minecraft:ender_chest",
+      "minecraft:trapped_chest",
+      "#minecraft:anvil",
+      "minecraft:hopper",
+      "minecraft:smoker",
+      "minecraft:furnace",
+      "minecraft:crafting_table",
+      "minecraft:barrel",
+      "minecraft:blast_furnace",
+      "minecraft:grindstone",
+      "minecraft:brewing_stand"
+    ]
+  },
   "blocks/gravity_affected": {
     "name": "gravity_affected",
     "type": "blocks",
