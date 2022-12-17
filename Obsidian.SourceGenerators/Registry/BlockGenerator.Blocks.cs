@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Obsidian.SourceGenerators.Registry;
@@ -53,40 +54,90 @@ public partial class BlockGenerator
 
     internal static string[] invalidBlocks = new[]
     {
-        "NetherWartBlock", 
-        "DeadTubeCoralBlock", 
+        "NetherWartBlock",
+        "DeadTubeCoralBlock",
         "DeadBrainCoralBlock",
         "DeadBubbleCoralBlock",
-        "DeadFireCoralBlock", 
-        "DeadHornCoralBlock", 
+        "DeadFireCoralBlock",
+        "DeadHornCoralBlock",
         "TubeCoralBlock",
-        "BrainCoralBlock", 
+        "BrainCoralBlock",
         "BubbleCoralBlock",
         "FireCoralBlock",
         "HornCoralBlock",
         "Grass",
-        "Snow"
+        "Snow",
+        "BrownMushroomBlock",
+        "RedMushroomBlock"
     };
 
-    private static void GenerateBlocks(Block[] blocks, GeneratorExecutionContext ctx)
+    private static void GenerateButtons(Block[] blocks, GeneratorExecutionContext ctx)
     {
         var buttons = new Dictionary<string, Block>();
-        var coloredBlocks = new Dictionary<BlockType, ColoredBlock>();
-
-        var addedMushroom = false;
 
         foreach (var block in blocks)
         {
             var blockName = block.Name;
-
-            var match = colorRegex.Match(blockName);
 
             if (blockName.EndsWith("Button"))
             {
                 buttons.Add(blockName.Replace("Button", string.Empty), block);
                 continue;
             }
-            else if (match.Success && !ignored.Contains(blockName))
+        }
+
+        var buttonTypeBuilder = new CodeBuilder()
+              .Namespace("Obsidian.API")
+              .Line()
+              .Type($"public enum ButtonType");
+
+        foreach (var buttonType in buttons.Keys)
+            buttonTypeBuilder.Line($"{buttonType},");
+
+        buttonTypeBuilder.EndScope();
+
+        ctx.AddSource("ButtonType.g.cs", buttonTypeBuilder.ToString());
+
+        var button = buttons.First();
+
+        var buttonBlock = button.Value;
+
+        var buttonBuilder = new CodeBuilder()
+               .Using("Obsidian.API")
+               .Line()
+               .Namespace("Obsidian.Blocks")
+               .Line()
+               .Type($"public sealed class ButtonBlock : IBlock");
+
+        buttonBuilder.Line("public int BaseId { get; private set; }");
+        buttonBuilder.Line("public string UnlocalizedName { get; private set; }");
+        buttonBuilder.Line("public IBlockState State { get; private set; }");
+        buttonBuilder.Line("public ButtonType Type { get; private set; }");
+        buttonBuilder.Line("public Material Material => Material.Button;");
+
+        foreach (var property in buttonBlock.Properties)
+            buttonBuilder.Line().Indent().Append($"public {property.Type} {property.Name} ").Append("{ get; private set; }");
+
+        buttonBuilder.Line().Method("internal ButtonBlock()").EndScope();
+
+        buttonBuilder.EndScope();
+        ctx.AddSource("ButtonBlock.g.cs", buttonBuilder.ToString());
+    }
+
+    private static void GenerateBlocks(Block[] blocks, GeneratorExecutionContext ctx)
+    {
+        var coloredBlocks = new Dictionary<BlockType, ColoredBlock>();
+
+        foreach (var block in blocks)
+        {
+            var blockName = block.Name;
+
+            if (blockName.EndsWith("Button"))
+                continue;
+
+            var match = colorRegex.Match(blockName);
+
+            if (match.Success && !ignored.Contains(blockName))
             {
                 var color = match.Value;
 
@@ -109,31 +160,66 @@ public partial class BlockGenerator
                     continue;
                 }
             }
-
             else if (invalidBlocks.Contains(blockName))
                 continue;
 
+            blockName = blockName.Replace("Block", string.Empty);
+
             var builder = new CodeBuilder()
-                .Namespace("Obsidian.API.Blocks")
+                .Using("Obsidian.API")
                 .Line()
-                .Type($"public sealed class {blockName.Replace("Block", string.Empty)}Block : IBlock");
+                .Namespace("Obsidian.Blocks")
+                .Line()
+                .Type($"public sealed class {blockName}Block : IBlock");
 
             builder.Line($"public string UnlocalizedName => \"{block.Tag}\";");
             builder.Line($"public int BaseId => {block.BaseId};");
             builder.Line("public int StateId { get; private set; }");
+
             builder.Line($"public Material Material => Material.{blockName};");
 
-            foreach (var property in block.Properties)
-                builder.Line().Indent().Append($"public {property.Type} {property.Name} ").Append("{ get; private set; }");
+            builder.Line($"public IBlockState State => new {blockName}();");
 
-            builder.Line().Method($"internal {blockName.Replace("Block", string.Empty)}Block()").EndScope();
+            builder.Line().Method($"internal {blockName}Block()").EndScope();
 
             builder.EndScope();
-            ctx.AddSource($"{blockName.Replace("Block", string.Empty)}Block.g.cs", builder.ToString());
+            ctx.AddSource($"{blockName}Block.g.cs", builder.ToString());
         }
 
-        CreateButtons(buttons, ctx);
         CreateColoredBlocks(coloredBlocks, ctx);
+    }
+
+    private static void CreateBlockStates(Block[] blocks, GeneratorExecutionContext ctx)
+    {
+        foreach (var block in blocks)
+        {
+            if (invalidBlocks.Contains(block.Name))
+                continue;
+
+            var blockName = block.Name.Replace("Block", string.Empty);
+
+            var builder = new CodeBuilder()
+                .Namespace("Obsidian.API.BlockStates")
+                .Line()
+                .Type($"public sealed class {blockName} : IBlockState");
+
+            builder.Line("public int Id { get; internal init; }");
+
+            foreach (var property in block.Properties)
+            {
+                var name = property.Name;
+                if (name == "Note")
+                    name = "NoteType";
+
+                builder.Line().Indent().Append($"public {property.Type} {name} ").Append("{ get; private set; }");
+            }
+
+            builder.Line().Method($"internal {blockName}()").EndScope();
+
+            builder.EndScope();
+
+            ctx.AddSource($"{blockName}.g.cs", builder.ToString());
+        }
     }
 
     private static void CreateColoredBlocks(Dictionary<BlockType, ColoredBlock> blocks, GeneratorExecutionContext ctx)
@@ -144,62 +230,24 @@ public partial class BlockGenerator
             var block = coloredBlock.Block;
 
             var blockBuilder = new CodeBuilder()
-               .Namespace("Obsidian.API.Blocks")
+               .Using("Obsidian.API")
+               .Line()
+               .Namespace("Obsidian.Blocks")
                .Line()
                .Type($"public sealed class {type}Block : IBlock");
 
+            blockBuilder.Line($"public int BaseId => {block.BaseId};");
             blockBuilder.Line("public string UnlocalizedName { get; private set; }");
-            blockBuilder.Line("public int BaseId { get; private set; }");
-            blockBuilder.Line("public int StateId { get; private set; }");
             blockBuilder.Line("public BlockColor Color { get; private set; }");
             blockBuilder.Line($"public Material Material => Material.{type};");
 
-            foreach (var property in block.Properties)
-                blockBuilder.Line().Indent().Append($"public {property.Type} {property.Name} ").Append("{ get; private set; }");
+            blockBuilder.Line("public IBlockState State { get; private set; }");
 
             blockBuilder.Line().Method($"internal {type}Block()").EndScope();
 
             blockBuilder.EndScope();
             ctx.AddSource($"{type}Block.g.cs", blockBuilder.ToString());
         }
-    }
-
-    private static void CreateButtons(Dictionary<string, Block> buttons, GeneratorExecutionContext ctx)
-    {
-        var buttonTypeBuilder = new CodeBuilder()
-              .Namespace("Obsidian.API.Blocks")
-              .Line()
-              .Type($"public enum ButtonType");
-
-        foreach (var buttonType in buttons.Keys)
-            buttonTypeBuilder.Line($"{buttonType},");
-
-        buttonTypeBuilder.EndScope();
-
-        ctx.AddSource("ButtonType.g.cs", buttonTypeBuilder.ToString());
-
-        var button = buttons.First();
-
-        var buttonBlock = button.Value;
-
-        var buttonBuilder = new CodeBuilder()
-               .Namespace("Obsidian.API.Blocks")
-               .Line()
-               .Type($"public sealed class ButtonBlock : IBlock");
-
-        buttonBuilder.Line("public string UnlocalizedName { get; private set; }");
-        buttonBuilder.Line("public int BaseId { get; private set; }");
-        buttonBuilder.Line("public int StateId { get; private set; }");
-        buttonBuilder.Line("public ButtonType Type { get; private set; }");
-        buttonBuilder.Line("public Material Material => Material.Button;");
-
-        foreach (var property in buttonBlock.Properties)
-            buttonBuilder.Line().Indent().Append($"public {property.Type} {property.Name} ").Append("{ get; private set; }");
-
-        buttonBuilder.Line().Method("internal ButtonBlock()").EndScope();
-
-        buttonBuilder.EndScope();
-        ctx.AddSource("ButtonBlock.g.cs", buttonBuilder.ToString());
     }
 
     private struct ColoredBlock

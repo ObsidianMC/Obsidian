@@ -1,4 +1,5 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Text;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlockGenerator

@@ -13,8 +13,13 @@ public sealed partial class BlockGenerator : ISourceGenerator
 
         if (assembly == "Obsidian.API")
         {
-            GenerateBlocks(assets.Blocks, context);
             GenerateBlocksProperties(context);
+            CreateBlockStates(assets.Blocks, context);
+            GenerateButtons(assets.Blocks, context);
+        }
+        else if (assembly == "Obsidian")
+        {
+            GenerateBlocks(assets.Blocks, context);
         }
     }
 

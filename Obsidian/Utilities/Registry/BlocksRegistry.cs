@@ -1,9 +1,13 @@
 ﻿using System.Linq.Expressions;
+using Obsidian.Blocks;
 
 namespace Obsidian.Utilities.Registry;
 internal partial class BlocksRegistry
 {
+    //Maybe we should make this a temp cache?
     private static ConcurrentDictionary<string, Func<IBlock>> blockCache = new();
+
+    public readonly static IBlock Air = new AirBlock();
 
     public static IBlock Get(int stateId)
     {
@@ -16,7 +20,6 @@ internal partial class BlocksRegistry
 
         if (blockCache.TryGetValue(typeName, out var value))
             return value() ?? throw new InvalidOperationException();
-
 
         var type = Type.GetType($"Obsidian.API.Blocks.{typeName}");
 
