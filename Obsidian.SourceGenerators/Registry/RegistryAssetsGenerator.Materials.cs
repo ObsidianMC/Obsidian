@@ -21,10 +21,14 @@ public partial class RegistryAssetsGenerator
 
         foreach (string material in materials)
         {
-            if (material.EndsWith("Button") && !addedButton)
+            if (material.EndsWith("Button"))
             {
-                builder.Line("Button,");
-                addedButton = true;
+                if(!addedButton)
+                {
+                    builder.Line("Button,");
+                    addedButton = true;
+                }
+
                 continue;
             }
 

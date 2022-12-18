@@ -22,10 +22,14 @@ public partial class RegistryAssetsGenerator
         {
             var name = item.Name;
 
-            if (name.EndsWith("Button") && !addedButton)
+            if (name.EndsWith("Button"))
             {
-                builder.Line($"{{ Material.Button, new Item({item.Id}, \"{item.Tag}\", Material.Button) }},");
-                addedButton = true;
+                if(!addedButton)
+                {
+                    builder.Line($"{{ Material.Button, new Item({item.Id}, \"{item.Tag}\", Material.Button) }},");
+                    addedButton = true;
+                }
+
                 continue;
             }
 

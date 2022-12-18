@@ -32,10 +32,17 @@ public partial class RegistryAssetsGenerator
         }
         builder.Append("};").Line();
 
-        builder.Indent().Append("internal static readonly string[] Names = { ");
+        builder.Indent().Append("internal static readonly string[] ResourceIds = { ");
         foreach (Block block in blocks)
         {
             builder.Append($"\"{block.Tag}\", ");
+        }
+        builder.Append("};").Line();
+
+        builder.Indent().Append("internal static readonly string[] Names = { ");
+        foreach (Block block in blocks)
+        {
+            builder.Append($"\"{block.Name}\", ");
         }
         builder.Append("};").Line();
 

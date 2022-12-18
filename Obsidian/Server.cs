@@ -242,7 +242,7 @@ public partial class Server : IServer
         await Task.WhenAll(Registry.RegisterCodecsAsync(),
                            Registry.RegisterRecipesAsync());
 
-        Block.blockNames = BlocksRegistry.Names;
+        Block.blockNames = BlocksRegistry.ResourceIds;
         Block.numericToBase = BlocksRegistry.NumericToBase;
         Block.stateToNumeric = BlocksRegistry.StateToNumeric;
         Block.stateToBase = BlocksRegistry.StateToBase;

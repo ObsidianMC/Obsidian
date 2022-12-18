@@ -73,6 +73,8 @@ public partial class BlockGenerator
 
         buttonBuilder.Line().Method("internal ButtonBlock()").EndScope();
 
+        buttonBuilder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.BaseId;").EndScope();
+        
         buttonBuilder.EndScope();
         ctx.AddSource("ButtonBlock.g.cs", buttonBuilder.ToString());
     }
@@ -110,6 +112,8 @@ public partial class BlockGenerator
             builder.Line($"public IBlockState State => {state}");
 
             builder.Line().Method($"internal {blockName}Block()").EndScope();
+
+            builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.BaseId;").EndScope();
 
             builder.EndScope();
             ctx.AddSource($"{blockName}Block.g.cs", builder.ToString());
