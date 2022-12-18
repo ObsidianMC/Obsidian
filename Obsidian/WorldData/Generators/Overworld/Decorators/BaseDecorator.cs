@@ -29,8 +29,8 @@ public abstract class BaseDecorator : IDecorator
     protected void FillWater()
     {
         if (chunk is null) { return; }
-        var water = BlocksRegistry.Get(Material.Water);
-        var sand = BlocksRegistry.Get(Material.Sand);
+        var water = BlocksRegistry.Water;
+        var sand = BlocksRegistry.Sand;
         if (pos.Y <= noise.Settings.WaterLevel)
         {
             chunk.SetBlock(pos, sand);
@@ -44,7 +44,7 @@ public abstract class BaseDecorator : IDecorator
     protected void FillSand()
     {
         if (chunk is null) { return; }
-        var sand = BlocksRegistry.Get(Material.Sand);
+        var sand = BlocksRegistry.Sand;
         if (pos.Y <= noise.Settings.WaterLevel)
         {
             chunk.SetBlock(pos, sand);

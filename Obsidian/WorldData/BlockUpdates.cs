@@ -15,7 +15,7 @@ internal static class BlockUpdates
         if (await world.GetBlockAsync(location + Vector.Down) is IBlock below &&
             (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId) || below.IsLiquid))
         {
-            await world.SetBlockAsync(location, BlocksRegistry.Get(Material.Air));
+            await world.SetBlockAsync(location, BlocksRegistry.Air);
             world.SpawnFallingBlock(location, material);
             return true;
         }
@@ -30,7 +30,7 @@ internal static class BlockUpdates
         var block = blockUpdate.Block;
         var world = blockUpdate.world;
         var location = blockUpdate.position;
-        int state = block.State is Water water ? water.Level : 0;
+        int state = block.State is WaterState water ? water.Level : 0;
         Vector belowPos = location + Vector.Down;
 
         // Handle the initial search for closet path downwards.
@@ -115,7 +115,7 @@ internal static class BlockUpdates
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
                     if (neighborBlock is IBlock neighbor && neighbor.Is(block.Material) &&
-                        ((Water)neighbor.State).Level == 0)
+                        ((WaterState)neighbor.State).Level == 0)
                     {
                         sourceNeighborCount++;
                     }
@@ -123,8 +123,7 @@ internal static class BlockUpdates
 
                 if (sourceNeighborCount > 1)
                 {
-                    var newBlock = BlocksRegistry.Get(Material.Water);
-                    await world.SetBlockAsync(location, newBlock);
+                    await world.SetBlockAsync(location, BlocksRegistry.Water);
                     return true;
                 }
             }
@@ -135,7 +134,7 @@ internal static class BlockUpdates
                 int lowestState = state;
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
-                    var neighborState = neighborBlock.State is Water neighborWater ? neighborWater.Level : 0; 
+                    var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0; 
 
                     if (neighborBlock.Material == block.Material)
                         lowestState = Math.Min(lowestState, neighborState);
@@ -171,7 +170,7 @@ internal static class BlockUpdates
             {
                 if (neighborBlock is null) { continue; }
 
-                var neighborState = neighborBlock.State is Water neighborWater ? neighborWater.Level : 0;
+                var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0;
 
                 if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(neighborBlock.BaseId) ||
                     (neighborBlock.IsLiquid && neighborState > state + 1))

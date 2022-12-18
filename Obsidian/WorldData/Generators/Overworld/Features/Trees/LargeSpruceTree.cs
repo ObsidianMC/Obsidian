@@ -75,14 +75,14 @@ public class LargeSpruceTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);//TODO state == 1
                 }
 
                 // Fill in any air gaps under the trunk
                 var b = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (b.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);//TODO state == 1
                 }
             }
         }
@@ -98,7 +98,7 @@ public class LargeSpruceTree : BaseTree
                     {
                         var b = await helper.GetBlockAsync(origin + (x - 4, y, z - 4), chunk);
                         if (b.Is(Material.GrassBlock))
-                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Get(Material.Podzol), chunk);//TODO state == 1
+                            await helper.SetBlockAsync(origin + (x - 4, y, z - 4), BlocksRegistry.Podzol, chunk);
                     }
                 }
             }
@@ -129,7 +129,7 @@ public class LargeSpruceTree : BaseTree
                     {
                         if (leaves[x, z])
                         {
-                            await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), BlocksRegistry.Get(leaf), chunk);
+                            await helper.SetBlockAsync(origin + (x - 4, y - level, z - 4), this.leafBlock, chunk);
                         }
                     }
                 }

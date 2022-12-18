@@ -1,14 +1,11 @@
-﻿using Obsidian.Blocks;
-using System.Linq.Expressions;
-using System.Reflection;
+﻿using System.Linq.Expressions;
 
 namespace Obsidian.Utilities.Registry;
+
 internal partial class BlocksRegistry
 {
     //Maybe we should make this a temp cache?
     private static readonly ConcurrentDictionary<string, Func<IBlock>> blockCache = new();
-
-    public static readonly IBlock Air = new AirBlock();
 
     static BlocksRegistry()
     {
@@ -25,24 +22,26 @@ internal partial class BlocksRegistry
         var registryId = StateToNumeric[baseId];
         var blockName = Names[registryId];
 
-        var baseName = blockName.Replace("Block", string.Empty);
+        if (blockName.EndsWith("Button"))
+            blockName = "ButtonBlock";
+        else if (blockName == "Obsidian")
+            blockName += "Block";
 
-        var typeName = $"{baseName}Block";
-
-        if (blockCache.TryGetValue(typeName, out var value))
+        if (blockCache.TryGetValue(blockName, out var value))
             return value() ?? throw new InvalidOperationException();
 
-        var type = Type.GetType($"Obsidian.Blocks.{typeName}");
+        var type = Type.GetType($"Obsidian.Blocks.{blockName}");
 
-        var ctor = type!.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        var ctor = type!.GetConstructor(Type.EmptyTypes);
 
         var expression = Expression.New(ctor);
 
-        var lambda = Expression.Lambda<Func<IBlock>>(expression);
+        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
 
-        blockCache.TryAdd(typeName, compiledLamdba);
+        blockCache.TryAdd(blockName, compiledLamdba);
 
         return compiledLamdba();
     }
@@ -63,27 +62,26 @@ internal partial class BlocksRegistry
 
         var blockName = Names[index];
 
-        var baseName = blockName.Replace("Block", string.Empty);
+        if (blockName.EndsWith("Button"))
+            blockName = "ButtonBlock";
+        else if (blockName == "Obsidian")
+            blockName += "Block";
 
-        if (baseName.EndsWith("Button"))
-            baseName = "Button";
-
-        var typeName = $"{baseName}Block";
-
-        if (blockCache.TryGetValue(typeName, out var value))
+        if (blockCache.TryGetValue(blockName, out var value))
             return value() ?? throw new InvalidOperationException();
 
-        var type = Type.GetType($"Obsidian.Blocks.{typeName}");
+        var type = Type.GetType($"Obsidian.Blocks.{blockName}");
 
-        var ctor = type!.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        var ctor = type!.GetConstructor(Type.EmptyTypes);
 
         var expression = Expression.New(ctor);
 
-        var lambda = Expression.Lambda<Func<IBlock>>(expression);
+        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
 
-        blockCache.TryAdd(typeName, compiledLamdba);
+        blockCache.TryAdd(blockName, compiledLamdba);
 
         return compiledLamdba();
     }
@@ -94,22 +92,24 @@ internal partial class BlocksRegistry
         if (!Names.Contains(materialString))
             throw new InvalidOperationException($"{material} is not a valid block.");
 
-        var typeName = $"{materialString.Replace("Block", string.Empty)}Block";
+        if (materialString == "Button")
+            materialString += "Block";
 
-        if (blockCache.TryGetValue(typeName, out var value))
+        if (blockCache.TryGetValue(materialString, out var value))
             return value() ?? throw new InvalidOperationException();
 
-        var type = Type.GetType($"Obsidian.Blocks.{typeName}");
+        var type = Type.GetType($"Obsidian.Blocks.{materialString}");
 
-        var ctor = type!.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        var ctor = type!.GetConstructor(Type.EmptyTypes);
 
         var expression = Expression.New(ctor);
 
-        var lambda = Expression.Lambda<Func<IBlock>>(expression);
+        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
 
-        blockCache.TryAdd(typeName, compiledLamdba);
+        blockCache.TryAdd(materialString, compiledLamdba);
 
         return compiledLamdba();
     }

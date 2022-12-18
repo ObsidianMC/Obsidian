@@ -11,21 +11,17 @@ public class RiverDecorator : BaseDecorator
 
     public override void Decorate()
     {
-        var sand = BlocksRegistry.Get(Material.Sand);
-        var dirt = BlocksRegistry.Get(Material.Dirt);
-        var gravel = BlocksRegistry.Get(Material.Gravel);
-
         FillWater();
 
         if (pos.Y <= noise.Settings.WaterLevel)
         {
-            chunk.SetBlock(pos, gravel);
+            chunk.SetBlock(pos, BlocksRegistry.Gravel);
         }
         else
         {
-            chunk.SetBlock(pos, sand);
+            chunk.SetBlock(pos, BlocksRegistry.Sand);
             for (int y = -1; y > -4; y--)
-                chunk.SetBlock(pos + (0, y, 0), gravel);
+                chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Gravel);
         }
     }
 }

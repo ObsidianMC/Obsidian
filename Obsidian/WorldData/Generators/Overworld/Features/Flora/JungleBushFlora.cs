@@ -28,6 +28,6 @@ public class JungleBushFlora : BaseFlora
                 }
             }
         }
-        await helper.SetBlockAsync(origin, BlocksRegistry.Get(Material.JungleLog), chunk);//TODO state == 1
+        await helper.SetBlockAsync(origin, BlocksRegistry.JungleLog, chunk);//TODO state == 1
     }
 }

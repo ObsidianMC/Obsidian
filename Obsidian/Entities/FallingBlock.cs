@@ -5,9 +5,9 @@ namespace Obsidian.Entities;
 
 public class FallingBlock : Entity
 {
-    public VectorF SpawnPosition { get; private set; }
+    public required IBlock Block { get; init; } 
 
-    public Material BlockMaterial { get; set; }
+    public VectorF SpawnPosition { get; private set; }
 
     private int AliveTime { get; set; }
 
@@ -65,10 +65,9 @@ public class FallingBlock : Entity
 
     private async Task ConvertToBlock(Vector loc)
     {
-        var block = BlocksRegistry.Get(BlockMaterial);
-        await world.SetBlockUntrackedAsync(loc, block);
+        await world.SetBlockUntrackedAsync(loc, this.Block);
 
-        await world.SetBlockAsync(loc, block);
+        await world.SetBlockAsync(loc, this.Block);
 
         await world.DestroyEntityAsync(this);
     }

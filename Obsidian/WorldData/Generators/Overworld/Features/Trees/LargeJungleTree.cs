@@ -17,7 +17,6 @@ public class LargeJungleTree : JungleTree
         List<Vector> vineCandidates = new();
         int topY = origin.Y + trunkHeight + heightOffset + 1;
 
-        var leafBlock = BlocksRegistry.Get(leaf);
         for (int y = topY - 3; y < topY + 1; y++)
         {
             for (int x = -leavesRadius; x <= leavesRadius + 1; x++)
@@ -53,7 +52,7 @@ public class LargeJungleTree : JungleTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);//TODO state == 1
 
                     // Roll the dice to place a vine on this trunk block.
                     if (rand.Next(10) == 0)
@@ -66,7 +65,7 @@ public class LargeJungleTree : JungleTree
                 var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (under.Material != Material.GrassBlock)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);//TODO state == 1
                 }
             }
         }

@@ -24,15 +24,15 @@ public class OceanDecorator : BaseDecorator
 
     public OceanDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
-        sand = BlocksRegistry.Get(Material.Sand);
-        dirt = BlocksRegistry.Get(Material.Dirt);
-        gravel = BlocksRegistry.Get(Material.Gravel);
-        clay = BlocksRegistry.Get(Material.Clay);
-        magma = BlocksRegistry.Get(Material.MagmaBlock);
-        seaGrass = BlocksRegistry.Get(Material.Seagrass);
-        tallSeaGrass = BlocksRegistry.Get(Material.TallSeagrass);
-        kelp = BlocksRegistry.Get(Material.KelpPlant);
-        bubble = BlocksRegistry.Get(Material.BubbleColumn);
+        sand = BlocksRegistry.Sand;
+        dirt = BlocksRegistry.Dirt;
+        gravel = BlocksRegistry.Gravel;
+        clay = BlocksRegistry.Clay;
+        magma = BlocksRegistry.MagmaBlock;
+        seaGrass = BlocksRegistry.Seagrass;
+        tallSeaGrass = BlocksRegistry.TallSeagrass;
+        kelp = BlocksRegistry.KelpPlant;
+        bubble = BlocksRegistry.BubbleColumn;
 
         primarySurface = dirt;
         secondarySurface = sand;
@@ -65,7 +65,7 @@ public class OceanDecorator : BaseDecorator
         }
         if (hasSeaGrass & IsTallGrass)
         {
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.TallSeagrass)); //TODO state == 1
+            chunk.SetBlock(pos + (0, 1, 0), tallSeaGrass); //TODO state == 1
             chunk.SetBlock(pos + (0, 2, 0), tallSeaGrass);
         }
 

@@ -454,6 +454,8 @@ public class World : IWorld
         region?.AddBlockUpdate(blockUpdate);
     }
 
+    private ConcurrentDictionary<(int x, int z), (int x, int z)> moduloCache = new();
+
     public async Task ManageChunksAsync()
     {
         if (ChunksToGen.IsEmpty) { return; }
@@ -484,7 +486,7 @@ public class World : IWorld
             }
             c = await Generator.GenerateChunkAsync(job.x, job.z, c);
             region.SetChunk(c);
-            await worldLight.ProcessSkyLightForChunk(c);
+           await worldLight.ProcessSkyLightForChunk(c);
         });
     }
 
@@ -501,7 +503,7 @@ public class World : IWorld
             Position = position,
             EntityId = GetTotalLoadedEntities() + 1,
             Server = Server,
-            BlockMaterial = mat
+            Block = BlocksRegistry.Get(mat)
         };
 
         Server.BroadcastPacket(new SpawnEntityPacket
@@ -512,7 +514,7 @@ public class World : IWorld
             Position = entity.Position,
             Pitch = 0,
             Yaw = 0,
-            Data = new Block(mat).StateId
+            Data = entity.Block.State != null ? entity.Block.State.Id : entity.Block.BaseId
         });
 
         TryAddEntity(entity);

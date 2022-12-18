@@ -29,7 +29,7 @@ public partial class PlayerActionPacket : IServerboundPacket
 
         if (Status == DiggingStatus.FinishedDigging || (Status == DiggingStatus.StartedDigging && player.Gamemode == Gamemode.Creative))
         {
-            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Get(Material.Air), true);
+            await player.World.SetBlockUntrackedAsync(Position, BlocksRegistry.Air, true);
 
             var blockBreakEvent = await server.Events.InvokeBlockBreakAsync(new BlockBreakEventArgs(server, player, block, Position));
             if (blockBreakEvent.Cancel)

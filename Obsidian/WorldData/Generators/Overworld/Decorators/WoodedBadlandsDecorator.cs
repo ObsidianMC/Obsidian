@@ -22,32 +22,29 @@ public class WoodedBadlandsDecorator : BaseDecorator
         int worldX = (chunk.X << 4) + pos.X;
         int worldZ = (chunk.Z << 4) + pos.Z;
 
-        var grass = BlocksRegistry.Get(9);
-        var dirt = BlocksRegistry.Get(Material.Dirt);
-
-        chunk.SetBlock(pos, grass);
+        chunk.SetBlock(pos, BlocksRegistry.GrassBlock);
         for (int y = -1; y > -4; y--)
-            chunk.SetBlock(pos + (0, y, 0), dirt);
+            chunk.SetBlock(pos + (0, y, 0), BlocksRegistry.Dirt);
 
         // Flowers
         var grassNoise = noise.Decoration.GetValue(worldX * 0.1, 8, worldZ * 0.1);
         if (grassNoise > 0 && grassNoise < 0.5) // 50% chance for grass
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.Grass));
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Grass);
 
         var poppyNoise = noise.Decoration.GetValue(worldX * 0.03, 9, worldZ * 0.03); // 0.03 makes more groupings
         if (poppyNoise > 1)
-            chunk.SetBlock(pos, BlocksRegistry.Get(Material.CoarseDirt));
+            chunk.SetBlock(pos, BlocksRegistry.CoarseDirt);
 
         var dandyNoise = noise.Decoration.GetValue(worldX * 0.03, 10, worldZ * 0.03); // 0.03 makes more groupings
         if (dandyNoise > 1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.CobblestoneStairs));
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.CobblestoneStairs);
 
         var cornFlowerNoise = noise.Decoration.GetValue(worldX * 0.03, 11, worldZ * 0.03); // 0.03 makes more groupings
         if (cornFlowerNoise > 1)
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Get(Material.Dirt));
+            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.Dirt);
 
         var azureNoise = noise.Decoration.GetValue(worldX * 0.03, 12, worldZ * 0.03); // 0.03 makes more groupings
         if (azureNoise > 1)
-            chunk.SetBlock(pos, BlocksRegistry.Get(Material.DarkOakLeaves));
+            chunk.SetBlock(pos, BlocksRegistry.DarkOakLeaves);
     }
 }

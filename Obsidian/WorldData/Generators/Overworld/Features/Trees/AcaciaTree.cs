@@ -22,7 +22,7 @@ public class AcaciaTree : BaseTree
                     {
                         if (x != origin.X - 3 && x != origin.X + 3 && z != origin.Z - 3 && z != origin.Z + 3)
                         {
-                            await helper.SetBlockAsync(x, y, z, BlocksRegistry.Get(leaf), chunk);
+                            await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                         }
                     }
                     else if (!(
@@ -32,7 +32,7 @@ public class AcaciaTree : BaseTree
                         (x == origin.X + 3 && z == origin.Z + 3)
                         ))
                     {
-                        await helper.SetBlockAsync(x, y, z, BlocksRegistry.Get(leaf), chunk);
+                        await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                     }
                 }
             }

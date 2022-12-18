@@ -5,10 +5,6 @@ namespace Obsidian.WorldData.Generators.Overworld;
 
 internal static class ChunkBuilder
 {
-    private static readonly IBlock bedrock = BlocksRegistry.Get(Material.Bedrock);
-    private static readonly IBlock stone = BlocksRegistry.Get(Material.Stone);
-    private static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
-
     internal static void FillChunk(Chunk chunk)
     {
         var terrainHeightmap = chunk.Heightmaps[HeightmapType.MotionBlocking];
@@ -20,11 +16,11 @@ internal static class ChunkBuilder
                 {
                     if (by <= -30 && by > 0) //TODO: better looking bedrock
                     {
-                        chunk.SetBlock(bx, by, bz, bedrock);
+                        chunk.SetBlock(bx, by, bz, BlocksRegistry.Bedrock);
                     }
                     else if (by <= terrainHeightmap.GetHeight(bx, bz))
                     {
-                        chunk.SetBlock(bx, by, bz, stone);
+                        chunk.SetBlock(bx, by, bz, BlocksRegistry.Stone);
                     }
                 }
             }
@@ -33,7 +29,6 @@ internal static class ChunkBuilder
 
     internal static void CarveCaves(GenHelper util, Chunk chunk)
     {
-        IBlock block = caveAir;
         int chunkOffsetX = chunk.X * 16;
         int chunkOffsetZ = chunk.Z * 16;
         for (int bx = 0; bx < 16; bx++)
@@ -47,7 +42,7 @@ internal static class ChunkBuilder
                     bool isCave = util.Noise.Cave.GetValue(bx + chunkOffsetX, by, bz + chunkOffsetZ) > 0;
                     if (isCave)
                     {
-                        chunk.SetBlock(bx, by, bz, block);
+                        chunk.SetBlock(bx, by, bz, BlocksRegistry.CaveAir);
                     }
                 }
             }

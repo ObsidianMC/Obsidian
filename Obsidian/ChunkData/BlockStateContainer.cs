@@ -110,20 +110,16 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         }
     }
 
-    private static readonly IBlock air = BlocksRegistry.Get(0);
-    private static readonly IBlock caveAir = BlocksRegistry.Get(Material.CaveAir);
-    private static readonly IBlock voidAir = BlocksRegistry.Get(Material.VoidAir);
-
     private short GetNonAirBlocks()
     {
         int validBlocksCount = 0;
         int indexOne, indexTwo, indexThree;
 
-        if (!Palette.TryGetId(air, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.Air, out indexOne))
             goto NO_AIR;
-        if (!Palette.TryGetId(caveAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexTwo))
             goto NO_CAVE;
-        if (!Palette.TryGetId(voidAir, out indexThree))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexThree))
             goto TWO_INDEXES;
 
         // 1 1 1
@@ -137,21 +133,21 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     // 0 ? ?
     NO_AIR:
-        if (!Palette.TryGetId(caveAir, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.CaveAir, out indexOne))
             goto NO_AIR_CAVE;
-        if (!Palette.TryGetId(voidAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
             goto ONE_INDEX;
         goto TWO_INDEXES;
 
     // 1 0 ?
     NO_CAVE:
-        if (!Palette.TryGetId(voidAir, out indexTwo))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexTwo))
             goto ONE_INDEX;
         goto TWO_INDEXES;
 
     // 0 0 ?
     NO_AIR_CAVE:
-        if (!Palette.TryGetId(voidAir, out indexOne))
+        if (!Palette.TryGetId(BlocksRegistry.VoidAir, out indexOne))
             return 0;
         // Fall through to ONE_INDEX
 

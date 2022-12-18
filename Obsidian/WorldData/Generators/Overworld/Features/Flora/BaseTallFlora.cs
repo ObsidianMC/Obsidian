@@ -1,6 +1,4 @@
-﻿using Obsidian.Utilities.Registry;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public abstract class BaseTallFlora : BaseFlora
 {
@@ -28,11 +26,11 @@ public abstract class BaseTallFlora : BaseFlora
         // Grow base
         for (int y = 0; y < growHeight - 1; y++)
         {
-            await helper.SetBlockAsync(placeVector + (0, y, 0), BlocksRegistry.Get(FloraMat/*,lowerState*/), chunk);//TODO FIX
+            await helper.SetBlockAsync(placeVector + (0, y, 0), this.floraBlock, chunk);//TODO LOWER STATE
         }
 
         // Top
-        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), BlocksRegistry.Get(FloraMat/*,upperState*/), chunk);
+        await helper.SetBlockAsync(placeVector + (0, growHeight - 1, 0), this.floraBlock, chunk);//TODO UPPER STATE
         return true;
     }
 }

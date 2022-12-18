@@ -4,6 +4,7 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public abstract class BaseFlora
 {
+    protected readonly IBlock floraBlock;
     protected GenHelper helper;
 
     protected Chunk chunk;
@@ -29,6 +30,8 @@ public abstract class BaseFlora
         this.helper = helper;
         this.chunk = chunk;
         this.FloraMat = mat;
+
+        this.floraBlock = BlocksRegistry.Get(mat);
     }
 
     /// <summary>
@@ -41,7 +44,7 @@ public abstract class BaseFlora
     public virtual async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
     {
         density = Math.Max(1, 10 - density);
-        var seedRand = new Random(seed + origin.GetHashCode());
+        var seedRand = new XorshiftRandom(seed + origin.GetHashCode());
 
         for (int rz = 0; rz <= radius * 2; rz++)
         {
@@ -73,7 +76,7 @@ public abstract class BaseFlora
     {
         if (await GetGrowHeightAsync(placeVector) >= height && await GetValidSurfaceAsync(placeVector))
         {
-            await helper.SetBlockAsync(placeVector, BlocksRegistry.Get(FloraMat), chunk);
+            await helper.SetBlockAsync(placeVector, this.floraBlock, chunk);
             return true;
         }
         return false;

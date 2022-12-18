@@ -4,6 +4,9 @@ namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public abstract class BaseTree
 {
+    protected readonly IBlock leafBlock;
+    protected readonly IBlock trunkBlock;
+
     protected readonly GenHelper helper;
 
     protected readonly Chunk chunk;
@@ -28,6 +31,9 @@ public abstract class BaseTree
         this.leaf = leaf;
         this.trunk = trunk;
         this.trunkHeight = trunkHeight;
+
+        this.leafBlock = BlocksRegistry.Get(leaf);
+        this.trunkBlock = BlocksRegistry.Get(trunk);
     }
 
     public virtual async Task<bool> TryGenerateTreeAsync(Vector origin, int heightOffset)
@@ -52,12 +58,12 @@ public abstract class BaseTree
                     {
                         if (x != origin.X - 2 && x != origin.X + 2 && z != origin.Z - 2 && z != origin.Z + 2)
                         {
-                            await helper.SetBlockAsync(x, y, z, BlocksRegistry.Get(leaf), chunk);
+                            await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                         }
                     }
                     else
                     {
-                        await helper.SetBlockAsync(x, y, z, BlocksRegistry.Get(leaf), chunk);
+                        await helper.SetBlockAsync(x, y, z, this.leafBlock, chunk);
                     }
                 }
             }
@@ -69,9 +75,9 @@ public abstract class BaseTree
         int topY = trunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
         {
-            await helper.SetBlockAsync(origin + (0, y, 0), BlocksRegistry.Get(trunk), chunk);//TODO state == 1
+            await helper.SetBlockAsync(origin + (0, y, 0), this.trunkBlock, chunk);//TODO state == 1
         }
-        await helper.SetBlockAsync(origin, BlocksRegistry.Get(Material.Dirt), chunk);
+        await helper.SetBlockAsync(origin, BlocksRegistry.Dirt, chunk);
     }
 
     protected virtual async Task<bool> TreeCanGrowAsync(Vector origin)

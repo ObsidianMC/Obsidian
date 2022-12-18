@@ -541,7 +541,7 @@ public partial class Server : IServer
 
                 if (player.Gamemode == Gamemode.Creative)
                 {
-                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Get(Material.Air));
+                    await player.World.SetBlockAsync(digging.Position, BlocksRegistry.Air);
                 }
             }
             break;

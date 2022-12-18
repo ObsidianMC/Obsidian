@@ -10,7 +10,6 @@ public class JungleTree : BaseTree
     private readonly IBlock vineSouth = BlocksRegistry.Get(4888);
     private readonly IBlock vineNorth = BlocksRegistry.Get(4884);
     private readonly IBlock vineEast = BlocksRegistry.Get(4876);
-    private readonly Random rand = new();
 
     public JungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
     {
@@ -23,8 +22,6 @@ public class JungleTree : BaseTree
         {
             origin + (0, heightOffset + trunkHeight - 2, 0)
         };
-
-        var leafBlock = BlocksRegistry.Get(leaf);
         for (int y = topY - 2; y < topY + 1; y++)
         {
             for (int x = -leavesRadius; x <= leavesRadius; x++)
@@ -36,7 +33,7 @@ public class JungleTree : BaseTree
                         if (await helper.GetBlockAsync(x + origin.X, y, z + origin.Z, chunk) is { IsAir: true })
                         {
                             await helper.SetBlockAsync(x + origin.X, y, z + origin.Z, leafBlock, chunk);
-                            if (rand.Next(3) == 0)
+                            if (Globals.Random.Next(3) == 0)
                             {
                                 vineCandidates.Add(new Vector(x + origin.X, y, z + origin.Z));
                             }
@@ -63,7 +60,7 @@ public class JungleTree : BaseTree
                     await helper.SetBlockAsync(samplePos, vine, chunk);
 
                     // Grow downwards
-                    var growAmt = rand.Next(3, 10);
+                    var growAmt = Globals.Random.Next(3, 10);
                     for (int y = -1; y > -growAmt; y--)
                     {
                         if (await helper.GetBlockAsync(samplePos + (0, y, 0), chunk) is IBlock downward && downward.IsAir)
@@ -83,9 +80,9 @@ public class JungleTree : BaseTree
     protected override async Task GenerateTrunkAsync(Vector origin, int heightOffset)
     {
         await base.GenerateTrunkAsync(origin, heightOffset);
-        if (rand.Next(3) == 0)
+        if (Globals.Random.Next(3) == 0)
         {
-            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), BlocksRegistry.Get(Material.Cocoa), chunk);//TODO state == 9
+            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), BlocksRegistry.Cocoa, chunk);//TODO state == 9
         }
     }
 
