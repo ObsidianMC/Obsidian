@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -49,7 +50,9 @@ public static partial class Extensions
                 EntityType.FishingBobber,
                 EntityType.EyeOfEnder};
 
-    public static bool IsAir(this ItemStack? item) => item == null || item.Type == Material.Air;
+
+
+    public static ParameterExpression[] GetParamExpressions(this Type[] types) => types.Select((t, i) => Expression.Parameter(t, $"param{i}")).ToArray();
 
     internal static bool IsNonLiving(this EntityType type) => nonLiving.Contains(type);
 

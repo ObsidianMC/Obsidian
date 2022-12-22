@@ -10,7 +10,7 @@ public partial class BlockGenerator
             var name = cache.Key;
             var values = cache.Value;
 
-            if (name != "BlockFace")
+            if (name == "BlockFace")
                 continue;
 
             var builder = new CodeBuilder()
