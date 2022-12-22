@@ -17,23 +17,8 @@ public partial class RegistryAssetsGenerator
 
         builder.Type("public enum Material");
 
-        var addedButton = false;
-
         foreach (string material in materials)
-        {
-            if (material.EndsWith("Button"))
-            {
-                if(!addedButton)
-                {
-                    builder.Line("Button,");
-                    addedButton = true;
-                }
-
-                continue;
-            }
-
             builder.Line($"{material},");
-        }
 
         builder.EndScope();
 

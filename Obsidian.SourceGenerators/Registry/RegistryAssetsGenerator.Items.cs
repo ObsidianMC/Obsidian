@@ -17,24 +17,13 @@ public partial class RegistryAssetsGenerator
 
         builder.Statement("internal static Dictionary<Material, Item> Items = new()");
 
-        var addedButton = false;
         foreach (Item item in assets.Items)
         {
             var name = item.Name;
 
-            if (name.EndsWith("Button"))
-            {
-                if(!addedButton)
-                {
-                    builder.Line($"{{ Material.Button, new Item({item.Id}, \"{item.Tag}\", Material.Button) }},");
-                    addedButton = true;
-                }
-
-                continue;
-            }
-
             builder.Line($"{{ Material.{name}, new Item({item.Id}, \"{item.Tag}\", Material.{name}) }},");
         }
+
         builder.EndScope(semicolon: true);
 
         builder.EndScope();

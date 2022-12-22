@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace Obsidian.Utilities.Registry;
 
@@ -6,6 +7,7 @@ internal partial class BlocksRegistry
 {
     //Maybe we should make this a temp cache?
     private static readonly ConcurrentDictionary<string, Func<IBlock>> blockCache = new();
+    private static readonly Type blockType = typeof(IBlock);
 
     static BlocksRegistry()
     {
@@ -36,7 +38,7 @@ internal partial class BlocksRegistry
 
         var expression = Expression.New(ctor);
 
-        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var conversion = Expression.Convert(expression, blockType);
         var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
@@ -76,7 +78,7 @@ internal partial class BlocksRegistry
 
         var expression = Expression.New(ctor);
 
-        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var conversion = Expression.Convert(expression, blockType);
         var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
@@ -86,7 +88,7 @@ internal partial class BlocksRegistry
         return compiledLamdba();
     }
 
-    public static IBlock Get(Material material, IStateBuilder<IBlock> stateBuilder = null)
+    public static IBlock Get(Material material, IStateBuilder<IBlockState> stateBuilder = null)
     {
         var materialString = material.ToString();
         if (!Names.Contains(materialString))
@@ -104,7 +106,7 @@ internal partial class BlocksRegistry
 
         var expression = Expression.New(ctor);
 
-        var conversion = Expression.Convert(expression, typeof(IBlock));
+        var conversion = Expression.Convert(expression, blockType);
         var lambda = Expression.Lambda<Func<IBlock>>(conversion);
 
         var compiledLamdba = lambda.Compile();
