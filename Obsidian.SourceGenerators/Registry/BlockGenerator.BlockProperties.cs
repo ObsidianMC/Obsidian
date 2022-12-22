@@ -1,5 +1,4 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
-using System.Text;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlockGenerator
@@ -11,25 +10,16 @@ public partial class BlockGenerator
             var name = cache.Key;
             var values = cache.Value;
 
+            if (name != "BlockFace")
+                continue;
+
             var builder = new CodeBuilder()
                 .Namespace("Obsidian.API")
                 .Line()
                 .Type($"public enum {name}");
 
-            if (name == "BlockFace")
-            {
-                builder.Indent().Line($"Down,");
-                builder.Indent().Line($"Up,");
-                builder.Indent().Line($"North,");
-                builder.Indent().Line($"South,");
-                builder.Indent().Line($"West,");
-                builder.Indent().Line($"East,");
-            }
-            else
-            {
-                foreach (var value in values)
-                    builder.Indent().Line($"{value},");
-            }
+            foreach (var value in values)
+                builder.Line($"{value},");
 
             builder.EndScope();
 

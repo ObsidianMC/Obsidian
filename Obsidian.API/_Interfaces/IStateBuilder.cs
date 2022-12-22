@@ -1,5 +1,5 @@
 ﻿namespace Obsidian.API;
-public interface IStateBuilder<TSelf>
+public interface IStateBuilder<TState> where TState : IBlockState
 {
-    public TSelf Build();
+    public TState Build();
 }
