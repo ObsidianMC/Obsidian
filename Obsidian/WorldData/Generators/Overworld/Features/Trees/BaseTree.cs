@@ -1,4 +1,6 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.API;
+using Obsidian.API.BlockStates.Builders;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
@@ -33,7 +35,37 @@ public abstract class BaseTree
         this.trunkHeight = trunkHeight;
 
         this.leafBlock = BlocksRegistry.Get(leaf);
-        this.trunkBlock = BlocksRegistry.Get(trunk);
+
+        IBlockState? state = null;
+
+        switch (trunk)
+        {
+            case Material.AcaciaLog:
+                state = new AcaciaLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.JungleLog:
+                state = new JungleLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.BirchLog:
+                state = new BirchLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.DarkOakLog:
+                state = new DarkOakLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.MangroveLog:
+                state = new MangroveLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.OakLog:
+                state = new OakLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            case Material.SpruceLog:
+                state = new SpruceLogStateBuilder().WithAxis(Axis.Y).Build();
+                break;
+            default:
+                break;
+        }
+
+        this.trunkBlock = BlocksRegistry.Get(trunk, state);
     }
 
     public virtual async Task<bool> TryGenerateTreeAsync(Vector origin, int heightOffset)
@@ -75,7 +107,7 @@ public abstract class BaseTree
         int topY = trunkHeight + heightOffset;
         for (int y = topY; y > 0; y--)
         {
-            await helper.SetBlockAsync(origin + (0, y, 0), this.trunkBlock, chunk);//TODO state == 1
+            await helper.SetBlockAsync(origin + (0, y, 0), this.trunkBlock, chunk);
         }
         await helper.SetBlockAsync(origin, BlocksRegistry.Dirt, chunk);
     }

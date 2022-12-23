@@ -1,10 +1,8 @@
-﻿using Obsidian.Utilities.Registry;
-
-namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
+﻿namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 public class LargeJungleTree : JungleTree
 {
-    private readonly Random rand = new();
+    private readonly XorshiftRandom rand = new();
 
     public LargeJungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk)
     {
@@ -52,7 +50,7 @@ public class LargeJungleTree : JungleTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
 
                     // Roll the dice to place a vine on this trunk block.
                     if (rand.Next(10) == 0)
@@ -65,7 +63,7 @@ public class LargeJungleTree : JungleTree
                 var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (under.Material != Material.GrassBlock)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
                 }
             }
         }

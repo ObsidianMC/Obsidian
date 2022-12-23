@@ -75,14 +75,14 @@ public class LargeSpruceTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
                 }
 
                 // Fill in any air gaps under the trunk
                 var b = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (b.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
                 }
             }
         }

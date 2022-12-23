@@ -1,4 +1,5 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
@@ -6,10 +7,11 @@ public class JungleTree : BaseTree
 {
     protected int leavesRadius = 5;
 
-    private readonly IBlock vineWest = BlocksRegistry.Get(4891);
-    private readonly IBlock vineSouth = BlocksRegistry.Get(4888);
-    private readonly IBlock vineNorth = BlocksRegistry.Get(4884);
-    private readonly IBlock vineEast = BlocksRegistry.Get(4876);
+    private static readonly IBlock vineWest = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsWest().Build());
+    private static readonly IBlock vineSouth = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsSouth().Build());
+    private static readonly IBlock vineNorth = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsNorth().Build());
+    private static readonly IBlock vineEast = BlocksRegistry.Get(Material.Vine, new VineStateBuilder().IsEast().Build());
+    private static readonly IBlock cocoa = BlocksRegistry.Get(Material.Cocoa, new CocoaStateBuilder().WithAge(2).WithFacing(Facing.South).Build());
 
     public JungleTree(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves, Material.JungleLog, 7)
     {
@@ -82,7 +84,7 @@ public class JungleTree : BaseTree
         await base.GenerateTrunkAsync(origin, heightOffset);
         if (Globals.Random.Next(3) == 0)
         {
-            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), BlocksRegistry.Cocoa, chunk);//TODO state == 9
+            await helper.SetBlockAsync(origin + (0, trunkHeight + heightOffset - 3, -1), cocoa, chunk);
         }
     }
 

@@ -75,14 +75,14 @@ public class LargeOakTree : BaseTree
             {
                 for (int y = topY; y > 0; y--)
                 {
-                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, y, z), this.trunkBlock, chunk);
                 }
 
                 // Fill in any air gaps under the trunk
                 var under = await helper.GetBlockAsync(origin + (x, -1, z), chunk);
                 if (under.IsAir)
                 {
-                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);//TODO state == 1
+                    await helper.SetBlockAsync(origin + (x, -1, z), this.trunkBlock, chunk);
                 }
             }
         }

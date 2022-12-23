@@ -1,12 +1,13 @@
-﻿using Obsidian.Utilities.Registry;
-
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.Utilities.Registry;
 namespace Obsidian.WorldData.Generators.Overworld.Features.Flora;
 
 public class JungleBushFlora : BaseFlora
 {
+    private static readonly IBlock jungleLogBlock = BlocksRegistry.Get(Material.JungleLog, new JungleLogStateBuilder().WithAxis(Axis.Y).Build());
+
     public JungleBushFlora(GenHelper helper, Chunk chunk) : base(helper, chunk, Material.JungleLeaves)
     {
-
     }
 
     public override async Task GenerateFloraAsync(Vector origin, int seed, int radius, int density)
@@ -28,6 +29,7 @@ public class JungleBushFlora : BaseFlora
                 }
             }
         }
-        await helper.SetBlockAsync(origin, BlocksRegistry.JungleLog, chunk);//TODO state == 1
+
+        await helper.SetBlockAsync(origin, jungleLogBlock, chunk);
     }
 }
