@@ -1,10 +1,12 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.Utilities.Registry;
 using Obsidian.WorldData.Generators.Overworld.Features.Trees;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class OldGrowthSpruceTaigaDecorator : BaseDecorator
 {
+    private static readonly IBlock sweetBerryBush = BlocksRegistry.Get(Material.SweetBerryBush, new SweetBerryBushStateBuilder().WithAge(3).Build());
     public OldGrowthSpruceTaigaDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
         Features.Trees.Add(new DecoratorFeatures.TreeInfo(1, typeof(SpruceTree)));
@@ -50,7 +52,7 @@ public class OldGrowthSpruceTaigaDecorator : BaseDecorator
 
         if (noise.Decoration.GetValue(worldX * 0.75, 4, worldZ * 0.75) > 0.95)
         {
-            chunk.SetBlock(pos + (0, 1, 0), BlocksRegistry.SweetBerryBush); //TODO state == 2
+            chunk.SetBlock(pos + (0, 1, 0), sweetBerryBush);
         }
     }
 }

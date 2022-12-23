@@ -1,10 +1,12 @@
-﻿using Obsidian.Utilities.Registry;
+﻿using Obsidian.API.BlockStates.Builders;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 
 public class OceanDecorator : BaseDecorator
 {
     protected readonly IBlock bubble, sand, dirt, gravel, clay, magma, seaGrass, tallSeaGrass, kelp;
+    protected readonly IBlock tallSeaGrassUpperState = BlocksRegistry.Get(Material.TallSeagrass, new TallSeagrassStateBuilder().WithHalf(EHalf.Upper).Build());
 
     protected IBlock primarySurface, secondarySurface, tertiarySurface;
 
@@ -65,8 +67,8 @@ public class OceanDecorator : BaseDecorator
         }
         if (hasSeaGrass & IsTallGrass)
         {
-            chunk.SetBlock(pos + (0, 1, 0), tallSeaGrass); //TODO state == 1
-            chunk.SetBlock(pos + (0, 2, 0), tallSeaGrass);
+            chunk.SetBlock(pos + (0, 1, 0), tallSeaGrass);
+            chunk.SetBlock(pos + (0, 2, 0), tallSeaGrassUpperState);
         }
 
         if (hasKelp & IsKelp)
