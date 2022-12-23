@@ -6,7 +6,10 @@ internal partial class BlocksRegistry
 {
     //Maybe we should make this a temp cache?
     private static readonly ConcurrentDictionary<string, Func<IBlockState, IBlock>> blockCache = new();
+    private static readonly ConcurrentDictionary<string, Func<int, IBlock>> blockWithIdCache = new();
+
     private static readonly Type blockType = typeof(IBlock);
+
 
     static BlocksRegistry()
     {
@@ -15,54 +18,45 @@ internal partial class BlocksRegistry
         {
             Get(resourceId);
         }
+
+        for (int i = 0; i < AllStates.Length; i++)
+        {
+            Get(AllStates[i]);
+        }
     }
 
-    public static IBlock Get(int stateId, IBlockState? state = null)
+    public static IBlock Get(int stateId)
     {
-        var baseId = StateToBase[stateId];
-        var registryId = StateToNumeric[baseId];
+        var registryId = StateToNumeric[stateId];
         var blockName = Names[registryId];
+        var resourceId = ResourceIds[registryId];
 
-        if (blockName.EndsWith("Button"))
-            blockName = "ButtonBlock";
-        else if (blockName == "Obsidian")
+        if (blockName == "Obsidian")
             blockName += "Block";
 
-        if (blockCache.TryGetValue(blockName, out var value))
-            return value(state) ?? throw new InvalidOperationException();
+        if (blockWithIdCache.TryGetValue(blockName, out var value))
+            return value(stateId) ?? throw new InvalidOperationException();
 
         var type = Type.GetType($"Obsidian.Blocks.{blockName}");
 
-        if (state != null)
-        {
-            var parameters = new[] { state!.GetType() };
+        var parameters = new[] { typeof(int) };
+        var expressionParams = parameters.GetParamExpressions();
 
-            var ctorWithState = type!.GetConstructor(parameters);
+        var ctorWithState = type!.GetConstructor(parameters);
 
-            var expressionWithState = Expression.New(ctorWithState, parameters.GetParamExpressions());
+        if (ctorWithState is null)
+            return Get(resourceId);
 
-            var conversionWithState = Expression.Convert(expressionWithState, blockType);
-            var lambdaWithState = Expression.Lambda<Func<IBlockState, IBlock>>(conversionWithState, parameters.GetParamExpressions());
+        var expressionWithState = Expression.New(ctorWithState, expressionParams);
 
-            var compiledLamdbaWithState = lambdaWithState.Compile();
+        var conversionWithState = Expression.Convert(expressionWithState, blockType);
+        var lambdaWithState = Expression.Lambda<Func<int, IBlock>>(conversionWithState, expressionParams);
 
-            blockCache.TryAdd(blockName, compiledLamdbaWithState);
+        var compiledLamdbaWithState = lambdaWithState.Compile();
 
-            return compiledLamdbaWithState(state);
-        }
+        blockWithIdCache.TryAdd(blockName, compiledLamdbaWithState);
 
-        var ctor = type!.GetConstructor(Type.EmptyTypes);
-
-        var expression = Expression.New(ctor);
-
-        var conversion = Expression.Convert(expression, blockType);
-        var lambda = Expression.Lambda<Func<IBlockState, IBlock>>(conversion, new[] { Expression.Parameter(typeof(IBlockState), "state") });
-
-        var compiledLamdba = lambda.Compile();
-
-        blockCache.TryAdd(blockName, compiledLamdba);
-
-        return compiledLamdba(state);
+        return compiledLamdbaWithState(stateId);
     }
 
     public static int GetNetworkId(int stateId)
@@ -127,7 +121,7 @@ internal partial class BlocksRegistry
         if (!Names.Contains(materialString))
             throw new InvalidOperationException($"{material} is not a valid block.");
 
-        if (materialString == "Button")
+        if (materialString == "Obsidian")
             materialString += "Block";
 
         if (blockCache.TryGetValue(materialString, out var value))

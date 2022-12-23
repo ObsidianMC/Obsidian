@@ -22,6 +22,7 @@ public partial class BlockGenerator
             var builder = new CodeBuilder()
                 .Using("Obsidian.API")
                 .Using("Obsidian.API.BlockStates")
+                .Using("Obsidian.API.BlockStates.Builders")
                 .Line()
                 .Namespace("Obsidian.Blocks")
                 .Line()
@@ -38,12 +39,16 @@ public partial class BlockGenerator
 
             if (block.Properties.Length > 0)
             {
-                builder.Line()
-                .Method($"public {blockName}(IBlockState state)");
+                builder.Line().Method($"public {blockName}(int stateId)");
+                builder.Line($"this.State = new {blockName}StateBuilder(stateId).Build();");
+                builder.EndScope();
 
+                builder.Line().Method($"public {blockName}(IBlockState state)");
                 builder.Line("ArgumentNullException.ThrowIfNull(state, \"state\");");
                 builder.Line("this.State = state;").EndScope();
             }
+
+
 
             builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.BaseId;").EndScope();
 

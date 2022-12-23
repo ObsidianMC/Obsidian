@@ -1,10 +1,10 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
+using System.Reflection;
 using System.Text;
 
 namespace Obsidian.SourceGenerators.Registry;
 public partial class BlockGenerator
 {
-
     private static void GenerateValueStore(CodeBuilder stateBuilder, BlockProperty[] properties)
     {
         stateBuilder.Statement("private Dictionary<string, List<string>> valueStore = new()");
@@ -20,33 +20,69 @@ public partial class BlockGenerator
         stateBuilder.EndScope(true).Line();
     }
 
-    private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties)
+    private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties, GeneratorExecutionContext ctx)
     {
         stateBuilder.Statement("private Dictionary<string, int> possibleStates = new()");
+
+        var sb = new StringBuilder();
         foreach (var kv in stateValues)
         {
             var key = kv.Key;
             var values = kv.Value;
 
-            var sb = new StringBuilder();
+            sb.Clear();
 
-            foreach (var property in properties)
+            var count = 0;
+            foreach (var value in values)
             {
-                foreach (var value in values)
-                {
-                    var index = Array.FindIndex(property.Values, v => v.Equals(value, StringComparison.OrdinalIgnoreCase));
+                var property = properties[count++];
 
-                    if (index == -1)
-                        continue;
+                var propertyValue = bool.TryParse(value, out _) ? value.ToLower() : value;
 
-                    sb.Append(index);
-                }
+                if (!property.Values.Contains(propertyValue))
+                    continue;
+
+                var index = Array.IndexOf(property.Values, propertyValue);
+
+                sb.Append(index);
             }
 
             stateBuilder.Indent().Append("{ ").Append($"\"{sb}\", {key}").Append(" },").Line();
         }
 
         stateBuilder.EndScope(true);
+    }
+
+    
+
+    private static void SetStateFromIdMethod(string fullName, CodeBuilder stateBuilder, BlockProperty[] properties)
+    {
+        stateBuilder.Line().Line().Method($"public {fullName}(int currentStateId)");
+
+        stateBuilder.Line("var (key, _) = this.possibleStates.First(x => x.Value == currentStateId);");
+
+        stateBuilder.Line("var values = key.GetStateValues(this.valueStore);");
+
+        var count = 0;
+        foreach (var property in properties)
+        {
+            var name = property.Name.Replace("Is", string.Empty);
+
+            var method = "";
+
+            if (property.Type == "bool")
+                method = $"bool.Parse(values[{count}]);";
+            else if (property.Type == "int")
+                method = $"int.Parse(values[{count}]);";
+            else
+                method = $"Enum.Parse<{property.Type}>(values[{count}]);";
+
+            stateBuilder.Line($"this.{name} = {method}");
+
+            count++;
+        }
+
+        stateBuilder.EndScope();
     }
 
     private static void CreateStateBuilders(Block[] blocks, GeneratorExecutionContext ctx)
@@ -62,12 +98,13 @@ public partial class BlockGenerator
 
             var stateBuilder = new CodeBuilder()
                 .Using("System.Text")
+                .Using("Obsidian.API.Utilities")
                 .Namespace("Obsidian.API.BlockStates.Builders")
                 .Line()
                 .Type($"public sealed class {fullName} : IStateBuilder<{blockName}State>");
 
             GenerateValueStore(stateBuilder, block.Properties);
-            GeneratePossibleStates(stateBuilder, block.StateValues, block.Properties);
+            GeneratePossibleStates(stateBuilder, block.StateValues, block.Properties, ctx);
 
             foreach (var property in block.Properties)
             {
@@ -79,6 +116,8 @@ public partial class BlockGenerator
             }
 
             stateBuilder.Line().Line().Method($"public {fullName}()").EndScope();
+
+            SetStateFromIdMethod(fullName, stateBuilder, block.Properties);
 
             stateBuilder.Line().Line().Method($"public {fullName}(IBlockState oldState)");
 
@@ -151,7 +190,7 @@ public partial class BlockGenerator
         foreach (var property in properties)
         {
             var name = property.Name;
-            var sanitizedName = property.Name.Replace("Is", string.Empty);
+            var sanitizedName = name.Replace("Is", string.Empty);
 
             stateBuilder.Indent().Append($"sb.Append(Array.FindIndex(this.valueStore[\"{name}\"].ToArray(), ")
                 .Append($"v => v.Equals(this.{sanitizedName}.ToString(), StringComparison.OrdinalIgnoreCase)));").Line();

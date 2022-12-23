@@ -30,22 +30,17 @@ internal sealed class Block : ITaggable, IHasName
     {
         string name = property.Name.RemoveNamespace().ToPascalCase();
 
-        (int baseId, int defaultId, var stateValues) = GetIds(property);
+        (int baseId, int defaultId, int statesCount, var stateValues) = GetIds(property);
         BlockProperty[] properties = GetBlockProperties(property).ToArray();
-
-        int statesCount = 1;
-        foreach (BlockProperty blockProperty in properties)
-        {
-            statesCount *= blockProperty.Values.Length;
-        }
 
         return new Block(name, property.Name, baseId, defaultId, id, statesCount, properties, stateValues);
     }
 
-    private static (int baseId, int defaultId, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)
+    private static (int baseId, int defaultId, int stateCount, Dictionary<int, List<string>> stateValues) GetIds(JsonProperty property)
     {
         int baseId = int.MaxValue;
         int defaultId = int.MinValue;
+        int stateCount = 0;
 
         var props = new Dictionary<int, List<string>>();
         foreach (JsonElement state in property.Value.GetProperty("states").EnumerateArray())
@@ -58,19 +53,18 @@ internal sealed class Block : ITaggable, IHasName
             if (state.TryGetProperty("default", out JsonElement _default) && _default.GetBoolean())
                 defaultId = id;
 
-            if(state.TryGetProperty("properties", out var jsonElement))
+            if (state.TryGetProperty("properties", out var jsonElement))
             {
+                var values = new List<string>();
                 foreach (var properties in jsonElement.EnumerateObject())
-                {
-                    if (props.ContainsKey(id))
-                        props[id].Add(properties.Value.GetString());
-                    else
-                        props.Add(id, new List<string>() { properties.Value.GetString() });
-                }
+                    values.Add(properties.Value.GetString().ToPascalCase());
+
+                props.Add(id, values);
             }
+            stateCount++;
         }
 
-        return (baseId, defaultId, props);
+        return (baseId, defaultId, stateCount, props);
     }
 
     private static IEnumerable<BlockProperty> GetBlockProperties(JsonProperty block)

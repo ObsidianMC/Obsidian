@@ -1,4 +1,5 @@
 ﻿using Obsidian.API.BlockStates;
+using Obsidian.API.BlockStates.Builders;
 using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData;
@@ -30,13 +31,13 @@ internal static class BlockUpdates
         var block = blockUpdate.Block;
         var world = blockUpdate.world;
         var location = blockUpdate.position;
-        int state = block.State is WaterState water ? water.Level : 0;
+        int waterLevel = block.State is WaterState water ? water.Level : 0;
         Vector belowPos = location + Vector.Down;
 
         // Handle the initial search for closet path downwards.
         // Just going to do a crappy pathfind for now. We can do
         // proper pathfinding some other time.
-        if (state == 0)
+        if (waterLevel == 0)
         {
             var validPaths = new List<Vector>();
             var paths = new List<Vector>() {
@@ -64,7 +65,7 @@ internal static class BlockUpdates
             if (validPaths.Count != 4 && validPaths.Count != 0)
             {
                 var path = validPaths[0];
-                var newBlock = BlocksRegistry.Get(block.BaseId + state + 1);
+                var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel + 1).Build());
                 await world.SetBlockAsync(path, newBlock);
                 var neighborUpdate = new BlockUpdate(world, path, newBlock);
                 await world.ScheduleBlockUpdateAsync(neighborUpdate);
@@ -72,7 +73,7 @@ internal static class BlockUpdates
             }
         }
 
-        if (state >= 8) // Falling water
+        if (waterLevel >= 8) // Falling water
         {
             // If above me is no longer water, than I should disappear too
             if (await world.GetBlockAsync(location + Vector.Up) is IBlock up && !up.IsLiquid)
@@ -85,7 +86,7 @@ internal static class BlockUpdates
             // Keep falling
             if (await world.GetBlockAsync(belowPos) is IBlock below && TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId))
             {
-                var newBlock = BlocksRegistry.Get(block.BaseId + state);
+                var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel).Build());
                 await world.SetBlockAsync(belowPos, newBlock);
                 await world.ScheduleBlockUpdateAsync(new BlockUpdate(world, belowPos, newBlock));
                 return false;
@@ -93,12 +94,12 @@ internal static class BlockUpdates
             else
             {
                 // Falling water has hit something solid. Change state to spread.
-                state = 1;
-                await world.SetBlockUntrackedAsync(location, BlocksRegistry.Get(block.BaseId + state));
+                waterLevel = 1;
+                await world.SetBlockUntrackedAsync(location, BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel).Build()));
             }
         }
 
-        if (state < 8)
+        if (waterLevel < 8)
         {
             var horizontalNeighbors = new Dictionary<Vector, IBlock?>() {
                     {location + Vector.Forwards, await world.GetBlockAsync(location + Vector.Forwards)},
@@ -108,7 +109,7 @@ internal static class BlockUpdates
                 };
 
             // Check infinite source blocks
-            if (state == 1 && block.IsLiquid)
+            if (waterLevel == 1 && block.IsLiquid)
             {
                 // if 2 neighbors are source blocks (state = 0), then become source block
                 int sourceNeighborCount = 0;
@@ -128,10 +129,10 @@ internal static class BlockUpdates
                 }
             }
 
-            if (state > 0)
+            if (waterLevel > 0)
             {
                 // On some side of the block, there should be another water block with a lower state.
-                int lowestState = state;
+                int lowestState = waterLevel;
                 foreach (var (loc, neighborBlock) in horizontalNeighbors)
                 {
                     var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0; 
@@ -142,7 +143,7 @@ internal static class BlockUpdates
 
                 // If not, turn to air and update neighbors.
                 var bUp = await world.GetBlockAsync(location + Vector.Up);
-                if (lowestState >= state && bUp.Material != block.Material)
+                if (lowestState >= waterLevel && bUp.Material != block.Material)
                 {
                     await world.SetBlockAsync(location, BlocksRegistry.Air);
                     return true;
@@ -155,7 +156,7 @@ internal static class BlockUpdates
 
                 if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(below.BaseId))
                 {
-                    var newBlock = BlocksRegistry.Get(block.BaseId + state + 8);
+                    var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel + 8).Build());
                     await world.SetBlockAsync(belowPos, newBlock);
                     var neighborUpdate = new BlockUpdate(world, belowPos, newBlock);
                     await world.ScheduleBlockUpdateAsync(neighborUpdate);
@@ -164,7 +165,7 @@ internal static class BlockUpdates
             }
 
             // the lowest level of water can only go down, so bail now.
-            if (state == 7) { return false; }
+            if (waterLevel == 7) { return false; }
 
             foreach (var (loc, neighborBlock) in horizontalNeighbors)
             {
@@ -173,9 +174,9 @@ internal static class BlockUpdates
                 var neighborState = neighborBlock.State is WaterState neighborWater ? neighborWater.Level : 0;
 
                 if (TagsRegistry.Blocks.ReplaceableByWater.Entries.Contains(neighborBlock.BaseId) ||
-                    (neighborBlock.IsLiquid && neighborState > state + 1))
+                    (neighborBlock.IsLiquid && neighborState > waterLevel + 1))
                 {
-                    var newBlock = BlocksRegistry.Get(block.BaseId + state + 1);
+                    var newBlock = BlocksRegistry.Get(Material.Water, new WaterStateBuilder().WithLevel(waterLevel + 1).Build());
                     await world.SetBlockAsync(loc, newBlock);
                     var neighborUpdate = new BlockUpdate(world, loc, newBlock);
                     await world.ScheduleBlockUpdateAsync(neighborUpdate);
