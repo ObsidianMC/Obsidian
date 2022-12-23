@@ -190,8 +190,9 @@ public class Region
                 foreach (NbtCompound entry in blockStatesPalette!)
                 {
                     var name = entry.GetString("Name");
-                    
-                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(name));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
+                    var id = entry.GetInt("Id");
+
+                    chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
             }
 
@@ -261,13 +262,14 @@ public class Region
 
                 foreach(var id in indirect.Values)
                 {
-                    var block = new Block(id);
+                    var block = BlocksRegistry.Get(id);
 
                     if (block.IsAir && !hasAir && !indirect.Values.Any(x => x > 0))
                     {
                         palette.Add(new NbtCompound
                         {
-                            new NbtTag<string>("Name", block.UnlocalizedName)
+                            new NbtTag<string>("Name", block.UnlocalizedName),
+                            new NbtTag<int>("Id", 0)
                         });
                         hasAir = true;
                         continue;
@@ -277,7 +279,8 @@ public class Region
 
                     palette.Add(new NbtCompound
                     {
-                        new NbtTag<string>("Name", block.UnlocalizedName)
+                        new NbtTag<string>("Name", block.UnlocalizedName),
+                        new NbtTag<int>("Id", id)
                     });//TODO INCLUDE PROPERTIES
                 }
 

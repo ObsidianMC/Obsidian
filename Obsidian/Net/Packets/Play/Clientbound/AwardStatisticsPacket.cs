@@ -32,10 +32,10 @@ public readonly struct Statistic
 
     public int Value { get; }
 
-    public Statistic(CategoryIds category, Block block, int value)
+    public Statistic(CategoryIds category, IBlock block, int value)
     {
         CategoryId = category;
-        StatisticId = block.Id;
+        StatisticId = block.BaseId;
         Value = value;
     }
 

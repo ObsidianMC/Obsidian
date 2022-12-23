@@ -242,13 +242,6 @@ public static partial class Registry
         CommandsPacket.AddNode(node);
     }
 
-    public static Block GetBlock(Material material) => new(material);
-
-    public static Block GetBlock(int id) => new(id);
-
-    public static Block GetBlock(string unlocalizedName) =>
-        new(BlocksRegistry.NumericToBase[Array.IndexOf(BlocksRegistry.Names, unlocalizedName)]);
-
     public static Item GetItem(int id) => ItemsRegistry.Items.Values.SingleOrDefault(x => x.Id == id);
     public static Item GetItem(Material mat) => ItemsRegistry.Items.GetValueOrDefault(mat);
     public static Item GetItem(string unlocalizedName) =>
