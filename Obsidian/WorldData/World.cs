@@ -514,7 +514,7 @@ public class World : IWorld
             Position = entity.Position,
             Pitch = 0,
             Yaw = 0,
-            Data = entity.Block.State != null ? entity.Block.State.Id : entity.Block.BaseId
+            Data = entity.Block.GetHashCode()
         });
 
         TryAddEntity(entity);

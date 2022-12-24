@@ -384,7 +384,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.State.Id);
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(world, location))
         {
             player.client.SendPacket(packet);
@@ -393,7 +393,7 @@ public partial class Server : IServer
 
     internal void BroadcastBlockChange(World world, Player initiator, IBlock block, Vector location)
     {
-        var packet = new BlockUpdatePacket(location, block.State.Id);
+        var packet = new BlockUpdatePacket(location, block.GetHashCode());
         foreach (Player player in PlayersInRange(world, location))
         {
             if (player == initiator)
