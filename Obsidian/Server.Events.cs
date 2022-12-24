@@ -90,7 +90,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
+                    BlockType = block.RegistryId
                 });
                 await player.SendSoundAsync(Sounds.BlockChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
@@ -109,7 +109,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
+                    BlockType = block.RegistryId
                 });
                 await player.SendSoundAsync(Sounds.BlockEnderChestOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }
@@ -144,7 +144,7 @@ public partial class Server
                     Position = blockPosition,
                     ActionId = 1,
                     ActionParam = 1,
-                    BlockType = BlocksRegistry.GetNetworkId(block.BaseId)
+                    BlockType = block.RegistryId
                 });
                 await player.SendSoundAsync(Sounds.BlockShulkerBoxOpen, blockPosition.SoundPosition, SoundCategory.Blocks);
             }

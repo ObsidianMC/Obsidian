@@ -579,7 +579,7 @@ public partial class MinecraftStream
 
         if (present)
         {
-            var item = Registry.GetItem((short)ReadVarInt());
+            var item = Registry.GetItem(ReadVarInt());
 
             var itemStack = new ItemStack(item.Type, ReadUnsignedByte())
             {

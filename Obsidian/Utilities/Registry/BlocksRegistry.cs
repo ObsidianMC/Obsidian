@@ -63,13 +63,6 @@ internal partial class BlocksRegistry
         return block;
     }
 
-    public static int GetNetworkId(int stateId)
-    {
-        var baseId = StateToBase[stateId];
-
-        return StateToNumeric[baseId];
-    }
-
     public static IBlock Get(string resourceId, IBlockState? state = null)
     {
         if (state != null)

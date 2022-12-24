@@ -38,7 +38,6 @@ public partial class UseItemOnPacket : IServerboundPacket
         if (b is not IBlock interactedBlock)
             return;
 
-        //TODO check if a player can place a block if they can't then call the player interact event
         if (TagsRegistry.Blocks.PlayersCanInteract.Entries.Contains(interactedBlock.RegistryId) && !player.Sneaking)
         {
             await server.Events.InvokePlayerInteractAsync(new PlayerInteractEventArgs(player)
@@ -110,7 +109,6 @@ public partial class UseItemOnPacket : IServerboundPacket
                 break;
         }
 
-        // TODO calculate the block state
         await player.World.SetBlockAsync(position, block, doBlockUpdate: true);
     }
 }
