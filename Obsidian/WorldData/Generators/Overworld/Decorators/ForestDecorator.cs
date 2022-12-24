@@ -7,8 +7,8 @@ namespace Obsidian.WorldData.Generators.Overworld.Decorators;
 public class ForestDecorator : BaseDecorator
 {
     private static IBlock sweetBerryBush = BlocksRegistry.Get(Material.SweetBerryBush, new SweetBerryBushStateBuilder().WithAge(3).Build());
-    private static IBlock roseBushUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(EHalf.Upper).Build());
-    private static IBlock peonyUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(EHalf.Upper).Build());
+    private static IBlock roseBushUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
+    private static IBlock peonyUpperState = BlocksRegistry.Get(Material.RoseBush, new RoseBushStateBuilder().WithHalf(BlockHalf.Upper).Build());
 
     public ForestDecorator(Biomes biome, Chunk chunk, Vector surfacePos, GenHelper helper) : base(biome, chunk, surfacePos, helper)
     {
