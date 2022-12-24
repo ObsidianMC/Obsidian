@@ -1,5 +1,4 @@
-﻿using Obsidian.Blocks;
-using Obsidian.Net;
+﻿using Obsidian.Net;
 using System.Runtime.InteropServices;
 
 namespace Obsidian.ChunkData;
@@ -10,7 +9,6 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
     public int BitCount { get; private set; }
     public int Count { get; protected set; }
     public bool IsFull => Count == Values.Length;
-
     public BaseIndirectPalette(byte bitCount)
     {
         BitCount = bitCount;
@@ -99,7 +97,7 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
     {
         await stream.WriteVarIntAsync(Count);
 
-        for (int i = 0; i < Count; i++)
+        for (int i = 0; i < Count; ++i)
             await stream.WriteVarIntAsync(Values[i]);
     }
 
@@ -108,7 +106,8 @@ public abstract class BaseIndirectPalette<T> : IPalette<T>
         stream.WriteVarInt(Count);
 
         ReadOnlySpan<int> values = GetSpan();
-        for (int i = 0; i < values.Length; i++)
+
+        for (int i = 0; i < values.Length; ++i)
             stream.WriteVarInt(values[i]);
     }
 

@@ -24,7 +24,6 @@ public static partial class Registry
 
     public static readonly Dictionary<string, IRecipe> Recipes = new();
 
-    public static int GlobalBitsPerBlocks { get; internal set; }
     public static int GlobalBitsPerBiomes { get; internal set; }
 
     public static CodecCollection<int, DimensionCodec> Dimensions { get; } = new("minecraft:dimension_type");

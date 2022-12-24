@@ -1,4 +1,5 @@
-﻿using Obsidian.ChunkData;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collection;
@@ -187,16 +188,16 @@ public class Region
             if (statesCompound.TryGetTag("palette", out var palleteArrayTag))
             {
                 var blockStatesPalette = palleteArrayTag as NbtList;
-                foreach (NbtCompound entry in blockStatesPalette!)
+                foreach (NbtCompound entry in blockStatesPalette)
                 {
                     var name = entry.GetString("Name");
                     var id = entry.GetInt("Id");
 
                     chunkSecPalette.GetOrAddId(BlocksRegistry.Get(id));//TODO PROCESS ADDED PROPERTIES TO GET CORRECT BLOCK STATE
                 }
-            }
 
-            section.BlockStateContainer.GrowDataArray();
+                section.BlockStateContainer.GrowDataArray();
+            }
 
             var biomesCompound = sectionCompound["biomes"] as NbtCompound;
             var biomesPalette = biomesCompound!["palette"] as NbtList;
@@ -258,24 +259,11 @@ public class Region
             {
                 var palette = new NbtList(NbtTagType.Compound, "palette");
 
-                var hasAir = false;
-
-                foreach(var id in indirect.Values)
+                Span<int> span = indirect.Values;
+                for(int i = 0; i < indirect.Count; i++)
                 {
+                    var id = span[i];
                     var block = BlocksRegistry.Get(id);
-
-                    if (block.IsAir && !hasAir && !indirect.Values.Any(x => x > 0))
-                    {
-                        palette.Add(new NbtCompound
-                        {
-                            new NbtTag<string>("Name", block.UnlocalizedName),
-                            new NbtTag<int>("Id", 0)
-                        });
-                        hasAir = true;
-                        continue;
-                    }
-                    else if (block.IsAir)
-                        continue;
 
                     palette.Add(new NbtCompound
                     {

@@ -8,10 +8,10 @@ public static class Palette
     {
         if (bitsPerEntry <= 4)
             return new IndirectPalette(4);
-        else if (bitsPerEntry > 4 || bitsPerEntry <= 8)
+        else if (bitsPerEntry > 4 && bitsPerEntry <= 8)
             return new IndirectPalette(bitsPerEntry);
 
-        return new GlobalBlockStatePalette(Registry.GlobalBitsPerBlocks);
+        return new GlobalBlockStatePalette(BlocksRegistry.GlobalBitsPerBlocks);
     }
 
     public static IPalette<Biomes> DetermineBiomePalette(this byte bitsPerEntry)

@@ -4,6 +4,7 @@ namespace Obsidian.Utilities.Registry;
 
 internal partial class BlocksRegistry
 {
+    public static int GlobalBitsPerBlocks { get; private set; }
     static BlocksRegistry()
     {
         //Lets cache everything first
@@ -21,6 +22,8 @@ internal partial class BlocksRegistry
         {
             Get(AllStates[i]);
         }
+
+        GlobalBitsPerBlocks = (int)Math.Ceiling(Math.Log2(StateToBase.Length));
     }
 
     public static IBlock Get(int stateId)

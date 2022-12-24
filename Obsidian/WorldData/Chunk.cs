@@ -1,7 +1,9 @@
-﻿using Obsidian.Blocks;
+﻿using Microsoft.Win32;
+using Obsidian.Blocks;
 using Obsidian.ChunkData;
 using Obsidian.Nbt;
 using Obsidian.Net;
+using Obsidian.Utilities.Registry;
 
 namespace Obsidian.WorldData;
 

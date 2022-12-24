@@ -12,6 +12,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
 
     public override DataArray DataArray { get; protected set; }
 
+
 #if CACHE_VALID_BLOCKS
     private readonly DirtyCache<short> validBlockCount;
 #endif
@@ -51,7 +52,7 @@ public sealed class BlockStateContainer : DataContainer<IBlock>
         DataArray[blockIndex] = paletteId;
     }
 
-    internal void GrowDataArray()
+    public void GrowDataArray()
     {
         if (Palette.BitCount > DataArray.BitsPerEntry)
             DataArray = DataArray.Grow(Palette.BitCount);
