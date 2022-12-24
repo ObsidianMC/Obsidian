@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateItems(Assets assets, GeneratorExecutionContext context)
+    private static void GenerateItems(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
         builder.Using("System.Collections.Generic");

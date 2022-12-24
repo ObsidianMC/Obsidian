@@ -2,9 +2,9 @@
 
 namespace Obsidian.SourceGenerators.Registry;
 
-public partial class BlockGenerator
+public partial class BlocksGenerator
 {
-    private static void GenerateBlocks(Block[] blocks, GeneratorExecutionContext ctx)
+    private static void GenerateBlocks(Block[] blocks, SourceProductionContext ctx)
     {
         var blocksBuilder = new CodeBuilder()
             .Using("Obsidian.Blocks")
@@ -47,8 +47,6 @@ public partial class BlockGenerator
                 builder.Line("ArgumentNullException.ThrowIfNull(state, \"state\");");
                 builder.Line("this.State = state;").EndScope();
             }
-
-
 
             builder.Line().Method("public override int GetHashCode()").Line($"return this.State != null ? this.State.Id : this.BaseId;").EndScope();
 

@@ -1,9 +1,9 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 
 namespace Obsidian.SourceGenerators.Registry;
-public partial class BlockGenerator
+public partial class BlocksGenerator
 {
-    private static void CreateBlockStates(Block[] blocks, GeneratorExecutionContext ctx)
+    private static void CreateBlockStates(Block[] blocks, SourceProductionContext ctx)
     {
         foreach (var block in blocks)
         {

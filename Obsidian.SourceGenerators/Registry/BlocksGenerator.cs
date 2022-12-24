@@ -5,7 +5,7 @@ using System.IO;
 namespace Obsidian.SourceGenerators.Registry;
 
 [Generator]
-public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
+public sealed partial class BlocksGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -23,16 +23,17 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         var asm = output.compilation.AssemblyName;
 
         var assets = Assets.Get(output.files);
-       
-        if (asm == "Obsidian")
+
+        if (asm == "Obsidian.API")
         {
-            GenerateTags(assets, context);
-            GenerateItems(assets, context);
-            GenerateBlockIds(assets, context);
+            GenerateBlocksProperties(context);
+
+            CreateBlockStates(assets.Blocks, context);
+            CreateStateBuilders(assets.Blocks, context);
         }
-        else if (asm == "Obsidian.API")
+        else if (asm == "Obsidian")
         {
-            GenerateMaterials(assets, context);
+            GenerateBlocks(assets.Blocks, context);
         }
     }
 }

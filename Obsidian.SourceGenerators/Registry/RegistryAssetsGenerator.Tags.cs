@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateTags(Assets assets, GeneratorExecutionContext context)
+    private static void GenerateTags(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
         builder.Using("Obsidian.Net.Packets.Play.Clientbound");

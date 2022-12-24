@@ -1,7 +1,7 @@
 ﻿using Obsidian.SourceGenerators.Registry.Models;
 
 namespace Obsidian.SourceGenerators.Registry;
-public partial class BlockGenerator
+public partial class BlocksGenerator
 {
     private static void GenerateValueStore(CodeBuilder stateBuilder, BlockProperty[] properties)
     {
@@ -18,7 +18,7 @@ public partial class BlockGenerator
         stateBuilder.EndScope(true).Line();
     }
 
-    private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties, GeneratorExecutionContext ctx)
+    private static void GeneratePossibleStates(CodeBuilder stateBuilder, Dictionary<int, List<string>> stateValues, BlockProperty[] properties)
     {
         stateBuilder.Statement("private Dictionary<string, int> possibleStates = new()");
 
@@ -97,7 +97,7 @@ public partial class BlockGenerator
         stateBuilder.EndScope();
     }
 
-    private static void CreateStateBuilders(Block[] blocks, GeneratorExecutionContext ctx)
+    private static void CreateStateBuilders(Block[] blocks, SourceProductionContext ctx)
     {
         foreach (var block in blocks)
         {
@@ -116,7 +116,7 @@ public partial class BlockGenerator
                 .Type($"public sealed class {fullName} : IStateBuilder<{blockName}State>");
 
             GenerateValueStore(stateBuilder, block.Properties);
-            GeneratePossibleStates(stateBuilder, block.StateValues, block.Properties, ctx);
+            GeneratePossibleStates(stateBuilder, block.StateValues, block.Properties);
 
             foreach (var property in block.Properties)
             {

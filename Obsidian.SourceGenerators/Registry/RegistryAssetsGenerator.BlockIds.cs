@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateBlockIds(Assets assets, GeneratorExecutionContext context)
+    private static void GenerateBlockIds(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
 
